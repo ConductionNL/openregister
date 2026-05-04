@@ -95,7 +95,13 @@ jobs:
           CONTAINER_NAME: nextcloud
           NEWMAN_RUNNER: host
           FAIL_FAST: "0"
-          COLLECTIONS: ${{ inputs.collections }}
+          # platform-annotations + files hardcode 'decidesk/meeting' /
+          # register=1 / schema=1 IDs that don't exist in fresh CI state
+          # (they assume dev-container state). Excluded by default until
+          # the collections gain proper setUp steps that seed their own
+          # test fixtures. Match agent-cms / federation pattern (extras).
+          # Override via workflow_dispatch input to run them anyway.
+          COLLECTIONS: ${{ inputs.collections || 'crud graphql relations auth-matrix error-matrix referential-integrity' }}
         run: bash tests/newman/run-all.sh
 
       - name: Upload Newman reports
