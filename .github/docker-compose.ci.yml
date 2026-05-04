@@ -6,6 +6,9 @@
 #
 # Paths are relative to this file: `..` resolves to the repo root.
 
+volumes:
+  nextcloud-data:
+
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -31,6 +34,11 @@ services:
       db:
         condition: service_healthy
     volumes:
+      # Named volume on /var/www/html so the official entrypoint can
+      # populate it from /usr/src/nextcloud — otherwise the bind mount
+      # below leaves /var/www/html/apps unwritable and the install
+      # bails with "Cannot write into apps directory".
+      - nextcloud-data:/var/www/html:rw
       - ..:/var/www/html/custom_apps/openregister:rw
     environment:
       POSTGRES_DB: nextcloud
