@@ -497,7 +497,10 @@ class ObjectService
                         'trace'             => $e->getTraceAsString(),
                     ]
                 );
-                throw new ValidationException(message: 'Schema not found');
+                // Rethrow the DoesNotExistException so NC's framework dispatcher
+                // converts it to a 404 response. Wrapping in ValidationException
+                // causes a 500 instead because ValidationException is generic.
+                throw $e;
             }//end try
         }//end if
 
