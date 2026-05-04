@@ -24,7 +24,9 @@ services:
       retries: 12
 
   nextcloud:
-    image: nextcloud:30-apache
+    # NC 32+ for OCP\DB\Types::DATETIME_IMMUTABLE; matches stable32 in code-quality.yml
+    # and openregister's info.xml min-version=28 max-version=34.
+    image: nextcloud:32-apache
     container_name: nextcloud
     user: root
     restart: unless-stopped
