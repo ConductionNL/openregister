@@ -78,7 +78,7 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return ObjectEntity The object entity that is being deleted
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      */
     public function getObject(): ObjectEntity
     {
@@ -90,7 +90,7 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return bool True if propagation is stopped
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
      */
     public function isPropagationStopped(): bool
     {
@@ -102,7 +102,7 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
      */
     public function stopPropagation(): void
     {
@@ -116,7 +116,7 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
      */
     public function setErrors(array $errors): void
     {
@@ -128,7 +128,7 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return array<string, mixed> The error details
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
      */
     public function getErrors(): array
     {
@@ -142,7 +142,7 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
      */
     public function setModifiedData(array $data): void
     {
@@ -154,7 +154,7 @@ class ObjectDeletingEvent extends Event implements StoppableEventInterface
      *
      * @return array<string, mixed> The modified data
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
      */
     public function getModifiedData(): array
     {

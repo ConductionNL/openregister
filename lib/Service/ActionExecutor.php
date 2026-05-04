@@ -16,9 +16,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-2
- * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-3
- * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-4
  */
 
 declare(strict_types=1);
@@ -78,7 +78,7 @@ class ActionExecutor
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
      */
     public function executeActions(array $actions, Event $event, array $payload, string $eventType): void
     {
@@ -200,7 +200,7 @@ class ActionExecutor
      *
      * @return array The CloudEvent-formatted payload
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
      */
     public function buildCloudEventPayload(Action $action, array $payload, string $eventType): array
     {

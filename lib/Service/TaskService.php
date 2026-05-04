@@ -15,7 +15,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
  */
 
 declare(strict_types=1);
@@ -98,7 +98,7 @@ class TaskService
      *
      * @throws Exception If no user is logged in or no calendar found
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
      */
     public function getTasksForObject(string $objectUuid): array
     {
@@ -166,7 +166,7 @@ class TaskService
      *
      * @throws Exception If no user is logged in or no calendar found
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
      */
     public function createTask(
         int $registerId,

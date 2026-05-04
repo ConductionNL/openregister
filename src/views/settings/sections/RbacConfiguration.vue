@@ -139,7 +139,7 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
  */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
@@ -166,13 +166,13 @@ export default {
 
 		rbacOptions: {
 			/**
-			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 			 */
 			get() {
 				return this.settingsStore.rbacOptions
 			},
 			/**
-			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 			 */
 			set(value) {
 				this.settingsStore.rbacOptions = value
@@ -180,35 +180,35 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 		 */
 		groupOptions() {
 			return this.settingsStore.groupOptions
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 		 */
 		userOptions() {
 			return this.settingsStore.userOptions
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 		 */
 		rebasing() {
 			return this.settingsStore.rebasing
@@ -217,14 +217,14 @@ export default {
 
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 		 */
 		showRebaseDialog() {
 			this.settingsStore.showRebaseDialog()
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 		 */
 		async saveSettings() {
 			await this.settingsStore.updateRbacSettings(this.rbacOptions)

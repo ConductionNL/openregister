@@ -7,7 +7,7 @@ The `DestructionCheckJob` already implements two distinct notification phases fo
 1. **Pre-destruction notifications** — N days before the deadline (default 30), per-object alerts to the `archivaris` group with deduplication and legal-hold exclusion.
 2. **List creation notification** — fires once when a destruction list is generated, already covered by REQ-001.
 
-The ghost change `retrofit-archival-destruction-workflow-2026-04-24` retroactively specifies the pre-destruction notification phase as REQ-009 and backfills `@spec` annotations on the 18 supporting Bucket 2a methods (legal hold management, archival date calculation, due-objects discovery) that map to existing REQs.
+The ghost change `retrofit-2026-04-24-archival-destruction-workflow` retroactively specifies the pre-destruction notification phase as REQ-009 and backfills `@spec` annotations on the 18 supporting Bucket 2a methods (legal hold management, archival date calculation, due-objects discovery) that map to existing REQs.
 
 **Files covered:**
 - `lib/BackgroundJob/DestructionCheckJob.php` — the new REQ-009 behavior

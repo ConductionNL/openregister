@@ -75,7 +75,7 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return 'objects'
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getName(): string
     {
@@ -87,7 +87,7 @@ class ObjectsTool extends AbstractTool
      *
      * @return string The tool description.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getDescription(): string
     {
@@ -103,7 +103,7 @@ class ObjectsTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getFunctions(): array
     {
@@ -220,7 +220,7 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
@@ -257,7 +257,7 @@ class ObjectsTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable filter parameters
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function searchObjects(
         int $limit=20,
@@ -324,7 +324,7 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getObject(string $id): array
     {
@@ -362,7 +362,7 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function createObject(string $register, string $schema, array $data): array
     {
@@ -406,7 +406,7 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function updateObject(string $id, array $data): array
     {
@@ -450,7 +450,7 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function deleteObject(string $id): array
     {

@@ -6,7 +6,7 @@
  *
  * @package OpenRegister
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-51
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-51
  */
 
 import Vue from 'vue'
@@ -21,7 +21,7 @@ const MOUNT_MAX_RETRIES = 30
  *
  * @return {HTMLElement|null} The mount point element or null.
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-51
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-51
  */
 function findMountPoint() {
 	// Try the Mail app content area

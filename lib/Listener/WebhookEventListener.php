@@ -16,8 +16,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-77
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-42
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-77
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-42
  */
 
 declare(strict_types=1);
@@ -95,7 +95,7 @@ class WebhookEventListener implements IEventListener
      * @param WebhookService  $webhookService Webhook service
      * @param LoggerInterface $logger         Logger
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function __construct(
         WebhookService $webhookService,
@@ -112,8 +112,8 @@ class WebhookEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-42
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-42
      */
     public function handle(Event $event): void
     {
@@ -158,7 +158,7 @@ class WebhookEventListener implements IEventListener
      * @SuppressWarnings(PHPMD.NPathComplexity)       Event handling requires checking many event types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Unified event extraction requires handling all types
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-77
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-77
      */
     private function extractPayload(Event $event): array|null
     {

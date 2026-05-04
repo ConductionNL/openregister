@@ -4,7 +4,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 
 OpenRegister's core object CRUD pipeline is implemented as a layered set of handlers under `lib/Service/Object/`. The coverage scanner classified all 252 methods under `object-interactions` (the notes/CalDAV/file-attachment spec) — a misclassification driven by the directory name overlap. None of these handlers actually touch comments, CalDAV, or file attachments; they implement an internal pipeline (save → validate → cache → metadata-hydrate → bulk-process) that has no corresponding capability spec.
 
-The ghost change `retrofit-object-lifecycle-2026-04-28` mints `object-lifecycle` as a new capability and retroactively specifies the pipeline as 5 REQs. Cross-capability handlers (permissions, audit, faceting, search, export, relations) are tagged with cross-references to their canonical home specs rather than collapsed into `object-lifecycle`.
+The ghost change `retrofit-2026-04-28-object-lifecycle` mints `object-lifecycle` as a new capability and retroactively specifies the pipeline as 5 REQs. Cross-capability handlers (permissions, audit, faceting, search, export, relations) are tagged with cross-references to their canonical home specs rather than collapsed into `object-lifecycle`.
 
 **Core files covered (single-capability):**
 - `lib/Service/Object/SaveObjects.php`, `SaveObject.php`, `CrudHandler.php`, `DeleteObject.php`, `GetObject.php`, `RenderObject.php`

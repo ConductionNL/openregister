@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -144,7 +144,7 @@ class ArchivalService
      *
      * @return DateTime The calculated archival action date
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
      */
     public function calculateArchivalDate(
         SelectionList $selectionList,
@@ -175,7 +175,7 @@ class ArchivalService
      *
      * @return ObjectEntity[] Array of objects due for destruction
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-1
      */
     public function findObjectsDueForDestruction(): array
     {
@@ -239,7 +239,7 @@ class ArchivalService
      *
      * @return DestructionList|null The generated list, or null if no objects found
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
      */
     public function generateDestructionList(): ?DestructionList
     {
@@ -274,7 +274,7 @@ class ArchivalService
      *
      * @throws InvalidArgumentException If list is not in pending_review status
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
      */
     public function approveDestructionList(DestructionList $list, string $userId): array
     {
@@ -377,7 +377,7 @@ class ArchivalService
      *
      * @throws InvalidArgumentException If list is not in pending_review status
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
      */
     public function rejectFromDestructionList(DestructionList $list, array $objectUuids): DestructionList
     {

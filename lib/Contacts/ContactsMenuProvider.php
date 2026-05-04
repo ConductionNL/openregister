@@ -100,7 +100,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      */
     public function __construct(
         ContactMatchingService $matchingService,
@@ -125,7 +125,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      */
     public function process(IEntry $entry): void
     {
@@ -149,7 +149,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      */
     private function doProcess(IEntry $entry): void
     {
@@ -190,7 +190,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      */
     private function injectCountBadge(IEntry $entry, array $matches, string $primaryEmail): void
     {
@@ -230,7 +230,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      */
     private function injectEntityActions(
         IEntry $entry,

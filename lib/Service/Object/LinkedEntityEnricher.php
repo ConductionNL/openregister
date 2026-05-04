@@ -54,7 +54,7 @@ class LinkedEntityEnricher
      * @param IUserManager     $userManager     User manager for resolving display names
      * @param LoggerInterface  $logger          Logger
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -72,7 +72,7 @@ class LinkedEntityEnricher
      *
      * @return array The object data with enriched linked entities
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function enrich(array $objectData, array $extend): array
     {
@@ -101,7 +101,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched mail objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichMail(array $ids): array
     {
@@ -149,7 +149,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched contact objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichContacts(array $ids): array
     {
@@ -193,7 +193,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched note objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichNotes(array $ids): array
     {
@@ -227,7 +227,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched todo objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichTodos(array $ids): array
     {
@@ -281,7 +281,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched event objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichCalendar(array $ids): array
     {
@@ -335,7 +335,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched Talk objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichTalk(array $ids): array
     {
@@ -375,7 +375,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched Deck objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichDeck(array $ids): array
     {
@@ -427,7 +427,7 @@ class LinkedEntityEnricher
      *
      * @return array The fallback result
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function notFoundResult(string $id): array
     {
@@ -445,7 +445,7 @@ class LinkedEntityEnricher
      *
      * @return string|null The field value or null
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function extractVcardField(string $carddata, string $field): ?string
     {
@@ -464,7 +464,7 @@ class LinkedEntityEnricher
      *
      * @return string|null The field value or null
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function extractIcalField(string $caldata, string $field): ?string
     {

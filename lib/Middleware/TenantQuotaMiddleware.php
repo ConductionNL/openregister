@@ -16,9 +16,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-79
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-78
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-79
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-78
  */
 
 declare(strict_types=1);
@@ -93,8 +93,8 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-79
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-79
      */
     public function beforeController(string|Controller $controller, string $methodName): void
     {
@@ -162,8 +162,8 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-78
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-78
      */
     public function afterController(string|Controller $controller, string $methodName, Response $response): Response
     {
@@ -258,7 +258,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @throws TenantQuotaExceededException If quota is exceeded
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
      */
     private function checkRequestQuota(object $organisation): void
     {

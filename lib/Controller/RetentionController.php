@@ -17,8 +17,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-66
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-69
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-66
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-69
  */
 
 declare(strict_types=1);
@@ -95,7 +95,7 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response with updated destruction list
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-66
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-66
      */
     public function approveDestructionList(string $id): JSONResponse
     {
@@ -255,7 +255,7 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response with updated status
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-66
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-66
      */
     public function rejectDestructionList(string $id): JSONResponse
     {
@@ -333,7 +333,7 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response with updated object
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-69
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-69
      */
     public function placeLegalHold(): JSONResponse
     {
@@ -387,7 +387,7 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response with updated object
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-69
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-69
      */
     public function releaseLegalHold(string $id): JSONResponse
     {
@@ -434,7 +434,7 @@ class RetentionController extends Controller
      *
      * @return JSONResponse Response confirming the bulk operation
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-69
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-69
      */
     public function placeBulkLegalHold(): JSONResponse
     {

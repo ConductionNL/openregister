@@ -56,7 +56,7 @@ class Notifier implements INotifier
      *
      * @psalm-return 'openregister'
      *
-     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
      */
     public function getID(): string
     {
@@ -82,7 +82,7 @@ class Notifier implements INotifier
      * @return INotification The prepared notification
      * @throws InvalidArgumentException If the notification is not from this app
      *
-     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
      */
     public function prepare(INotification $notification, string $languageCode): INotification
     {
@@ -111,7 +111,7 @@ class Notifier implements INotifier
      *
      * @return INotification The prepared notification
      *
-     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
      */
     private function prepareConfigurationUpdate(INotification $notification, $l): INotification
     {

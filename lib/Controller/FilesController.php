@@ -13,7 +13,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
  */
 
 declare(strict_types=1);
@@ -135,7 +135,7 @@ class FilesController extends Controller
      *
      * @PublicPage
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
      */
     public function index(
         string $register,
@@ -285,7 +285,7 @@ class FilesController extends Controller
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
      */
     public function create(
         string $register,
@@ -831,7 +831,7 @@ class FilesController extends Controller
      *     array{error?: string, success?: bool},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
      */
     public function delete(
         string $register,
@@ -880,7 +880,7 @@ class FilesController extends Controller
      *     array{error?: mixed|string, labels?: list<string>,...},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
      */
     public function publish(
         string $register,

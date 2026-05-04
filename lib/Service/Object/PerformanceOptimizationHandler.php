@@ -41,7 +41,7 @@ class PerformanceOptimizationHandler
      * @param OrganisationService $organisationService Organisation service for context.
      * @param LoggerInterface     $logger              Logger for debugging.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function __construct(
         private readonly OrganisationService $organisationService,
@@ -60,7 +60,7 @@ class PerformanceOptimizationHandler
      * @psalm-return   string|null
      * @phpstan-return string|null
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function getActiveOrganisationForContext(): ?string
     {
@@ -111,7 +111,7 @@ class PerformanceOptimizationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Different timing scenarios generate different recommendations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive recommendations require detailed analysis
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function getPerformanceRecommendations(float $totalTime, array $perfTimings, array $query): array
     {

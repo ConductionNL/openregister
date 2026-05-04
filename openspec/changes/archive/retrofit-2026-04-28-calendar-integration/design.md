@@ -4,7 +4,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 
 Calendar integration is an existing CalDAV-exposure layer that surfaces register objects as iCalendar (VEVENT) entries through Nextcloud's `ICalendarProvider`/`ICalendar` contracts. Schemas declare calendar-eligible properties via configuration; the provider walks each register's calendar-enabled schemas, transforms matching objects into VEVENTs, and exposes them under stable CalDAV URIs.
 
-The ghost change `retrofit-calendar-integration-2026-04-28` mints `calendar-integration` as a new capability and retroactively specifies the observed behavior as 2 REQs covering (a) the CalDAV provider/calendar contract and (b) the iCalendar payload transformation.
+The ghost change `retrofit-2026-04-28-calendar-integration` mints `calendar-integration` as a new capability and retroactively specifies the observed behavior as 2 REQs covering (a) the CalDAV provider/calendar contract and (b) the iCalendar payload transformation.
 
 **Files covered:**
 - `lib/Calendar/RegisterCalendarProvider.php` (3 methods) — `ICalendarProvider` implementation: surfaces calendars per user

@@ -7,7 +7,7 @@ The existing `tenant-lifecycle` spec defines the provisioning/suspension/deprovi
 1. **OTAP environment validation** (`isValidEnvironment`, `isValidPromotionOrder`) — guards against invalid environment values and enforces unidirectional promotion order across `dev` → `test` → `acceptance` → `production`.
 2. **Hourly deprovisioning job** (`TenantDeprovisionJob::run`) — already partially specified by REQ-003 but missing an `@spec` annotation.
 
-The ghost change `retrofit-tenant-lifecycle-2026-04-28` adds REQ-005 for the OTAP validation logic and backfills the REQ-003 annotation on the deprovisioning job. It also surfaces an observed gap between REQ-003 (which specifies object soft-deletion) and the actual implementation (which only flips the Organisation status to `archived` and defers object deletion to a purge job).
+The ghost change `retrofit-2026-04-28-tenant-lifecycle` adds REQ-005 for the OTAP validation logic and backfills the REQ-003 annotation on the deprovisioning job. It also surfaces an observed gap between REQ-003 (which specifies object soft-deletion) and the actual implementation (which only flips the Organisation status to `archived` and defers object deletion to a purge job).
 
 **Files covered:**
 - `lib/Service/TenantLifecycleService.php` — `isValidEnvironment`, `isValidPromotionOrder` (REQ-005, new); `validateTransition` (REQ-001, existing)

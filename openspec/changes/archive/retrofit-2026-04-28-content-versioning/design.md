@@ -4,7 +4,7 @@ Retrofit change. Tasks describe retroactive annotation, not new implementation w
 
 The existing `content-versioning` capability covers *object* versioning (semantic version numbering, draft states, rollback through audit trail). It does **not** cover *file attachment* versioning, which OpenRegister exposes through Nextcloud's `IVersionManager` / `files_versions` app via the thin wrapper `FileVersioningHandler`.
 
-The ghost change `retrofit-content-versioning-2026-04-28` extends `content-versioning` with REQ-017 to specify the file-attachment versioning behavior as observed in `FileVersioningHandler`.
+The ghost change `retrofit-2026-04-28-content-versioning` extends `content-versioning` with REQ-017 to specify the file-attachment versioning behavior as observed in `FileVersioningHandler`.
 
 **Files covered:**
 - `lib/Service/File/FileVersioningHandler.php` (4 methods, 1 private) — wrapper around Nextcloud `IVersionManager` for listing and restoring file-attachment versions
