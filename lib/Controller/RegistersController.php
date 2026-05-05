@@ -276,105 +276,32 @@ class RegistersController extends Controller
         // Extract filters.
         $filters = $params['filters'] ?? [];
 
-        $registers    = $this->registerService->findAll(
+        // Schema expansion + per-schema `@self.stats` are handled by the service-layer
+        // serializer (see lib/Service/Serializer/RegisterSerializer.php and the
+        // `register-service-extensions` capability spec).
+        $registersArr = $this->registerService->findAllSerialized(
             limit: $limit,
             offset: $offset,
             filters: $filters,
             searchConditions: [],
             searchParams: [],
+            _extend: $extend,
             _multitenancy: false
         );
-        $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
 
-        // If 'schemas' is requested in _extend, expand schema IDs to full schema objects.
-        if (in_array('schemas', $extend, true) === true) {
-            foreach ($registersArr as &$register) {
-                if (($register['schemas'] ?? null) !== null && is_array($register['schemas']) === true) {
-                    $expandedSchemas = [];
-                    foreach ($register['schemas'] as $schemaId) {
-                        try {
-                            $schema            = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
-                            $expandedSchemas[] = $schema->jsonSerialize();
-                        } catch (DoesNotExistException $e) {
-                            // Schema not found, skip it.
-                            $ctx = ['schemaId' => $schemaId];
-                            $this->logger->warning(
-                                message: '[RegistersController] Schema not found for expansion',
-                                context: array_merge(['file' => __FILE__, 'line' => __LINE__], $ctx)
-                            );
-                        }
-                    }
-
-                    $register['schemas'] = $expandedSchemas;
-
-                    // If schemas were expanded and stats are requested, add schema-level stats.
-                    if (in_array('@self.stats', $extend, true) === true && empty($expandedSchemas) === false) {
-                        // Get object counts per schema using optimized query.
-                        $schemaCounts = $this->registerService->getSchemaObjectCounts(
-                            registerId: $register['id'],
-                            schemas: $expandedSchemas
-                        );
-
-                        $registerId = $register['id'];
-                        $countsJson = json_encode($schemaCounts);
-                        $msg        = "[RegistersController] Schema counts for register {$registerId}: {$countsJson}";
-                        $this->logger->debug(
-                            message: $msg,
-                            context: ['file' => __FILE__, 'line' => __LINE__]
-                        );
-
-                        // Add stats to each expanded schema.
-                        foreach ($register['schemas'] as &$schema) {
-                            $schemaId = $schema['id'] ?? null;
-                            $hasCount = 'no';
-                            if (isset($schemaCounts[$schemaId]) === true) {
-                                $hasCount = 'yes';
-                            }
-
-                            $this->logger->debug(
-                                message: "[RegistersController] Processing schema {$schemaId},".' has count: '.$hasCount,
-                                context: ['file' => __FILE__, 'line' => __LINE__]
-                            );
-                            // Default: no objects found for this schema.
-                            $schema['stats'] = [
-                                'objects' => ['total' => 0],
-                            ];
-                            $this->logger->debug(
-                                message: "[RegistersController] No count for schema {$schemaId}, set to 0",
-                                context: ['file' => __FILE__, 'line' => __LINE__]
-                            );
-
-                            if ($schemaId !== null && isset($schemaCounts[$schemaId]) === true) {
-                                $schema['stats'] = [
-                                    'objects' => $schemaCounts[$schemaId],
-                                ];
-                                $statsJson       = json_encode($schema['stats']);
-                                $msg = "[RegistersController] Set stats for schema {$schemaId}: {$statsJson}";
-                                $this->logger->debug(
-                                message: $msg,
-                                context: ['file' => __FILE__, 'line' => __LINE__]
-                                );
-                            }
-                        }//end foreach
-
-                        unset($schema);
-                        // CRITICAL: Unset reference to prevent corruption of array in subsequent iterations.
-                    }//end if
-                }//end if
-            }//end foreach
-
-            unset($register);
-            // CRITICAL: Unset reference to prevent array corruption.
-        }//end if
-        // If '@self.stats' is requested, attach statistics to each register.
-        if (in_array('@self.stats', $extend, true) === true) {
+        // Register-level `@self.stats` (object/log/file counts on the register itself, not on
+        // its schemas) is a separate concern from the per-schema stats handled above and is
+        // out of scope for the serializer.
+        if (in_array(needle: '@self.stats', haystack: $extend, strict: true) === true) {
             foreach ($registersArr as &$register) {
                 $register['stats'] = [
                     'objects' => $this->objectEntityMapper->getStatistics(registerId: $register['id'], schemaId: null),
                     'logs'    => $this->auditTrailMapper->getStatistics(registerId: $register['id'], schemaId: null),
-                    'files'   => [ 'total' => 0, 'size' => 0 ],
+                    'files'   => ['total' => 0, 'size' => 0],
                 ];
             }
+
+            unset($register);
         }
 
         return new JSONResponse(data: ['results' => $registersArr]);

@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -89,6 +90,13 @@ class RegisterServiceTest extends TestCase
     private $logger;
 
     /**
+     * Mock register serializer.
+     *
+     * @var RegisterSerializer|MockObject
+     */
+    private $registerSerializer;
+
+    /**
      * The service under test.
      *
      * @var RegisterService
@@ -108,6 +116,7 @@ class RegisterServiceTest extends TestCase
         $this->fileService         = $this->createMock(FileService::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
         $this->logger              = $this->createMock(LoggerInterface::class);
+        $this->registerSerializer  = $this->createMock(RegisterSerializer::class);
 
         $this->service = new RegisterService(
             registerMapper: $this->registerMapper,
@@ -115,7 +124,8 @@ class RegisterServiceTest extends TestCase
             db: $this->db,
             fileService: $this->fileService,
             organisationService: $this->organisationService,
-            logger: $this->logger
+            logger: $this->logger,
+            registerSerializer: $this->registerSerializer
         );
     }
 
