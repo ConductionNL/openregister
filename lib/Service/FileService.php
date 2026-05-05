@@ -667,6 +667,9 @@ class FileService
             }
 
             return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
+        } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
+            // Access denials must propagate to the controller for HTTP 403 with structured body.
+            throw $e;
         } catch (exception $e) {
             $this->logger->error(
                 message: '[FileService] Failed to create folder for entity: {message}',
