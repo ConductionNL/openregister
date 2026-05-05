@@ -219,6 +219,7 @@ class SaveObject
         private readonly TranslationHandler $translationHandler,
         private readonly LoggerInterface $logger,
         private readonly TmloService $tmloService,
+        private readonly \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler,
         ArrayLoader $arrayLoader,
     ) {
         $this->twig = new Environment($arrayLoader);
@@ -3453,6 +3454,28 @@ class SaveObject
 
         if (array_key_exists('organisation', $selfData) === true && empty($selfData['organisation']) === false) {
             $objectEntity->setOrganisation($selfData['organisation']);
+        }
+
+        // Propagate @self.folder so the access-control check governs the bind
+        // (numeric → access-checked, empty/legacy → auto-create). Without
+        // propagation a user-supplied @self.folder is silently dropped —
+        // defeating the whole `self-folder-access-control` capability.
+        if (array_key_exists('folder', $selfData) === true && empty($selfData['folder']) === false) {
+            $folderValue = (string) $selfData['folder'];
+
+            // For non-empty numeric folder values (the format produced by
+            // explicit `@self.folder` writes), require that the acting user
+            // can read the target folder — otherwise reject the bind with
+            // `FolderAccessDeniedException`. Legacy non-numeric values fall
+            // through to the auto-create path unchanged.
+            if (is_numeric($folderValue) === true) {
+                $this->folderManagementHandler->assertFolderIsAccessible(
+                    folderId: $folderValue,
+                    objectEntity: $objectEntity
+                );
+            }
+
+            $objectEntity->setFolder($folderValue);
         }
 
         // Set TMLO metadata from @self if provided.

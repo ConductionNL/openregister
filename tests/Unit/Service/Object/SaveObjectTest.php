@@ -135,6 +135,7 @@ class SaveObjectTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
             $this->logger,
             $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             $arrayLoader
         );
     }

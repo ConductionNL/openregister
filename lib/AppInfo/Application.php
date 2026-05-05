@@ -438,6 +438,7 @@ class Application extends App implements IBootstrap
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
                     fileService: null
                 );
             }

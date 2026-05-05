@@ -235,6 +235,7 @@ class IntegratedFileUploadTest extends TestCase
             $translationHandler,
             $this->logger,
             $tmloService,
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             $arrayLoader
         );
     }
