@@ -2,11 +2,11 @@
 
 OpenRegister lets clients attach an object to a pre-existing Nextcloud folder by setting `@self.folder` to the folder's numeric node ID. The binding flows through three places:
 
-1. **Hydration** — `SaveObjects::hydrate($object['@self'])` (`lib/Service/Object/SaveObjects.php:611`) copies every key from the incoming `@self` envelope onto the `ObjectEntity`, including `folder`, without filtering. This is by design — `@self` is the envelope of protected metadata.
-2. **Entity storage** — `ObjectEntity::$folder` (`lib/Db/ObjectEntity.php:241`) is `?string`, persisted as-is.
-3. **Folder creation / lookup** — `FolderManagementHandler::createObjectFolderById()` (`lib/Service/File/FolderManagementHandler.php:231-283`) reads `$objectEntity->getFolder()` and decides: does the ID resolve? If yes, return that folder. If no, auto-create a new folder under the register folder.
+1. **Hydration** — `SaveObjects::hydrate($object['@self'])` copies every key from the incoming `@self` envelope onto the `ObjectEntity`, including `folder`, without filtering. This is by design — `@self` is the envelope of protected metadata.
+2. **Entity storage** — `ObjectEntity::$folder` is `?string`, persisted as-is.
+3. **Folder creation / lookup** — `FolderManagementHandler::createObjectFolderById()` reads `$objectEntity->getFolder()` and decides: does the ID resolve? If yes, return that folder. If no, auto-create a new folder under the register folder.
 
-The vulnerability is at step 3, specifically in the supporting `getNodeById()` helper (lines 641-672):
+The vulnerability is at step 3, specifically in the supporting `getNodeById()` helper:
 
 ```php
 // First try via the current user's folder.
@@ -123,8 +123,11 @@ Not applicable — this change introduces no new schemas, no new registers, and 
 
 Rollback: revert the PR. Stored data is unchanged, so rollback has no migration cost.
 
-## Open Questions
+## Resolved Questions
 
-- **Should we also verify the folder is a Folder (vs a File)?** Current code has a `$existingFolder instanceof Folder` guard inside `getExistingFolderFromProperty`, so a file ID would resolve as `null` and hit the new hard-fail branch. That's the correct behaviour (file IDs shouldn't bind as folders) but it piggybacks on the hard-fail. Confirm in tests.
-- **Does the `controller-level` HTTP-403 mapping need to live on every `@self.folder`-accepting endpoint, or a single handler in a base class?** Check the current pattern — if controllers already have a shared `handleSaveException` method, add the new exception there once.
-- **Deprecation path for the `rootFolder` fallback in `getNodeById()`?** Not in this change, but worth noting for future work: now that binding has its own restrictive lookup, the general-purpose helper's root-fallback becomes the only path where cross-user exposure could matter. Review whether any callers of `getNodeById()` other than file reads still exist.
+1. **Folder vs File type check.** Decided: `assertFolderIsAccessible()` MUST verify `$node instanceof Folder` explicitly (not piggyback on `getExistingFolderFromProperty`'s null return). A file-ID bind attempt is denied, with the same `FolderAccessDeniedException`. Codified in the spec scenario *"Binding to a file (not a folder) fails with 403"* and in `tasks.md` 2.1.
+2. **Where the controller-level HTTP-403 mapping lives.** Decided: prefer reusing or extending an existing shared error-handler method (e.g. `handleSaveException`) rather than adding copy-pasted try/catch blocks per endpoint. Codified in `tasks.md` 5.2 ("Prefer extending existing shared error-handler method over copy-paste try/catch") and verified in 5.3 (no upstream absorption).
+
+## Deferred (genuinely open, tracked separately)
+
+- **Deprecation path for the `rootFolder` fallback in `getNodeById()`.** Out of scope for this change. Now that the binding path has its own restrictive lookup, the general-purpose helper's root-fallback becomes the only remaining path where cross-user exposure could matter. A separate change should audit `getNodeById()` callers (anonymous file reads, public downloads) and decide whether to keep, restrict, or replace the fallback per-callsite.

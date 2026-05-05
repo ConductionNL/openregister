@@ -1,5 +1,36 @@
 ## ADDED Requirements
 
+### Requirement: Default-deny invariant for `@self.folder` binds
+
+Every non-empty numeric `@self.folder` write SHALL be denied by default unless an explicit positive read-access check passes. There is no "unknown / fail-open" state: any condition that prevents the system from confirming readability for the acting user (lookup miss, exception during resolution, ambiguous mount state) MUST result in `FolderAccessDeniedException`. This invariant exists so that future refactors of the access-control helper have a clear north-star: anything that doesn't end in "and `isReadable()` returned `true` for this user" is a denial.
+
+#### Scenario: Unknown failure mode in resolution path defaults to denial
+- **GIVEN** a future refactor introduces a new failure mode in `assertFolderIsAccessible()` (e.g. a new exception type from `Folder::isReadable()`)
+- **WHEN** the helper encounters that failure
+- **THEN** the bind MUST be denied (translated to `FolderAccessDeniedException`)
+- **AND** the bind MUST NOT silently auto-create or proceed
+
+### Requirement: Definition of "self"
+
+In this capability, "self" — the actor whose access governs the bind — is defined precisely as:
+
+1. The `IUser` explicitly passed to `FolderManagementHandler::createObjectFolderById()` via the `?IUser $currentUser` parameter, **if non-null**;
+2. Otherwise, the session user retrieved via `IUserSession::getUser()`, **if non-null**;
+3. Otherwise, no user is present and the bind MUST be denied (an unauthenticated context cannot pass the read-access check).
+
+"Self" is **never** the owner of the register, the owner of the object being saved, or any other implied identity. The check governs whether the actor performing the save has read access to the requested folder — nothing else.
+
+#### Scenario: Explicit IUser argument overrides session user
+- **GIVEN** the session user is `alice` and `bob` is passed as the explicit `$currentUser`, where `bob` has read access to folder `42` and `alice` does not
+- **WHEN** `createObjectFolderById($objectEntity, $bob)` runs
+- **THEN** the bind succeeds because `bob`'s access is checked, not `alice`'s
+
+#### Scenario: No user in context denies the bind
+- **GIVEN** no `IUser` is passed and `IUserSession::getUser()` returns `null` (e.g. an unauthenticated job that nonetheless has `@self.folder` set to a numeric ID)
+- **WHEN** `createObjectFolderById()` runs
+- **THEN** `FolderAccessDeniedException` is thrown
+- **AND** no folder is auto-created
+
 ### Requirement: `@self.folder` writes require read access to the target folder
 
 When an object is saved with a non-empty, numeric value for `@self.folder` (or the equivalent post-hydration `ObjectEntity::getFolder()`), the system SHALL verify that the acting user can read the Nextcloud folder identified by that node ID before the object is associated with the folder. "Can read" is defined as: the folder is reachable via the acting user's user-folder mount AND `Folder::isReadable()` returns `true`. If either check fails, the system SHALL abort the save with `FolderAccessDeniedException`; it SHALL NOT fall back to creating a new folder and SHALL NOT bind the object to the requested folder.

@@ -4,8 +4,6 @@
 
 Defines the `_extend` contract on `RegisterService` so that any caller — HTTP controllers or other apps consuming the service via DI — can request post-processed register payloads (e.g. schemas hydrated from IDs into full objects, object counts per schema) with identical semantics and output. Also establishes the `lib/Service/Serializer/` namespace as the home for entity serializers that implement this contract.
 
-## Requirements
-
 ## ADDED Requirements
 
 ### Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`
@@ -54,7 +52,7 @@ When `_extend` contains the string `'schemas'`, the serializer MUST replace each
 
 ### Requirement: Missing schema ID SHALL be retained in place, not dropped
 
-When `SchemaMapper::find()` throws `DoesNotExistException` for a schema ID referenced by a register, the serializer MUST keep the original ID in its original position within the output `schemas` array, producing a mixed array of objects and IDs. This diverges from `RegistersController::index()`'s pre-refactor behavior, which dropped the missing schema; the new behavior aligns with OpenRegister's established "preserve original identifier on hydration failure" convention (e.g. `lib/Service/Object/RenderObject.php` preserves the UUID when cache lookup fails).
+When `SchemaMapper::find()` throws `DoesNotExistException` for a schema ID referenced by a register, the serializer MUST keep the original ID in its original position within the output `schemas` array, producing a mixed array of objects and IDs. This diverges from `RegistersController::index()`'s pre-refactor behavior, which dropped the missing schema; the new behavior aligns with OpenRegister's established "preserve original identifier on hydration failure" convention (e.g. `RenderObject` preserves the UUID when cache lookup fails). The wire-format implications for typed JSON consumers are documented in the proposal and changelog.
 
 The serializer MUST log a warning via the injected `LoggerInterface` with the failed schema ID in context.
 

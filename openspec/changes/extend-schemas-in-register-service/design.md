@@ -1,8 +1,8 @@
 ## Context
 
-OpenRegister's `RegisterService::findAll()` and `RegisterService::find()` advertise an `_extend` parameter (e.g. `_extend: ['schemas']`) that should replace schema-ID references on each register with fully-hydrated schema objects. The parameter is declared end-to-end — service → mapper — but the only place it is actually honored is inside `RegistersController::index()` (≈ `lib/Controller/RegistersController.php:286-345`), which loops over the serialized register arrays after the fact and expands them using `SchemaMapper`.
+OpenRegister's `RegisterService::findAll()` and `RegisterService::find()` advertise an `_extend` parameter (e.g. `_extend: ['schemas']`) that should replace schema-ID references on each register with fully-hydrated schema objects. The parameter is declared end-to-end — service → mapper — but the only place it is actually honored is inside `RegistersController::index()`, which loops over the serialized register arrays after the fact and expands them using `SchemaMapper`. (Line numbers intentionally elided — grep `_extend` in `RegistersController` to find the current callsite.)
 
-This means the contract is only honored over HTTP. Any consumer that calls the service via DI (DocuDesk's `RegisterDiscoveryService`, and almost certainly others) gets back entities whose `jsonSerialize()` yields schemas as an ID array (`Register.php:540-546` comment: *"Always return schemas as array of IDs."*). Downstream UIs that expect objects (e.g. DocuDesk's admin settings dropdown) silently render empty.
+This means the contract is only honored over HTTP. Any consumer that calls the service via DI (DocuDesk's `RegisterDiscoveryService`, and almost certainly others) gets back entities whose `jsonSerialize()` yields schemas as an ID array — `Register::jsonSerialize()` carries the explicit comment *"Always return schemas as array of IDs."* Downstream UIs that expect objects (e.g. DocuDesk's admin settings dropdown) silently render empty.
 
 Current state, annotated:
 
@@ -136,13 +136,13 @@ The existing `findAll` / `find` methods **keep their current signatures and enti
 
 **Choice:** Exactly the values the controller recognizes today, with identical semantics:
 
-- `'schemas'` — replace the `schemas` field (array of IDs) with an array that contains a full schema object *where expansion succeeded* and the original **schema ID** *where expansion failed* (see next bullet). Schemas are fetched via `SchemaMapper::find()` with `_multitenancy: false`. `properties` stripping is deferred to the consumer — the serializer matches the controller's current behavior, which does NOT strip `properties`. DocuDesk's `RegisterDiscoveryService::filterSchemaProperties()` is a DocuDesk-side concern.
+- `'schemas'` — replace the `schemas` field (array of IDs) with an array that contains a full schema object *where expansion succeeded* and the original **schema ID** *where expansion failed* (see next bullet). Schemas are fetched via `SchemaMapper::find()` with `_multitenancy: false`. The serializer **preserves the `properties` field** on each expanded schema. Consumer-side stripping (e.g. DocuDesk's `RegisterDiscoveryService::filterSchemaProperties()`) stays in the consumer; the serializer is intentionally non-opinionated here.
 - `'@self.stats'` — only meaningful alongside `'schemas'`. Attaches per-schema `stats.objects.total` counts from `registerService->getSchemaObjectCounts()` to each *successfully expanded* schema object. Matches the controller's current loop (≈ line 324-345). IDs that failed to expand receive no stats (they remain bare IDs).
-- **Missing / deleted schema IDs — keep the original ID in its array position.** This is a **deliberate divergence** from `RegistersController::index()`'s current behavior, which silently drops missing schemas (`lib/Controller/RegistersController.php:295-302`). The new behavior:
+- **Missing / deleted schema IDs — keep the original ID in its array position.** This is a **deliberate divergence** from `RegistersController::index()`'s current behavior, which silently drops missing schemas. The new behavior:
   - Preserves information (orphan references remain visible to callers rather than vanishing).
-  - Matches OpenRegister's established convention for failed hydration (e.g. `RenderObject.php:1261` — *"Object not found in preloaded cache - preserving original UUID"*).
+  - Matches OpenRegister's established convention for failed hydration (e.g. `RenderObject` preserves the original UUID when a preloaded-cache lookup fails: *"Object not found in preloaded cache - preserving original UUID"*).
   - Still logs a warning via the injected `LoggerInterface`, matching the controller's current log intent.
-  - Produces a mixed-type `schemas` array (object | int | string) when some IDs fail to resolve. Downstream consumers MUST handle this — DocuDesk's frontend already does (`Settings.vue:353` filters `typeof schema === 'object'`). This is treated as a behavior improvement bundled with this change, not a breaking API change (see Risks below).
+  - Produces a mixed-type `schemas` array (object | int | string) when some IDs fail to resolve. Downstream consumers MUST handle this — DocuDesk's frontend already does (its schema-list code filters `typeof schema === 'object'`). This is a wire-format change for typed JSON clients (see Risks).
 
 Unknown `_extend` values are ignored silently (no error) — same as the controller. An ADR-style "strict mode" for unknown keys is deferred.
 
@@ -163,9 +163,10 @@ The mapper's `_extend` parameter remains declared for BC but is documented as un
 | Circular DI between `RegisterService` and `RegisterSerializer` via `SchemaMapper` | Stats are pre-computed in the service and passed into the serializer. `SchemaMapper` is injected into the serializer directly; no back-reference to `RegisterService`. |
 | `_extend` semantics drift between the HTTP endpoint and the serializer-based path | The controller is refactored to delegate to `findAllSerialized()`. Both paths share the same serializer. A unit test asserts byte-identical output between "controller path" and "direct serializer call" for a representative input. |
 | Performance regression on the HTTP endpoint from the extra service method indirection | No: the same DB calls happen in the same order (findAll → per-schema find → optional stats query). The refactor is structural, not algorithmic. |
+| Per-register N+1 schema lookup (M registers × N schema IDs = M×N `SchemaMapper::find()` calls per `index` request) | **Pre-existing in the controller's current loop — preserved verbatim by the refactor, not introduced by it.** Mitigation today: typical registers have a small N (≤10 schemas) and `index` is paginated. Optimisation deferred to a follow-up: add a batched `SchemaMapper::findByIds(int[] $ids)` and a per-request in-process cache on the serializer. Tracked separately so this change stays a behaviour-preserving refactor. |
 | Downstream app (DocuDesk) still broken until DocuDesk ships its own follow-up PR | Out of scope for this change. But flagged as an acceptance criterion in `tasks.md` and a cross-repo dependency in the PR description. |
 | `properties` stripping behavior differs between controller and DocuDesk's local filter | Resolved: the serializer does not strip `properties` (matches current controller). DocuDesk's filter remains a DocuDesk-side concern and stays in DocuDesk. |
-| HTTP endpoint response changes shape for registers that reference missing schema IDs (IDs now retained instead of dropped) | Treated as a bug fix, not a breaking change. The DocuDesk frontend already filters for `typeof schema === 'object'` and will safely ignore orphan IDs. Documented in the release note. If a consumer turns out to depend on the drop-on-missing behavior, they can post-filter; the new behavior is strictly more informative. |
+| HTTP endpoint response changes shape for registers that reference missing schema IDs (IDs now retained instead of dropped) | **Wire-format breaking change on the edge case.** The `schemas` field becomes a heterogeneous array (objects + bare ints/strings) for registers with orphan IDs. JSON consumers in statically-typed clients (Go, Java, Kotlin) that decode `schemas` as `[]Schema` will fail; they need a discriminated decoder. The DocuDesk frontend already filters for `typeof schema === 'object'` and is unaffected. Treated as a bug fix on the *server* contract (orphan-ID retention is a security/observability win) and as a breaking change on the *wire* contract (called out in the proposal, the changelog, and the release note). Mitigation for downstream consumers: post-filter or use a discriminated decoder. |
 
 ## Migration Plan
 
@@ -178,10 +179,12 @@ This is not a migration-heavy change — no DB schema changes, no external API c
 
 **Rollback:** The refactor is contained within OpenRegister's service/serializer/controller layer. Revert the PR; the controller goes back to inline expansion; nothing else is affected.
 
-## Open Questions
+## Resolved Questions
 
-1. **Should unknown `_extend` values warn?** The controller silently ignores them. Current proposal: match that (silent). Revisit if this leads to bugs (unknown key → silently wrong output).
-2. **Do we want `findSerialized` / `findAllSerialized` on the service, or is the serializer injection enough?** Inclination: yes to both convenience methods — the controller becomes a one-liner. If the team prefers minimal surface area on `RegisterService`, we can skip the convenience methods and have consumers inject the serializer directly.
+The following were open during drafting and are now decided:
+
+1. **Unknown `_extend` values are silently ignored** (matches the controller's current behavior). Codified in the spec under *"Unknown `_extend` keys SHALL be ignored silently"*. Revisit only if a future bug surfaces from a typo'd key being silently wrong; not a 1.0 concern.
+2. **Both `findSerialized` and `findAllSerialized` ship on `RegisterService`.** Codified in `tasks.md` 2.2 / 2.3 and in `spec.md` as MUST. Rationale: keeps the controller a one-liner, mirrors the `find` / `findAll` pair, and avoids forcing every consumer to inject the serializer separately.
 
 ## Seed Data
 
