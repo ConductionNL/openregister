@@ -24,6 +24,7 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -93,17 +94,16 @@ class RegistersControllerTest extends TestCase
             $this->githubService,
             $this->appManager,
             $this->oasService,
-            $this->createMock(\Psr\Container\ContainerInterface::class)
+            $this->createMock(\Psr\Container\ContainerInterface::class),
+            $this->createMock(IGroupManager::class)
         );
     }
 
     public function testIndexReturnsRegisters(): void
     {
-        $register = $this->createMock(Register::class);
-        $register->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
-
         $this->request->method('getParams')->willReturn([]);
-        $this->registerService->method('findAll')->willReturn([$register]);
+        $this->registerService->method('findAllSerialized')
+            ->willReturn([['id' => 1, 'title' => 'Test']]);
 
         $result = $this->controller->index();
 
@@ -117,7 +117,7 @@ class RegistersControllerTest extends TestCase
             '_limit' => '10',
             '_page' => '2',
         ]);
-        $this->registerService->method('findAll')->willReturn([]);
+        $this->registerService->method('findAllSerialized')->willReturn([]);
 
         $result = $this->controller->index();
 
@@ -482,7 +482,7 @@ class RegistersControllerTest extends TestCase
     public function testIndexThrowsOnException(): void
     {
         $this->request->method('getParams')->willReturn([]);
-        $this->registerService->method('findAll')
+        $this->registerService->method('findAllSerialized')
             ->willThrowException(new Exception('DB error'));
 
         $this->expectException(Exception::class);
@@ -813,10 +813,11 @@ class RegistersControllerTest extends TestCase
             '_offset' => '10',
         ]);
         $this->registerService->expects($this->once())
-            ->method('findAll')
+            ->method('findAllSerialized')
             ->with(
                 $this->equalTo(5),
                 $this->equalTo(10),
+                $this->anything(),
                 $this->anything(),
                 $this->anything(),
                 $this->anything(),
@@ -836,11 +837,12 @@ class RegistersControllerTest extends TestCase
             'filters' => ['title' => 'Test'],
         ]);
         $this->registerService->expects($this->once())
-            ->method('findAll')
+            ->method('findAllSerialized')
             ->with(
                 $this->isNull(),
                 $this->isNull(),
                 $this->equalTo(['title' => 'Test']),
+                $this->anything(),
                 $this->anything(),
                 $this->anything(),
                 $this->anything()
@@ -857,7 +859,7 @@ class RegistersControllerTest extends TestCase
         $this->request->method('getParams')->willReturn([
             '_extend' => 'schemas',
         ]);
-        $this->registerService->method('findAll')->willReturn([]);
+        $this->registerService->method('findAllSerialized')->willReturn([]);
 
         $result = $this->controller->index();
 
@@ -866,26 +868,24 @@ class RegistersControllerTest extends TestCase
 
     public function testIndexWithExtendSchemasExpandsSchemaIds(): void
     {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->setRegisterSchemas($register, [10, 20]);
-
         $this->request->method('getParams')->willReturn([
             '_extend' => ['schemas'],
         ]);
-        $this->registerService->method('findAll')->willReturn([$register]);
-
-        $schema1 = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
-        $schema1->method('jsonSerialize')->willReturn(['id' => 10, 'title' => 'Schema A']);
-        $schema2 = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
-        $schema2->method('jsonSerialize')->willReturn(['id' => 20, 'title' => 'Schema B']);
-
-        $this->schemaMapper->method('find')
-            ->willReturnCallback(function ($id) use ($schema1, $schema2) {
-                if ($id === 10) {
-                    return $schema1;
-                }
-                return $schema2;
-            });
+        // After the refactor, expansion lives in the service-layer serializer; the controller
+        // receives an already-serialized payload.
+        $this->registerService->method('findAllSerialized')
+            ->willReturn(
+                [
+                    [
+                        'id'      => 1,
+                        'title'   => 'Test',
+                        'schemas' => [
+                            ['id' => 10, 'title' => 'Schema A'],
+                            ['id' => 20, 'title' => 'Schema B'],
+                        ],
+                    ],
+                ]
+            );
 
         $result = $this->controller->index();
 
@@ -895,43 +895,43 @@ class RegistersControllerTest extends TestCase
         $this->assertSame('Schema A', $data['results'][0]['schemas'][0]['title']);
     }
 
-    public function testIndexWithExtendSchemasSkipsMissingSchema(): void
+    public function testIndexWithExtendSchemasRetainsOrphanIds(): void
     {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->setRegisterSchemas($register, [10, 999]);
-
         $this->request->method('getParams')->willReturn([
             '_extend' => ['schemas'],
         ]);
-        $this->registerService->method('findAll')->willReturn([$register]);
-
-        $schema1 = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
-        $schema1->method('jsonSerialize')->willReturn(['id' => 10, 'title' => 'Schema A']);
-
-        $this->schemaMapper->method('find')
-            ->willReturnCallback(function ($id) use ($schema1) {
-                if ($id === 10) {
-                    return $schema1;
-                }
-                throw new DoesNotExistException('Not found');
-            });
+        // Per the spec divergence, orphan schema IDs are retained in their original position
+        // (heterogeneous array of objects + bare IDs).
+        $this->registerService->method('findAllSerialized')
+            ->willReturn(
+                [
+                    [
+                        'id'      => 1,
+                        'title'   => 'Test',
+                        'schemas' => [
+                            ['id' => 10, 'title' => 'Schema A'],
+                            999,
+                        ],
+                    ],
+                ]
+            );
 
         $result = $this->controller->index();
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
-        // Only the existing schema should be present
-        $this->assertCount(1, $data['results'][0]['schemas']);
+        $this->assertCount(2, $data['results'][0]['schemas']);
+        $this->assertSame('Schema A', $data['results'][0]['schemas'][0]['title']);
+        $this->assertSame(999, $data['results'][0]['schemas'][1]);
     }
 
     public function testIndexWithSelfStatsExtend(): void
     {
-        $register = $this->createRealRegister(1, 'Test');
-
         $this->request->method('getParams')->willReturn([
             '_extend' => ['@self.stats'],
         ]);
-        $this->registerService->method('findAll')->willReturn([$register]);
+        $this->registerService->method('findAllSerialized')
+            ->willReturn([['id' => 1, 'title' => 'Test']]);
         $this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 3]);
 
@@ -947,21 +947,27 @@ class RegistersControllerTest extends TestCase
 
     public function testIndexWithSchemasAndSelfStatsExtend(): void
     {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->setRegisterSchemas($register, [10]);
-
         $this->request->method('getParams')->willReturn([
             '_extend' => ['schemas', '@self.stats'],
         ]);
-        $this->registerService->method('findAll')->willReturn([$register]);
-
-        $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
-        $schema->method('jsonSerialize')->willReturn(['id' => 10, 'title' => 'Schema A']);
-
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->registerService->method('getSchemaObjectCounts')->willReturn([
-            10 => ['total' => 42],
-        ]);
+        // Schemas (with per-schema stats) come pre-attached from the serializer; register-level
+        // `@self.stats` is added by the controller on top.
+        $this->registerService->method('findAllSerialized')
+            ->willReturn(
+                [
+                    [
+                        'id'      => 1,
+                        'title'   => 'Test',
+                        'schemas' => [
+                            [
+                                'id'    => 10,
+                                'title' => 'Schema A',
+                                'stats' => ['objects' => ['total' => 42]],
+                            ],
+                        ],
+                    ],
+                ]
+            );
         $this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 3]);
 
@@ -969,27 +975,33 @@ class RegistersControllerTest extends TestCase
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
-        // Schema should have stats attached
         $this->assertArrayHasKey('stats', $data['results'][0]['schemas'][0]);
         $this->assertSame(['total' => 42], $data['results'][0]['schemas'][0]['stats']['objects']);
+        $this->assertArrayHasKey('stats', $data['results'][0]);
     }
 
     public function testIndexWithSchemasAndStatsNoCountForSchema(): void
     {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->setRegisterSchemas($register, [10]);
-
         $this->request->method('getParams')->willReturn([
             '_extend' => ['schemas', '@self.stats'],
         ]);
-        $this->registerService->method('findAll')->willReturn([$register]);
-
-        $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
-        $schema->method('jsonSerialize')->willReturn(['id' => 10, 'title' => 'Schema A']);
-
-        $this->schemaMapper->method('find')->willReturn($schema);
-        // Return empty counts — schema 10 is not in the map
-        $this->registerService->method('getSchemaObjectCounts')->willReturn([]);
+        // Serializer-side default when getSchemaObjectCounts has no entry for the schema.
+        $this->registerService->method('findAllSerialized')
+            ->willReturn(
+                [
+                    [
+                        'id'      => 1,
+                        'title'   => 'Test',
+                        'schemas' => [
+                            [
+                                'id'    => 10,
+                                'title' => 'Schema A',
+                                'stats' => ['objects' => ['total' => 0]],
+                            ],
+                        ],
+                    ],
+                ]
+            );
         $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 0]);
 
@@ -997,7 +1009,6 @@ class RegistersControllerTest extends TestCase
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
-        // Should have zero stats
         $this->assertSame(['total' => 0], $data['results'][0]['schemas'][0]['stats']['objects']);
     }
 
@@ -1008,10 +1019,11 @@ class RegistersControllerTest extends TestCase
             '_page' => '3',
         ]);
         $this->registerService->expects($this->once())
-            ->method('findAll')
+            ->method('findAllSerialized')
             ->with(
                 $this->equalTo(10),
                 $this->equalTo(20),  // (3-1) * 10 = 20
+                $this->anything(),
                 $this->anything(),
                 $this->anything(),
                 $this->anything(),
@@ -1789,19 +1801,16 @@ class RegistersControllerTest extends TestCase
 
     public function testIndexExtendSchemasWithNullSchemasField(): void
     {
-        // Register with no schemas set (null/empty)
-        $register = $this->createRealRegister(1, 'Test');
-        // schemas defaults to [] in Register entity
-
+        // Register with no schemas — serializer returns the register with schemas as [].
         $this->request->method('getParams')->willReturn([
             '_extend' => ['schemas'],
         ]);
-        $this->registerService->method('findAll')->willReturn([$register]);
+        $this->registerService->method('findAllSerialized')
+            ->willReturn([['id' => 1, 'title' => 'Test', 'schemas' => []]]);
 
         $result = $this->controller->index();
 
         $this->assertSame(200, $result->getStatus());
-        // schemas should remain as empty array (no expansion needed)
         $this->assertSame([], $result->getData()['results'][0]['schemas']);
     }
 

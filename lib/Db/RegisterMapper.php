@@ -191,7 +191,6 @@ class RegisterMapper extends QBMapper
      * Includes RBAC and organisation filtering for multi-tenancy.
      *
      * @param int|string $id            The ID of the register to find
-     * @param array      $_extend       Optional array of extensions (e.g., ['@self.stats'])
      * @param bool|null  $published     Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac         Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy Whether to apply multi-tenancy filtering (default: true)
@@ -200,7 +199,6 @@ class RegisterMapper extends QBMapper
      *
      * @throws \Exception If RBAC permission check fails
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      * @SuppressWarnings(PHPMD.NPathComplexity)       Find operation requires multiple lookup strategies
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -208,7 +206,6 @@ class RegisterMapper extends QBMapper
      */
     public function find(
         string|int $id,
-        ?array $_extend=[],
         ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
@@ -443,7 +440,6 @@ class RegisterMapper extends QBMapper
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
-     * @param array      $_extend          Optional array of extensions (e.g., ['@self.stats'])
      * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac            Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy    Whether to apply multi-tenancy filtering (default: true)
@@ -451,8 +447,8 @@ class RegisterMapper extends QBMapper
      * @return Register[]
      *
      * @psalm-return                                  list<OCA\OpenRegister\Db\Register>
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$published` mirrors `find()`'s draft-bypass surface; not yet wired in `findAll`.
      */
     public function findAll(
         ?int $limit=null,
@@ -460,7 +456,6 @@ class RegisterMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $_extend=[],
         ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
@@ -733,7 +728,6 @@ class RegisterMapper extends QBMapper
     ): array {
         $register  = $this->find(
             id: $registerId,
-            _extend: [],
             published: $published,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
