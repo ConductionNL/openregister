@@ -35,6 +35,8 @@ class TenantQuotaExceededException extends Exception
      * @param int    $quota      The quota limit
      * @param string $resetAt    ISO 8601 timestamp when quota resets
      * @param int    $retryAfter Seconds until quota reset
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function __construct(
         string $message,
@@ -49,6 +51,8 @@ class TenantQuotaExceededException extends Exception
      * Get the quota limit.
      *
      * @return int The quota
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function getQuota(): int
     {
@@ -59,6 +63,8 @@ class TenantQuotaExceededException extends Exception
      * Get the reset timestamp.
      *
      * @return string ISO 8601 timestamp
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function getResetAt(): string
     {
@@ -69,6 +75,8 @@ class TenantQuotaExceededException extends Exception
      * Get the retry-after seconds.
      *
      * @return int Seconds until reset
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function getRetryAfter(): int
     {

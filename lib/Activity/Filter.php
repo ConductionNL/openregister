@@ -36,6 +36,8 @@ class Filter implements IFilter
      *
      * @param IL10N         $l            The localization service.
      * @param IURLGenerator $urlGenerator The URL generator.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function __construct(
         private IL10N $l,
@@ -47,6 +49,8 @@ class Filter implements IFilter
      * Get the unique identifier of the filter.
      *
      * @return string The filter identifier.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function getIdentifier(): string
     {
@@ -57,6 +61,8 @@ class Filter implements IFilter
      * Get the human-readable name of the filter.
      *
      * @return string The filter name.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function getName(): string
     {
@@ -67,6 +73,8 @@ class Filter implements IFilter
      * Get the priority of the filter.
      *
      * @return int The filter priority.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function getPriority(): int
     {
@@ -77,6 +85,8 @@ class Filter implements IFilter
      * Get the icon URL for the filter.
      *
      * @return string The icon URL.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function getIcon(): string
     {
@@ -93,6 +103,8 @@ class Filter implements IFilter
      * @return array<array-key, string> The filtered types.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $types required by IFilter interface
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function filterTypes(array $types): array
     {
@@ -103,6 +115,8 @@ class Filter implements IFilter
      * Get the allowed apps for this filter.
      *
      * @return array<array-key, string> The allowed app IDs.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function allowedApps(): array
     {

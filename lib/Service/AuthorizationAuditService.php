@@ -13,6 +13,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
  */
 
 declare(strict_types=1);
@@ -101,6 +104,8 @@ class AuthorizationAuditService
      * @param array|null $newAuthorization The new authorization value.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
      */
     public function logRegisterAuthorizationChange(
         int $registerId,
@@ -153,6 +158,8 @@ class AuthorizationAuditService
      * @param array|null $newRoles      The new roles configuration.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
      */
     public function logRoleDefinitionChange(
         int $registerId,

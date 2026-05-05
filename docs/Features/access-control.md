@@ -521,15 +521,26 @@ $object->setAuthorization([
 ]);
 ```
 
+### Conditional rules work identically at every level
+
+Schema-level, object-level, and property-level `authorization` blocks all accept the **same** conditional rule grammar. A rule of the form `{ "group": "...", "match": { ... } }` evaluates the same way whether it sits on a schema, an object, or a single property, and whether it is enforced at list time (SQL `WHERE` via `MagicRbacHandler`), at single-object fetch time (`PermissionHandler::hasPermission`), or during property filtering (`PropertyRbacHandler`).
+
+All three enforcement points route conditional match evaluation through the shared `ConditionMatcher` service. The operator set and dynamic-variable set listed below therefore apply uniformly:
+
+- **Operators**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`.
+- **Dynamic variables** resolved at evaluation time: `$organisation` / `$activeOrganisation`, `$userId` / `$user`, `$now`.
+
+A schema authored with `{ "read": [{ "group": "public", "match": { "publishDate": { "$lte": "$now" } } }] }` returns the same object set from `GET /api/objects/{register}/{schema}` (list) and `GET /api/objects/{register}/{schema}/{id}` (find). List-vs-find drift caused by differing grammar is no longer possible.
+
 ### Property-Level Authorization
 
 In addition to the schema- and object-level rules above, individual properties can carry their own `authorization` block with conditional rules. This is covered in depth in [Property Authorization](./property-authorization.md); this section is a short map into that feature.
 
-Property-level rules support:
+Property-level rules support the same grammar as schema-level (listed above):
 
 - **Group checks** — the same groups used at schema level (including `"public"`).
-- **`match` conditions** on the object, with operators: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`.
-- **Dynamic variables** resolved at evaluation time: `$organisation` / `$activeOrganisation`, `$userId` / `$user`, `$now`.
+- **`match` conditions** on the object, with the operators listed above.
+- **Dynamic variables** — the same set listed above.
 
 Example — a `publishedAt` field that is only visible after its own timestamp:
 

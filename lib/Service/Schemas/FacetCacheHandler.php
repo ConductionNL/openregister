@@ -19,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
@@ -247,6 +249,8 @@ class FacetCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {

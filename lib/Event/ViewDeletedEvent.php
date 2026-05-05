@@ -53,6 +53,8 @@ class ViewDeletedEvent extends Event
      * Get the deleted view.
      *
      * @return View The view that was deleted.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getView(): View
     {

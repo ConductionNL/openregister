@@ -1,0 +1,852 @@
+{
+  "generated_at": "2026-05-01T11:43:22Z",
+  "app": "openregister",
+  "branch": "development",
+  "scanner_version": "1",
+  "buckets": {
+    "annotated_summary": {
+      "total_annotation_lines": 1532,
+      "unique_change_targets": 138,
+      "files_annotated": 249,
+      "changes": [
+        "retrofit-annotate-openregister-2026-04-23 (tasks 1-58)",
+        "retrofit-b2b-crossrefs-2026-04-28 (task-1, task-21)",
+        "retrofit-calendar-integration-2026-04-28 (task-2)",
+        "retrofit-content-versioning-2026-04-28 (task-1)",
+        "retrofit-notificatie-engine-2026-04-28 (task-1)",
+        "retrofit-object-lifecycle-2026-04-28 (tasks 1-13)",
+        "retrofit-tenant-isolation-audit-2026-04-28 (tasks 1-2)",
+        "retrofit-tenant-lifecycle-2026-04-28 (tasks 1-2)"
+      ],
+      "note": "Bulk of codebase already annotated by prior retrofit runs; these methods are treated as annotated and not re-bucketed"
+    },
+    "plumbing": [
+      {
+        "file": "lib/Activity/Setting/RegisterSetting.php",
+        "methods": [
+          "getIdentifier",
+          "getName",
+          "getGroupIdentifier",
+          "getGroupName",
+          "getPriority",
+          "canChangeStream",
+          "isDefaultEnabledStream",
+          "canChangeMail",
+          "isDefaultEnabledMail"
+        ]
+      },
+      {
+        "file": "lib/Activity/Setting/ObjectSetting.php",
+        "methods": [
+          "getIdentifier",
+          "getName",
+          "getGroupIdentifier",
+          "getGroupName",
+          "getPriority",
+          "canChangeStream",
+          "isDefaultEnabledStream",
+          "canChangeMail",
+          "isDefaultEnabledMail"
+        ]
+      },
+      {
+        "file": "lib/Activity/Setting/SchemaSetting.php",
+        "methods": [
+          "getIdentifier",
+          "getName",
+          "getGroupIdentifier",
+          "getGroupName",
+          "getPriority",
+          "canChangeStream",
+          "isDefaultEnabledStream",
+          "canChangeMail",
+          "isDefaultEnabledMail"
+        ]
+      },
+      {
+        "file": "lib/Activity/Filter.php",
+        "methods": [
+          "getIdentifier",
+          "getName",
+          "getPriority",
+          "getIcon",
+          "filterTypes",
+          "allowedApps"
+        ]
+      },
+      {
+        "file": "lib/Calendar/RegisterCalendar.php",
+        "methods": [
+          "getKey",
+          "getUri",
+          "getDisplayName",
+          "getDisplayColor",
+          "getPermissions",
+          "isDeleted"
+        ]
+      },
+      {
+        "file": "lib/Service/Object/UtilityHandler.php",
+        "methods": [
+          "isUuid",
+          "normalizeToArray",
+          "getUrlSeparator",
+          "normalizeEntity",
+          "calculateEfficiency",
+          "cleanQuery"
+        ]
+      },
+      {
+        "file": "lib/Middleware/TenantQuotaExceededException.php",
+        "methods": [
+          "getQuota",
+          "getResetAt",
+          "getRetryAfter"
+        ]
+      },
+      {
+        "file": "lib/Middleware/TenantStatusException.php",
+        "methods": [
+          "getStatus"
+        ]
+      },
+      {
+        "file": "lib/Service/Edepot/Transport/TransportResult.php",
+        "methods": [
+          "isSuccess",
+          "isPartialSuccess",
+          "getObjectResults",
+          "getErrorMessage",
+          "getTransferReference",
+          "getAcceptedUuids",
+          "getRejectedUuids",
+          "toArray"
+        ]
+      },
+      {
+        "file": "lib/Controller/UiController.php",
+        "methods": [
+          "registers",
+          "registersDetails",
+          "schemas",
+          "schemasDetails",
+          "sources",
+          "organisation",
+          "objects",
+          "tables",
+          "chat",
+          "configurations",
+          "deleted",
+          "auditTrail",
+          "searchTrail",
+          "webhooks",
+          "webhooksLogs",
+          "entities",
+          "entitiesDetails",
+          "endpoints",
+          "endpointLogs"
+        ]
+      },
+      {
+        "file": "lib/Service/LanguageService.php",
+        "methods": [
+          "setPreferredLanguage",
+          "getPreferredLanguage",
+          "setAcceptedLanguages",
+          "getAcceptedLanguages",
+          "setReturnAllTranslations",
+          "shouldReturnAllTranslations",
+          "setFallbackUsed",
+          "isFallbackUsed",
+          "resolveLanguageForRegister"
+        ]
+      },
+      {
+        "file": "lib/Service/Object/NewFacetingExample.php",
+        "methods": [
+          "basicTermsFaceting",
+          "dateHistogramFaceting",
+          "rangeFaceting",
+          "ecommerceFaceting",
+          "paginatedSearchWithFacets",
+          "migrationExample",
+          "advancedFilteringWithFacets",
+          "performanceOptimizedFaceting"
+        ]
+      },
+      {
+        "file": "lib/Service/Object/ObjectServiceFacetExample.php",
+        "methods": [
+          "newFacetingApproach",
+          "legacyFacetingApproach",
+          "paginatedSearchWithFacets",
+          "ecommerceFacetedSearch",
+          "analyticsDashboardFacets",
+          "disjunctiveFacetingDemo",
+          "performanceComparison",
+          "frontendIntegrationExample"
+        ]
+      }
+    ],
+    "bucket_1": [],
+    "bucket_2a": {
+      "approval-workflow": [
+        {
+          "file": "lib/Controller/ApprovalController.php",
+          "method": "approve",
+          "observed_behavior": "approve step in approval chain"
+        },
+        {
+          "file": "lib/Controller/ApprovalController.php",
+          "method": "reject",
+          "observed_behavior": "reject step in approval chain"
+        },
+        {
+          "file": "lib/Controller/ApprovalController.php",
+          "method": "steps",
+          "observed_behavior": "list approval steps"
+        },
+        {
+          "file": "lib/Service/ApprovalService.php",
+          "method": "initializeChain",
+          "observed_behavior": "initialize approval chain for an object"
+        },
+        {
+          "file": "lib/Service/ApprovalService.php",
+          "method": "approveStep",
+          "observed_behavior": "approve a specific step with comment"
+        },
+        {
+          "file": "lib/Service/ApprovalService.php",
+          "method": "rejectStep",
+          "observed_behavior": "reject a step with reason"
+        }
+      ],
+      "search-trail": [
+        {
+          "file": "lib/Controller/SearchTrailController.php",
+          "method": "index",
+          "observed_behavior": "list search trail entries"
+        },
+        {
+          "file": "lib/Controller/SearchTrailController.php",
+          "method": "statistics",
+          "observed_behavior": "search trail statistics"
+        },
+        {
+          "file": "lib/Controller/SearchTrailController.php",
+          "method": "popularTerms",
+          "observed_behavior": "popular search terms"
+        },
+        {
+          "file": "lib/Controller/SearchTrailController.php",
+          "method": "activity",
+          "observed_behavior": "search activity over time"
+        },
+        {
+          "file": "lib/Controller/SearchTrailController.php",
+          "method": "userAgentStats",
+          "observed_behavior": "user agent breakdown of search traffic"
+        }
+      ],
+      "configuration": [
+        {
+          "file": "lib/Controller/ConfigurationsController.php",
+          "method": "export",
+          "observed_behavior": "export configuration as JSON/YAML"
+        },
+        {
+          "file": "lib/Controller/ConfigurationsController.php",
+          "method": "import",
+          "observed_behavior": "import configuration from URL or file"
+        }
+      ],
+      "solr-search": [
+        {
+          "file": "lib/Controller/Settings/SolrOperationsController.php",
+          "method": "setupSolr",
+          "observed_behavior": "setup Solr search backend"
+        },
+        {
+          "file": "lib/Controller/Settings/SolrOperationsController.php",
+          "method": "warmupSolrIndex",
+          "observed_behavior": "warm up Solr index"
+        },
+        {
+          "file": "lib/Service/IndexService.php",
+          "method": "indexObject",
+          "observed_behavior": "index object in Solr"
+        },
+        {
+          "file": "lib/Service/IndexService.php",
+          "method": "reindexAll",
+          "observed_behavior": "reindex all objects"
+        },
+        {
+          "file": "lib/Service/IndexService.php",
+          "method": "searchObjects",
+          "observed_behavior": "search objects via Solr backend"
+        },
+        {
+          "file": "lib/BackgroundJob/SolrWarmupJob.php",
+          "method": "run",
+          "observed_behavior": "scheduled Solr cache warmup"
+        },
+        {
+          "file": "lib/BackgroundJob/SolrNightlyWarmupJob.php",
+          "method": "run",
+          "observed_behavior": "nightly Solr optimization"
+        }
+      ],
+      "gdpr-processing": [
+        {
+          "file": "lib/Controller/GdprEntitiesController.php",
+          "method": "index",
+          "observed_behavior": "list GDPR processing activities"
+        },
+        {
+          "file": "lib/Controller/GdprEntitiesController.php",
+          "method": "getTypes",
+          "observed_behavior": "get GDPR entity types"
+        },
+        {
+          "file": "lib/Controller/GdprEntitiesController.php",
+          "method": "getCategories",
+          "observed_behavior": "get personal data categories"
+        },
+        {
+          "file": "lib/Controller/GdprEntitiesController.php",
+          "method": "getStats",
+          "observed_behavior": "GDPR processing statistics"
+        }
+      ],
+      "tmlo-export": [
+        {
+          "file": "lib/Controller/TmloController.php",
+          "method": "exportSingle",
+          "observed_behavior": "export single object as TMLO XML"
+        },
+        {
+          "file": "lib/Controller/TmloController.php",
+          "method": "exportBatch",
+          "observed_behavior": "export batch as TMLO"
+        },
+        {
+          "file": "lib/Controller/TmloController.php",
+          "method": "summary",
+          "observed_behavior": "TMLO export summary statistics"
+        }
+      ],
+      "oas-generation": [
+        {
+          "file": "lib/Controller/OasController.php",
+          "method": "generateAll",
+          "observed_behavior": "generate OpenAPI spec for all registers"
+        },
+        {
+          "file": "lib/Controller/OasController.php",
+          "method": "generate",
+          "observed_behavior": "generate OpenAPI spec for specific register"
+        }
+      ],
+      "scheduled-workflows": [
+        {
+          "file": "lib/Controller/ScheduledWorkflowController.php",
+          "method": "index",
+          "observed_behavior": "list scheduled workflow executions"
+        },
+        {
+          "file": "lib/Controller/ScheduledWorkflowController.php",
+          "method": "create",
+          "observed_behavior": "schedule a workflow execution"
+        },
+        {
+          "file": "lib/BackgroundJob/ScheduledWorkflowJob.php",
+          "method": "run",
+          "observed_behavior": "executes scheduled workflow via engine"
+        }
+      ],
+      "workflow-import": [
+        {
+          "file": "lib/Service/Configuration/ImportHandler.php",
+          "method": "importFromJson",
+          "observed_behavior": "import configuration including workflow definitions and schema hook attachments"
+        },
+        {
+          "file": "lib/BackgroundJob/HookRetryJob.php",
+          "method": "run",
+          "observed_behavior": "retry failed schema hooks with backoff"
+        }
+      ],
+      "actions": [
+        {
+          "file": "lib/Controller/ActionsController.php",
+          "method": "(all methods)",
+          "observed_behavior": "action configuration management (CRUD for schema actions)"
+        },
+        {
+          "file": "lib/Service/ActionService.php",
+          "method": "createAction",
+          "observed_behavior": "create schema action with event trigger config"
+        },
+        {
+          "file": "lib/Service/ActionExecutor.php",
+          "method": "executeActions",
+          "observed_behavior": "execute configured actions on entity mutation events"
+        },
+        {
+          "file": "lib/BackgroundJob/ActionRetryJob.php",
+          "method": "run",
+          "observed_behavior": "retry failed action delivery"
+        },
+        {
+          "file": "lib/BackgroundJob/ActionScheduleJob.php",
+          "method": "run",
+          "observed_behavior": "execute scheduled action triggers"
+        }
+      ],
+      "file-extraction": [
+        {
+          "file": "lib/Controller/FileExtractionController.php",
+          "method": "extract",
+          "observed_behavior": "extract text/metadata from files for search indexing"
+        },
+        {
+          "file": "lib/Controller/FileExtractionController.php",
+          "method": "extractAll",
+          "observed_behavior": "extract text from all unindexed files"
+        },
+        {
+          "file": "lib/Controller/FileExtractionController.php",
+          "method": "vectorizeBatch",
+          "observed_behavior": "vectorize file content for semantic search"
+        },
+        {
+          "file": "lib/Service/TextExtractionService.php",
+          "method": "extractFile",
+          "observed_behavior": "extract text from a single file"
+        },
+        {
+          "file": "lib/BackgroundJob/CronFileTextExtractionJob.php",
+          "method": "run",
+          "observed_behavior": "scheduled text extraction"
+        },
+        {
+          "file": "lib/BackgroundJob/ObjectTextExtractionJob.php",
+          "method": "run",
+          "observed_behavior": "text extraction from object-linked files"
+        }
+      ],
+      "dashboard": [
+        {
+          "file": "lib/Controller/DashboardController.php",
+          "method": "calculate",
+          "observed_behavior": "calculate dashboard statistics"
+        },
+        {
+          "file": "lib/Controller/DashboardController.php",
+          "method": "getAuditTrailActionChart",
+          "observed_behavior": "audit trail action chart data"
+        },
+        {
+          "file": "lib/Controller/DashboardController.php",
+          "method": "getObjectsByRegisterChart",
+          "observed_behavior": "objects by register chart"
+        },
+        {
+          "file": "lib/Service/DashboardService.php",
+          "method": "calculate",
+          "observed_behavior": "aggregates multi-dimensional stats for dashboard"
+        }
+      ],
+      "endpoints": [
+        {
+          "file": "lib/Controller/EndpointsController.php",
+          "method": "index",
+          "observed_behavior": "list configured API endpoints"
+        },
+        {
+          "file": "lib/Controller/EndpointsController.php",
+          "method": "create",
+          "observed_behavior": "create custom API endpoint"
+        },
+        {
+          "file": "lib/Controller/EndpointsController.php",
+          "method": "test",
+          "observed_behavior": "test endpoint configuration"
+        },
+        {
+          "file": "lib/Service/EndpointService.php",
+          "method": "testEndpoint",
+          "observed_behavior": "executes endpoint test with sample data"
+        }
+      ],
+      "vectorization": [
+        {
+          "file": "lib/Controller/ObjectsController.php",
+          "method": "vectorizeBatch",
+          "observed_behavior": "batch vectorize objects for semantic search"
+        },
+        {
+          "file": "lib/Service/VectorizationService.php",
+          "method": "(class)",
+          "observed_behavior": "object vectorization for LLM/semantic search"
+        }
+      ]
+    },
+    "bucket_2b": {
+      "blob-migration": [
+        {
+          "file": "lib/BackgroundJob/BlobMigrationJob.php",
+          "method": "run",
+          "observed_behavior": "migrates objects from blob storage to MagicMapper dedicated tables"
+        }
+      ],
+      "names-cache": [
+        {
+          "file": "lib/Controller/NamesController.php",
+          "method": "index",
+          "observed_behavior": "list cached object names"
+        },
+        {
+          "file": "lib/Controller/NamesController.php",
+          "method": "warmup",
+          "observed_behavior": "warm up the names cache"
+        },
+        {
+          "file": "lib/Controller/NamesController.php",
+          "method": "stats",
+          "observed_behavior": "names cache statistics"
+        },
+        {
+          "file": "lib/BackgroundJob/NameCacheWarmupJob.php",
+          "method": "run",
+          "observed_behavior": "scheduled names cache warmup"
+        },
+        {
+          "file": "lib/Service/Object/CacheHandler.php",
+          "method": "warmupNameCache",
+          "observed_behavior": "warms up the distributed names cache"
+        }
+      ],
+      "tables-sync": [
+        {
+          "file": "lib/Controller/TablesController.php",
+          "method": "sync",
+          "observed_behavior": "sync register/schema to MagicMapper SQL table"
+        },
+        {
+          "file": "lib/Controller/TablesController.php",
+          "method": "syncAll",
+          "observed_behavior": "sync all schemas to dedicated SQL tables"
+        },
+        {
+          "file": "lib/Service/MigrationService.php",
+          "method": "migrateToMagicTable",
+          "observed_behavior": "migrate object storage to schema-specific SQL tables"
+        },
+        {
+          "file": "lib/Controller/MigrationController.php",
+          "method": "status",
+          "observed_behavior": "get storage migration status"
+        },
+        {
+          "file": "lib/Controller/MigrationController.php",
+          "method": "migrate",
+          "observed_behavior": "trigger storage migration"
+        }
+      ],
+      "deck-integration": [
+        {
+          "file": "lib/Controller/DeckController.php",
+          "method": "index",
+          "observed_behavior": "list Deck cards linked to object"
+        },
+        {
+          "file": "lib/Controller/DeckController.php",
+          "method": "create",
+          "observed_behavior": "link or create Deck card for object"
+        },
+        {
+          "file": "lib/Controller/DeckController.php",
+          "method": "objects",
+          "observed_behavior": "get objects linked to a board"
+        },
+        {
+          "file": "lib/Service/DeckCardService.php",
+          "method": "linkOrCreateCard",
+          "observed_behavior": "links existing or creates new card in Deck board"
+        }
+      ],
+      "security-auth": [
+        {
+          "file": "lib/Service/AuthorizationService.php",
+          "method": "authorizeJwt",
+          "observed_behavior": "JWT-based endpoint authorization"
+        },
+        {
+          "file": "lib/Service/AuthorizationService.php",
+          "method": "authorizeOAuth",
+          "observed_behavior": "OAuth-based endpoint authorization"
+        },
+        {
+          "file": "lib/Service/SecurityService.php",
+          "method": "(class)",
+          "observed_behavior": "security operations including rate limiting"
+        }
+      ],
+      "user-management": [
+        {
+          "file": "lib/Controller/UserController.php",
+          "method": "me",
+          "observed_behavior": "get current authenticated user profile"
+        },
+        {
+          "file": "lib/Controller/UserController.php",
+          "method": "updateMe",
+          "observed_behavior": "update user profile fields"
+        },
+        {
+          "file": "lib/Controller/UserController.php",
+          "method": "changePassword",
+          "observed_behavior": "change user password"
+        },
+        {
+          "file": "lib/Controller/UserController.php",
+          "method": "exportData",
+          "observed_behavior": "export personal data (GDPR right of access)"
+        },
+        {
+          "file": "lib/Controller/UserController.php",
+          "method": "listTokens",
+          "observed_behavior": "list API tokens for user"
+        },
+        {
+          "file": "lib/Controller/UserController.php",
+          "method": "createToken",
+          "observed_behavior": "create personal API token"
+        },
+        {
+          "file": "lib/Controller/UserController.php",
+          "method": "revokeToken",
+          "observed_behavior": "revoke an API token"
+        },
+        {
+          "file": "lib/Controller/UserController.php",
+          "method": "requestDeactivation",
+          "observed_behavior": "request account deactivation"
+        }
+      ],
+      "health-metrics": [
+        {
+          "file": "lib/Controller/HealthController.php",
+          "method": "index",
+          "observed_behavior": "health check endpoint with component status"
+        },
+        {
+          "file": "lib/Controller/HeartbeatController.php",
+          "method": "heartbeat",
+          "observed_behavior": "lightweight heartbeat ping endpoint"
+        },
+        {
+          "file": "lib/Controller/MetricsController.php",
+          "method": "index",
+          "observed_behavior": "Prometheus-compatible metrics text output"
+        },
+        {
+          "file": "lib/Service/MetricsService.php",
+          "method": "getDashboardMetrics",
+          "observed_behavior": "aggregated metrics for dashboard"
+        }
+      ],
+      "mappings": [
+        {
+          "file": "lib/Controller/MappingsController.php",
+          "method": "index",
+          "observed_behavior": "list data transformation mappings"
+        },
+        {
+          "file": "lib/Controller/MappingsController.php",
+          "method": "test",
+          "observed_behavior": "test mapping against sample payload"
+        },
+        {
+          "file": "lib/Service/MappingService.php",
+          "method": "(class)",
+          "observed_behavior": "data transformation mapping execution"
+        }
+      ],
+      "applications": [
+        {
+          "file": "lib/Controller/ApplicationsController.php",
+          "method": "index",
+          "observed_behavior": "list registered applications"
+        },
+        {
+          "file": "lib/Controller/ApplicationsController.php",
+          "method": "create",
+          "observed_behavior": "register an external application"
+        }
+      ],
+      "views": [
+        {
+          "file": "lib/Controller/ViewsController.php",
+          "method": "index",
+          "observed_behavior": "list saved object views/filters"
+        },
+        {
+          "file": "lib/Controller/ViewsController.php",
+          "method": "create",
+          "observed_behavior": "create named view with filter preset"
+        }
+      ],
+      "file-sidebar": [
+        {
+          "file": "lib/Controller/FileSidebarController.php",
+          "method": "getObjectsForFile",
+          "observed_behavior": "get objects linked to a file for file sidebar panel"
+        },
+        {
+          "file": "lib/Controller/FileSidebarController.php",
+          "method": "getExtractionStatus",
+          "observed_behavior": "get text extraction status for file"
+        },
+        {
+          "file": "lib/Listener/FilesSidebarListener.php",
+          "method": "handle",
+          "observed_behavior": "injects object panel in Nextcloud files sidebar"
+        },
+        {
+          "file": "lib/Listener/FileChangeListener.php",
+          "method": "handle",
+          "observed_behavior": "handles file change events for linked objects"
+        }
+      ]
+    },
+    "bucket_3a": [
+      {
+        "req": "larping-skill-widget#all",
+        "evidence": "172 removed lines with 'larp' keyword in git history \u2014 spec ownership transferred to larpingapp; code may have existed in OpenRegister before redirect"
+      }
+    ],
+    "bucket_3b": [
+      {
+        "req": "built-in-dashboards#all",
+        "note": "status:redirect \u2014 owned by root openspec cross-app pattern"
+      },
+      {
+        "req": "larping-skill-widget#all",
+        "note": "status:redirect \u2014 moved to larpingapp/openspec"
+      },
+      {
+        "req": "no-code-app-builder#all",
+        "note": "status:redirect \u2014 owned by root openspec"
+      },
+      {
+        "req": "open-raadsinformatie#all",
+        "note": "status:redirect \u2014 moved to procest/openspec"
+      },
+      {
+        "req": "product-service-catalog#all",
+        "note": "status:redirect \u2014 moved to pipelinq/openspec"
+      },
+      {
+        "req": "document-zaakdossier#all",
+        "note": "status:redirect \u2014 moved to procest/openspec"
+      },
+      {
+        "req": "dso-omgevingsloket#all",
+        "note": "status:redirect \u2014 moved to procest/openspec"
+      },
+      {
+        "req": "zgw-api-mapping#all",
+        "note": "status:redirect \u2014 moved to procest/openspec"
+      },
+      {
+        "req": "content-versioning#Req:DraftPublishedLifecycle",
+        "note": "Draft/published lifecycle \u2014 RevertHandler covers rollback but no DraftService or version entity found; spec partially implemented via audit trail + revert only"
+      },
+      {
+        "req": "content-versioning#Req:VersionComparison",
+        "note": "Visual diff comparison between versions \u2014 no diffing service found in codebase"
+      },
+      {
+        "req": "content-versioning#Req:DeltaStorage",
+        "note": "Delta strategy for drafts vs full snapshots \u2014 audit trail stores full diffs but delta-only draft storage not found"
+      },
+      {
+        "req": "environment-otap#Req:ConfigurationPromotion",
+        "note": "Configuration promotion between OTAP environments \u2014 TenantLifecycleService has environment validation (REQ-005) but promotion-copy feature not found"
+      },
+      {
+        "req": "mock-registers#Req:IdempotentImport",
+        "note": "Mock data seeding (BRP/KVK/BAG/DSO/ORI registers) \u2014 no seed JSON files or MockRegisterService found in main codebase"
+      },
+      {
+        "req": "unit-test-coverage-phase2#all",
+        "note": "Test coverage tracking spec \u2014 no production code REQs"
+      },
+      {
+        "req": "mariadb-ci-matrix#Req:CIMatrix",
+        "note": "CI workflow configuration in .github/workflows \u2014 not a production code REQ"
+      }
+    ],
+    "bucket_4": {
+      "adr-014-license-missing": [],
+      "adr-014-copyright-missing": [],
+      "forbidden-debug-calls": [
+        {
+          "file": "lib/Db/SchemaMapper.php",
+          "line": 892,
+          "pattern": "print_r() used for string conversion \u2014 replace with json_encode() or (string) cast"
+        }
+      ],
+      "direct-sql-prepare": [
+        {
+          "file": "lib/Service/RegisterService.php",
+          "line": 442,
+          "pattern": "Direct $this->db->prepare() \u2014 use QueryBuilder"
+        },
+        {
+          "file": "lib/Service/Object/ReferentialIntegrityService.php",
+          "lines": [
+            373,
+            902
+          ],
+          "pattern": "Direct $this->db->prepare() for referential integrity cross-table queries"
+        },
+        {
+          "file": "lib/Service/Object/LinkedEntityEnricher.php",
+          "lines": [
+            121,
+            161,
+            247,
+            301,
+            347,
+            400
+          ],
+          "pattern": "Multiple direct $this->db->prepare() calls for linked entity lookups"
+        },
+        {
+          "file": "lib/Service/Object/CacheHandler.php",
+          "line": 1770,
+          "pattern": "Direct $this->db->prepare() in cache handler"
+        }
+      ]
+    }
+  },
+  "ignored": 0,
+  "notes": [
+    "1532 @spec annotation lines across 249 files pointing at 138 unique change/task refs \u2014 bulk of codebase already tagged via retrofit runs",
+    "8 specs are status:redirect stubs pointing to other app repos \u2014 correctly excluded from Bucket 1",
+    "content-versioning is partially implemented: RevertHandler/RevertController cover rollback (Bucket 1 with NEEDS-REVIEW) but draft/publish lifecycle, visual diffs, and delta storage are Bucket 3b",
+    "mariadb-ci-matrix is a CI infrastructure spec; unit-test-coverage-phase2 is a test tracking spec \u2014 neither has production code REQs",
+    "ADR-014 compliance excellent: 0 non-migration PHP files missing @license (all 524 non-migration PHP files have license headers)",
+    "8 direct $this->db->prepare() calls bypass QueryBuilder \u2014 mostly in low-level cross-table queries where QueryBuilder cannot express required SQL; flag for review",
+    "1 print_r() call in lib/Db/SchemaMapper.php:892 \u2014 used for string conversion, harmless but should be replaced",
+    "Bucket 2a has 14 clusters; Bucket 2b has 11 clusters \u2014 all need /opsx-reverse-spec or /opsx-extend passes to create specs",
+    "Bucket 2b warning: cluster labels 'sources', 'security-auth', 'applications' are namespace words \u2014 needs human pre-split before reverse-spec",
+    "Larping: 172 removed git lines \u2014 strong evidence of prior code, but spec redirect makes this 3b not 3a",
+    "Post-merge update 2026-05-01: branch updated to development after PR #1364 merged. chat-ai cluster removed from Bucket 2a (reverse-spec done via PR #1368). Bucket 1 cleared \u2014 all 138 methods annotated via PRs #1365 + #1364. Tier 1 capabilities (edepot-transfer, graphql-api, faceting-configuration, event-driven-architecture) confirmed fully annotated via grep scan \u2014 issue #33 Tier 1 priorities are already complete."
+  ]
+}

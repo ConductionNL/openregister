@@ -15,6 +15,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
  */
 
 declare(strict_types=1);
@@ -63,6 +66,9 @@ class TransferController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The list of transfer lists.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
      */
     public function index(): JSONResponse
     {
@@ -79,6 +85,8 @@ class TransferController extends Controller
      * @return JSONResponse The transfer list data.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
      */
     public function show(string $id): JSONResponse
     {
@@ -96,6 +104,9 @@ class TransferController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The transfer initiation result.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
      */
     public function create(): JSONResponse
     {

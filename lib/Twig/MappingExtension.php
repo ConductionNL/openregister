@@ -41,6 +41,8 @@ class MappingExtension extends AbstractExtension
      * Get the Twig filters provided by this extension.
      *
      * @return TwigFilter[] Array of Twig filters
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function getFilters(): array
     {
@@ -58,6 +60,8 @@ class MappingExtension extends AbstractExtension
      * Get the Twig functions provided by this extension.
      *
      * @return TwigFunction[] Array of Twig functions
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function getFunctions(): array
     {

@@ -36,6 +36,8 @@ class GraphQLSubscriptionListener implements IEventListener
      *
      * @param SubscriptionService $subscriptionService Subscription service
      * @param LoggerInterface     $logger              Logger
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-11
      */
     public function __construct(
         private readonly SubscriptionService $subscriptionService,
@@ -49,6 +51,8 @@ class GraphQLSubscriptionListener implements IEventListener
      * @param Event $event The event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-11
      */
     public function handle(Event $event): void
     {

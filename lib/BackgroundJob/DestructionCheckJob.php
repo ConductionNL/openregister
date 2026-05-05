@@ -16,6 +16,10 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-63
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
  */
 
 declare(strict_types=1);
@@ -60,6 +64,8 @@ class DestructionCheckJob extends TimedJob
      *
      * @param ITimeFactory  $time Time factory for parent class
      * @param IDBConnection $db   Database connection
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-8
      */
     public function __construct(
         ITimeFactory $time,
@@ -87,6 +93,10 @@ class DestructionCheckJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-8
+     * @spec openspec/changes/retrofit-archival-destruction-workflow-2026-04-24/tasks.md#task-1
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
      */
     protected function run($argument): void
     {
@@ -161,6 +171,8 @@ class DestructionCheckJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-63
      */
     private function sendPreDestructionNotifications(
         RetentionService $retentionService,
@@ -251,6 +263,9 @@ class DestructionCheckJob extends TimedJob
      * @param LoggerInterface $logger        Logger
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-8
+     * @spec openspec/changes/retrofit-archival-destruction-workflow-2026-04-24/tasks.md#task-1
      */
     private function sendObjectNotification(
         string $uuid,
@@ -299,6 +314,8 @@ class DestructionCheckJob extends TimedJob
      * @param LoggerInterface $logger      Logger
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     private function sendReviewNotification(
         string $listUuid,

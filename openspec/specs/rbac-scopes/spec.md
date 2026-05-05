@@ -1,8 +1,11 @@
 ---
-status: implemented
+status: in-progress
 ---
 
 # RBAC Scopes
+
+**OpenSpec changes**
+- `unify-rbac-condition-matching` (active) — collapses `PermissionHandler::evaluateMatchConditions` and `MagicRbacHandler`'s private PHP-side condition matcher onto the shared `ConditionMatcher` service, so schema-level RBAC honours the full operator set (`$eq/$ne/$gt/$gte/$lt/$lte/$in/$nin/$exists`) and dynamic variables (`$organisation/$userId/$now`) that the SQL and property layers already support. Fixes OpenCatalogi `PublicationsController::attachments` throwing on schemas with operator-based `public`-with-match rules.
 
 ## Purpose
 Validate and extend OpenRegister's existing three-level RBAC system. The core RBAC is already implemented via PermissionHandler (schema-level), MagicRbacHandler (row-level SQL filtering), and PropertyRbacHandler (field-level). This spec documents the existing behavior as requirements and identifies extensions needed for scope management APIs, caching, and audit. Specifically, it maps the existing hierarchical RBAC model (register, schema, object, property) to standard OAuth2 scopes in the generated OpenAPI Specification, and validates that per-operation security requirements are correctly enforced so that API consumers can discover and request the precise group-based permissions they need. The scope system bridges Nextcloud's native group management with standardised OAuth2/OAS security semantics, enabling external API consumers, ZGW-compliant systems, and MCP clients to understand and negotiate access programmatically.
@@ -12,7 +15,7 @@ Validate and extend OpenRegister's existing three-level RBAC system. The core RB
 ## Relationship to Existing Implementation
 This spec primarily documents and validates existing functionality, with targeted extensions:
 
-- **Schema-level RBAC (fully implemented)**: `PermissionHandler` with `hasPermission()`, `checkPermission()`, `hasGroupPermission()`, `getAuthorizedGroups()`, and `evaluateMatchConditions()` — all requirements in this spec validate existing behavior.
+- **Schema-level RBAC (fully implemented)**: `PermissionHandler` with `hasPermission()`, `checkPermission()`, `hasGroupPermission()`, and `getAuthorizedGroups()`. Conditional match evaluation is delegated to the shared `ConditionMatcher` service (previously a local `evaluateMatchConditions()` helper with equality-only / `$organisation`-only support, now removed in favour of the canonical matcher).
 - **Property-level RBAC (fully implemented)**: `PropertyRbacHandler` with `canReadProperty()`, `canUpdateProperty()`, `filterReadableProperties()`, and `getUnauthorizedProperties()` with conditional rule evaluation via `ConditionMatcher`.
 - **Database-level RBAC (fully implemented)**: `MagicRbacHandler` with `applyRbacFilters()` (QueryBuilder), `buildRbacConditionsSql()` (raw SQL for UNION), dynamic variable resolution (`$organisation`, `$userId`, `$now`), and full operator support.
 - **OAS scope generation (fully implemented)**: `OasService::extractSchemaGroups()` extracts groups from authorization blocks, `getScopeDescription()` generates descriptions, `applyRbacToOperation()` adds per-operation security blocks.

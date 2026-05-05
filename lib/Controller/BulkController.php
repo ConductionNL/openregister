@@ -16,6 +16,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -423,6 +425,8 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with validation result
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
      */
     public function validateSchema(string $schema): JSONResponse
     {

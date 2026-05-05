@@ -15,6 +15,8 @@
  * @author   Conduction B.V. <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -131,6 +133,8 @@ class SchemaGenerator
      * @param GraphQLResolver $resolver The resolver
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function setResolver(GraphQLResolver $resolver): void
     {
@@ -144,6 +148,8 @@ class SchemaGenerator
      * @return Schema The executable GraphQL schema
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema generation inherently branches per register+schema
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function generate(): Schema
     {
@@ -252,6 +258,8 @@ class SchemaGenerator
      * @param array<string, mixed> $queryFields    Query fields accumulator
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
      */
     private function buildQueryFields(
         RegisterSchema $schema,
@@ -717,6 +725,8 @@ class SchemaGenerator
      * Get schemas indexed by ID.
      *
      * @return array<int, RegisterSchema>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function getSchemasById(): array
     {
@@ -728,6 +738,8 @@ class SchemaGenerator
      * Get registers indexed by ID.
      *
      * @return array<int, Register>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function getRegistersById(): array
     {
