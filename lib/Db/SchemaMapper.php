@@ -889,7 +889,7 @@ class SchemaMapper extends QBMapper
                     $property['$ref'] = $property['$ref']->id;
                 } else if (is_int($property['$ref']) === true) {
                 } else if (is_string($property['$ref']) === false && $property['$ref'] !== '') {
-                    $refValue = print_r($property['$ref'], true);
+                    $refValue = json_encode($property['$ref']);
                     $msg      = "Schema property '$key' has a \$ref that is not a string or empty: ".$refValue;
                     throw new Exception($msg);
                 }

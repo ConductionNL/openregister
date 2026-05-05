@@ -368,8 +368,15 @@ class ReferentialIntegrityService
                 $registerCache[(string) $register->getId()] = $register;
             }
 
+            // Raw SQL: QueryBuilder does not target the information_schema metadata
+            // tables. The schema-resolution function differs across platforms —
+            // MySQL/MariaDB expose DATABASE() while PostgreSQL exposes current_schema()
+            // (mirrors MagicMapper.php:1697-1707).
+            $platform   = $this->db->getDatabasePlatform();
+            $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
+            $schemaFn   = $isPostgres === true ? 'current_schema()' : 'DATABASE()';
             // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
-            $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = current_schema()";
+            $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = {$schemaFn}";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $tables = [];
@@ -899,6 +906,9 @@ class ReferentialIntegrityService
 
         $sql = "{$selectClause} WHERE {$whereCondition} LIMIT 100";
 
+        // Raw SQL: QueryBuilder cannot express the platform-specific JSON-array
+        // containment operators required here — `JSON_CONTAINS(... JSON_QUOTE(?))`
+        // for MariaDB and `column::jsonb @> to_jsonb(?::text)` for PostgreSQL.
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$targetUuid]);
         $rows = $stmt->fetchAll();
