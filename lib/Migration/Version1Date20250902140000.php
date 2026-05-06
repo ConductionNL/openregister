@@ -6,6 +6,7 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -86,7 +87,14 @@ class Version1Date20250902140000 extends SimpleMigrationStep
         }
 
         // Soft delete filtering
-        if (!$table->hasIndex('objects_deleted_idx')) {
+        if (
+            $table->hasColumn('deleted')
+            && $table->getColumn('deleted')->getType()->getName() === Types::JSON
+        ) {
+            $output->info('Skipped index objects_deleted_idx because deleted is a JSON column');
+        } elseif ($table->hasColumn('deleted') === false) {
+            $output->info('Skipped index objects_deleted_idx because deleted column does not exist');
+        } elseif (!$table->hasIndex('objects_deleted_idx')) {
             $table->addIndex(['deleted'], 'objects_deleted_idx');
             $output->info('Added index objects_deleted_idx for soft delete filtering');
         }

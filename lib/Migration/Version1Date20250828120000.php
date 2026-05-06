@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -74,6 +75,11 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         ];
 
         foreach ($singleIndexes as $column => $indexName) {
+            if ($table->hasColumn($column) && $this->canUseBtreeIndex($table, $column) === false) {
+                $output->info("Skipped index {$indexName} on JSON column {$column}");
+                continue;
+            }
+
             if ($table->hasColumn($column) && !$table->hasIndex($indexName)) {
                 $table->addIndex([$column], $indexName);
                 $output->info("Added index {$indexName} on column {$column}");
@@ -121,6 +127,12 @@ class Version1Date20250828120000 extends SimpleMigrationStep
                     $allColumnsExist = false;
                     break;
                 }
+
+                if ($this->canUseBtreeIndex($table, $column) === false) {
+                    $allColumnsExist = false;
+                    $output->info("Skipped composite index {$indexName} because {$column} is a JSON column");
+                    break;
+                }
             }
             
             if ($allColumnsExist) {
@@ -137,6 +149,23 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
+
+
+    /**
+     * Checks whether a column can be used in a regular btree index.
+     *
+     * JSON columns do not have a default btree operator class in PostgreSQL and
+     * also need special handling on other supported databases.
+     *
+     * @param mixed  $table  The table definition
+     * @param string $column The column name
+     *
+     * @return bool
+     */
+    private function canUseBtreeIndex($table, string $column): bool
+    {
+        return $table->getColumn($column)->getType()->getName() !== Types::JSON;
+    }//end canUseBtreeIndex()
 
 
 }//end class
