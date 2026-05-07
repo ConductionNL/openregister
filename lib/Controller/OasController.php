@@ -20,6 +20,9 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-oas-generation-2026-05-01/tasks.md#task-1
+ * @spec openspec/changes/retrofit-oas-generation-2026-05-01/tasks.md#task-2
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -79,6 +82,8 @@ class OasController extends Controller
      * @return JSONResponse
      *
      * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-oas-generation-2026-05-01/tasks.md#task-1
      */
     public function generateAll(): JSONResponse
     {
@@ -99,6 +104,8 @@ class OasController extends Controller
      * @PublicPage
      *
      * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-oas-generation-2026-05-01/tasks.md#task-2
      */
     public function generate(string $id): JSONResponse
     {
