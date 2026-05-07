@@ -371,7 +371,7 @@ class ReferentialIntegrityService
             // Raw SQL: QueryBuilder does not target the information_schema metadata
             // tables. The schema-resolution function differs across platforms —
             // MySQL/MariaDB expose DATABASE() while PostgreSQL exposes current_schema()
-            // (mirrors MagicMapper.php:1697-1707).
+            // (mirrors lib/Db/MagicMapper.php:1697-1707).
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
             $schemaFn   = $isPostgres === true ? 'current_schema()' : 'DATABASE()';

@@ -391,11 +391,10 @@ class RegisterService
             );
 
             // Build UNION queries for each schema's magic table.
-            // Cast syntax differs across platforms — PostgreSQL accepts CAST AS VARCHAR
-            // while MariaDB/MySQL require CAST AS CHAR (mirrors MagicMapper.php:1346-1349).
+            // Cast syntax differs across platforms — PostgreSQL uses `::text`
+            // while MariaDB/MySQL require CAST AS CHAR (mirrors lib/Db/MagicMapper.php:1346-1349).
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
-            $textType   = $isPostgres === true ? 'VARCHAR' : 'CHAR';
 
             $unionQueries = [];
 
@@ -419,9 +418,12 @@ class RegisterService
                 }
 
                 $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+                $schemaIdExpr    = $isPostgres === true
+                    ? "{$schemaId}::text"
+                    : "CAST({$schemaId} AS CHAR)";
                 $unionQueries[]  = "
                     SELECT
-                        CAST({$schemaId} AS {$textType}) as schema_id,
+                        {$schemaIdExpr} as schema_id,
                         COUNT(*) as total,
                         COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
                         0 as invalid,
