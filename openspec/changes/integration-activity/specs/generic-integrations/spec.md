@@ -39,7 +39,7 @@ Tab SHALL provide event-type filter chips with persistence of the user's last se
 
 ### Requirement: Widget Surfaces
 
-Standard four surfaces; detail-page surface mirrors tab.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`); the `detail-page` surface mirrors the tab.
 
 ### Requirement: Reference-Property (Niche)
 

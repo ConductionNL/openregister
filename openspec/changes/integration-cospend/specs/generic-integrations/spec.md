@@ -29,7 +29,7 @@ Totals SHALL aggregate only bills in the same currency. Mixed-currency sets SHAL
 
 ### Requirement: Widget Surfaces
 
-Standard four; single-entity is amount chip.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`); the `single-entity` rendering is an amount chip.
 
 ### Requirement: Reference-Property Auto-Rendering
 

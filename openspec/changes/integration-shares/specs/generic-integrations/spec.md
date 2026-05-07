@@ -9,7 +9,7 @@ status: proposed
 Surface NC Shares (file/folder shares on object's linked files) through the registry with query-time aggregation and revoke action.
 
 **Standards**: NC Share API (`OCP\Share\IManager`), ADR-019
-**Cross-references**: [generic-integrations](../../../pluggable-integration-registry/specs/generic-integrations/spec.md), [integration-activity](../../../integration-activity/specs/integration-activity/spec.md)
+**Cross-references**: [generic-integrations](../../../pluggable-integration-registry/specs/generic-integrations/spec.md), [integration-activity](../../../integration-activity/specs/generic-integrations/spec.md)
 
 ---
 
@@ -40,7 +40,7 @@ Tab SHALL group shares by type: user / group / public link / federated.
 
 ### Requirement: Widget Surfaces
 
-Standard four; dashboard surface shows count headline.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`); the dashboard surfaces show a count headline.
 
 ### Requirement: Reference-Property Auto-Rendering
 

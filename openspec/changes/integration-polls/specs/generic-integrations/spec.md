@@ -37,7 +37,7 @@ Tab SHALL show each poll's status (draft/open/closed), vote tally, and the curre
 
 ### Requirement: Widget Surfaces
 
-`CnPollsCard` SHALL render on all four surfaces; detail-page includes mini bar-chart tally.
+Per umbrella AD-6/AD-18, `CnPollsCard` SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`); the `detail-page` rendering includes a mini bar-chart tally.
 
 ### Requirement: Reference-Property Auto-Rendering
 

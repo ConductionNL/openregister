@@ -35,7 +35,7 @@ Linked bookmarks' Bookmarks-side tags SHALL be shown as filter chips in the tab.
 
 ### Requirement: Widget Surfaces
 
-Four surfaces, standard contract.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`).
 
 ### Requirement: Reference-Property Auto-Rendering
 

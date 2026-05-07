@@ -97,15 +97,19 @@ Three layers decide what the user actually sees. They already exist in skeletal 
 
 **Decision**: Registering an integration without both a tab and widget component fails pre-commit (local) and fails the hydra quality gate (pipeline). No tab-only integrations permitted.
 
-**Why**: The user has explicit preference for full parity. Making parity a hard rule enforces it from day one; softer "warnings" drift. A `scripts/check-integration-parity.sh` walks each provider's JS registration and asserts both `tab` and `widget` are set to components that resolve.
+**Definition of "set"** (normative): a `tab` or `widget` value is "set" iff the key is present on the registration object, the value is non-null, non-undefined, and `typeof value === 'function'` (a Vue component constructor or async-component factory). Non-function values (`{}`, `false`, primitives) are rejected.
+
+**Why**: The user has explicit preference for full parity. Making parity a hard rule enforces it from day one; softer "warnings" drift. A `scripts/check-integration-parity.sh` walks each provider's JS registration and asserts both `tab` and `widget` are set per the definition above.
 
 **Trade-off**: Slower onboarding for a new integration — both UI surfaces must exist before merge. Acceptable: the work is small (one shell widget can wrap the tab's data for MVP), and the user experience benefit is real.
+
+**Hydra-repo gate wiring**: The hydra quality gate's parity check is wired by extending `scripts/run-hydra-gates.sh` in the hydra repo. That is a hydra-repo change, tracked as a separate one-task change in hydra (depends_on this umbrella). It is not in this umbrella's hydra.json because it touches a different repo.
 
 ### AD-4: External integrations route via OpenConnector
 
 **Decision**: Providers declare `storage: "external"` with an `openconnector_source: "..."` reference. When the sub-resource endpoint is hit, `IntegrationRegistry` delegates to the OpenConnector client, passing the object context (register/schema/id) as request context. There is no local link table for external entities; pairings are stored in OpenConnector's own pairing model or computed per-request.
 
-**Why**: OpenConnector is the existing pattern for external-service integration. Reusing it avoids inventing a second external-integration mechanism and lets OR stay focused on its own primitives. The `storage` strategy becomes a first-class switch: `magic-column` (legacy), `link-table`, `external`.
+**Why**: OpenConnector is the existing pattern for external-service integration. Reusing it avoids inventing a second external-integration mechanism and lets OR stay focused on its own primitives. The `storage` strategy becomes a first-class switch: `magic-column` (legacy), `link-table`, `external`, `query-time`. (`query-time` is documented below — used by read-only providers such as NC Activity and NC Shares that aggregate live from another NC service rather than persisting their own link rows.)
 
 **Trade-off**: External integrations are higher-latency and can fail for reasons unrelated to OR (external service down, OAuth expired). The UI must handle graceful degradation — `IntegrationProvider::health()` returns a status that the tab/widget can display.
 
@@ -217,13 +221,18 @@ Leaves that miss any of these fail the parity gate at merge time.
 
 **Trade-off**: A permission string is less expressive than a DSL. If real cases demand more (e.g., "handler OR admin"), the contract evolves later — but YAGNI for now.
 
-### AD-17: Registry advertised via Nextcloud's OCS capabilities endpoint
+### AD-17: Registry advertised via Nextcloud's OCS capabilities endpoint (role-redacted)
 
-**Decision**: OR's `CapabilitiesService` is extended to include an `integrations` block in the response from `/ocs/v2.php/cloud/capabilities`. Block contains: `{ id, label, group, enabled, requiresPermission, authStatus, surfaces[] }` for each registered integration on the instance. Full per-object operations remain at `/api/integrations` and the sub-resource endpoints — capabilities is for *discovery*, not *operation*.
+**Decision**: OR's `CapabilitiesService` is extended to include an `integrations` block in the response from `/ocs/v2.php/cloud/capabilities`. The block is **role-redacted**:
 
-**Why**: User picked "expose via capabilities." External clients (mobile apps, partner integrations, other NC apps) get a standard discovery mechanism — they can do feature-detection without polling OR-specific endpoints. Free to add now, awkward to add later (every client would have to dual-path).
+- **All authenticated users** receive `{ id, label, group, enabled, surfaces[] }` per entry — the public surface needed to render UI / do feature detection.
+- **Admins** additionally receive `{ requiresPermission, authStatus, openConnectorSource }` per entry — the operational surface needed to manage integrations.
 
-**Trade-off**: Slightly bigger capabilities response. Mitigated by the registry being small (target: <50 integrations forever).
+Sensitive fields are *omitted* (not `null`-stubbed) for non-admins so that absence is indistinguishable from non-existence. Full per-object operations remain at `/api/integrations` and the sub-resource endpoints — capabilities is for *discovery*, not *operation*.
+
+**Why**: User picked "expose via capabilities." External clients (mobile apps, partner integrations, other NC apps) get a standard discovery mechanism — they can do feature-detection without polling OR-specific endpoints. Free to add now, awkward to add later (every client would have to dual-path). Role-redaction prevents leaking infrastructure-configuration gaps (`authStatus: 'expired'`) and the permission model (`requiresPermission` strings) to non-admin callers — OCS capabilities is reachable by every authenticated NC user.
+
+**Trade-off**: Slightly bigger capabilities response and a per-caller redaction step. Mitigated by the registry being small (target: <50 integrations forever).
 
 ### AD-18: Reference-property auto-rendering via `single-entity` widget surface
 
@@ -262,6 +271,30 @@ The `referenceType` marker is added to the schema property type system as an opt
 
 **Trade-off**: This change creates a dependency on a not-yet-written ADR. Acceptable — the ADR is small, the principle is well-understood, and writing it is a parallel task that doesn't block implementation here.
 
+### AD-22: `query-time` storage strategy for read-only aggregators
+
+**Decision**: A fourth storage strategy `'query-time'` joins `magic-column`, `link-table`, `external`. Providers with this strategy persist nothing — `list()` queries the upstream NC service live on every call; `create()` / `update()` / `delete()` throw `NotImplementedException`. Used by NC Activity (leaf `integration-activity`) and NC Shares (leaf `integration-shares`).
+
+**Why**: For sources OR doesn't own (Activity events, Share rows), persisting a parallel link table is busywork that creates staleness. Query-time providers stay correct by definition because they read the authoritative source.
+
+**Trade-off**: Per-render query cost. Mitigated by:
+- A timeout contract: if the upstream query exceeds 2 seconds, the surface SHALL render the degraded ("source slow — retrying in background") state rather than blocking the request. Implementations MAY use a shorter timeout.
+- Pagination at the upstream API (NC Activity and Share Manager both support it).
+- Request-scoped caching for repeated reads within one request.
+
+**Cross-integration "OR events" in blended feeds**: A blended feed (e.g. activity tab) may include OR-internal events (objects linked, audit-trail entries). Source: OR's audit-trail provider — exposed via the same registry, queried by the consuming feed in the same render pass. No new event store is introduced.
+
+### AD-23: OpenConnector failure-path contract
+
+**Decision**: External providers (`storage='external'`) follow this contract:
+1. **Auth check is lazy.** Providers do NOT call `health()` on every render. Auth status is surfaced reactively: if a request returns 401 from the upstream service, the provider throws `ProviderAuthException` and the UI surfaces the reconnect banner. `health()` is only refreshed on demand (admin "Test connection") and from the OCS capabilities response.
+2. **Token refresh is OpenConnector-managed.** Providers call OpenConnector assuming valid tokens; OpenConnector refreshes silently when possible and reports `authStatus: 'expired'` when it cannot.
+3. **OpenConnector unavailability is distinct from upstream unavailability.** If the OpenConnector NC app itself is disabled or its source is missing, the provider throws `ProviderUnavailableException` with `details.cause = 'openconnector-down' | 'openconnector-source-missing' | 'upstream-service-down'` so the UI can render an actionable message ("Reconfigure connector" vs "Service offline").
+
+**Why**: The reactive (lazy) auth pattern avoids a per-render upstream round-trip just to check status. Distinguishing connector-down from upstream-down avoids "Service unavailable" messages when the real fix is reconnecting the connector source.
+
+**Trade-off**: Slightly richer exception payloads. Acceptable — the alternative (every external integration reinventing this) is worse.
+
 ## The contract (normative)
 
 ### PHP `IntegrationProvider` interface
@@ -291,8 +324,23 @@ interface IntegrationProvider
     /** NC app id the integration requires, or null for always-available. */
     public function getRequiredApp(): ?string;
 
-    /** 'magic-column' | 'link-table' | 'external' */
+    /**
+     * Storage strategy. One of:
+     *   - 'magic-column' — link stored as a column on the OR object row.
+     *   - 'link-table'   — link stored in a dedicated `openregister_*_links` table.
+     *   - 'external'     — no local persistence; CRUD routed through OpenConnector.
+     *   - 'query-time'   — no local persistence; the source system is queried live on
+     *                      every `list()` call. Used by read-only/aggregating providers
+     *                      (e.g. NC Activity, NC Shares). Mutation methods on these
+     *                      providers throw `NotImplementedException`.
+     */
     public function getStorageStrategy(): string;
+
+    /**
+     * OpenConnector source id, for providers with `getStorageStrategy() === 'external'`.
+     * MUST return null for native NC and query-time integrations.
+     */
+    public function getOpenConnectorSource(): ?string;
 
     /** Whether the integration is currently usable on this NC instance. */
     public function isEnabled(): bool;

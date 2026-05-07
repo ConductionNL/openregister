@@ -40,7 +40,7 @@ Link table SHALL store per-object hour total updated on entry write. Dashboard r
 
 ### Requirement: Widget Surfaces
 
-Standard four; detail-page shows per-user/week breakdown.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`); the `detail-page` rendering shows a per-user/week breakdown.
 
 ### Requirement: Reference-Property Auto-Rendering
 

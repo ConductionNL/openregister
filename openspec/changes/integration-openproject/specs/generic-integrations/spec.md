@@ -9,7 +9,7 @@ status: proposed
 Link OpenProject work packages to OR objects through the registry via OpenConnector external routing. First external-service integration proving the umbrella's `storage='external'` path.
 
 **Standards**: OpenProject REST API v3, OAuth 2.0, ADR-019
-**Cross-references**: [generic-integrations](../../../pluggable-integration-registry/specs/generic-integrations/spec.md), [integration-xwiki](../../../integration-xwiki/specs/integration-xwiki/spec.md)
+**Cross-references**: [generic-integrations](../../../pluggable-integration-registry/specs/generic-integrations/spec.md), [integration-xwiki](../../../integration-xwiki/specs/generic-integrations/spec.md)
 
 ---
 
@@ -59,7 +59,7 @@ When OpenConnector reports `authStatus: 'expired'`, the tab SHALL display an exp
 
 ### Requirement: Widget Surfaces
 
-Standard four; dashboard shows open WPs assigned to user; single-entity is WP chip with status badge.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`); the dashboard surfaces show open WPs assigned to the user, and `single-entity` is a WP chip with status badge.
 
 ### Requirement: Reference-Property Auto-Rendering
 

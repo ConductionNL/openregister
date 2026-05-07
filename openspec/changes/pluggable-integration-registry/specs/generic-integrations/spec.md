@@ -11,7 +11,7 @@ OpenRegister exposes a uniform contract for "things linked to an object" — Nex
 This spec defines the **integration registry**: a backend service + frontend registry + provider contract + three-stage filter (registry existence → schema relevance → component context) that governs which integrations are visible where.
 
 **Standards**: Nextcloud OCS Capabilities, JSON Schema, RFC 5545 (iCalendar), RFC 6350 (vCard), Nextcloud DI tag system
-**Cross-references**: [nextcloud-entity-relations](../../../specs/nextcloud-entity-relations/spec.md), [object-interactions](../../../specs/object-interactions/spec.md), [authorization-rbac](../../../specs/authorization-rbac/spec.md)
+**Cross-references**: [nextcloud-entity-relations](../../../../specs/nextcloud-entity-relations/spec.md), [object-interactions](../../../../specs/object-interactions/spec.md), [authorization-rbac](../../../../specs/authorization-rbac/spec.md)
 
 ---
 
@@ -29,7 +29,7 @@ A uniform contract is the entire point of a registry. Each integration ships a v
 
 - **GIVEN** a developer wants to add a new integration named `forms`
 - **WHEN** they create a class `FormsProvider implements IntegrationProvider`
-- **THEN** their class MUST implement: `getId()`, `getLabel()`, `getIcon()`, `getGroup()`, `getRequiredApp()`, `getStorageStrategy()`, `isEnabled()`, `requiresPermission()`, `authRequirements()`, `list()`, `get()`, `create()`, `update()`, `delete()`, `health()`
+- **THEN** their class MUST implement: `getId()`, `getLabel()`, `getIcon()`, `getGroup()`, `getRequiredApp()`, `getStorageStrategy()`, `getOpenConnectorSource()`, `isEnabled()`, `requiresPermission()`, `authRequirements()`, `list()`, `get()`, `create()`, `update()`, `delete()`, `health()`
 - **AND** the class MUST be registered as a DI-tagged service with tag `IntegrationProvider`
 - **AND** `IntegrationRegistry::list()` MUST return the new provider on the next request
 
@@ -46,6 +46,73 @@ A uniform contract is the entire point of a registry. Each integration ships a v
 - **THEN** the provider MUST be excluded from the result
 - **AND** `GET /api/integrations` MUST NOT list it
 - **AND** `CnObjectSidebar` MUST NOT render its tab
+
+---
+
+### Requirement: Storage Strategy Enum
+
+`IntegrationProvider::getStorageStrategy()` SHALL return one of four values: `'magic-column'`, `'link-table'`, `'external'`, `'query-time'`. Any other value SHALL be rejected by the registry at registration time.
+
+- `magic-column` — link stored as a column on the OR object row (legacy built-ins).
+- `link-table`   — link stored in a dedicated `openregister_*_links` table.
+- `external`     — no local persistence; CRUD routed through OpenConnector. Provider SHALL also implement `getOpenConnectorSource()` returning a non-null source id.
+- `query-time`   — no local persistence; the source system is queried live on every `list()` call. Mutation methods SHALL throw `NotImplementedException`.
+
+#### Scenario: query-time provider rejects mutation
+
+- **GIVEN** a provider returning `'query-time'` from `getStorageStrategy()`
+- **WHEN** `create()`, `update()`, or `delete()` is invoked
+- **THEN** the provider MUST throw `NotImplementedException`
+- **AND** the controller layer MUST translate the exception to HTTP 501 with a body that names the source-of-truth NC service
+
+#### Scenario: query-time provider exceeding timeout returns degraded surface
+
+- **GIVEN** a `query-time` provider whose upstream service does not respond within the per-render timeout (default 2s)
+- **WHEN** the surface (tab or widget) renders
+- **THEN** the surface MUST render the degraded "source slow — retrying in background" state
+- **AND** the request MUST NOT block the page beyond the timeout
+- **AND** a structured log entry MUST be emitted with `{integration, surface, timeout_ms}`
+
+#### Scenario: external provider missing OpenConnector source id is rejected
+
+- **GIVEN** a provider returning `'external'` from `getStorageStrategy()` and `null` from `getOpenConnectorSource()`
+- **WHEN** the registry resolves it
+- **THEN** the registry MUST reject the provider with a clear error and exclude it from `getEnabled()`
+
+---
+
+### Requirement: External Provider Failure Modes
+
+`ExternalIntegrationRouter` and `external` providers SHALL distinguish three failure modes via `ProviderUnavailableException` with a `details.cause` field of `'openconnector-down' | 'openconnector-source-missing' | 'upstream-service-down'`. Auth status SHALL be checked lazily — providers MUST NOT issue a health probe to OpenConnector on every render. A 401 from the upstream service SHALL be translated to `ProviderAuthException` with a `reconnectUrl`.
+
+#### Scenario: OpenConnector NC app disabled
+
+- **GIVEN** the OpenConnector NC app is disabled
+- **WHEN** `OpenProjectProvider::list()` is called
+- **THEN** the call MUST throw `ProviderUnavailableException`
+- **AND** `details.cause` MUST equal `'openconnector-down'`
+- **AND** the UI MUST render "Connector unavailable — admin: enable OpenConnector"
+
+#### Scenario: OpenConnector source for the provider is missing
+
+- **GIVEN** OpenConnector is enabled but no source named `openproject` is configured
+- **WHEN** `OpenProjectProvider::list()` is called
+- **THEN** `details.cause` MUST equal `'openconnector-source-missing'`
+- **AND** the admin UI MUST link to OpenConnector's source-creation flow
+
+#### Scenario: Upstream service unreachable
+
+- **GIVEN** OpenConnector reaches `openproject` but the OpenProject API is unreachable
+- **WHEN** `OpenProjectProvider::list()` is called
+- **THEN** `details.cause` MUST equal `'upstream-service-down'`
+- **AND** the UI MUST render "OpenProject offline — last seen <timestamp>"
+
+#### Scenario: Lazy auth — token refresh handled by OpenConnector
+
+- **GIVEN** an `external` provider whose tokens are refreshable via OpenConnector
+- **WHEN** the provider invokes an upstream call without first calling `health()`
+- **THEN** the provider MUST trust OpenConnector to refresh tokens silently
+- **AND** only when the upstream returns 401 MUST the provider raise `ProviderAuthException`
 
 ---
 
@@ -97,9 +164,15 @@ Stage 3: Component prop excludeIntegrations — per-render override
 
 The system SHALL refuse to merge a change that registers an `IntegrationProvider` (frontend or backend) without a corresponding tab AND widget component. The check SHALL run in pre-commit, repository CI, and the hydra quality gate.
 
+A `tab` or `widget` value is considered "set" only when **all** of the following hold:
+
+- the registration object has the key (the key is present, not omitted),
+- the value is not `null` and not `undefined`,
+- `typeof value === 'function'` (a Vue component constructor or async-component factory) — plain object literals, primitives, and `false` MUST be rejected.
+
 #### Rationale
 
-User explicit preference — every integration gets both surfaces. Enforcing it at registration time prevents drift; making it a CI gate prevents merges from sneaking past local hooks.
+User explicit preference — every integration gets both surfaces. Enforcing it at registration time prevents drift; making it a CI gate prevents merges from sneaking past local hooks. Without an executable definition of "set", a registration like `{tab: null, widget: FooCard}` could pass a naive presence check while breaking at render time.
 
 #### Scenario: A registration without a widget fails the parity check
 
@@ -108,6 +181,18 @@ User explicit preference — every integration gets both surfaces. Enforcing it 
 - **THEN** the script MUST exit non-zero with an error naming the integration id and the missing component
 - **AND** the CI workflow `integration-parity` MUST fail
 - **AND** the hydra quality gate MUST report the failure under gate `integration-parity`
+
+#### Scenario: A registration with `widget: null` fails the parity check
+
+- **GIVEN** a JS file calls `OCA.OpenRegister.integrations.register({ id: 'foo', tab: FooTab, widget: null })`
+- **WHEN** `scripts/check-integration-parity.sh` runs
+- **THEN** the script MUST exit non-zero with an error naming the integration id and that `widget` is null
+
+#### Scenario: A registration with a non-component value fails the parity check
+
+- **GIVEN** a JS file calls `OCA.OpenRegister.integrations.register({ id: 'foo', tab: FooTab, widget: {} })` (object literal, not a function)
+- **WHEN** `scripts/check-integration-parity.sh` runs
+- **THEN** the script MUST exit non-zero with an error stating that `widget` is not a Vue component (typeof !== 'function')
 
 #### Scenario: A registration without a tab fails the parity check
 
@@ -200,6 +285,14 @@ Providers with `getStorageStrategy() === 'external'` SHALL route their CRUD oper
 
 `IntegrationProvider::requiresPermission()` SHALL return either `null` (default — inherit from object RBAC + NC app permissions) or a permission string. Permission strings SHALL be evaluated against `AuthorizationService` for the current user on the object before the integration is included in any list/read response.
 
+The permission-string vocabulary recognised by `AuthorizationService` for integration gating is:
+
+- `'admin'` — the user is a member of the Nextcloud admin group (`IGroupManager::isAdmin($userId)`).
+- `'audit.view'` — the user has the OR-internal audit-view role on the object.
+- A custom string starting with `<app-id>.` — delegated to that app's permission resolver.
+
+Unknown permission strings SHALL be treated as "deny" and SHALL log a warning identifying the integration and the unrecognised string.
+
 #### Scenario: Provider with no extra permission inherits object access
 
 - **GIVEN** a user with read access to an object
@@ -218,14 +311,36 @@ Providers with `getStorageStrategy() === 'external'` SHALL route their CRUD oper
 
 ### Requirement: OCS Capabilities Advertising
 
-The system SHALL include an `integrations` block in the response from `/ocs/v2.php/cloud/capabilities` containing one entry per registered + enabled integration. Each entry SHALL include: `id`, `label`, `group`, `enabled`, `requiresPermission`, `authStatus`, `surfaces` (the list of surfaces the integration supports).
+The system SHALL include an `integrations` block in the response from `/ocs/v2.php/cloud/capabilities` containing one entry per registered + enabled integration. Each entry SHALL be redacted per caller role:
+
+- **All authenticated users** see only the public block: `{id, label, group, enabled, surfaces}`.
+- **Admins** additionally see the sensitive block: `{requiresPermission, authStatus, openConnectorSource}`.
+
+The sensitive fields SHALL be omitted (not set to `null`) for non-admin callers so that introspection cannot distinguish "field hidden" from "field unset". This protects against leaking infrastructure-configuration gaps (`authStatus: 'expired'` on OAuth-backed integrations) and the permission model (`requiresPermission` strings) to regular users.
+
+#### Rationale
+
+OCS capabilities is reachable by every authenticated NC user. Without role-based redaction, a non-admin learning that `authStatus: 'expired'` on `openproject` is told "this org has an OpenProject integration that nobody has reconnected" — disclosure of infrastructure state. Likewise, leaking permission strings (`audit.view`, `admin`, custom roles) reveals the org's RBAC topology. Admins need the full block to operate; everyone else only needs presence + label to render the UI.
+
+#### Scenario: Non-admin caller sees only the public block
+
+- **GIVEN** the registry has an enabled `openproject` integration with `authStatus: 'expired'` and `requiresPermission: null`
+- **WHEN** a non-admin user calls `GET /ocs/v2.php/cloud/capabilities`
+- **THEN** the `openproject` entry MUST contain exactly the fields `{id, label, group, enabled, surfaces}`
+- **AND** the fields `requiresPermission`, `authStatus`, `openConnectorSource` MUST be absent from the entry
+
+#### Scenario: Admin caller sees the full block
+
+- **GIVEN** the same registry state
+- **WHEN** an admin user calls `GET /ocs/v2.php/cloud/capabilities`
+- **THEN** the `openproject` entry MUST contain `{id, label, group, enabled, surfaces, requiresPermission, authStatus, openConnectorSource}`
 
 #### Scenario: Capabilities response advertises the registry
 
 - **GIVEN** the registry has 8 enabled integrations
 - **WHEN** `GET /ocs/v2.php/cloud/capabilities` is called
 - **THEN** the response MUST include `data.capabilities.openregister.integrations` as an array of 8 objects
-- **AND** each object MUST include the documented fields
+- **AND** each object MUST include at minimum the public-block fields documented above
 
 ---
 
@@ -389,6 +504,15 @@ Before this change, `CnObjectSidebar` showed all 5 hardcoded tabs regardless of 
 - **THEN** validation MUST NOT reject on read
 - **AND** a warning MUST be logged identifying the schema and the stale id
 - **AND** the `calendar` tab MUST simply not render (stage 1 registry filter drops it)
+
+#### Scenario: Schema with mid-rollout linkedTypes ids (umbrella deployed, leaf pending)
+
+- **GIVEN** a schema with `linkedTypes: ["mail", "calendar"]` after the umbrella deploys
+- **AND** the `mail` and `calendar` leaf providers have not yet merged (only the 5 built-ins are registered)
+- **WHEN** `CnObjectSidebar` renders for an object of that schema
+- **THEN** stage 1 registry filter MUST drop `mail` and `calendar` (no tabs rendered for those types)
+- **AND** the schema MUST NOT be modified by the umbrella's migration (auto-population only fires when `linkedTypes` is absent — present-but-stale is left intact for the leaves to satisfy on merge)
+- **AND** an admin-visible dashboard notice (or warning log per schema) MUST identify the schema and the unregistered ids so admins can audit during rollout
 
 ---
 

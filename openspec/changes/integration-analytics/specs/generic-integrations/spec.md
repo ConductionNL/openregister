@@ -41,7 +41,7 @@ Dashboard surfaces SHALL auto-refresh every 5 minutes. Detail-page and single-en
 
 ### Requirement: Widget Surfaces
 
-Standard four; single-entity includes sparkline.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`); `single-entity` includes a sparkline.
 
 ### Requirement: Reference-Property Auto-Rendering
 

@@ -46,7 +46,7 @@ Admin setting SHALL allow stripping GPS data from EXIF at link time. Default OFF
 
 ### Requirement: Widget Surfaces
 
-Standard four surfaces with grid/strip appropriate to each.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`) with grid/strip appropriate to each.
 
 ### Requirement: Reference-Property Auto-Rendering
 

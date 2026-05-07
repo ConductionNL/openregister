@@ -54,7 +54,7 @@ Same as OpenProject — explicit banner + reconnect link.
 
 ### Requirement: Widget Surfaces
 
-Standard four; single-entity is page-title + breadcrumb chip.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`); `single-entity` is a page-title + breadcrumb chip.
 
 ### Requirement: Reference-Property Auto-Rendering
 

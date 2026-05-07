@@ -33,22 +33,44 @@ Tab SHALL display recent fire events for linked rules within a configurable wind
 
 ### Requirement: Widget Surfaces
 
-Standard four; detail-page shows linked rules + recent events.
+Per umbrella AD-6/AD-18, the widget SHALL render on all four surfaces (`user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`); the `detail-page` rendering shows linked rules + recent events.
 
 ### Requirement: Reference-Property Auto-Rendering
 
 `referenceType: 'flow'` SHALL render rule chip.
 
-### Requirement: Permission Inheritance
+### Requirement: Admin-Gated Permission Semantics
 
-`FlowProvider::requiresPermission()` SHALL return `'admin'` — only admins see flow rules (NC Flow admin-gated).
+`FlowProvider::requiresPermission()` SHALL return the literal string `'admin'`. In OR's `AuthorizationService` mapping, `'admin'` resolves to **"the current user is a member of the Nextcloud admin group"** (i.e. `IGroupManager::isAdmin($userId) === true`). It is NOT an OR-internal role string and NOT a per-object permission.
 
-#### Scenario: Non-admin user does not see Flow tab
+The Flow integration is hidden by **two independent gates**:
 
-- **GIVEN** a non-admin user viewing an object
+1. **App gate** (`isEnabled()` / `getRequiredApp()`): hides the integration if `workflowengine` is disabled at the NC instance level. When `workflowengine` is disabled, the integration is filtered out at stage 1 of the visibility filter for all users — admins included.
+2. **Permission gate** (`requiresPermission(): 'admin'`): when `workflowengine` is enabled, the integration is filtered out at stage 1 for non-admin users. Admins see it.
+
+The two gates are independent — disabling `workflowengine` hides the tab even from admins; enabling it exposes the tab to admins only.
+
+#### Scenario: workflowengine disabled — tab hidden from everyone
+
+- **GIVEN** the NC `workflowengine` app is disabled instance-wide
+- **WHEN** `CnObjectSidebar` renders for any user (admin or not)
+- **THEN** no Flow tab MUST appear
+- **AND** `/api/integrations/flow` MUST return HTTP 404 (integration not registered, distinct from 403)
+
+#### Scenario: workflowengine enabled, non-admin user — tab hidden via permission gate
+
+- **GIVEN** `workflowengine` is enabled
+- **AND** the current user is not in the NC admin group
 - **WHEN** `CnObjectSidebar` renders
 - **THEN** no Flow tab MUST appear
 - **AND** `/api/integrations/flow` MUST return HTTP 403 for the user
+
+#### Scenario: workflowengine enabled, admin user — tab visible
+
+- **GIVEN** `workflowengine` is enabled
+- **AND** the current user is a member of the NC admin group
+- **WHEN** `CnObjectSidebar` renders for an object whose schema lists `flow` in `linkedTypes`
+- **THEN** the Flow tab MUST appear
 
 ---
 

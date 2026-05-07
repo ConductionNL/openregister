@@ -1,5 +1,7 @@
 # Tasks: Integration — OpenProject
 
+> **ADR-028 task-cap waiver**: this leaf has 24 tasks (cap is 15). The work is a single external-integration vertical slice (provider + OpenConnector source template + tab + 4-surface widget + tests + nl/en). Splitting it would force interleaved depends_on chains that ship slower than one cohesive leaf. Hydra builders SHOULD batch this leaf across multiple turns.
+
 ## Umbrella coordination
 
 - [ ] Add `getOpenConnectorSource(): ?string` to umbrella `IntegrationProvider` interface (tiny umbrella PR)
