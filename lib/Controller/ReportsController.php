@@ -174,11 +174,13 @@ class ReportsController extends Controller
     {
         $identifier = trim($identifier);
         $arg        = ctype_digit($identifier) === true ? (int) $identifier : $identifier;
-        return $this->objectMapper->find(
-            $arg,
-            _rbac: false,
-            _multitenancy: false
-        );
+
+        // SECURITY: standard RBAC + multitenancy filtering must apply on every
+        // dashboard load — render/preview surface user-controlled HTML/XLSX/PDF
+        // bytes that embed widget data resolved at render time. Bypassing the
+        // mapper's filters lets any authenticated caller render any dashboard
+        // in any tenant by guessing identifiers (cross-tenant exfiltration).
+        return $this->objectMapper->find($arg);
 
     }//end loadDashboard()
 }//end class
