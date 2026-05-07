@@ -102,7 +102,12 @@ class MailAppScriptListener implements IEventListener
             return;
         }
 
-        // Inject the sidebar script.
+        // Inject the sidebar script. Polyfill goes first so deferred scripts
+        // see `window.process` before the sidebar bundle's module-init code
+        // peeks at `process.platform` / `process.env`. The sidebar bundle is
+        // built without NodePolyfillPlugin, so without this shim it throws
+        // ReferenceError and prevents Mail's own app from mounting.
+        Util::addScript('openregister', 'openregister-process-polyfill');
         Util::addScript('openregister', 'openregister-mail-sidebar');
         Util::addStyle('openregister', 'mail-sidebar');
 

@@ -24,13 +24,15 @@ const MOUNT_MAX_RETRIES = 30
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-51
  */
 function findMountPoint() {
-	// Try the Mail app content area
-	const appContent = document.getElementById('app-content-vue')
+	// Mail-specific content areas only. Do NOT fall back to `#content` —
+	// that's Mail's own Vue mount target, and Vue 2's $mount('#content')
+	// replaces the element wholesale, taking any container we appended
+	// inside it with it. (Symptom: sidebar briefly appears, then vanishes
+	// the instant Mail finishes mounting.)
+	return document.getElementById('app-content-vue')
 		|| document.getElementById('app-content')
 		|| document.querySelector('.app-content')
-		|| document.querySelector('#content')
-
-	return appContent || null
+		|| null
 }
 
 /**
