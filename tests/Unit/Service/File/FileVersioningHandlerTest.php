@@ -107,4 +107,23 @@ class FileVersioningHandlerTest extends TestCase
         $this->appManager->method('isEnabledForUser')->willReturn(false);
         $this->assertFalse($this->handler->isVersioningEnabled());
     }
+
+    /**
+     * Test restoreVersion rejects malformed version IDs.
+     *
+     * Covers tasks.md Phase 4: "Write unit test for version restore" — at the
+     * version-id-parse level. Real Files_Versions integration is exercised via
+     * graceful-degradation paths (testRestoreVersionDisabled).
+     */
+    public function testRestoreVersionRejectsMalformedId(): void
+    {
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
+        $file = $this->createMock(File::class);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid version ID format');
+
+        // Anything that doesn't yield a positive integer after stripping 'v-'.
+        $this->handler->restoreVersion($file, 'not-a-version');
+    }
 }

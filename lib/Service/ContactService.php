@@ -357,7 +357,11 @@ class ContactService
                     // Remove properties matching this object only.
                     unset($vcard->{'X-OPENREGISTER-OBJECT'});
                     unset($vcard->{'X-OPENREGISTER-ROLE'});
-                    $this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
+                    $this->cardDavBackend->updateCard(
+                        $link->getAddressbookId(),
+                        $link->getContactUri(),
+                        $vcard->serialize()
+                    );
                 }
             } catch (Exception $e) {
                 $this->logger->warning(

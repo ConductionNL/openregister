@@ -16,7 +16,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -31,7 +31,9 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -89,7 +91,9 @@ class ActionsController extends Controller
         ActionMapper $actionMapper,
         ActionLogMapper $actionLogMapper,
         ActionService $actionService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->actionMapper    = $actionMapper;
@@ -97,6 +101,43 @@ class ActionsController extends Controller
         $this->actionService   = $actionService;
         $this->logger          = $logger;
     }//end __construct()
+
+    /**
+     * Gate Actions mutations to admin group members.
+     *
+     * SECURITY: Actions persist as workflow hooks that fire on every
+     * matching object lifecycle event. A non-admin who briefly auth-es
+     * could otherwise register an attacker-chosen workflow that
+     * survives password reset, session revocation, and even the source
+     * account being disabled (the action row carries no owner check on
+     * execution). Every write surface (`create`/`update`/`patch`/
+     * `destroy`/`test`/`migrateFromHooks`) is admin-only at the
+     * framework level (the methods carry no `@NoAdminRequired`); this
+     * helper stays as defence-in-depth so a future refactor that
+     * silently re-adds `@NoAdminRequired` does not open the surface.
+     *
+     * @return JSONResponse|null 403 response when not admin, null when allowed.
+     */
+    private function requireAdmin(): ?JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required'],
+                statusCode: 401
+            );
+        }
+
+        if ($this->groupManager->isAdmin($user->getUID()) === false) {
+            return new JSONResponse(
+                data: ['error' => 'Forbidden: Actions management is admin-only'],
+                statusCode: 403
+            );
+        }
+
+        return null;
+
+    }//end requireAdmin()
 
     /**
      * List all actions with pagination and filtering
@@ -110,7 +151,7 @@ class ActionsController extends Controller
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -210,7 +251,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -236,18 +277,22 @@ class ActionsController extends Controller
     /**
      * Create a new action
      *
-     * @return JSONResponse
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
      *
-     * @NoAdminRequired
+     * @return JSONResponse
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         try {
             $data = $this->request->getParams();
 
@@ -283,20 +328,24 @@ class ActionsController extends Controller
     /**
      * Update an action (full replacement)
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
+     *
      * @param int $id Action ID
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         try {
             $data = $this->request->getParams();
 
@@ -327,40 +376,45 @@ class ActionsController extends Controller
     /**
      * Partial update an action
      *
+     * Admin-only at the framework level (no @NoAdminRequired); update()
+     * also runs requireAdmin() as defence-in-depth.
+     *
      * @param int $id Action ID
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function patch(int $id): JSONResponse
     {
-        return $this->update(objectId: $id);
+        // requireAdmin() runs inside update() — no need to duplicate here.
+        return $this->update(id: $id);
     }//end patch()
 
     /**
      * Soft-delete an action
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
+     *
      * @param int $id Action ID
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         try {
             $action = $this->actionService->deleteAction($id);
 
@@ -381,18 +435,22 @@ class ActionsController extends Controller
     /**
      * Test action with dry-run simulation
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
+     *
      * @param int $id Action ID
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function test(int $id): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         try {
             $data = $this->request->getParams();
 
@@ -471,18 +529,22 @@ class ActionsController extends Controller
     /**
      * Migrate inline hooks from a schema to Action entities
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
+     *
      * @param int $schemaId Schema ID
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function migrateFromHooks(int $schemaId): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         try {
             $report = $this->actionService->migrateFromHooks($schemaId);
 

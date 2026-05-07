@@ -17,8 +17,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-35
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-35
  */
 
 declare(strict_types=1);
@@ -95,7 +95,7 @@ class SipPackageBuilder
      *
      * @throws InvalidArgumentException If no objects are provided.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-35
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-35
      */
     public function build(string $transferId, array $objectsWithFiles, int $maxPackageSize=0): array
     {
@@ -286,7 +286,7 @@ class SipPackageBuilder
      *
      * @return string The METS XML string.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function generateMetsXml(string $transferId, array $objectsWithFiles): string
     {
@@ -350,7 +350,9 @@ class SipPackageBuilder
 
                 if ($isRendition === true) {
                     $renditionGrp->appendChild($fileElement);
-                } else {
+                }
+
+                if ($isRendition === false) {
                     $originalGrp->appendChild($fileElement);
                 }
 
@@ -371,7 +373,7 @@ class SipPackageBuilder
      *
      * @return string The PREMIS XML string.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function generatePremisXml(string $transferId, array $objectsWithFiles): string
     {

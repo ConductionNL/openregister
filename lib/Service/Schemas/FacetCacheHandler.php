@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-30
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
@@ -250,7 +250,7 @@ class FacetCacheHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-30
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {
@@ -489,12 +489,8 @@ class FacetCacheHandler
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
-        $now = new DateTime();
-        if ($ttl > 0) {
-            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
-        } else {
-            $expires = null;
-        }
+        $now     = new DateTime();
+        $expires = $ttl > 0 ? (clone $now)->add(new DateInterval("PT{$ttl}S")) : null;
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE pattern.
         $qb = $this->db->getQueryBuilder();

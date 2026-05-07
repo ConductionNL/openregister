@@ -145,11 +145,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
     public function extractVectorizationItems($entity): array
     {
         // Get object data.
-        if (is_array($entity) === true) {
-            $objectData = $entity;
-        } else {
-            $objectData = $entity->jsonSerialize();
-        }
+        $objectData = is_array($entity) === true ? $entity : $entity->jsonSerialize();
 
         // Get vectorization config.
         $config = $this->settingsService->getObjectSettingsOnly();
@@ -200,17 +196,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
-        if (is_array($entity) === true) {
-            $objectData = $entity;
-        } else {
-            $objectData = $entity->jsonSerialize();
-        }
-
-        if (($objectData['id'] ?? null) !== null) {
-            $objectId = $objectData['id'];
-        } else {
-            $objectId = 'unknown';
-        }
+        $objectData = is_array($entity) === true ? $entity : $entity->jsonSerialize();
+        $objectId   = ($objectData['id'] ?? null) !== null ? $objectData['id'] : 'unknown';
 
         // DEBUG: Log what we're receiving.
         $this->logger->debug(
@@ -337,11 +324,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      */
     public function getEntityIdentifier($entity)
     {
-        if (is_array($entity) === true) {
-            $objectData = $entity;
-        } else {
-            $objectData = $entity->jsonSerialize();
-        }
+        $objectData = is_array($entity) === true ? $entity : $entity->jsonSerialize();
 
         if (($objectData['id'] ?? null) !== null) {
             return $objectData['id'];

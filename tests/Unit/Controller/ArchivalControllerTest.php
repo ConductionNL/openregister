@@ -17,22 +17,19 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ArchivalController;
-use OCA\OpenRegister\Db\DestructionList;
-use OCA\OpenRegister\Db\DestructionListMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SelectionList;
-use OCA\OpenRegister\Db\SelectionListMapper;
-use OCA\OpenRegister\Service\ArchivalService;
-use OCA\OpenRegister\Service\ObjectService;
-use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Service\Archival\DestructionService;
+use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCP\AppFramework\Http;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Test class for ArchivalController
@@ -40,351 +37,694 @@ use PHPUnit\Framework\TestCase;
 class ArchivalControllerTest extends TestCase
 {
     private IRequest&MockObject $request;
-    private ArchivalService&MockObject $archivalService;
-    private SelectionListMapper&MockObject $selectionListMapper;
-    private DestructionListMapper&MockObject $destructionListMapper;
-    private ObjectService&MockObject $objectService;
+    private DestructionService&MockObject $destructionService;
+    private LegalHoldService&MockObject $legalHoldService;
+    private MagicMapper&MockObject $objectMapper;
     private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
+    private LoggerInterface&MockObject $logger;
     private ArchivalController $controller;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->request               = $this->createMock(IRequest::class);
-        $this->archivalService       = $this->createMock(ArchivalService::class);
-        $this->selectionListMapper   = $this->createMock(SelectionListMapper::class);
-        $this->destructionListMapper = $this->createMock(DestructionListMapper::class);
-        $this->objectService         = $this->createMock(ObjectService::class);
-        $this->userSession           = $this->createMock(IUserSession::class);
+        $this->request            = $this->createMock(IRequest::class);
+        $this->destructionService = $this->createMock(DestructionService::class);
+        $this->legalHoldService   = $this->createMock(LegalHoldService::class);
+        $this->objectMapper       = $this->getMockBuilder(MagicMapper::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['findByUuid'])
+            ->getMock();
+        $this->userSession        = $this->createMock(IUserSession::class);
+        $this->groupManager       = $this->createMock(IGroupManager::class);
+        $this->logger             = $this->createMock(LoggerInterface::class);
 
         $this->controller = new ArchivalController(
             'openregister',
             $this->request,
-            $this->archivalService,
-            $this->selectionListMapper,
-            $this->destructionListMapper,
-            $this->objectService,
-            $this->userSession
+            $this->destructionService,
+            $this->legalHoldService,
+            $this->objectMapper,
+            $this->userSession,
+            $this->groupManager,
+            $this->logger
         );
     }
 
     // ==================================================================================
-    // SELECTION LIST CRUD
+    // HELPER: configure user session for archivist role
     // ==================================================================================
 
     /**
-     * Test listing selection lists returns OK.
+     * Create a mock ObjectEntity with magic method support.
+     *
+     * ObjectEntity uses __call for getters/setters, so we must use addMethods.
+     *
+     * @param array $methods The magic methods to add to the mock.
+     *
+     * @return MockObject The mocked ObjectEntity.
      */
-    public function testListSelectionListsOk(): void
+    private function createObjectEntityMock(): MockObject
     {
-        $list1 = new SelectionList();
-        $list1->setUuid('sl-1');
-        $list1->setCategory('B1');
-
-        $this->selectionListMapper
-            ->method('findAll')
-            ->willReturn([$list1]);
-
-        $response = $this->controller->listSelectionLists();
-
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $data = $response->getData();
-        $this->assertSame(1, $data['total']);
+        return $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['jsonSerialize', 'getObject'])
+            ->addMethods(['getUuid', 'getRetention'])
+            ->getMock();
     }
 
     /**
-     * Test getting a selection list returns OK.
+     * Set up the user session so the current user is an authenticated archivist.
+     *
+     * @param string $uid The user ID.
      */
-    public function testGetSelectionListOk(): void
+    private function setUpArchivist(string $uid = 'archivist-1'): void
     {
-        $list = new SelectionList();
-        $list->setUuid('sl-1');
-        $list->setCategory('B1');
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn($uid);
 
-        $this->selectionListMapper
-            ->method('findByUuid')
-            ->with('sl-1')
-            ->willReturn($list);
-
-        $response = $this->controller->getSelectionList('sl-1');
-
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isInGroup')->willReturn(true);
+        $this->groupManager->method('isAdmin')->willReturn(false);
     }
 
     /**
-     * Test getting a non-existent selection list returns 404.
+     * Set up the user session so the current user is an admin (not in archivist group).
+     *
+     * @param string $uid The user ID.
      */
-    public function testGetSelectionListNotFound(): void
+    private function setUpAdmin(string $uid = 'admin'): void
     {
-        $this->selectionListMapper
-            ->method('findByUuid')
-            ->willThrowException(new DoesNotExistException('Not found'));
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn($uid);
 
-        $response = $this->controller->getSelectionList('non-existent');
-
-        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isInGroup')->willReturn(false);
+        $this->groupManager->method('isAdmin')->willReturn(true);
     }
 
     /**
-     * Test creating a selection list.
+     * Set up the user session with no user (unauthenticated).
      */
-    public function testCreateSelectionListOk(): void
+    private function setUpUnauthenticated(): void
     {
-        $this->request
-            ->method('getParams')
-            ->willReturn([
-                'category'       => 'B1',
-                'retentionYears' => 5,
-                'action'         => 'vernietigen',
-                'description'    => 'Short retention',
-            ]);
-
-        $created = new SelectionList();
-        $created->setUuid('sl-new');
-        $created->setCategory('B1');
-
-        $this->selectionListMapper
-            ->method('createEntry')
-            ->willReturn($created);
-
-        $response = $this->controller->createSelectionList();
-
-        $this->assertSame(Http::STATUS_CREATED, $response->getStatus());
+        $this->userSession->method('getUser')->willReturn(null);
     }
 
     /**
-     * Test creating a selection list without category returns 400.
+     * Set up an authenticated user without archivist or admin role.
+     *
+     * @param string $uid The user ID.
      */
-    public function testCreateSelectionListMissingCategory(): void
+    private function setUpRegularUser(string $uid = 'user-1'): void
     {
-        $this->request
-            ->method('getParams')
-            ->willReturn([
-                'retentionYears' => 5,
-                'action'         => 'vernietigen',
-            ]);
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn($uid);
 
-        $response = $this->controller->createSelectionList();
-
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-    }
-
-    /**
-     * Test deleting a selection list.
-     */
-    public function testDeleteSelectionListOk(): void
-    {
-        $list = new SelectionList();
-        $list->setUuid('sl-1');
-
-        $this->selectionListMapper
-            ->method('findByUuid')
-            ->willReturn($list);
-
-        $response = $this->controller->deleteSelectionList('sl-1');
-
-        $this->assertSame(Http::STATUS_NO_CONTENT, $response->getStatus());
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isInGroup')->willReturn(false);
+        $this->groupManager->method('isAdmin')->willReturn(false);
     }
 
     // ==================================================================================
-    // RETENTION METADATA
+    // AUTHORIZATION CHECKS (shared by all endpoints)
     // ==================================================================================
 
     /**
-     * Test getting retention metadata for an object.
+     * Test that unauthenticated requests return 401.
      */
-    public function testGetRetentionOk(): void
+    public function testUnauthenticatedReturns401(): void
     {
-        $object = new ObjectEntity();
-        $object->setRetention(['archiefnominatie' => 'vernietigen']);
+        $this->setUpUnauthenticated();
 
-        $this->objectService
-            ->method('find')
-            ->with('obj-1')
-            ->willReturn($object);
+        $response = $this->controller->listDestructionLists();
 
-        $response = $this->controller->getRetention('obj-1');
-
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $data = $response->getData();
-        $this->assertSame('vernietigen', $data['retention']['archiefnominatie']);
+        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+        $this->assertSame('Niet geauthenticeerd', $response->getData()['error']);
     }
 
     /**
-     * Test getting retention for non-existent object returns 404.
+     * Test that a regular user (not archivist, not admin) gets 403.
      */
-    public function testGetRetentionNotFound(): void
+    public function testRegularUserReturns403(): void
     {
-        $this->objectService
-            ->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
+        $this->setUpRegularUser();
 
-        $response = $this->controller->getRetention('non-existent');
+        $response = $this->controller->listDestructionLists();
 
-        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+        $this->assertStringContainsString('archivaris', $response->getData()['error']);
     }
 
-    // ==================================================================================
-    // DESTRUCTION LIST ENDPOINTS
-    // ==================================================================================
-
     /**
-     * Test listing destruction lists.
+     * Test that an admin user is authorized.
      */
-    public function testListDestructionListsOk(): void
+    public function testAdminIsAuthorized(): void
     {
-        $this->request->method('getParam')->willReturn(null);
-
-        $list = new DestructionList();
-        $list->setUuid('dl-1');
-
-        $this->destructionListMapper
-            ->method('findAll')
-            ->willReturn([$list]);
+        $this->setUpAdmin();
 
         $response = $this->controller->listDestructionLists();
 
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
     }
 
-    /**
-     * Test generating a destruction list when no objects are due.
-     */
-    public function testGenerateDestructionListEmpty(): void
-    {
-        $this->archivalService
-            ->method('generateDestructionList')
-            ->willReturn(null);
+    // ==================================================================================
+    // LIST DESTRUCTION LISTS
+    // ==================================================================================
 
-        $response = $this->controller->generateDestructionList();
+    /**
+     * Test listing destruction lists returns OK with empty results.
+     */
+    public function testListDestructionListsOk(): void
+    {
+        $this->setUpArchivist();
+        $this->request->method('getParam')->willReturn(null);
+
+        $response = $this->controller->listDestructionLists();
 
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
         $data = $response->getData();
-        $this->assertArrayHasKey('message', $data);
+        $this->assertArrayHasKey('results', $data);
+        $this->assertArrayHasKey('total', $data);
+        $this->assertSame(0, $data['total']);
     }
 
     /**
-     * Test generating a destruction list when objects are found.
+     * Test listing destruction lists passes the status filter.
      */
-    public function testGenerateDestructionListCreated(): void
+    public function testListDestructionListsWithStatusFilter(): void
     {
-        $list = new DestructionList();
-        $list->setUuid('dl-new');
-        $list->setObjects(['obj-1']);
+        $this->setUpArchivist();
+        $this->request->method('getParam')->willReturn('approved');
 
-        $this->archivalService
-            ->method('generateDestructionList')
-            ->willReturn($list);
+        $response = $this->controller->listDestructionLists();
 
-        $response = $this->controller->generateDestructionList();
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame('approved', $response->getData()['filter']);
+    }
 
-        $this->assertSame(Http::STATUS_CREATED, $response->getStatus());
+    // ==================================================================================
+    // GET DESTRUCTION LIST
+    // ==================================================================================
+
+    /**
+     * Test getting a specific destruction list by ID.
+     */
+    public function testGetDestructionListOk(): void
+    {
+        $this->setUpArchivist();
+
+        $object = $this->createObjectEntityMock();
+        $object->method('jsonSerialize')->willReturn(['uuid' => 'dl-1', 'status' => 'in_review']);
+
+        $this->objectMapper
+            ->method('findByUuid')
+            ->with('dl-1')
+            ->willReturn($object);
+
+        $response = $this->controller->getDestructionList('dl-1');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame('dl-1', $response->getData()['uuid']);
     }
 
     /**
-     * Test approving a destruction list.
+     * Test getting a non-existent destruction list returns 404.
+     */
+    public function testGetDestructionListNotFound(): void
+    {
+        $this->setUpArchivist();
+
+        $this->objectMapper
+            ->method('findByUuid')
+            ->willThrowException(new \Exception('Not found'));
+
+        $response = $this->controller->getDestructionList('non-existent');
+
+        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+        $this->assertArrayHasKey('error', $response->getData());
+    }
+
+    // ==================================================================================
+    // APPROVE DESTRUCTION LIST
+    // ==================================================================================
+
+    /**
+     * Test approving a destruction list successfully.
      */
     public function testApproveDestructionListOk(): void
     {
-        $list = new DestructionList();
-        $list->setUuid('dl-1');
-        $list->setStatus(DestructionList::STATUS_PENDING_REVIEW);
+        $this->setUpArchivist();
 
-        $this->destructionListMapper
+        $object = $this->createObjectEntityMock();
+        $object->method('getObject')->willReturn([
+            'status' => DestructionService::STATUS_IN_REVIEW,
+            'items'  => ['obj-1', 'obj-2'],
+        ]);
+
+        $this->objectMapper
             ->method('findByUuid')
             ->with('dl-1')
-            ->willReturn($list);
+            ->willReturn($object);
 
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($user);
+        $this->request->method('getParams')->willReturn([
+            'action' => 'approve_all',
+        ]);
 
-        $this->archivalService
-            ->method('approveDestructionList')
+        $this->destructionService
+            ->method('approveList')
             ->willReturn([
-                'destroyed' => 5,
-                'errors'    => 0,
-                'list'      => $list,
+                'status' => DestructionService::STATUS_APPROVED,
+                'items'  => ['obj-1', 'obj-2'],
             ]);
 
         $response = $this->controller->approveDestructionList('dl-1');
 
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $data = $response->getData();
-        $this->assertSame(5, $data['destroyed']);
+        $this->assertSame(DestructionService::STATUS_APPROVED, $response->getData()['status']);
     }
 
     /**
-     * Test approving without authentication returns 401.
+     * Test approving with partial exclusion.
      */
-    public function testApproveDestructionListUnauthorized(): void
+    public function testApproveDestructionListPartial(): void
     {
-        $list = new DestructionList();
-        $list->setUuid('dl-1');
+        $this->setUpArchivist();
 
-        $this->destructionListMapper
-            ->method('findByUuid')
-            ->willReturn($list);
+        $object = $this->createObjectEntityMock();
+        $object->method('getObject')->willReturn([
+            'status' => DestructionService::STATUS_IN_REVIEW,
+            'items'  => ['obj-1', 'obj-2', 'obj-3'],
+        ]);
 
-        $this->userSession->method('getUser')->willReturn(null);
-
-        $response = $this->controller->approveDestructionList('dl-1');
-
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-    }
-
-    /**
-     * Test rejecting objects from destruction list.
-     */
-    public function testRejectFromDestructionListOk(): void
-    {
-        $list = new DestructionList();
-        $list->setUuid('dl-1');
-        $list->setStatus(DestructionList::STATUS_PENDING_REVIEW);
-
-        $this->destructionListMapper
+        $this->objectMapper
             ->method('findByUuid')
             ->with('dl-1')
-            ->willReturn($list);
+            ->willReturn($object);
 
-        $this->request
-            ->method('getParam')
-            ->with('objects', [])
-            ->willReturn(['obj-1', 'obj-2']);
+        $this->request->method('getParams')->willReturn([
+            'action'           => 'approve_partial',
+            'excluded'         => ['obj-2'],
+            'exclusionReasons' => ['Not ready for destruction'],
+        ]);
 
-        $updatedList = new DestructionList();
-        $updatedList->setUuid('dl-1');
-        $updatedList->setObjects(['obj-3']);
+        $this->destructionService
+            ->method('approveList')
+            ->willReturn([
+                'status' => DestructionService::STATUS_APPROVED,
+                'items'  => ['obj-1', 'obj-3'],
+            ]);
 
-        $this->archivalService
-            ->method('rejectFromDestructionList')
-            ->willReturn($updatedList);
-
-        $response = $this->controller->rejectFromDestructionList('dl-1');
+        $response = $this->controller->approveDestructionList('dl-1');
 
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
     }
 
     /**
-     * Test rejecting with empty objects array returns 400.
+     * Test dual-approval conflict (same user tries second approval).
      */
-    public function testRejectFromDestructionListEmptyObjects(): void
+    public function testApproveDestructionListDualApprovalConflict(): void
     {
-        $list = new DestructionList();
-        $list->setUuid('dl-1');
+        $this->setUpArchivist();
 
-        $this->destructionListMapper
+        $object = $this->createObjectEntityMock();
+        $object->method('getObject')->willReturn([
+            'status' => DestructionService::STATUS_AWAITING_SECOND,
+        ]);
+
+        $this->objectMapper
             ->method('findByUuid')
-            ->willReturn($list);
+            ->with('dl-1')
+            ->willReturn($object);
 
-        $this->request
-            ->method('getParam')
-            ->with('objects', [])
-            ->willReturn([]);
+        $this->request->method('getParams')->willReturn([]);
 
-        $response = $this->controller->rejectFromDestructionList('dl-1');
+        // Service returns same status (awaiting_second), indicating same-user rejection.
+        $this->destructionService
+            ->method('approveList')
+            ->willReturn([
+                'status' => DestructionService::STATUS_AWAITING_SECOND,
+            ]);
+
+        $response = $this->controller->approveDestructionList('dl-1');
+
+        $this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+        $this->assertStringContainsString('andere archivaris', $response->getData()['error']);
+    }
+
+    /**
+     * Test approving a non-existent list returns 500.
+     */
+    public function testApproveDestructionListException(): void
+    {
+        $this->setUpArchivist();
+
+        $this->objectMapper
+            ->method('findByUuid')
+            ->willThrowException(new \Exception('Not found'));
+
+        $this->request->method('getParams')->willReturn([]);
+
+        $response = $this->controller->approveDestructionList('non-existent');
+
+        $this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+        $this->assertStringContainsString('Failed to approve', $response->getData()['error']);
+    }
+
+    // ==================================================================================
+    // REJECT DESTRUCTION LIST
+    // ==================================================================================
+
+    /**
+     * Test rejecting a destruction list successfully.
+     */
+    public function testRejectDestructionListOk(): void
+    {
+        $this->setUpArchivist();
+
+        $object = $this->createObjectEntityMock();
+        $object->method('getObject')->willReturn([
+            'status' => DestructionService::STATUS_IN_REVIEW,
+        ]);
+
+        $this->objectMapper
+            ->method('findByUuid')
+            ->with('dl-1')
+            ->willReturn($object);
+
+        $this->request->method('getParams')->willReturn([
+            'reason' => 'Onjuiste documenten in de lijst',
+        ]);
+
+        $this->destructionService
+            ->method('rejectList')
+            ->willReturn([
+                'status' => DestructionService::STATUS_REJECTED,
+                'reason' => 'Onjuiste documenten in de lijst',
+            ]);
+
+        $response = $this->controller->rejectDestructionList('dl-1');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame(DestructionService::STATUS_REJECTED, $response->getData()['status']);
+    }
+
+    /**
+     * Test rejecting without a reason returns 400.
+     */
+    public function testRejectDestructionListMissingReason(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([]);
+
+        $response = $this->controller->rejectDestructionList('dl-1');
 
         $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $this->assertStringContainsString('reden', $response->getData()['error']);
+    }
+
+    /**
+     * Test rejecting with an empty reason returns 400.
+     */
+    public function testRejectDestructionListEmptyReason(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'reason' => '   ',
+        ]);
+
+        $response = $this->controller->rejectDestructionList('dl-1');
+
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+    }
+
+    /**
+     * Test rejecting a non-existent list returns 500.
+     */
+    public function testRejectDestructionListException(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'reason' => 'Test reason',
+        ]);
+
+        $this->objectMapper
+            ->method('findByUuid')
+            ->willThrowException(new \Exception('Not found'));
+
+        $response = $this->controller->rejectDestructionList('non-existent');
+
+        $this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+        $this->assertStringContainsString('Failed to reject', $response->getData()['error']);
+    }
+
+    // ==================================================================================
+    // CREATE LEGAL HOLD
+    // ==================================================================================
+
+    /**
+     * Test creating a legal hold on a single object.
+     */
+    public function testCreateLegalHoldSingleObjectOk(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'objectId' => 'obj-1',
+            'reason'   => 'Lopende rechtszaak',
+        ]);
+
+        $object = $this->createObjectEntityMock();
+        $object->method('getUuid')->willReturn('obj-1');
+        $object->method('getRetention')->willReturn([
+            'legalHold' => ['active' => true, 'reason' => 'Lopende rechtszaak'],
+        ]);
+
+        $this->objectMapper
+            ->method('findByUuid')
+            ->with('obj-1')
+            ->willReturn($object);
+
+        $this->legalHoldService
+            ->method('placeHold')
+            ->willReturn($object);
+
+        $response = $this->controller->createLegalHold();
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $data = $response->getData();
+        $this->assertSame('Bewaarplicht geplaatst', $data['message']);
+        $this->assertSame('obj-1', $data['objectId']);
+    }
+
+    /**
+     * Test creating a bulk legal hold on a schema.
+     */
+    public function testCreateLegalHoldBulkOk(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'schemaId'   => '5',
+            'registerId' => '3',
+            'reason'     => 'Audit vereist',
+        ]);
+
+        $response = $this->controller->createLegalHold();
+
+        $this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
+        $this->assertStringContainsString('achtergrondtaak', $response->getData()['message']);
+    }
+
+    /**
+     * Test bulk legal hold without registerId returns 400.
+     */
+    public function testCreateLegalHoldBulkMissingRegisterId(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'schemaId' => '5',
+            'reason'   => 'Audit vereist',
+        ]);
+
+        $response = $this->controller->createLegalHold();
+
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $this->assertStringContainsString('registerId', $response->getData()['error']);
+    }
+
+    /**
+     * Test creating a legal hold without reason returns 400.
+     */
+    public function testCreateLegalHoldMissingReason(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'objectId' => 'obj-1',
+        ]);
+
+        $response = $this->controller->createLegalHold();
+
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $this->assertStringContainsString('reden', $response->getData()['error']);
+    }
+
+    /**
+     * Test creating a legal hold without objectId or schemaId returns 400.
+     */
+    public function testCreateLegalHoldMissingIds(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'reason' => 'Lopende rechtszaak',
+        ]);
+
+        $response = $this->controller->createLegalHold();
+
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $this->assertStringContainsString('objectId', $response->getData()['error']);
+    }
+
+    /**
+     * Test creating a legal hold when an exception occurs.
+     */
+    public function testCreateLegalHoldException(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'objectId' => 'obj-1',
+            'reason'   => 'Lopende rechtszaak',
+        ]);
+
+        $this->objectMapper
+            ->method('findByUuid')
+            ->willThrowException(new \Exception('Object not found'));
+
+        $response = $this->controller->createLegalHold();
+
+        $this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+        $this->assertStringContainsString('Failed to create legal hold', $response->getData()['error']);
+    }
+
+    // ==================================================================================
+    // RELEASE LEGAL HOLD
+    // ==================================================================================
+
+    /**
+     * Test releasing a legal hold successfully.
+     */
+    public function testReleaseLegalHoldOk(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'reason' => 'Rechtszaak afgerond',
+        ]);
+
+        $object = $this->createObjectEntityMock();
+        $object->method('getUuid')->willReturn('obj-1');
+        $object->method('getRetention')->willReturn([
+            'legalHold' => ['active' => false],
+        ]);
+
+        $this->objectMapper
+            ->method('findByUuid')
+            ->with('obj-1')
+            ->willReturn($object);
+
+        $this->legalHoldService
+            ->method('releaseHold')
+            ->willReturn($object);
+
+        $response = $this->controller->releaseLegalHold('obj-1');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $data = $response->getData();
+        $this->assertSame('Bewaarplicht opgeheven', $data['message']);
+        $this->assertSame('obj-1', $data['objectId']);
+    }
+
+    /**
+     * Test releasing a legal hold without reason returns 400.
+     */
+    public function testReleaseLegalHoldMissingReason(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([]);
+
+        $response = $this->controller->releaseLegalHold('obj-1');
+
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $this->assertStringContainsString('reden', $response->getData()['error']);
+    }
+
+    /**
+     * Test releasing a legal hold when an exception occurs.
+     */
+    public function testReleaseLegalHoldException(): void
+    {
+        $this->setUpArchivist();
+
+        $this->request->method('getParams')->willReturn([
+            'reason' => 'Rechtszaak afgerond',
+        ]);
+
+        $this->objectMapper
+            ->method('findByUuid')
+            ->willThrowException(new \Exception('Object not found'));
+
+        $response = $this->controller->releaseLegalHold('obj-1');
+
+        $this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+        $this->assertStringContainsString('Failed to release legal hold', $response->getData()['error']);
+    }
+
+    // ==================================================================================
+    // LIST LEGAL HOLDS
+    // ==================================================================================
+
+    /**
+     * Test listing legal holds returns OK with empty results.
+     */
+    public function testListLegalHoldsOk(): void
+    {
+        $this->setUpArchivist();
+
+        $response = $this->controller->listLegalHolds();
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $data = $response->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertArrayHasKey('total', $data);
+        $this->assertSame(0, $data['total']);
+    }
+
+    // ==================================================================================
+    // LIST CERTIFICATES
+    // ==================================================================================
+
+    /**
+     * Test listing certificates returns OK with empty results.
+     */
+    public function testListCertificatesOk(): void
+    {
+        $this->setUpArchivist();
+
+        $response = $this->controller->listCertificates();
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $data = $response->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertArrayHasKey('total', $data);
+        $this->assertSame(0, $data['total']);
     }
 }

@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppInfo;
 
+use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
+use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -142,7 +144,17 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
+use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
+use OCA\OpenRegister\Listener\AggregationThresholdListener;
+use OCA\OpenRegister\Listener\RealtimeEventListener;
+use OCA\OpenRegister\Listener\TranslationProjectionListener;
+use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
+use OCA\OpenRegister\Notification\AnnotationNotifier;
+use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\HookListener;
+use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
+use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\Comments\CommentsEntityEvent;
@@ -151,6 +163,7 @@ use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -197,6 +210,7 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
+use OCA\OpenRegister\Capabilities\UrnCapability;
 
 /**
  * Class Application
@@ -229,7 +243,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     public function __construct()
     {
@@ -243,7 +257,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     public function register(IRegistrationContext $context): void
     {
@@ -260,8 +274,23 @@ class Application extends App implements IBootstrap
         // Register the LanguageMiddleware for Accept-Language header parsing.
         $context->registerMiddleware(LanguageMiddleware::class);
 
+        // Register the default no-op TranslationProvider. Operators replace
+        // this binding with a real provider (LibreTranslate / DeepL / etc.)
+        // by overriding it in their own app's registration.
+        $context->registerService(
+            TranslationProviderInterface::class,
+            function () {
+                return new IdentityTranslationProvider();
+            }
+        );
+
         // Register the TenantQuotaMiddleware for tenant quota enforcement and status checks.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\TenantQuotaMiddleware::class);
+
+        // Register the OasValidationMiddleware for opt-in request-body
+        // validation against per-operation OAS schemas. Activates only on
+        // POST/PUT/PATCH with `?_validate=true`; pass-through otherwise.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\OasValidationMiddleware::class);
 
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
@@ -272,6 +301,16 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerEventListeners(context: $context);
+
+        // Register the annotation-driven INotifier so notifications fired by
+        // AnnotationNotificationDispatcher get a parsed subject — without
+        // this Nextcloud silently drops the notification.
+        $context->registerNotifierService(AnnotationNotifier::class);
+
+        // Surface URN identifier surface via Nextcloud capabilities API so
+        // clients can discover URN endpoints + the instance slug without
+        // probing routes.
+        $context->registerCapability(UrnCapability::class);
     }//end register()
 
     /**
@@ -289,7 +328,7 @@ class Application extends App implements IBootstrap
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
     {
@@ -406,7 +445,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerCacheAndFileHandlers(IRegistrationContext $context): void
     {
@@ -451,7 +490,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerConfigurationServices(IRegistrationContext $context): void
     {
@@ -511,6 +550,33 @@ class Application extends App implements IBootstrap
             // Inject workflow dependencies for deploying workflows during import.
             $importHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
             $importHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
+
+            // Optional: services used by seed-related-items to attach files /
+            // notes / tasks. Wrapped in try/catch so a missing dependency
+            // doesn't break import for apps that don't seed related items.
+            try {
+                $importHandler->setFileService($container->get(\OCA\OpenRegister\Service\FileService::class));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] FileService unavailable for ImportHandler: '.$e->getMessage());
+            }
+
+            try {
+                $importHandler->setNoteService($container->get(\OCA\OpenRegister\Service\NoteService::class));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] NoteService unavailable for ImportHandler: '.$e->getMessage());
+            }
+
+            try {
+                $importHandler->setTaskService($container->get(\OCA\OpenRegister\Service\TaskService::class));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] TaskService unavailable for ImportHandler: '.$e->getMessage());
+            }
+
+            try {
+                $importHandler->setUserSession($container->get('OCP\IUserSession'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IUserSession unavailable for ImportHandler: '.$e->getMessage());
+            }
 
             return $importHandler;
         };
@@ -584,7 +650,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerSettingsServices(IRegistrationContext $context): void
     {
@@ -639,7 +705,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerSearchBackend(IRegistrationContext $context): void
     {
@@ -669,7 +735,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerVectorizationService(IRegistrationContext $context): void
     {
@@ -700,7 +766,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerObjectInteractionServices(IRegistrationContext $context): void
     {
@@ -735,7 +801,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerEventListeners(IRegistrationContext $context): void
     {
@@ -759,6 +825,50 @@ class Application extends App implements IBootstrap
 
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
+
+        // Lifecycle annotation listeners — see x-openregister-lifecycle.
+        // Order matters: initial state runs on creating; validation runs on updating.
+        $context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
+
+        // Calculations annotation listener — materialises declared calculations
+        // into the object payload before persistence (see x-openregister-calculations).
+        $context->registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, CalculationOnSaveListener::class);
+
+        // Notifications annotation listener — fires INotificationManager
+        // notifications declared on the schema's x-openregister-notifications.
+        $context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
+
+        // Aggregation cache eviction on every object write.
+        $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
+
+        // Realtime event log — append-only CloudEvent records for SSE/polling clients.
+        $context->registerEventListener(ObjectCreatedEvent::class,      RealtimeEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class,      RealtimeEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class,      RealtimeEventListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, RealtimeEventListener::class);
+
+        // Translation sidecar projection — keeps oc_openregister_translations in sync with JSONB property data.
+        $context->registerEventListener(ObjectCreatedEvent::class,      TranslationProjectionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class,      TranslationProjectionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class,      TranslationProjectionListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, TranslationProjectionListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, AggregationCacheInvalidationListener::class);
+
+        // Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.
+        $context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
+
+        // Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
+        $context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, AggregationThresholdListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, AggregationThresholdListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, AggregationThresholdListener::class);
 
         // HookListener for schema hook execution on lifecycle events.
         $context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);
@@ -792,15 +902,16 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
 
         // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
-        $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(RegisterCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(RegisterUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(RegisterDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(SchemaCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(SchemaDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $activityListener = \OCA\OpenRegister\Listener\ActivityEventListener::class;
+        $context->registerEventListener(ObjectCreatedEvent::class, $activityListener);
+        $context->registerEventListener(ObjectUpdatedEvent::class, $activityListener);
+        $context->registerEventListener(ObjectDeletedEvent::class, $activityListener);
+        $context->registerEventListener(RegisterCreatedEvent::class, $activityListener);
+        $context->registerEventListener(RegisterUpdatedEvent::class, $activityListener);
+        $context->registerEventListener(RegisterDeletedEvent::class, $activityListener);
+        $context->registerEventListener(SchemaCreatedEvent::class, $activityListener);
+        $context->registerEventListener(SchemaUpdatedEvent::class, $activityListener);
+        $context->registerEventListener(SchemaDeletedEvent::class, $activityListener);
     }//end registerEventListeners()
 
     /**
@@ -810,7 +921,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     public function boot(IBootContext $context): void
     {

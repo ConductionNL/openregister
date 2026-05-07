@@ -41,7 +41,9 @@ class EmailServiceTest extends TestCase
             $this->appManager,
             $this->db,
             $this->userSession,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+            $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class)
         );
     }
 

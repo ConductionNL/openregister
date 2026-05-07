@@ -9,10 +9,10 @@
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -69,7 +69,7 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -110,8 +110,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -210,8 +210,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

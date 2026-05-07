@@ -33,13 +33,69 @@ The Calendar Provider creates virtual calendars from OpenRegister schema objects
 
 ### Schema Configuration
 
-Schemas store calendar provider configuration in their `configuration` JSON field. The `getCalendarProviderConfig()` method on the Schema entity extracts and validates this configuration, including:
+Schemas store calendar provider configuration in their `configuration` JSON field under the `calendarProvider` key. The `getCalendarProviderConfig()` method on the Schema entity extracts the block; an empty/false `enabled` value returns `null`, signalling the schema is not surfaced as a calendar.
 
-- `enabled` -- Whether the schema produces a virtual calendar
-- `titleTemplate` -- Template for event titles with `{field}` placeholders
-- `descriptionTemplate` -- Template for event descriptions
-- `startDateField` -- Schema property to use as event start date
-- `endDateField` -- Schema property to use as event end date
+#### Configuration fields
+
+| Field | Required | Description |
+|---|---|---|
+| `enabled` | yes | Set to `true` to register a virtual calendar for this schema. |
+| `dtstart` | yes | Name of the schema property holding the event start datetime (e.g. `startsAt`, `publishedAt`, `dueDate`). |
+| `dtend` | no | Property holding the explicit end datetime. When omitted, the transformer auto-computes a default end (1h after start for date-time, 1 day after start for date). |
+| `titleTemplate` | yes | Mustache-style template for the VEVENT SUMMARY. Tokens `{{ propertyName }}` are replaced with the corresponding object data field. **Note: must use double-brace syntax** — single-brace `{title}` was a previous bug that silently mis-rendered as `}`; the renderer now requires `{{title}}` and consistent with the notification dispatcher's interpolation grammar. |
+| `descriptionTemplate` | no | Same Mustache grammar as `titleTemplate`, used for the VEVENT DESCRIPTION. |
+| `color` | no | CSS hex colour used by the Calendar app for this calendar. |
+| `allDay` | no | Force all-day mode. When omitted, auto-detected from the property type — `format: date` produces all-day events, `format: date-time` produces timed events. |
+
+#### Common configuration patterns
+
+**Zaak deadlines** (one event per case, due date as start):
+```json
+{
+  "calendarProvider": {
+    "enabled": true,
+    "dtstart": "deadline",
+    "titleTemplate": "Deadline: {{ title }}",
+    "color": "#e74c3c"
+  }
+}
+```
+
+**Publication dates** (one event when something goes live):
+```json
+{
+  "calendarProvider": {
+    "enabled": true,
+    "dtstart": "publishedAt",
+    "titleTemplate": "Published: {{ title }}",
+    "descriptionTemplate": "{{ summary }}"
+  }
+}
+```
+
+**Event schedules** (meetings with start + end):
+```json
+{
+  "calendarProvider": {
+    "enabled": true,
+    "dtstart": "startsAt",
+    "dtend": "endsAt",
+    "titleTemplate": "{{ title }}",
+    "descriptionTemplate": "Location: {{ location }}",
+    "color": "#0082c9"
+  }
+}
+```
+
+#### Timerange filtering
+
+When a calendar client (Nextcloud Calendar, CalDAV, etc.) requests events for a date window, `RegisterCalendar::search()` translates the timerange into canonical operator filters on `dtstart`:
+
+```php
+['dtstartField' => ['gte' => $startISO, 'lte' => $endISO]]
+```
+
+These flow through the magic-table search pipeline using the same operator grammar as `x-openregister-aggregations` (`gte`/`lte`/`gt`/`lt`/`in`/`ne`). Older versions used a non-canonical `field>=` array-key shape that the search layer didn't recognise, silently returning empty results — fixed in the same change as the Mustache-template alignment above.
 
 ### Frontend Configuration
 

@@ -16,7 +16,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ class ActionScheduleJob extends TimedJob
      * @param ActionExecutor  $actionExecutor Action executor
      * @param LoggerInterface $logger         Logger
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-6
      */
     public function __construct(
         ITimeFactory $time,
@@ -72,8 +72,8 @@ class ActionScheduleJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-5
      */
     protected function run($argument): void
     {
@@ -108,11 +108,9 @@ class ActionScheduleJob extends TimedJob
                     $cron = new CronExpression($action->getSchedule());
 
                     $lastExecuted = $action->getLastExecutedAt();
-                    $isDue        = false;
+                    $isDue        = true;
 
-                    if ($lastExecuted === null) {
-                        $isDue = true;
-                    } else {
+                    if ($lastExecuted !== null) {
                         /*
                          * @psalm-suppress UndefinedClass
                          */

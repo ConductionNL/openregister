@@ -29,7 +29,7 @@ class AuthenticationExtension extends AbstractExtension
      *
      * @return TwigFunction[] Array of TwigFunction instances
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
      */
     public function getFunctions(): array
     {

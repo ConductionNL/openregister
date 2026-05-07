@@ -85,7 +85,7 @@ class ToolRegistrationListener implements IEventListener
      * @param ApplicationTool $applicationTool Application tool.
      * @param AgentTool       $agentTool       Agent tool.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
      */
     public function __construct(
         RegisterTool $registerTool,
@@ -108,7 +108,7 @@ class ToolRegistrationListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
      */
     public function handle(Event $event): void
     {

@@ -73,7 +73,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return 'schema'
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getName(): string
     {
@@ -85,7 +85,7 @@ class SchemaTool extends AbstractTool
      *
      * @return string The tool description
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getDescription(): string
     {
@@ -101,7 +101,7 @@ class SchemaTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getFunctions(): array
     {
@@ -222,7 +222,7 @@ class SchemaTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
@@ -257,7 +257,7 @@ class SchemaTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable filter parameter
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function listSchemas(int $limit=100, int $offset=0, ?string $register=null): array
     {
@@ -297,7 +297,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getSchema(string $id): array
     {
@@ -337,7 +337,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function createSchema(string $title, array $properties, string $description='', ?array $required=null): array
     {
@@ -383,7 +383,7 @@ class SchemaTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function updateSchema(
         string $id,
@@ -436,7 +436,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function deleteSchema(string $id): array
     {

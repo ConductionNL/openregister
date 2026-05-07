@@ -1,0 +1,930 @@
+{
+  "info": {
+    "_postman_id": "openregister-platform-annotations",
+    "name": "OpenRegister - Platform Annotations + Integration Providers",
+    "description": "End-to-end tests for the four declarative annotations (lifecycle, aggregations, calculations, notifications) and the integration provider routes (contacts/match, actions, emails, references). Verifies the platform foundation that landed in PR #1357 + the migrations across decidesk, docudesk, procest, softwarecatalog, opencatalogi.\n\nRequires:\n- All annotation pilots in place (decidesk Meeting / Motion / Minutes / ActionItem / docudesk signingRequest)\n- admin:admin user\n- baseUrl variable (default http://localhost:8080)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "admin"
+    }
+  ],
+  "item": [
+    {
+      "name": "Lifecycle — Meeting full path",
+      "item": [
+        {
+          "name": "Create Meeting (draft)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const j = pm.response.json();",
+                  "pm.expect(j.lifecycle).to.eql('draft');",
+                  "pm.collectionVariables.set('meetingId', j['@self'].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Newman lifecycle test\",\"meetingType\":\"regular\",\"scheduledDate\":\"2026-05-01T10:00:00+02:00\",\"meetingMode\":\"hybrid\",\"lifecycle\":\"draft\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/meeting"
+          }
+        },
+        {
+          "name": "GET available-actions for draft (expect schedule, withdraw)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const actions = pm.response.json().actions.map(a => a.action);",
+                  "pm.expect(actions).to.include('schedule');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{meetingId}}/available-actions"
+          }
+        },
+        {
+          "name": "Transition: schedule (draft → scheduled)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().lifecycle).to.eql('scheduled');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"schedule\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{meetingId}}/transition"
+          }
+        },
+        {
+          "name": "Invalid transition: resume from scheduled (expect 422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 422', () => pm.response.to.have.status(422));",
+                  "pm.expect(pm.response.json().error).to.include('not allowed');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"resume\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{meetingId}}/transition"
+          }
+        },
+        {
+          "name": "Transition: open (guard runs, allowed)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().lifecycle).to.eql('opened');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"open\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{meetingId}}/transition"
+          }
+        },
+        {
+          "name": "Transition: close (terminal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().lifecycle).to.eql('closed');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"close\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{meetingId}}/transition"
+          }
+        },
+        {
+          "name": "Cleanup: delete meeting",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/meeting/{{meetingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lifecycle — Motion + Amendment",
+      "item": [
+        {
+          "name": "Create Motion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('motionId', pm.response.json()['@self'].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Newman motion\",\"text\":\"x\",\"motionType\":\"motion\",\"proposer\":\"admin\",\"lifecycle\":\"submitted\",\"submittedAt\":\"2026-04-29T09:00:00Z\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/motion"
+          }
+        },
+        {
+          "name": "Motion debate → vote → adopt",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Each transition succeeded', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"debate\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{motionId}}/transition"
+          }
+        },
+        {
+          "name": "Motion vote",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 + lifecycle voting', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().lifecycle).to.eql('voting'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"vote\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{motionId}}/transition"
+          }
+        },
+        {
+          "name": "Motion adopt",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 + lifecycle adopted', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().lifecycle).to.eql('adopted'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"adopt\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{motionId}}/transition"
+          }
+        },
+        {
+          "name": "Cleanup motion",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/motion/{{motionId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lifecycle — Minutes + side-effect listener",
+      "item": [
+        {
+          "name": "Create Minutes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('minutesId', pm.response.json()['@self'].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Newman minutes\",\"lifecycle\":\"draft\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/minutes"
+          }
+        },
+        {
+          "name": "Minutes submit → approve → sign",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('submit ok', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().lifecycle).to.eql('review');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"submit\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{minutesId}}/transition"
+          }
+        },
+        {
+          "name": "Minutes approve (listener should set approvedAt + signedBy)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('approve ok', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"approve\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{minutesId}}/transition"
+          }
+        },
+        {
+          "name": "Verify side-effect: approvedAt + signedBy populated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.expect(j.approvedAt).to.not.be.null;",
+                  "pm.expect(j.signedBy).to.include('admin');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/minutes/{{minutesId}}"
+          }
+        },
+        {
+          "name": "Cleanup minutes",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/minutes/{{minutesId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lifecycle — SigningRequest",
+      "item": [
+        {
+          "name": "Create signingRequest",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('signingId', pm.response.json()['@self'].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"documentFileId\":\"doc-x\",\"documentName\":\"Newman doc\",\"initiatorUserId\":\"admin\",\"signatureLevel\":\"SES\",\"signingMode\":\"sequential\",\"status\":\"DRAFT\",\"provider\":\"native\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/signing/signingRequest"
+          }
+        },
+        {
+          "name": "send → start → complete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('send ok', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('PENDING'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"send\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{signingId}}/transition"
+          }
+        },
+        {
+          "name": "start",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('start ok', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('IN_PROGRESS'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"start\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{signingId}}/transition"
+          }
+        },
+        {
+          "name": "complete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('complete ok', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('COMPLETED'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"complete\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{signingId}}/transition"
+          }
+        },
+        {
+          "name": "Cleanup signingRequest",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/signing/signingRequest/{{signingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Aggregations + Calculations — ActionItem",
+      "item": [
+        {
+          "name": "Aggregation: totalCompleted (count metric)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.expect(j.metric).to.eql('count');",
+                  "pm.expect(j.value).to.be.a('number');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/aggregations/decidesk/action-item/totalCompleted"
+          }
+        },
+        {
+          "name": "Aggregation: byStatus (groupBy)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 + groups present', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().groups).to.be.an('array'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/aggregations/decidesk/action-item/byStatus"
+          }
+        },
+        {
+          "name": "Aggregation: completedThisMonth ($startOfMonth placeholder)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/aggregations/decidesk/action-item/completedThisMonth"
+          }
+        },
+        {
+          "name": "Aggregation: avgDaysLate (uses materialised calc field)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 + metric avg', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().metric).to.eql('avg'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/aggregations/decidesk/action-item/avgDaysLate"
+          }
+        },
+        {
+          "name": "Aggregation: 404 for unknown name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/aggregations/decidesk/action-item/nonexistent"
+          }
+        },
+        {
+          "name": "Calculation: create ActionItem and verify daysOpen materialises (@self.created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const j = pm.response.json();",
+                  "pm.expect(j.daysOpen).to.be.a('number');",
+                  "pm.expect(j.daysOpen).to.be.at.most(1);",
+                  "pm.collectionVariables.set('actionItemId', j['@self'].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Newman calc test\",\"taskStatus\":\"open\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/action-item"
+          }
+        },
+        {
+          "name": "Cleanup ActionItem",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/action-item/{{actionItemId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications — meeting open fires NC notification",
+      "item": [
+        {
+          "name": "Clear admin notifications",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/ocs/v2.php/apps/notifications/api/v2/notifications"
+          }
+        },
+        {
+          "name": "Create + schedule + open",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Created ok', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('notifMeetingId', pm.response.json()['@self'].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Newman notif test\",\"meetingType\":\"regular\",\"scheduledDate\":\"2026-05-01T10:00:00+02:00\",\"meetingMode\":\"hybrid\",\"lifecycle\":\"draft\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/meeting"
+          }
+        },
+        {
+          "name": "Schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"schedule\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{notifMeetingId}}/transition"
+          }
+        },
+        {
+          "name": "Open (should fire notification)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"open\"}"
+            },
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{notifMeetingId}}/transition"
+          }
+        },
+        {
+          "name": "Verify notification was delivered",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json().ocs.data.filter(n => n.app === 'openregister');",
+                  "pm.expect(items.length).to.be.at.least(1);",
+                  "pm.expect(items[0].subject).to.include('Newman notif test');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/ocs/v2.php/apps/notifications/api/v2/notifications?format=json"
+          }
+        },
+        {
+          "name": "Cleanup notification meeting",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/decidesk/meeting/{{notifMeetingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Integration providers",
+      "item": [
+        {
+          "name": "Contacts match (graceful empty)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 + matches array', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().matches).to.be.an('array'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/contacts/match?email=admin@example.com"
+          }
+        },
+        {
+          "name": "Actions list (empty)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 + results array', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().results).to.be.an('array'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/actions"
+          }
+        },
+        {
+          "name": "Emails by-sender (graceful empty after EmailLinkMapper fallback)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 not 500', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/emails/by-sender?sender=admin@example.com"
+          }
+        },
+        {
+          "name": "Reference Provider — extract URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 + references parsed', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().ocs.data.references).to.be.an('object'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"text\":\"http://localhost:8080/index.php/apps/openregister/objects/decidesk/meeting/sample\",\"resolve\":true}"
+            },
+            "url": "{{baseUrl}}/ocs/v2.php/references/extract?format=json"
+          }
+        }
+      ]
+    }
+  ]
+}

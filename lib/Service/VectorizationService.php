@@ -315,12 +315,11 @@ class VectorizationService
                             $failed++;
                             //
                             // EmbeddingData may contain 'error' key even if not in type definition.
+                            $errorMsg = 'Embedding generation failed';
                             if (is_array($embeddingData) === true
                                 && array_key_exists('error', $embeddingData) === true
                             ) {
                                 $errorMsg = $embeddingData['error'];
-                            } else {
-                                $errorMsg = 'Embedding generation failed';
                             }
 
                             $errors[] = [

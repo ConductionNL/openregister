@@ -15,7 +15,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
  */
 
 declare(strict_types=1);
@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -98,7 +99,7 @@ class TaskService
      *
      * @throws Exception If no user is logged in or no calendar found
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
      */
     public function getTasksForObject(string $objectUuid): array
     {
@@ -166,7 +167,7 @@ class TaskService
      *
      * @throws Exception If no user is logged in or no calendar found
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
      */
     public function createTask(
         int $registerId,
@@ -355,11 +356,7 @@ class TaskService
                 } else if (is_iterable($components) === true) {
                     // If components is an array or other iterable.
                     foreach ($components as $comp) {
-                        if (is_string($comp) === true) {
-                            $compName = $comp;
-                        } else {
-                            $compName = (string) $comp;
-                        }
+                        $compName = is_string($comp) === true ? $comp : (string) $comp;
 
                         if (strtoupper($compName) === 'VTODO') {
                             $supportsVtodo = true;
@@ -377,7 +374,7 @@ class TaskService
             }//end if
         }//end foreach
 
-        throw new \OCA\OpenRegister\Exception\NoVtodoCalendarException($user->getUID());
+        throw new NoVtodoCalendarException(userId: $user->getUID());
     }//end findUserCalendar()
 
     /**

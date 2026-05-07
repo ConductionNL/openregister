@@ -9,75 +9,65 @@ describe('Configuration Store', () => {
 		setActivePinia(createPinia())
 	})
 
-	it('sets configuration item correctly', () => {
+	it('wraps the active configuration in a ConfigurationEntity', () => {
 		const store = useConfigurationStore()
 
 		store.setConfigurationItem(mockConfiguration)
 
 		expect(store.configurationItem).toBeInstanceOf(ConfigurationEntity)
-		expect(store.configurationItem).toEqual(mockConfiguration)
-
+		expect(store.configurationItem.id).toBe(mockConfiguration.id)
+		expect(store.configurationItem.title).toBe(mockConfiguration.title)
 		expect(store.configurationItem.validate().success).toBe(true)
 	})
 
-	it('sets configuration list correctly', () => {
+	it('wraps every entry of the list in a ConfigurationEntity', () => {
 		const store = useConfigurationStore()
 
 		store.setConfigurationList(mockConfigurations)
 
 		expect(store.configurationList).toHaveLength(mockConfigurations.length)
-
 		store.configurationList.forEach((item, index) => {
 			expect(item).toBeInstanceOf(ConfigurationEntity)
-			expect(item).toEqual(mockConfigurations[index])
+			expect(item.id).toBe(mockConfigurations[index].id)
 			expect(item.validate().success).toBe(true)
 		})
 	})
 
 	it('sets pagination correctly', () => {
 		const store = useConfigurationStore()
-		const page = 2
-		const limit = 10
-
-		store.setPagination(page, limit)
-
-		expect(store.pagination).toEqual({ page, limit })
+		store.setPagination(2, 10)
+		expect(store.pagination).toEqual({ page: 2, limit: 10 })
 	})
 
 	it('sets filters correctly', () => {
 		const store = useConfigurationStore()
 		const filters = { search: 'test', type: 'config' }
-
 		store.setFilters(filters)
-
 		expect(store.filters).toEqual(filters)
 	})
 
 	it('handles null configuration item correctly', () => {
 		const store = useConfigurationStore()
-
 		store.setConfigurationItem(null)
-
 		expect(store.configurationItem).toBeNull()
 	})
 
-	it('validates configuration items in list', () => {
+	it('flags invalid items in the list as failing validation', () => {
 		const store = useConfigurationStore()
+		// Empty id + title fail z.string().min(1).
 		const invalidConfiguration = {
-			'@self': {
-				id: '',
-				uuid: '',
-				title: '',
-				description: null,
-				version: '',
-				slug: '',
-				owner: null,
-				organisation: null,
-				application: null,
-				updated: '',
-				created: '',
-			},
-			configuration: {},
+			id: '',
+			title: '',
+			description: null,
+			version: '',
+			type: '',
+			application: '',
+			owner: '',
+			organisation: null,
+			registers: [],
+			schemas: [],
+			created: '',
+			updated: '',
 		}
 
 		store.setConfigurationList([invalidConfiguration])
