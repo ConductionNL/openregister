@@ -81,6 +81,9 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ */
 import {
 	NcModal,
 	NcButton,
@@ -113,10 +116,16 @@ export default {
 		this.fetchRegister()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 */
 		closeDialog() {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 */
 		formatValue(value) {
 			if (value === null || value === undefined) {
 				return 'N/A' // Handle null or undefined
@@ -127,6 +136,9 @@ export default {
 			}
 			return value // Return the value as is for other types
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 */
 		fetchSchema() {
 			this.schemaLoading = true
 			schemaStore.getSchema(this.auditTrail.schema)
@@ -135,6 +147,9 @@ export default {
 					this.schemaLoading = false
 				})
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 */
 		fetchRegister() {
 			this.registerLoading = true
 			registerStore.getRegister(this.auditTrail.register)
@@ -143,12 +158,18 @@ export default {
 					this.registerLoading = false
 				})
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 */
 		goToSchema() {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
 			this.$router.push('/schemas')
 			schemaStore.setSchemaItem(this.schemaItem)
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 */
 		goToRegister() {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)

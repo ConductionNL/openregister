@@ -16,6 +16,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
  */
 
 declare(strict_types=1);
@@ -56,6 +58,9 @@ class CalendarEventTransformer
      * @param array        $calendarConfig The calendar provider configuration
      *
      * @return array|null The VEVENT array, or null if the object lacks required date data
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
      */
     public function transform(
         ObjectEntity $object,
@@ -147,6 +152,9 @@ class CalendarEventTransformer
      * @param string $dtstartField   The dtstart field name
      *
      * @return bool True if events should be all-day
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
      */
     public function determineAllDay(array $calendarConfig, Schema $schema, string $dtstartField): bool
     {
@@ -183,6 +191,9 @@ class CalendarEventTransformer
      * @param bool   $allDay Whether this is an all-day event
      *
      * @return array The formatted [value, params] array
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
      */
     public function formatDateValue(string $value, bool $allDay): array
     {
@@ -204,6 +215,8 @@ class CalendarEventTransformer
      * @param bool   $allDay         Whether this is an all-day event
      *
      * @return array The formatted [value, params] array for DTEND
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
      */
     private function buildDtend(
         array $objectData,
@@ -241,6 +254,9 @@ class CalendarEventTransformer
      * @param array  $objectData The object data array
      *
      * @return string The interpolated string
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-19
      */
     public function interpolateTemplate(string $template, array $objectData): string
     {

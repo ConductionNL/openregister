@@ -65,6 +65,9 @@
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-49
+ */
 import { translate as t } from '@nextcloud/l10n'
 import NcAppSidebar from '@nextcloud/vue/dist/Components/NcAppSidebar.js'
 import NcAppSidebarTab from '@nextcloud/vue/dist/Components/NcAppSidebarTab.js'
@@ -127,6 +130,9 @@ export default {
 		switchTab(tabId) {
 			this.activeTab = tabId
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-49
+		 */
 		onLinked() {
 			if (this.$refs.objectsTab) {
 				this.$refs.objectsTab.loadObjects()

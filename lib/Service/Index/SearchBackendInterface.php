@@ -19,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
  */
 
 declare(strict_types=1);
@@ -131,6 +133,8 @@ interface SearchBackendInterface
      * @return array Search results with objects, pagination, and facets.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
      */
     public function searchObjectsPaginated(
         array $query=[],

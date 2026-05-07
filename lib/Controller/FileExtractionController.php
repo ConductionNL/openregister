@@ -62,6 +62,8 @@ class FileExtractionController extends Controller
      * @param ChunkMapper           $chunkMapper          Chunk mapper for text chunks
      * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
      * @param RiskLevelService      $riskLevelService     Risk level computation service
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function __construct(
         string $appName,
@@ -86,6 +88,8 @@ class FileExtractionController extends Controller
      * @return JSONResponse JSON response containing file extraction data
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function index(): JSONResponse
     {
@@ -215,6 +219,8 @@ class FileExtractionController extends Controller
      *     positionReference: array|null, sourceId: int|null,
      *     sourceType: null|string, startOffset: int, updatedAt: null|string,
      *     uuid: null|string, vectorized: bool}>}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function show(int $id): JSONResponse
     {
@@ -277,6 +283,8 @@ class FileExtractionController extends Controller
      * >
      *
      * @suppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function extract(int $id, bool $forceReExtract=false): JSONResponse
     {
@@ -340,6 +348,8 @@ class FileExtractionController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function discover(int $limit=100): JSONResponse
     {
@@ -389,6 +399,8 @@ class FileExtractionController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function extractAll(int $limit=100): JSONResponse
     {
@@ -435,6 +447,8 @@ class FileExtractionController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function retryFailed(int $limit=50): JSONResponse
     {
@@ -485,6 +499,8 @@ class FileExtractionController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function stats(): JSONResponse
     {
@@ -531,6 +547,8 @@ class FileExtractionController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function cleanup(): JSONResponse
     {
@@ -580,6 +598,8 @@ class FileExtractionController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function fileTypes(): JSONResponse
     {
@@ -616,6 +636,8 @@ class FileExtractionController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with vectorization result
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function vectorizeBatch(): JSONResponse
     {

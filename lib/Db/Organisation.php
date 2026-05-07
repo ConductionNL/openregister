@@ -313,6 +313,55 @@ class Organisation extends Entity implements JsonSerializable
     public ?int $userCount = null;
 
     /**
+     * Linked mail entity IDs for this organisation.
+     *
+     * @var array|null Linked mail entity IDs
+     */
+    protected ?array $mail = null;
+
+    /**
+     * Linked contact entity IDs for this organisation.
+     *
+     * @var array|null Linked contact entity IDs
+     */
+    protected ?array $contacts = null;
+
+    /**
+     * Linked note entity IDs for this organisation.
+     *
+     * @var array|null Linked note entity IDs
+     */
+    protected ?array $notes = null;
+
+    /**
+     * Linked todo entity IDs for this organisation.
+     *
+     * @var array|null Linked todo entity IDs
+     */
+    protected ?array $todos = null;
+
+    /**
+     * Linked calendar event entity IDs for this organisation.
+     *
+     * @var array|null Linked calendar entity IDs
+     */
+    protected ?array $calendar = null;
+
+    /**
+     * Linked Talk conversation IDs for this organisation.
+     *
+     * @var array|null Linked Talk entity IDs
+     */
+    protected ?array $talk = null;
+
+    /**
+     * Linked Deck card IDs for this organisation.
+     *
+     * @var array|null Linked Deck entity IDs
+     */
+    protected ?array $deck = null;
+
+    /**
      * Organisation constructor
      *
      * Sets up the entity type mappings for proper database handling.

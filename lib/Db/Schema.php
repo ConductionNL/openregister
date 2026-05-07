@@ -888,6 +888,17 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return bool True if the group has permission for the action
      *
+     * @deprecated This is a pre-unification duplicate of the RBAC matcher. The
+     *             canonical evaluators are {@see \OCA\OpenRegister\Service\Object\PermissionHandler::hasPermission()}
+     *             (PHP-side) and {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::applyRbacFilters()}
+     *             (SQL-side), both of which delegate conditional match evaluation
+     *             to {@see \OCA\OpenRegister\Service\ConditionMatcher}. This method
+     *             has no production callers (only test coverage via
+     *             BasicCrudTest/RbacTest/RbacComprehensiveTest) and is retained
+     *             solely to avoid churning the test suite in the #1336 unification
+     *             change. Scheduled for removal in a follow-up cleanup; do not
+     *             add new callers.
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Conditional authorization rules require multiple checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Match condition evaluation creates multiple paths
      */
@@ -971,6 +982,12 @@ class Schema extends Entity implements JsonSerializable
      * @param string $activeOrganisation The user's active organisation UUID
      *
      * @return bool True if all conditions are satisfied
+     *
+     * @deprecated See {@see self::hasPermission()} — this helper exists only to
+     *             serve the deprecated entity-level matcher. Operator and
+     *             dynamic-variable support is deliberately narrower than the
+     *             canonical {@see \OCA\OpenRegister\Service\ConditionMatcher}.
+     *             Do not add callers.
      */
     private function evaluateMatchConditions(
         array $conditions,

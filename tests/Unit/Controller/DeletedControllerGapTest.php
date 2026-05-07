@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCP\IUser;
@@ -28,6 +29,7 @@ class DeletedControllerGapTest extends TestCase
     private SchemaMapper&MockObject $schemaMapper;
     private ObjectService&MockObject $objectService;
     private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -39,6 +41,7 @@ class DeletedControllerGapTest extends TestCase
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->objectService = $this->createMock(ObjectService::class);
         $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
 
         $this->controller = new DeletedController(
             'openregister',
@@ -47,7 +50,8 @@ class DeletedControllerGapTest extends TestCase
             $this->registerMapper,
             $this->schemaMapper,
             $this->objectService,
-            $this->userSession
+            $this->userSession,
+            $this->groupManager
         );
     }
 

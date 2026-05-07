@@ -10,6 +10,8 @@
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
@@ -65,6 +67,8 @@ class LinkedEntityPropertyHandler
      * Constructor for LinkedEntityPropertyHandler.
      *
      * @param LoggerInterface $logger Logger for logging operations
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -83,6 +87,8 @@ class LinkedEntityPropertyHandler
      * @param array        $data   The object data being saved
      *
      * @return ObjectEntity The updated object entity
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
      */
     public function extractAndPopulate(ObjectEntity $object, Schema $schema, array $data): ObjectEntity
     {
@@ -124,6 +130,8 @@ class LinkedEntityPropertyHandler
      * @param array  $extractedIds   Reference to the collected IDs (grouped by type)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function extractFromProperty(
         string $propertyName,
@@ -170,6 +178,8 @@ class LinkedEntityPropertyHandler
      * @param mixed $value The property value
      *
      * @return string|null The extracted ID or null
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function extractIdFromEnvelope(mixed $value): ?string
     {
@@ -198,6 +208,8 @@ class LinkedEntityPropertyHandler
      * @param array        $newIds The newly extracted IDs
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
      */
     private function mergeIntoMetadataColumn(ObjectEntity $object, string $ncType, array $newIds): void
     {

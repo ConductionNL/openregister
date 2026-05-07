@@ -78,6 +78,8 @@ class WorkflowResult implements JsonSerializable
      * @param array<string,mixed>                                         $metadata Engine-specific metadata
      *
      * @throws InvalidArgumentException If status is not valid
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function __construct(
         string $status,
@@ -104,6 +106,8 @@ class WorkflowResult implements JsonSerializable
      * @param array<string, mixed> $metadata Optional metadata
      *
      * @return self
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public static function approved(array $metadata=[]): self
     {
@@ -117,6 +121,8 @@ class WorkflowResult implements JsonSerializable
      * @param array<string, mixed>                                              $metadata Optional metadata
      *
      * @return self
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public static function rejected(array $errors, array $metadata=[]): self
     {
@@ -130,6 +136,8 @@ class WorkflowResult implements JsonSerializable
      * @param array<string, mixed> $metadata Optional metadata
      *
      * @return self
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public static function modified(array $data, array $metadata=[]): self
     {
@@ -143,6 +151,8 @@ class WorkflowResult implements JsonSerializable
      * @param array<string, mixed> $metadata Optional metadata
      *
      * @return self
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public static function error(string $message, array $metadata=[]): self
     {
@@ -157,6 +167,8 @@ class WorkflowResult implements JsonSerializable
      * Get the outcome status of the workflow result.
      *
      * @return string The status value
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function getStatus(): string
     {
@@ -167,6 +179,8 @@ class WorkflowResult implements JsonSerializable
      * Get the modified object data.
      *
      * @return array<string, mixed>|null
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function getData(): ?array
     {
@@ -177,6 +191,8 @@ class WorkflowResult implements JsonSerializable
      * Get the validation errors.
      *
      * @return array<int, array{field?: string, message: string, code?: string}>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function getErrors(): array
     {
@@ -187,6 +203,8 @@ class WorkflowResult implements JsonSerializable
      * Get the engine-specific metadata.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function getMetadata(): array
     {
@@ -197,6 +215,8 @@ class WorkflowResult implements JsonSerializable
      * Check whether the result status is approved.
      *
      * @return bool True if approved
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function isApproved(): bool
     {
@@ -207,6 +227,8 @@ class WorkflowResult implements JsonSerializable
      * Check whether the result status is rejected.
      *
      * @return bool True if rejected
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function isRejected(): bool
     {
@@ -217,6 +239,8 @@ class WorkflowResult implements JsonSerializable
      * Check whether the result status is modified.
      *
      * @return bool True if modified
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function isModified(): bool
     {
@@ -227,6 +251,8 @@ class WorkflowResult implements JsonSerializable
      * Check whether the result status is error.
      *
      * @return bool True if error
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function isError(): bool
     {
@@ -237,6 +263,8 @@ class WorkflowResult implements JsonSerializable
      * Convert the result to an array representation.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function toArray(): array
     {
@@ -252,6 +280,8 @@ class WorkflowResult implements JsonSerializable
      * Serialize the result to a JSON-compatible array.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-5
      */
     public function jsonSerialize(): array
     {

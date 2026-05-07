@@ -375,6 +375,100 @@ class FileMapper extends QBMapper
     }//end getFilesForObject()
 
     /**
+     * Batched lookup: file IDs for a list of object UUIDs.
+     *
+     * Resolves UUID -> folder node via oc_filecache.name (matching the fallback path of
+     * getFilesForObject), then fetches all child file IDs in a second query. Total of
+     * two queries regardless of input size, vs. N+1 if callers loop over getFilesForObject.
+     *
+     * Note: this method does NOT consider an object's explicit `folder` property — only
+     * pass UUIDs. Full file metadata (renderFiles via _extend[]=@self.files) still uses
+     * getFilesForObject which respects the explicit folder property.
+     *
+     * @param string[] $uuids Object UUIDs to look up.
+     *
+     * @return array<string, int[]> Map of UUID -> list of file IDs (empty array if none).
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two-step batched lookup with input
+     *                                               validation; complexity is intrinsic.
+     */
+    public function getFileIdsForObjects(array $uuids): array
+    {
+        $result = [];
+        foreach ($uuids as $uuid) {
+            if (is_string($uuid) === true && $uuid !== '') {
+                $result[$uuid] = [];
+            }
+        }
+
+        if (empty($result) === true) {
+            return [];
+        }
+
+        // Step 1: resolve UUIDs to folder node IDs via filecache.name.
+        // Multiple folders may share a UUID name; the oldest (lowest fileid) wins,
+        // matching the resolution rule in getFilesForObject.
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('fileid', 'name')
+            ->from('filecache')
+            ->where(
+                $qb->expr()->in(
+                    'name',
+                    $qb->createNamedParameter(array_keys($result), IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            )
+            ->orderBy('fileid', 'ASC');
+
+        $stmt         = $qb->executeQuery();
+        $uuidToNodeId = [];
+        $row          = $stmt->fetch();
+        while ($row !== false) {
+            $name = (string) $row['name'];
+            // First (oldest) folder wins for duplicates.
+            if (isset($uuidToNodeId[$name]) === false) {
+                $uuidToNodeId[$name] = (int) $row['fileid'];
+            }
+
+            $row = $stmt->fetch();
+        }
+
+        $stmt->closeCursor();
+
+        if (empty($uuidToNodeId) === true) {
+            return $result;
+        }
+
+        // Step 2: fetch child file IDs for each folder node in one query.
+        $qb2 = $this->db->getQueryBuilder();
+        $qb2->select('fileid', 'parent')
+            ->from('filecache')
+            ->where(
+                $qb2->expr()->in(
+                    'parent',
+                    $qb2->createNamedParameter(array_values($uuidToNodeId), IQueryBuilder::PARAM_INT_ARRAY)
+                )
+            );
+
+        $stmt2           = $qb2->executeQuery();
+        $nodeIdToFileIds = [];
+        $childRow        = $stmt2->fetch();
+        while ($childRow !== false) {
+            $parent = (int) $childRow['parent'];
+            $nodeIdToFileIds[$parent][] = (int) $childRow['fileid'];
+            $childRow = $stmt2->fetch();
+        }
+
+        $stmt2->closeCursor();
+
+        // Step 3: project node IDs back to UUIDs.
+        foreach ($uuidToNodeId as $uuid => $nodeId) {
+            $result[$uuid] = $nodeIdToFileIds[$nodeId] ?? [];
+        }
+
+        return $result;
+    }//end getFileIdsForObjects()
+
+    /**
      * Generate a share URL from a share token.
      *
      * @param string $token The share token

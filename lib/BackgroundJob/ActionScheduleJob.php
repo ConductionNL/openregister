@@ -48,6 +48,8 @@ class ActionScheduleJob extends TimedJob
      * @param ActionMapper    $actionMapper   Action mapper
      * @param ActionExecutor  $actionExecutor Action executor
      * @param LoggerInterface $logger         Logger
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
      */
     public function __construct(
         ITimeFactory $time,
@@ -62,11 +64,13 @@ class ActionScheduleJob extends TimedJob
     /**
      * Run the schedule evaluation
      *
-     * @param mixed $arguments Job arguments (unused)
+     * @param mixed $argument Job arguments (unused)
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
      */
     protected function run($argument): void
     {
@@ -97,6 +101,7 @@ class ActionScheduleJob extends TimedJob
                     /*
                      * @psalm-suppress UndefinedClass CronExpression is an optional runtime dependency
                      */
+
                     $cron = new CronExpression($action->getSchedule());
 
                     $lastExecuted = $action->getLastExecutedAt();
@@ -108,6 +113,7 @@ class ActionScheduleJob extends TimedJob
                         /*
                          * @psalm-suppress UndefinedClass
                          */
+
                         $nextRun = $cron->getNextRunDate($lastExecuted);
                         $isDue   = $nextRun <= $now;
                     }

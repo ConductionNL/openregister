@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -70,6 +72,8 @@ class ExportHandler
      * @param ImportService   $importService      Import service
      * @param FileService     $fileService        File service
      * @param LoggerInterface $logger             PSR-3 logger
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-11
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -93,6 +97,8 @@ class ExportHandler
      * @return array Export result with content, filename, and mimetype.
      *
      * @throws \Exception If export fails.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-11
      */
     public function export(
         Register $register,
@@ -207,6 +213,8 @@ class ExportHandler
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Import options require multiple boolean flags for configuration
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file type handlers require conditional branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Import orchestration requires comprehensive error handling
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-15
      */
     public function import(
         Register $register,
@@ -332,6 +340,8 @@ class ExportHandler
      * @return array Download result with content, filename, and mimetype.
      *
      * @throws \Exception If download fails.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-11
      */
     public function downloadObjectFiles(string $objectId)
     {

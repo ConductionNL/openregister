@@ -1,3 +1,6 @@
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+ */
 /* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
@@ -204,6 +207,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * Fetch search trails with optional filtering and pagination
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
 		 */
 		async fetchSearchTrails(options = {}) {
 			this.searchTrailLoading = true
@@ -450,6 +455,8 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 * Delete search trail logs older than specified days
 		 * @param {number} days - Number of days to keep
 		 * @return {Promise<object>} The response data
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
 		 */
 		async cleanupSearchTrails(days = 30) {
 			try {

@@ -53,6 +53,8 @@ class DateTimeType extends ScalarType
      * @return string The ISO 8601 string
      *
      * @throws Error If the value cannot be serialized
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function serialize(mixed $value): string
     {
@@ -78,6 +80,8 @@ class DateTimeType extends ScalarType
      * @return string The validated ISO 8601 string
      *
      * @throws Error If the value is not a valid ISO 8601 date-time
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function parseValue(mixed $value): string
     {
@@ -115,6 +119,8 @@ class DateTimeType extends ScalarType
      * @return string The parsed value
      *
      * @throws Error If the node is not a string
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables=null): string
     {

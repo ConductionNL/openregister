@@ -13,6 +13,11 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-46
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-50
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-53
  */
 
 declare(strict_types=1);
@@ -117,6 +122,8 @@ class EmailService
      * @param int|null $offset     Results offset.
      *
      * @return array{results: array, total: int} Email links with total count.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-51
      */
     public function getEmailsForObject(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
@@ -144,6 +151,8 @@ class EmailService
      * @return EmailLink The created link.
      *
      * @throws Exception If the email does not exist or is already linked.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-50
      */
     public function linkEmail(
         string $objectUuid,
@@ -211,6 +220,8 @@ class EmailService
      * @param string $sender The sender email address.
      *
      * @return array Array of email links with object UUIDs.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-53
      */
     public function searchBySender(string $sender): array
     {
@@ -243,6 +254,8 @@ class EmailService
      * @param int $accountId The mail account ID.
      *
      * @return array|null Message data or null if not found.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-46
      */
     private function fetchMailMessage(int $messageId, int $accountId): ?array
     {

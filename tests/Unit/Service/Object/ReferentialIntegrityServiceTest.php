@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
+use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -65,6 +66,9 @@ class ReferentialIntegrityServiceTest extends TestCase
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
 
+    /** @var IDBConnection&MockObject */
+    private IDBConnection $db;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -74,13 +78,15 @@ class ReferentialIntegrityServiceTest extends TestCase
         $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->db = $this->createMock(IDBConnection::class);
 
         $this->service = new ReferentialIntegrityService(
             $this->schemaMapper,
             $this->registerMapper,
             $this->objectMapper,
             $this->auditTrailMapper,
-            $this->logger
+            $this->logger,
+            $this->db
         );
     }
 

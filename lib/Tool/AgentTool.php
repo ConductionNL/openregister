@@ -69,6 +69,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @return string Tool name
      *
      * @psalm-return 'Agent Management'
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getName(): string
     {
@@ -79,6 +81,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * Get the tool description
      *
      * @return string The tool description
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getDescription(): string
     {
@@ -95,6 +99,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @return array<int, array<string, mixed>> Array of function definitions
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getFunctions(): array
     {
@@ -220,6 +226,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response with agents list
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function listAgents(int $limit=50, int $offset=0): array
     {
@@ -271,6 +279,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response with agent details
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getAgent(string $uuid): array
     {
@@ -316,6 +326,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for agent creation
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function createAgent(
         string $name,
@@ -384,6 +396,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function updateAgent(
         string $uuid,
@@ -444,6 +458,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response confirming deletion
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function deleteAgent(string $uuid): array
     {
@@ -488,6 +504,8 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @param string|null $userId       User ID for session context (optional)
      *
      * @return array Response
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {

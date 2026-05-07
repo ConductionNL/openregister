@@ -122,7 +122,9 @@ class ConditionMatcher
     private function singleConditionMatches(array $object, string $property, mixed $value): bool
     {
         // Get object value, checking both direct property and @self.
-        $objectValue = $this->getObjectValue(object: $object, property: $property);
+        $objectValue = $this->unwrapResolvedRelation(
+            value: $this->getObjectValue(object: $object, property: $property)
+        );
 
         // Resolve dynamic variables in the match value.
         $resolvedValue = $this->resolveDynamicValue(value: $value);
@@ -152,6 +154,33 @@ class ConditionMatcher
 
         return true;
     }//end singleConditionMatches()
+
+    /**
+     * Unwrap resolved relations to their scalar id.
+     *
+     * When a property has been expanded into its full related object (array with
+     * an 'id' key), RBAC conditions still compare against the scalar id. Mirrors
+     * the behaviour of the pre-unification PermissionHandler::evaluateMatchConditions
+     * — without this, a rule like {"match": {"parent": "uuid-123"}} would flip from
+     * allow to deny for any schema where "parent" is a resolved relation
+     * (list-vs-find drift). Arrays without an 'id' key are not resolved relations
+     * and pass through unchanged.
+     *
+     * @param mixed $value Raw value from the object (may be a scalar, null, or
+     *                     an array representing a resolved relation or a plain
+     *                     array-valued property).
+     *
+     * @return mixed The unwrapped scalar id, or the original value if not a
+     *               resolved relation.
+     */
+    private function unwrapResolvedRelation(mixed $value): mixed
+    {
+        if (is_array($value) === true && isset($value['id']) === true) {
+            return $value['id'];
+        }
+
+        return $value;
+    }//end unwrapResolvedRelation()
 
     /**
      * Get a value from the object, checking both direct property and @self
@@ -185,10 +214,19 @@ class ConditionMatcher
      * Supports special variables:
      * - $organisation / $activeOrganisation: Current user's active organisation UUID
      * - $userId / $user: Current user's ID
-     * - $now: Current datetime in ISO 8601 format
+     * - $now: Current datetime as 'Y-m-d H:i:s' (SQL-native format)
      *
      * For operator arrays (e.g. {"$lte": "$now"}), resolves dynamic values
      * inside operator operands recursively.
+     *
+     * The `$now` format MUST stay aligned with
+     * {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::resolveDynamicValue()}
+     * — both paths evaluate the same authorization JSON, and for text/JSON-stored
+     * date columns the comparison is a raw lexicographic string compare. A format
+     * mismatch causes list (SQL) and find (PHP) endpoints to disagree on objects
+     * whose stored dates use a different separator (e.g. ISO 8601 "T" vs space).
+     * See `rbac-scopes/spec.md` scenario "Dynamic `$now` variable resolves to a
+     * canonical SQL-native format".
      *
      * @param mixed $value The value to resolve
      *
@@ -221,8 +259,12 @@ class ConditionMatcher
         }
 
         // Check for $now variable.
+        // MUST match MagicRbacHandler's SQL-path format (Y-m-d H:i:s) so that
+        // list and find endpoints produce identical verdicts for text-column
+        // date comparisons. Previously used 'c' (ISO 8601 with "T" separator),
+        // which caused divergence against columns storing dates in SQL format.
         if ($value === '$now') {
-            return (new DateTime())->format('c');
+            return (new DateTime())->format('Y-m-d H:i:s');
         }
 
         return $value;
