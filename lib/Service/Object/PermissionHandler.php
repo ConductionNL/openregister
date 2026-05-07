@@ -769,7 +769,6 @@ class PermissionHandler
 
     }//end resolveInheritFromPublic()
 
-
     /**
      * Strict-boolean coercion for cascade levels backed by JSON storage.
      *
@@ -779,9 +778,9 @@ class PermissionHandler
      * can spot bad seed/migration writes. The previous loose `(bool)` cast
      * silently turned `"false"` into `true`, which inverted the gate.
      *
-     * @param mixed       $value    The raw value from the JSON authorization block.
-     * @param string      $level    Cascade level for the log message ("schema" or "register").
-     * @param int|null    $schemaId Schema id for the log context (null for transient).
+     * @param mixed    $value    The raw value from the JSON authorization block.
+     * @param string   $level    Cascade level for the log message ("schema" or "register").
+     * @param int|null $schemaId Schema id for the log context (null for transient).
      *
      * @return bool|null Strict boolean, or null when the value is null/invalid.
      */
@@ -808,7 +807,6 @@ class PermissionHandler
         return null;
 
     }//end coerceStrictBoolOrLog()
-
 
     /**
      * Get the parent register for a schema.
