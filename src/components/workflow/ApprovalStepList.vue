@@ -30,10 +30,6 @@ import { generateUrl } from '@nextcloud/router'
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-
 export default {
 	name: 'ApprovalStepList',
 	components: { NcButton },

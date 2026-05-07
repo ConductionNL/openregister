@@ -240,8 +240,7 @@
 							<label class="dialog-label">{{ t('openregister', 'Headers') }}</label>
 							<NcTextArea
 								:value="headersText"
-								:placeholder="t('openregister', 'X-Custom-Header: value
-authorization: bearer token')"
+								:placeholder="t('openregister', 'X-Custom-Header: value\nauthorization: bearer token')"
 								rows="4"
 								@update:value="updateHeaders" />
 							<p class="field-hint">

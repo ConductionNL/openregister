@@ -258,7 +258,6 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 <script>
 import { ref } from 'vue'
-import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 import Plus from 'vue-material-design-icons/Plus.vue'

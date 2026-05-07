@@ -356,7 +356,6 @@ import PaginationComponent from '../../components/PaginationComponent.vue'
 import SwitchOrganisationModal from '../../modals/organisation/SwitchOrganisationModal.vue'
 import { reloadAppData } from '../../services/AppInitializationService.js'
 import Check from 'vue-material-design-icons/Check.vue'
-import { translate as t } from '@nextcloud/l10n'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 
 export default {

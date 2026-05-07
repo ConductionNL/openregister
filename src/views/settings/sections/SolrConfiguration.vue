@@ -1122,7 +1122,6 @@ import FileWarmupModal from '../../../modals/settings/FileWarmupModal.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'SolrConfiguration',

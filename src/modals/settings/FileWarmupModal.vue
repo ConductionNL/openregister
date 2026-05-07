@@ -189,7 +189,6 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { showSuccess, showError } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'FileWarmupModal',
