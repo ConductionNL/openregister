@@ -61,6 +61,7 @@ class AnnotationNotificationDispatcher
      * @param IMailer                                                  $mailer              Mailer for the `email` channel.
      * @param IActivityManager                                         $activityManager     Activity manager for the `activity` channel.
      * @param IClientService                                           $httpClient          HTTP client for the `webhook` and `talk` channels.
+     * @param IServerContainer                                         $serverContainer     Server container for expression resolvers (F06).
      * @param RateLimiter|null                                         $rateLimiter         Optional rate limiter (per-rule, per-recipient).
      * @param IConfig|null                                             $config              Optional config service for runtime tunables.
      * @param NotificationHistoryMapper|null                           $historyMapper       Optional history mapper for delivery audit rows.
@@ -667,6 +668,7 @@ class AnnotationNotificationDispatcher
             } else {
                 $base = (string) $this->serverContainer->get(\OCP\IConfig::class)->getSystemValue('overwrite.cli.url', 'http://localhost');
             }
+
             $base = rtrim($base, '/');
             $url  = $base.'/ocs/v2.php/apps/spreed/api/v1/chat/'.rawurlencode($token);
 
@@ -823,7 +825,7 @@ class AnnotationNotificationDispatcher
             $kind = (string) ($r['kind'] ?? '');
             if ($kind === 'users') {
                 foreach ((array) ($r['users'] ?? []) as $u) {
-                    if (is_string($u) === true && $u !== '' && $this->userExists($u) === true) {
+                    if (is_string($u) === true && $u !== '' && $this->userExists(uid: $u) === true) {
                         $uids[] = $u;
                     }
                 }
@@ -841,7 +843,7 @@ class AnnotationNotificationDispatcher
                 // adding it to the recipient list.
                 $field = (string) ($r['field'] ?? '');
                 $value = ($data[$field] ?? null);
-                if (is_string($value) === true && $value !== '' && $this->userExists($value) === true) {
+                if (is_string($value) === true && $value !== '' && $this->userExists(uid: $value) === true) {
                     $uids[] = $value;
                 }
 
@@ -863,13 +865,13 @@ class AnnotationNotificationDispatcher
 
                 $value = ($data[$relName] ?? null);
                 foreach ($this->extractUidsFromRelation(value: $value) as $uid) {
-                    if ($this->userExists($uid) === true) {
+                    if ($this->userExists(uid: $uid) === true) {
                         $uids[] = $uid;
                     }
                 }
 
                 continue;
-            }
+            }//end if
 
             if ($kind === 'object-acl') {
                 if ($object !== null) {
@@ -1044,15 +1046,19 @@ class AnnotationNotificationDispatcher
      * cost flat across N recipients in a single dispatch.
      *
      * @param string $uid Candidate Nextcloud user identifier.
+     *
+     * @return bool True when the uid corresponds to a real Nextcloud user.
      */
     private function userExists(string $uid): bool
     {
         if ($uid === '') {
             return false;
         }
+
         if (isset($this->userExistsCache[$uid]) === true) {
             return $this->userExistsCache[$uid];
         }
+
         try {
             $exists = $this->userManager->userExists($uid);
         } catch (\Throwable $e) {
@@ -1061,6 +1067,7 @@ class AnnotationNotificationDispatcher
             );
             $exists = false;
         }
+
         $this->userExistsCache[$uid] = (bool) $exists;
         return $this->userExistsCache[$uid];
     }//end userExists()
@@ -1284,6 +1291,7 @@ class AnnotationNotificationDispatcher
                     if (is_scalar($data[$key]) === false) {
                         return '';
                     }
+
                     return htmlspecialchars((string) $data[$key], ENT_QUOTES, 'UTF-8');
                 }
 
@@ -1291,6 +1299,7 @@ class AnnotationNotificationDispatcher
                     if (is_scalar($context[$key]) === false) {
                         return '';
                     }
+
                     return htmlspecialchars((string) $context[$key], ENT_QUOTES, 'UTF-8');
                 }
 

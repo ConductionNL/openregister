@@ -98,7 +98,7 @@ class TransitionController extends Controller
                 ['error' => $e->getMessage()],
                 Http::STATUS_UNPROCESSABLE_ENTITY
             );
-        }
+        }//end try
 
         return new JSONResponse($object->jsonSerialize());
     }//end transition()

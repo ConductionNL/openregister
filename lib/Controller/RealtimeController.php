@@ -40,6 +40,7 @@ class RealtimeController extends Controller
      * @param IRequest            $request             The current request.
      * @param RealtimeEventMapper $eventMapper         The realtime event mapper.
      * @param OrganisationService $organisationService The organisation service.
+     * @param IUserSession        $userSession         Active session — drives the 401 anonymous-caller short-circuit (F11).
      */
     public function __construct(
         string $appName,
