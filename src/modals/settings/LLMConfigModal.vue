@@ -876,9 +876,7 @@ export default {
 
 		confirmClearEmbeddings() {
 			// Use native browser confirm to avoid focus-trap conflicts with nested modals
-			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. you will need to re-vectorize all objects and files. this action cannot be undone.
-
-are you sure you want to continue?')
+			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?')
 
 			if (confirm(message)) {
 				this.clearAllEmbeddings()
