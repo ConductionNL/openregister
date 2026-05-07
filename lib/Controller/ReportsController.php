@@ -40,6 +40,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * REST endpoint for on-demand dashboard rendering.
@@ -59,6 +60,7 @@ class ReportsController extends Controller
         IRequest $request,
         private readonly ReportRenderService $renderService,
         private readonly MagicMapper $objectMapper,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -87,8 +89,14 @@ class ReportsController extends Controller
                 statusCode: Http::STATUS_NOT_FOUND
             );
         } catch (\Throwable $e) {
+            // SECURITY: log internal exception detail (file paths, SQL
+            // fragments, library state) and return a generic message.
+            $this->logger->error(
+                message: '[ReportsController] Failed to load dashboard',
+                context: ['identifier' => $id, 'error' => $e->getMessage()]
+            );
             return new JSONResponse(
-                data: ['error' => 'Failed to load dashboard: '.$e->getMessage()],
+                data: ['error' => 'Failed to load dashboard'],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }
@@ -99,13 +107,19 @@ class ReportsController extends Controller
                 format: $format
             );
         } catch (InvalidArgumentException $e) {
+            // Validation errors are safe to return verbatim (the caller
+            // controls the input that triggered them).
             return new JSONResponse(
                 data: ['error' => $e->getMessage()],
                 statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
             );
         } catch (\Throwable $e) {
+            $this->logger->error(
+                message: '[ReportsController] Render failed',
+                context: ['identifier' => $id, 'format' => $format, 'error' => $e->getMessage()]
+            );
             return new JSONResponse(
-                data: ['error' => 'Render failed: '.$e->getMessage()],
+                data: ['error' => 'Render failed; see server logs for details'],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }
