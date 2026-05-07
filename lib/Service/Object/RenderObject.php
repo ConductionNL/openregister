@@ -43,6 +43,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\UrnService;
+use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
@@ -68,6 +71,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class RenderObject
 {
@@ -126,20 +131,23 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param FileMapper             $fileMapper           File mapper for database operations.
-     * @param MagicMapper            $objectEntityMapper   Object entity mapper for database operations.
-     * @param RegisterMapper         $registerMapper       Register mapper for database operations.
-     * @param SchemaMapper           $schemaMapper         Schema mapper for database operations.
-     * @param ISystemTagManager      $systemTagManager     System tag manager for file tags.
-     * @param ISystemTagObjectMapper $systemTagMapper      System tag object mapper for file tags.
-     * @param CacheHandler           $cacheHandler         Cache service for performance optimization.
-     * @param CacheHandler           $objectCacheService   Object cache service for optimized loading.
-     * @param PropertyRbacHandler    $propertyRbacHandler  Property-level RBAC handler.
-     * @param LoggerInterface        $logger               Logger for performance monitoring.
-     * @param FileService            $fileService          File service for file operations.
-     * @param ComputedFieldHandler   $computedFieldHandler Handler for computed field evaluation.
-     * @param TranslationHandler     $translationHandler   Handler for translatable property resolution.
-     * @param LinkedEntityEnricher   $linkedEntityEnricher Enricher for linked entity metadata.
+     * @param FileMapper               $fileMapper               File mapper for database operations.
+     * @param MagicMapper              $objectEntityMapper       Object entity mapper for database operations.
+     * @param RegisterMapper           $registerMapper           Register mapper for database operations.
+     * @param SchemaMapper             $schemaMapper             Schema mapper for database operations.
+     * @param ISystemTagManager        $systemTagManager         System tag manager for file tags.
+     * @param ISystemTagObjectMapper   $systemTagMapper          System tag object mapper for file tags.
+     * @param CacheHandler             $cacheHandler             Cache service for performance optimization.
+     * @param CacheHandler             $objectCacheService       Object cache service for optimized loading.
+     * @param PropertyRbacHandler      $propertyRbacHandler      Property-level RBAC handler.
+     * @param LoggerInterface          $logger                   Logger for performance monitoring.
+     * @param FileService              $fileService              File service for file operations.
+     * @param ComputedFieldHandler     $computedFieldHandler     Handler for computed field evaluation.
+     * @param TranslationHandler       $translationHandler       Handler for translatable property resolution.
+     * @param LinkedEntityEnricher     $linkedEntityEnricher     Enricher for linked entity metadata.
+     * @param CalculationEvaluator     $calculationEvaluator     Evaluator for derived/computed properties.
+     * @param UrnService               $urnService               URN resolver for register/schema/object identifiers.
+     * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      *
@@ -160,6 +168,9 @@ class RenderObject
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
         private readonly LinkedEntityEnricher $linkedEntityEnricher,
+        private readonly CalculationEvaluator $calculationEvaluator,
+        private readonly UrnService $urnService,
+        private readonly TranslationStatusService $translationStatusService,
     ) {
     }//end __construct()
 
@@ -1133,7 +1144,9 @@ class RenderObject
         // Both extend spellings are equivalent (see normalizeMap below).
         if (self::shouldExtendFiles(extend: $_extend) === true) {
             $entity = $this->renderFiles(object: $entity);
-        } else {
+        }
+
+        if (self::shouldExtendFiles(extend: $_extend) === false) {
             $entity = $this->setLightweightFileIds(entity: $entity);
         }
 
@@ -1195,11 +1208,7 @@ class RenderObject
                 $inversePropertyNames = array_keys($inversedProperties);
 
                 // Normalize extend to array.
-                if (is_array($_extend) === true) {
-                    $extendArray = $_extend;
-                } else {
-                    $extendArray = explode(',', $_extend);
-                }
+                $extendArray = is_array($_extend) === true ? $_extend : explode(',', $_extend);
 
                 // Check if any inverse property is being extended (or 'all' is specified).
                 $shouldHandleInverse = in_array('all', $extendArray, true)
@@ -1279,7 +1288,7 @@ class RenderObject
                 $serialized = $entity->jsonSerialize();
                 $enriched   = $this->linkedEntityEnricher->enrich($serialized, $linkedExtend);
                 // Update the linked type values on the entity.
-                foreach ($linkedExtend as $key => $unused) {
+                foreach (array_keys($linkedExtend) as $key) {
                     if (isset($enriched[$key]) === true) {
                         $setter = 'set'.ucfirst(ltrim($key, '_'));
                         $entity->$setter($enriched[$key]);
@@ -1340,10 +1349,122 @@ class RenderObject
             );
         }
 
+        // Evaluate virtual calculations (`materialise: false`) when the
+        // caller asks for them via _extend. Materialised calcs are
+        // already in $objectData (set by CalculationOnSaveListener).
+        $extendArr = is_array($_extend) === true ? $_extend : ($_extend === null ? [] : [$_extend]);
+        if (in_array('calculations', $extendArr, true) === true) {
+            $objectData = $this->applyVirtualCalculations(
+                entity: $entity,
+                schema: $renderSchema,
+                data: $objectData
+            );
+        }
+
         $entity->setObject($objectData);
+
+        // Compute the RFC 8141 URN once per render. UrnService resolves
+        // the entity's register/schema references to slugs and builds
+        // the canonical urn:nl-or:{instance}:{register-slug}:{schema-slug}:{uuid}
+        // identifier, which then surfaces in @self.urn via getObjectArray.
+        try {
+            $entity->setUrn($this->urnService->buildForObject($entity));
+        } catch (\Throwable $e) {
+            // URN derivation MUST NOT break rendering; log + skip on failure.
+            $this->logger->debug(
+                sprintf('[RenderObject] URN derivation failed for object %s: %s', (string) $entity->getUuid(), $e->getMessage())
+            );
+        }
+
+        // Per-language translation completeness (Decision 4 from
+        // register-i18n). Compute-on-read against the translations
+        // sidecar; skipped when the schema has no translatable
+        // properties (returns []).
+        try {
+            if ($renderSchema !== null && $entity->getUuid() !== null) {
+                $completeness = $this->translationStatusService->completenessForObject(
+                    (string) $entity->getUuid(),
+                    $renderSchema
+                );
+                if (count($completeness) > 0) {
+                    $entity->setTranslationCompleteness($completeness);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[RenderObject] translation completeness lookup failed for %s: %s',
+                    (string) $entity->getUuid(),
+                    $e->getMessage()
+                )
+            );
+        }
 
         return $entity;
     }//end renderEntity()
+
+    /**
+     * Apply virtual (materialise:false) calculations declared on the
+     * schema to the given data array. Materialised calculations are
+     * persisted on save and skipped here.
+     *
+     * @param ObjectEntity         $entity The object being rendered (used for @self.* refs).
+     * @param Schema|null          $schema The schema definition (may be null).
+     * @param array<string, mixed> $data   The current rendered data array.
+     *
+     * @return array<string, mixed>
+     */
+    private function applyVirtualCalculations(ObjectEntity $entity, $schema, array $data): array
+    {
+        if ($schema === null) {
+            return $data;
+        }
+
+        $config = ($schema->getConfiguration() ?? []);
+        $calcs  = ($config['x-openregister-calculations'] ?? null);
+        if (is_array($calcs) === false || count($calcs) === 0) {
+            return $data;
+        }
+
+        $created          = $entity->getCreated();
+        $updated          = $entity->getUpdated();
+        $payload          = $data;
+        $payload['@self'] = [
+            'id'       => $entity->getUuid(),
+            'uuid'     => $entity->getUuid(),
+            'register' => $entity->getRegister(),
+            'schema'   => $entity->getSchema(),
+            'owner'    => $entity->getOwner(),
+            'created'  => $created !== null ? $created->format(\DateTimeInterface::ATOM) : null,
+            'updated'  => $updated !== null ? $updated->format(\DateTimeInterface::ATOM) : null,
+        ];
+
+        foreach ($calcs as $name => $spec) {
+            if (is_array($spec) === false) {
+                continue;
+            }
+
+            // Skip materialised — already in $data from save-time listener.
+            if (($spec['materialise'] ?? false) === true) {
+                continue;
+            }
+
+            try {
+                $value = $this->calculationEvaluator->evaluate($payload, $spec['expression'] ?? null);
+                if ($value instanceof \DateTimeInterface) {
+                    $value = $value->format(\DateTimeInterface::ATOM);
+                }
+
+                $data[(string) $name] = $value;
+            } catch (\Throwable $e) {
+                $this->logger->debug(
+                    sprintf('[RenderObject] Virtual calculation "%s" failed: %s', (string) $name, $e->getMessage())
+                );
+            }
+        }//end foreach
+
+        return $data;
+    }//end applyVirtualCalculations()
 
     /**
      * Handle extends containing a wildcard ($)
@@ -1883,11 +2004,7 @@ class RenderObject
 
         // Normalize inversedBy to an array to support multi-field inverse relations.
         // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
-        if (is_array($inversedByField) === true) {
-            $inversedByFields = $inversedByField;
-        } else {
-            $inversedByFields = [$inversedByField];
-        }
+        $inversedByFields = is_array($inversedByField) === true ? $inversedByField : [$inversedByField];
 
         return [
             'targetSchemaRef'  => $targetSchemaRef,
@@ -2014,11 +2131,7 @@ class RenderObject
 
         // Pass additional field names for multi-field inversedBy so the SQL also searches
         // columns that may store references in {"value": "uuid"} format not in _relations.
-        if (count($inversedByFields) > 1) {
-            $additionalFields = array_slice($inversedByFields, 1);
-        } else {
-            $additionalFields = [];
-        }
+        $additionalFields = count($inversedByFields) > 1 ? array_slice($inversedByFields, 1) : [];
 
         $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
@@ -2329,10 +2442,9 @@ class RenderObject
             }
 
             // Normalize inversedBy to an array to support multi-field inverse relations.
+            $inversedByProperties = [$inversedByProperty];
             if (is_array($inversedByProperty) === true) {
                 $inversedByProperties = $inversedByProperty;
-            } else {
-                $inversedByProperties = [$inversedByProperty];
             }
 
             // Resolve schema reference to actual schema ID.
@@ -2350,11 +2462,7 @@ class RenderObject
 
             // Initialize the target property if not already set to preserve any existing values.
             if (isset($objectData[$targetProperty]) === false) {
-                if ($isArray === true) {
-                    $objectData[$targetProperty] = [];
-                } else {
-                    $objectData[$targetProperty] = null;
-                }
+                $objectData[$targetProperty] = $isArray === true ? [] : null;
             }
 
             // Find objects that have our UUID in ANY of their inversedBy fields.
@@ -2507,10 +2615,9 @@ class RenderObject
             }
 
             if ($isArray === false) {
+                $objectData[$targetProperty] = null;
                 if (empty($renderedObjects) === false) {
                     $objectData[$targetProperty] = end($renderedObjects);
-                } else {
-                    $objectData[$targetProperty] = null;
                 }
             }
         }//end foreach

@@ -122,7 +122,8 @@ class ScheduledWorkflowJob extends TimedJob
         try {
             $engines = $this->engineRegistry->getEnginesByType($engineType);
             if (empty($engines) === true) {
-                $this->handleError(schedule: $schedule, startTime: $startTime, error: "No engine found for type '$engineType'");
+                $errorMessage = "No engine found for type '$engineType'";
+                $this->handleError(schedule: $schedule, startTime: $startTime, error: $errorMessage);
                 return;
             }
 
@@ -158,7 +159,7 @@ class ScheduledWorkflowJob extends TimedJob
                     [
                         'hookId'     => 'scheduled-'.$schedule->getId(),
                         'eventType'  => 'scheduled',
-                        'objectUuid' => 'scheduled-'.$schedule->getUuid(),
+                        'objectUuid' => $schedule->getUuid(),
                         'schemaId'   => $schedule->getSchemaId(),
                         'registerId' => $schedule->getRegisterId(),
                         'engine'     => $engineType,
@@ -220,7 +221,7 @@ class ScheduledWorkflowJob extends TimedJob
                     [
                         'hookId'     => 'scheduled-'.$schedule->getId(),
                         'eventType'  => 'scheduled',
-                        'objectUuid' => 'scheduled-'.$schedule->getUuid(),
+                        'objectUuid' => $schedule->getUuid(),
                         'schemaId'   => $schedule->getSchemaId(),
                         'registerId' => $schedule->getRegisterId(),
                         'engine'     => $schedule->getEngine(),

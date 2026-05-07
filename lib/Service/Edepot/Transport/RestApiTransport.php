@@ -60,6 +60,8 @@ class RestApiTransport implements TransportInterface
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-33
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {

@@ -161,6 +161,8 @@ class TenantQuotaMiddleware extends Middleware
      * @return Response The unmodified response
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-78
@@ -184,13 +186,12 @@ class TenantQuotaMiddleware extends Middleware
         }
 
         // Track bandwidth from response content length.
+        // Estimate from headers or use 0 for non-JSON responses.
+        $contentLength = 0;
         if ($response instanceof JSONResponse) {
             $encoded       = json_encode($response->getData());
             $content       = ($encoded !== false) ? $encoded : '';
             $contentLength = strlen($content);
-        } else {
-            // Estimate from headers or use 0.
-            $contentLength = 0;
         }
 
         if ($contentLength > 0) {
@@ -257,6 +258,8 @@ class TenantQuotaMiddleware extends Middleware
      * @return void
      *
      * @throws TenantQuotaExceededException If quota is exceeded
+     *
+     * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
      */

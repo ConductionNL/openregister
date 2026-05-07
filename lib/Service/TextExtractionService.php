@@ -888,6 +888,8 @@ class TextExtractionService
      * @throws Exception If file cannot be read
      *
      * Else needed for multi-format extraction branching
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function performTextExtraction(int $fileId, array $ncFile): ?string
     {
@@ -1784,12 +1786,16 @@ class TextExtractionService
                 ];
             }
 
-            $offset += $chunkLength - $chunkOverlap;
-
-            // Prevent infinite loop.
-            if ($offset <= 0) {
-                $offset = $chunkLength;
+            // If chunk cannot advance past overlap (e.g. final sliver of
+            // text), stop — the remainder is already captured above or too
+            // small to emit. Prevents an infinite loop when the remaining
+            // tail is shorter than or equal to $chunkOverlap.
+            $advance = ($chunkLength - $chunkOverlap);
+            if ($advance < 1) {
+                break;
             }
+
+            $offset += $advance;
         }//end while
 
         return array_filter(
@@ -1902,11 +1908,7 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
-            if ($currentChunk === '') {
-                $testChunk = $split;
-            } else {
-                $testChunk = $currentChunk.$separator.$split;
-            }
+            $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
 
             if (strlen($testChunk) <= $chunkSize) {
                 // Can add to current chunk.

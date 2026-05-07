@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot\Transport;
 
+use phpseclib3\Crypt\PublicKeyLoader;
+use phpseclib3\Net\SFTP;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -203,18 +205,22 @@ class SftpTransport implements TransportInterface
      * @psalm-suppress UndefinedClass
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
-    private function createSftpConnection(array $config): \phpseclib3\Net\SFTP
+    private function createSftpConnection(array $config): SFTP
     {
         $port = (int) ($config['port'] ?? 22);
-        $sftp = new \phpseclib3\Net\SFTP($config['host'], $port);
+        $sftp = new SFTP($config['host'], $port);
 
         if (empty($config['keyPath']) === false) {
-            $key    = \phpseclib3\Crypt\PublicKeyLoader::load(
+            $key    = PublicKeyLoader::load(
                 file_get_contents($config['keyPath'])
             );
             $logged = $sftp->login($config['username'], $key);
-        } else {
+        }
+
+        if (empty($config['keyPath']) === true) {
             $logged = $sftp->login($config['username'], ($config['password'] ?? ''));
         }
 

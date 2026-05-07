@@ -29,10 +29,10 @@ class CalendarEventTransformerTest extends TestCase
     {
         $this->transformer = new CalendarEventTransformer();
 
-        $this->schema = $this->createMock(Schema::class);
-        $this->schema->method('getId')->willReturn(12);
-        $this->schema->method('getTitle')->willReturn('Zaken');
-        $this->schema->method('getProperties')->willReturn([
+        $this->schema = new Schema();
+        $this->schema->setId(12);
+        $this->schema->setTitle('Zaken');
+        $this->schema->setProperties([
             'startdatum' => ['type' => 'string', 'format' => 'date'],
             'einddatum'  => ['type' => 'string', 'format' => 'date'],
             'naam'       => ['type' => 'string'],
@@ -42,10 +42,10 @@ class CalendarEventTransformerTest extends TestCase
 
     private function createObjectEntity(array $data, string $uuid = 'abc-123', int $register = 5): ObjectEntity
     {
-        $object = $this->createMock(ObjectEntity::class);
-        $object->method('getObject')->willReturn($data);
-        $object->method('getUuid')->willReturn($uuid);
-        $object->method('getRegister')->willReturn($register);
+        $object = new ObjectEntity();
+        $object->setObject($data);
+        $object->setUuid($uuid);
+        $object->setRegister($register);
         return $object;
     }
 
@@ -101,7 +101,7 @@ class CalendarEventTransformerTest extends TestCase
         $config = [
             'enabled'       => true,
             'dtstart'       => 'startdatum',
-            'titleTemplate' => '{naam} - {locatie}',
+            'titleTemplate' => '{{naam}} - {{locatie}}',
         ];
 
         $result = $this->transformer->transform($object, $this->schema, $config);
@@ -118,7 +118,7 @@ class CalendarEventTransformerTest extends TestCase
         $config = [
             'enabled'       => true,
             'dtstart'       => 'startdatum',
-            'titleTemplate' => '{naam} - {missing}',
+            'titleTemplate' => '{{naam}} - {{missing}}',
         ];
 
         $result = $this->transformer->transform($object, $this->schema, $config);
@@ -137,8 +137,8 @@ class CalendarEventTransformerTest extends TestCase
         $config = [
             'enabled'             => true,
             'dtstart'             => 'startdatum',
-            'titleTemplate'       => '{naam}',
-            'descriptionTemplate' => 'Locatie: {locatie}',
+            'titleTemplate'       => '{{naam}}',
+            'descriptionTemplate' => 'Locatie: {{locatie}}',
         ];
 
         $result = $this->transformer->transform($object, $this->schema, $config);

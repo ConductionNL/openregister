@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<phpmd-baseline>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Db/AuditTrail.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Db/Consumer.php"/>
-</phpmd-baseline>

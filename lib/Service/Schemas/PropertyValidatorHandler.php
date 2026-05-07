@@ -48,6 +48,7 @@ class PropertyValidatorHandler
         'object',
         'null',
         'file',
+        'geo',
         'NcFile',
         'NcMail',
         'NcContact',

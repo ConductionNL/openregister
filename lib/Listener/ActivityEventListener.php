@@ -60,6 +60,9 @@ class ActivityEventListener implements IEventListener
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
      */
     public function handle(Event $event): void

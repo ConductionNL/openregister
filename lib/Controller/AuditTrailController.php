@@ -46,6 +46,7 @@ use OCP\IRequest;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Controller covers audit trail, verification, verwerkingsregister
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Necessary service dependencies
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)   One public method per audit trail route
  */
 class AuditTrailController extends Controller
 {
@@ -63,10 +64,46 @@ class AuditTrailController extends Controller
         IRequest $request,
         private readonly LogService $logService,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly AuditHashService $auditHashService
+        private readonly AuditHashService $auditHashService,
+        private readonly \OCP\IUserSession $userSession,
+        private readonly \OCP\IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Gate destructive / bulk-export audit operations on admin membership.
+     *
+     * SECURITY: `clearAll` wipes the entire audit table — a chain of
+     * trust for AVG/GDPR Art 30 reviews. `export` dumps every row in
+     * bulk and is an obvious recon path across tenants. Both surfaces
+     * are admin-only at the framework level (the methods carry no
+     * `@NoAdminRequired`) and this body-level helper stays as
+     * defence-in-depth so removing the framework gate by accident does
+     * not silently open the surface.
+     *
+     * @return JSONResponse|null 401/403 response when blocked, null when allowed.
+     */
+    private function requireAdmin(): ?JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required'],
+                statusCode: 401
+            );
+        }
+
+        if ($this->groupManager->isAdmin($user->getUID()) === false) {
+            return new JSONResponse(
+                data: ['error' => 'Forbidden: this audit-trail operation is admin-only'],
+                statusCode: 403
+            );
+        }
+
+        return null;
+
+    }//end requireAdmin()
 
     /**
      * Extract pagination, filter, and search parameters from request
@@ -333,7 +370,8 @@ class AuditTrailController extends Controller
     /**
      * Export audit trail logs in specified format
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
      *
      * @NoCSRFRequired
      *
@@ -344,6 +382,10 @@ class AuditTrailController extends Controller
      */
     public function export(): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         // Extract request parameters.
         $params = $this->extractRequestParameters();
 
@@ -442,7 +484,8 @@ class AuditTrailController extends Controller
     /**
      * Clear all audit trail logs
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
      *
      * @NoCSRFRequired
      *
@@ -452,6 +495,10 @@ class AuditTrailController extends Controller
      */
     public function clearAll(): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         try {
             // Use the clearAllLogs method from the mapper.
             $result = $this->auditTrailMapper->clearAllLogs();

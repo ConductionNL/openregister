@@ -174,11 +174,7 @@ class DeleteObject
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
         // Handle array input - find object with context (searches across all magic tables).
         // @psalm-suppress UndefinedInterfaceMethod.
-        if ($object instanceof ObjectEntity === true) {
-            $identifier = $object->getUuid();
-        } else {
-            $identifier = $object['id'];
-        }
+        $identifier = $object instanceof ObjectEntity ? $object->getUuid() : $object['id'];
 
         $includeDeleted = ($object instanceof ObjectEntity);
         $context        = $this->objectEntityMapper->findAcrossAllSources(
@@ -187,10 +183,9 @@ class DeleteObject
             _rbac: false,
             _multitenancy: false
         );
+        $objectEntity   = $context['object'];
         if ($object instanceof ObjectEntity === true) {
             $objectEntity = $object;
-        } else {
-            $objectEntity = $context['object'];
         }
 
         $registerEntity = $context['register'];
@@ -240,8 +235,10 @@ class DeleteObject
             try {
                 $organisationMapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
                 $activeOrganisation = $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 // If we can't get the active organisation, log and continue with null.
+                // Catches Error too so a null DB in tests (or a missing binding) doesn't
+                // abort the whole delete path.
                 $this->logger->warning(
                     message: '[DeleteObject] Failed to get active organisation during delete',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]

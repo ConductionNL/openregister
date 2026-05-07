@@ -78,7 +78,12 @@ class FileSidebarService
      *
      * @param int $fileId The Nextcloud file ID to search for.
      *
-     * @return array<int, array{uuid: string, title: string, register: array{id: int, title: string}, schema: array{id: int, title: string}}>
+     * @return array<int, array{
+     *     uuid: string,
+     *     title: string,
+     *     register: array{id: int, title: string},
+     *     schema: array{id: int, title: string}
+     * }>
      */
     public function getObjectsForFile(int $fileId): array
     {

@@ -250,7 +250,7 @@ class ApprovalController extends Controller
         $steps = $this->stepMapper->findAllFiltered($filters);
 
         return new JSONResponse(
-            array_map(fn ($s) => $s->jsonSerialize(), $steps)
+            array_map(fn ($step) => $step->jsonSerialize(), $steps)
         );
     }//end steps()
 

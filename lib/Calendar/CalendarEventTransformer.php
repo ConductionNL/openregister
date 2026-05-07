@@ -92,7 +92,12 @@ class CalendarEventTransformer
         $dtstart = $this->formatDateValue(value: $dtstartValue, allDay: $allDay);
 
         // Build DTEND.
-        $dtend = $this->buildDtend(objectData: $objectData, calendarConfig: $calendarConfig, dtstartValue: $dtstartValue, allDay: $allDay);
+        $dtend = $this->buildDtend(
+            objectData: $objectData,
+            calendarConfig: $calendarConfig,
+            dtstartValue: $dtstartValue,
+            allDay: $allDay
+        );
 
         // Interpolate title.
         $summary = $this->interpolateTemplate(
@@ -260,8 +265,14 @@ class CalendarEventTransformer
      */
     public function interpolateTemplate(string $template, array $objectData): string
     {
+        // Match Mustache-style `{{ key }}` tokens, matching the convention
+        // used by the notification dispatcher's interpolate() helper. The
+        // previous single-brace `{key}` pattern silently corrupted any
+        // template that used the standard `{{...}}` form: `{{title}}`
+        // would render as `}` because the regex consumed the leading
+        // `{{title}` greedily and left the trailing `}` behind.
         return preg_replace_callback(
-            '/\{([^}]+)\}/',
+            '/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
             function ($matches) use ($objectData) {
                 $key   = $matches[1];
                 $value = $objectData[$key] ?? '';
@@ -273,7 +284,7 @@ class CalendarEventTransformer
                 return (string) $value;
             },
             $template
-        );
+        ) ?? $template;
     }//end interpolateTemplate()
 
     /**

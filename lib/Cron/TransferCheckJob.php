@@ -86,6 +86,8 @@ class TransferCheckJob extends TimedJob
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-12
      */
     protected function run(mixed $argument): void

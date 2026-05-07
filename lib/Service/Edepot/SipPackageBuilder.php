@@ -350,7 +350,9 @@ class SipPackageBuilder
 
                 if ($isRendition === true) {
                     $renditionGrp->appendChild($fileElement);
-                } else {
+                }
+
+                if ($isRendition === false) {
                     $originalGrp->appendChild($fileElement);
                 }
 

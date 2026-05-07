@@ -153,9 +153,16 @@ class AuditHashService
      * @param int|null $from Start entry ID (inclusive), null for beginning
      * @param int|null $to   End entry ID (inclusive), null for end
      *
-     * @return array{valid: bool, entriesVerified: int, brokenAt: int|null, skippedNullHashes: int, range?: array{from: int, to: int}}
+     * @return array{
+     *     valid: bool,
+     *     entriesVerified: int,
+     *     brokenAt: int|null,
+     *     skippedNullHashes: int,
+     *     range?: array{from: int, to: int}
+     * }
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-14

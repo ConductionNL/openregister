@@ -120,10 +120,13 @@ class TenantLifecycleService
         $allowedTransitions = self::STATE_TRANSITIONS[$currentStatus] ?? [];
 
         if (in_array($targetStatus, $allowedTransitions, true) === false) {
-            throw new Exception(
-                "Invalid state transition from '{$currentStatus}' to '{$targetStatus}'. ".'Valid transitions: '.implode(', ', $allowedTransitions),
-                Response::HTTP_CONFLICT
+            $message = sprintf(
+                "Invalid state transition from '%s' to '%s'. Valid transitions: %s",
+                $currentStatus,
+                $targetStatus,
+                implode(', ', $allowedTransitions)
             );
+            throw new Exception($message, Response::HTTP_CONFLICT);
         }
     }//end validateTransition()
 
@@ -153,6 +156,8 @@ class TenantLifecycleService
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-74
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-77
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function provision(Organisation $organisation, string $adminUserId): Organisation
     {
@@ -197,7 +202,7 @@ class TenantLifecycleService
 
             // Set default authorization RBAC rules.
             $authorization = $organisation->getAuthorization();
-            foreach ($authorization as $entityType => &$permissions) {
+            foreach ($authorization as &$permissions) {
                 if (is_array($permissions) === false) {
                     continue;
                 }

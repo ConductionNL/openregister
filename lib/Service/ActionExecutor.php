@@ -36,6 +36,8 @@ use OCA\OpenRegister\WorkflowEngine\WorkflowResult;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use Psr\Log\LoggerInterface;
+use DateTime;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * ActionExecutor orchestrates action execution for events
@@ -128,7 +130,9 @@ class ActionExecutor
             }
 
             // Execute workflow.
-            if ($action->getMode() === 'async') {
+            $isAsync = ($action->getMode() === 'async');
+
+            if ($isAsync === true) {
                 // Fire-and-forget: execute but don't process response for event modification.
                 try {
                     $result   = $engine->execute(
@@ -142,19 +146,20 @@ class ActionExecutor
                     $error  = $e->getMessage();
                     $this->handleFailure(action: $action, payload: $cloudEventPayload, error: $error);
                 }
-            } else {
+            }
+
+            if ($isAsync === false) {
                 // Sync mode: execute and process response.
-                $result = $engine->execute(
+                $result   = $engine->execute(
                     $action->getWorkflowId(),
                     $cloudEventPayload,
                     $action->getTimeout()
                 );
+                $response = (array) $result;
 
                 if ($result instanceof WorkflowResult) {
                     $response = $result->toArray();
                     $this->processWorkflowResult(result: $result, action: $action, event: $event);
-                } else {
-                    $response = (array) $result;
                 }
             }//end if
         } catch (Exception $e) {
@@ -208,8 +213,8 @@ class ActionExecutor
             'specversion'     => '1.0',
             'type'            => 'nl.openregister.action.'.$eventType,
             'source'          => '/openregister/actions/'.$action->getUuid(),
-            'id'              => \Symfony\Component\Uid\Uuid::v4()->toRfc4122(),
-            'time'            => (new \DateTime())->format('c'),
+            'id'              => Uuid::v4()->toRfc4122(),
+            'time'            => (new DateTime())->format('c'),
             'datacontenttype' => 'application/json',
             'data'            => $payload,
             'action'          => [

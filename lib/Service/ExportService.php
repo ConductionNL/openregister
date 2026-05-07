@@ -53,6 +53,7 @@ use React\EventLoop\Loop;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
@@ -95,14 +96,29 @@ class ExportService
     private readonly PropertyRbacHandler $propertyRbacHandler;
 
     /**
-     * Constructor for the ExportService
+     * Translation handler for column projection during export.
      *
-     * @param RegisterMapper      $registerMapper      The register mapper
-     * @param IUserManager        $_userManager        The user manager (unused but kept for future use)
-     * @param IGroupManager       $groupManager        The group manager
-     * @param ObjectService       $objectService       The object service
-     * @param CacheHandler        $cacheHandler        The cache handler for name resolution
-     * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler
+     * @var \OCA\OpenRegister\Service\Object\TranslationHandler
+     */
+    private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
+
+    /**
+     * Optional register context used during sheet population.
+     *
+     * @var Register|null
+     */
+    private ?Register $contextRegister = null;
+
+    /**
+     * Constructor for the ExportService.
+     *
+     * @param RegisterMapper                                      $registerMapper      The register mapper.
+     * @param IUserManager                                        $_userManager        The user manager (unused).
+     * @param IGroupManager                                       $groupManager        The group manager.
+     * @param ObjectService                                       $objectService       The object service.
+     * @param CacheHandler                                        $cacheHandler        The cache handler for name resolution.
+     * @param PropertyRbacHandler                                 $propertyRbacHandler The property RBAC handler.
+     * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler  The translation handler.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -112,13 +128,15 @@ class ExportService
         IGroupManager $groupManager,
         ObjectService $objectService,
         CacheHandler $cacheHandler,
-        PropertyRbacHandler $propertyRbacHandler
+        PropertyRbacHandler $propertyRbacHandler,
+        \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler
     ) {
         $this->registerMapper      = $registerMapper;
         $this->groupManager        = $groupManager;
         $this->objectService       = $objectService;
         $this->cacheHandler        = $cacheHandler;
         $this->propertyRbacHandler = $propertyRbacHandler;
+        $this->translationHandler  = $translationHandler;
     }//end __construct()
 
     /**
@@ -238,6 +256,72 @@ class ExportService
     }//end exportToCsv()
 
     /**
+     * Build an empty import template spreadsheet for a schema
+     *
+     * Generates a spreadsheet that contains only the header row derived from the
+     * schema's properties (the same headers `exportToExcel` would emit), with no
+     * data rows. The returned spreadsheet can be written to either XLSX or CSV.
+     *
+     * @param Register|null $register    Optional register context (used for translation column expansion)
+     * @param Schema        $schema      Schema whose property keys become the header row
+     * @param IUser|null    $currentUser Current user (drives admin metadata column inclusion)
+     *
+     * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
+     */
+    public function buildTemplateSpreadsheet(
+        ?Register $register,
+        Schema $schema,
+        ?IUser $currentUser=null
+    ): Spreadsheet {
+        // Capture register context so getHeaders can emit per-language
+        // `field_lang` columns for translatable properties.
+        $this->contextRegister = $register;
+
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->removeSheetByIndex(0);
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle($schema->getSlug() ?? 'data');
+
+        $headers = $this->getHeaders(schema: $schema, currentUser: $currentUser);
+        foreach ($headers as $col => $header) {
+            $sheet->setCellValue(coordinate: $col.'1', value: $header);
+        }
+
+        return $spreadsheet;
+    }//end buildTemplateSpreadsheet()
+
+    /**
+     * Render an empty CSV import template for a schema
+     *
+     * Emits a UTF-8 BOM-prefixed CSV string containing only the header row
+     * derived from the schema's properties. Mirrors the BOM convention used
+     * by the export pipeline so Excel opens the file with the correct encoding.
+     *
+     * @param Register|null $register    Optional register context
+     * @param Schema        $schema      Schema whose property keys become the header row
+     * @param IUser|null    $currentUser Current user (drives admin metadata column inclusion)
+     *
+     * @return string CSV content with a UTF-8 BOM prefix and a single header row
+     */
+    public function buildTemplateCsv(
+        ?Register $register,
+        Schema $schema,
+        ?IUser $currentUser=null
+    ): string {
+        $spreadsheet = $this->buildTemplateSpreadsheet(
+            register: $register,
+            schema: $schema,
+            currentUser: $currentUser
+        );
+        $writer      = new Csv($spreadsheet);
+        $writer->setUseBOM(true);
+
+        ob_start();
+        $writer->save('php://output');
+        return ob_get_clean();
+    }//end buildTemplateCsv()
+
+    /**
      * Populate a worksheet with data
      *
      * Uses a two-pass approach for optimal UUID-to-name resolution:
@@ -260,6 +344,10 @@ class ExportService
         array $filters=[],
         ?IUser $currentUser=null
     ): void {
+        // Capture register context so getHeaders / getObjectValue can
+        // emit / read per-language `field_lang` columns for translatable
+        // properties (register-i18n Phase 3 wire-in).
+        $this->contextRegister = $register;
         $sheet = $spreadsheet->createSheet();
 
         $sheetTitle = 'data';
@@ -501,7 +589,9 @@ class ExportService
      *
      * @psalm-return array<array-key>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Header generation has multiple schema and permission conditions
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-16
      */
@@ -548,6 +638,20 @@ class ExportService
                     object: []
                 ) === false
                 ) {
+                    continue;
+                }
+
+                // Translatable property: emit one column per configured
+                // language so the CSV round-trips through TranslationCsvCodec.
+                // Falls back to ['nl', 'en'] when the register isn't
+                // resolvable (org-wide minimum per CLAUDE.md memory).
+                if (($properties[$fieldName]['translatable'] ?? false) === true) {
+                    $languages = $this->resolveExportLanguages();
+                    foreach ($languages as $lang) {
+                        $headers[$col] = $fieldName.'_'.$lang;
+                        $col++;
+                    }
+
                     continue;
                 }
 
@@ -708,10 +812,73 @@ class ExportService
             default:
                 // Get value from object data and convert to string.
                 $objectData = $object->getObject();
-                $value      = $objectData[$header] ?? null;
+
+                // Translatable `field_lang` column — extract the
+                // language-keyed slot from the JSONB property
+                // (register-i18n Phase 3 wire-in).
+                $langValue = $this->extractLanguageSlot(objectData: $objectData, header: $header);
+                if ($langValue !== null) {
+                    return $langValue;
+                }
+
+                $value = $objectData[$header] ?? null;
                 return $this->convertValueToString(value: $value);
         }
     }//end getObjectValue()
+
+    /**
+     * Resolve the language list to use for translatable column emission.
+     *
+     * Priority: contextRegister languages → org-wide minimum [nl, en].
+     *
+     * @return string[]
+     */
+    private function resolveExportLanguages(): array
+    {
+        if ($this->contextRegister !== null) {
+            $registerLanguages = $this->contextRegister->getLanguages();
+            if (is_array($registerLanguages) === true && count($registerLanguages) > 0) {
+                return array_values(array_unique($registerLanguages));
+            }
+        }
+
+        return ['nl', 'en'];
+    }//end resolveExportLanguages()
+
+    /**
+     * Extract `objectData[field][lang]` for a `field_lang` header.
+     *
+     * Returns null when the header doesn't match a known
+     * translatable-property + language pair.
+     *
+     * @param array<string, mixed> $objectData The object data.
+     * @param string               $header     The header name (field_lang).
+     *
+     * @return string|null The language slot value, or null if not present.
+     */
+    private function extractLanguageSlot(array $objectData, string $header): ?string
+    {
+        $underscore = strrpos($header, '_');
+        if ($underscore === false || $underscore === 0) {
+            return null;
+        }
+
+        $field = substr($header, 0, $underscore);
+        $lang  = substr($header, $underscore + 1);
+        if ($field === '' || $lang === ''
+            || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $lang) !== 1
+        ) {
+            return null;
+        }
+
+        $value = $objectData[$field] ?? null;
+        if (is_array($value) === false || isset($value[$lang]) === false) {
+            return null;
+        }
+
+        $slotValue = $value[$lang];
+        return is_scalar($slotValue) === true ? (string) $slotValue : null;
+    }//end extractLanguageSlot()
 
     /**
      * Convert a value to a string representation

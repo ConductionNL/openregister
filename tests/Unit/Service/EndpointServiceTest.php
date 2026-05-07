@@ -349,6 +349,18 @@ class EndpointServiceTest extends TestCase
     {
         // Agent endpoint resolves services via \OC::$server->get() and then
         // tries to find the agent — returns an error when the agent UUID doesn't exist.
+        // Seed AgentMapper / ToolRegistry / SettingsService into the
+        // service container so the resolution path doesn't NPE on a
+        // null AgentMapper (other tests may or may not have set it).
+        $agentMapper = $this->createMock(AgentMapper::class);
+        $agentMapper->method('findByUuid')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Agent not found'));
+        $this->setUpOcServer(
+            $agentMapper,
+            $this->createMock(ToolRegistry::class),
+            $this->createMock(SettingsService::class)
+        );
+
         $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
         $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'hello'], 'headers' => []];
 

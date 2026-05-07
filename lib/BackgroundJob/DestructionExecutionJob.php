@@ -230,7 +230,12 @@ class DestructionExecutionJob extends QueuedJob
             }
 
             $logger->info(
-                '[DestructionExecutionJob] Done: '.$destroyedCount.' destroyed, '.$skippedHolds.' held, '.$skippedErrors.' errors'
+                sprintf(
+                    '[DestructionExecutionJob] Done: %d destroyed, %d held, %d errors',
+                    $destroyedCount,
+                    $skippedHolds,
+                    $skippedErrors
+                )
             );
         } catch (Exception $e) {
             $logger->error('[DestructionExecutionJob] Fatal: '.$e->getMessage(), ['exception' => $e]);

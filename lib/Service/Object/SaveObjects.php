@@ -289,16 +289,11 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
         if (count($objects) > 10000 || ($isMixedSchema === true && count($objects) > 1000)) {
+            $opLabel = 'Starting single-schema bulk save operation';
+            $opType  = 'single-schema';
             if ($isMixedSchema === true) {
                 $opLabel = 'Starting mixed-schema bulk save operation';
-            } else {
-                $opLabel = 'Starting single-schema bulk save operation';
-            }
-
-            if ($isMixedSchema === true) {
-                $opType = 'mixed-schema';
-            } else {
-                $opType = 'single-schema';
+                $opType  = 'mixed-schema';
             }
 
             $this->logger->info(
@@ -406,10 +401,9 @@ class SaveObjects
         $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
 
         // ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does.
+        $efficiency = 0;
         if (count($processedObjects) > 0) {
             $efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
-        } else {
-            $efficiency = 0;
         }
 
         $result['performance'] = [
@@ -691,11 +685,10 @@ class SaveObjects
         );
 
         // PERFORMANCE OPTIMIZATION: Pre-calculate metadata once.
-        $currentUser = $this->userSession->getUser();
+        $currentUser  = $this->userSession->getUser();
+        $defaultOwner = null;
         if ($currentUser !== null) {
             $defaultOwner = $currentUser->getUID();
-        } else {
-            $defaultOwner = null;
         }
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
@@ -754,10 +747,9 @@ class SaveObjects
         Register|string|int $register,
         Schema|string|int $schema
     ): array {
+        $registerId = $register;
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
-        } else {
-            $registerId = $register;
         }
 
         if ($register instanceof Register) {
@@ -768,10 +760,9 @@ class SaveObjects
             $register = $this->loadRegisterWithCache(registerId: $registerId);
         }
 
+        $schemaId = $schema;
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
-        } else {
-            $schemaId = $schema;
         }
 
         if ($schema instanceof Schema) {
@@ -853,10 +844,9 @@ class SaveObjects
         $selfData = $this->applyHydratedMetadata(selfData: $selfData, object: $object, tempEntity: $tempEntity);
 
         // DEBUG: Log actual data structure to understand what we're receiving.
+        $selfKeys = 'none';
         if (isset($object['@self']) === true) {
             $selfKeys = array_keys($object['@self']);
-        } else {
-            $selfKeys = 'none';
         }
 
         $this->logger->info(
@@ -1520,10 +1510,9 @@ class SaveObjects
             // Only extract @self if it exists (mixed schema or other paths).
             // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
             // or extract @self if it exists (mixed schema or other paths).
+            $selfData = $object;
             if (isset($object['@self']) === true) {
                 $selfData = $object['@self'];
-            } else {
-                $selfData = $object;
             }
 
             // Generate or validate object identifiers (uuid, id, register, schema).
@@ -1686,11 +1675,10 @@ class SaveObjects
     {
         // Set owner to current user if not provided (with null check).
         if (isset($selfData['owner']) === false || empty($selfData['owner']) === true) {
-            $currentUser = $this->userSession->getUser();
+            $currentUser       = $this->userSession->getUser();
+            $selfData['owner'] = null;
             if ($currentUser !== null) {
                 $selfData['owner'] = $currentUser->getUID();
-            } else {
-                $selfData['owner'] = null;
             }
         }
 
@@ -1873,10 +1861,9 @@ class SaveObjects
                 continue;
             }
 
+            $currentPath = $key;
             if ($prefix !== '') {
                 $currentPath = $prefix.'.'.$key;
-            } else {
-                $currentPath = $key;
             }
 
             $propertyRelations = $this->scanPropertyForRelation(

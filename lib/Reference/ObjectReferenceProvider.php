@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
  * Supports hash-routed UI URLs, API object URLs, and direct object routes.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements ISearchableReferenceProvider
 {
@@ -265,6 +266,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
@@ -405,6 +407,8 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @return string|null Cache key (user ID or empty string for anonymous)
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */
     public function getCacheKey(string $referenceId): ?string
@@ -434,7 +438,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 1: Hash-routed UI URL.
         // /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}.
-        $hashPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/('.$uuidPattern.')$/i';
+        $hashPattern = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
 
         if (preg_match($hashPattern, $referenceText, $matches) === 1) {
             return [
@@ -446,7 +454,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 2: API object URL.
         // /apps/openregister/api/objects/{registerId}/{schemaId}/{uuid}.
-        $apiPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
+        $apiPattern = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
 
         if (preg_match($apiPattern, $referenceText, $matches) === 1) {
             return [
@@ -458,7 +470,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 3: Direct object show route.
         // /apps/openregister/objects/{registerId}/{schemaId}/{uuid}.
-        $directPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
+        $directPattern = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
 
         if (preg_match($directPattern, $referenceText, $matches) === 1) {
             return [
@@ -544,6 +560,8 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      * @param array $objectData The full object data
      *
      * @return array<int, array{label: string, value: string}> Preview properties
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-3
      */

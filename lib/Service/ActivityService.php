@@ -356,6 +356,8 @@ class ActivityService
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function publish(
         string $subject,

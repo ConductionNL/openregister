@@ -38,6 +38,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setObjectId(?int $objectId)
  * @method int|null getEmailId()
  * @method void setEmailId(?int $emailId)
+ * @method string|null getRegisterId()
+ * @method void setRegisterId(?string $registerId)
+ * @method string|null getSchemaId()
+ * @method void setSchemaId(?string $schemaId)
+ * @method string|null getObjectUuid()
+ * @method void setObjectUuid(?string $objectUuid)
  * @method int getPositionStart()
  * @method void setPositionStart(int $positionStart)
  * @method int getPositionEnd()
@@ -56,6 +62,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedAt(DateTime $createdAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class EntityRelation extends Entity implements JsonSerializable
 {
@@ -101,6 +109,35 @@ class EntityRelation extends Entity implements JsonSerializable
      * @var integer|null
      */
     protected ?int $emailId = null;
+
+    /**
+     * Register identifier (uuid or slug) for object-source relations.
+     *
+     * Disambiguates the magic-table this relation's `object_id`
+     * points at — magic-table id sequences are scoped per-table, so
+     * the int alone can collide. Nullable for backwards compatibility
+     * with relations created before the disambiguation columns landed.
+     *
+     * @var string|null
+     */
+    protected ?string $registerId = null;
+
+    /**
+     * Schema identifier (uuid or slug) for object-source relations.
+     *
+     * @var string|null
+     */
+    protected ?string $schemaId = null;
+
+    /**
+     * Object uuid for object-source relations.
+     *
+     * Globally unique across all magic-tables — preferred over the int
+     * `object_id` for downstream lookups (DSAR, retention enforcement).
+     *
+     * @var string|null
+     */
+    protected ?string $objectUuid = null;
 
     /**
      * Position start.
@@ -169,6 +206,9 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'fileId', type: 'integer');
         $this->addType(fieldName: 'objectId', type: 'integer');
         $this->addType(fieldName: 'emailId', type: 'integer');
+        $this->addType(fieldName: 'registerId', type: 'string');
+        $this->addType(fieldName: 'schemaId', type: 'string');
+        $this->addType(fieldName: 'objectUuid', type: 'string');
         $this->addType(fieldName: 'positionStart', type: 'integer');
         $this->addType(fieldName: 'positionEnd', type: 'integer');
         $this->addType(fieldName: 'confidence', type: 'float');
@@ -201,6 +241,9 @@ class EntityRelation extends Entity implements JsonSerializable
             'fileId'          => $this->fileId,
             'objectId'        => $this->objectId,
             'emailId'         => $this->emailId,
+            'registerId'      => $this->registerId,
+            'schemaId'        => $this->schemaId,
+            'objectUuid'      => $this->objectUuid,
             'positionStart'   => $this->positionStart,
             'positionEnd'     => $this->positionEnd,
             'confidence'      => $this->confidence,

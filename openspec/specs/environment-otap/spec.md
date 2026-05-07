@@ -44,9 +44,9 @@ The system MUST adjust its behavior based on the Organisation's environment type
 
 ### Requirement: Configuration promotion MUST transfer settings between OTAP environments
 
-> **Status: deferred** — `POST /api/organisations/{uuid}/promote` endpoint not found in codebase as of 2026-04-30 coverage scan. Environment field + validation (REQ-005 equivalent) IS implemented via TenantLifecycleService.
-
 Administrators MUST be able to promote configuration (schemas, mappings, sources, webhooks, endpoints) from one environment to another within the same parent organisation hierarchy.
+
+> **Status: deferred** — `POST /api/organisations/{uuid}/promote` endpoint not found in codebase as of 2026-04-30 coverage scan. Environment field + validation (REQ-005 equivalent) IS implemented via TenantLifecycleService.
 
 #### Scenario: Promote configuration from test to acceptance
 - **WHEN** an administrator calls `POST /api/organisations/{sourceUuid}/promote` with `targetOrganisation: "{targetUuid}"`

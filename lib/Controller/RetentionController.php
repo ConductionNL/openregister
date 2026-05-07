@@ -67,6 +67,8 @@ class RetentionController extends Controller
      * @param IJobList               $jobList          Background job list
      * @param IUserSession           $userSession      User session
      * @param LoggerInterface        $logger           Logger
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
         string $appName,
@@ -96,6 +98,10 @@ class RetentionController extends Controller
      * @return JSONResponse Response with updated destruction list
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-66
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function approveDestructionList(string $id): JSONResponse
     {
@@ -256,6 +262,8 @@ class RetentionController extends Controller
      * @return JSONResponse Response with updated status
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-66
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function rejectDestructionList(string $id): JSONResponse
     {

@@ -203,7 +203,7 @@ class TmloController extends Controller
             ];
 
             // Query objects for each status.
-            foreach ($counts as $status => $count) {
+            foreach (array_keys($counts) as $status) {
                 $result          = $this->objectService->findAll(
                     register: $registerEntity,
                     schema: $schemaEntity,

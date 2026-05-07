@@ -80,14 +80,15 @@ class GraphQLResolver
     /**
      * Constructor.
      *
-     * @param GetObject           $getObject         Object finder
-     * @param ObjectService       $objectService     Object service
-     * @param PermissionHandler   $permissionHandler Permission handler
-     * @param PropertyRbacHandler $propertyRbac      Property RBAC handler
-     * @param RelationHandler     $relationHandler   Relation handler
-     * @param AuditTrailMapper    $auditTrailMapper  Audit trail mapper
-     * @param RegisterMapper      $registerMapper    Register mapper
-     * @param LoggerInterface     $logger            Logger
+     * @param GetObject                                           $getObject          Object finder
+     * @param ObjectService                                       $objectService      Object service
+     * @param PermissionHandler                                   $permissionHandler  Permission handler
+     * @param PropertyRbacHandler                                 $propertyRbac       Property RBAC handler
+     * @param RelationHandler                                     $relationHandler    Relation handler
+     * @param AuditTrailMapper                                    $auditTrailMapper   Audit trail mapper
+     * @param RegisterMapper                                      $registerMapper     Register mapper
+     * @param LoggerInterface                                     $logger             Logger
+     * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
@@ -100,6 +101,7 @@ class GraphQLResolver
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger,
+        private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
     ) {
     }//end __construct()
 
@@ -567,8 +569,28 @@ class GraphQLResolver
      */
     private function filterProperties(Schema $schema, array $data): array
     {
-        return $this->propertyRbac->filterReadableProperties($schema, $data);
+        // Apply property-level RBAC first (drops fields the caller can't read).
+        $data = $this->propertyRbac->filterReadableProperties($schema, $data);
 
+        // Apply translation resolution: language-keyed JSONB property
+        // values collapse to a single string per the request-scoped
+        // LanguageService chain (Decision 2 → per-property fallback).
+        // The register lookup is best-effort; null register falls back
+        // to the [nl, en] default chain inside the handler.
+        $register = null;
+        try {
+            $register = $this->findRegisterForSchema(schema: $schema);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf('[GraphQLResolver] register lookup for translation context failed: %s', $e->getMessage())
+            );
+        }
+
+        return $this->translationHandler->resolveTranslationsForRender(
+            objectData: $data,
+            schema: $schema,
+            register: $register
+        );
     }//end filterProperties()
 
     /**
@@ -658,25 +680,33 @@ class GraphQLResolver
         $data['_register'] = $object->getRegister();
         $data['_schema']   = $object->getSchema();
 
-        $created = $object->getCreated();
-        if ($created instanceof \DateTimeInterface === true) {
-            $data['_created'] = $created->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_created'] = $created;
-        }
+        $created          = $object->getCreated();
+        $data['_created'] = $this->formatDateOrPassthrough(value: $created);
 
-        $updated = $object->getUpdated();
-        if ($updated instanceof \DateTimeInterface === true) {
-            $data['_updated'] = $updated->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_updated'] = $updated;
-        }
+        $updated          = $object->getUpdated();
+        $data['_updated'] = $this->formatDateOrPassthrough(value: $updated);
 
         $data['_owner'] = $object->getOwner();
 
         return $data;
 
     }//end objectToArray()
+
+    /**
+     * Format a DateTimeInterface as ATOM, or pass through unchanged.
+     *
+     * @param mixed $value The value to format.
+     *
+     * @return mixed The ATOM-formatted string or the original value.
+     */
+    private function formatDateOrPassthrough(mixed $value): mixed
+    {
+        if ($value instanceof \DateTimeInterface === true) {
+            return $value->format(\DateTimeInterface::ATOM);
+        }
+
+        return $value;
+    }//end formatDateOrPassthrough()
 
     /**
      * Find the register for a schema.

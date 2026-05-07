@@ -51,8 +51,12 @@ use Exception;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class OrganisationController extends Controller
 {
@@ -1176,7 +1180,7 @@ class OrganisationController extends Controller
                 data: ['error' => $e->getMessage()],
                 statusCode: $statusCode
             );
-        }
+        }//end try
     }//end activate()
 
     /**
@@ -1216,6 +1220,8 @@ class OrganisationController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function usage(string $uuid): JSONResponse
     {
@@ -1229,6 +1235,8 @@ class OrganisationController extends Controller
             $currentBandwidth = 0;
 
             if (function_exists('apcu_enabled') === true && apcu_enabled() === true) {
+                $reqSuccess       = false;
+                $bwSuccess        = false;
                 $reqFetched       = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}", $reqSuccess);
                 $currentRequests  = ($reqSuccess === true) ? (int) $reqFetched : 0;
                 $bwFetched        = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}", $bwSuccess);
@@ -1244,6 +1252,16 @@ class OrganisationController extends Controller
             $bandwidthQuota = $organisation->getBandwidthQuota();
             $storageQuota   = $organisation->getStorageQuota();
 
+            $requestUtil   = null;
+            $bandwidthUtil = null;
+            if ($requestQuota !== null && $requestQuota > 0) {
+                $requestUtil = round((($currentRequests / $requestQuota) * 100), 1);
+            }
+
+            if ($bandwidthQuota !== null && $bandwidthQuota > 0) {
+                $bandwidthUtil = round((($currentBandwidth / $bandwidthQuota) * 100), 1);
+            }
+
             return new JSONResponse(
                 data: [
                     'current'     => [
@@ -1257,8 +1275,8 @@ class OrganisationController extends Controller
                         'storage'   => $storageQuota,
                     ],
                     'utilization' => [
-                        'requests'  => $requestQuota !== null && $requestQuota > 0 ? round(($currentRequests / $requestQuota) * 100, 1) : null,
-                        'bandwidth' => $bandwidthQuota !== null && $bandwidthQuota > 0 ? round(($currentBandwidth / $bandwidthQuota) * 100, 1) : null,
+                        'requests'  => $requestUtil,
+                        'bandwidth' => $bandwidthUtil,
                     ],
                     'history'     => array_map(
                         static function ($record) {

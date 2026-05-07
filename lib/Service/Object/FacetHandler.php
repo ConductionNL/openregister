@@ -555,15 +555,16 @@ class FacetHandler
                     transformed: $transformed,
                     currentOrder: $order
                 );
-            } else {
-                $order = $this->transformAggregatedFacet(
-                    field: $field,
-                    facetData: $facetData,
-                    aggregatedConfigs: $aggregatedConfigs,
-                    transformed: $transformed,
-                    currentOrder: $order
-                );
+                continue;
             }
+
+            $order = $this->transformAggregatedFacet(
+                field: $field,
+                facetData: $facetData,
+                aggregatedConfigs: $aggregatedConfigs,
+                transformed: $transformed,
+                currentOrder: $order
+            );
         }//end foreach
 
         return $transformed;
@@ -766,10 +767,9 @@ class FacetHandler
         $order       = $currentOrder;
         $fieldConfig = $aggregatedConfigs[$field] ?? null;
 
+        $configOrder = null;
         if ($fieldConfig !== null) {
             $configOrder = ($fieldConfig['order'] ?? null);
-        } else {
-            $configOrder = null;
         }
 
         $facetOrder = ++$order;

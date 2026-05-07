@@ -158,6 +158,7 @@ use function React\Promise\all;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class ObjectService
 {
@@ -361,11 +362,7 @@ class ObjectService
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID.
                     $folderIdValue = $folderNode->getId();
-                    if ($folderIdValue !== null) {
-                        $entity->setFolder((string) $folderIdValue);
-                    } else {
-                        $entity->setFolder(null);
-                    }
+                    $entity->setFolder($folderIdValue !== null ? (string) $folderIdValue : null);
 
                     // Save the entity with the new folder ID.
                     $this->objectMapper->update($entity);
@@ -500,7 +497,10 @@ class ObjectService
                         'trace'             => $e->getTraceAsString(),
                     ]
                 );
-                throw new ValidationException(message: 'Schema not found');
+                // Rethrow the DoesNotExistException so NC's framework dispatcher
+                // converts it to a 404 response. Wrapping in ValidationException
+                // causes a 500 instead because ValidationException is generic.
+                throw $e;
             }//end try
         }//end if
 
@@ -529,7 +529,9 @@ class ObjectService
                     register: $this->currentRegister,
                     schema: $this->currentSchema
                 );
-            } else {
+            }
+
+            if ($hasContext === false) {
                 $object = $this->objectMapper->find($object);
             }
         }
@@ -1160,8 +1162,10 @@ class ObjectService
                 );
                 $contactMatchingService->invalidateCacheForObject($object);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // ContactMatchingService not available — skip cache invalidation.
+            // Catches Error too so a partially-wired container in tests (or
+            // any transitive DI failure) doesn't abort the save path.
         }
 
         // Render and return the saved object.
@@ -1358,6 +1362,8 @@ class ObjectService
      * @param array $object The object data to normalize.
      *
      * @return array The normalized object data.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function normalizeDateValues(array $object): array
     {
@@ -1534,7 +1540,7 @@ class ObjectService
 
             $retention = ($object->getRetention() ?? []);
             if (isset($retention['archiefstatus']) === true && $retention['archiefstatus'] === 'overgebracht') {
-                throw new \OCP\AppFramework\Db\DoesNotExistException(
+                throw new OcpDoesNotExistException(
                     'OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only.'
                 );
             }

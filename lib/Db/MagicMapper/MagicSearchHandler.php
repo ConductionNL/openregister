@@ -518,6 +518,8 @@ class MagicSearchHandler
      * @param object $connection Database connection for value quoting
      *
      * @return string[] Array of SQL WHERE conditions
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function buildObjectFilterConditionsSql(array $query, Schema $schema, object $connection): array
     {
@@ -929,6 +931,8 @@ class MagicSearchHandler
      * @param Schema        $schema  Schema for column mapping
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void
     {
@@ -975,40 +979,41 @@ class MagicSearchHandler
 
             if (is_array($value) === true) {
                 $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
-                if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
-                    if (isset($value['gte']) === true) {
-                        $qb->andWhere($qb->expr()->gte("t.{$columnName}", $qb->createNamedParameter($value['gte'])));
-                    }
-
-                    if (isset($value['lte']) === true) {
-                        $qb->andWhere($qb->expr()->lte("t.{$columnName}", $qb->createNamedParameter($value['lte'])));
-                    }
-
-                    if (isset($value['gt']) === true) {
-                        $qb->andWhere($qb->expr()->gt("t.{$columnName}", $qb->createNamedParameter($value['gt'])));
-                    }
-
-                    if (isset($value['lt']) === true) {
-                        $qb->andWhere($qb->expr()->lt("t.{$columnName}", $qb->createNamedParameter($value['lt'])));
-                    }
-
-                    if (isset($value['in']) === true) {
-                        $inValues = is_array($value['in']) === true ? $value['in'] : [$value['in']];
-                        $qb->andWhere(
-                            $qb->expr()->in(
-                                "t.{$columnName}",
-                                $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
-                            )
-                        );
-                    }
-                } else {
+                if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
                     $qb->andWhere(
                         $qb->expr()->in(
                             "t.{$columnName}",
                             $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                         )
                     );
-                }//end if
+                    continue;
+                }
+
+                if (isset($value['gte']) === true) {
+                    $qb->andWhere($qb->expr()->gte("t.{$columnName}", $qb->createNamedParameter($value['gte'])));
+                }
+
+                if (isset($value['lte']) === true) {
+                    $qb->andWhere($qb->expr()->lte("t.{$columnName}", $qb->createNamedParameter($value['lte'])));
+                }
+
+                if (isset($value['gt']) === true) {
+                    $qb->andWhere($qb->expr()->gt("t.{$columnName}", $qb->createNamedParameter($value['gt'])));
+                }
+
+                if (isset($value['lt']) === true) {
+                    $qb->andWhere($qb->expr()->lt("t.{$columnName}", $qb->createNamedParameter($value['lt'])));
+                }
+
+                if (isset($value['in']) === true) {
+                    $inValues = is_array($value['in']) === true ? $value['in'] : [$value['in']];
+                    $qb->andWhere(
+                        $qb->expr()->in(
+                            "t.{$columnName}",
+                            $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
+                        )
+                    );
+                }
 
                 continue;
             }//end if
@@ -1377,8 +1382,11 @@ class MagicSearchHandler
                 // Delegates to the shared SchemaTypeConverter so this handler and
                 // MagicStatisticsHandler agree on type semantics across read paths.
                 $propertyType = $propertyTypes[$propertyName] ?? 'string';
-                $objectData[$propertyName] = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $propertyType);
-            }
+                $objectData[$propertyName] = $this->schemaTypeConverter->convertValue(
+                    value: $value,
+                    schemaType: $propertyType
+                );
+            }//end foreach
 
             // Set metadata properties.
             if (($metadataData['uuid'] ?? null) !== null) {

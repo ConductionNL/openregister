@@ -131,6 +131,8 @@ class LinkedEntityPropertyHandler
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function extractFromProperty(

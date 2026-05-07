@@ -11,7 +11,7 @@
 
     <arg name="basepath" value="."/>
     <arg name="colors"/>
-    <arg name="parallel" value="75"/>
+    <arg name="parallel" value="1"/>
     <arg name="extensions" value="php"/>
     <arg value="p"/>
 

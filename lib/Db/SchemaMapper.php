@@ -42,6 +42,11 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
+use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
+use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
+use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
@@ -224,17 +229,8 @@ class SchemaMapper extends QBMapper
         bool $_multitenancy=true
     ): Schema {
         // Check request-scoped cache to avoid redundant DB queries for the same schema.
-        if ($_rbac === true) {
-            $rbacFlag = '1';
-        } else {
-            $rbacFlag = '0';
-        }
-
-        if ($_multitenancy === true) {
-            $mtFlag = '1';
-        } else {
-            $mtFlag = '0';
-        }
+        $rbacFlag = ($_rbac === true) ? '1' : '0';
+        $mtFlag   = ($_multitenancy === true) ? '1' : '0';
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
         if (isset($this->findCache[$cacheKey]) === true) {
@@ -305,18 +301,8 @@ class SchemaMapper extends QBMapper
         $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-        if ($_rbac === true) {
-            $rbacChar = '1';
-        } else {
-            $rbacChar = '0';
-        }
-
-        if ($_multitenancy === true) {
-            $mtChar = '1';
-        } else {
-            $mtChar = '0';
-        }
-
+        $rbacChar   = ($_rbac === true) ? '1' : '0';
+        $mtChar     = ($_multitenancy === true) ? '1' : '0';
         $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
         $this->findCache[$cacheKey] = $schema;
         $this->findCache[(string) $schema->getId().$rbacSuffix]      = $schema;
@@ -591,7 +577,174 @@ class SchemaMapper extends QBMapper
         $this->validateConfigurationFields(schema: $schema);
         $this->buildRequiredFieldsArray(schema: $schema);
         $this->autoPopulateConfigurationFields(schema: $schema);
+        $this->validateLifecycleAnnotation(schema: $schema);
+        $this->validateAggregationsAnnotation(schema: $schema);
+        $this->validateCalculationsAnnotation(schema: $schema);
+        $this->validateNotificationsAnnotation(schema: $schema);
+        $this->validateWidgetsAnnotation(schema: $schema);
     }//end cleanObject()
+
+    /**
+     * Validate the optional `x-openregister-lifecycle` annotation.
+     *
+     * The annotation is stored under `configuration['x-openregister-lifecycle']`.
+     * Errors are aggregated by LifecycleAnnotationValidator and thrown here as
+     * a single message so callers see a clear schema-save failure.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateLifecycleAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-lifecycle'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        // Validator expects the annotation at top-level alongside `properties`.
+        $shape = [
+            'properties'               => ($schema->getProperties() ?? []),
+            'x-openregister-lifecycle' => $annotation,
+        ];
+
+        $errors = (new LifecycleAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-lifecycle: '.implode(' ', $messages));
+    }//end validateLifecycleAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-aggregations` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateAggregationsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-aggregations'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                  => ($schema->getProperties() ?? []),
+            'x-openregister-aggregations' => $annotation,
+        ];
+
+        $errors = (new AggregationAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-aggregations: '.implode(' ', $messages));
+    }//end validateAggregationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-calculations` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateCalculationsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-calculations'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                  => ($schema->getProperties() ?? []),
+            'x-openregister-calculations' => $annotation,
+        ];
+
+        $errors = (new CalculationAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-calculations: '.implode(' ', $messages));
+    }//end validateCalculationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-notifications` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateNotificationsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-notifications'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                   => ($schema->getProperties() ?? []),
+            'x-openregister-notifications' => $annotation,
+        ];
+
+        $errors = (new NotificationAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-notifications: '.implode(' ', $messages));
+    }//end validateNotificationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-widgets` annotation.
+     *
+     * Schemas that pre-declare widgets (e.g. the `dashboard` schema in
+     * the `reports` register) carry the array under
+     * `configuration['x-openregister-widgets']`. Operators see shape
+     * errors at schema-save time rather than at first render.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     */
+    private function validateWidgetsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-widgets'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = ['x-openregister-widgets' => $annotation];
+
+        $errors = (new WidgetAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-widgets: '.implode(' ', $messages));
+    }//end validateWidgetsAnnotation()
 
     /**
      * Clean $ref properties to ensure they are strings
