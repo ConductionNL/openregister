@@ -52,6 +52,7 @@ class UrnController extends Controller
      * 400 when the URN doesn't parse; 404 when the URN parses but the
      * referenced register/schema doesn't exist on this instance.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function resolve(?string $urn=null): JSONResponse
@@ -90,6 +91,7 @@ class UrnController extends Controller
     /**
      * Reverse: derive the URN that addresses an OpenRegister object URL.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function lookup(?string $url=null): JSONResponse
@@ -120,6 +122,7 @@ class UrnController extends Controller
      * of `urn → url-or-null`, preserving the input list order via the
      * map keys.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function bulk(?array $urns=null): JSONResponse

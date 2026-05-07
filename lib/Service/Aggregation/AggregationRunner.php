@@ -33,8 +33,11 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\IDBConnection;
+use OCP\IUserSession;
 use RuntimeException;
 
 /**
@@ -43,13 +46,24 @@ use RuntimeException;
 class AggregationRunner
 {
 
+    /**
+     * Hard cap on the number of rows the PHP fallback path will hydrate
+     * per request. The native Postgres path (tryNativeAggregation) does
+     * the work in SQL and is unaffected. Picked at 10 000 to keep peak
+     * memory bounded against an authenticated-caller request flood that
+     * varies the filter to bypass the AggregationCache.
+     */
+    private const PHP_FALLBACK_ROW_CAP = 10000;
+
     public function __construct(
         private readonly MagicMapper $magicMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly PlaceholderResolver $placeholders,
         private readonly IDBConnection $db,
-        private readonly AggregationCache $cache
+        private readonly AggregationCache $cache,
+        private readonly PermissionHandler $permissionHandler,
+        private readonly IUserSession $userSession
     ) {}//end __construct()
 
     /**
@@ -83,6 +97,38 @@ class AggregationRunner
         if (isset($annotation[$name]) === false || is_array($annotation[$name]) === false) {
             throw new RuntimeException(sprintf('Aggregation "%s" is not declared on this schema.', $name));
         }
+
+        // RBAC gate: aggregating values from a schema rolls up information
+        // the caller could otherwise enumerate via /api/objects/{r}/{s},
+        // so the same `list` permission is required. Without this check,
+        // group-by aggregations on sensitive fields (status / owner /
+        // category) would leak the value distribution of objects the
+        // caller cannot read.
+        $callerId = $this->userSession->getUser()?->getUID();
+        $allowed  = $this->permissionHandler->hasPermission(
+            schema: $schema,
+            action: 'list',
+            userId: $callerId,
+            objectOwner: null,
+            _rbac: true,
+            object: null
+        );
+        if ($allowed === false) {
+            throw new NotAuthorizedException(
+                sprintf(
+                    'You do not have permission to aggregate schema "%s".',
+                    $schemaRef
+                )
+            );
+        }
+        // NOTE: this gate is schema-level (matches `list`). For schemas
+        // whose authorization config also declares per-object ACL rules
+        // (`object-acl` / conditional rules), the aggregate value still
+        // rolls up rows the caller cannot read row-by-row. A future
+        // hardening step is to add a per-row hasPermission(read) filter
+        // in the PHP fallback path and a derived WHERE clause (or
+        // bailout to PHP) in the native path. Tracked alongside the
+        // aggregations-backend-native follow-up.
 
         $spec    = $annotation[$name];
         $metric  = (string) ($spec['metric'] ?? '');
@@ -139,12 +185,23 @@ class AggregationRunner
             return $result;
         }
 
-        // Fall back: pull all objects and filter in PHP.
+        // Fall back: pull objects and filter in PHP.
+        //
+        // Capped at PHP_FALLBACK_ROW_CAP to bound the per-request memory
+        // footprint — the cache is keyed on the resolved filter, so any
+        // authenticated caller can otherwise force a fresh hydrate by
+        // varying a filter parameter. The native Postgres path is the
+        // intended steady state; the fallback is a development /
+        // non-Postgres safety net, not a production aggregation engine.
+        // Aggregations whose source table exceeds the cap are surfaced
+        // with `truncated: true` so callers know the value is partial
+        // (or 503 from the controller in a future hardening step).
         $objects = $this->magicMapper->findAllInRegisterSchemaTable(
             register: $register,
             schema: $schema,
-            limit: 100000
+            limit: self::PHP_FALLBACK_ROW_CAP
         );
+        $truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
 
         $rows = [];
         foreach ($objects as $entity) {
@@ -158,19 +215,21 @@ class AggregationRunner
 
         if (is_array($groupBy) === true && isset($groupBy['field']) === true) {
             $result = [
-                'name'    => $name,
-                'metric'  => $metric,
-                'field'   => is_string($field) === true ? $field : null,
-                'backend' => 'php-fallback',
-                'groups'  => $this->computeGrouped($rows, $metric, $field, (string) $groupBy['field']),
+                'name'      => $name,
+                'metric'    => $metric,
+                'field'     => is_string($field) === true ? $field : null,
+                'backend'   => 'php-fallback',
+                'truncated' => $truncated,
+                'groups'    => $this->computeGrouped($rows, $metric, $field, (string) $groupBy['field']),
             ];
         } else {
             $result = [
-                'name'    => $name,
-                'metric'  => $metric,
-                'field'   => is_string($field) === true ? $field : null,
-                'backend' => 'php-fallback',
-                'value'   => $this->computeMetric($rows, $metric, $field),
+                'name'      => $name,
+                'metric'    => $metric,
+                'field'     => is_string($field) === true ? $field : null,
+                'backend'   => 'php-fallback',
+                'truncated' => $truncated,
+                'value'     => $this->computeMetric($rows, $metric, $field),
             ];
         }
         $this->cache->set(

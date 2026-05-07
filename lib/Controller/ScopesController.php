@@ -110,6 +110,7 @@ class ScopesController extends Controller
      *
      * @return JSONResponse The effective-scope envelope.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function index(?string $register=null, ?string $schema=null): JSONResponse

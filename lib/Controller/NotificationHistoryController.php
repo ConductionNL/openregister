@@ -29,8 +29,11 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Class NotificationHistoryController.
@@ -49,7 +52,9 @@ class NotificationHistoryController extends Controller
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly NotificationHistoryMapper $mapper
+        private readonly NotificationHistoryMapper $mapper,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -70,9 +75,29 @@ class NotificationHistoryController extends Controller
      */
     public function index(): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Unauthorized'],
+                statusCode: Http::STATUS_UNAUTHORIZED
+            );
+        }
+
         $filters = $this->extractFilters();
         $limit   = $this->resolveLimit();
         $offset  = $this->resolveOffset();
+
+        // Per-user scoping: non-admins are silently constrained to their
+        // own notification history, even if they explicitly pass a
+        // `recipient` filter naming someone else. Admins keep full
+        // visibility (the spec explicitly calls out audit access).
+        // Without this guard, the @NoAdminRequired annotation would
+        // make the endpoint a notification-history dump for every
+        // authenticated user on the instance.
+        $isAdmin = $this->groupManager->isAdmin($user->getUID());
+        if ($isAdmin === false) {
+            $filters['recipient'] = $user->getUID();
+        }
 
         $results = $this->mapper->findFiltered(filters: $filters, limit: $limit, offset: $offset);
         $total   = $this->mapper->countFiltered(filters: $filters);

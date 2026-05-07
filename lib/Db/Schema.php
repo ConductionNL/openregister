@@ -1643,8 +1643,18 @@ class Schema extends Entity implements JsonSerializable
             // through the schema's configuration column. Validation of
             // their shape is done by the dedicated validators (e.g.
             // LifecycleAnnotationValidator) at schema-save time.
+            //
+            // The key MUST be in the declared vocabulary — unknown
+            // `x-openregister-*` keys are silently dropped to surface
+            // typos at save time rather than persisting them and having
+            // them silently no-op (e.g. `x-openregister-lifecycl` would
+            // otherwise round-trip without ever firing the listener).
             if (str_starts_with((string) $key, 'x-openregister-') === true) {
-                $validatedConfig[$key] = $value;
+                if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
+                    $validatedConfig[$key] = $value;
+                }
+                // Unknown x-openregister-* keys fall through and are
+                // dropped from $validatedConfig.
             }
         }//end foreach
 
@@ -1748,6 +1758,27 @@ class Schema extends Entity implements JsonSerializable
             }
         }
     }//end validateAllowedTagsValue()
+
+    /**
+     * Declared `x-openregister-*` annotation keys.
+     *
+     * Keys outside this set are dropped at save time so a typo
+     * (e.g. `x-openregister-lifecycl` instead of `…-lifecycle`) is
+     * caught early instead of silently round-tripping through the
+     * configuration column and having the corresponding listener
+     * never fire.
+     *
+     * @var array<int, string>
+     */
+    private const ANNOTATION_VOCABULARY = [
+        'x-openregister-lifecycle',
+        'x-openregister-aggregations',
+        'x-openregister-calculations',
+        'x-openregister-notifications',
+        'x-openregister-widgets',
+        'x-openregister-relations',
+        'x-openregister-processing-activity',
+    ];
 
     /**
      * Valid linked type values for Nextcloud entity integration

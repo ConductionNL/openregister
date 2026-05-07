@@ -320,6 +320,19 @@ final class CalculationEvaluator
     }//end diffDays()
 
     /**
+     * Format a date/time value via PHP's DateTimeImmutable::format().
+     *
+     * Trust model: the `$fmt` string is sourced from the schema annotation,
+     * which is authored at schema-edit time by an admin/operator who already
+     * has full schema-write privileges. PHP's `format()` is side-effect-free
+     * and the result is stored as a calculated field value (text) — there is
+     * no template/SQL/eval surface downstream that could turn an exotic
+     * format character into a vulnerability. Accordingly, the format string
+     * is NOT validated against an allowlist. If non-admin operators ever
+     * gain calculation-authoring rights, restrict `$fmt` to a safe subset
+     * (e.g. ISO-style `Y-m-d\TH:i:sP`, common locale formats) before calling
+     * `format()`.
+     *
      * @param array<string, mixed> $object
      */
     private function formatDate(array $object, mixed $args): ?string

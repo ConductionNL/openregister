@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -66,6 +67,14 @@ class TransitionController extends Controller
 
         try {
             $object = $this->engine->transition(objectId: $id, action: $action);
+        } catch (NotAuthorizedException $e) {
+            // Caller lacks `update` permission on the object. Surface
+            // as 403 so clients can distinguish "not allowed" from
+            // "transition refused" (422) and "object missing" (404).
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                Http::STATUS_FORBIDDEN
+            );
         } catch (HookStoppedException $e) {
             // The validator listener (or another listener) rejected the
             // save by calling stopPropagation(). Surface its message as a
@@ -98,6 +107,11 @@ class TransitionController extends Controller
     {
         try {
             $actions = $this->engine->availableActions(objectId: $id);
+        } catch (NotAuthorizedException $e) {
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                Http::STATUS_FORBIDDEN
+            );
         } catch (RuntimeException $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
