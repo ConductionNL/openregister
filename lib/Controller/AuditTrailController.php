@@ -64,10 +64,44 @@ class AuditTrailController extends Controller
         IRequest $request,
         private readonly LogService $logService,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly AuditHashService $auditHashService
+        private readonly AuditHashService $auditHashService,
+        private readonly \OCP\IUserSession $userSession,
+        private readonly \OCP\IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Gate destructive / bulk-export audit operations on admin membership.
+     *
+     * SECURITY: `clearAll` wipes the entire audit table — a chain of
+     * trust for AVG/GDPR Art 30 reviews. `export` dumps every row in
+     * bulk and is an obvious recon path across tenants. Both surfaces
+     * stay `@NoAdminRequired` at the framework level so the existing
+     * UI keeps loading, but reject non-admin callers in the body.
+     *
+     * @return JSONResponse|null 401/403 response when blocked, null when allowed.
+     */
+    private function requireAdmin(): ?JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required'],
+                statusCode: 401
+            );
+        }
+
+        if ($this->groupManager->isAdmin($user->getUID()) === false) {
+            return new JSONResponse(
+                data: ['error' => 'Forbidden: this audit-trail operation is admin-only'],
+                statusCode: 403
+            );
+        }
+
+        return null;
+
+    }//end requireAdmin()
 
     /**
      * Extract pagination, filter, and search parameters from request
@@ -345,6 +379,10 @@ class AuditTrailController extends Controller
      */
     public function export(): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         // Extract request parameters.
         $params = $this->extractRequestParameters();
 
@@ -453,6 +491,10 @@ class AuditTrailController extends Controller
      */
     public function clearAll(): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         try {
             // Use the clearAllLogs method from the mapper.
             $result = $this->auditTrailMapper->clearAllLogs();
