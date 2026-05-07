@@ -31,11 +31,19 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
 /**
+ * URN resolution controller.
+ *
  * @psalm-suppress UnusedClass
  */
 class UrnController extends Controller
 {
-
+    /**
+     * Constructor.
+     *
+     * @param string     $appName    The application name.
+     * @param IRequest   $request    The current request.
+     * @param UrnService $urnService The URN resolution service.
+     */
     public function __construct(
         string $appName,
         IRequest $request,
@@ -44,13 +52,16 @@ class UrnController extends Controller
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
-
     /**
      * Resolve a URN to its canonical API URL.
      *
      * Returns 200 `{urn, url, instance, register, schema, uuid}` on success;
      * 400 when the URN doesn't parse; 404 when the URN parses but the
      * referenced register/schema doesn't exist on this instance.
+     *
+     * @param string|null $urn The URN to resolve.
+     *
+     * @return JSONResponse JSON response with the resolution result or error.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -77,19 +88,24 @@ class UrnController extends Controller
             );
         }
 
-        return new JSONResponse([
-            'urn'      => $urn,
-            'url'      => $url,
-            'instance' => $parts['instance'],
-            'register' => $parts['register'],
-            'schema'   => $parts['schema'],
-            'uuid'     => $parts['uuid'],
-        ]);
+        return new JSONResponse(
+                [
+                    'urn'      => $urn,
+                    'url'      => $url,
+                    'instance' => $parts['instance'],
+                    'register' => $parts['register'],
+                    'schema'   => $parts['schema'],
+                    'uuid'     => $parts['uuid'],
+                ]
+                );
     }//end resolve()
-
 
     /**
      * Reverse: derive the URN that addresses an OpenRegister object URL.
+     *
+     * @param string|null $url The URL to reverse-resolve.
+     *
+     * @return JSONResponse JSON response with the URN or error.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -108,12 +124,13 @@ class UrnController extends Controller
             );
         }
 
-        return new JSONResponse([
-            'url' => $url,
-            'urn' => $urn,
-        ]);
+        return new JSONResponse(
+                [
+                    'url' => $url,
+                    'urn' => $urn,
+                ]
+                );
     }//end lookup()
-
 
     /**
      * Batch URN resolution.
@@ -121,6 +138,10 @@ class UrnController extends Controller
      * Accepts JSON body `{urns: ["urn:nl-or:...", ...]}`. Returns a map
      * of `urn → url-or-null`, preserving the input list order via the
      * map keys.
+     *
+     * @param array|null $urns The list of URNs to resolve.
+     *
+     * @return JSONResponse JSON response with the bulk resolution result.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -131,13 +152,26 @@ class UrnController extends Controller
             return new JSONResponse(['error' => 'urns array is required'], Http::STATUS_BAD_REQUEST);
         }
 
+        // SECURITY: cap the input list. Each URN triggers a parse →
+        // register find → schema find → object find chain, so a 100k
+        // input list = ~400k DB round-trips per request. Currently this
+        // route is effectively admin-only via the absence of
+        // @NoAdminRequired, but a future relaxation would convert the
+        // missing cap directly into a DoS lever.
+        if (count($urns) > 1000) {
+            return new JSONResponse(
+                ['error' => 'Too many URNs (max 1000 per request)', 'count' => count($urns)],
+                Http::STATUS_UNPROCESSABLE_ENTITY
+            );
+        }
+
         $resolved = $this->urnService->resolveBulk($urns);
 
-        return new JSONResponse([
-            'count'    => count($resolved),
-            'resolved' => $resolved,
-        ]);
+        return new JSONResponse(
+                [
+                    'count'    => count($resolved),
+                    'resolved' => $resolved,
+                ]
+                );
     }//end bulk()
-
-
 }//end class

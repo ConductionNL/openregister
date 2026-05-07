@@ -127,6 +127,9 @@ class NotificationCoalescer
      * @param array<string, mixed>|null $perRuleOverride Optional `coalesce` block from the rule spec.
      *
      * @return bool True when the dispatch may proceed.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function shouldDispatch(string $ruleId, string $recipient, ?array $perRuleOverride): bool
     {

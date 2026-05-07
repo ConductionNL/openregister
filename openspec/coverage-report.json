@@ -9,14 +9,14 @@
       "unique_change_targets": 138,
       "files_annotated": 249,
       "changes": [
-        "retrofit-annotate-openregister-2026-04-23 (tasks 1-58)",
-        "retrofit-b2b-crossrefs-2026-04-28 (task-1, task-21)",
-        "retrofit-calendar-integration-2026-04-28 (task-2)",
-        "retrofit-content-versioning-2026-04-28 (task-1)",
-        "retrofit-notificatie-engine-2026-04-28 (task-1)",
-        "retrofit-object-lifecycle-2026-04-28 (tasks 1-13)",
-        "retrofit-tenant-isolation-audit-2026-04-28 (tasks 1-2)",
-        "retrofit-tenant-lifecycle-2026-04-28 (tasks 1-2)"
+        "retrofit-2026-04-23-annotate-openregister (tasks 1-58)",
+        "retrofit-2026-04-28-b2b-crossrefs (task-1, task-21)",
+        "retrofit-2026-04-28-calendar-integration (task-2)",
+        "retrofit-2026-04-28-content-versioning (task-1)",
+        "retrofit-2026-04-28-notificatie-engine (task-1)",
+        "retrofit-2026-04-28-object-lifecycle (tasks 1-13)",
+        "retrofit-2026-04-28-tenant-isolation-audit (tasks 1-2)",
+        "retrofit-2026-04-28-tenant-lifecycle (tasks 1-2)"
       ],
       "note": "Bulk of codebase already annotated by prior retrofit runs; these methods are treated as annotated and not re-bucketed"
     },

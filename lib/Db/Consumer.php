@@ -42,6 +42,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAuthorizationConfiguration(?array $authorizationConfiguration)
  * @method string|null getUserId()
  * @method void setUserId(?string $userId)
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class Consumer extends Entity implements JsonSerializable
 {

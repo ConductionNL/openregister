@@ -74,22 +74,88 @@ class FileAuditHandlerTest extends TestCase
     }//end testLogDownloadAnonymous()
 
     /**
-     * Test bulk download logging.
+     * Test bulk download logging persists a SINGLE audit row for the ZIP,
+     * not one row per file inside the archive.
      */
     public function testLogBulkDownload(): void
     {
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('admin');
+        $user->method('getDisplayName')->willReturn('Admin User');
         $this->userSession->method('getUser')->willReturn($user);
 
-        $this->logger->expects($this->once())->method('info');
+        $object = new ObjectEntity();
+        $object->setId(123);
+        $object->setUuid('abc-123');
+        $object->setRegister('reg-1');
+        $object->setSchema('sch-1');
 
-        $this->handler->logBulkDownload(
+        $captured = null;
+        $this->auditTrailMapper->expects($this->once())
+            ->method('insert')
+            ->with($this->callback(
+                function ($auditTrail) use (&$captured) {
+                    $captured = $auditTrail;
+                    return $auditTrail instanceof AuditTrail;
+                }
+            ))
+            ->willReturnArgument(0);
+
+        $result = $this->handler->logBulkDownload(
+            $object,
             [42, 43, 44],
             ['file1.pdf', 'file2.pdf', 'file3.pdf'],
-            'abc-123'
+            'object_abc-123_files.zip',
+            512000
         );
+
+        $this->assertInstanceOf(AuditTrail::class, $result);
+        $this->assertSame('file.bulk_downloaded', $captured->getAction());
+        $changed = $captured->getChanged();
+        $this->assertSame([42, 43, 44], $changed['fileIds']);
+        $this->assertSame(['file1.pdf', 'file2.pdf', 'file3.pdf'], $changed['fileNames']);
+        $this->assertSame(3, $changed['fileCount']);
+        $this->assertSame('object_abc-123_files.zip', $changed['zipName']);
+        $this->assertSame(512000, $changed['totalBytes']);
+        $this->assertSame('admin', $captured->getUser());
     }//end testLogBulkDownload()
+
+    /**
+     * Test bulk download by an anonymous caller still produces a single
+     * audit row, with the user attributed to the remote IP for traceability.
+     */
+    public function testLogBulkDownloadAnonymous(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->request->method('getRemoteAddress')->willReturn('192.168.1.50');
+
+        $object = new ObjectEntity();
+        $object->setId(123);
+        $object->setUuid('abc-123');
+        $object->setRegister('reg-1');
+        $object->setSchema('sch-1');
+
+        $captured = null;
+        $this->auditTrailMapper->expects($this->once())
+            ->method('insert')
+            ->with($this->callback(
+                function ($auditTrail) use (&$captured) {
+                    $captured = $auditTrail;
+                    return true;
+                }
+            ))
+            ->willReturnArgument(0);
+
+        $this->handler->logBulkDownload(
+            $object,
+            [42],
+            ['only.pdf'],
+            'one.zip'
+        );
+
+        $this->assertSame('Anonymous', $captured->getUser());
+        $this->assertStringContainsString('192.168.1.50', $captured->getUserName());
+    }//end testLogBulkDownloadAnonymous()
 
     /**
      * Test download logging does not throw even if internal error.

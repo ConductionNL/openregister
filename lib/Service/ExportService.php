@@ -16,10 +16,10 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-11
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-16
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-16
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
  */
 
 namespace OCA\OpenRegister\Service;
@@ -53,6 +53,7 @@ use React\EventLoop\Loop;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
@@ -95,20 +96,32 @@ class ExportService
     private readonly PropertyRbacHandler $propertyRbacHandler;
 
     /**
-     * Constructor for the ExportService
+     * Translation handler for column projection during export.
      *
-     * @param RegisterMapper      $registerMapper      The register mapper
-     * @param IUserManager        $_userManager        The user manager (unused but kept for future use)
-     * @param IGroupManager       $groupManager        The group manager
-     * @param ObjectService       $objectService       The object service
-     * @param CacheHandler        $cacheHandler        The cache handler for name resolution
-     * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler
+     * @var \OCA\OpenRegister\Service\Object\TranslationHandler
+     */
+    private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
+
+    /**
+     * Optional register context used during sheet population.
+     *
+     * @var Register|null
+     */
+    private ?Register $contextRegister = null;
+
+    /**
+     * Constructor for the ExportService.
+     *
+     * @param RegisterMapper                                      $registerMapper      The register mapper.
+     * @param IUserManager                                        $_userManager        The user manager (unused).
+     * @param IGroupManager                                       $groupManager        The group manager.
+     * @param ObjectService                                       $objectService       The object service.
+     * @param CacheHandler                                        $cacheHandler        The cache handler for name resolution.
+     * @param PropertyRbacHandler                                 $propertyRbacHandler The property RBAC handler.
+     * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler  The translation handler.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
-    private ?Register $contextRegister = null;
-
     public function __construct(
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
@@ -162,8 +175,8 @@ class ExportService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input combinations
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-11
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
      */
     public function exportToExcel(
         ?Register $register=null,
@@ -217,7 +230,7 @@ class ExportService
      *
      * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
      */
     public function exportToCsv(
         ?Register $register=null,
@@ -474,7 +487,7 @@ class ExportService
      *
      * @return array Map of UUID string to human-readable name.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
      */
     private function resolveUuidNameMap(array $objects, array $nameColumns): array
     {
@@ -576,9 +589,11 @@ class ExportService
      *
      * @psalm-return array<array-key>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Header generation has multiple schema and permission conditions
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-16
      */
     private function getHeaders(?Schema $schema=null, ?IUser $currentUser=null): array
     {
@@ -633,9 +648,10 @@ class ExportService
                 if (($properties[$fieldName]['translatable'] ?? false) === true) {
                     $languages = $this->resolveExportLanguages();
                     foreach ($languages as $lang) {
-                        $headers[$col] = $fieldName . '_' . $lang;
+                        $headers[$col] = $fieldName.'_'.$lang;
                         $col++;
                     }
+
                     continue;
                 }
 
@@ -800,7 +816,7 @@ class ExportService
                 // Translatable `field_lang` column — extract the
                 // language-keyed slot from the JSONB property
                 // (register-i18n Phase 3 wire-in).
-                $langValue = $this->extractLanguageSlot($objectData, $header);
+                $langValue = $this->extractLanguageSlot(objectData: $objectData, header: $header);
                 if ($langValue !== null) {
                     return $langValue;
                 }
@@ -809,7 +825,6 @@ class ExportService
                 return $this->convertValueToString(value: $value);
         }
     }//end getObjectValue()
-
 
     /**
      * Resolve the language list to use for translatable column emission.
@@ -826,16 +841,20 @@ class ExportService
                 return array_values(array_unique($registerLanguages));
             }
         }
+
         return ['nl', 'en'];
     }//end resolveExportLanguages()
 
-
     /**
      * Extract `objectData[field][lang]` for a `field_lang` header.
+     *
      * Returns null when the header doesn't match a known
      * translatable-property + language pair.
      *
-     * @param array<string, mixed> $objectData
+     * @param array<string, mixed> $objectData The object data.
+     * @param string               $header     The header name (field_lang).
+     *
+     * @return string|null The language slot value, or null if not present.
      */
     private function extractLanguageSlot(array $objectData, string $header): ?string
     {
@@ -843,6 +862,7 @@ class ExportService
         if ($underscore === false || $underscore === 0) {
             return null;
         }
+
         $field = substr($header, 0, $underscore);
         $lang  = substr($header, $underscore + 1);
         if ($field === '' || $lang === ''
@@ -850,10 +870,12 @@ class ExportService
         ) {
             return null;
         }
+
         $value = $objectData[$field] ?? null;
         if (is_array($value) === false || isset($value[$lang]) === false) {
             return null;
         }
+
         $slotValue = $value[$lang];
         return is_scalar($slotValue) === true ? (string) $slotValue : null;
     }//end extractLanguageSlot()
@@ -987,7 +1009,7 @@ class ExportService
      *
      * @return string|null The resolved name(s) in the same format as input
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
      */
     private function resolveUuidsToNames(mixed $value, array $uuidToNameMap): ?string
     {

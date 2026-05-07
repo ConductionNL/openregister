@@ -45,6 +45,8 @@ use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
+ * Listener that evaluates threshold-typed notifications on object writes.
+ *
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectTransitionedEvent>
  */
 class AggregationThresholdListener implements IEventListener
@@ -53,8 +55,24 @@ class AggregationThresholdListener implements IEventListener
     private const STATE_ABOVE = 'above';
     private const STATE_BELOW = 'below';
 
+    /**
+     * Distributed cache holding the last threshold state per (schema, notification).
+     *
+     * @var ICache|null
+     */
     private ?ICache $stateCache = null;
 
+    /**
+     * Wire collaborators and prepare the state cache.
+     *
+     * @param SchemaMapper                     $schemaMapper      Schema lookup mapper.
+     * @param AggregationRunner                $aggregationRunner Runner that computes aggregation values.
+     * @param AnnotationNotificationDispatcher $dispatcher        Notification dispatcher.
+     * @param LoggerInterface                  $logger            PSR logger for warnings.
+     * @param ICacheFactory                    $cacheFactory      Distributed-cache factory.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly AggregationRunner $aggregationRunner,
@@ -69,18 +87,29 @@ class AggregationThresholdListener implements IEventListener
         }
     }//end __construct()
 
+    /**
+     * Re-evaluate every threshold notification declared on the schema.
+     *
+     * @param Event $event Inbound dispatcher event.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
     public function handle(Event $event): void
     {
-        $object = $this->extractObject($event);
+        $object = $this->extractObject(event: $event);
         if ($object === null) {
             return;
         }
 
         try {
-            $schema = $this->loadSchema($object);
+            $schema = $this->loadSchema(object: $object);
         } catch (\Throwable $e) {
             return;
         }
+
         if ($schema === null) {
             return;
         }
@@ -95,10 +124,12 @@ class AggregationThresholdListener implements IEventListener
             if (is_array($spec) === false) {
                 continue;
             }
+
             $trigger = ($spec['trigger'] ?? null);
             if (is_array($trigger) === false || (string) ($trigger['type'] ?? '') !== 'threshold') {
                 continue;
             }
+
             try {
                 $this->evaluate(schema: $schema, notificationName: (string) $name, trigger: $trigger, object: $object);
             } catch (\Throwable $e) {
@@ -110,17 +141,26 @@ class AggregationThresholdListener implements IEventListener
                     )
                 );
             }
-        }
+        }//end foreach
     }//end handle()
 
     /**
-     * @param array<string, mixed> $trigger
+     * Evaluate one notification spec and dispatch on rising-edge crossings.
+     *
+     * @param Schema               $schema           Schema declaring the notification.
+     * @param string               $notificationName Notification key in the schema config.
+     * @param array<string, mixed> $trigger          Trigger configuration block.
+     * @param ObjectEntity         $object           Object that just changed.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function evaluate(Schema $schema, string $notificationName, array $trigger, ObjectEntity $object): void
     {
         $aggregationName = (string) ($trigger['aggregation'] ?? '');
-        $op              = (string) ($trigger['op'] ?? '');
-        $threshold       = ($trigger['value'] ?? null);
+        $op        = (string) ($trigger['op'] ?? '');
+        $threshold = ($trigger['value'] ?? null);
         if ($aggregationName === '' || $op === '' || $threshold === null) {
             return;
         }
@@ -134,7 +174,7 @@ class AggregationThresholdListener implements IEventListener
             return;
         }
 
-        $isAbove = $this->compare($value, $op, $threshold);
+        $isAbove  = $this->compare(actual: $value, op: $op, expected: $threshold);
         $newState = $isAbove === true ? self::STATE_ABOVE : self::STATE_BELOW;
 
         $stateKey = sprintf('threshold:%d:%s', $schema->getId(), $notificationName);
@@ -164,14 +204,20 @@ class AggregationThresholdListener implements IEventListener
     }//end evaluate()
 
     /**
-     * @param int|float $actual
-     * @param mixed     $expected
+     * Compare two values with the configured operator.
+     *
+     * @param int|float $actual   Numeric value computed from the aggregation.
+     * @param string    $op       Comparison operator (gt|gte|lt|lte|eq|ne).
+     * @param mixed     $expected Threshold value, must be numeric.
+     *
+     * @return bool True when the comparison is satisfied, false otherwise.
      */
     private function compare($actual, string $op, $expected): bool
     {
         if (is_numeric($expected) === false) {
             return false;
         }
+
         $rhs = (float) $expected;
         $lhs = (float) $actual;
         return match ($op) {
@@ -185,32 +231,50 @@ class AggregationThresholdListener implements IEventListener
         };
     }//end compare()
 
+    /**
+     * Resolve the underlying object for any of the supported event types.
+     *
+     * @param Event $event Inbound dispatcher event.
+     *
+     * @return ObjectEntity|null Object instance, or null when not resolvable.
+     */
     private function extractObject(Event $event): ?ObjectEntity
     {
         if ($event instanceof ObjectTransitionedEvent) {
             return $event->getObject();
         }
+
         if (method_exists($event, 'getObject') === true) {
             $obj = $event->getObject();
             if ($obj instanceof ObjectEntity) {
                 return $obj;
             }
         }
+
         if (method_exists($event, 'getNewObject') === true) {
             $obj = $event->getNewObject();
             if ($obj instanceof ObjectEntity) {
                 return $obj;
             }
         }
+
         return null;
     }//end extractObject()
 
+    /**
+     * Look up the schema referenced by an object instance.
+     *
+     * @param ObjectEntity $object Object whose schema reference to resolve.
+     *
+     * @return Schema|null Resolved schema, or null on lookup failure.
+     */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
         $schemaRef = (string) $object->getSchema();
         if ($schemaRef === '') {
             return null;
         }
+
         // SchemaMapper resolves slug/uuid/id.
         try {
             return $this->schemaMapper->find($schemaRef);
@@ -218,5 +282,4 @@ class AggregationThresholdListener implements IEventListener
             return null;
         }
     }//end loadSchema()
-
 }//end class

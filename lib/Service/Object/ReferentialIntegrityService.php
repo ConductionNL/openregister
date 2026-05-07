@@ -109,7 +109,7 @@ class ReferentialIntegrityService
      * @param LoggerInterface  $logger             Logger for debugging.
      * @param IDBConnection    $db                 Database connection for raw SQL queries.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -130,7 +130,7 @@ class ReferentialIntegrityService
      *
      * @return DeletionAnalysis The analysis result with targets and blockers.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function canDelete(ObjectEntity $object): DeletionAnalysis
     {
@@ -165,7 +165,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple action types require distinct handling paths
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function applyDeletionActions(
         DeletionAnalysis $analysis,
@@ -238,7 +238,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function logRestrictBlock(
         string $objectUuid,
@@ -281,7 +281,7 @@ class ReferentialIntegrityService
      *
      * @return bool True if any schema has onDelete config referencing this schema.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function hasIncomingOnDeleteReferences(string $schemaId): bool
     {
@@ -296,7 +296,7 @@ class ReferentialIntegrityService
      *
      * @return bool True if the value is valid.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public static function isValidOnDeleteAction(string $value): bool
     {
@@ -313,7 +313,7 @@ class ReferentialIntegrityService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * Reduced from 19 to ~12 by extracting buildSchemaRegisterMap + indexRelationsForSchema.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function ensureRelationIndex(): void
     {
@@ -354,7 +354,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function buildSchemaRegisterMap(): void
     {
@@ -368,8 +368,15 @@ class ReferentialIntegrityService
                 $registerCache[(string) $register->getId()] = $register;
             }
 
+            // Raw SQL: QueryBuilder does not target the information_schema metadata
+            // tables. The schema-resolution function differs across platforms —
+            // MySQL/MariaDB expose DATABASE() while PostgreSQL exposes current_schema()
+            // (mirrors lib/Db/MagicMapper.php:1697-1707).
+            $platform   = $this->db->getDatabasePlatform();
+            $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
+            $schemaFn   = $isPostgres === true ? 'current_schema()' : 'DATABASE()';
             // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
-            $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = current_schema()";
+            $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = {$schemaFn}";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $tables = [];
@@ -416,7 +423,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function indexRelationsForSchema(\OCA\OpenRegister\Db\Schema $schema, array $allSchemas): void
     {
@@ -465,7 +472,7 @@ class ReferentialIntegrityService
      *
      * @return string|null The uppercase onDelete action, or null if not set.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function extractOnDelete(array $property): ?string
     {
@@ -485,7 +492,7 @@ class ReferentialIntegrityService
      *
      * @return string|null The $ref value, or null if not a relation property.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function extractTargetRef(array $property): ?string
     {
@@ -514,7 +521,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies needed
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function resolveSchemaRef(string $ref, array $allSchemas): ?string
     {
@@ -557,7 +564,7 @@ class ReferentialIntegrityService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple action types and fallback chains create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Core algorithm that handles all 5 action types inline
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function walkDeletionGraph(
         ObjectEntity $object,
@@ -741,7 +748,7 @@ class ReferentialIntegrityService
      *
      * @return ObjectEntity[] Matching objects.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function findReferencingObjects(
         string $sourceSchemaId,
@@ -862,7 +869,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles PostgreSQL/MySQL and array/scalar variants
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function findReferencingInMagicTable(
         Register $register,
@@ -884,19 +891,17 @@ class ReferentialIntegrityService
 
         // Build the array/scalar SQL variant selector before accessing the database.
         // For array properties we need JSON_CONTAINS / jsonb @> operators; for scalars a simple = suffices.
+        $queryMode = 'scalar';
         if ($isArray === true) {
             $queryMode = 'array';
-        } else {
-            $queryMode = 'scalar';
         }
 
         $platform   = $this->db->getDatabasePlatform();
         $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
 
+        $deletedCheck = '_deleted IS NULL';
         if ($isPostgres === true) {
             $deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
-        } else {
-            $deletedCheck = '_deleted IS NULL';
         }
 
         $selectClause   = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$fullTableName}";
@@ -910,6 +915,9 @@ class ReferentialIntegrityService
 
         $sql = "{$selectClause} WHERE {$whereCondition} LIMIT 100";
 
+        // Raw SQL: QueryBuilder cannot express the platform-specific JSON-array
+        // containment operators required here — `JSON_CONTAINS(... JSON_QUOTE(?))`
+        // for MariaDB and `column::jsonb @> to_jsonb(?::text)` for PostgreSQL.
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$targetUuid]);
         $rows = $stmt->fetchAll();
@@ -923,17 +931,12 @@ class ReferentialIntegrityService
 
             $deleted = $row['_deleted'] ?? null;
             if ($deleted !== null && $deleted !== 'null') {
+                $decoded = $deleted;
                 if (is_string($deleted) === true) {
                     $decoded = json_decode($deleted, true);
-                } else {
-                    $decoded = $deleted;
                 }
 
-                if (is_array($decoded) === true) {
-                    $entity->setDeleted($decoded);
-                } else {
-                    $entity->setDeleted([]);
-                }
+                $entity->setDeleted(is_array($decoded) === true ? $decoded : []);
             }
 
             // Set object with at least the property that matched.
@@ -952,7 +955,7 @@ class ReferentialIntegrityService
      *
      * @return bool True if the property is required.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function isRequiredProperty(string $schemaId, string $propertyName): bool
     {
@@ -972,7 +975,7 @@ class ReferentialIntegrityService
      *
      * @return mixed The default value, or null if not set.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getDefaultValue(string $schemaId, string $propertyName): mixed
     {
@@ -1005,7 +1008,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function logIntegrityAction(
         string $action,
@@ -1059,7 +1062,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function applySetNull(array $target): void
     {
@@ -1118,7 +1121,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function applySetDefault(array $target): void
     {
@@ -1170,7 +1173,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Groups targets and handles entity resolution per group
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function applyBatchCascadeDelete(
         array $cascadeTargets,

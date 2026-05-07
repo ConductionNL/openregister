@@ -89,9 +89,8 @@ HTML;
         $subtitle = $this->escape(value: (string) ($widget['subtitle'] ?? ''));
         $type     = (string) ($widget['type'] ?? 'kpi');
 
-        if ($data === null) {
-            $bodyHtml = '<p class="widget-error">No data available — the data source did not resolve.</p>';
-        } else {
+        $bodyHtml = '<p class="widget-error">No data available — the data source did not resolve.</p>';
+        if ($data !== null) {
             $bodyHtml = $this->renderBody(widget: $widget, data: $data, type: $type);
         }
 

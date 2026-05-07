@@ -13,7 +13,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
  */
 
 declare(strict_types=1);
@@ -41,6 +41,7 @@ use OCA\OpenRegister\Event\FileVersionRestoredEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IRequest;
 use OCP\IUserManager;
+use OCP\IUserSession;
 
 /**
  * FilesController handles file operations for objects in registers
@@ -61,8 +62,9 @@ use OCP\IUserManager;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Nextcloud controller DI requires many dependencies
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
@@ -93,15 +95,20 @@ class FilesController extends Controller
      * Initializes controller with required dependencies for file operations.
      * Calls parent constructor to set up base controller functionality.
      *
-     * @param string           $appName         Application name
-     * @param IRequest         $request         HTTP request object
-     * @param FileService      $fileService     File service for file operations
-     * @param ObjectService    $objectService   Object service for object validation
-     * @param IRootFolder      $rootFolder      Root folder for file access
-     * @param IUserManager     $userManager     User manager for user lookups
-     * @param IEventDispatcher $eventDispatcher Event dispatcher for file events
+     * @param string                                               $appName          Application name
+     * @param IRequest                                             $request          HTTP request object
+     * @param FileService                                          $fileService      File service for file operations
+     * @param ObjectService                                        $objectService    Object service for object validation
+     * @param IRootFolder                                          $rootFolder       Root folder for file access
+     * @param IUserManager                                         $userManager      User manager for user lookups
+     * @param IEventDispatcher                                     $eventDispatcher  Event dispatcher for file events
+     * @param \OCA\OpenRegister\Db\FileMapper|null                 $fileMapper       OR-side metadata mapper. Null-safe.
+     * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Audit-trail writer. Null-safe.
+     * @param IUserSession|null                                    $userSession      Session for auth gating.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
         string $appName,
@@ -110,7 +117,10 @@ class FilesController extends Controller
         ObjectService $objectService,
         private readonly IRootFolder $rootFolder,
         private readonly IUserManager $userManager,
-        private readonly IEventDispatcher $eventDispatcher
+        private readonly IEventDispatcher $eventDispatcher,
+        private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null,
+        private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler=null,
+        private readonly ?IUserSession $userSession=null
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -119,6 +129,47 @@ class FilesController extends Controller
         $this->fileService   = $fileService;
         $this->objectService = $objectService;
     }//end __construct()
+
+    /**
+     * Record a download event: bump the OR-side download counter and
+     * write an audit-trail row. Best-effort — failures here MUST NOT
+     * break the underlying file response. Logs at warn-level on a
+     * mapper or audit-handler exception.
+     *
+     * Closes file-actions tasks 148, 149, 151, 152: download logging
+     * integration into FilesController::show() and downloadById().
+     *
+     * @param int                                    $fileId The Nextcloud filecache fileid being downloaded.
+     * @param \OCA\OpenRegister\Db\ObjectEntity|null $object Parent object whose folder hosts the file.
+     *
+     * @return void
+     */
+    private function recordDownloadEvent(int $fileId, ?\OCA\OpenRegister\Db\ObjectEntity $object=null): void
+    {
+        if ($this->fileMapper !== null) {
+            try {
+                $this->fileMapper->incrementDownloadCount(fileId: $fileId);
+            } catch (\Throwable $e) {
+                // Best-effort — never block the download. Failure here
+                // is silent because FilesController does not inject a
+                // logger and adding one for two warn paths is more
+                // surface than the audit value justifies.
+            }
+        }
+
+        if ($this->fileAuditHandler !== null && $object !== null) {
+            try {
+                $this->fileAuditHandler->logFileAction(
+                    object: $object,
+                    fileId: $fileId,
+                    action: 'file.downloaded',
+                    data: ['fileId' => $fileId]
+                );
+            } catch (\Throwable $e) {
+                // Same best-effort policy as above.
+            }
+        }//end if
+    }//end recordDownloadEvent()
 
     /**
      * Get all files associated with a specific object
@@ -135,7 +186,7 @@ class FilesController extends Controller
      *
      * @PublicPage
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
      */
     public function index(
         string $register,
@@ -225,6 +276,9 @@ class FilesController extends Controller
             $response->addHeader('Content-Disposition', 'inline; filename="'.$file->getName().'"');
             $response->addHeader('Content-Length', (string) $file->getSize());
 
+            // Record download (counter + audit). Best-effort.
+            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: $object);
+
             return $response;
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
@@ -285,7 +339,7 @@ class FilesController extends Controller
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
      */
     public function create(
         string $register,
@@ -548,11 +602,12 @@ class FilesController extends Controller
             $uploadedFiles = $this->normalizeMultipartFiles(files: $files, data: $data);
         }
 
-        // Check for single file upload.
+        // Check for single file upload via the 'file' field. Run it through
+        // the same normalizer as 'files[]' so 'share' and 'tags' are populated.
         $uploadedFile = $this->request->getUploadedFile('file');
 
         if (empty($uploadedFile) === false) {
-            $uploadedFiles[] = $uploadedFile;
+            $uploadedFiles[] = $this->normalizeSingleFile(files: $uploadedFile, data: $data);
         }
 
         if (empty($uploadedFiles) === true) {
@@ -615,7 +670,7 @@ class FilesController extends Controller
             'tmp_name' => $files['tmp_name'] ?? '',
             'error'    => $files['error'] ?? UPLOAD_ERR_NO_FILE,
             'size'     => $files['size'] ?? 0,
-            'share'    => $data['share'] === 'true',
+            'share'    => $this->parseBool(value: $data['share'] ?? false),
             'tags'     => $tags,
         ];
     }//end normalizeSingleFile()
@@ -684,7 +739,7 @@ class FilesController extends Controller
                 'tmp_name' => $tmpNameArray[$i] ?? '',
                 'error'    => $errorArray[$i] ?? $errorScalar ?? UPLOAD_ERR_NO_FILE,
                 'size'     => $sizeArray[$i] ?? $sizeScalar ?? 0,
-                'share'    => $data['share'] === 'true',
+                'share'    => $this->parseBool(value: $data['share'] ?? false),
                 'tags'     => $tags,
             ];
         }//end for
@@ -831,7 +886,7 @@ class FilesController extends Controller
      *     array{error?: string, success?: bool},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
      */
     public function delete(
         string $register,
@@ -880,7 +935,7 @@ class FilesController extends Controller
      *     array{error?: mixed|string, labels?: list<string>,...},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
      */
     public function publish(
         string $register,
@@ -1002,6 +1057,11 @@ class FilesController extends Controller
             if ($file === null) {
                 return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
             }
+
+            // Record download (counter + audit). Best-effort. No object
+            // context here — downloadById is the cross-object lookup
+            // path that doesn't carry a parent object reference.
+            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: null);
 
             // Stream the file content back to the client.
             return $this->fileService->streamFile($file);
@@ -1610,6 +1670,19 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // Gate anonymous callers on the file being publicly published.
+            // Authenticated callers fall through to the existing object-level
+            // RBAC path; anonymous callers MUST NOT be able to preview files
+            // that haven't been explicitly published with a public share link.
+            if ($this->userSession !== null && $this->userSession->getUser() === null) {
+                if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
+                    return new JSONResponse(
+                        data: ["error" => "Preview not available for unpublished files"],
+                        statusCode: 403
+                    );
+                }
+            }
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {

@@ -1,3 +1,8 @@
+# e-Depot Transfer
+
+## Purpose
+Define how OpenRegister exports objects to a Dutch e-Depot for permanent archival storage. The capability MUST package selected objects as OAIS-compliant SIP archives with MDTO-compliant XML metadata, deliver them via SFTP, REST, or OpenConnector, track per-object transfer status, and enforce read-only state on transferred objects so the e-Depot remains the authoritative copy. This satisfies Archiefwet 1995 obligations for transferring permanent records to the receiving archival institution.
+
 ## Requirements
 
 ### Requirement: The system MUST generate MDTO-compliant XML metadata per object

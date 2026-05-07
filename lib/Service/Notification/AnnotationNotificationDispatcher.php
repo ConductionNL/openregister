@@ -24,6 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use DateTime;
+use DateTimeImmutable;
+use DateTimeInterface;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -40,9 +43,32 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Reads notification annotations and dispatches matching ones.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class AnnotationNotificationDispatcher
 {
+    /**
+     * Constructor.
+     *
+     * @param SchemaMapper                                             $schemaMapper        Mapper used to resolve the object's schema.
+     * @param INotificationManager                                     $notificationManager Nextcloud notification API.
+     * @param LoggerInterface                                          $logger              Logger for dispatch diagnostics.
+     * @param IGroupManager                                            $groupManager        Group resolver for `groups` recipient kinds.
+     * @param IUserManager                                             $userManager         User resolver for `users` recipient kinds.
+     * @param IMailer                                                  $mailer              Mailer for the `email` channel.
+     * @param IActivityManager                                         $activityManager     Activity manager for the `activity` channel.
+     * @param IClientService                                           $httpClient          HTTP client for the `webhook` and `talk` channels.
+     * @param RateLimiter|null                                         $rateLimiter         Optional rate limiter (per-rule, per-recipient).
+     * @param IConfig|null                                             $config              Optional config service for runtime tunables.
+     * @param NotificationHistoryMapper|null                           $historyMapper       Optional history mapper for delivery audit rows.
+     * @param NotificationCoalescer|null                               $coalescer           Optional coalescer for burst suppression.
+     * @param \OCA\OpenRegister\Db\NotificationSubscriptionMapper|null $subscriptionMapper  Optional subscription mapper for opt-in filtering.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
+     */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly INotificationManager $notificationManager,
@@ -56,7 +82,8 @@ class AnnotationNotificationDispatcher
         private readonly ?RateLimiter $rateLimiter=null,
         private readonly ?IConfig $config=null,
         private readonly ?NotificationHistoryMapper $historyMapper=null,
-        private readonly ?NotificationCoalescer $coalescer=null
+        private readonly ?NotificationCoalescer $coalescer=null,
+        private readonly ?\OCA\OpenRegister\Db\NotificationSubscriptionMapper $subscriptionMapper=null
     ) {
     }//end __construct()
 
@@ -66,15 +93,21 @@ class AnnotationNotificationDispatcher
      * @param ObjectEntity         $object  The object the event happened on.
      * @param string               $trigger 'created' | 'updated' | 'transition'.
      * @param array<string, mixed> $context Trigger-specific extras (e.g. `action`, `from`, `to`).
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function dispatch(ObjectEntity $object, string $trigger, array $context=[]): void
     {
-        $schema = $this->loadSchema($object);
+        $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             return;
         }
 
-        $notifications = $this->getAnnotation($schema);
+        $notifications = $this->getAnnotation(schema: $schema);
         if ($notifications === null) {
             return;
         }
@@ -86,7 +119,12 @@ class AnnotationNotificationDispatcher
                 continue;
             }
 
-            if ($this->matches($spec['trigger'] ?? [], $trigger, $context) === false) {
+            $matches = $this->matches(
+                triggerSpec: $spec['trigger'] ?? [],
+                trigger: $trigger,
+                context: $context
+            );
+            if ($matches === false) {
                 continue;
             }
 
@@ -104,7 +142,25 @@ class AnnotationNotificationDispatcher
                 continue;
             }
 
-            $recipients = $this->resolveRecipients(($spec['recipients'] ?? []), $data, $object, $context);
+            $recipients = $this->resolveRecipients(
+                recipientsSpec: ($spec['recipients'] ?? []),
+                data: $data,
+                object: $object,
+                context: $context
+            );
+            // Subscription gate: when the rule opts into subscription
+            // filtering via `requiresSubscription: true`, intersect
+            // the resolved recipients with the set of users who have
+            // subscribed to this object's (register, schema). Anonymous
+            // / non-uid recipients are passed through unchanged because
+            // subscriptions are user-scoped only.
+            if (($spec['requiresSubscription'] ?? false) === true) {
+                $recipients = $this->filterBySubscription(
+                    recipients: $recipients,
+                    object: $object
+                );
+            }
+
             if (count($recipients) === 0) {
                 continue;
             }
@@ -270,7 +326,6 @@ class AnnotationNotificationDispatcher
 
     }//end dispatch()
 
-
     /**
      * Helper to dispatch a broadcast-style channel (webhook / talk).
      *
@@ -293,6 +348,8 @@ class AnnotationNotificationDispatcher
      * @param array<string, mixed>      $context          Trigger context (action, from, to).
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     private function dispatchBroadcastChannel(
         string $channel,
@@ -381,7 +438,6 @@ class AnnotationNotificationDispatcher
 
     }//end rateLimitAllows()
 
-
     /**
      * Apply the (optional) coalescer. Returns true when the dispatch
      * may proceed.
@@ -407,7 +463,6 @@ class AnnotationNotificationDispatcher
         return $this->coalescer->shouldDispatch(ruleId: $ruleId, recipient: $recipient, perRuleOverride: $coalesce);
 
     }//end coalesceAllows()
-
 
     /**
      * Persist a row in `openregister_notification_history`.
@@ -468,7 +523,6 @@ class AnnotationNotificationDispatcher
         }//end try
 
     }//end recordHistory()
-
 
     /**
      * Record a per-recipient short-circuit (rate-limit / coalesce)
@@ -574,17 +628,6 @@ class AnnotationNotificationDispatcher
     }//end organisationGateAllows()
 
     /**
-     * POST a JSON payload to the configured webhook URL.
-     *
-     * @param array<string, mixed> $spec       The notification spec block.
-     * @param ObjectEntity         $object     The object the event happened on.
-     * @param string               $notificationName Annotation name.
-     * @param string               $subject    Interpolated subject.
-     * @param array<int, string>   $recipients Resolved recipient uids.
-     * @param array<string, mixed> $context    Trigger context (action, from, to).
-     */
-
-    /**
      * Post a chat message into a Talk room.
      *
      * Uses the standard NC Talk REST API at
@@ -596,6 +639,8 @@ class AnnotationNotificationDispatcher
      *
      * @param array<string, mixed> $spec    Notification spec block.
      * @param string               $message Already-interpolated subject.
+     *
+     * @return void
      */
     private function emitTalk(array $spec, string $message): void
     {
@@ -648,6 +693,18 @@ class AnnotationNotificationDispatcher
         }//end try
     }//end emitTalk()
 
+    /**
+     * POST a JSON payload to the configured webhook URL.
+     *
+     * @param array<string, mixed> $spec             The notification spec block.
+     * @param ObjectEntity         $object           The object the event happened on.
+     * @param string               $notificationName Annotation name.
+     * @param string               $subject          Interpolated subject.
+     * @param array<int, string>   $recipients       Resolved recipient uids.
+     * @param array<string, mixed> $context          Trigger context (action, from, to).
+     *
+     * @return void
+     */
     private function emitWebhook(
         array $spec,
         ObjectEntity $object,
@@ -689,7 +746,7 @@ class AnnotationNotificationDispatcher
             ],
             'recipients'   => $recipients,
             'context'      => $context,
-            'timestamp'    => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'timestamp'    => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
         ];
 
         try {
@@ -711,8 +768,13 @@ class AnnotationNotificationDispatcher
     }//end emitWebhook()
 
     /**
-     * @param array<string, mixed> $triggerSpec
-     * @param array<string, mixed> $context
+     * Decide whether a notification's `trigger` block matches the active event.
+     *
+     * @param array<string, mixed> $triggerSpec The declared `trigger` sub-document.
+     * @param string               $trigger     The active event type.
+     * @param array<string, mixed> $context     Per-event context (e.g. `action`).
+     *
+     * @return bool True when the rule should fire for this event.
      */
     private function matches(array $triggerSpec, string $trigger, array $context): bool
     {
@@ -737,10 +799,18 @@ class AnnotationNotificationDispatcher
     }//end matches()
 
     /**
-     * @param array<int, array<string, mixed>> $recipientsSpec
-     * @param array<string, mixed>             $data
+     * Resolve a `recipients` block to a flat list of UIDs.
+     *
+     * @param array<int, array<string, mixed>> $recipientsSpec The declared recipients block.
+     * @param array<string, mixed>             $data           Object payload (used by `field` resolvers).
+     * @param ObjectEntity|null                $object         Optional owning object (needed for ACL/expression kinds).
+     * @param array<string, mixed>             $context        Per-event context.
      *
      * @return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object=null, array $context=[]): array
     {
@@ -792,7 +862,7 @@ class AnnotationNotificationDispatcher
                 }
 
                 $value = ($data[$relName] ?? null);
-                foreach ($this->extractUidsFromRelation($value) as $uid) {
+                foreach ($this->extractUidsFromRelation(value: $value) as $uid) {
                     if ($this->userExists($uid) === true) {
                         $uids[] = $uid;
                     }
@@ -804,7 +874,7 @@ class AnnotationNotificationDispatcher
             if ($kind === 'object-acl') {
                 if ($object !== null) {
                     $perm = (string) ($r['permission'] ?? 'read');
-                    foreach ($this->resolveObjectAclRecipients($object, $perm) as $uid) {
+                    foreach ($this->resolveObjectAclRecipients(object: $object, permission: $perm) as $uid) {
                         $uids[] = $uid;
                     }
                 }
@@ -815,7 +885,12 @@ class AnnotationNotificationDispatcher
             if ($kind === 'expression') {
                 if ($object !== null) {
                     $resolverTag = (string) ($r['resolver'] ?? '');
-                    foreach ($this->resolveExpressionRecipients($resolverTag, $object, $context) as $uid) {
+                    $resolved    = $this->resolveExpressionRecipients(
+                        resolverTag: $resolverTag,
+                        object: $object,
+                        context: $context
+                    );
+                    foreach ($resolved as $uid) {
                         $uids[] = $uid;
                     }
                 }
@@ -864,7 +939,12 @@ class AnnotationNotificationDispatcher
      * walk the full RBAC `OrObjectAclMapper` once that surface is
      * stable.
      *
+     * @param ObjectEntity $object     The object whose ACL should be read.
+     * @param string       $permission The required permission (`read` or `manage`).
+     *
      * @return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function resolveObjectAclRecipients(ObjectEntity $object, string $permission): array
     {
@@ -922,7 +1002,10 @@ class AnnotationNotificationDispatcher
      * bans that pattern in `lib/`. The injected container is functionally
      * equivalent without coupling to the static accessor.
      *
-     * @param  array<string, mixed> $context
+     * @param string               $resolverTag DI tag (or FQCN) of the resolver service.
+     * @param ObjectEntity         $object      The object whose recipients are being resolved.
+     * @param array<string, mixed> $context     Per-event context passed through to the resolver.
+     *
      * @return array<int, string>
      */
     private function resolveExpressionRecipients(string $resolverTag, ObjectEntity $object, array $context): array
@@ -997,7 +1080,11 @@ class AnnotationNotificationDispatcher
      *   - an array of objects with a `userId` or `uid` field
      *   - any nested combination of the above
      *
+     * @param mixed $value The raw relation value.
+     *
      * @return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractUidsFromRelation(mixed $value): array
     {
@@ -1066,6 +1153,11 @@ class AnnotationNotificationDispatcher
      * @param array<string, mixed> $data         Object data for `{{prop}}` interpolation.
      * @param array<string, mixed> $context      Trigger-specific context.
      * @param string               $fallbackName Annotation name (last-resort fallback).
+     *
+     * @return string The interpolated subject string.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function resolveLocalizedSubject(
         mixed $template,
@@ -1080,7 +1172,8 @@ class AnnotationNotificationDispatcher
         }
 
         if (is_array($template) === true) {
-            $defaultLocale = isset($template['defaultLocale']) === true && is_string($template['defaultLocale']) === true ? $template['defaultLocale'] : 'nl';
+            $declared      = isset($template['defaultLocale']) === true && is_string($template['defaultLocale']) === true;
+            $defaultLocale = $declared === true ? $template['defaultLocale'] : 'nl';
 
             // Recipient locale wins when declared.
             if ($locale !== null && isset($template[$locale]) === true && is_string($template[$locale]) === true) {
@@ -1127,6 +1220,8 @@ class AnnotationNotificationDispatcher
      * fallback chain in `resolveLocalizedSubject()`.
      *
      * @param string $uid Nextcloud user identifier.
+     *
+     * @return string|null The 2-letter language code, or null when unknown.
      */
     private function resolveUserLocale(string $uid): ?string
     {
@@ -1173,15 +1268,18 @@ class AnnotationNotificationDispatcher
      * The literal template fragments authored by the schema author
      * pass through unchanged (they aren't sourced from object data).
      *
-     * @param array<string, mixed> $data
-     * @param array<string, mixed> $context
+     * @param string               $template The raw subject template.
+     * @param array<string, mixed> $data     Object data for `{{prop}}` lookup.
+     * @param array<string, mixed> $context  Per-event context for `{{prop}}` lookup.
+     *
+     * @return string The interpolated string.
      */
     private function interpolate(string $template, array $data, array $context): string
     {
         return preg_replace_callback(
             '/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
-            static function (array $m) use ($data, $context): string {
-                $key = $m[1];
+            static function (array $matches) use ($data, $context): string {
+                $key = $matches[1];
                 if (array_key_exists($key, $data) === true) {
                     if (is_scalar($data[$key]) === false) {
                         return '';
@@ -1203,7 +1301,15 @@ class AnnotationNotificationDispatcher
     }//end interpolate()
 
     /**
-     * @param array<string, mixed> $parameters
+     * Persist + dispatch a single in-app Nextcloud notification row.
+     *
+     * @param string               $uid        Recipient user UID.
+     * @param string               $objectId   The owning object's UUID (or rule name fallback).
+     * @param string               $name       Annotation name (notification type identifier).
+     * @param string               $subject    Pre-interpolated subject text.
+     * @param array<string, mixed> $parameters Extra notification parameters.
+     *
+     * @return void
      */
     private function emitNotification(string $uid, string $objectId, string $name, string $subject, array $parameters): void
     {
@@ -1212,7 +1318,7 @@ class AnnotationNotificationDispatcher
             $notification
                 ->setApp('openregister')
                 ->setUser($uid)
-                ->setDateTime(new \DateTime())
+                ->setDateTime(new DateTime())
                 ->setObject('object', $objectId !== '' ? $objectId : $name)
                 ->setSubject($name, array_merge($parameters, ['_text' => $subject]));
             $this->notificationManager->notify($notification);
@@ -1229,6 +1335,12 @@ class AnnotationNotificationDispatcher
      * Resolves the user's email via IUserManager and short-circuits if
      * SMTP isn't configured (mailer->validateMailFrom would fail) or
      * the user has no email on file.
+     *
+     * @param string $uid     Recipient user UID.
+     * @param string $subject Email subject line.
+     * @param string $body    Email body text.
+     *
+     * @return void
      */
     private function emitEmail(string $uid, string $subject, string $body): void
     {
@@ -1259,6 +1371,13 @@ class AnnotationNotificationDispatcher
 
     /**
      * Publish an entry to the Nextcloud Activity stream.
+     *
+     * @param string $uid      Affected user UID.
+     * @param string $objectId Owning object's UUID (or rule name fallback).
+     * @param string $name     Annotation name (activity subject identifier).
+     * @param string $subject  Pre-interpolated activity text.
+     *
+     * @return void
      */
     private function emitActivity(string $uid, string $objectId, string $name, string $subject): void
     {
@@ -1279,6 +1398,13 @@ class AnnotationNotificationDispatcher
         }
     }//end emitActivity()
 
+    /**
+     * Resolve the schema referenced by an object, returning null on failure.
+     *
+     * @param ObjectEntity $object The object whose schema should be looked up.
+     *
+     * @return Schema|null The resolved schema, or null when missing/unresolvable.
+     */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
         $ref = $object->getSchema();
@@ -1294,6 +1420,10 @@ class AnnotationNotificationDispatcher
     }//end loadSchema()
 
     /**
+     * Pull the `x-openregister-notifications` annotation off a schema.
+     *
+     * @param Schema $schema The schema whose annotation should be read.
+     *
      * @return array<string, mixed>|null
      */
     private function getAnnotation(Schema $schema): ?array
@@ -1302,4 +1432,69 @@ class AnnotationNotificationDispatcher
         $value  = ($config['x-openregister-notifications'] ?? null);
         return is_array($value) === true ? $value : null;
     }//end getAnnotation()
+
+    /**
+     * Filter resolved recipients down to users who have subscribed to
+     * the object's (register, schema). Non-uid recipients (email
+     * literals, webhook urls, etc) pass through unchanged because the
+     * subscription store is user-scoped only.
+     *
+     * Null-safe: when the SubscriptionMapper isn't wired (legacy
+     * fixtures) or the object lacks register/schema metadata, the
+     * filter is a no-op and every recipient is kept.
+     *
+     * @param array<int, array> $recipients The resolved recipient list.
+     * @param ObjectEntity      $object     The object the event fired on.
+     *
+     * @return array<int, array>
+     */
+    private function filterBySubscription(array $recipients, ObjectEntity $object): array
+    {
+        if ($this->subscriptionMapper === null) {
+            return $recipients;
+        }
+
+        $registerId = $object->getRegister();
+        $schemaId   = $object->getSchema();
+        if (is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+            return $recipients;
+        }
+
+        try {
+            $subscribed = $this->subscriptionMapper->findSubscribedUids(
+                registerId: (int) $registerId,
+                schemaId: (int) $schemaId
+            );
+        } catch (\Throwable $e) {
+            // A query failure MUST NOT block dispatch — log and pass
+            // every recipient through.
+            $this->logger->warning(
+                '[AnnotationNotificationDispatcher] subscription lookup failed: '.$e->getMessage(),
+                ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return $recipients;
+        }
+
+        $subscribedSet = array_flip($subscribed);
+
+        return array_values(
+                array_filter(
+            $recipients,
+            static function (array $recipient) use ($subscribedSet): bool {
+                $kind = ($recipient['kind'] ?? null);
+                $uid  = ($recipient['uid'] ?? null);
+                if ($kind !== 'user' || is_string($uid) === false || $uid === '') {
+                    // Non-user recipients (email literal, webhook url,
+                    // talk room, group expansion that already produced
+                    // a user) bypass the subscription filter so legacy
+                    // wire shapes still receive notifications.
+                    return true;
+                }
+
+                return isset($subscribedSet[$uid]);
+            }
+        )
+                );
+
+    }//end filterBySubscription()
 }//end class

@@ -333,34 +333,29 @@ class SolrSettingsHandler
         $totalTime    = ($serviceStats['search_time'] ?? 0) + ($serviceStats['index_time'] ?? 0);
 
         // Calculate operations per second.
+        $opsPerSec = 0;
         if ($totalTime > 0) {
             $opsPerSec = round($totalOps / ($totalTime / 1000), 2);
-        } else {
-            $opsPerSec = 0;
         }
 
+        $errorRate = 0;
         if ($totalOps > 0) {
             $errorRate = round(($serviceStats['errors'] ?? 0) / $totalOps * 100, 2);
-        } else {
-            $errorRate = 0;
         }
 
+        $coreStatus = 'inactive';
         if ($rawStats['available'] === true) {
             $coreStatus = 'active';
-        } else {
-            $coreStatus = 'inactive';
         }
 
+        $avgSearchTimeMs = 0;
         if (($serviceStats['searches'] ?? 0) > 0) {
             $avgSearchTimeMs = round(($serviceStats['search_time'] ?? 0) / ($serviceStats['searches'] ?? 1), 2);
-        } else {
-            $avgSearchTimeMs = 0;
         }
 
+        $avgIndexTimeMs = 0;
         if (($serviceStats['indexes'] ?? 0) > 0) {
             $avgIndexTimeMs = round(($serviceStats['index_time'] ?? 0) / ($serviceStats['indexes'] ?? 1), 2);
-        } else {
-            $avgIndexTimeMs = 0;
         }
 
         return [

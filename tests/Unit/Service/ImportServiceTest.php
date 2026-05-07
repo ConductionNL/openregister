@@ -69,12 +69,21 @@ class ImportServiceTest extends TestCase
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->jobList = $this->createMock(IJobList::class);
 
+        // The CSV codec is invoked as a translatable-property pre-pass
+        // inside transformCsvRowToObject; without a stub the default
+        // mock returns null and wipes the row data. Pass-through.
+        $translationCsvCodec = $this->createMock(\OCA\OpenRegister\Service\Translation\TranslationCsvCodec::class);
+        $translationCsvCodec->method('unflattenFromCsv')
+            ->willReturnCallback(static fn(array $row) => $row);
+
         $this->service = new ImportService(
             $this->schemaMapper,
             $this->objectService,
             $this->logger,
             $this->groupManager,
-            $this->jobList
+            $this->jobList,
+            $translationCsvCodec,
+            $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
         );
     }
 

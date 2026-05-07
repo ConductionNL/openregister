@@ -215,6 +215,8 @@ class DsarService
      * @param bool        $dryRun  When true, returns matches without erasing.
      *
      * @return array<string, mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function eraseObjectsForSubject(string $subject, ?string $type=null, bool $dryRun=false): array
     {
@@ -471,13 +473,24 @@ class DsarService
                     $qb->expr()->isNotNull('r.object_id')
                 );
 
+            // SECURITY: escape LIKE wildcards in user-supplied subject before
+            // wrapping with `%`-anchors. Without this, an admin (the
+            // `vergetelheid` endpoint is admin-gated) could pass
+            // `subject=%@%` or `subject=_` to match every PII row in
+            // `openregister_entities.value` — combined with the downstream
+            // `eraseObjectsForSubject()` chain, that's a one-call wildcard
+            // erase well beyond legitimate DSAR semantics.
+            $escapedSubject = $this->db->escapeLikeParameter($subject);
+
             if ($mode === 'ilike') {
                 $qb->andWhere(
-                    $qb->expr()->iLike('e.value', $qb->createNamedParameter('%'.$subject.'%'))
+                    $qb->expr()->iLike('e.value', $qb->createNamedParameter('%'.$escapedSubject.'%'))
                 );
-            } else {
+            }
+
+            if ($mode !== 'ilike') {
                 $qb->andWhere(
-                    $qb->expr()->iLike('e.value', $qb->createNamedParameter($subject))
+                    $qb->expr()->iLike('e.value', $qb->createNamedParameter($escapedSubject))
                 );
             }
 

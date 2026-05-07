@@ -9,6 +9,14 @@
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -25,7 +33,14 @@ use OCP\IUserSession;
 
 class RealtimeController extends Controller
 {
-
+    /**
+     * Constructor.
+     *
+     * @param string              $appName             The application name.
+     * @param IRequest            $request             The current request.
+     * @param RealtimeEventMapper $eventMapper         The realtime event mapper.
+     * @param OrganisationService $organisationService The organisation service.
+     */
     public function __construct(
         string $appName,
         IRequest $request,
@@ -35,7 +50,6 @@ class RealtimeController extends Controller
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
 
     /**
      * Cursor-based polling. Returns events with `id > since`.
@@ -50,6 +64,15 @@ class RealtimeController extends Controller
      * Anonymous/unauthenticated callers get HTTP 401. Authenticated
      * callers see only events scoped to their active organisation
      * (multi-tenancy gate). Cross-org events MUST NOT leak.
+     *
+     * @param int|null    $since      The cursor (event id) to fetch events after.
+     * @param int|null    $limit      Maximum number of events to return.
+     * @param string|null $register   Optional register filter.
+     * @param string|null $schema     Optional schema filter.
+     * @param string|null $objectUuid Optional object UUID filter.
+     * @param string|null $eventType  Optional event type filter.
+     *
+     * @return JSONResponse JSON response with events, cursor, and hasMore.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -99,7 +122,7 @@ class RealtimeController extends Controller
             'organisation' => $orgUuid,
         ];
 
-        $events    = $this->eventMapper->findSince($since, $effectiveLimit, $filters);
+        $events     = $this->eventMapper->findSince($since, $effectiveLimit, $filters);
         $serialised = array_map(fn($event) => $event->jsonSerialize(), $events);
 
         $newCursor = $since ?? 0;
@@ -107,19 +130,22 @@ class RealtimeController extends Controller
             $newCursor = (int) $events[count($events) - 1]->getId();
         }
 
-        return new JSONResponse([
-            'events'  => $serialised,
-            'cursor'  => $newCursor,
-            'hasMore' => count($events) === $effectiveLimit,
-        ]);
+        return new JSONResponse(
+                [
+                    'events'  => $serialised,
+                    'cursor'  => $newCursor,
+                    'hasMore' => count($events) === $effectiveLimit,
+                ]
+                );
     }//end events()
-
 
     /**
      * Get the current head cursor (highest event id). Clients use this
      * to fast-forward past historical events on initial subscription —
      * GET /api/realtime/cursor → {cursor: 12345}, then start polling
      * with `?since=12345`.
+     *
+     * @return JSONResponse JSON response containing the current head cursor.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -133,10 +159,27 @@ class RealtimeController extends Controller
             );
         }
 
-        return new JSONResponse([
-            'cursor' => $this->eventMapper->getMaxId(),
-        ]);
+        // SECURITY: scope the cursor to the caller's active organisation.
+        // Returning the global head pointer let any authed caller observe
+        // the global write rate by polling — small but real cross-tenant
+        // side channel. With no active org, return 0 (fail-closed) so
+        // there is no head pointer to mine.
+        $orgUuid = null;
+        try {
+            $activeOrg = $this->organisationService->getActiveOrganisation();
+            $orgUuid   = $activeOrg?->getUuid();
+        } catch (\Throwable $e) {
+            $orgUuid = null;
+        }
+
+        if ($orgUuid === null) {
+            return new JSONResponse(['cursor' => 0]);
+        }
+
+        return new JSONResponse(
+                [
+                    'cursor' => $this->eventMapper->getMaxIdForOrganisation($orgUuid),
+                ]
+                );
     }//end cursor()
-
-
 }//end class

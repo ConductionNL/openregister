@@ -349,7 +349,7 @@ In multi-tenant deployments, reports MUST only include objects belonging to the 
 - **AND** this capability MUST be restricted to instance administrators only
 
 ### Requirement: The system MUST support API access for external BI tools via GraphQL + REST
-External BI tools (Power BI, Tableau, Looker, Metabase) integrate via the GraphQL API at `POST /api/graphql`, which auto-generates a schema spanning every register and supports cross-register queries with filters + pagination + RBAC + multi-tenancy. For BI tools that prefer REST/JDBC, the existing REST API supports query parameters that enable efficient data extraction: cursor-based pagination for full data sync, `_fields` parameter for column selection, `_format` parameter for response format (JSON, CSV, JSONL), and `If-Modified-Since` headers for incremental sync.
+External BI tools (Power BI, Tableau, Looker, Metabase) MUST be able to integrate via the GraphQL API at `POST /api/graphql`, which auto-generates a schema spanning every register and supports cross-register queries with filters, pagination, RBAC, and multi-tenancy. For BI tools that prefer REST/JDBC, the REST API MUST accept query parameters that enable efficient data extraction: cursor-based pagination for full data sync, `_fields` parameter for column selection, `_format` parameter for response format (JSON, CSV, JSONL), and `If-Modified-Since` headers for incremental sync.
 
 #### Scenario: Full data sync with cursor pagination
 - **GIVEN** an external ETL tool needs to sync all 50,000 `meldingen` objects

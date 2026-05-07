@@ -632,6 +632,7 @@ import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
 import { BTabs, BTab } from 'bootstrap-vue'
 import { getTheme } from '../../services/getTheme.js'
+import { updateFileLabels } from '../../services/fileMetadata.js'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
@@ -1597,21 +1598,36 @@ export default {
 			this.closeModal()
 			this.$router.push('/audit-trails')
 		},
+		// Apply a batch action across the selected files. Prefers the
+		// shared-store batchFiles action (one POST to /files/batch); falls
+		// back to N sequential single-file calls when the runtime store
+		// doesn't expose batchFiles yet (older @conduction/nextcloud-vue).
+		// Per-action callbacks let callers swap in publishFile / unpublishFile
+		// / deleteFile for the legacy fallback path.
+		async _runBatchAction(action, perFileFallback) {
+			if (this.selectedAttachments.length === 0) return
+			const { type, objectId } = this._getFileParams()
+			const fileIds = [...this.selectedAttachments]
+
+			if (typeof objectStore.batchFiles === 'function') {
+				await objectStore.batchFiles(type, objectId, action, fileIds)
+				return
+			}
+
+			// Legacy fallback: loop the per-file action.
+			for (const fileId of fileIds) {
+				await perFileFallback(type, objectId, fileId)
+			}
+		},
 		async publishSelectedFiles() {
 			if (this.selectedAttachments.length === 0) return
 
 			try {
 				this.publishLoading = [...this.selectedAttachments]
-				const { type, objectId } = this._getFileParams()
-
-				const selectedFiles = objectStore.files.results.filter(file =>
-					this.selectedAttachments.includes(file.id),
+				await this._runBatchAction(
+					'publish',
+					(type, objectId, fileId) => objectStore.publishFile(type, objectId, fileId),
 				)
-
-				for (const file of selectedFiles) {
-					await objectStore.publishFile(type, objectId, file.id)
-				}
-
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -1625,16 +1641,10 @@ export default {
 
 			try {
 				this.depublishLoading = [...this.selectedAttachments]
-				const { type, objectId } = this._getFileParams()
-
-				const selectedFiles = objectStore.files.results.filter(file =>
-					this.selectedAttachments.includes(file.id),
+				await this._runBatchAction(
+					'depublish',
+					(type, objectId, fileId) => objectStore.unpublishFile(type, objectId, fileId),
 				)
-
-				for (const file of selectedFiles) {
-					await objectStore.unpublishFile(type, objectId, file.id)
-				}
-
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -1648,16 +1658,10 @@ export default {
 
 			try {
 				this.fileIdsLoading = [...this.selectedAttachments]
-				const { type, objectId } = this._getFileParams()
-
-				const selectedFiles = objectStore.files.results?.filter(item =>
-					this.selectedAttachments.includes(item.id),
-				) || []
-
-				for (const file of selectedFiles) {
-					await objectStore.deleteFile(type, objectId, file.id)
-				}
-
+				await this._runBatchAction(
+					'delete',
+					(type, objectId, fileId) => objectStore.deleteFile(type, objectId, fileId),
+				)
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -1712,6 +1716,12 @@ export default {
 			this.editingLabelsFileId = null
 			this.editingLabels = []
 		},
+		// Persist label changes via the dedicated /files/{fileId}/labels
+		// endpoint with optimistic UI: the in-memory attachment.labels
+		// flips to the new value as soon as the user clicks save, and
+		// reverts on error so the UI never lies if the request fails.
+		// API call shape is implemented in services/fileMetadata.js so it
+		// can be unit-tested without mounting this modal.
 		async saveFileLabels(file) {
 			const { type, objectId } = this._getFileParams()
 			const rawRegister = objectStore.objectItem['@self']?.register
@@ -1719,18 +1729,30 @@ export default {
 			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
 			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
 
+			// Snapshot the current value so we can revert on failure.
+			const previousLabels = Array.isArray(file.labels) ? [...file.labels] : []
+			const nextLabels = [...this.editingLabels]
+
+			// Optimistic update — flip the in-memory file row immediately.
+			file.labels = nextLabels
 			this.labelsLoading = true
+
 			try {
-				const url = `/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectId}/files/${file.id}`
-				const response = await fetch(url, {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ tags: this.editingLabels }),
+				await updateFileLabels({
+					registerId,
+					schemaId,
+					objectId,
+					fileId: file.id,
+					labels: nextLabels,
 				})
-				if (!response.ok) throw new Error(`HTTP ${response.status}`)
+				// Re-fetch to pick up server-side normalisation (dedup, tag
+				// resolution) and any other fields that change as a side
+				// effect of the label update.
 				await objectStore.fetchFiles(type, objectId)
 				this.cancelFileLabels()
 			} catch (error) {
+				// Revert the optimistic update so the UI matches the server.
+				file.labels = previousLabels
 				// eslint-disable-next-line no-console
 				console.error('Failed to save file labels:', error)
 			} finally {

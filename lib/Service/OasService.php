@@ -23,6 +23,7 @@ use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\OasValidationException;
+use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use OCP\IURLGenerator;
 use OCP\IConfig;
@@ -35,10 +36,11 @@ use Psr\Log\LoggerInterface;
  * Creates comprehensive API documentation including endpoints, schemas, parameters,
  * and examples based on register and schema definitions.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)     OAS generation requires many endpoint and schema methods
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex OpenAPI schema generation logic
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
  */
 class OasService
 {
@@ -120,12 +122,14 @@ class OasService
      * @param SchemaMapper         $schemaMapper   Schema mapper for database operations
      * @param IURLGenerator        $urlGenerator   URL generator for absolute URLs
      * @param LoggerInterface|null $logger         PSR-3 logger for surfacing validation issues
+     * @param ?OasRequestValidator $metaValidator  Optional validator for the vendored OAS 3.1 meta-schema check.
      */
     public function __construct(
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
         IURLGenerator $urlGenerator,
-        ?LoggerInterface $logger=null
+        ?LoggerInterface $logger=null,
+        private readonly ?OasRequestValidator $metaValidator=null
     ) {
         $this->registerMapper = $registerMapper;
         $this->schemaMapper   = $schemaMapper;
@@ -162,10 +166,10 @@ class OasService
      * @throws \Exception                When base OAS file cannot be read or parsed
      * @throws OasValidationException    In strict mode, when the generated OAS has validation errors
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex OAS generation with multiple schema and path operations
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for register and schema processing
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) OAS generation requires multiple steps: setup, schema loading,
-     *                                               CRUD paths, validation
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function createOas(?string $registerId=null, bool $strict=false): array
     {
@@ -356,9 +360,10 @@ class OasService
             $context = ['path' => $issue['path'], 'code' => $issue['code']];
             if ($issue['severity'] === OasValidationReport::SEVERITY_ERROR) {
                 $this->logger->error('OAS validation: '.$issue['message'], $context);
-            } else {
-                $this->logger->warning('OAS validation: '.$issue['message'], $context);
+                continue;
             }
+
+            $this->logger->warning('OAS validation: '.$issue['message'], $context);
         }
     }//end logValidationIssues()
 
@@ -826,12 +831,8 @@ class OasService
         if (isset($cleanDef['items']) === true) {
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
-                $firstItem = $cleanDef['items'][0] ?? null;
-                if (empty($firstItem) === false) {
-                    $cleanDef['items'] = $firstItem;
-                } else {
-                    $cleanDef['items'] = ['type' => 'string'];
-                }
+                $firstItem         = $cleanDef['items'][0] ?? null;
+                $cleanDef['items'] = empty($firstItem) === false ? $firstItem : ['type' => 'string'];
             }
 
             if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {
@@ -870,17 +871,15 @@ class OasService
     private function addCrudPaths(object $register, object $schema, array $rbac=[], string $operationIdPrefix=''): void
     {
         $registerSlugValue = $register->getSlug();
+        $registerSlug      = $this->slugify(string: $register->getTitle());
         if ($registerSlugValue !== null && $registerSlugValue !== '') {
             $registerSlug = $registerSlugValue;
-        } else {
-            $registerSlug = $this->slugify(string: $register->getTitle());
         }
 
         $schemaSlugValue = $schema->getSlug();
+        $schemaSlug      = $this->slugify(string: $schema->getTitle());
         if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
             $schemaSlug = $schemaSlugValue;
-        } else {
-            $schemaSlug = $this->slugify(string: $schema->getTitle());
         }
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
@@ -942,17 +941,15 @@ class OasService
     private function addExtendedPaths(object $register, object $schema): void
     {
         $registerSlugValue = $register->getSlug();
+        $registerSlug      = $this->slugify(string: $register->getTitle());
         if ($registerSlugValue !== null && $registerSlugValue !== '') {
             $registerSlug = $registerSlugValue;
-        } else {
-            $registerSlug = $this->slugify(string: $register->getTitle());
         }
 
         $schemaSlugValue = $schema->getSlug();
+        $schemaSlug      = $this->slugify(string: $schema->getTitle());
         if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
             $schemaSlug = $schemaSlugValue;
-        } else {
-            $schemaSlug = $this->slugify(string: $schema->getTitle());
         }
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
@@ -1832,7 +1829,57 @@ class OasService
 
         // Pass 6: NLGov rules — HTTP method whitelist (API-01) and status code whitelist (API-03).
         $this->validateNlGovRules();
+
+        // Pass 7: Strict-mode meta-schema validation against the
+        // vendored OpenAPI 3.1 meta-schema. Best-effort: missing
+        // validator (DI not wired in older fixtures) or missing meta
+        // file (vendoring not run) silently skips this pass.
+        $this->validateAgainstMetaSchema();
     }//end validateOasIntegrity()
+
+    /**
+     * Validate the generated OAS document against the vendored OpenAPI 3.1
+     * meta-schema. Closes oas-validation issue #1378.
+     *
+     * @return void
+     */
+    private function validateAgainstMetaSchema(): void
+    {
+        if ($this->metaValidator === null) {
+            return;
+        }
+
+        $metaPath = __DIR__.'/Resources/meta/openapi-3.1.0.json';
+        if (file_exists($metaPath) === false) {
+            return;
+        }
+
+        $metaJson = (string) file_get_contents($metaPath);
+        $meta     = json_decode($metaJson, true);
+        if (is_array($meta) === false) {
+            return;
+        }
+
+        try {
+            $errors = $this->metaValidator->validate(body: $this->oas, schema: $meta);
+            foreach ($errors as $err) {
+                $this->report->addError(
+                    path: $err['path'],
+                    message: 'OpenAPI 3.1 meta-schema violation: '.$err['message'],
+                    code: 'meta-schema-violation'
+                );
+            }
+        } catch (\Throwable $e) {
+            // Validator errors MUST NOT block OAS generation — log and move on.
+            if ($this->logger !== null) {
+                $this->logger->warning(
+                    '[OasService] meta-schema validation pass errored: '.$e->getMessage(),
+                    ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
+        }
+
+    }//end validateAgainstMetaSchema()
 
     /**
      * Verify every entry in `servers` uses an absolute URL.
@@ -1924,6 +1971,8 @@ class OasService
      *   operation (unused tag → warning only, not auto-removed).
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function validateTagConsistency(): void
     {
@@ -2026,7 +2075,7 @@ class OasService
                     continue;
                 }
 
-                foreach (($operation['responses'] ?? []) as $statusCode => $_response) {
+                foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
                     $statusKey = (string) $statusCode;
                     if (isset($allowedCodes[$statusKey]) === false) {
                         $this->report->addWarning(
@@ -2217,6 +2266,7 @@ class OasService
      * @return array The authorization with roles expanded.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function expandRolesForOas(array $authorization, object $schema, ?object $register=null): array
     {

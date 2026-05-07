@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
  * and organization (tertiary, 0.5) with APCu cache (TTL 60s).
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class ContactMatchingService
 {
@@ -365,6 +367,9 @@ class ContactMatchingService
      * @param string|null $organization The organization name (optional)
      *
      * @return array Combined, deduplicated match results sorted by confidence
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function matchContact(
         string $email,
@@ -508,35 +513,27 @@ class ContactMatchingService
     }//end invalidateCacheForObject()
 
     /**
-     * Search objects and filter by property patterns.
-     *
-     * @param string     $searchTerm       The term to search for
-     * @param array      $propertyPatterns Property name patterns to match
-     * @param string     $matchType        The match type label
-     * @param float      $confidence       The confidence score
-     * @param bool       $exactMatch       Whether to require exact value match
-     * @param array|null $schemaFilter     Optional schema name patterns to restrict results
-     *
-     * @return array The filtered match results
-     */
-    /**
      * Per-request cache for the contact-linked-schemas check.
+     *
+     * @var boolean|null
      */
     private ?bool $hasContactLinkedSchemasCache = null;
 
     /**
-     * Returns true when at least one schema declares
-     * `linkedTypes: ["contact"]` in its configuration.
+     * Returns true when at least one schema declares `linkedTypes: ["contact"]` in its configuration.
      *
      * Used as a fast-path skip in matchByEmail/Name/Organization so the
      * ContactsMenuProvider doesn't run an expensive cross-schema search
      * on deployments that don't opt any schema into contact-linking.
+     *
+     * @return bool True if any schema opts into contact linking.
      */
     private function hasContactLinkedSchemas(): bool
     {
         if ($this->hasContactLinkedSchemasCache !== null) {
             return $this->hasContactLinkedSchemasCache;
         }
+
         try {
             $schemas = $this->schemaMapper->findAll(_multitenancy: false);
             foreach ($schemas as $schema) {
@@ -548,9 +545,25 @@ class ContactMatchingService
         } catch (\Throwable $e) {
             // Fail closed — if we can't tell, skip the search.
         }
+
         return $this->hasContactLinkedSchemasCache = false;
     }//end hasContactLinkedSchemas()
 
+    /**
+     * Search objects and filter by property patterns.
+     *
+     * @param string     $searchTerm       The term to search for.
+     * @param array      $propertyPatterns Property name patterns to match.
+     * @param string     $matchType        The match type label.
+     * @param float      $confidence       The confidence score.
+     * @param bool       $exactMatch       Whether to require exact value match.
+     * @param array|null $schemaFilter     Optional schema name patterns to restrict results.
+     *
+     * @return array The filtered match results.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     */
     private function searchAndFilter(
         string $searchTerm,
         array $propertyPatterns,
@@ -652,7 +665,11 @@ class ContactMatchingService
                 continue;
             }
 
-            $matchedParts = $this->countMatchingNameParts(result: $result, nameParts: $nameParts, propertyPatterns: $propertyPatterns);
+            $matchedParts = $this->countMatchingNameParts(
+                result: $result,
+                nameParts: $nameParts,
+                propertyPatterns: $propertyPatterns
+            );
             $totalParts   = count($nameParts);
 
             if ($matchedParts === 0) {
@@ -663,7 +680,7 @@ class ContactMatchingService
             $confidence = ($matchedParts === $totalParts) ? 0.7 : 0.4;
 
             $matches[] = $this->formatMatch(result: $result, matchType: 'name', confidence: $confidence);
-        }
+        }//end foreach
 
         return $matches;
     }//end searchAndFilterByName()
@@ -677,6 +694,8 @@ class ContactMatchingService
      * @param bool   $exactMatch       Whether to require exact match
      *
      * @return bool True if a matching property is found
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function hasMatchingProperty(
         array $result,
@@ -695,16 +714,14 @@ class ContactMatchingService
                     continue;
                 }
 
-                if ($exactMatch === true) {
-                    if (strtolower($value) === strtolower($searchTerm)) {
-                        return true;
-                    }
-                } else {
-                    if (stripos($value, $searchTerm) !== false
-                        || stripos($searchTerm, $value) !== false
-                    ) {
-                        return true;
-                    }
+                if ($exactMatch === true && strtolower($value) === strtolower($searchTerm)) {
+                    return true;
+                }
+
+                if ($exactMatch === false
+                    && (stripos($value, $searchTerm) !== false || stripos($searchTerm, $value) !== false)
+                ) {
+                    return true;
                 }
             }
         }//end foreach

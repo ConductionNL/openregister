@@ -9,7 +9,7 @@ Implement an immutable audit trail with cryptographic hash chaining for all regi
 
 **Tender demand**: 56% of analyzed government tenders require immutable audit trail capabilities.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Every mutation MUST produce an immutable audit trail entry
 All create, update, and delete operations on register objects MUST generate an audit trail entry that cannot be modified or deleted.
@@ -120,7 +120,7 @@ Read operations on schemas marked as containing sensitive data MUST also produce
 - THEN an audit entry MUST be created with action `read`
 - AND the entry MUST NOT include the full object data (only the object UUID)
 
-### Current Implementation Status
+## Current Implementation Status
 - **Implemented:**
   - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size, hash, previousHash
   - `AuditTrailMapper` (`lib/Db/AuditTrailMapper.php`) with `createAuditTrail()` method recording create/update/delete actions with user context, session, IP address, and changed fields
@@ -139,7 +139,7 @@ Read operations on schemas marked as containing sensitive data MUST also produce
 - **Partial:**
   - The existing AuditTrail records most of the required metadata including hash chaining and immutability guarantees
 
-### Standards & References
+## Standards & References
 - **GDPR Article 30** — Processing records requirement
 - **NEN 2082** — Records management (audit trail requirements)
 - **Archiefwet 1995** — Dutch archival law (long-term retention)

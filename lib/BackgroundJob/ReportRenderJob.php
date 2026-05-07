@@ -271,7 +271,22 @@ class ReportRenderJob extends TimedJob
      */
     private function writeToFiles(ObjectEntity $dashboard, array $payload, array $rendered, array $delivery): void
     {
-        $owner = (string) ($dashboard->getOwner() ?? 'admin');
+        // SECURITY: refuse to fall back to 'admin' when the dashboard
+        // owner is null. The previous default dropped attacker-controlled
+        // bytes (rendered HTML/PDF derived from a user-writable
+        // ObjectEntity) into admin's Files share, where admin would see
+        // them on next login — a phishing/redirect persistence vector.
+        // Without an owner we have no honest "who runs this job", so
+        // skip delivery and surface the misconfiguration in logs.
+        $owner = $dashboard->getOwner();
+        if ($owner === null || $owner === '') {
+            $this->logger->warning(
+                message: '[ReportRenderJob] Dashboard owner missing — skipping Files delivery',
+                context: ['dashboardUuid' => $dashboard->getUuid()]
+            );
+            return;
+        }
+
         try {
             $userFolder = $this->rootFolder->getUserFolder(userId: $owner);
         } catch (NotFoundException $e) {
@@ -288,7 +303,20 @@ class ReportRenderJob extends TimedJob
             $folderPath = sprintf('Reports/%s', $slug);
         }
 
+        // SECURITY: $delivery['filesFolder'] comes from the dashboard
+        // payload (user-controlled JSON). Restrict to a relative path
+        // under the owner's home — strip leading slashes and reject any
+        // segment that escapes the home root (`..`) or addresses an
+        // absolute filesystem path.
         $folderPath = ltrim($folderPath, '/');
+        if ($folderPath === '' || str_contains($folderPath, '..') === true) {
+            $this->logger->warning(
+                message: '[ReportRenderJob] Rejected delivery folder containing path traversal',
+                context: ['folder' => $folderPath, 'owner' => $owner]
+            );
+            return;
+        }
+
         if ($userFolder->nodeExists(path: $folderPath) === false) {
             $userFolder->newFolder(path: $folderPath);
         }
@@ -298,9 +326,10 @@ class ReportRenderJob extends TimedJob
         if ($folder->nodeExists(path: $filename) === true) {
             $existing = $folder->get(path: $filename);
             $existing->putContent(data: (string) $rendered['bytes']);
-        } else {
-            $folder->newFile(path: $filename, content: (string) $rendered['bytes']);
+            return;
         }
+
+        $folder->newFile(path: $filename, content: (string) $rendered['bytes']);
 
     }//end writeToFiles()
 

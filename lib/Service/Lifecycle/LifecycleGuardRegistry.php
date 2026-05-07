@@ -50,11 +50,18 @@ final class LifecycleGuardRegistry
      */
     private array $cache = [];
 
+    /**
+     * Constructor.
+     *
+     * @param ContainerInterface $container DI container used to resolve guard services.
+     * @param LoggerInterface    $logger    Logger for guard resolution diagnostics.
+     */
     public function __construct(
         private readonly ContainerInterface $container,
         private readonly IServerContainer $serverContainer,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     /**
      * Resolve a guard tag to its registered implementation.
@@ -111,5 +118,4 @@ final class LifecycleGuardRegistry
         $this->cache[$tag] = $instance;
         return $instance;
     }//end resolve()
-
 }//end class

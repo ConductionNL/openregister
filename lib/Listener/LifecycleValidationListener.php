@@ -62,14 +62,34 @@ use Psr\Log\LoggerInterface;
  */
 class LifecycleValidationListener implements IEventListener
 {
-
+    /**
+     * Wire collaborators used to validate transitions and run guards.
+     *
+     * @param SchemaMapper           $schemaMapper  Schema lookup mapper.
+     * @param LifecycleGuardRegistry $guardRegistry Registry resolving guard ids to instances.
+     * @param IUserSession           $userSession   Current user session.
+     * @param LoggerInterface        $logger        PSR logger for warnings.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly LifecycleGuardRegistry $guardRegistry,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
+    /**
+     * Validate the attempted lifecycle transition before persistence.
+     *
+     * @param Event $event Inbound dispatcher event.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
     public function handle(Event $event): void
     {
         if (($event instanceof ObjectUpdatingEvent) === false) {
@@ -84,12 +104,12 @@ class LifecycleValidationListener implements IEventListener
         }
 
         $newObject = $event->getNewObject();
-        $schema    = $this->loadSchema($newObject);
+        $schema    = $this->loadSchema(object: $newObject);
         if ($schema === null) {
             return;
         }
 
-        $annotation = $this->getLifecycleAnnotation($schema);
+        $annotation = $this->getLifecycleAnnotation(schema: $schema);
         if ($annotation === null) {
             return;
         }
@@ -107,47 +127,60 @@ class LifecycleValidationListener implements IEventListener
         }
 
         if (is_string($newValue) === false || $newValue === '') {
-            $this->reject($event, [
-                'code'      => 'lifecycle-invalid-value',
-                'field'     => $field,
-                'attempted' => $newValue,
-                'message'   => sprintf('Lifecycle field "%s" must be a non-empty string.', $field),
-            ]);
+            $this->reject(
+                event: $event,
+                error: [
+                    'code'      => 'lifecycle-invalid-value',
+                    'field'     => $field,
+                    'attempted' => $newValue,
+                    'message'   => sprintf('Lifecycle field "%s" must be a non-empty string.', $field),
+                ]
+            );
             return;
         }
 
         $transitions = ($annotation['transitions'] ?? []);
-        $matched     = $this->findTransitionByTarget($transitions, (string) $oldValue, $newValue);
+        $matched     = $this->findTransitionByTarget(
+            transitions: $transitions,
+            oldValue: (string) $oldValue,
+            newValue: $newValue
+        );
 
         if ($matched === null) {
-            $this->reject($event, [
-                'code'      => 'lifecycle-invalid-transition',
-                'field'     => $field,
-                'from'      => $oldValue,
-                'attempted' => $newValue,
-                'message'   => sprintf(
-                    'No transition allows moving "%s" from "%s" to "%s".',
-                    $field,
-                    (string) $oldValue,
-                    $newValue
-                ),
-            ]);
+            $this->reject(
+                event: $event,
+                error: [
+                    'code'      => 'lifecycle-invalid-transition',
+                    'field'     => $field,
+                    'from'      => $oldValue,
+                    'attempted' => $newValue,
+                    'message'   => sprintf(
+                        'No transition allows moving "%s" from "%s" to "%s".',
+                        $field,
+                        (string) $oldValue,
+                        $newValue
+                    ),
+                ]
+            );
             return;
         }
 
         [$action, $spec] = $matched;
-        $requires = ($spec['requires'] ?? null);
+        $requires        = ($spec['requires'] ?? null);
         if (is_string($requires) === true && $requires !== '') {
             $userId = ($this->userSession->getUser()?->getUID() ?? '');
             $guard  = $this->guardRegistry->resolve($requires);
             $result = $guard->check($newData, $action, $userId);
             if ($result->isAllowed() === false) {
-                $this->reject($event, [
-                    'code'    => 'lifecycle-guard-denied',
-                    'field'   => $field,
-                    'action'  => $action,
-                    'message' => ($result->getMessage() ?? 'Transition denied by guard.'),
-                ]);
+                $this->reject(
+                    event: $event,
+                    error: [
+                        'code'    => 'lifecycle-guard-denied',
+                        'field'   => $field,
+                        'action'  => $action,
+                        'message' => ($result->getMessage() ?? 'Transition denied by guard.'),
+                    ]
+                );
             }
         }
     }//end handle()
@@ -168,20 +201,31 @@ class LifecycleValidationListener implements IEventListener
             if (is_array($spec) === false) {
                 continue;
             }
+
             if (($spec['to'] ?? null) !== $newValue) {
                 continue;
             }
+
             $from = ($spec['from'] ?? []);
             if (is_array($from) === false) {
                 continue;
             }
+
             if (in_array($oldValue, $from, true) === true) {
                 return [(string) $action, $spec];
             }
         }
+
         return null;
     }//end findTransitionByTarget()
 
+    /**
+     * Look up the schema referenced by an object instance.
+     *
+     * @param ObjectEntity $object Object whose schema reference to resolve.
+     *
+     * @return Schema|null Resolved schema, or null on lookup failure.
+     */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
         $schemaRef = $object->getSchema();
@@ -200,7 +244,11 @@ class LifecycleValidationListener implements IEventListener
     }//end loadSchema()
 
     /**
-     * @return array<string, mixed>|null
+     * Read the `x-openregister-lifecycle` configuration block.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return array<string, mixed>|null Lifecycle annotation, or null when missing.
      */
     private function getLifecycleAnnotation(Schema $schema): ?array
     {
@@ -210,12 +258,16 @@ class LifecycleValidationListener implements IEventListener
     }//end getLifecycleAnnotation()
 
     /**
-     * @param array<string, mixed> $error
+     * Stop the event and stamp a structured error onto it.
+     *
+     * @param ObjectUpdatingEvent  $event The event being rejected.
+     * @param array<string, mixed> $error Structured error payload.
+     *
+     * @return void
      */
     private function reject(ObjectUpdatingEvent $event, array $error): void
     {
         $event->setErrors($error);
         $event->stopPropagation();
     }//end reject()
-
 }//end class

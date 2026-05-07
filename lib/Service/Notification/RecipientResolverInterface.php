@@ -37,7 +37,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
  */
 interface RecipientResolverInterface
 {
-
     /**
      * Resolve the recipient uids for a notification dispatch.
      *
@@ -47,5 +46,4 @@ interface RecipientResolverInterface
      * @return array<int, string> List of Nextcloud uids.
      */
     public function resolve(ObjectEntity $object, array $context): array;
-
 }//end interface

@@ -11,6 +11,14 @@
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Translation
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -22,11 +30,15 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 
 class TranslationCsvCodec
 {
-
+    /**
+     * Constructor.
+     *
+     * @param TranslationHandler $translationHandler Handler exposing translatable property metadata.
+     */
     public function __construct(
         private readonly TranslationHandler $translationHandler
-    ) {}//end __construct()
-
+    ) {
+    }//end __construct()
 
     /**
      * Flatten an object's data into CSV-compatible columns.
@@ -38,34 +50,42 @@ class TranslationCsvCodec
      * Caller iterates the rows in their CSV-build path; this method
      * is per-row.
      *
-     * @param array<string, mixed> $data
+     * @param array<string, mixed> $data   The object's data payload to flatten.
+     * @param Schema               $schema The schema describing translatable properties.
      *
      * @return array<string, scalar|null>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function flattenForCsv(array $data, Schema $schema): array
     {
         $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-        $row               = [];
+        $row = [];
 
         foreach ($data as $key => $value) {
             // Untranslatable property: pass through as-is. Non-scalar
             // values get JSON-encoded so the CSV row stays single-cell-per-column.
             if (in_array($key, $translatableProps, true) === false) {
-                $row[$key] = is_scalar($value) === true || $value === null
-                    ? $value
-                    : json_encode($value, JSON_UNESCAPED_SLASHES);
+                if (is_scalar($value) === true || $value === null) {
+                    $row[$key] = $value;
+                    continue;
+                }
+
+                $row[$key] = json_encode($value, JSON_UNESCAPED_SLASHES);
                 continue;
             }
 
             // Translatable property with language-keyed value:
             // emit `field_lang` columns per language present.
-            if (is_array($value) === true && $this->isLanguageKeyed($value) === true) {
+            if (is_array($value) === true && $this->isLanguageKeyed(value: $value) === true) {
                 foreach ($value as $lang => $langValue) {
                     if (is_string($lang) === false || $lang === '') {
                         continue;
                     }
-                    $row[$key . '_' . $lang] = is_scalar($langValue) === true ? $langValue : null;
+
+                    $row[$key.'_'.$lang] = is_scalar($langValue) === true ? $langValue : null;
                 }
+
                 continue;
             }
 
@@ -74,17 +94,16 @@ class TranslationCsvCodec
             // "und" = undetermined language) so the round-trip
             // preserves the variant without guessing.
             if (is_string($value) === true) {
-                $row[$key . '_und'] = $value;
+                $row[$key.'_und'] = $value;
                 continue;
             }
 
             // Anything else: pass through.
             $row[$key] = is_scalar($value) === true ? $value : null;
-        }
+        }//end foreach
 
         return $row;
     }//end flattenForCsv()
-
 
     /**
      * Reverse of `flattenForCsv`. Reconstructs the nested
@@ -95,66 +114,76 @@ class TranslationCsvCodec
      * properties. Other `_`-suffixed columns are passed through as-is
      * (they may be unrelated user fields with underscores in the name).
      *
-     * @param array<string, mixed> $row
+     * @param array<string, mixed> $row    The flat CSV row to unflatten.
+     * @param Schema               $schema The schema describing translatable properties.
      *
      * @return array<string, mixed>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function unflattenFromCsv(array $row, Schema $schema): array
     {
         $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-        $out               = [];
+        $out = [];
 
         foreach ($row as $column => $value) {
             // Check if this column matches a translatable-property + language suffix.
             $matched = false;
             foreach ($translatableProps as $prop) {
-                $prefix = $prop . '_';
+                $prefix = $prop.'_';
                 if (str_starts_with($column, $prefix) === true) {
                     $lang = substr($column, strlen($prefix));
                     if ($lang === '' || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $lang) !== 1) {
                         continue;
                     }
+
                     if (is_string($value) === false || $value === '') {
                         // Empty cells: don't write a slot (lets the
                         // projection treat this as "not translated").
                         $matched = true;
                         break;
                     }
+
                     if (isset($out[$prop]) === false || is_array($out[$prop]) === false) {
                         $out[$prop] = [];
                     }
+
                     $out[$prop][$lang] = $value;
-                    $matched = true;
+                    $matched           = true;
                     break;
-                }
-            }
+                }//end if
+            }//end foreach
+
             if ($matched === true) {
                 continue;
             }
 
             // Untranslatable / unrecognised column: pass through.
             $out[$column] = $value;
-        }
+        }//end foreach
 
         return $out;
     }//end unflattenFromCsv()
 
-
     /**
-     * @param array<mixed> $value
+     * Detect whether an array's keys are all BCP 47-style language codes.
+     *
+     * @param array<mixed> $value The array whose keys should be inspected.
+     *
+     * @return bool True when every key looks like a language code.
      */
     private function isLanguageKeyed(array $value): bool
     {
         if (count($value) === 0) {
             return false;
         }
+
         foreach (array_keys($value) as $key) {
             if (is_string($key) === false || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $key) !== 1) {
                 return false;
             }
         }
+
         return true;
-    }
-
-
+    }//end isLanguageKeyed()
 }//end class

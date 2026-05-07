@@ -12,10 +12,10 @@
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -80,14 +80,15 @@ class GraphQLResolver
     /**
      * Constructor.
      *
-     * @param GetObject           $getObject         Object finder
-     * @param ObjectService       $objectService     Object service
-     * @param PermissionHandler   $permissionHandler Permission handler
-     * @param PropertyRbacHandler $propertyRbac      Property RBAC handler
-     * @param RelationHandler     $relationHandler   Relation handler
-     * @param AuditTrailMapper    $auditTrailMapper  Audit trail mapper
-     * @param RegisterMapper      $registerMapper    Register mapper
-     * @param LoggerInterface     $logger            Logger
+     * @param GetObject                                           $getObject          Object finder
+     * @param ObjectService                                       $objectService      Object service
+     * @param PermissionHandler                                   $permissionHandler  Permission handler
+     * @param PropertyRbacHandler                                 $propertyRbac       Property RBAC handler
+     * @param RelationHandler                                     $relationHandler    Relation handler
+     * @param AuditTrailMapper                                    $auditTrailMapper   Audit trail mapper
+     * @param RegisterMapper                                      $registerMapper     Register mapper
+     * @param LoggerInterface                                     $logger             Logger
+     * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
@@ -115,7 +116,7 @@ class GraphQLResolver
      *
      * @throws Error If object not found or access denied
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     public function resolveSingle(Schema $schema, mixed $root, array $args): ?array
     {
@@ -166,7 +167,7 @@ class GraphQLResolver
      *
      * @return array<string, mixed> The connection result
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     public function resolveList(Schema $schema, mixed $root, array $args): array
     {
@@ -273,7 +274,7 @@ class GraphQLResolver
      *
      * @throws Error If access denied or validation fails
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
      */
     public function resolveCreate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -336,7 +337,7 @@ class GraphQLResolver
      *
      * @throws Error If access denied, not found, or validation fails
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
      */
     public function resolveUpdate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -411,7 +412,7 @@ class GraphQLResolver
      *
      * @throws Error If access denied or not found
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
      */
     public function resolveDelete(Schema $schema, array $args): bool
     {
@@ -468,7 +469,7 @@ class GraphQLResolver
      *
      * @return array<array<string, mixed>> The audit trail entries
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
      */
     public function resolveAuditTrail(string $objectUuid, int $last=10): array
     {
@@ -493,7 +494,7 @@ class GraphQLResolver
      *
      * @return array<array<string, mixed>> The referencing objects
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     public function resolveUsedBy(string $objectUuid): array
     {
@@ -538,7 +539,7 @@ class GraphQLResolver
      *
      * @throws Error If permission denied
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     private function checkSchemaPermission(Schema $schema, string $action): void
     {
@@ -679,19 +680,11 @@ class GraphQLResolver
         $data['_register'] = $object->getRegister();
         $data['_schema']   = $object->getSchema();
 
-        $created = $object->getCreated();
-        if ($created instanceof \DateTimeInterface === true) {
-            $data['_created'] = $created->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_created'] = $created;
-        }
+        $created          = $object->getCreated();
+        $data['_created'] = $this->formatDateOrPassthrough(value: $created);
 
-        $updated = $object->getUpdated();
-        if ($updated instanceof \DateTimeInterface === true) {
-            $data['_updated'] = $updated->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_updated'] = $updated;
-        }
+        $updated          = $object->getUpdated();
+        $data['_updated'] = $this->formatDateOrPassthrough(value: $updated);
 
         $data['_owner'] = $object->getOwner();
 
@@ -700,13 +693,29 @@ class GraphQLResolver
     }//end objectToArray()
 
     /**
+     * Format a DateTimeInterface as ATOM, or pass through unchanged.
+     *
+     * @param mixed $value The value to format.
+     *
+     * @return mixed The ATOM-formatted string or the original value.
+     */
+    private function formatDateOrPassthrough(mixed $value): mixed
+    {
+        if ($value instanceof \DateTimeInterface === true) {
+            return $value->format(\DateTimeInterface::ATOM);
+        }
+
+        return $value;
+    }//end formatDateOrPassthrough()
+
+    /**
      * Find the register for a schema.
      *
      * @param Schema $schema The schema
      *
      * @return Register|null The register
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     private function findRegisterForSchema(Schema $schema): ?Register
     {
@@ -751,7 +760,7 @@ class GraphQLResolver
      *
      * @return Error[]
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
      */
     public function getPartialErrors(): array
     {
@@ -764,7 +773,7 @@ class GraphQLResolver
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
      */
     public function reset(): void
     {

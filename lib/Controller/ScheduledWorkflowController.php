@@ -61,7 +61,7 @@ class ScheduledWorkflowController extends Controller
         $workflows = $this->workflowMapper->findAll();
 
         return new JSONResponse(
-            array_map(fn ($w) => $w->jsonSerialize(), $workflows)
+            array_map(fn ($workflow) => $workflow->jsonSerialize(), $workflows)
         );
     }//end index()
 

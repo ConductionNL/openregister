@@ -37,9 +37,24 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Re-evaluate every materialised calculation declared on a (register, schema).
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
 class RematerialiseCalculationsCommand extends Command
 {
-
+    /**
+     * Wire the mappers, evaluator, and object service used by the command.
+     *
+     * @param RegisterMapper       $registerMapper Register lookup mapper.
+     * @param SchemaMapper         $schemaMapper   Schema lookup mapper.
+     * @param MagicMapper          $magicMapper    Magic table mapper for objects.
+     * @param ObjectService        $objectService  Object persistence service.
+     * @param CalculationEvaluator $evaluator      Expression evaluator.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -50,15 +65,34 @@ class RematerialiseCalculationsCommand extends Command
         parent::__construct();
     }//end __construct()
 
+    /**
+     * Define command name, description, and arguments.
+     *
+     * @return void
+     */
     protected function configure(): void
     {
-        $this->setName('openregister:rematerialise-calculations')
-            ->setDescription('Re-evaluate every materialised calculation on objects in a (register, schema) and persist the result.')
+        $this->setName(name: 'openregister:rematerialise-calculations')
+            ->setDescription(
+                'Re-evaluate every materialised calculation on objects in a (register, schema) and persist the result.'
+            )
             ->addArgument('register', InputArgument::REQUIRED, 'Register slug, uuid or id')
             ->addArgument('schema',   InputArgument::REQUIRED, 'Schema slug, uuid or id')
             ->addOption('dry-run',    null, InputOption::VALUE_NONE, 'Report changes without saving');
     }//end configure()
 
+    /**
+     * Iterate every object and re-materialise all declared calculations.
+     *
+     * @param InputInterface  $input  Console input.
+     * @param OutputInterface $output Console output stream.
+     *
+     * @return int Symfony command exit code.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $registerRef = (string) $input->getArgument('register');
@@ -73,7 +107,7 @@ class RematerialiseCalculationsCommand extends Command
             return Command::FAILURE;
         }
 
-        $calcs = $this->getCalculations($schema);
+        $calcs = $this->getCalculations(schema: $schema);
         if ($calcs === null || count($calcs) === 0) {
             $output->writeln('<comment>Schema declares no x-openregister-calculations — nothing to do.</comment>');
             return Command::SUCCESS;
@@ -85,18 +119,21 @@ class RematerialiseCalculationsCommand extends Command
                 $materialiseNames[] = (string) $name;
             }
         }
+
         if (count($materialiseNames) === 0) {
             $output->writeln('<comment>No materialised calculations declared — nothing to do.</comment>');
             return Command::SUCCESS;
         }
 
-        $output->writeln(sprintf(
+        $output->writeln(
+                sprintf(
             '<info>Rematerialising %d calculation(s) on %s/%s%s</info>',
             count($materialiseNames),
             $register->getSlug() ?? $register->getId(),
             $schema->getSlug() ?? $schema->getId(),
-            $dryRun ? ' (dry run)' : ''
-        ));
+            $dryRun === true ? ' (dry run)' : ''
+        )
+                );
 
         $entities = $this->magicMapper->findAllInRegisterSchemaTable(
             register: $register,
@@ -109,33 +146,37 @@ class RematerialiseCalculationsCommand extends Command
         $failed    = 0;
 
         foreach ($entities as $entity) {
-            $data = $entity->getObject() ?? [];
-            $payload = $this->withSelf($data, $entity);
+            $data    = $entity->getObject() ?? [];
+            $payload = $this->withSelf(data: $data, entity: $entity);
 
             $changed = false;
             foreach ($calcs as $name => $spec) {
                 if (is_array($spec) === false || ($spec['materialise'] ?? false) !== true) {
                     continue;
                 }
+
                 try {
                     $value = $this->evaluator->evaluate($payload, $spec['expression'] ?? null);
                     if ($value instanceof DateTimeInterface) {
                         $value = $value->format(DateTimeInterface::ATOM);
                     }
+
                     if (($data[(string) $name] ?? null) !== $value) {
                         $data[(string) $name] = $value;
                         $changed = true;
                     }
                 } catch (\Throwable $e) {
                     $failed++;
-                    $output->writeln(sprintf(
+                    $output->writeln(
+                            sprintf(
                         '  <error>! %s on %s: %s</error>',
                         (string) $name,
                         (string) $entity->getUuid(),
                         $e->getMessage()
-                    ));
-                }
-            }
+                    )
+                            );
+                }//end try
+            }//end foreach
 
             if ($changed === false) {
                 $unchanged++;
@@ -152,32 +193,41 @@ class RematerialiseCalculationsCommand extends Command
                         uuid: $entity->getUuid()
                     );
                 } catch (\Throwable $e) {
-                    $output->writeln(sprintf(
+                    $output->writeln(
+                            sprintf(
                         '  <error>save failed on %s: %s</error>',
                         (string) $entity->getUuid(),
                         $e->getMessage()
-                    ));
+                    )
+                            );
                     $failed++;
                 }
             }
-        }
+        }//end foreach
 
-        $output->writeln(sprintf(
+        $output->writeln(
+                sprintf(
             '<info>Touched %d, unchanged %d, failed %d</info>',
             $touched,
             $unchanged,
             $failed
-        ));
+        )
+                );
         return $failed > 0 ? Command::FAILURE : Command::SUCCESS;
     }//end execute()
 
     /**
-     * @param array<string, mixed> $data
+     * Inject the synthetic `@self` metadata into an evaluation payload.
+     *
+     * @param array<string, mixed>              $data   Object data.
+     * @param \OCA\OpenRegister\Db\ObjectEntity $entity Object entity providing metadata.
+     *
+     * @return array<string, mixed> Payload with `@self` injected.
      */
     private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array
     {
-        $created = $entity->getCreated();
-        $updated = $entity->getUpdated();
+        $created       = $entity->getCreated();
+        $updated       = $entity->getUpdated();
         $data['@self'] = [
             'id'       => $entity->getUuid(),
             'uuid'     => $entity->getUuid(),
@@ -191,7 +241,11 @@ class RematerialiseCalculationsCommand extends Command
     }//end withSelf()
 
     /**
-     * @return array<string, mixed>|null
+     * Read the `x-openregister-calculations` configuration block.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return array<string, mixed>|null Calculations map, or null when absent.
      */
     private function getCalculations(Schema $schema): ?array
     {
@@ -199,5 +253,4 @@ class RematerialiseCalculationsCommand extends Command
         $value  = ($config['x-openregister-calculations'] ?? null);
         return is_array($value) === true ? $value : null;
     }//end getCalculations()
-
 }//end class

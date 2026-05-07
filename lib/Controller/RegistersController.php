@@ -481,7 +481,8 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @suppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @return JSONResponse JSON response with updated register or error
      *
@@ -1245,6 +1246,73 @@ class RegistersController extends Controller
     }//end import()
 
     /**
+     * Roll back an import by soft-deleting every object whose `create`
+     * audit row carries the given `importJobId`. Implements the
+     * rollback contract on the `data-import-export` change.
+     *
+     * @return JSONResponse Report with counts and per-object outcomes.
+     *
+     * @NoAdminRequired
+     */
+    public function rollbackImport(): JSONResponse
+    {
+        $importJobId = $this->request->getParam('importJobId');
+        if (is_string($importJobId) === false || $importJobId === '') {
+            return new JSONResponse(
+                data: ['error' => 'importJobId is required'],
+                statusCode: 422
+            );
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required'],
+                statusCode: 401
+            );
+        }
+
+        // SECURITY: rollback wipes every object created by an import job.
+        // The only safety net was that `deleteObject` runs RBAC, which is
+        // much weaker than it sounds — any user with broad delete rights
+        // on the affected schemas could otherwise wipe a *different*
+        // user's import (and across tenants, since the audit lookup
+        // doesn't filter by organisation). Require the caller to be
+        // either the original importer or a member of the admin group.
+        $isAdmin     = $this->groupManager->isAdmin($user->getUID());
+        $auditSample = $this->auditTrailMapper->findByImportJobId(
+            importJobId: $importJobId,
+            action: 'create'
+        );
+        if (count($auditSample) === 0) {
+            return new JSONResponse(
+                data: ['error' => 'Import job not found', 'importJobId' => $importJobId],
+                statusCode: 404
+            );
+        }
+
+        $importerUid = method_exists($auditSample[0], 'getUser') === true
+            ? $auditSample[0]->getUser()
+            : null;
+        if ($isAdmin === false && $importerUid !== $user->getUID()) {
+            return new JSONResponse(
+                data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],
+                statusCode: 403
+            );
+        }
+
+        try {
+            $report = $this->importService->softDeleteByImportJobId(importJobId: $importJobId);
+            return new JSONResponse(data: $report, statusCode: 200);
+        } catch (\Throwable $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: 500
+            );
+        }
+    }//end rollbackImport()
+
+    /**
      * Get statistics for a specific register
      *
      * @param int $id The register ID
@@ -1576,6 +1644,9 @@ class RegistersController extends Controller
      * @param Register $register The register to check manage permission for.
      *
      * @return bool True if user has manage permission.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function checkRegisterManagePermission(Register $register): bool
     {

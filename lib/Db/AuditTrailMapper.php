@@ -58,9 +58,29 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class AuditTrailMapper extends QBMapper
 {
+
+    /**
+     * Request-scoped import-job tag.
+     *
+     * Set by `ImportService` at the start of a bulk import via
+     * `setRequestImportJobId()` and cleared in the import's `finally`
+     * block. Read by `createAuditTrail()` as a fallback when the
+     * `ObjectEntity` does not carry its own per-entity override. The
+     * mapper is request-bound under the standard NC DI container, so
+     * the value is request-local; a leaked value across requests would
+     * still be a benign mistag because the next import either sets a
+     * new UUID (overrides) or no UUID (single-object writes never
+     * resolve through this fallback because they go through
+     * `saveObject` not `saveObjects`).
+     *
+     * @var string|null
+     */
+    private ?string $requestImportJobId = null;
+
     /**
      * Constructor for the AuditTrailMapper
      *
@@ -79,6 +99,66 @@ class AuditTrailMapper extends QBMapper
     ) {
         parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
     }//end __construct()
+
+    /**
+     * Set the request-scoped import-job UUID stamped on all
+     * `createAuditTrail()` rows for the duration of an import. Pass
+     * `null` to clear (typically in the import's `finally` block).
+     *
+     * @param string|null $importJobId UUID v4 of the active import job, or null to clear.
+     *
+     * @return void
+     */
+    public function setRequestImportJobId(?string $importJobId): void
+    {
+        $this->requestImportJobId = $importJobId;
+    }//end setRequestImportJobId()
+
+    /**
+     * Get the currently-active request-scoped import-job UUID. Returns
+     * null when no import is in flight.
+     *
+     * @return string|null
+     */
+    public function getRequestImportJobId(): ?string
+    {
+        return $this->requestImportJobId;
+    }//end getRequestImportJobId()
+
+    /**
+     * Find audit-trail entries tagged with the given import-job UUID.
+     *
+     * Used by `ImportService::softDeleteByImportJobId()` to identify
+     * the objects created during a specific import for rollback.
+     *
+     * @param string      $importJobId UUID of the import job to look up.
+     * @param string|null $action      Optional action filter (e.g. `'create'`); null returns all actions.
+     *
+     * @return AuditTrail[] Matching audit trail rows.
+     */
+    public function findByImportJobId(string $importJobId, ?string $action='create'): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_audit_trails')
+            ->where(
+                $qb->expr()->eq(
+                    'import_job_id',
+                    $qb->createNamedParameter($importJobId, IQueryBuilder::PARAM_STR)
+                )
+            );
+
+        if ($action !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('action', $qb->createNamedParameter($action, IQueryBuilder::PARAM_STR))
+            );
+        }
+
+        $qb->orderBy('created', 'ASC');
+
+        return $this->findEntities(query: $qb);
+    }//end findByImportJobId()
 
 
 
@@ -254,9 +334,10 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail The created audit trail
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4 is standard Symfony UID pattern
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Audit trail creation requires handling many optional fields
+     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Audit trail creation requires handling many optional fields
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {
@@ -352,6 +433,17 @@ class AuditTrailMapper extends QBMapper
             $auditTrail->setProcessingActivityId($processingActivityId);
         }
 
+        // Import-job tag — stamped by `ImportService` on every object it
+        // creates so the rollback contract can find them by audit row.
+        // Resolution order: entity-level override > request-scoped scope.
+        // Single-object writes use the entity field; bulk saves go through
+        // the request scope so we don't have to thread the UUID through
+        // `saveObjects` and the SaveObjects handler.
+        $importJobId = ($objectEntity->getImportJobId() ?? $this->requestImportJobId);
+        if ($importJobId !== null) {
+            $auditTrail->setImportJobId($importJobId);
+        }
+
         // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
         $serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
         $auditTrail->setSize(max($serializedSize, 14));
@@ -386,6 +478,8 @@ class AuditTrailMapper extends QBMapper
      * @param ObjectEntity $objectEntity The entity being audited.
      *
      * @return string|null Resolved verwerkingsactiviteit uuid, or null.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function resolveProcessingActivityId(ObjectEntity $objectEntity): ?string
     {
@@ -1411,6 +1505,16 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setAction($action);
         $auditTrail->setChanged($context);
         $auditTrail->setUser($userId);
+
+        // SECURITY / AVG: keep `user_name` populated even though the
+        // migration (Version1Date20260423100000) relaxed NOT NULL on
+        // the column to support referential-integrity rows that have
+        // no displayable actor. Without this default, every audit row
+        // produced through this entry point would persist with a NULL
+        // `user_name` — undermining GDPR Art 30 §4 supervisor review.
+        $userName = $user !== null ? $user->getDisplayName() : 'System';
+        $auditTrail->setUserName($userName);
+
         $auditTrail->setCreated(new DateTime());
 
         return $this->insert(entity: $auditTrail);
@@ -1525,6 +1629,9 @@ class AuditTrailMapper extends QBMapper
      * @param string|null $to     Optional ISO-8601 end date (inclusive).
      *
      * @return array{results: array<int, AuditTrail>, total: int}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function findByActor(
         string $userId,

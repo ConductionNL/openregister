@@ -20,6 +20,8 @@ use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\IRequest;
 use OCP\IUserManager;
+use OCP\IUserSession;
+use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -311,6 +313,137 @@ class FilesControllerFileActionsTest extends TestCase
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(404, $response->getStatus());
     }//end testPreviewUnsupported()
+
+    /**
+     * Test that an anonymous caller hitting preview() on an UNPUBLISHED file
+     * gets 403 — the public-preview gate must block previewing files that
+     * haven't been explicitly published with a public share.
+     */
+    public function testPreviewAnonymousOnUnpublishedFileReturns403(): void
+    {
+        $fileMapper = $this->createMock(\OCA\OpenRegister\Db\FileMapper::class);
+        $fileMapper->expects($this->once())
+            ->method('isFilePublished')
+            ->with(42)
+            ->willReturn(false);
+
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn(null);
+
+        $controller = new FilesController(
+            'openregister',
+            $this->request,
+            $this->fileService,
+            $this->objectService,
+            $this->rootFolder,
+            $this->userManager,
+            $this->eventDispatcher,
+            $fileMapper,
+            null,
+            $userSession
+        );
+
+        $response = $controller->preview('reg', 'sch', 'abc-123', 42);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertEquals(403, $response->getStatus());
+    }//end testPreviewAnonymousOnUnpublishedFileReturns403()
+
+    /**
+     * Test that an anonymous caller hitting preview() on a PUBLISHED file
+     * passes the gate and falls through to the file/preview pipeline.
+     * Verified by asserting the JSONResponse 404 we get from the unsupported
+     * preview handler — meaning the gate did NOT short-circuit with 403.
+     */
+    public function testPreviewAnonymousOnPublishedFileFallsThrough(): void
+    {
+        $object = $this->createObjectMock();
+        $this->setupObjectServiceMocks($object);
+
+        $file = $this->createMock(File::class);
+        $this->fileService->method('getFile')->willReturn($file);
+
+        $previewHandler = $this->createMock(FilePreviewHandler::class);
+        $previewHandler->method('getPreview')
+            ->willThrowException(new Exception('Preview not available for this file type'));
+        $this->fileService->method('getPreviewHandler')->willReturn($previewHandler);
+
+        $this->request->method('getParam')->willReturn(null);
+
+        $fileMapper = $this->createMock(\OCA\OpenRegister\Db\FileMapper::class);
+        $fileMapper->expects($this->once())
+            ->method('isFilePublished')
+            ->with(42)
+            ->willReturn(true);
+
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn(null);
+
+        $controller = new FilesController(
+            'openregister',
+            $this->request,
+            $this->fileService,
+            $this->objectService,
+            $this->rootFolder,
+            $this->userManager,
+            $this->eventDispatcher,
+            $fileMapper,
+            null,
+            $userSession
+        );
+
+        $response = $controller->preview('reg', 'sch', 'abc-123', 42);
+
+        // The gate let us through; the unsupported preview handler returned 404.
+        // 403 here would mean the gate fired (regression).
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertEquals(404, $response->getStatus());
+    }//end testPreviewAnonymousOnPublishedFileFallsThrough()
+
+    /**
+     * Test that an AUTHENTICATED caller bypasses the published-file gate
+     * entirely — isFilePublished MUST NOT even be queried for logged-in users.
+     */
+    public function testPreviewAuthenticatedBypassesPublishedGate(): void
+    {
+        $object = $this->createObjectMock();
+        $this->setupObjectServiceMocks($object);
+
+        $file = $this->createMock(File::class);
+        $this->fileService->method('getFile')->willReturn($file);
+
+        $previewHandler = $this->createMock(FilePreviewHandler::class);
+        $previewHandler->method('getPreview')
+            ->willThrowException(new Exception('Preview not available for this file type'));
+        $this->fileService->method('getPreviewHandler')->willReturn($previewHandler);
+
+        $this->request->method('getParam')->willReturn(null);
+
+        $fileMapper = $this->createMock(\OCA\OpenRegister\Db\FileMapper::class);
+        $fileMapper->expects($this->never())->method('isFilePublished');
+
+        $authedUser  = $this->createMock(IUser::class);
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($authedUser);
+
+        $controller = new FilesController(
+            'openregister',
+            $this->request,
+            $this->fileService,
+            $this->objectService,
+            $this->rootFolder,
+            $this->userManager,
+            $this->eventDispatcher,
+            $fileMapper,
+            null,
+            $userSession
+        );
+
+        $response = $controller->preview('reg', 'sch', 'abc-123', 42);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertEquals(404, $response->getStatus());
+    }//end testPreviewAuthenticatedBypassesPublishedGate()
 
     /**
      * Helper: build a mock target ObjectEntity. The objectService is set up

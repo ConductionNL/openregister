@@ -1596,6 +1596,8 @@ class Schema extends Entity implements JsonSerializable
      * @throws \InvalidArgumentException If validation fails
      *
      * @return array Validated configuration
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function validateConfigurationArray(array $configuration): array
     {

@@ -16,6 +16,14 @@
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -33,20 +41,28 @@ use Psr\Log\LoggerInterface;
 
 class BulkTranslationService
 {
-
+    /**
+     * Constructor.
+     *
+     * @param TranslationProviderInterface $provider           The translation provider.
+     * @param TranslationMapper            $translationMapper  The translation mapper.
+     * @param TranslationHandler           $translationHandler The translation handler.
+     * @param SchemaMapper                 $schemaMapper       The schema mapper.
+     * @param LoggerInterface              $logger             The logger.
+     */
     public function __construct(
         private readonly TranslationProviderInterface $provider,
         private readonly TranslationMapper $translationMapper,
         private readonly TranslationHandler $translationHandler,
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
-
+    ) {
+    }//end __construct()
 
     /**
-     * Translate an object's translatable properties from one language
-     * to another, filling only slots that are currently empty in the
-     * target language.
+     * Translate an object's translatable properties from one language to another.
+     *
+     * Fills only slots that are currently empty in the target language.
      *
      * Returns a per-property patch:
      *   `[propertyName => translatedValue]`
@@ -59,10 +75,17 @@ class BulkTranslationService
      * persists the object. Callers who don't want that immediate
      * write should invoke the provider directly.
      *
+     * @param ObjectEntity  $object     The object to translate.
+     * @param string        $fromLang   Source language code.
+     * @param string        $toLang     Target language code.
      * @param string[]|null $properties Optional whitelist of property
      *                                  names to translate; null = all.
      *
      * @return array{translated: array<string, string>, skipped: array<string, string>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function translateObject(
         ObjectEntity $object,
@@ -77,7 +100,7 @@ class BulkTranslationService
             return ['translated' => [], 'skipped' => ['_global' => 'fromLang === toLang']];
         }
 
-        $schema = $this->loadSchema($object);
+        $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             return ['translated' => [], 'skipped' => ['_global' => 'schema-not-resolvable']];
         }
@@ -88,7 +111,7 @@ class BulkTranslationService
         }
 
         $data       = (array) ($object->getObject() ?? []);
-        $translator = 'provider:' . $this->provider->getIdentifier();
+        $translator = 'provider:'.$this->provider->getIdentifier();
 
         foreach ($translatableProps as $property) {
             if (is_array($properties) === true && in_array($property, $properties, true) === false) {
@@ -105,6 +128,7 @@ class BulkTranslationService
                 // Legacy single-language fallback — treat plain string as NL.
                 $sourceValue = $existing;
             }
+
             if (is_string($sourceValue) === false || $sourceValue === '') {
                 $skipped[$property] = 'no-source-value';
                 continue;
@@ -135,7 +159,7 @@ class BulkTranslationService
                         $e->getMessage()
                     )
                 );
-                $skipped[$property] = 'provider-error: ' . $e->getMessage();
+                $skipped[$property] = 'provider-error: '.$e->getMessage();
                 continue;
             }
 
@@ -169,24 +193,29 @@ class BulkTranslationService
                     )
                 );
             }
-        }
+        }//end foreach
 
         return ['translated' => $translated, 'skipped' => $skipped];
     }//end translateObject()
 
-
+    /**
+     * Resolve a schema entity from an object's schema reference.
+     *
+     * @param ObjectEntity $object The object whose schema reference should be resolved.
+     *
+     * @return Schema|null The resolved schema, or null when not resolvable.
+     */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
         $ref = $object->getSchema();
         if ($ref === null || $ref === '') {
             return null;
         }
+
         try {
             return $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
         } catch (\Throwable $e) {
             return null;
         }
-    }
-
-
+    }//end loadSchema()
 }//end class

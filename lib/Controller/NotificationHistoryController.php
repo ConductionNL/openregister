@@ -78,14 +78,25 @@ class NotificationHistoryController extends Controller
         $user = $this->userSession->getUser();
         if ($user === null) {
             return new JSONResponse(
-                data: ['error' => 'Unauthorized'],
+                data: ['error' => 'Authentication required'],
                 statusCode: Http::STATUS_UNAUTHORIZED
             );
         }
 
         $filters = $this->extractFilters();
-        $limit   = $this->resolveLimit();
-        $offset  = $this->resolveOffset();
+
+        // SECURITY: non-admins may only read their OWN history. Force the
+        // `recipient` filter to the current UID regardless of any value
+        // the caller supplied — without this, any authed Bob could query
+        // `?recipient=alice` and read Alice's full notification stream
+        // (recipient list, channels, ruleId, dispatch timestamps), a
+        // privacy + recon vector across tenants.
+        if ($this->groupManager->isAdmin($user->getUID()) === false) {
+            $filters['recipient'] = $user->getUID();
+        }
+
+        $limit  = $this->resolveLimit();
+        $offset = $this->resolveOffset();
 
         // Per-user scoping: non-admins are silently constrained to their
         // own notification history, even if they explicitly pass a

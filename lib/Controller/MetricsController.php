@@ -233,10 +233,9 @@ class MetricsController extends Controller
             $out = [];
             foreach ($rows as $row) {
                 $isSuccess = (bool) ($row['success'] ?? false);
+                $status    = 'failure';
                 if ($isSuccess === true) {
                     $status = 'success';
-                } else {
-                    $status = 'failure';
                 }
 
                 $out[$status] = (int) ($row['cnt'] ?? 0);

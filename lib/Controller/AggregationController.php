@@ -31,12 +31,19 @@ use RuntimeException;
 
 class AggregationController extends Controller
 {
+    /**
+     * Constructor.
+     *
+     * @param string            $appName The application name.
+     * @param IRequest          $request The current request.
+     * @param AggregationRunner $runner  The aggregation runner.
+     */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly AggregationRunner $runner
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
@@ -48,6 +55,12 @@ class AggregationController extends Controller
      * `aggregations-backend-native` task 6.3. Reverse proxies and
      * downstream observability stacks can grep the header without
      * parsing the JSON envelope.
+     *
+     * @param string $register Register reference.
+     * @param string $schema   Schema reference.
+     * @param string $name     Aggregation name.
+     *
+     * @return JSONResponse JSON response with aggregation result.
      *
      * @NoAdminRequired
      * @NoCSRFRequired

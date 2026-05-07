@@ -16,8 +16,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-33
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-37
+ * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-37
  */
 
 declare(strict_types=1);
@@ -76,7 +76,7 @@ class TransferExecutionJob extends QueuedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-37
      */
     protected function run(mixed $argument): void
     {

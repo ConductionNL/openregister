@@ -48,7 +48,7 @@ class TranslationHandler
      * @param LanguageService $languageService The request-scoped language service
      * @param LoggerInterface $logger          Logger interface
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function __construct(
         private readonly LanguageService $languageService,
@@ -66,7 +66,7 @@ class TranslationHandler
      *
      * @return string[] Array of translatable property names
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function getTranslatableProperties(Schema $schema): array
     {
@@ -100,7 +100,7 @@ class TranslationHandler
      *
      * @return array The object data with resolved translations
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function resolveTranslationsForRender(
         array $objectData,
@@ -140,6 +140,7 @@ class TranslationHandler
                 $chain[] = $lang;
             }
         }
+
         if (in_array($defaultLanguage, $chain, true) === false) {
             $chain[] = $defaultLanguage;
         }
@@ -167,13 +168,14 @@ class TranslationHandler
                     if ($candidate !== $resolvedLanguage) {
                         $this->languageService->setFallbackUsed(true);
                     }
+
                     break;
                 }
             }
 
-            // Final fallback: any available variant. (Useful when an
+            // Final fallback: any available variant (useful when an
             // object carries a translation in a language not in the
-            // register's configured chain — e.g. legacy data.)
+            // register's configured chain — e.g. legacy data).
             if ($picked === null) {
                 $firstValue = reset($value);
                 if ($firstValue !== false) {
@@ -200,7 +202,7 @@ class TranslationHandler
      *
      * @return array The normalized object data with translations wrapped correctly
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function normalizeTranslationsForSave(
         array $objectData,
@@ -263,7 +265,7 @@ class TranslationHandler
      *
      * @return bool True if this looks like a language-keyed object
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function isLanguageKeyedObject(array $value): bool
     {

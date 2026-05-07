@@ -28,6 +28,8 @@ use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
 /**
+ * Translation row entity.
+ *
  * @method int getId()
  * @method void setId(int $id)
  * @method string|null getObjectUuid()
@@ -48,7 +50,7 @@ use OCP\AppFramework\Db\Entity;
 class Translation extends Entity implements JsonSerializable
 {
 
-    public const STATUS_DRAFT              = 'draft';
+    public const STATUS_DRAFT = 'draft';
     public const STATUS_MACHINE_TRANSLATED = 'machine_translated';
     public const STATUS_HUMAN_REVIEWED     = 'human_reviewed';
     public const STATUS_APPROVED           = 'approved';
@@ -60,26 +62,74 @@ class Translation extends Entity implements JsonSerializable
         self::STATUS_APPROVED,
     ];
 
+    /**
+     * UUID of the object the translation slot belongs to.
+     *
+     * @var string|null
+     */
     protected ?string $objectUuid = null;
-    protected ?string $property = null;
-    protected ?string $language = null;
-    protected ?string $value = null;
-    protected ?string $status = null;
-    protected ?string $translator = null;
-    protected ?DateTime $updated = null;
-
-    public function __construct()
-    {
-        $this->addType('objectUuid', 'string');
-        $this->addType('property', 'string');
-        $this->addType('language', 'string');
-        $this->addType('value', 'string');
-        $this->addType('status', 'string');
-        $this->addType('translator', 'string');
-        $this->addType('updated', 'datetime');
-    }
 
     /**
+     * Object property path being translated.
+     *
+     * @var string|null
+     */
+    protected ?string $property = null;
+
+    /**
+     * BCP-47 language tag for the translation.
+     *
+     * @var string|null
+     */
+    protected ?string $language = null;
+
+    /**
+     * Translated value (may be long-form text).
+     *
+     * @var string|null
+     */
+    protected ?string $value = null;
+
+    /**
+     * Workflow status of the translation slot.
+     *
+     * @var string|null
+     */
+    protected ?string $status = null;
+
+    /**
+     * UID of the translator who last wrote this row.
+     *
+     * @var string|null
+     */
+    protected ?string $translator = null;
+
+    /**
+     * Timestamp of the last update to this row.
+     *
+     * @var DateTime|null
+     */
+    protected ?DateTime $updated = null;
+
+    /**
+     * Configure typed columns for the entity.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->addType(fieldName: 'objectUuid', type: 'string');
+        $this->addType(fieldName: 'property', type: 'string');
+        $this->addType(fieldName: 'language', type: 'string');
+        $this->addType(fieldName: 'value', type: 'string');
+        $this->addType(fieldName: 'status', type: 'string');
+        $this->addType(fieldName: 'translator', type: 'string');
+        $this->addType(fieldName: 'updated', type: 'datetime');
+    }//end __construct()
+
+    /**
+     * Flat array shape for response embedding.
+     *
      * @return array<string, mixed>
      */
     public function jsonSerialize(): array
@@ -94,6 +144,5 @@ class Translation extends Entity implements JsonSerializable
             'translator' => $this->translator,
             'updated'    => $this->updated?->format(\DateTimeInterface::ATOM),
         ];
-    }
-
+    }//end jsonSerialize()
 }//end class

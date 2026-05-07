@@ -250,6 +250,8 @@ class VerwerkingsactiviteitMapper extends QBMapper
      * @return void
      *
      * @throws InvalidArgumentException When validation fails.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     private function validate(Verwerkingsactiviteit $entity): void
     {

@@ -14,7 +14,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
  */
 
 declare(strict_types=1);
@@ -58,7 +58,7 @@ class WorkflowExecutionController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
      */
     public function index(): JSONResponse
     {
@@ -122,7 +122,7 @@ class WorkflowExecutionController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
      */
     public function show(int $id): JSONResponse
     {
@@ -142,7 +142,7 @@ class WorkflowExecutionController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
      */
     public function destroy(int $id): JSONResponse
     {

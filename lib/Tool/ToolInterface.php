@@ -40,7 +40,7 @@ interface ToolInterface
      *
      * @return string Tool name (e.g., 'register', 'schema', 'objects')
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getName(): string;
 
@@ -52,7 +52,7 @@ interface ToolInterface
      *
      * @return string Tool description for LLM
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getDescription(): string;
 
@@ -80,7 +80,7 @@ interface ToolInterface
      *
      * @return array Array of function definitions
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getFunctions(): array;
 
@@ -98,7 +98,7 @@ interface ToolInterface
      *
      * @throws \Exception If function execution fails
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array;
 
@@ -112,7 +112,7 @@ interface ToolInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function setAgent(?\OCA\OpenRegister\Db\Agent $agent): void;
 }//end interface

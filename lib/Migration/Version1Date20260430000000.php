@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use Doctrine\DBAL\Types\Types;
+use OCP\DB\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
@@ -36,17 +36,23 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20260430000000 extends SimpleMigrationStep
 {
-
     /**
-     * @param IOutput        $output     Migration output
-     * @param Closure        $schemaClosure Schema closure
-     * @param array<string, mixed> $options Migration options
+     * Apply the schema change for this migration.
+     *
+     * @param IOutput              $output        Migration output
+     * @param Closure              $schemaClosure Schema closure
+     * @param array<string, mixed> $options       Migration options
      *
      * @return null|ISchemaWrapper
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_realtime_events') === true) {
@@ -55,56 +61,100 @@ class Version1Date20260430000000 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_realtime_events');
 
-        $table->addColumn('id', Types::BIGINT, [
-            'autoincrement' => true,
-            'notnull'       => true,
-        ]);
+        $table->addColumn(
+                'id',
+                Types::BIGINT,
+                [
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                ]
+                );
         $table->setPrimaryKey(['id']);
 
         // CloudEvent-style envelope fields.
-        $table->addColumn('event_type', Types::STRING, [
-            'notnull' => true,
-            'length'  => 64,
-        ]);
-        $table->addColumn('source', Types::STRING, [
-            'notnull' => true,
-            'length'  => 255,
-        ]);
-        $table->addColumn('subject', Types::STRING, [
-            'notnull' => false,
-            'length'  => 255,
-        ]);
+        $table->addColumn(
+                'event_type',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 64,
+                ]
+                );
+        $table->addColumn(
+                'source',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 255,
+                ]
+                );
+        $table->addColumn(
+                'subject',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
+                );
 
         // OpenRegister identity (denormalised for filtering).
-        $table->addColumn('register_id', Types::STRING, [
-            'notnull' => false,
-            'length'  => 255,
-        ]);
-        $table->addColumn('schema_id', Types::STRING, [
-            'notnull' => false,
-            'length'  => 255,
-        ]);
-        $table->addColumn('object_uuid', Types::STRING, [
-            'notnull' => false,
-            'length'  => 64,
-        ]);
-        $table->addColumn('actor_uid', Types::STRING, [
-            'notnull' => false,
-            'length'  => 64,
-        ]);
-        $table->addColumn('organisation', Types::STRING, [
-            'notnull' => false,
-            'length'  => 64,
-        ]);
+        $table->addColumn(
+                'register_id',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
+                );
+        $table->addColumn(
+                'schema_id',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
+                );
+        $table->addColumn(
+                'object_uuid',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 64,
+                ]
+                );
+        $table->addColumn(
+                'actor_uid',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 64,
+                ]
+                );
+        $table->addColumn(
+                'organisation',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 64,
+                ]
+                );
 
         // Full CloudEvent payload as JSON.
-        $table->addColumn('payload', Types::TEXT, [
-            'notnull' => true,
-        ]);
+        $table->addColumn(
+                'payload',
+                Types::TEXT,
+                [
+                    'notnull' => true,
+                ]
+                );
 
-        $table->addColumn('created', Types::DATETIME_MUTABLE, [
-            'notnull' => true,
-        ]);
+        $table->addColumn(
+                'created',
+                Types::DATETIME,
+                [
+                    'notnull' => true,
+                ]
+                );
 
         // Indices for the cursor-based polling query (`WHERE id > :since`)
         // and per-object / per-schema filters.
@@ -114,5 +164,4 @@ class Version1Date20260430000000 extends SimpleMigrationStep
 
         return $schema;
     }//end changeSchema()
-
 }//end class

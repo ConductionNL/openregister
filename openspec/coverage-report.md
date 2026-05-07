@@ -577,7 +577,7 @@ These clusters need `/opsx-reverse-spec openregister --cluster <name>` to create
 
 ## Notes for the human reviewer
 
-1. **Annotated bulk is large**: 1532 `@spec` lines across 249 files cover most of the mature code paths. The prior `retrofit-annotate-openregister-2026-04-23` run was comprehensive. Focus on Bucket 1 (138 unannotated methods) next.
+1. **Annotated bulk is large**: 1532 `@spec` lines across 249 files cover most of the mature code paths. The prior `retrofit-2026-04-23-annotate-openregister` run was comprehensive. Focus on Bucket 1 (138 unannotated methods) next.
 
 2. **content-versioning partial gap**: `RevertHandler` and `RevertController` implement rollback (Bucket 1, NEEDS-REVIEW), but the draft/publish lifecycle, version comparison, and delta storage described in the spec were not found. These are Bucket 3b — either mark as deferred or verify if they exist under different class names.
 

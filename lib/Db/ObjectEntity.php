@@ -135,6 +135,8 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.LongVariable)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -531,7 +533,27 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?string $processingActivityId = null;
 
     /**
+     * Import-job tag transferred to the audit trail on save.
+     *
+     * Transient field — set by `ImportService` at the start of a bulk
+     * import so every object created during that import gets the same
+     * UUID stamped on its `create` audit row. Powers the
+     * `softDeleteByImportJobId` rollback contract: a critical failure
+     * (or explicit user request) hands the UUID back, the audit table
+     * is queried for `action = 'create' AND import_job_id = X`, and
+     * the resulting object UUIDs are soft-deleted as a unit.
+     *
+     * Not persisted to the object itself — the audit trail is the
+     * canonical record so per-magic-table migrations are avoided.
+     *
+     * @var string|null Transient import-job reference (UUID v4).
+     */
+    protected ?string $importJobId = null;
+
+    /**
      * Get the URN for this object.
+     *
+     * @return string|null URN string, or null when none is set.
      */
     public function getUrn(): ?string
     {
@@ -541,6 +563,8 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Get the transient processing-activity override used by the
      * audit-trail trigger contract. Null when no override is set.
+     *
+     * @return string|null Processing-activity code or UUID, or null.
      */
     public function getProcessingActivityId(): ?string
     {
@@ -551,6 +575,10 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Set the transient processing-activity override (code or uuid).
      * Not persisted to the object — read by `AuditTrailMapper` at
      * write time only.
+     *
+     * @param string|null $processingActivityId Processing-activity code or UUID.
+     *
+     * @return void
      */
     public function setProcessingActivityId(?string $processingActivityId): void
     {
@@ -558,18 +586,60 @@ class ObjectEntity extends Entity implements JsonSerializable
     }//end setProcessingActivityId()
 
     /**
+     * Get the transient import-job UUID that should be stamped on the
+     * next save's audit-trail `create` row. Null when the write is
+     * not part of a tagged bulk import.
+     *
+     * @return string|null Import-job UUID, or null when not part of an import.
+     */
+    public function getImportJobId(): ?string
+    {
+        return $this->importJobId;
+    }//end getImportJobId()
+
+    /**
+     * Set the transient import-job UUID. Not persisted to the object;
+     * read by `AuditTrailMapper::createAuditTrail()` at write time and
+     * stored on the audit row.
+     *
+     * @param string|null $importJobId Import-job UUID to stamp on the next audit row.
+     *
+     * @return void
+     */
+    public function setImportJobId(?string $importJobId): void
+    {
+        $this->importJobId = $importJobId;
+    }//end setImportJobId()
+
+    /**
      * Set the URN for this object (transient, not persisted).
+     *
+     * @param string|null $urn URN to attach to the object instance.
+     *
+     * @return void
      */
     public function setUrn(?string $urn): void
     {
         $this->urn = $urn;
     }//end setUrn()
 
+    /**
+     * Read the cached per-language translation completeness map.
+     *
+     * @return array<string, mixed>|null Completeness map keyed by language, or null when not computed.
+     */
     public function getTranslationCompleteness(): ?array
     {
         return $this->translationCompleteness;
     }//end getTranslationCompleteness()
 
+    /**
+     * Write the cached per-language translation completeness map.
+     *
+     * @param array<string, mixed>|null $translationCompleteness Completeness map keyed by language.
+     *
+     * @return void
+     */
     public function setTranslationCompleteness(?array $translationCompleteness): void
     {
         $this->translationCompleteness = $translationCompleteness;

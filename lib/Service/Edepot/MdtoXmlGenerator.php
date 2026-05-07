@@ -18,8 +18,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-32
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-32
  */
 
 declare(strict_types=1);
@@ -90,8 +90,8 @@ class MdtoXmlGenerator
      *
      * @throws InvalidArgumentException If required fields are missing.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-32
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-32
      */
     public function generate(ObjectEntity $object, array $files=[]): string
     {
@@ -138,7 +138,7 @@ class MdtoXmlGenerator
      *
      * @throws InvalidArgumentException If required fields are missing.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function validateRequiredFields(ObjectEntity $object, array $retention): void
     {
@@ -182,7 +182,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function addIdentificatie(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void
     {
@@ -209,7 +209,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function addNaam(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void
     {
@@ -227,7 +227,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function addWaardering(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
@@ -245,7 +245,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function addBewaartermijn(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
@@ -262,7 +262,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function addInformatiecategorie(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
@@ -278,7 +278,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function addArchiefvormer(DOMDocument $dom, DOMElement $parent): void
     {
@@ -314,7 +314,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function addBestand(DOMDocument $dom, DOMElement $parent, array $file): void
     {
@@ -348,7 +348,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
      */
     private function addTextElement(DOMDocument $dom, DOMElement $parent, string $name, string $content): void
     {

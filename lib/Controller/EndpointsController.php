@@ -51,6 +51,8 @@ use Psr\Log\LoggerInterface;
  * @link https://www.OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public method per endpoint route.
  */
 class EndpointsController extends Controller
 {
@@ -408,6 +410,7 @@ class EndpointsController extends Controller
      *     array{error: 'Endpoint not found'|'Failed to delete endpoint'},
      *     array<never, never>>
      */
+
     /**
      * Partially update an endpoint by ID.
      *
@@ -431,7 +434,13 @@ class EndpointsController extends Controller
 
     }//end patch()
 
-
+    /**
+     * Delete an endpoint by ID.
+     *
+     * @param int $id The endpoint ID to delete.
+     *
+     * @return JSONResponse Empty response on success or error response on failure.
+     */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
