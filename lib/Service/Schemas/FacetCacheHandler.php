@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-30
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
@@ -250,7 +250,7 @@ class FacetCacheHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-30
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-30
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {

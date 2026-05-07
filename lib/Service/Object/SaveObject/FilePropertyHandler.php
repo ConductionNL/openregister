@@ -52,7 +52,7 @@ class FilePropertyHandler
      * @param LoggerInterface $logger      Logger for logging operations
      * @param FileService     $fileService File service for file operations
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -85,7 +85,7 @@ class FilePropertyHandler
      *
      * @throws Exception If file reading fails.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     public function processUploadedFiles(array $uploadedFiles, array $data): array
     {
@@ -164,7 +164,7 @@ class FilePropertyHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for different file input formats
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file type detection requires checking many formats
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     public function isFileProperty($value, ?Schema $schema=null, ?string $propertyName=null): bool
     {
@@ -309,7 +309,7 @@ class FilePropertyHandler
      * @psalm-return   bool
      * @phpstan-return bool
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     public function isFileObject(array $value): bool
     {
@@ -366,7 +366,7 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function generateFileName(
         string $propertyName,
@@ -404,7 +404,7 @@ class FilePropertyHandler
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $index kept for API consistency with other methods
      * @psalm-suppress                                UnusedParam $index kept for API consistency and future use
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function prepareAutoTags(
         array $fileConfig,
@@ -460,7 +460,7 @@ class FilePropertyHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional branches for file property processing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file property handling requires many steps
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     public function handleFileProperty(
         ObjectEntity $objectEntity,
@@ -675,7 +675,7 @@ class FilePropertyHandler
      *
      * @throws Exception If file validation fails or file operations fail.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     public function processSingleFileProperty(
         ObjectEntity $objectEntity,
@@ -742,7 +742,7 @@ class FilePropertyHandler
      *
      * @throws Exception If file processing fails.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function processStringFileInput(
         ObjectEntity $objectEntity,
@@ -828,7 +828,7 @@ class FilePropertyHandler
      *
      * @throws Exception If file processing fails.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function processFileObjectInput(
         ObjectEntity $objectEntity,
@@ -907,7 +907,7 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function fetchFileFromUrl(string $url): string
     {
@@ -952,7 +952,7 @@ class FilePropertyHandler
      * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function parseFileDataFromUrl(string $url, string $content): array
     {
@@ -998,7 +998,7 @@ class FilePropertyHandler
      * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     public function parseFileData(string $fileContent): array
     {
@@ -1073,7 +1073,7 @@ class FilePropertyHandler
      *
      * @throws Exception If validation fails.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     public function validateFileAgainstConfig(
         array $fileData,
@@ -1137,7 +1137,7 @@ class FilePropertyHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple security checks for executable detection
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     public function blockExecutableFiles(array $fileData, string $errorPrefix): void
     {
@@ -1214,7 +1214,7 @@ class FilePropertyHandler
      *
      * @throws Exception If executable magic bytes are detected.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function detectExecutableMagicBytes(string $content, string $errorPrefix): void
     {
@@ -1284,7 +1284,7 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function getExtensionFromMimeType(string $mimeType): string
     {
@@ -1361,7 +1361,7 @@ class FilePropertyHandler
      *     'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'}
      * @phpstan-return array<int, string>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function getCommonFileExtensions(): array
     {
@@ -1441,7 +1441,7 @@ class FilePropertyHandler
      *     'out', 'o', 'so', 'dylib'}
      * @phpstan-return array<int, string>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function getDangerousExecutableExtensions(): array
     {
@@ -1526,7 +1526,7 @@ class FilePropertyHandler
      *     'application/x-python-code', 'application/java-archive'}
      * @phpstan-return array<int, string>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-13
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
      */
     private function getExecutableMimeTypes(): array
     {

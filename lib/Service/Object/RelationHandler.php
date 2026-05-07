@@ -59,7 +59,7 @@ class RelationHandler
      * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -92,7 +92,7 @@ class RelationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for schema property handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Inverse filter resolution requires comprehensive handling
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function applyInversedByFilter(array &$filters, callable $findAllCallback): array|null
     {
@@ -207,7 +207,7 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control optional extraction features
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
     {
@@ -239,7 +239,7 @@ class RelationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple execution paths for relationship extraction limits
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Circuit breaker logic requires comprehensive safeguards
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function extractAllRelationshipIds(array $objects, array $_extend): array
     {
@@ -350,7 +350,7 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch processing with error handling requires multiple conditions
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function bulkLoadRelationshipsBatched(array $relationshipIds): array
     {
@@ -462,7 +462,7 @@ class RelationHandler
      * @psalm-return   list<ObjectEntity>
      * @phpstan-return array<int, ObjectEntity>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function loadRelationshipChunkOptimized(array $relationshipIds): array
     {
@@ -500,7 +500,7 @@ class RelationHandler
      *
      * @psalm-return array{results: array|mixed, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function getContracts(string $objectId, array $filters=[]): array
     {
@@ -564,7 +564,7 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function getUses(
         string $objectId,
@@ -777,7 +777,7 @@ class RelationHandler
      *
      * @return ObjectEntity[] Filtered objects the user has access to.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function filterByRbac(array $objects): array
     {
@@ -856,7 +856,7 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function getUsedBy(
         string $objectId,

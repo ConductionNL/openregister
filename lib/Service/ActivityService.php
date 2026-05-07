@@ -43,7 +43,7 @@ class ActivityService
      * @param IURLGenerator   $urlGenerator    The URL generator.
      * @param LoggerInterface $logger          The logger.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function __construct(
         private IManager $activityManager,
@@ -60,7 +60,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function publishObjectCreated(ObjectEntity $object): void
     {
@@ -89,7 +89,7 @@ class ActivityService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $oldObject reserved for future diff support
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function publishObjectUpdated(ObjectEntity $newObject, ?ObjectEntity $oldObject=null): void
     {
@@ -115,7 +115,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function publishObjectDeleted(ObjectEntity $object): void
     {
@@ -140,7 +140,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function publishRegisterCreated(Register $register): void
     {
@@ -166,7 +166,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function publishRegisterUpdated(Register $register): void
     {
@@ -192,7 +192,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function publishRegisterDeleted(Register $register): void
     {
@@ -217,7 +217,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function publishSchemaCreated(Schema $schema): void
     {
@@ -243,7 +243,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function publishSchemaUpdated(Schema $schema): void
     {
@@ -269,7 +269,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function publishSchemaDeleted(Schema $schema): void
     {
@@ -294,7 +294,7 @@ class ActivityService
      *
      * @return string The absolute URL to the object.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function buildObjectLink(ObjectEntity $object): string
     {
@@ -313,7 +313,7 @@ class ActivityService
      *
      * @return string The absolute URL to the register.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function buildRegisterLink(Register $register): string
     {
@@ -329,7 +329,7 @@ class ActivityService
      *
      * @return string The absolute URL to the schema.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function buildSchemaLink(Schema $schema): string
     {
@@ -355,7 +355,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -445,7 +445,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function publishEvent(
         string $subject,
@@ -482,7 +482,7 @@ class ActivityService
      *
      * @return string The resolved title.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function resolveTitle(?string $primary, ?string $fallback): string
     {

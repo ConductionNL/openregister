@@ -109,7 +109,7 @@ class ReferentialIntegrityService
      * @param LoggerInterface  $logger             Logger for debugging.
      * @param IDBConnection    $db                 Database connection for raw SQL queries.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -130,7 +130,7 @@ class ReferentialIntegrityService
      *
      * @return DeletionAnalysis The analysis result with targets and blockers.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function canDelete(ObjectEntity $object): DeletionAnalysis
     {
@@ -165,7 +165,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple action types require distinct handling paths
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function applyDeletionActions(
         DeletionAnalysis $analysis,
@@ -238,7 +238,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function logRestrictBlock(
         string $objectUuid,
@@ -281,7 +281,7 @@ class ReferentialIntegrityService
      *
      * @return bool True if any schema has onDelete config referencing this schema.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function hasIncomingOnDeleteReferences(string $schemaId): bool
     {
@@ -296,7 +296,7 @@ class ReferentialIntegrityService
      *
      * @return bool True if the value is valid.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public static function isValidOnDeleteAction(string $value): bool
     {
@@ -313,7 +313,7 @@ class ReferentialIntegrityService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * Reduced from 19 to ~12 by extracting buildSchemaRegisterMap + indexRelationsForSchema.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function ensureRelationIndex(): void
     {
@@ -354,7 +354,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function buildSchemaRegisterMap(): void
     {
@@ -416,7 +416,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function indexRelationsForSchema(\OCA\OpenRegister\Db\Schema $schema, array $allSchemas): void
     {
@@ -465,7 +465,7 @@ class ReferentialIntegrityService
      *
      * @return string|null The uppercase onDelete action, or null if not set.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function extractOnDelete(array $property): ?string
     {
@@ -485,7 +485,7 @@ class ReferentialIntegrityService
      *
      * @return string|null The $ref value, or null if not a relation property.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function extractTargetRef(array $property): ?string
     {
@@ -514,7 +514,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies needed
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function resolveSchemaRef(string $ref, array $allSchemas): ?string
     {
@@ -557,7 +557,7 @@ class ReferentialIntegrityService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple action types and fallback chains create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Core algorithm that handles all 5 action types inline
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function walkDeletionGraph(
         ObjectEntity $object,
@@ -741,7 +741,7 @@ class ReferentialIntegrityService
      *
      * @return ObjectEntity[] Matching objects.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function findReferencingObjects(
         string $sourceSchemaId,
@@ -862,7 +862,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles PostgreSQL/MySQL and array/scalar variants
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function findReferencingInMagicTable(
         Register $register,
@@ -945,7 +945,7 @@ class ReferentialIntegrityService
      *
      * @return bool True if the property is required.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function isRequiredProperty(string $schemaId, string $propertyName): bool
     {
@@ -965,7 +965,7 @@ class ReferentialIntegrityService
      *
      * @return mixed The default value, or null if not set.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getDefaultValue(string $schemaId, string $propertyName): mixed
     {
@@ -998,7 +998,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function logIntegrityAction(
         string $action,
@@ -1052,7 +1052,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function applySetNull(array $target): void
     {
@@ -1111,7 +1111,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function applySetDefault(array $target): void
     {
@@ -1163,7 +1163,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Groups targets and handles entity resolution per group
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function applyBatchCascadeDelete(
         array $cascadeTargets,

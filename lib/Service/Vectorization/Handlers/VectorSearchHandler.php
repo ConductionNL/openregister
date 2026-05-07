@@ -16,7 +16,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
  */
 
 declare(strict_types=1);
@@ -698,7 +698,7 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Collection resolution requires multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter and collection resolution paths
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
      */
     private function getCollectionsToSearch(array $filters): array
     {

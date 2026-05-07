@@ -12,10 +12,10 @@
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -116,7 +116,7 @@ class GraphQLResolver
      *
      * @throws Error If object not found or access denied
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     public function resolveSingle(Schema $schema, mixed $root, array $args): ?array
     {
@@ -167,7 +167,7 @@ class GraphQLResolver
      *
      * @return array<string, mixed> The connection result
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     public function resolveList(Schema $schema, mixed $root, array $args): array
     {
@@ -274,7 +274,7 @@ class GraphQLResolver
      *
      * @throws Error If access denied or validation fails
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
      */
     public function resolveCreate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -337,7 +337,7 @@ class GraphQLResolver
      *
      * @throws Error If access denied, not found, or validation fails
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
      */
     public function resolveUpdate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -412,7 +412,7 @@ class GraphQLResolver
      *
      * @throws Error If access denied or not found
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
      */
     public function resolveDelete(Schema $schema, array $args): bool
     {
@@ -469,7 +469,7 @@ class GraphQLResolver
      *
      * @return array<array<string, mixed>> The audit trail entries
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
      */
     public function resolveAuditTrail(string $objectUuid, int $last=10): array
     {
@@ -494,7 +494,7 @@ class GraphQLResolver
      *
      * @return array<array<string, mixed>> The referencing objects
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     public function resolveUsedBy(string $objectUuid): array
     {
@@ -539,7 +539,7 @@ class GraphQLResolver
      *
      * @throws Error If permission denied
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
      */
     private function checkSchemaPermission(Schema $schema, string $action): void
     {
@@ -715,7 +715,7 @@ class GraphQLResolver
      *
      * @return Register|null The register
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     private function findRegisterForSchema(Schema $schema): ?Register
     {
@@ -760,7 +760,7 @@ class GraphQLResolver
      *
      * @return Error[]
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
      */
     public function getPartialErrors(): array
     {
@@ -773,7 +773,7 @@ class GraphQLResolver
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
      */
     public function reset(): void
     {

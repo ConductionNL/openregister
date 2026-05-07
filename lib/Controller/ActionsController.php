@@ -16,7 +16,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -148,7 +148,7 @@ class ActionsController extends Controller
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -248,7 +248,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -280,7 +280,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -333,7 +333,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -381,7 +381,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -402,7 +402,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

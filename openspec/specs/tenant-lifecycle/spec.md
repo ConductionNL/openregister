@@ -1,5 +1,6 @@
 ---
-retrofit_extensions: [REQ-005]
+retrofit_extensions:
+  - REQ-005
 ---
 
 # Tenant Lifecycle

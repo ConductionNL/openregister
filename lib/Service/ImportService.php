@@ -14,9 +14,9 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
  */
 
 declare(strict_types=1);
@@ -332,8 +332,8 @@ class ImportService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
      */
     public function importFromExcel(
         string $filePath,
@@ -434,7 +434,7 @@ class ImportService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
      */
     public function importFromCsv(
         string $filePath,
@@ -1410,7 +1410,7 @@ class ImportService
      * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
      */
     private function transformObjectBySchema(array $objectData, Schema $schema): array
     {

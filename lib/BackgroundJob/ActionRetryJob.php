@@ -16,8 +16,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-32
- * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-32
+ * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-4
  */
 
 declare(strict_types=1);
@@ -77,7 +77,7 @@ class ActionRetryJob extends QueuedJob
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-4
      */
     protected function run($arguments): void
     {
@@ -178,7 +178,7 @@ class ActionRetryJob extends QueuedJob
      *
      * @return int Delay in seconds
      *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-4
      */
     public static function calculateDelay(string $policy, int $attempt): int
     {

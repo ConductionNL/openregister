@@ -16,7 +16,7 @@
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -134,7 +134,7 @@ class SchemaGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     public function setResolver(GraphQLResolver $resolver): void
     {
@@ -149,7 +149,7 @@ class SchemaGenerator
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema generation inherently branches per register+schema
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     public function generate(): Schema
     {
@@ -259,7 +259,7 @@ class SchemaGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
      */
     private function buildQueryFields(
         RegisterSchema $schema,
@@ -724,7 +724,7 @@ class SchemaGenerator
      *
      * @return array<int, RegisterSchema>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     public function getSchemasById(): array
     {
@@ -737,7 +737,7 @@ class SchemaGenerator
      *
      * @return array<int, Register>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     public function getRegistersById(): array
     {

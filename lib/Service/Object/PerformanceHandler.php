@@ -50,7 +50,7 @@ class PerformanceHandler
      * @param CacheHandler    $objectCacheService Object cache service for caching.
      * @param LoggerInterface $logger             Logger for performance monitoring.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function __construct(
         private readonly CacheHandler $objectCacheService,
@@ -71,7 +71,7 @@ class PerformanceHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function optimizeRequestForPerformance(array &$query, array &$perfTimings): void
     {
@@ -118,7 +118,7 @@ class PerformanceHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple criteria for determining request simplicity
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function isSimpleRequest(array $query): bool
     {
@@ -163,7 +163,7 @@ class PerformanceHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function optimizeExtendQueries(array | string $extend): array
     {
@@ -194,7 +194,7 @@ class PerformanceHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     private function optimizeExtendInQuery(array &$query): void
     {
@@ -235,7 +235,7 @@ class PerformanceHandler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function preloadCriticalEntities(array $query): void
     {
@@ -265,7 +265,7 @@ class PerformanceHandler
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flags control optional extraction features
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for different data types
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
     {
@@ -339,7 +339,7 @@ class PerformanceHandler
      *
      * @return bool True if the value is a UUID string
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     private function isUuid(mixed $value): bool
     {
@@ -376,7 +376,7 @@ class PerformanceHandler
      *
      * @return array<mixed> Array of entities
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function getCachedEntities(mixed $ids, callable $fallbackFunc): array
     {
@@ -394,7 +394,7 @@ class PerformanceHandler
      *
      * @psalm-return int<0, max>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function getFacetCount(bool $hasFacets, array $query): int
     {
@@ -419,7 +419,7 @@ class PerformanceHandler
      *
      * @return int Total pages
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function calculateTotalPages(int $total, int $limit): int
     {
@@ -441,7 +441,7 @@ class PerformanceHandler
      *
      * @psalm-return int<0, max>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
      */
     public function calculateExtendCount(mixed $extend): int
     {

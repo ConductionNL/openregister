@@ -16,15 +16,15 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-66
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-67
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-68
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-69
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-70
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-71
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-72
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-71
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-66
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-67
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-68
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-70
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-71
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-71
  */
 
 declare(strict_types=1);
@@ -100,8 +100,8 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-71
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-71
      */
     public function executeHooks(Event $event, Schema $schema): void
     {
@@ -142,7 +142,7 @@ class HookExecutor
      *
      * @return string|null The event type string (e.g. 'creating') or null
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
      */
     private function resolveEventType(Event $event): ?string
     {
@@ -165,7 +165,7 @@ class HookExecutor
      *
      * @return array<int, array<string, mixed>> Sorted array of hook configurations
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
      */
     private function loadHooks(Schema $schema, string $eventType): array
     {
@@ -201,7 +201,7 @@ class HookExecutor
      *
      * @return ObjectEntity|null The object entity or null
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
      */
     private function getObjectFromEvent(Event $event): ?ObjectEntity
     {
@@ -239,7 +239,7 @@ class HookExecutor
      *
      * @return bool True if propagation is stopped
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-68
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-68
      */
     private function isEventStopped(Event $event): bool
     {
@@ -269,7 +269,7 @@ class HookExecutor
      *
      * @return bool True if the hook should execute
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-70
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-70
      */
     private function evaluateFilterCondition(array $hook, ObjectEntity $object): bool
     {
@@ -308,7 +308,7 @@ class HookExecutor
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
      */
     private function executeSingleHook(
         array $hook,
@@ -425,7 +425,7 @@ class HookExecutor
      *
      * @return array<string, mixed> CloudEvent-formatted payload
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-66
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-66
      */
     private function buildCloudEventPayload(
         ObjectEntity $object,
@@ -469,7 +469,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-71
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-71
      */
     private function executeAsyncHook(
         $adapter,
@@ -519,7 +519,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-67
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-67
      */
     private function processWorkflowResult(
         WorkflowResult $result,
@@ -607,7 +607,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-67
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-67
      */
     private function setModifiedDataOnEvent(Event $event, array $data): void
     {
@@ -628,7 +628,7 @@ class HookExecutor
      *
      * @return string The failure mode to apply
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-69
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
      */
     private function determineFailureMode(Exception $exception, array $hook): string
     {
@@ -665,7 +665,7 @@ class HookExecutor
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-69
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
      */
     private function applyFailureMode(
         string $failureMode,
@@ -733,7 +733,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-69
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
      */
     private function stopEvent(Event $event, array $errors, string $fallbackError): void
     {
@@ -764,7 +764,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-69
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
      */
     private function setValidationMetadata(
         ObjectEntity $object,
@@ -793,7 +793,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-72
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
      */
     private function scheduleRetryJob(ObjectEntity $object, array $hook): void
     {
@@ -824,7 +824,7 @@ class HookExecutor
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-68
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-68
      */
     private function logHookExecution(
         array $hook,

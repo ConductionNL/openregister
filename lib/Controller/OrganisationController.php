@@ -18,10 +18,10 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-73
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-72
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-73
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-72
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -107,7 +107,7 @@ class OrganisationController extends Controller
      * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
      * @param TenantUsageMapper      $tenantUsageMapper      Usage mapper
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function __construct(
         string $appName,
@@ -135,7 +135,7 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse JSON response with organisations or error
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function index(): JSONResponse
     {
@@ -186,7 +186,7 @@ class OrganisationController extends Controller
      *     users: int<0, max>, groups: int<0, max>}, authorization: array,
      *     created: null|string, updated: null|string}|null}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function setActive(string $uuid): JSONResponse
     {
@@ -256,7 +256,7 @@ class OrganisationController extends Controller
      *     users: int<0, max>, groups: int<0, max>}, authorization: array,
      *     created: null|string, updated: null|string}|null}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function getActive(): JSONResponse
     {
@@ -317,7 +317,7 @@ class OrganisationController extends Controller
      *     users: int<0, max>, groups: int<0, max>}, authorization: array,
      *     created: null|string, updated: null|string}}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function create(string $name, string $description=''): JSONResponse
     {
@@ -385,7 +385,7 @@ class OrganisationController extends Controller
      *     array{error?: string, message?: 'Successfully joined organisation'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function join(string $uuid): JSONResponse
     {
@@ -449,7 +449,7 @@ class OrganisationController extends Controller
      *     message?: 'Successfully left organisation'|
      *     'Successfully removed user from organisation'}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function leave(string $uuid): JSONResponse
     {
@@ -525,7 +525,7 @@ class OrganisationController extends Controller
      *     users: int<0, max>, groups: int<0, max>}, authorization: array,
      *     created: null|string, updated: null|string}}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function show(string $uuid): JSONResponse
     {
@@ -585,7 +585,7 @@ class OrganisationController extends Controller
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) Already decomposed into helper methods
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function update(string $uuid): JSONResponse
     {
@@ -636,7 +636,7 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse JSON response with patched organisation or error
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function patch(string $uuid): JSONResponse
     {
@@ -668,7 +668,7 @@ class OrganisationController extends Controller
      *     limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function search(string $query=''): JSONResponse
     {
@@ -747,7 +747,7 @@ class OrganisationController extends Controller
      *     array{error?: 'Failed to clear cache', message?: 'Cache cleared successfully'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function clearCache(): JSONResponse
     {
@@ -792,7 +792,7 @@ class OrganisationController extends Controller
      *     array{error?: 'Failed to retrieve statistics', statistics?: array{total: int}},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function stats(): JSONResponse
     {
@@ -831,7 +831,7 @@ class OrganisationController extends Controller
      *
      * @return array<string, mixed> Cleaned request data.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function extractRequestData(): array
     {
@@ -851,7 +851,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function handleNameAndSlugUpdate(object $organisation, array $data): void
     {
@@ -876,7 +876,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function handleDescriptionUpdate(object $organisation, array $data): void
     {
@@ -896,7 +896,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function handleSlugUpdate(object $organisation, array $data): void
     {
@@ -918,7 +918,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function handleActiveFieldUpdate(object $organisation, array $data): void
     {
@@ -943,7 +943,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function applySimpleFieldUpdates(object $organisation, array $data): void
     {
@@ -970,7 +970,7 @@ class OrganisationController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function applyArrayFieldUpdates(object $organisation, array $data): void
     {
@@ -1000,7 +1000,7 @@ class OrganisationController extends Controller
      *
      * @psalm-return JSONResponse<400, array{error: string}, array<never, never>>|null
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function handleParentUpdate(object $organisation, array $data, string $uuid): JSONResponse|null
     {
@@ -1051,7 +1051,7 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse Success response with organisation data.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function saveAndReturnOrganisation(object $organisation): JSONResponse
     {
@@ -1069,7 +1069,7 @@ class OrganisationController extends Controller
      *
      * @return JSONResponse Error response with error message
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function handleUpdateError(string $uuid, Exception $exception): JSONResponse
     {
@@ -1097,7 +1097,7 @@ class OrganisationController extends Controller
      *
      * @return string The generated slug
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     private function generateSlug(string $name): string
     {
@@ -1125,8 +1125,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
      */
     public function suspend(string $uuid): JSONResponse
     {
@@ -1157,8 +1157,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
      */
     public function activate(string $uuid): JSONResponse
     {
@@ -1192,8 +1192,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
      */
     public function deprovision(string $uuid): JSONResponse
     {
@@ -1219,7 +1219,7 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -1302,8 +1302,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-73
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-73
      */
     public function isolationVerify(): JSONResponse
     {
@@ -1340,8 +1340,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-72
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-72
      */
     public function isolationMetrics(): JSONResponse
     {

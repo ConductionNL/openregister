@@ -62,7 +62,7 @@ class FileVersioningHandler
      *
      * @return bool True if files_versions is enabled.
      *
-     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
      */
     public function isVersioningEnabled(): bool
     {
@@ -79,7 +79,7 @@ class FileVersioningHandler
      *
      * @return array{versions: array, warning?: string} Version listing.
      *
-     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
@@ -153,7 +153,7 @@ class FileVersioningHandler
      *
      * @throws Exception If versioning is not enabled or version not found.
      *
-     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
@@ -203,7 +203,7 @@ class FileVersioningHandler
      *
      * @return string The current user ID or 'system'.
      *
-     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
      */
     private function getCurrentUserId(): string
     {

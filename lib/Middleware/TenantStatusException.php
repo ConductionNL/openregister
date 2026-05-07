@@ -35,7 +35,7 @@ class TenantStatusException extends Exception
      * @param string $status  The organisation status
      * @param int    $code    HTTP status code
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
      */
     public function __construct(
         string $message,
@@ -50,7 +50,7 @@ class TenantStatusException extends Exception
      *
      * @return string The status
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-17
      */
     public function getStatus(): string
     {

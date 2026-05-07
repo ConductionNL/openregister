@@ -1,8 +1,9 @@
 ---
-retrofit_extensions: ["The system MUST send configurable advance notifications to archivists for objects approaching their archiefactiedatum"]
+retrofit_extensions:
+  - REQ-009
 ---
 
-### Requirement: The system MUST send configurable advance notifications to archivists for objects approaching their archiefactiedatum
+### REQ-009: The system MUST send configurable advance notifications to archivists for objects approaching their archiefactiedatum
 
 The `DestructionCheckJob` MUST scan for objects whose `archiefactiedatum` falls within a configurable advance window (default: 30 days) and send per-object Nextcloud notifications to all users in the `archivaris` group. Notifications MUST be deduplicated — each object is notified at most once per retention lifecycle — using a persisted list stored in app config. Objects with active legal holds MUST be excluded. Objects with `archiefnominatie: bewaren` receive an e-Depot transfer subject rather than a destruction warning.
 

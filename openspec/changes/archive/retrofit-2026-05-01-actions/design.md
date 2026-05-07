@@ -2,7 +2,7 @@
 
 Retrofit change. Tasks describe retroactive annotation, not new implementation work.
 
-The Actions feature is an already-implemented, standalone workflow trigger system layered on top of OpenRegister's object lifecycle events. It evolved from (and coexists with) the earlier inline schema hooks (`HookListener`/`HookExecutor`). The change `retrofit-actions-2026-05-01` retroactively specifies observed behavior as 5 REQs covering CRUD, event-triggered execution, sync/async modes, retry with backoff, and scheduled execution.
+The Actions feature is an already-implemented, standalone workflow trigger system layered on top of OpenRegister's object lifecycle events. It evolved from (and coexists with) the earlier inline schema hooks (`HookListener`/`HookExecutor`). The change `retrofit-2026-05-01-actions` retroactively specifies observed behavior as 5 REQs covering CRUD, event-triggered execution, sync/async modes, retry with backoff, and scheduled execution.
 
 **Files covered:**
 - `lib/Controller/ActionsController.php` (CRUD API)

@@ -22,7 +22,7 @@
  *
  * @since 2.0.0 Introduced by fix-empty-string-date-conversion
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-24
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-24
  */
 
 declare(strict_types=1);
