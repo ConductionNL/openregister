@@ -16,7 +16,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-34
  */
 
 declare(strict_types=1);
@@ -54,8 +54,8 @@ class SftpTransport implements TransportInterface
      *
      * @return TransportResult The result of the transport.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-34
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {
@@ -128,7 +128,7 @@ class SftpTransport implements TransportInterface
      *
      * @return bool True if connection test succeeds.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function testConnection(array $config): bool
     {
@@ -159,7 +159,7 @@ class SftpTransport implements TransportInterface
      *
      * @return string The transport name.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getName(): string
     {
@@ -175,7 +175,7 @@ class SftpTransport implements TransportInterface
      *
      * @throws RuntimeException If required configuration is missing.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     private function validateConfig(array $config): void
     {
@@ -202,7 +202,7 @@ class SftpTransport implements TransportInterface
      *
      * @psalm-suppress UndefinedClass
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     private function createSftpConnection(array $config): \phpseclib3\Net\SFTP
     {

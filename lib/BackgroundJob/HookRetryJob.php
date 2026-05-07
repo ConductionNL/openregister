@@ -16,7 +16,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-72
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
  */
 
 declare(strict_types=1);
@@ -86,7 +86,7 @@ class HookRetryJob extends QueuedJob
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-72
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
      */
     protected function run($argument): void
     {

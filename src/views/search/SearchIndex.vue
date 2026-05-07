@@ -1,6 +1,6 @@
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-90
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-90
  */
 import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
@@ -45,7 +45,7 @@ export default {
 			return normalizeObjects(objectStore.searchCollection)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-90
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-90
 		 */
 		hasSelectedRegisters() {
 			return objectStore.searchParams.register != null

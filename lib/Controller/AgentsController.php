@@ -16,8 +16,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
- * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -178,7 +178,7 @@ class AgentsController extends Controller
      * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve agents',
      *     results?: array<Agent>}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      */
     public function index(): JSONResponse
     {
@@ -263,7 +263,7 @@ class AgentsController extends Controller
      *     array{error: 'Access denied to this agent'|'Agent not found'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      */
     public function show(int $id): JSONResponse
     {
@@ -313,7 +313,7 @@ class AgentsController extends Controller
      *
      * @return JSONResponse JSON response with created agent
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      */
     public function create(): JSONResponse
     {
@@ -401,7 +401,7 @@ class AgentsController extends Controller
      *
      * @return JSONResponse JSON response with updated agent
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      */
     public function update(int $id): JSONResponse
     {
@@ -484,7 +484,7 @@ class AgentsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      */
     public function patch(int $id): JSONResponse
     {
@@ -511,7 +511,7 @@ class AgentsController extends Controller
      *     'User not authenticated', message?: 'Agent deleted successfully'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      */
     public function destroy(int $id): JSONResponse
     {
@@ -577,7 +577,7 @@ class AgentsController extends Controller
      *     array{error?: 'Failed to retrieve statistics', total?: int,
      *     active?: int, inactive?: int}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
      */
     public function stats(): JSONResponse
     {
@@ -624,7 +624,7 @@ class AgentsController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve tools', results?: array}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
      */
     public function tools(): JSONResponse
     {

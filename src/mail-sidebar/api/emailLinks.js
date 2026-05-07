@@ -5,7 +5,7 @@
  *
  * @package OpenRegister
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-47
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-47
  */
 
 import axios from '@nextcloud/axios'
@@ -56,7 +56,7 @@ export async function fetchSenderObjects(sender, signal) {
  * @param {object} params The link parameters (objectUuid, mailAccountId, mailMessageId).
  * @return {Promise<object>} The updated linked IDs.
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-47
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-47
  */
 export async function createQuickLink(params) {
 	const { objectUuid, mailAccountId, mailMessageId } = params

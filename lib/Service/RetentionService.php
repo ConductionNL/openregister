@@ -17,13 +17,13 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-60
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-61
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-62
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-70
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-65
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-68
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-67
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-60
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-61
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-62
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-70
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-65
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-68
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-67
  */
 
 declare(strict_types=1);
@@ -124,8 +124,8 @@ class RetentionService
      *
      * @return ObjectEntity The object with archival metadata applied
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-60
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-70
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-60
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-70
      */
     public function applyArchivalMetadata(ObjectEntity $object, Schema $schema): ObjectEntity
     {
@@ -197,8 +197,8 @@ class RetentionService
      *
      * @return string|null ISO 8601 date string or null if calculation not possible
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-61
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-65
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-61
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-65
      */
     public function calculateArchiefactiedatum(
         ObjectEntity $object,
@@ -307,7 +307,7 @@ class RetentionService
      *
      * @return ObjectEntity The object with recalculated dates
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-65
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-65
      */
     public function recalculateArchiefactiedatum(
         ObjectEntity $object,
@@ -655,7 +655,7 @@ class RetentionService
      *
      * @return string[] Array of object UUIDs
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-62
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-62
      */
     public function getObjectsOnPendingDestructionLists(): array
     {
@@ -708,7 +708,7 @@ class RetentionService
      *
      * @return array|null The destruction list data or null on failure
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-68
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-68
      */
     public function createDestructionList(array $objects): ?array
     {
@@ -767,8 +767,8 @@ class RetentionService
      *
      * @return array The destruction certificate data
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-62
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-67
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-62
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-67
      */
     public function generateDestructionCertificate(
         array $destructionList,

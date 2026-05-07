@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-18
  */
 
 declare(strict_types=1);
@@ -131,8 +131,8 @@ class RegisterCalendarProvider implements ICalendarProvider
      *
      * @return array Array of ICalendar instances
      *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-18
      */
     public function getCalendars(string $principalUri, array $calendarUris=[]): array
     {
@@ -188,7 +188,7 @@ class RegisterCalendarProvider implements ICalendarProvider
      *
      * @return array Array of ['schema' => Schema, 'config' => array] entries
      *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
      */
     private function getCalendarEnabledSchemas(): array
     {
@@ -231,7 +231,7 @@ class RegisterCalendarProvider implements ICalendarProvider
      *
      * @return bool True if the principal is a valid user
      *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
      */
     private function isValidUserPrincipal(string $principalUri): bool
     {

@@ -85,7 +85,7 @@ class TransportResult
      *
      * @return bool True if successful.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function isSuccess(): bool
     {
@@ -97,7 +97,7 @@ class TransportResult
      *
      * @return bool True if partially successful.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function isPartialSuccess(): bool
     {
@@ -123,7 +123,7 @@ class TransportResult
      *
      * @return array<string, array{accepted: bool, reference: string|null, error: string|null}> Object results.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getObjectResults(): array
     {
@@ -135,7 +135,7 @@ class TransportResult
      *
      * @return string|null The error message.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getErrorMessage(): ?string
     {
@@ -157,7 +157,7 @@ class TransportResult
      *
      * @return array<int, string> UUIDs of accepted objects.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getAcceptedUuids(): array
     {
@@ -176,7 +176,7 @@ class TransportResult
      *
      * @return array<int, string> UUIDs of rejected objects.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getRejectedUuids(): array
     {
@@ -195,7 +195,7 @@ class TransportResult
      *
      * @return array<string,mixed> Serialized result.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function toArray(): array
     {

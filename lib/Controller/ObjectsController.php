@@ -17,11 +17,11 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-22
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-20
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -909,7 +909,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1649,7 +1649,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
      */
     public function create(
         string $register,
@@ -1786,7 +1786,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
      */
     public function update(
         string $register,
@@ -2239,7 +2239,7 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
      */
     public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2711,7 +2711,7 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress NoValue
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
     {
@@ -2787,7 +2787,7 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress NoValue
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
      */
     public function import(int $register): JSONResponse
     {

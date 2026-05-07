@@ -17,8 +17,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-16
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-16
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ class AuditHandler
      * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
      * @param LoggerInterface  $logger           PSR-3 logger
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,
@@ -71,8 +71,8 @@ class AuditHandler
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-16
      */
     public function getLogs(string $uuid, array $filters=[]): array
     {
@@ -129,7 +129,7 @@ class AuditHandler
      *
      * @return bool True if object belongs to register/schema
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
      */
     public function validateObjectOwnership(object|array $object, string $requestedRegister, string $requestedSchema): bool
     {
@@ -182,7 +182,7 @@ class AuditHandler
      *
      * @return array Prepared filters for audit trail query.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
     private function prepareFilters(string $uuid, array $filters): array
     {
@@ -220,7 +220,7 @@ class AuditHandler
      *
      * @return string Schema ID
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
      */
     private function extractSchemaId(mixed $schema): string
     {
@@ -242,7 +242,7 @@ class AuditHandler
      *
      * @return null|string Schema slug
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
      */
     private function extractSchemaSlug(mixed $schema): string|null
     {

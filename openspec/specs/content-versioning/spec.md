@@ -1,6 +1,7 @@
 ---
 status: implemented
-retrofit_extensions: [REQ-017]
+retrofit_extensions:
+  - REQ-017
 ---
 # Content Versioning
 

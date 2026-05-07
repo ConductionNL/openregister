@@ -1,4 +1,4 @@
-# Design — retrofit-oas-generation-2026-05-01
+# Design — retrofit-2026-05-01-oas-generation
 
 > **Retrofit change.** Tasks describe retroactive annotation, not new implementation work. The code exists; this design documents the observed architecture.
 

@@ -74,7 +74,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return 'register'
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getName(): string
     {
@@ -86,7 +86,7 @@ class RegisterTool extends AbstractTool
      *
      * @return string The tool description
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getDescription(): string
     {
@@ -98,7 +98,7 @@ class RegisterTool extends AbstractTool
      *
      * @return array<int, array<string, mixed>> Array of function definitions
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getFunctions(): array
     {
@@ -207,7 +207,7 @@ class RegisterTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
@@ -241,7 +241,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function listRegisters(int $limit=100, int $offset=0): array
     {
@@ -278,7 +278,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getRegister(string $id): array
     {
@@ -313,7 +313,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function createRegister(string $title, string $description='', ?string $slug=null): array
     {
@@ -353,7 +353,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function updateRegister(string $id, ?string $title=null, ?string $description=null): array
     {
@@ -395,7 +395,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function deleteRegister(string $id): array
     {

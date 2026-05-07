@@ -16,10 +16,10 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-11
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-16
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-16
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
  */
 
 namespace OCA\OpenRegister\Service;
@@ -157,8 +157,8 @@ class ExportService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input combinations
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-11
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
      */
     public function exportToExcel(
         ?Register $register=null,
@@ -212,7 +212,7 @@ class ExportService
      *
      * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
      */
     public function exportToCsv(
         ?Register $register=null,
@@ -399,7 +399,7 @@ class ExportService
      *
      * @return array Map of UUID string to human-readable name.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
      */
     private function resolveUuidNameMap(array $objects, array $nameColumns): array
     {
@@ -503,7 +503,7 @@ class ExportService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Header generation has multiple schema and permission conditions
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-16
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-16
      */
     private function getHeaders(?Schema $schema=null, ?IUser $currentUser=null): array
     {
@@ -842,7 +842,7 @@ class ExportService
      *
      * @return string|null The resolved name(s) in the same format as input
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
      */
     private function resolveUuidsToNames(mixed $value, array $uuidToNameMap): ?string
     {
