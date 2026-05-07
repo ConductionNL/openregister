@@ -78,6 +78,24 @@
 					Allow administrators to bypass all RBAC restrictions
 				</p>
 
+				<!-- Inherit-from-public default -->
+				<NcCheckboxRadioSwitch
+					:checked.sync="rbacOptions.inheritFromPublicDefault"
+					:disabled="saving"
+					type="switch">
+					{{ rbacOptions.inheritFromPublicDefault
+						? 'Authenticated users inherit public group rights (default)'
+						: 'Authenticated users do NOT inherit public group rights (default)' }}
+				</NcCheckboxRadioSwitch>
+				<p class="option-description">
+					Tenant-wide default for the schema-level <code>inheritFromPublic</code> flag.
+					When on (default), authenticated users qualify for any rule that targets the
+					<code>public</code> group across all schemas — unless an individual schema or
+					register opts out via its <code>inheritFromPublic</code> field. When off,
+					authenticated users must qualify via their own group memberships everywhere
+					the flag is not explicitly set. Anonymous users are unaffected either way.
+				</p>
+
 				<h4>Default User Groups</h4>
 				<p class="option-description">
 					Configure which Nextcloud groups different types of users are assigned to by default

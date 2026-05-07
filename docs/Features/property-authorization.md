@@ -69,7 +69,7 @@ Each rule combines a group check with an optional condition:
 
 | Field | Meaning |
 | --- | --- |
-| `group` | A Nextcloud group the current user must belong to. The literal value `"public"` matches **any authenticated user** (including when no other group matches). |
+| `group` | A Nextcloud group the current user must belong to. The literal value `"public"` matches anonymous users, and — by default — authenticated users as well. The schema-level `inheritFromPublic` flag (see [Access Control → inheritFromPublic](./access-control.md#disabling-public-group-inheritance-for-authenticated-users-inheritfrompublic)) lets a tenant turn off the authenticated-user inheritance per schema, register, or globally. |
 | `match` | Optional map of conditions evaluated against the object. All conditions must be true for the rule to grant access. Omit `match` for an unconditional rule. |
 
 A rule is satisfied when **both** the group check and every `match` condition pass.

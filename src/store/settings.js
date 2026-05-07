@@ -97,6 +97,12 @@ export const useSettingsStore = defineStore('settings', {
 			defaultNewUserGroup: 'viewer',
 			defaultObjectOwner: '',
 			adminOverride: true,
+			// Tenant-wide default for the schema-level inheritFromPublic flag.
+			// When true (default — pre-change behaviour), authenticated users
+			// qualify for any rule targeting the `public` group on schemas that
+			// don't override this. When false, authenticated users only qualify
+			// via their own group memberships.
+			inheritFromPublicDefault: true,
 		},
 
 		multitenancyOptions: {
