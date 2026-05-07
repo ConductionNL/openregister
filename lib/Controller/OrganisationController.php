@@ -1169,9 +1169,7 @@ class OrganisationController extends Controller
             if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
                 $userId = \OC::$server->get(\OCP\IUserSession::class)->getUser()?->getUID() ?? 'admin';
                 $result = $this->tenantLifecycleService->provision($organisation, $userId);
-            }
-
-            if ($status !== TenantLifecycleService::STATUS_PROVISIONING) {
+            } else {
                 $result = $this->tenantLifecycleService->reactivate($organisation);
             }
 
