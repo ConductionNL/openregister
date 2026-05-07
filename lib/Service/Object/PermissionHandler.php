@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCP\IAppConfig;
 use OCP\IUserSession;
 use OCP\IUserManager;
 use OCP\IGroupManager;
@@ -88,6 +89,18 @@ class PermissionHandler
     private array $cachedRegisterConfig = [];
 
     /**
+     * Per-request cache for resolved `inheritFromPublic` flag per schema.
+     *
+     * Maps schema ID to its resolved boolean value (cascade: schema → register
+     * → IAppConfig → hard-coded true). Avoids repeated cascade walks within a
+     * single request when the same schema is checked many times (e.g. listing
+     * filter + per-object follow-up).
+     *
+     * @var array<int, bool>
+     */
+    private array $cachedInheritFromPublic = [];
+
+    /**
      * PermissionHandler constructor.
      *
      * @param IUserSession       $userSession        User session for getting current user.
@@ -96,6 +109,7 @@ class PermissionHandler
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
      * @param MagicMapper        $objectEntityMapper Mapper for object entity operations.
      * @param ConditionMatcher   $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
+     * @param IAppConfig         $appConfig          Tenant configuration for the inheritFromPublic default.
      * @param LoggerInterface    $logger             Logger for permission auditing.
      * @param ContainerInterface $container          Container for lazy loading services.
      *
@@ -108,6 +122,7 @@ class PermissionHandler
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $objectEntityMapper,
         private readonly ConditionMatcher $conditionMatcher,
+        private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container
     ) {
@@ -226,8 +241,11 @@ class PermissionHandler
             }
         }//end foreach
 
-        // Logged-in users should also have at least the same rights as 'public' users.
-        if ($this->hasGroupPermission(
+        // Logged-in users should also have at least the same rights as 'public' users —
+        // unless inheritFromPublic is disabled for this schema (cascade: schema → register
+        // → IAppConfig openregister.rbac.inherit_from_public_default → true).
+        if ($this->resolveInheritFromPublic(schema: $schema) === true
+            && $this->hasGroupPermission(
                 authorization: $authorization,
                 groupId: 'public',
                 action: $action,
@@ -661,6 +679,73 @@ class PermissionHandler
 
         return null;
     }//end resolveAuthorization()
+
+    /**
+     * Resolve the effective `inheritFromPublic` flag for a schema.
+     *
+     * Cascade (first explicitly-set value wins):
+     *   1. schema's authorization.inheritFromPublic
+     *   2. register's authorization.inheritFromPublic
+     *   3. IAppConfig key `openregister.rbac.inherit_from_public_default`
+     *   4. hard-coded `true` (preserves pre-change behaviour)
+     *
+     * `null` is treated as "unset" — the cascade falls through.
+     *
+     * Result is cached per request, keyed by schema ID, to avoid repeated
+     * cascade walks when the same schema is checked many times (listing
+     * filter + per-object follow-up).
+     *
+     * @param Schema $schema The schema to resolve the flag for.
+     *
+     * @return bool The effective inheritFromPublic value.
+     *
+     * @spec openspec/changes/rbac-disable-public-inheritance/specs/rbac-scopes/spec.md#requirement-the-effective-value-of-inheritfrompublic-must-be-resolved-via-cascade
+     */
+    public function resolveInheritFromPublic(Schema $schema): bool
+    {
+        $schemaId = $schema->getId();
+        if ($schemaId !== null && array_key_exists($schemaId, $this->cachedInheritFromPublic) === true) {
+            return $this->cachedInheritFromPublic[$schemaId];
+        }
+
+        $resolved = null;
+
+        // Step 1: schema-level authorization.
+        $auth = $schema->getAuthorization();
+        if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true && $auth['inheritFromPublic'] !== null) {
+            $resolved = (bool) $auth['inheritFromPublic'];
+        }
+
+        // Step 2: register-level authorization.
+        if ($resolved === null) {
+            $register = $this->getRegisterForSchema(schema: $schema);
+            if ($register !== null) {
+                $registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
+                if (is_array($registerAuth) === true
+                    && array_key_exists('inheritFromPublic', $registerAuth) === true
+                    && $registerAuth['inheritFromPublic'] !== null
+                ) {
+                    $resolved = (bool) $registerAuth['inheritFromPublic'];
+                }
+            }
+        }
+
+        // Step 3: tenant-wide IAppConfig default.
+        if ($resolved === null) {
+            $resolved = $this->appConfig->getValueBool(
+                app: 'openregister',
+                key: 'rbac.inherit_from_public_default',
+                default: true
+            );
+        }
+
+        if ($schemaId !== null) {
+            $this->cachedInheritFromPublic[$schemaId] = $resolved;
+        }
+
+        return $resolved;
+
+    }//end resolveInheritFromPublic()
 
     /**
      * Get the parent register for a schema.
