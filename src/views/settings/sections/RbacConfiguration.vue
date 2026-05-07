@@ -3,7 +3,7 @@
 		name="Role Based Access Control (RBAC)"
 		description="Configure access permissions and user groups"
 		:loading="loading"
-		loading-message="Loading RBAC settings...">
+		:loading-message="t('openregister', 'Loading RBAC settings...')">
 		<template #actions>
 			<NcButton
 				type="error"

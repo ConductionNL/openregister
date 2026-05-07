@@ -46,7 +46,7 @@
 					</div>
 					<div class="or-mail-object-card__meta">
 						<span class="or-mail-object-card__schema">{{ obj.schema }}</span>
-						<span v-if="obj.register" class="or-mail-object-card__register">Register #{{ obj.register }}</span>
+						<span v-if="obj.register" class="or-mail-object-card__register">{{ t('openregister', 'Register #{id}', { id: obj.register }) }}</span>
 					</div>
 				</div>
 			</div>

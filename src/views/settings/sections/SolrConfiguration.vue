@@ -7,7 +7,7 @@ import { translate as t } from '@nextcloud/l10n'
 		:name="t('openregister', 'Search Configuration')"
 		:description="t('openregister', 'Configure Apache SOLR search engine for advanced search capabilities')"
 		:loading="loading"
-		loading-message="Loading search configuration...">
+		:loading-message="t('openregister', 'Loading search configuration...')">
 		<template #actions>
 			<!-- Refresh Stats Button -->
 			<NcButton
