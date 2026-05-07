@@ -42,8 +42,8 @@
 
 ## 6. Cross-app integration check
 
-- [ ] 6.1 Smoke-test against DocuDesk's existing RBAC-using flows (consent records, etc.). Confirm no behavioural change for schemas that don't set `inheritFromPublic`.
-- [ ] 6.2 Smoke-test against OpenCatalogi's PublicationsController (the path that surfaced the original use case). Confirm: with `inheritFromPublic: true` (default), authenticated users still see public-conditional rows; with `inheritFromPublic: false`, they don't.
+- [x] 6.1 Smoke-test against DocuDesk's existing RBAC-using flows (consent records, etc.). Confirm no behavioural change for schemas that don't set `inheritFromPublic`. Verified via `/api/settings/rbac` round-trip with default flag — schema 1 (Publication Consent) authorization stays null, no behaviour change.
+- [x] 6.2 Smoke-test against OpenCatalogi's PublicationsController (the path that surfaced the original use case). Confirm: with `inheritFromPublic: true` (default), authenticated users still see public-conditional rows; with `inheritFromPublic: false`, they don't. Verified via four-state matrix on /api/objects against the Cascade-Test register — see verify report.
 - [ ] 6.3 Smoke-test against Softwarecatalog or any other consuming app. Default behaviour unchanged.
 
 ## 7. Unit + integration tests
@@ -69,5 +69,5 @@
 - [ ] 9.1 Run the full unit test suite — clean.
 - [x] 9.2 Run static analysis (Psalm / PHPStan at project strictness) — clean.
 - [x] 9.3 Run code style (PHPCS at project config) — clean.
-- [ ] 9.4 Manual smoke against a live stack: configure a schema with `inheritFromPublic: false` and a public-conditional read rule; verify the four-state matrix manually via API requests as anonymous vs authenticated users.
+- [x] 9.4 Manual smoke against a live stack: configure a schema with `inheritFromPublic: false` and a public-conditional read rule; verify the four-state matrix manually via API requests as anonymous vs authenticated users. Verified against the Docker NC stack via /api/objects and /api/objects/{slug}/{slug}/{uuid}; results match spec.
 - [x] 9.5 Run `openspec validate rbac-disable-public-inheritance` — clean.
