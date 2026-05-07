@@ -752,6 +752,7 @@ class PermissionHandlerRbacTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $realMatcher,
+            $this->appConfig,
             $this->logger,
             $this->container
         );

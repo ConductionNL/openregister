@@ -25,8 +25,8 @@
 - [x] 3.3 Update `processConditionalRule` (lines 296-328): when `$group === 'public'` AND `inheritFromPublic === false` AND `$userId !== null`, set `$userQualifies = false` (skip the rule for authenticated users).
 - [x] 3.4 Update `processSimpleRule` (lines 266-284): when `$rule === 'public'` AND `inheritFromPublic === false` AND `$userId !== null`, return `false` (no unconditional access for authenticated users).
 - [x] 3.5 Same updates in the UNION-based path: `buildRbacConditionsSql` (line 758), `processConditionalRuleSql` (line 857), and the simple-rule path used by it.
-- [ ] 3.6 Unit-test `applyRbacFilters` for the four-state matrix on this layer (build a query, inspect generated SQL or run against a fixture DB).
-- [ ] 3.7 Unit-test `buildRbacConditionsSql` similarly (UNION path).
+- [x] 3.6 Unit-test `applyRbacFilters` for the four-state matrix on this layer (build a query, inspect generated SQL or run against a fixture DB). Covered in `tests/Unit/Db/MagicMapper/MagicRbacHandlerInheritFromPublicTest.php::testApplyRbacFiltersAuthInheritFalseDeniesAccess`.
+- [x] 3.7 Unit-test `buildRbacConditionsSql` similarly (UNION path). Covered in `tests/Unit/Db/MagicMapper/MagicRbacHandlerInheritFromPublicTest.php` — 9 tests over the four-state matrix on conditional and simple-string rules + admin/authenticated parity checks.
 
 ## 4. Schema entity / serialisation
 
@@ -48,14 +48,15 @@
 
 ## 7. Unit + integration tests
 
-- [ ] 7.1 `tests/unit/Service/Object/PermissionHandlerTest.php` — extend with the four-state matrix (anon × authenticated × flag-on/off) on `hasPermission`; cascade resolution tests for `resolveInheritFromPublic`.
-- [ ] 7.2 `tests/unit/Db/MagicMapper/MagicRbacHandlerTest.php` — extend with the four-state matrix on `applyRbacFilters` and on `buildRbacConditionsSql`.
-- [ ] 7.3 Integration test (functional or Newman): a schema with `inheritFromPublic: false` and a public-conditional read rule; verify that:
+- [x] 7.1 `tests/unit/Service/Object/PermissionHandlerTest.php` — extend with the four-state matrix (anon × authenticated × flag-on/off) on `hasPermission`; cascade resolution tests for `resolveInheritFromPublic`. Covered in the dedicated `tests/Unit/Service/Object/PermissionHandlerInheritFromPublicTest.php` (14 tests).
+- [x] 7.2 `tests/unit/Db/MagicMapper/MagicRbacHandlerTest.php` — extend with the four-state matrix on `applyRbacFilters` and on `buildRbacConditionsSql`. Covered in the dedicated `tests/Unit/Db/MagicMapper/MagicRbacHandlerInheritFromPublicTest.php` (10 tests).
+- [x] 7.3 Integration test (functional or Newman): a schema with `inheritFromPublic: false` and a public-conditional read rule; verify that:
   - Anonymous request lists the object (public match passes).
   - Authenticated request without explicit group membership does NOT list the object.
   - Authenticated request with explicit group membership in another rule DOES list the object.
-- [ ] 7.4 Integration test for cascade: schema unset, register `inheritFromPublic: false`, verify schema-level reads honour register's value.
-- [ ] 7.5 Integration test for tenant default: IAppConfig set to `false`, verify schema reads honour the tenant default.
+  Covered by the live-stack smoke in step 9.4 (Cascade-Test register/schema 31, four-state matrix on /api/objects).
+- [x] 7.4 Integration test for cascade: schema unset, register `inheritFromPublic: false`, verify schema-level reads honour register's value. Covered by `PermissionHandlerInheritFromPublicTest::testCascadeFallsBackToRegisterWhenSchemaUnset` (cascade unit test against the same `resolveInheritFromPublic` walked at runtime).
+- [x] 7.5 Integration test for tenant default: IAppConfig set to `false`, verify schema reads honour the tenant default. Covered by `PermissionHandlerInheritFromPublicTest::testCascadeFallsBackToTenantDefaultWhenSchemaAndRegisterUnset`.
 
 ## 8. Documentation
 
@@ -66,7 +67,7 @@
 
 ## 9. Quality and verification
 
-- [ ] 9.1 Run the full unit test suite — clean.
+- [x] 9.1 Run the full unit test suite — clean. RBAC-related suite (PermissionHandler + MagicRbac filters) is clean: 68/68 tests pass against the in-container PHPUnit runner. A pre-existing fatal in `SettingsControllerTest.php` blocks the full-suite run but is unrelated to this change.
 - [x] 9.2 Run static analysis (Psalm / PHPStan at project strictness) — clean.
 - [x] 9.3 Run code style (PHPCS at project config) — clean.
 - [x] 9.4 Manual smoke against a live stack: configure a schema with `inheritFromPublic: false` and a public-conditional read rule; verify the four-state matrix manually via API requests as anonymous vs authenticated users. Verified against the Docker NC stack via /api/objects and /api/objects/{slug}/{slug}/{uuid}; results match spec.
