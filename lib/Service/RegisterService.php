@@ -418,10 +418,13 @@ class RegisterService
                 }
 
                 $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
-                $schemaIdExpr    = $isPostgres === true
-                    ? "{$schemaId}::text"
-                    : "CAST({$schemaId} AS CHAR)";
-                $unionQueries[]  = "
+                if ($isPostgres === true) {
+                    $schemaIdExpr = "{$schemaId}::text";
+                } else {
+                    $schemaIdExpr = "CAST({$schemaId} AS CHAR)";
+                }
+
+                $unionQueries[] = "
                     SELECT
                         {$schemaIdExpr} as schema_id,
                         COUNT(*) as total,
