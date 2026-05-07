@@ -506,8 +506,18 @@ class PermissionHandler
         try {
             $this->eventDispatcher->dispatchTyped($event);
         } catch (Exception $e) {
+            // SECURITY: fail CLOSED. A listener exception means the app
+            // that owns the verdict for this verb is unavailable — for
+            // verbs the standard rule chain has no opinion on (the
+            // common case for custom verbs like ZGW `besluit_nemen`),
+            // falling through to "deny by default" is acceptable, but
+            // for verbs where a listener has previously voted ALLOW,
+            // returning null lets the standard chain re-decide and
+            // potentially open access. Treat the dispatcher exception
+            // itself as a deny vote so a crashed listener cannot
+            // upgrade-to-allow.
             $this->logger->warning(
-                message: '[PermissionHandler] CustomScopeEvaluatingEvent dispatch failed',
+                message: '[PermissionHandler] CustomScopeEvaluatingEvent dispatch failed — denying',
                 context: [
                     'file'   => __FILE__,
                     'line'   => __LINE__,
@@ -515,7 +525,7 @@ class PermissionHandler
                     'error'  => $e->getMessage(),
                 ]
             );
-            return null;
+            return false;
         }
 
         if ($event->hasVerdict() === false) {
