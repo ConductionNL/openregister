@@ -1505,6 +1505,16 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setAction($action);
         $auditTrail->setChanged($context);
         $auditTrail->setUser($userId);
+
+        // SECURITY / AVG: keep `user_name` populated even though the
+        // migration (Version1Date20260423100000) relaxed NOT NULL on
+        // the column to support referential-integrity rows that have
+        // no displayable actor. Without this default, every audit row
+        // produced through this entry point would persist with a NULL
+        // `user_name` — undermining GDPR Art 30 §4 supervisor review.
+        $userName = $user !== null ? $user->getDisplayName() : 'System';
+        $auditTrail->setUserName($userName);
+
         $auditTrail->setCreated(new DateTime());
 
         return $this->insert(entity: $auditTrail);
