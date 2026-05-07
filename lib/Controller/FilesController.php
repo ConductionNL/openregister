@@ -616,7 +616,7 @@ class FilesController extends Controller
             'tmp_name' => $files['tmp_name'] ?? '',
             'error'    => $files['error'] ?? UPLOAD_ERR_NO_FILE,
             'size'     => $files['size'] ?? 0,
-            'share'    => $data['share'] === 'true',
+            'share'    => $this->parseBool(value: $data['share'] ?? false),
             'tags'     => $tags,
         ];
     }//end normalizeSingleFile()
@@ -685,7 +685,7 @@ class FilesController extends Controller
                 'tmp_name' => $tmpNameArray[$i] ?? '',
                 'error'    => $errorArray[$i] ?? $errorScalar ?? UPLOAD_ERR_NO_FILE,
                 'size'     => $sizeArray[$i] ?? $sizeScalar ?? 0,
-                'share'    => $data['share'] === 'true',
+                'share'    => $this->parseBool(value: $data['share'] ?? false),
                 'tags'     => $tags,
             ];
         }//end for

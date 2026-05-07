@@ -1596,10 +1596,62 @@ class FilesControllerTest extends TestCase
                 }
                 return null;
             });
-        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getParams')->willReturn([
+            'share' => 'true',
+            'tags' => 'a,b',
+        ]);
 
         $result = $this->invokePrivateMethod('extractUploadedFiles', []);
         $this->assertCount(1, $result);
+
+        // Regression guard: the 'file' branch must run through normalizeSingleFile
+        // so 'share' and 'tags' are populated. Without this, processUploadedFiles
+        // dereferences $file['share'] and throws a TypeError (null given).
+        $this->assertSame('single.txt', $result[0]['name']);
+        $this->assertArrayHasKey('share', $result[0]);
+        $this->assertIsBool($result[0]['share']);
+        $this->assertTrue($result[0]['share']);
+        $this->assertArrayHasKey('tags', $result[0]);
+        $this->assertSame(['a', 'b'], $result[0]['tags']);
+    }
+
+    /**
+     * @dataProvider shareValueProvider
+     */
+    public function testExtractUploadedFilesShareParsing(mixed $shareInput, bool $expected): void
+    {
+        $uploadedFile = [
+            'name' => 'single.txt',
+            'type' => 'text/plain',
+            'tmp_name' => '/tmp/phpSingle',
+            'error' => 0,
+            'size' => 100,
+        ];
+
+        $this->request->method('getUploadedFile')
+            ->willReturnCallback(function ($key) use ($uploadedFile) {
+                return $key === 'file' ? $uploadedFile : null;
+            });
+        $this->request->method('getParams')->willReturn(['share' => $shareInput]);
+
+        $result = $this->invokePrivateMethod('extractUploadedFiles', []);
+        $this->assertSame($expected, $result[0]['share']);
+    }
+
+    public static function shareValueProvider(): array
+    {
+        return [
+            'string true'  => ['true', true],
+            'string TRUE'  => ['TRUE', true],
+            'string 1'     => ['1', true],
+            'string yes'   => ['yes', true],
+            'string on'    => ['on', true],
+            'bool true'    => [true, true],
+            'string false' => ['false', false],
+            'string 0'     => ['0', false],
+            'bool false'   => [false, false],
+            'empty string' => ['', false],
+        ];
     }
 
     public function testExtractUploadedFilesMultipart(): void
