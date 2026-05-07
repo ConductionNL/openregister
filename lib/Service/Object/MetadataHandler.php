@@ -48,6 +48,8 @@ class MetadataHandler
      *
      * @psalm-return   mixed
      * @phpstan-return mixed
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function getValueFromPath(array $data, string $path): mixed
     {
@@ -80,6 +82,8 @@ class MetadataHandler
      *
      * @psalm-return   string|null
      * @phpstan-return string|null
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function generateSlugFromValue(string $value): string|null
     {
@@ -114,6 +118,8 @@ class MetadataHandler
      *
      * @psalm-return   string
      * @phpstan-return string
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function createSlugHelper(string $text): string
     {

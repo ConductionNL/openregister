@@ -275,6 +275,9 @@
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+ */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
@@ -354,6 +357,9 @@ export default {
 			this.settingsStore.showRebaseDialog()
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+		 */
 		async saveSettings() {
 			await this.settingsStore.updateRetentionSettings(this.retentionOptions)
 		},

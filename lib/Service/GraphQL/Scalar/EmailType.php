@@ -53,6 +53,8 @@ class EmailType extends ScalarType
      * @return string The email string
      *
      * @throws Error If the value is not a string
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function serialize(mixed $value): string
     {
@@ -74,6 +76,8 @@ class EmailType extends ScalarType
      * @return string The validated email string
      *
      * @throws Error If the value is not a valid email
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function parseValue(mixed $value): string
     {
@@ -102,6 +106,8 @@ class EmailType extends ScalarType
      * @return string The parsed value
      *
      * @throws Error If the node is not a string
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables=null): string
     {

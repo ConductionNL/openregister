@@ -13,6 +13,14 @@
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-7
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-11
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-10
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-9
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-14
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-13
  */
 
 declare(strict_types=1);
@@ -53,6 +61,9 @@ class AuditHashService
      * Compute the genesis hash (used as previousHash for the first entry).
      *
      * @return string The SHA-256 hex digest of the genesis seed
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-10
      */
     public function getGenesisHash(): string
     {
@@ -68,6 +79,9 @@ class AuditHashService
      * @param AuditTrail $entry The audit trail entry
      *
      * @return string The canonical JSON string
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-9
      */
     public function getCanonicalJson(AuditTrail $entry): string
     {
@@ -89,6 +103,9 @@ class AuditHashService
      * @param string     $previousHash The hash of the previous entry in the chain
      *
      * @return string The SHA-256 hex digest
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-11
      */
     public function computeHash(AuditTrail $entry, string $previousHash): string
     {
@@ -103,6 +120,9 @@ class AuditHashService
      * Returns the genesis hash if no entries exist or the last entry has no hash.
      *
      * @return string The hash of the last entry or the genesis hash
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-13
      */
     public function getLastHash(): string
     {
@@ -136,6 +156,9 @@ class AuditHashService
      * @return array{valid: bool, entriesVerified: int, brokenAt: int|null, skippedNullHashes: int, range?: array{from: int, to: int}}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-14
      */
     public function verifyChain(?int $from=null, ?int $to=null): array
     {
@@ -236,6 +259,8 @@ class AuditHashService
      * @param int $id The entry ID
      *
      * @return string|null The hash of the previous entry, or null if none
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     private function getHashBefore(int $id): ?string
     {
@@ -266,6 +291,8 @@ class AuditHashService
      * @param array $row The database row
      *
      * @return array The mapped array with camelCase keys
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-7
      */
     private function mapRowToEntity(array $row): array
     {

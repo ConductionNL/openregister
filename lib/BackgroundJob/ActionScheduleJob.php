@@ -15,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -48,6 +50,8 @@ class ActionScheduleJob extends TimedJob
      * @param ActionMapper    $actionMapper   Action mapper
      * @param ActionExecutor  $actionExecutor Action executor
      * @param LoggerInterface $logger         Logger
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
      */
     public function __construct(
         ITimeFactory $time,
@@ -67,6 +71,9 @@ class ActionScheduleJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-5
      */
     protected function run($argument): void
     {

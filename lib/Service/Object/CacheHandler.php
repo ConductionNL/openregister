@@ -167,6 +167,8 @@ class CacheHandler
      * @param RegisterMapper|null $registerMapper     Register mapper for magic table queries
      * @param SchemaMapper|null   $schemaMapper       Schema mapper for magic table queries
      * @param IDBConnection|null  $db                 Database connection for magic table queries
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function __construct(
         private readonly OrganisationMapper $organisationMapper,
@@ -200,6 +202,8 @@ class CacheHandler
              * Get user.
              *
              * @return null
+             *
+             * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
              */
             public function getUser()
             {
@@ -215,6 +219,8 @@ class CacheHandler
      * @return MagicMapper The unified object mapper.
      *
      * @throws RuntimeException When container is not available.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function getObjectMapper(): MagicMapper
     {
@@ -236,6 +242,8 @@ class CacheHandler
      * Returns null if index service is unavailable or disabled.
      *
      * @return IndexService|null Index service instance or null
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function getIndexService(): ?IndexService
     {
@@ -272,6 +280,8 @@ class CacheHandler
      *
      * @phpstan-return ObjectEntity|null
      * @psalm-return   ObjectEntity|null
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function getObject(int | string $identifier): ?ObjectEntity
     {
@@ -317,6 +327,8 @@ class CacheHandler
      * @psalm-suppress UnusedReturnValue
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function indexObjectInSolr(ObjectEntity $object, bool $commit=false): bool
     {
@@ -372,6 +384,8 @@ class CacheHandler
      * @psalm-suppress UnusedReturnValue
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function removeObjectFromSolr(ObjectEntity $object, bool $commit=false): bool
     {
@@ -425,6 +439,8 @@ class CacheHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function extractDynamicFieldsFromObject(array $objectData, string $prefix=''): array
     {
@@ -479,6 +495,8 @@ class CacheHandler
      * @param mixed $value Value to check
      *
      * @return bool True if value is a date string
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function isDateString($value): bool
     {
@@ -495,6 +513,8 @@ class CacheHandler
      * @param string $dateString Date string to format
      *
      * @return string|null Formatted date or null
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function formatDateForSolr(string $dateString): ?string
     {
@@ -523,6 +543,8 @@ class CacheHandler
      * @psalm-param array<int|string> $identifiers
      *
      * @psalm-return array<ObjectEntity>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function preloadObjects(array $identifiers): array
     {
@@ -582,6 +604,8 @@ class CacheHandler
      * @param ObjectEntity $object The object to cache
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function cacheObject(ObjectEntity $object): void
     {
@@ -620,6 +644,8 @@ class CacheHandler
      *     query_hit_rate: float, name_hit_rate: float,
      *     cache_size: int<0, max>, query_cache_size: int<0, max>,
      *     name_cache_size: int<0, max>}
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function getStats(): array
     {
@@ -667,6 +693,8 @@ class CacheHandler
      * @param string|null $pattern Optional pattern to clear specific cache entries
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function clearSearchCache(?string $pattern=null): void
     {
@@ -722,6 +750,8 @@ class CacheHandler
      * @param string   $operation  Operation performed ('create', 'update', 'delete')
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function clearSchemaRelatedCaches(?int $schemaId=null, ?int $registerId=null, string $operation='unknown'): void
     {
@@ -805,6 +835,8 @@ class CacheHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function invalidateForObjectChange(
         ?ObjectEntity $object=null,
@@ -903,6 +935,8 @@ class CacheHandler
      * @param ObjectEntity $object The object to remove from cache
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function clearObjectFromCache(ObjectEntity $object): void
     {
@@ -935,6 +969,8 @@ class CacheHandler
      * Use sparingly - typically for administrative operations or major system changes.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function clearAllCaches(): void
     {
@@ -1003,6 +1039,8 @@ class CacheHandler
      *
      * @deprecated Use clearAllCaches() instead
      * @return     void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function clearCache(): void
     {
@@ -1024,6 +1062,8 @@ class CacheHandler
      * @param int        $ttl        Cache TTL in seconds (default: 24 hours)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function setObjectName(string|int $identifier, string $name, int $ttl=86400): void
     {
@@ -1076,6 +1116,8 @@ class CacheHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function getSingleObjectName(string|int $identifier): ?string
     {
@@ -1189,6 +1231,8 @@ class CacheHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * Bulk name retrieval with multiple cache layers requires extensive handling.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function getMultipleObjectNames(array $identifiers): array
     {
@@ -1347,6 +1391,8 @@ class CacheHandler
      * @psalm-return   array<string, string>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function getAllObjectNames(bool $forceWarmup=false): array
     {
@@ -1395,6 +1441,8 @@ class CacheHandler
      * @return int Number of names loaded into cache
      *
      * @psalm-return int<0, max>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function warmupNameCache(): int
     {
@@ -1485,6 +1533,8 @@ class CacheHandler
      * the main objects table.
      *
      * @return int Number of names loaded from magic tables.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function loadNamesFromMagicTables(): int
     {
@@ -1585,6 +1635,8 @@ class CacheHandler
      * @return array<string, string> Map of UUID to name.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch loading across multiple table types requires branching
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function batchLoadNamesFromMagicTables(array $uuids): array
     {
@@ -1691,6 +1743,8 @@ class CacheHandler
      * @param array  $uuids     Array of UUIDs to look up.
      *
      * @return array<string, string> Map of UUID to name.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function queryTableForNames(string $tableName, array $uuids): array
     {
@@ -1750,6 +1804,8 @@ class CacheHandler
      * without requiring a fresh database query.
      *
      * @return int Number of entries stored in distributed cache.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     private function persistNameCacheToDistributed(): int
     {
@@ -1797,6 +1853,8 @@ class CacheHandler
      * useful for cross-request statistics.
      *
      * @return int The number of names in distributed cache, or 0 if unavailable
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function getDistributedNameCacheCount(): int
     {
@@ -1823,6 +1881,8 @@ class CacheHandler
      * Called when objects are modified to ensure name consistency.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function clearNameCache(): void
     {
@@ -1859,6 +1919,8 @@ class CacheHandler
      * Get comprehensive search index dashboard statistics
      *
      * @return array Dashboard statistics from IndexService
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function getSolrDashboardStats(): array
     {
@@ -1876,6 +1938,8 @@ class CacheHandler
      * @return (bool|string)[] Commit operation results
      *
      * @psalm-return array{success: bool, error?: string, timestamp?: string, message?: 'Commit failed'|'Commit successful'}
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function commitSolr(): array
     {
@@ -1913,6 +1977,8 @@ class CacheHandler
      *
      * @psalm-return array{success: bool, error?: string, timestamp?: string,
      *               message?: 'Optimization failed'|'Optimization successful'}
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function optimizeSolr(): array
     {
@@ -1951,6 +2017,8 @@ class CacheHandler
      * @psalm-return array{success: false|mixed, error: mixed|null|string,
      *     timestamp?: string, error_details?: mixed|null,
      *     message?: 'Index clear failed'|'Index cleared successfully'}
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function clearSolrIndexForDashboard(): array
     {

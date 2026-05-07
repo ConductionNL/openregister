@@ -214,6 +214,16 @@ class MagicMapper extends AbstractObjectMapper
     private static array $calcVersionCache = [];
 
     /**
+     * Cache recording whether a register+schema table's columns have been verified
+     * in the current PHP process. Eliminates repeated information_schema queries
+     * on the happy path. Cleared by invalidateTableCache() and clearAllStaticCaches().
+     * Key format: 'registerId_schemaId' => true
+     *
+     * @var array<string, bool>
+     */
+    private static array $tableColumnsVerifiedCache = [];
+
+    /**
      * Cache for column existence checks to avoid repeated information_schema queries.
      * Key format: 'tableName' => ['column1' => true, 'column2' => true, ...]
      *
@@ -357,6 +367,7 @@ class MagicMapper extends AbstractObjectMapper
             groupManager: $this->groupManager,
             userManager: $this->userManager,
             appConfig: $this->appConfig,
+            conditionMatcher: $this->container->get(\OCA\OpenRegister\Service\ConditionMatcher::class),
             container: $this->container,
             logger: $this->logger
         );
@@ -373,7 +384,8 @@ class MagicMapper extends AbstractObjectMapper
             db: $this->db,
             logger: $this->logger,
             rbacHandler: $this->rbacHandler,
-            organizationHandler: $this->organizationHandler
+            organizationHandler: $this->organizationHandler,
+            schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class)
         );
 
         $this->bulkHandler = new MagicBulkHandler(
@@ -406,7 +418,8 @@ class MagicMapper extends AbstractObjectMapper
             logger: $this->logger,
             registerMapper: $this->registerMapper,
             schemaMapper: $this->schemaMapper,
-            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+            schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class)
         );
 
         // Use setter injection for the count callback to avoid circular dependency.
@@ -480,6 +493,34 @@ class MagicMapper extends AbstractObjectMapper
     }//end setRegSchemaTableCache()
 
     /**
+     * Mark a register+schema table's columns as verified for this process.
+     *
+     * @param string $cacheKey The cache key (registerId_schemaId)
+     *
+     * @return void
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function setTableColumnsVerified(string $cacheKey): void
+    {
+        self::$tableColumnsVerifiedCache[$cacheKey] = true;
+    }//end setTableColumnsVerified()
+
+    /**
+     * Check whether a register+schema table's columns have been verified.
+     *
+     * @param string $cacheKey The cache key (registerId_schemaId)
+     *
+     * @return bool True if columns have been verified in this process
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function isTableColumnsVerified(string $cacheKey): bool
+    {
+        return isset(self::$tableColumnsVerifiedCache[$cacheKey]);
+    }//end isTableColumnsVerified()
+
+    /**
      * Clear all static caches used by MagicMapper.
      *
      * @return void
@@ -488,10 +529,11 @@ class MagicMapper extends AbstractObjectMapper
      */
     public static function clearAllStaticCaches(): void
     {
-        self::$tableExistsCache    = [];
-        self::$regSchemaTableCache = [];
-        self::$tableStructureCache = [];
-        self::$calcVersionCache    = [];
+        self::$tableExistsCache          = [];
+        self::$regSchemaTableCache       = [];
+        self::$tableStructureCache       = [];
+        self::$calcVersionCache          = [];
+        self::$tableColumnsVerifiedCache = [];
     }//end clearAllStaticCaches()
 
     /**
@@ -1698,6 +1740,7 @@ class MagicMapper extends AbstractObjectMapper
         unset(self::$regSchemaTableCache[$cacheKey]);
         unset(self::$tableStructureCache[$cacheKey]);
         unset(self::$calcVersionCache[$cacheKey]);
+        unset(self::$tableColumnsVerifiedCache[$cacheKey]);
 
         $this->logger->debug(
             message: '[MagicMapper] Invalidated table cache',
@@ -3022,7 +3065,7 @@ class MagicMapper extends AbstractObjectMapper
                     $value = $now;
                 }
 
-                if ($value instanceof DateTime) {
+                if ($value instanceof \DateTimeInterface) {
                     $value = $value->format('Y-m-d H:i:s');
                 } else if (is_string($value) === true) {
                     // Delegate string parsing to DateTimeNormalizer so that empty/whitespace
@@ -3151,6 +3194,18 @@ class MagicMapper extends AbstractObjectMapper
                             $value = $cleanedArray;
                         }
                     }//end if
+
+                    // Normalise date/date-time properties to Y-m-d H:i:s for MySQL DATETIME columns.
+                    $propertyFormat = $propertyConfig['format'] ?? null;
+                    if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
+                        if ($value instanceof \DateTimeInterface) {
+                            $value = $value->format('Y-m-d H:i:s');
+                        } else if (is_string($value) === true) {
+                            $value = $this->container
+                                ->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+                                ->formatForDatabase($value);
+                        }
+                    }
 
                     // Convert boolean values to integers (0/1) for database compatibility.
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
@@ -5088,6 +5143,9 @@ class MagicMapper extends AbstractObjectMapper
             $objectData = $entity->getObject() ?? [];
             $entity->setObject(array_merge($objectData, $modifiedData));
         }
+
+        // Ensure table has all required columns before updating (e.g. _tmlo added after table was created).
+        $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $uuid      = $entity->getUuid();

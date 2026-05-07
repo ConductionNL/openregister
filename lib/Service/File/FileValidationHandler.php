@@ -18,10 +18,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\FileMapper;
-use OCP\Files\File;
-use OCP\Files\Folder;
 use OCP\Files\Node;
-use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -237,119 +234,71 @@ class FileValidationHandler
     }//end detectExecutableMagicBytes()
 
     /**
-     * Check file ownership and fix it if needed to prevent "File not found" errors.
+     * Check file ownership and repair the OpenRegister owner record when it drifted.
      *
-     * This method attempts to access the file to check if there are any ownership
-     * or permission issues. If the file exists but cannot be accessed, it attempts
-     * to fix the ownership by setting it to the OpenRegister user.
+     * Probes read access via `Node::isReadable()` — a pure permission-bitmask
+     * check against `oc_filecache`. It does NOT read file contents and does NOT
+     * acquire a Nextcloud shared lock, so this probe is safe to run in a hot
+     * listing loop against arbitrarily large or actively-locked files. See
+     * `openspec/changes/fix-object-files-listing-lock-and-limit/design.md`
+     * Decision 1 for the rationale (the prior implementation used
+     * `File::getContent()` which forced O(file-size) reads and triggered
+     * `LockedException` on every NC-locked file).
+     *
+     * Behaviour:
+     * - If the current session can read the file and the owner record has
+     *   drifted, `ownFile()` is called to repair the DB record (best effort —
+     *   any failure is logged at warning level but does not propagate).
+     * - If the current session cannot read the file at all, a
+     *   `NotPermittedException` is thrown. Ownership is intentionally NOT
+     *   repaired in this branch: repair is only a valid action when the
+     *   session can already observe the file through the user's permission
+     *   surface.
      *
      * @param Node $file The file node to check ownership for.
      *
      * @return void
      *
-     * @throws Exception If ownership check/fix fails.
+     * @throws NotPermittedException When the file is not readable by the current session.
      *
-     * @TODO This is a hack to fix NextCloud file ownership issues on production
-     * @TODO where files exist but can't be accessed due to permission problems.
-     * @TODO This should be removed once the underlying NextCloud rights issue is resolved.
-     *
-     * @psalm-return   void
-     * @phpstan-return void
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Ownership checking requires handling multiple exception scenarios
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for ownership verification and fixing
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) The method fans out across
+     * readability, owner-drift detection, and best-effort repair with a nested
+     * try/catch; splitting further would obscure the ownership-repair intent.
      */
     public function checkOwnership(Node $file): void
     {
         $fileName = $file->getName();
         $fileId   = $file->getId();
 
+        if ($file->isReadable() === false) {
+            $this->logger->warning(
+                message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) is not readable by current session",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            throw new NotPermittedException("File {$fileName} is not readable by the current session");
+        }
+
         try {
-            // Try to read the file to trigger any potential access issues.
-            if ($file instanceof File) {
-                $file->getContent();
-            } else if ($file instanceof Folder === true) {
-                // For folders, try to list contents.
-                $file->getDirectoryListing();
-            }
+            $fileOwner        = $file->getOwner();
+            $openRegisterUser = $this->getUser();
 
-            $this->logger->debug(
-                message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) is accessible",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        } catch (NotFoundException $e) {
-            // File exists but we can't access it - likely an ownership issue.
-            $this->logger->warning(
-                message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) not accessible",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
-            try {
-                $fileOwner        = $file->getOwner();
-                $openRegisterUser = $this->getUser();
-
-                if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
-                    $this->logger->info(
-                        message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) has wrong owner",
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
-
-                    // Try to fix the ownership.
-                    $ownershipFixed = $this->ownFile(file: $file);
-
-                    if ($ownershipFixed === false) {
-                        $this->logger->error(
-                            message: "[FileValidationHandler] checkOwnership: Failed to fix ownership for file {$fileName}",
-                            context: ['file' => __FILE__, 'line' => __LINE__]
-                        );
-                        throw new Exception("Failed to fix file ownership for file: ".$file->getName());
-                    }
-
-                    $this->logger->info(
-                        message: "[FileValidationHandler] checkOwnership: Fixed ownership for file {$fileName}",
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
-
-                    return;
-                }//end if
-
+            if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
                 $this->logger->info(
-                    message: "[FileValidationHandler] checkOwnership: File {$fileName} has correct owner but not accessible",
+                    message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) has drifted owner, repairing",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-            } catch (Exception $ownershipException) {
-                $ownerErr = $ownershipException->getMessage();
-                $errMsg   = "[FileValidationHandler] checkOwnership: Error for file {$fileName}: $ownerErr";
-                $this->logger->error(
-                    message: $errMsg,
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                throw new Exception("Ownership check failed for file: ".$file->getName());
-            }//end try
-        } catch (NotPermittedException $e) {
-            // Permission denied - likely an ownership issue.
-            $warnMsg  = "[FileValidationHandler] checkOwnership: Permission denied for file {$fileName},";
-            $warnMsg .= ' attempting ownership fix';
-            $this->logger->warning(
-                message: $warnMsg,
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
 
-            try {
-                // Try to fix the ownership.
                 $this->ownFile(file: $file);
-                $fixMsg  = "[FileValidationHandler] checkOwnership: Fixed ownership for file {$fileName}";
-                $fixMsg .= ' after permission error';
-                $this->logger->info(
-                    message: $fixMsg,
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            } catch (Exception $ownershipException) {
-                $ownerErr = $ownershipException->getMessage();
-                $errMsg   = "[FileValidationHandler] checkOwnership: Failed to fix for file {$fileName}: $ownerErr";
-                $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                throw new Exception("Ownership fix failed for file: ".$file->getName());
             }
+        } catch (Exception $ownershipException) {
+            // Repair is best-effort: a readable file with an unrecoverable owner
+            // record should not fail the caller. The drift will be re-evaluated
+            // on the next call.
+            $this->logger->warning(
+                message: "[FileValidationHandler] checkOwnership: Could not repair ownership for {$fileName}: ".$ownershipException->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }//end try
     }//end checkOwnership()
 

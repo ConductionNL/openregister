@@ -479,9 +479,9 @@ The testing documentation SHALL be updated to reflect:
 
 | Change | Files Affected |
 |--------|---------------|
-| Rewrite `integration-tests` job to matrix | `.github/workflows/quality.yml` |
-| Rewrite `php-tests` job to matrix | `.github/workflows/quality.yml` |
-| Update summary job for matrix labels | `.github/workflows/quality.yml` |
+| Rewrite `integration-tests` job to matrix | `.github/workflows/code-quality.yml` |
+| Rewrite `php-tests` job to matrix | `.github/workflows/code-quality.yml` |
+| Update summary job for matrix labels | `.github/workflows/code-quality.yml` |
 | Add MariaDB fallbacks to MagicSearchHandler | `lib/Db/MagicMapper/MagicSearchHandler.php` |
 | Add MariaDB fallbacks to MagicFacetHandler | `lib/Db/MagicMapper/MagicFacetHandler.php` |
 | Platform-guard GIN index creation | `lib/Db/MagicMapper.php` |
@@ -493,7 +493,7 @@ The testing documentation SHALL be updated to reflect:
 ## Current Implementation Status
 
 - **Implemented -- CI matrix workflow**: `.github/workflows/database-tests.yml` implements the 2-line matrix with PHPUnit and Newman jobs running against both PostgreSQL 16 (PHP 8.3, NC stable32) and MariaDB 10.11 (PHP 8.2, NC stable31). Uses Docker containers started dynamically from matrix variables with health-check polling.
-- **Implemented -- quality.yml updated**: PHPUnit and Newman disabled in the shared quality workflow call (`quality.yml`) since they now run in `database-tests.yml` with real database backends instead of SQLite.
+- **Implemented -- quality.yml updated**: PHPUnit and Newman disabled in the shared quality workflow call (`code-quality.yml`) since they now run in `database-tests.yml` with real database backends instead of SQLite.
 - **Implemented -- MagicMapper-only testing**: Newman runs once per matrix job (MagicMapper only); no dual-storage testing in CI.
 - **Implemented -- MagicMapper table creation**: `MagicMapper::createTable()` and `mapColumnTypeToSQL()` have full PostgreSQL/MariaDB branching for column types (JSONB vs JSON, TIMESTAMP vs DATETIME, BIGSERIAL vs AUTO_INCREMENT).
 - **Implemented -- MagicBulkHandler platform branching**: `MagicBulkHandler` detects `PostgreSQLPlatform` and uses `INSERT...ON CONFLICT DO UPDATE` vs `INSERT...ON DUPLICATE KEY UPDATE`, plus platform-specific column introspection.
@@ -521,7 +521,7 @@ The testing documentation SHALL be updated to reflect:
 ## Specificity Assessment
 
 - **Highly specific and implementable as-is**: The spec provides exact matrix configurations, YAML snippets, Docker container setup instructions, and parameterized install commands.
-- **Clear scope**: Modifies `.github/workflows/quality.yml`, MagicMapper database handlers, test scripts, and documentation.
+- **Clear scope**: Modifies `.github/workflows/code-quality.yml`, MagicMapper database handlers, test scripts, and documentation.
 - **Identifies concrete compatibility gaps**: Lists specific methods (`applyJsonArrayFilter`, `applyRelationsContainsFilter`, `buildArrayPropertyConditionSql`) that need MariaDB fallbacks, with exact SQL operator mappings.
 - **Well-defined maintenance procedure**: Describes the version bump process when a new Nextcloud stable is released.
 - **No ambiguity**: Matrix entries, service containers, health checks, and parameterized install steps are all fully specified.

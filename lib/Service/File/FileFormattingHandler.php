@@ -20,9 +20,13 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\InvalidPathException;
+use OCP\Files\Lock\ILock;
+use OCP\Files\Lock\ILockManager;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\IURLGenerator;
+use OCP\IUserSession;
+use OCP\Lock\LockedException;
 use OCP\Share\IManager;
 use Psr\Log\LoggerInterface;
 
@@ -44,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * @version  1.0.0
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Handler coordinates formatting, sharing, tagging, locking, URL generation, and session lookup.
  */
 class FileFormattingHandler
 {
@@ -61,12 +66,16 @@ class FileFormattingHandler
      * @param TaggingHandler     $taggingHandler     Tagging handler for tag operations.
      * @param FileSharingHandler $fileSharingHandler Sharing handler for share operations.
      * @param IURLGenerator      $urlGenerator       URL generator for creating URLs.
+     * @param ILockManager       $lockManager        Lock manager for reading file lock state.
+     * @param IUserSession       $userSession        Session used to gate lock fields for authenticated callers only.
      * @param LoggerInterface    $logger             Logger for logging operations.
      */
     public function __construct(
         private readonly TaggingHandler $taggingHandler,
         private readonly FileSharingHandler $fileSharingHandler,
         private readonly IURLGenerator $urlGenerator,
+        private readonly ILockManager $lockManager,
+        private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -130,6 +139,17 @@ class FileFormattingHandler
             'labels'      => $this->fileService->getFileTags((string) $file->getId()),
         ];
 
+        // Append NC lock state for authenticated callers only (anonymous callers
+        // MUST NOT see who holds a lock — prevents leaking activity/identity on
+        // public objects). See design.md Decision 6.
+        if ($this->userSession->getUser() !== null) {
+            $lockEnvelope       = $this->formatLock(fileId: (int) $file->getId());
+            $metadata['locked'] = $lockEnvelope !== null;
+            if ($lockEnvelope !== null) {
+                $metadata['lock'] = $lockEnvelope;
+            }
+        }
+
         // Process labels that contain ':' to add as separate metadata fields.
         $remainingLabels = [];
         foreach ($metadata['labels'] as $label) {
@@ -191,7 +211,7 @@ class FileFormattingHandler
      *
      * @psalm-return   array{results: list<array<string, mixed>>,
      *     total: int<0, max>, page: int<1, max>, pages: int,
-     *     limit: int<1, 100>, offset: int<0, max>}
+     *     limit: int<1, max>, offset: int<0, max>}
      * @phpstan-return array{results: array<int, array<string, mixed>>,
      *     total: int, page: int, pages: int, limit: int, offset: int}
      *
@@ -203,10 +223,22 @@ class FileFormattingHandler
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
-        // Format all files first.
-        $formattedFiles = [];
+        // Format all files first. A single NC-locked file must not break the
+        // whole listing — catch LockedException per-file and emit a minimal
+        // envelope so the caller can still see the entry. See design.md
+        // Decision 3.
+        $isAuthenticated = $this->userSession->getUser() !== null;
+        $formattedFiles  = [];
         foreach ($files as $file) {
-            $formattedFiles[] = $this->formatFile(file: $file);
+            try {
+                $formattedFiles[] = $this->formatFile(file: $file);
+            } catch (LockedException $lockedException) {
+                $formattedFiles[] = $this->buildLockedStubEntry(
+                    file: $file,
+                    lockedException: $lockedException,
+                    isAuthenticated: $isAuthenticated
+                );
+            }
         }
 
         // Extract and apply filters.
@@ -214,8 +246,12 @@ class FileFormattingHandler
         $formattedFiles = $this->applyFileFilters(formattedFiles: $formattedFiles, filters: $filters);
 
         // Apply pagination (support both _page/_limit and page/limit conventions).
+        // No upper ceiling on `_limit`: per-object attachment counts are the
+        // natural bound, and a 100-file cap silently truncated production
+        // listings. Floor at 1 keeps pagination arithmetic sound. See
+        // design.md Decision 4.
         $page   = max(1, (int) ($requestParams['_page'] ?? $requestParams['page'] ?? 1));
-        $limit  = max(1, min(100, (int) ($requestParams['_limit'] ?? $requestParams['limit'] ?? 30)));
+        $limit  = max(1, (int) ($requestParams['_limit'] ?? $requestParams['limit'] ?? 30));
         $offset = ($page - 1) * $limit;
         $total  = count($formattedFiles);
         $pages  = (int) ceil($total / $limit);
@@ -455,4 +491,155 @@ class FileFormattingHandler
             }
         );
     }//end applyFileFilters()
+
+    /**
+     * Build the `lock` response envelope for a given file id.
+     *
+     * Returns `null` when no lock provider is registered (the `files_lock` app
+     * is not installed / disabled) or when there are no locks on the file.
+     * Otherwise returns the first lock's public fields mapped to stable
+     * string aliases so the API contract does not leak Nextcloud's numeric
+     * constants to consumers.
+     *
+     * This helper MUST only be invoked for authenticated callers; anonymous
+     * requests never reach `ILockManager`. See design.md Decision 6.
+     *
+     * @param int $fileId The file id to look up locks for.
+     *
+     * @return array{type: string, scope: string, owner: string, createdAt: string, expiresAt: ?string}|null
+     *
+     * @psalm-return   array{type: string, scope: string, owner: string, createdAt: string, expiresAt: ?string}|null
+     * @phpstan-return array{type: string, scope: string, owner: string, createdAt: string, expiresAt: string|null}|null
+     */
+    private function formatLock(int $fileId): ?array
+    {
+        if ($this->lockManager->isLockProviderAvailable() === false) {
+            return null;
+        }
+
+        try {
+            $locks = $this->lockManager->getLocks(fileId: $fileId);
+        } catch (Exception $lockLookupException) {
+            // A failure to query the lock provider must not break the listing;
+            // treat it as "no lock info available" and move on.
+            $this->logger->warning(
+                message: "[FileFormattingHandler] formatLock: lock lookup failed for fileId {$fileId}: ".$lockLookupException->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
+            );
+
+            return null;
+        }
+
+        if (count($locks) === 0) {
+            return null;
+        }
+
+        $lock = $locks[0];
+
+        $createdAt = $lock->getCreatedAt();
+        $timeout   = $lock->getTimeout();
+        $expiresAt = null;
+        if ($timeout > 0) {
+            $expiresAt = (new DateTime())->setTimestamp($createdAt + $timeout)->format('c');
+        }
+
+        return [
+            'type'      => $this->mapLockType(type: $lock->getType()),
+            'scope'     => $this->mapLockScope(scope: $lock->getScope()),
+            'owner'     => $lock->getOwner(),
+            'createdAt' => (new DateTime())->setTimestamp($createdAt)->format('c'),
+            'expiresAt' => $expiresAt,
+        ];
+    }//end formatLock()
+
+    /**
+     * Build a minimal stub entry for a file that raised `LockedException`
+     * during formatting.
+     *
+     * For authenticated callers the stub carries the standard `locked`/`lock`
+     * fields populated with best-effort lock metadata; for anonymous callers
+     * it omits both fields entirely so the authentication gate is honoured
+     * even on the error path. See design.md Decisions 3 and 6.
+     *
+     * @param Node            $file            The file node that failed to format.
+     * @param LockedException $lockedException The raised LockedException.
+     * @param bool            $isAuthenticated Whether the request has a user session.
+     *
+     * @return array<string, mixed>
+     *
+     * @psalm-return   array<string, mixed>
+     * @phpstan-return array<string, mixed>
+     */
+    private function buildLockedStubEntry(Node $file, LockedException $lockedException, bool $isAuthenticated): array
+    {
+        $fileId = (int) $file->getId();
+        $name   = $file->getName();
+
+        $bestEffortLock = null;
+        if ($isAuthenticated === true) {
+            $bestEffortLock = $this->formatLock(fileId: $fileId);
+        }
+
+        $this->logger->info(
+            message: "[FileFormattingHandler] formatFiles: file {$name} (ID: {$fileId}) is locked, emitting stub entry",
+            context: [
+                'file'      => __FILE__,
+                'line'      => __LINE__,
+                'app'       => 'openregister',
+                'fileId'    => $fileId,
+                'name'      => $name,
+                'lockType'  => $bestEffortLock['type'] ?? null,
+                'lockOwner' => $bestEffortLock['owner'] ?? null,
+                'reason'    => $lockedException->getMessage(),
+            ]
+        );
+
+        $stub = [
+            'id'    => $fileId,
+            'title' => $name,
+            'error' => 'locked',
+        ];
+
+        if ($isAuthenticated === true) {
+            $stub['locked'] = true;
+            if ($bestEffortLock !== null) {
+                $stub['lock'] = $bestEffortLock;
+            }
+        }
+
+        return $stub;
+    }//end buildLockedStubEntry()
+
+    /**
+     * Map an `ILock::TYPE_*` constant to a stable string alias for the public API.
+     *
+     * @param int $type One of `ILock::TYPE_USER`, `ILock::TYPE_APP`, `ILock::TYPE_TOKEN`.
+     *
+     * @return string The string alias (`"user"`, `"app"`, `"token"`, or `"unknown"`).
+     */
+    private function mapLockType(int $type): string
+    {
+        return match ($type) {
+            ILock::TYPE_USER  => 'user',
+            ILock::TYPE_APP   => 'app',
+            ILock::TYPE_TOKEN => 'token',
+            default           => 'unknown',
+        };
+    }//end mapLockType()
+
+    /**
+     * Map an `ILock::LOCK_*` scope constant to a stable string alias for the public API.
+     *
+     * @param int $scope One of `ILock::LOCK_EXCLUSIVE`, `ILock::LOCK_SHARED`.
+     *
+     * @return string The string alias (`"exclusive"`, `"shared"`, or `"unknown"`).
+     */
+    private function mapLockScope(int $scope): string
+    {
+        return match ($scope) {
+            ILock::LOCK_EXCLUSIVE => 'exclusive',
+            ILock::LOCK_SHARED    => 'shared',
+            default               => 'unknown',
+        };
+    }//end mapLockScope()
 }//end class

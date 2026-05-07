@@ -13,6 +13,12 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-76
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-78
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-86
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
  */
 
 declare(strict_types=1);
@@ -161,6 +167,9 @@ class WebhookService
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook dispatch conditions
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-86
      */
     public function dispatchEvent(Event $_event, string $eventName, array $payload): void
     {
@@ -222,6 +231,8 @@ class WebhookService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple exception handling paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
      * Fallback for connection errors without response
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
      */
     public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
     {
@@ -468,6 +479,8 @@ class WebhookService
      * @return array Webhook payload in mapped, CloudEvents, or standard format.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Three payload format strategies
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-76
      */
     private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array
     {
@@ -539,6 +552,8 @@ class WebhookService
      * @param Webhook $webhook   Webhook entity (for context)
      *
      * @return array|null Transformed payload, or null on failure
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-76
      */
     private function applyMappingTransformation(
         int $mappingId,
@@ -696,6 +711,8 @@ class WebhookService
      * @param int     $attempt   Next attempt number
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-78
      */
     private function scheduleRetry(Webhook $webhook, string $eventName, array $_payload, int $attempt): void
     {
@@ -743,6 +760,8 @@ class WebhookService
      * @param int     $attempt Attempt number
      *
      * @return int Delay in seconds
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-78
      */
     private function calculateRetryDelay(Webhook $webhook, int $attempt): int
     {
@@ -880,6 +899,8 @@ class WebhookService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook filtering conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter matching paths
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
      */
     private function findWebhooksForInterception(string $eventType): array
     {

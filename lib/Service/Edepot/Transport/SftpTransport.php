@@ -15,6 +15,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
  */
 
 declare(strict_types=1);
@@ -51,6 +53,9 @@ class SftpTransport implements TransportInterface
      * @param array<string,mixed> $config      SFTP configuration: host, port, username, password/keyPath, remotePath.
      *
      * @return TransportResult The result of the transport.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {
@@ -122,6 +127,8 @@ class SftpTransport implements TransportInterface
      * @param array<string,mixed> $config SFTP configuration.
      *
      * @return bool True if connection test succeeds.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function testConnection(array $config): bool
     {
@@ -151,6 +158,8 @@ class SftpTransport implements TransportInterface
      * Get transport name.
      *
      * @return string The transport name.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getName(): string
     {
@@ -165,6 +174,8 @@ class SftpTransport implements TransportInterface
      * @return void
      *
      * @throws RuntimeException If required configuration is missing.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     private function validateConfig(array $config): void
     {
@@ -190,6 +201,8 @@ class SftpTransport implements TransportInterface
      * @throws RuntimeException If connection fails.
      *
      * @psalm-suppress UndefinedClass
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     private function createSftpConnection(array $config): \phpseclib3\Net\SFTP
     {

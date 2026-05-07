@@ -50,6 +50,8 @@ class ChunkProcessingHandler
      * @param RegisterMapper        $registerMapper      Mapper for register operations.
      * @param SchemaMapper          $schemaMapper        Mapper for schema operations.
      * @param LoggerInterface       $logger              Logger for logging operations.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-4
      */
     public function __construct(
         private readonly TransformationHandler $transformHandler,
@@ -106,6 +108,8 @@ class ChunkProcessingHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete chunk processing pipeline in single method
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags for feature toggles in bulk operations
      * Multiple conditional paths for object classification and reconstruction
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-4
      */
     public function processObjectsChunk(
         array $objects,
