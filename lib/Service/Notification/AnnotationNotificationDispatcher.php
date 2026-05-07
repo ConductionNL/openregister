@@ -1059,13 +1059,20 @@ class AnnotationNotificationDispatcher
             return $this->userExistsCache[$uid];
         }
 
+        // R06: only cache definitive verdicts. A `\Throwable` from
+        // IUserManager (transient DB/LDAP failure, momentary container
+        // hiccup) is NOT a definitive "user doesn't exist" — caching it
+        // would silently drop every notification for this uid for the
+        // rest of the request, even after the underlying problem
+        // clears. Log + return false WITHOUT writing to the cache so
+        // the next call within the same request retries the lookup.
         try {
             $exists = $this->userManager->userExists($uid);
         } catch (\Throwable $e) {
-            $this->logger->debug(
-                sprintf('[AnnotationNotificationDispatcher] userExists check failed for "%s": %s', $uid, $e->getMessage())
+            $this->logger->warning(
+                sprintf('[AnnotationNotificationDispatcher] userExists check failed for "%s" (not cached, will retry): %s', $uid, $e->getMessage())
             );
-            $exists = false;
+            return false;
         }
 
         $this->userExistsCache[$uid] = (bool) $exists;

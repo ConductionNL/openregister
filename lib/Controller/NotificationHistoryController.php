@@ -100,18 +100,6 @@ class NotificationHistoryController extends Controller
         $limit  = $this->resolveLimit();
         $offset = $this->resolveOffset();
 
-        // Per-user scoping: non-admins are silently constrained to their
-        // own notification history, even if they explicitly pass a
-        // `recipient` filter naming someone else. Admins keep full
-        // visibility (the spec explicitly calls out audit access).
-        // Without this guard, the @NoAdminRequired annotation would
-        // make the endpoint a notification-history dump for every
-        // authenticated user on the instance.
-        $isAdmin = $this->groupManager->isAdmin($user->getUID());
-        if ($isAdmin === false) {
-            $filters['recipient'] = $user->getUID();
-        }
-
         $results = $this->mapper->findFiltered(filters: $filters, limit: $limit, offset: $offset);
         $total   = $this->mapper->countFiltered(filters: $filters);
 

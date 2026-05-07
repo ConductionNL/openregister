@@ -97,6 +97,13 @@ class AggregationRunner
      * @param string $registerRef Register slug/uuid/id.
      * @param string $schemaRef   Schema slug/uuid/id.
      * @param string $name        Aggregation name (key in the annotation).
+     * @param bool   $bypassRbac  Internal-system mode: skip the F04 list-permission gate.
+     *                            Pass `true` ONLY from non-controller callers that already
+     *                            hold an authoritative reason to compute the aggregation
+     *                            (e.g. report rendering for a viewer who has dashboard read,
+     *                            threshold listeners reacting to a write event).
+     *                            Defaults to `false` so HTTP-driven callers (the
+     *                            controller) keep the F04 verdict.
      *
      * @return array{
      *   name: string,
@@ -112,8 +119,9 @@ class AggregationRunner
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Internal-mode toggle, intentional.
      */
-    public function run(string $registerRef, string $schemaRef, string $name): array
+    public function run(string $registerRef, string $schemaRef, string $name, bool $bypassRbac=false): array
     {
         $schema   = $this->loadSchema(schemaRef: $schemaRef);
         $register = $this->loadRegister(registerRef: $registerRef);
@@ -134,8 +142,14 @@ class AggregationRunner
         // in the PHP fallback path and a derived WHERE clause (or
         // bailout to PHP) in the native path. Tracked alongside the
         // aggregations-backend-native follow-up.
+        //
+        // Non-controller callers (ReportRenderService for dashboard
+        // widgets, AggregationThresholdListener for fire-once threshold
+        // crossings) pass `bypassRbac: true` because they already hold
+        // an authoritative reason that's separate from the active session
+        // (a viewer with dashboard read, a write-event reaction).
         $userId = $this->userSession->getUser()?->getUID();
-        if ($this->permissionHandler->hasPermission(
+        if ($bypassRbac === false && $this->permissionHandler->hasPermission(
             schema: $schema,
             action: 'list',
             userId: $userId,
@@ -212,11 +226,16 @@ class AggregationRunner
                 $external      = $this->searchBackend->aggregate(query: $portableQuery);
                 if ($external !== null) {
                     $backendName = $this->detectBackendName(backend: $this->searchBackend);
-                    $result      = [
-                        'name'    => $name,
-                        'metric'  => $metric,
-                        'field'   => is_string($field) === true ? $field : null,
-                        'backend' => $backendName,
+                    // R05: surface `truncated` on every backend so the
+                    // shape is consistent. Search backends propagate the
+                    // flag from the engine when supplied; otherwise
+                    // assume the engine returned the full set.
+                    $result = [
+                        'name'      => $name,
+                        'metric'    => $metric,
+                        'field'     => is_string($field) === true ? $field : null,
+                        'backend'   => $backendName,
+                        'truncated' => (bool) ($external['truncated'] ?? false),
                     ] + $external;
                     $this->cache->set(
                         registerSlug: (string) $register->getSlug(),
@@ -226,7 +245,7 @@ class AggregationRunner
                         result: $result
                     );
                     return $result;
-                }
+                }//end if
             } catch (\Throwable $e) {
                 // External backend errored — fall through to native /
                 // PHP path so a flaky Solr/ES never breaks aggregations.
@@ -245,11 +264,16 @@ class AggregationRunner
             groupBy: is_array($groupBy) === true ? $groupBy : null
         );
         if ($native !== null) {
+            // R05: native Postgres aggregates over the full set, so
+            // `truncated` is structurally always false here. Surface
+            // the key explicitly so client code can branch on
+            // `result.truncated` regardless of backend.
             $result = [
-                'name'    => $name,
-                'metric'  => $metric,
-                'field'   => is_string($field) === true ? $field : null,
-                'backend' => 'postgres',
+                'name'      => $name,
+                'metric'    => $metric,
+                'field'     => is_string($field) === true ? $field : null,
+                'backend'   => 'postgres',
+                'truncated' => false,
             ] + $native;
             $this->cache->set(
                 registerSlug: (string) $register->getSlug(),
@@ -259,7 +283,7 @@ class AggregationRunner
                 result: $result
             );
             return $result;
-        }
+        }//end if
 
         // Fall back: pull objects and filter in PHP.
         //

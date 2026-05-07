@@ -1654,15 +1654,50 @@ class Schema extends Entity implements JsonSerializable
             if (str_starts_with((string) $key, 'x-openregister-') === true) {
                 if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
                     $validatedConfig[$key] = $value;
-                }
-
-                // Unknown x-openregister-* keys fall through and are
-                // dropped from $validatedConfig.
-            }
+                } else {
+                    // R07: track unknown `x-openregister-*` keys (almost
+                    // always typos like `x-openregister-lifecycl`) so
+                    // SchemaMapper can log them via its structured
+                    // logger after save. The entity has no DI surface
+                    // for a logger and the ADR added in F06 bans the
+                    // `\OC::$server` static accessor — collecting on
+                    // the entity and bridging through the mapper is
+                    // the cleanest path that still surfaces a signal.
+                    $this->droppedAnnotationKeys[] = (string) $key;
+                }//end if
+            }//end if
         }//end foreach
 
         return $validatedConfig;
     }//end validateConfigurationArray()
+
+    /**
+     * R07: dropped `x-openregister-*` keys collected during the most
+     * recent `validateConfigurationArray()` pass. SchemaMapper reads
+     * this after `setConfiguration()` and emits a logger->warning()
+     * for each entry so operators see a signal without us having to
+     * inject a logger into the entity itself.
+     *
+     * @var array<int, string>
+     */
+    private array $droppedAnnotationKeys = [];
+
+    /**
+     * Return + reset the list of dropped annotation keys.
+     *
+     * Returns the keys collected since the last call (or instance
+     * construction) and then clears the internal buffer so a single
+     * dropped key isn't logged twice across the cleanObject() →
+     * insert/update path.
+     *
+     * @return array<int, string>
+     */
+    public function consumeDroppedAnnotationKeys(): array
+    {
+        $dropped = $this->droppedAnnotationKeys;
+        $this->droppedAnnotationKeys = [];
+        return $dropped;
+    }//end consumeDroppedAnnotationKeys()
 
     /**
      * Validate calendar provider configuration
