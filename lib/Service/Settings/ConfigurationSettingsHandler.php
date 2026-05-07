@@ -221,25 +221,37 @@ class ConfigurationSettingsHandler
             ];
 
             // RBAC Settings.
+            // The schema/register-level `inheritFromPublic` cascade falls back to the
+            // tenant-wide IAppConfig key `rbac.inherit_from_public_default` (read by
+            // PermissionHandler::resolveInheritFromPublic). Surface it under the same
+            // `rbac` payload object so the frontend treats it as a regular RBAC option.
+            $inheritFromPublicDefault = $this->appConfig->getValueBool(
+                $this->appName,
+                'rbac.inherit_from_public_default',
+                true
+            );
+
             $rbacConfig = $this->appConfig->getValueString($this->appName, 'rbac', '');
             if (empty($rbacConfig) === true) {
                 $data['rbac'] = [
-                    'enabled'             => true,
-                    'anonymousGroup'      => 'public',
-                    'defaultNewUserGroup' => 'viewer',
-                    'defaultObjectOwner'  => '',
-                    'adminOverride'       => true,
+                    'enabled'                  => true,
+                    'anonymousGroup'           => 'public',
+                    'defaultNewUserGroup'      => 'viewer',
+                    'defaultObjectOwner'       => '',
+                    'adminOverride'            => true,
+                    'inheritFromPublicDefault' => $inheritFromPublicDefault,
                 ];
             }
 
             if (empty($rbacConfig) === false) {
                 $rbacData     = json_decode($rbacConfig, true);
                 $data['rbac'] = [
-                    'enabled'             => $rbacData['enabled'] ?? true,
-                    'anonymousGroup'      => $rbacData['anonymousGroup'] ?? 'public',
-                    'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
-                    'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
-                    'adminOverride'       => $rbacData['adminOverride'] ?? true,
+                    'enabled'                  => $rbacData['enabled'] ?? true,
+                    'anonymousGroup'           => $rbacData['anonymousGroup'] ?? 'public',
+                    'defaultNewUserGroup'      => $rbacData['defaultNewUserGroup'] ?? 'viewer',
+                    'defaultObjectOwner'       => $rbacData['defaultObjectOwner'] ?? '',
+                    'adminOverride'            => $rbacData['adminOverride'] ?? true,
+                    'inheritFromPublicDefault' => $inheritFromPublicDefault,
                 ];
             }
 
@@ -539,7 +551,17 @@ class ConfigurationSettingsHandler
                     'adminOverride'       => $rbacData['adminOverride'] ?? true,
                 ];
                 $this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
-            }
+
+                // Persist the inheritFromPublic tenant default to a separate IAppConfig
+                // key that PermissionHandler::resolveInheritFromPublic reads at runtime.
+                if (array_key_exists(key: 'inheritFromPublicDefault', array: $rbacData) === true) {
+                    $this->appConfig->setValueBool(
+                        app: $this->appName,
+                        key: 'rbac.inherit_from_public_default',
+                        value: (bool) $rbacData['inheritFromPublicDefault']
+                    );
+                }
+            }//end if
 
             // Handle Multitenancy settings - enabled by default.
             if (($data['multitenancy'] ?? null) !== null) {
