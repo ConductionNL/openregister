@@ -1767,6 +1767,10 @@ class CacheHandler
                         WHERE _uuid IN ({$placeholders})
                         AND _deleted IS NULL";
 
+                // Raw SQL: QueryBuilder cannot accept a runtime-resolved magic
+                // table name nor a column name picked at runtime from a fixed
+                // allowlist. SQL itself is plain SELECT/IN/IS NULL — portable
+                // across MariaDB / MySQL / PostgreSQL.
                 $stmt = $this->db->prepare($sql);
                 foreach ($uuids as $index => $uuid) {
                     $stmt->bindValue((int) $index + 1, $uuid);
