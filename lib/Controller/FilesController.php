@@ -602,11 +602,12 @@ class FilesController extends Controller
             $uploadedFiles = $this->normalizeMultipartFiles(files: $files, data: $data);
         }
 
-        // Check for single file upload.
+        // Check for single file upload via the 'file' field. Run it through
+        // the same normalizer as 'files[]' so 'share' and 'tags' are populated.
         $uploadedFile = $this->request->getUploadedFile('file');
 
         if (empty($uploadedFile) === false) {
-            $uploadedFiles[] = $uploadedFile;
+            $uploadedFiles[] = $this->normalizeSingleFile(files: $uploadedFile, data: $data);
         }
 
         if (empty($uploadedFiles) === true) {
@@ -669,7 +670,7 @@ class FilesController extends Controller
             'tmp_name' => $files['tmp_name'] ?? '',
             'error'    => $files['error'] ?? UPLOAD_ERR_NO_FILE,
             'size'     => $files['size'] ?? 0,
-            'share'    => $data['share'] === 'true',
+            'share'    => $this->parseBool(value: $data['share'] ?? false),
             'tags'     => $tags,
         ];
     }//end normalizeSingleFile()
@@ -738,7 +739,7 @@ class FilesController extends Controller
                 'tmp_name' => $tmpNameArray[$i] ?? '',
                 'error'    => $errorArray[$i] ?? $errorScalar ?? UPLOAD_ERR_NO_FILE,
                 'size'     => $sizeArray[$i] ?? $sizeScalar ?? 0,
-                'share'    => $data['share'] === 'true',
+                'share'    => $this->parseBool(value: $data['share'] ?? false),
                 'tags'     => $tags,
             ];
         }//end for
