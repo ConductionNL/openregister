@@ -37,7 +37,7 @@
 ## 5. Tenant default IAppConfig
 
 - [x] 5.1 The IAppConfig key `openregister.rbac.inherit_from_public_default` is read by `resolveInheritFromPublic` (task 1.2). No registration step needed (IAppConfig keys are implicit).
-- [ ] 5.2 Document the key in `docs/` (extend existing RBAC documentation).
+- [x] 5.2 Document the key in `docs/` (extend existing RBAC documentation). Added in `docs/Features/access-control.md` under "Disabling public-group inheritance for authenticated users (inheritFromPublic)" and in the "RBAC Configuration" block.
 - [x] 5.3 Validate that boolean parsing accepts `true`, `false`, `"true"`, `"false"`, `"1"`, `"0"`, `1`, `0` (use `getValueBool` or equivalent helper).
 
 ## 6. Cross-app integration check
@@ -60,8 +60,8 @@
 
 ## 8. Documentation
 
-- [ ] 8.1 Extend the canonical `rbac-scopes` documentation (in `docs/` or wherever the RBAC docs live) with the new `inheritFromPublic` field — its purpose, the cascade, the four-state matrix, the `authenticated` rule alternative for "all logged-in users".
-- [ ] 8.2 Add a worked example: a publication-style schema with public-time-window read AND `inheritFromPublic: false`, demonstrating that authenticated users without explicit group access don't see the time-windowed content.
+- [x] 8.1 Extend the canonical `rbac-scopes` documentation (in `docs/` or wherever the RBAC docs live) with the new `inheritFromPublic` field — its purpose, the cascade, the four-state matrix, the `authenticated` rule alternative for "all logged-in users". Added in `docs/Features/access-control.md`. Cross-reference added in `docs/Features/property-authorization.md` (the `"public"` group row of the rule table).
+- [x] 8.2 Add a worked example: a publication-style schema with public-time-window read AND `inheritFromPublic: false`, demonstrating that authenticated users without explicit group access don't see the time-windowed content. Added under "Worked example: a publication-style schema with a curated authenticated view" in `docs/Features/access-control.md`.
 - [x] 8.3 CHANGELOG entry under "Added": new `inheritFromPublic` boolean on schema/register authorization; tenant default IAppConfig key.
 - [x] 8.4 CHANGELOG entry under "Behavior changes" — note that flipping the tenant default OR setting `inheritFromPublic: false` per-schema is a deliberate opt-in; existing schemas that don't set it are unaffected.
 
