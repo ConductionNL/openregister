@@ -77,8 +77,10 @@ class AuditTrailController extends Controller
      * SECURITY: `clearAll` wipes the entire audit table — a chain of
      * trust for AVG/GDPR Art 30 reviews. `export` dumps every row in
      * bulk and is an obvious recon path across tenants. Both surfaces
-     * stay `@NoAdminRequired` at the framework level so the existing
-     * UI keeps loading, but reject non-admin callers in the body.
+     * are admin-only at the framework level (the methods carry no
+     * `@NoAdminRequired`) and this body-level helper stays as
+     * defence-in-depth so removing the framework gate by accident does
+     * not silently open the surface.
      *
      * @return JSONResponse|null 401/403 response when blocked, null when allowed.
      */
@@ -368,7 +370,8 @@ class AuditTrailController extends Controller
     /**
      * Export audit trail logs in specified format
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
      *
      * @NoCSRFRequired
      *
@@ -481,7 +484,8 @@ class AuditTrailController extends Controller
     /**
      * Clear all audit trail logs
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
      *
      * @NoCSRFRequired
      *

@@ -110,8 +110,11 @@ class ActionsController extends Controller
      * could otherwise register an attacker-chosen workflow that
      * survives password reset, session revocation, and even the source
      * account being disabled (the action row carries no owner check on
-     * execution). Gate every write surface (`create`/`update`/`patch`/
-     * `destroy`/`test`/`migrateFromHooks`) on admin-group membership.
+     * execution). Every write surface (`create`/`update`/`patch`/
+     * `destroy`/`test`/`migrateFromHooks`) is admin-only at the
+     * framework level (the methods carry no `@NoAdminRequired`); this
+     * helper stays as defence-in-depth so a future refactor that
+     * silently re-adds `@NoAdminRequired` does not open the surface.
      *
      * @return JSONResponse|null 403 response when not admin, null when allowed.
      */
@@ -274,15 +277,15 @@ class ActionsController extends Controller
     /**
      * Create a new action
      *
-     * @return JSONResponse
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
      *
-     * @NoAdminRequired
+     * @return JSONResponse
      *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
@@ -325,17 +328,17 @@ class ActionsController extends Controller
     /**
      * Update an action (full replacement)
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
+     *
      * @param int $id Action ID
      *
      * @return JSONResponse
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
     {
@@ -373,17 +376,17 @@ class ActionsController extends Controller
     /**
      * Partial update an action
      *
+     * Admin-only at the framework level (no @NoAdminRequired); update()
+     * also runs requireAdmin() as defence-in-depth.
+     *
      * @param int $id Action ID
      *
      * @return JSONResponse
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function patch(int $id): JSONResponse
     {
@@ -394,17 +397,17 @@ class ActionsController extends Controller
     /**
      * Soft-delete an action
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
+     *
      * @param int $id Action ID
      *
      * @return JSONResponse
-     *
-     * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
     {
@@ -432,15 +435,15 @@ class ActionsController extends Controller
     /**
      * Test action with dry-run simulation
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
+     *
      * @param int $id Action ID
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function test(int $id): JSONResponse
     {
@@ -526,15 +529,15 @@ class ActionsController extends Controller
     /**
      * Migrate inline hooks from a schema to Action entities
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
+     *
      * @param int $schemaId Schema ID
      *
      * @return JSONResponse
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function migrateFromHooks(int $schemaId): JSONResponse
     {

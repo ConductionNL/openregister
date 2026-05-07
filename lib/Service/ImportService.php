@@ -352,12 +352,16 @@ class ImportService
 
         // Generate a per-import UUID and stamp it on every audit row
         // produced during this call. ImportService::softDeleteByImportJobId
-        // uses this UUID to roll the import back. Cleared in finally
-        // so the value never leaks across requests.
+        // uses this UUID to roll the import back. The set/clear pair is
+        // wrapped in try/finally so the request-scoped field is always
+        // cleared, including when the set itself or any subsequent line
+        // throws — guards against cross-request bleed on long-lived
+        // workers where the singleton mapper is reused.
         $importJobId = Uuid::v4()->toRfc4122();
-        $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
 
         try {
+            $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+
             $reader = new Xlsx();
             $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($filePath);
@@ -458,9 +462,10 @@ class ImportService
 
         // Per-import UUID — see importFromExcel() for the rationale.
         $importJobId = Uuid::v4()->toRfc4122();
-        $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
 
         try {
+            $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+
             // Use PhpSpreadsheet CSV reader (works perfectly for multiline fields).
             $reader = new Csv();
             $reader->setReadDataOnly(true);
