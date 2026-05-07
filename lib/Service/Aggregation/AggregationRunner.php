@@ -34,9 +34,12 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Index\SearchBackendInterface;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
-use ReflectionClass;
 use OCP\IDBConnection;
+use OCP\IUserSession;
+use ReflectionClass;
 use RuntimeException;
 
 /**
@@ -67,6 +70,9 @@ class AggregationRunner
         private readonly PlaceholderResolver $placeholders,
         private readonly IDBConnection $db,
         private readonly AggregationCache $cache,
+        private readonly PermissionHandler $permissionHandler,
+        private readonly IUserSession $userSession,
+        private readonly OrganisationService $organisationService,
         private readonly ?SearchBackendInterface $searchBackend=null
     ) {
     }//end __construct()
@@ -95,8 +101,23 @@ class AggregationRunner
      */
     public function run(string $registerRef, string $schemaRef, string $name): array
     {
-        $schema     = $this->loadSchema(schemaRef: $schemaRef);
-        $register   = $this->loadRegister(registerRef: $registerRef);
+        $schema   = $this->loadSchema(schemaRef: $schemaRef);
+        $register = $this->loadRegister(registerRef: $registerRef);
+
+        // SECURITY: gate aggregation behind list-permission on the schema
+        // before any native or fallback path executes. Without this gate,
+        // the native PG path would compute COUNT/SUM/AVG over rows the
+        // caller has no read permission for (cross-tenant + cross-RBAC
+        // statistics leak).
+        $userId = $this->userSession->getUser()?->getUID();
+        if ($this->permissionHandler->hasPermission(
+            schema: $schema,
+            action: 'list',
+            userId: $userId
+        ) === false) {
+            throw new RuntimeException('Forbidden: caller lacks list permission on the requested schema.');
+        }
+
         $annotation = $this->getAnnotation(schema: $schema);
         if ($annotation === null) {
             throw new RuntimeException(
@@ -118,11 +139,17 @@ class AggregationRunner
 
         // Cache lookup: the resolved filter (with placeholders concrete)
         // is the cache key together with the user's RBAC scope. 60s TTL.
-        $cacheKey = [
+        // SECURITY: cache key MUST include userId + active organisation —
+        // two callers with different RBAC verdicts on the same (metric,
+        // field, filter) tuple would otherwise read each other's results.
+        $activeOrg = $this->organisationService->getActiveOrganisation();
+        $cacheKey  = [
             'metric'  => $metric,
             'field'   => $field,
             'filter'  => $resolvedFilter,
             'groupBy' => $groupBy,
+            'userId'  => $userId,
+            'org'     => $activeOrg?->getUuid(),
         ];
         $cached   = $this->cache->get(
             registerSlug: (string) $register->getSlug(),
@@ -528,6 +555,15 @@ class AggregationRunner
 
         $whereParts = ["(_deleted IS NULL OR _deleted = 'null'::jsonb)"];
         $bindings   = [];
+
+        // SECURITY: mirror MagicRbacHandler's multi-tenancy predicate. The
+        // native fast path bypasses MagicMapper entirely, so without this
+        // filter any authed caller could compute aggregates over rows in
+        // other tenants. Active org of `null` ⇒ no rows (fail-closed).
+        $activeOrg    = $this->organisationService->getActiveOrganisation();
+        $whereParts[] = '"organisation" = ?';
+        $bindings[]   = $activeOrg?->getUuid() ?? '__no_active_org__';
+
         foreach ($filter as $f => $v) {
             $col = $this->sanitizeColumnName(name: (string) $f);
             if (is_array($v) === false) {
@@ -688,7 +724,10 @@ class AggregationRunner
     private function loadSchema(string $schemaRef): Schema
     {
         try {
-            return $this->schemaMapper->find($schemaRef, _multitenancy: false);
+            // SECURITY: keep multitenancy filter on so a tenant user cannot
+            // resolve schemas owned by another tenant simply by knowing
+            // the slug.
+            return $this->schemaMapper->find($schemaRef);
         } catch (\Throwable $e) {
             throw new RuntimeException(sprintf('Schema "%s" not found.', $schemaRef), 0, $e);
         }
@@ -706,7 +745,8 @@ class AggregationRunner
     private function loadRegister(string $registerRef): \OCA\OpenRegister\Db\Register
     {
         try {
-            return $this->registerMapper->find($registerRef, _multitenancy: false);
+            // SECURITY: keep multitenancy filter on (see loadSchema).
+            return $this->registerMapper->find($registerRef);
         } catch (\Throwable $e) {
             throw new RuntimeException(sprintf('Register "%s" not found.', $registerRef), 0, $e);
         }
