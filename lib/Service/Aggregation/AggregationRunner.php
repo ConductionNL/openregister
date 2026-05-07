@@ -560,8 +560,10 @@ class AggregationRunner
         // native fast path bypasses MagicMapper entirely, so without this
         // filter any authed caller could compute aggregates over rows in
         // other tenants. Active org of `null` ⇒ no rows (fail-closed).
+        // Column is `_organisation` — magic tables prefix metadata cols
+        // with `_` (see MagicMapper::METADATA_PREFIX).
         $activeOrg    = $this->organisationService->getActiveOrganisation();
-        $whereParts[] = '"organisation" = ?';
+        $whereParts[] = '"_organisation" = ?';
         $bindings[]   = $activeOrg?->getUuid() ?? '__no_active_org__';
 
         foreach ($filter as $f => $v) {
