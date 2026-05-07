@@ -72,6 +72,7 @@ class RealtimeController extends Controller
      *
      * @return JSONResponse JSON response with events, cursor, and hasMore.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function events(
@@ -136,13 +137,31 @@ class RealtimeController extends Controller
      *
      * @return JSONResponse JSON response containing the current head cursor.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function cursor(): JSONResponse
     {
+        // SECURITY: scope the cursor to the caller's active organisation.
+        // Returning the global head pointer let any authed caller observe
+        // the global write rate by polling — small but real cross-tenant
+        // side channel. With no active org, return 0 (fail-closed) so
+        // there is no head pointer to mine.
+        $orgUuid = null;
+        try {
+            $activeOrg = $this->organisationService->getActiveOrganisation();
+            $orgUuid   = $activeOrg?->getUuid();
+        } catch (\Throwable $e) {
+            $orgUuid = null;
+        }
+
+        if ($orgUuid === null) {
+            return new JSONResponse(['cursor' => 0]);
+        }
+
         return new JSONResponse(
                 [
-                    'cursor' => $this->eventMapper->getMaxId(),
+                    'cursor' => $this->eventMapper->getMaxIdForOrganisation($orgUuid),
                 ]
                 );
     }//end cursor()
