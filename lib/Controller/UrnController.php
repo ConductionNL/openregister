@@ -149,6 +149,19 @@ class UrnController extends Controller
             return new JSONResponse(['error' => 'urns array is required'], Http::STATUS_BAD_REQUEST);
         }
 
+        // SECURITY: cap the input list. Each URN triggers a parse →
+        // register find → schema find → object find chain, so a 100k
+        // input list = ~400k DB round-trips per request. Currently this
+        // route is effectively admin-only via the absence of
+        // @NoAdminRequired, but a future relaxation would convert the
+        // missing cap directly into a DoS lever.
+        if (count($urns) > 1000) {
+            return new JSONResponse(
+                ['error' => 'Too many URNs (max 1000 per request)', 'count' => count($urns)],
+                Http::STATUS_UNPROCESSABLE_ENTITY
+            );
+        }
+
         $resolved = $this->urnService->resolveBulk($urns);
 
         return new JSONResponse(
