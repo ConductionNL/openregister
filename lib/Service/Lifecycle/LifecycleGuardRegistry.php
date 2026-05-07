@@ -53,8 +53,9 @@ final class LifecycleGuardRegistry
     /**
      * Constructor.
      *
-     * @param ContainerInterface $container DI container used to resolve guard services.
-     * @param LoggerInterface    $logger    Logger for guard resolution diagnostics.
+     * @param ContainerInterface $container       OR app container used to resolve guard services first.
+     * @param IServerContainer   $serverContainer NC server container used as fallback for FQCN-tagged guards (F06).
+     * @param LoggerInterface    $logger          Logger for guard resolution diagnostics.
      */
     public function __construct(
         private readonly ContainerInterface $container,

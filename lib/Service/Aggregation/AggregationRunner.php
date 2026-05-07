@@ -142,9 +142,10 @@ class AggregationRunner
             objectOwner: null,
             _rbac: true,
             object: null
-        ) === false) {
+        ) === false
+        ) {
             throw new NotAuthorizedException(
-                sprintf(
+                message: sprintf(
                     'You do not have permission to aggregate schema "%s".',
                     $schemaRef
                 )
@@ -184,7 +185,7 @@ class AggregationRunner
             'userId'  => $userId,
             'org'     => $activeOrg?->getUuid(),
         ];
-        $cached   = $this->cache->get(
+        $cached    = $this->cache->get(
             registerSlug: (string) $register->getSlug(),
             schemaSlug: (string) $schema->getSlug(),
             name: $name,
@@ -271,7 +272,7 @@ class AggregationRunner
         // Aggregations whose source table exceeds the cap are surfaced
         // with `truncated: true` so callers know the value is partial
         // (or 503 from the controller in a future hardening step).
-        $objects = $this->magicMapper->findAllInRegisterSchemaTable(
+        $objects   = $this->magicMapper->findAllInRegisterSchemaTable(
             register: $register,
             schema: $schema,
             limit: self::PHP_FALLBACK_ROW_CAP

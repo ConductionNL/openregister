@@ -45,10 +45,11 @@ final class TransitionEngine
     /**
      * Constructor.
      *
-     * @param ObjectService    $objectService   Object CRUD service used to load + save the entity.
-     * @param SchemaMapper     $schemaMapper    Mapper to resolve the entity's schema.
-     * @param IEventDispatcher $eventDispatcher Dispatcher used to fire ObjectTransitionedEvent.
-     * @param IUserSession     $userSession     Current user session, for actor attribution.
+     * @param ObjectService     $objectService     Object CRUD service used to load + save the entity.
+     * @param SchemaMapper      $schemaMapper      Mapper to resolve the entity's schema.
+     * @param IEventDispatcher  $eventDispatcher   Dispatcher used to fire ObjectTransitionedEvent.
+     * @param IUserSession      $userSession       Current user session, for actor attribution.
+     * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -103,7 +104,7 @@ final class TransitionEngine
         );
         if ($allowed === false) {
             throw new NotAuthorizedException(
-                sprintf(
+                message: sprintf(
                     'You do not have permission to transition object "%s".',
                     $objectId
                 )
@@ -204,7 +205,7 @@ final class TransitionEngine
         );
         if ($allowed === false) {
             throw new NotAuthorizedException(
-                sprintf(
+                message: sprintf(
                     'You do not have permission to read object "%s".',
                     $objectId
                 )

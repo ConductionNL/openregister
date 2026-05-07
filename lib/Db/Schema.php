@@ -1655,6 +1655,7 @@ class Schema extends Entity implements JsonSerializable
                 if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
                     $validatedConfig[$key] = $value;
                 }
+
                 // Unknown x-openregister-* keys fall through and are
                 // dropped from $validatedConfig.
             }
