@@ -742,6 +742,19 @@ class Schema extends Entity implements JsonSerializable
         $validActions = ['create', 'read', 'update', 'delete'];
 
         foreach ($authorization as $action => $rules) {
+            // The optional `inheritFromPublic` flag is a sibling of the CRUD actions and
+            // controls whether authenticated users qualify for `public` rules on this
+            // schema/register. See PermissionHandler::resolveInheritFromPublic.
+            if ($action === 'inheritFromPublic') {
+                if ($rules !== null && is_bool($rules) === false) {
+                    throw new InvalidArgumentException(
+                        "Authorization '{$action}' in {$context} must be a boolean or null"
+                    );
+                }
+
+                continue;
+            }
+
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
                 $validList = implode(', ', $validActions);
