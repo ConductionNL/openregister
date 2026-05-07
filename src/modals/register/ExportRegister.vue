@@ -58,7 +58,6 @@ import {
 	NcSelect,
 } from '@nextcloud/vue'
 
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
 

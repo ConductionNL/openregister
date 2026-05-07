@@ -102,10 +102,10 @@ class TaskService
      * @throws Exception If no user is logged in
      */
     public function getAllUserTasks(
-        ?string $status = null,
-        int $limit = 50,
-        int $offset = 0,
-        ?string $assignee = null
+        ?string $status=null,
+        int $limit=50,
+        int $offset=0,
+        ?string $assignee=null
     ): array {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -172,7 +172,7 @@ class TaskService
                         'Failed to parse calendar object: '.$e->getMessage(),
                         ['uri' => $calendarObject['uri']]
                     );
-                }
+                }//end try
             }//end foreach
         }//end foreach
 
@@ -219,7 +219,7 @@ class TaskService
             return stripos($components, 'VTODO') !== false;
         } else if (is_iterable($components) === true) {
             foreach ($components as $comp) {
-                $compName = is_string($comp) ? $comp : (string) $comp;
+                $compName = is_string($comp) === true ? $comp : (string) $comp;
                 if (strtoupper($compName) === 'VTODO') {
                     return true;
                 }

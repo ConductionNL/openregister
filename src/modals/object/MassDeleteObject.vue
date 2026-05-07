@@ -88,7 +88,6 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Close from 'vue-material-design-icons/Close.vue'

@@ -73,7 +73,7 @@ class MailAppScriptListener implements IEventListener
     public function handle(Event $event): void
     {
         // Only handle BeforeTemplateRenderedEvent from the Mail app.
-        if (!($event instanceof \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent)) {
+        if (($event instanceof \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent) === false) {
             return;
         }
 
