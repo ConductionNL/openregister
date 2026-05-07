@@ -1,5 +1,7 @@
 ---
 status: implemented
+retrofit_extensions:
+  - "REQ-009"
 ---
 
 # Archival Destruction Workflow
@@ -12,7 +14,7 @@ Implement a NEN 15489 compliant destruction workflow for register objects, provi
 
 
 
-### Requirement: The system MUST provide a DestructionCheckJob that generates destruction lists from eligible objects
+### REQ-001: DestructionCheckJob and Destruction List Generation
 
 A Nextcloud `TimedJob` MUST scan for objects that have reached their `archiefactiedatum` with `archiefnominatie` set to `vernietigen` and generate destruction lists as register objects for archivist review.
 
@@ -46,7 +48,7 @@ A Nextcloud `TimedJob` MUST scan for objects that have reached their `archiefact
 - **THEN** the soft-deleted objects MUST be included in the destruction list
 - **AND** they MUST be marked with `alreadySoftDeleted: true` in the list entry
 
-### Requirement: The system MUST provide API endpoints for destruction list management
+### REQ-002: Destruction List Management API
 
 An `ArchivalController` MUST expose REST endpoints under `/api/archival/` for listing, viewing, approving, and rejecting destruction lists.
 
@@ -67,7 +69,7 @@ An `ArchivalController` MUST expose REST endpoints under `/api/archival/` for li
 - **WHEN** they call any `/api/archival/destruction-lists` endpoint
 - **THEN** the system MUST return HTTP 403 Forbidden
 
-### Requirement: Destruction MUST follow a multi-step approval workflow with full, partial, and rejection paths
+### REQ-003: Multi-Step Approval Workflow
 
 Destruction lists MUST support full approval, partial approval (excluding specific objects), and full rejection, each with mandatory audit trail entries.
 
@@ -102,7 +104,7 @@ Destruction lists MUST support full approval, partial approval (excluding specif
 - **AND** a second archivist (different user from the first) MUST approve before destruction proceeds
 - **AND** if the same archivist attempts the second approval, the system MUST return HTTP 409 Conflict
 
-### Requirement: The DestructionExecutionJob MUST permanently delete approved objects in batches
+### REQ-004: Batch Permanent Deletion via DestructionExecutionJob
 
 A `QueuedJob` MUST process approved destruction lists by permanently deleting objects, their associated files, and creating audit trail entries.
 
@@ -136,7 +138,7 @@ A `QueuedJob` MUST process approved destruction lists by permanently deleting ob
 - **THEN** all 5 zaakdocumenten MUST also be permanently destroyed
 - **AND** each cascaded destruction MUST produce an audit trail entry with action `archival.cascade_destroyed`
 
-### Requirement: The system MUST generate destruction certificates upon completed destruction
+### REQ-005: Destruction Certificate Generation
 
 After all objects on an approved destruction list are destroyed, the system MUST generate an immutable destruction certificate (verklaring van vernietiging).
 
@@ -159,7 +161,7 @@ After all objects on an approved destruction list are destroyed, the system MUST
 - **THEN** the destruction certificate MUST record 13 objects destroyed and 2 skipped
 - **AND** the skipped objects MUST be listed with their skip reason
 
-### Requirement: The system MUST support legal holds that prevent destruction
+### REQ-006: Legal Hold Management
 
 Legal holds MUST be placeable on individual objects or all objects in a schema, preventing any destruction regardless of `archiefactiedatum`.
 
@@ -191,7 +193,7 @@ Legal holds MUST be placeable on individual objects or all objects in a schema, 
 - **THEN** `zaak-456` MUST be automatically excluded from destruction
 - **AND** the archivist MUST be notified that 1 object was excluded due to legal hold
 
-### Requirement: The system MUST calculate archiefactiedatum using configurable afleidingswijzen
+### REQ-007: Archiefactiedatum Calculation via Afleidingswijzen
 
 The `ArchiefactiedatumCalculator` service MUST support multiple derivation methods for calculating the archive action date.
 
@@ -224,7 +226,7 @@ The `ArchiefactiedatumCalculator` service MUST support multiple derivation metho
 - **THEN** `archiefactiedatum` MUST be recalculated to 2040-12-31
 - **AND** the change MUST be logged in the audit trail
 
-### Requirement: WOO-published objects MUST be flagged on destruction lists
+### REQ-008: WOO-Published Object Flagging
 
 Objects published under the Wet open overheid (WOO) MUST receive special handling during destruction workflows.
 
@@ -234,3 +236,36 @@ Objects published under the Wet open overheid (WOO) MUST receive special handlin
 - **WHEN** the destruction list is generated
 - **THEN** `besluit-123` MUST be flagged with label `woo_gepubliceerd`
 - **AND** the archivist MUST explicitly confirm destruction of publicly accessible records before approval proceeds
+
+### REQ-009: Advance Archivist Notifications
+
+The `DestructionCheckJob` MUST scan for objects whose `archiefactiedatum` falls within a configurable advance window (default: 30 days) and send per-object Nextcloud notifications to all users in the `archivaris` group. Notifications MUST be deduplicated — each object is notified at most once per retention lifecycle — using a persisted list stored in app config. Objects with active legal holds MUST be excluded. Objects with `archiefnominatie: bewaren` receive an e-Depot transfer subject rather than a destruction warning.
+
+#### Scenario: Objects within lead window trigger advance notifications
+- **GIVEN** the `notificationLeadDays` setting is 30 (default)
+- **AND** 5 objects have `archiefactiedatum` between today and today+30 days
+- **AND** `archiefstatus` is `nog_te_archiveren` for all 5
+- **AND** none have been notified before (not in the `retention_notified_objects` app config list)
+- **AND** none have an active legal hold
+- **WHEN** the `DestructionCheckJob` runs
+- **THEN** 5 Nextcloud notifications MUST be sent, one per object, to each user in the `archivaris` group
+- **AND** each notification MUST include: object title, `archiefactiedatum`, selectielijst category, and a descriptive subject
+- **AND** all 5 object UUIDs MUST be appended to `retention_notified_objects` in app config
+
+#### Scenario: Already-notified objects are not re-notified
+- **GIVEN** object `zaak-111` is in the `retention_notified_objects` list
+- **AND** `zaak-111` still has `archiefactiedatum` within the lead window
+- **WHEN** the `DestructionCheckJob` runs
+- **THEN** no notification MUST be sent for `zaak-111`
+- **AND** `zaak-111` MUST NOT be added to the notified list again
+
+#### Scenario: Objects with active legal hold excluded from advance notifications
+- **GIVEN** object `zaak-222` has `archiefactiedatum` within the lead window
+- **AND** `zaak-222` has `retention.legalHold.active` set to `true`
+- **WHEN** the `DestructionCheckJob` runs
+- **THEN** no advance notification MUST be sent for `zaak-222`
+
+#### Scenario: Objects with archiefnominatie bewaren receive e-Depot transfer subject
+- **GIVEN** object `zaak-333` has `archiefnominatie: bewaren` and `archiefactiedatum` within the lead window
+- **WHEN** the `DestructionCheckJob` runs
+- **THEN** the notification subject MUST be "Object requires e-Depot transfer" rather than "Object approaching destruction date"

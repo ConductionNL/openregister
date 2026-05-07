@@ -17,6 +17,8 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-76
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-78
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-86
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
  */
 
 declare(strict_types=1);
@@ -167,6 +169,7 @@ class WebhookService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook dispatch conditions
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-86
      */
     public function dispatchEvent(Event $_event, string $eventName, array $payload): void
     {
@@ -228,6 +231,8 @@ class WebhookService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple exception handling paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
      * Fallback for connection errors without response
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
      */
     public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
     {

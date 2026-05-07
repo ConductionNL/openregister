@@ -13,6 +13,8 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
  */
 
 namespace OCA\OpenRegister\Service;
@@ -94,6 +96,7 @@ class LinkedEntityService
      * @return array The updated linked IDs array
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
      */
     public function addLink(string $objectUuid, string $type, string $entityId): array
     {
@@ -127,6 +130,7 @@ class LinkedEntityService
      * @return array The updated linked IDs array
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
      */
     public function removeLink(string $objectUuid, string $type, string $entityId): array
     {
@@ -241,6 +245,7 @@ class LinkedEntityService
      * @return array Array of result objects with entityType, uuid, name, etc.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
      */
     public function reverseLookup(string $type, string $entityId): array
     {

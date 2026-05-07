@@ -37,6 +37,8 @@ class ObjectServiceFacetExample
      * Constructor for ObjectServiceFacetExample
      *
      * @param ObjectService $objectService The object service instance
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function __construct(
         private readonly ObjectService $objectService
@@ -51,6 +53,8 @@ class ObjectServiceFacetExample
      * @return array The facet results using new system
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function newFacetingApproach(): array
     {
@@ -79,6 +83,8 @@ class ObjectServiceFacetExample
      * @return array The facet results using legacy system
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function legacyFacetingApproach(): array
     {
@@ -103,6 +109,8 @@ class ObjectServiceFacetExample
      * @return array Complete search results with pagination and facets
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function paginatedSearchWithFacets(): array
     {
@@ -142,6 +150,8 @@ class ObjectServiceFacetExample
      * @return array E-commerce search results with product facets
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function ecommerceFacetedSearch(): array
     {
@@ -230,6 +240,8 @@ class ObjectServiceFacetExample
      * @return array Analytics data with time-based facets
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function analyticsDashboardFacets(): array
     {
@@ -295,6 +307,8 @@ class ObjectServiceFacetExample
      * @return array Results demonstrating disjunctive faceting
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function disjunctiveFacetingDemo(): array
     {
@@ -335,6 +349,8 @@ class ObjectServiceFacetExample
      * Compares performance between new and legacy faceting approaches.
      *
      * @return array Performance comparison with new_approach, legacy_approach, and improvement.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function performanceComparison(): array
     {
@@ -395,6 +411,8 @@ class ObjectServiceFacetExample
      * Shows how to structure data for frontend consumption.
      *
      * @return array Frontend-ready data with search results, pagination, facets, and applied filters.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function frontendIntegrationExample(): array
     {
@@ -493,6 +511,8 @@ class ObjectServiceFacetExample
      * @psalm-param array<array<string, mixed>> $buckets
      *
      * @return array Frontend-friendly bucket structure with value, label, count, from, and to.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function transformBuckets(array $buckets): array
     {
@@ -520,6 +540,8 @@ class ObjectServiceFacetExample
      * @psalm-param array<string, mixed> $query
      *
      * @return array Applied filters with field, value, and type for each filter.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function extractAppliedFilters(array $query): array
     {
@@ -554,6 +576,8 @@ class ObjectServiceFacetExample
      * Check if audit trails are enabled
      *
      * @return false True if audit trails are enabled, false otherwise
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function isAuditTrailsEnabled(): bool
     {
@@ -569,6 +593,8 @@ class ObjectServiceFacetExample
      * @param float $newTime    New execution time in seconds
      *
      * @return float Performance improvement percentage
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function calculatePerformanceImprovement(float $legacyTime, float $newTime): float
     {

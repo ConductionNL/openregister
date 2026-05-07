@@ -53,6 +53,8 @@ class LinkedEntityEnricher
      * @param ICommentsManager $commentsManager Comments manager for notes
      * @param IUserManager     $userManager     User manager for resolving display names
      * @param LoggerInterface  $logger          Logger
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -69,6 +71,8 @@ class LinkedEntityEnricher
      * @param array $extend     The _extend parameters (e.g., ['_mail' => '1', '_contacts' => '1'])
      *
      * @return array The object data with enriched linked entities
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function enrich(array $objectData, array $extend): array
     {
@@ -96,6 +100,8 @@ class LinkedEntityEnricher
      * @param array $ids Array of mail IDs
      *
      * @return array Array of enriched mail objects
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function enrichMail(array $ids): array
     {
@@ -142,6 +148,8 @@ class LinkedEntityEnricher
      * @param array $ids Array of contact UIDs
      *
      * @return array Array of enriched contact objects
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function enrichContacts(array $ids): array
     {
@@ -184,6 +192,8 @@ class LinkedEntityEnricher
      * @param array $ids Array of comment IDs
      *
      * @return array Array of enriched note objects
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function enrichNotes(array $ids): array
     {
@@ -216,6 +226,8 @@ class LinkedEntityEnricher
      * @param array $ids Array of todo IDs
      *
      * @return array Array of enriched todo objects
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function enrichTodos(array $ids): array
     {
@@ -268,6 +280,8 @@ class LinkedEntityEnricher
      * @param array $ids Array of calendar event IDs
      *
      * @return array Array of enriched event objects
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function enrichCalendar(array $ids): array
     {
@@ -320,6 +334,8 @@ class LinkedEntityEnricher
      * @param array $ids Array of Talk tokens
      *
      * @return array Array of enriched Talk objects
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function enrichTalk(array $ids): array
     {
@@ -358,6 +374,8 @@ class LinkedEntityEnricher
      * @param array $ids Array of Deck card IDs
      *
      * @return array Array of enriched Deck objects
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function enrichDeck(array $ids): array
     {
@@ -408,6 +426,8 @@ class LinkedEntityEnricher
      * @param string $id The entity ID
      *
      * @return array The fallback result
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function notFoundResult(string $id): array
     {
@@ -424,6 +444,8 @@ class LinkedEntityEnricher
      * @param string $field    The field name (e.g., 'FN', 'EMAIL')
      *
      * @return string|null The field value or null
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function extractVcardField(string $carddata, string $field): ?string
     {
@@ -441,6 +463,8 @@ class LinkedEntityEnricher
      * @param string $field   The field name (e.g., 'SUMMARY', 'DTSTART')
      *
      * @return string|null The field value or null
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function extractIcalField(string $caldata, string $field): ?string
     {

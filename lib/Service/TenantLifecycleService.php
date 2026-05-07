@@ -18,6 +18,10 @@
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-74
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-77
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
  */
 
 declare(strict_types=1);
@@ -107,6 +111,9 @@ class TenantLifecycleService
      * @return void
      *
      * @throws Exception If the transition is invalid
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
      */
     public function validateTransition(string $currentStatus, string $targetStatus): void
     {
@@ -145,6 +152,7 @@ class TenantLifecycleService
      * @throws Exception If provisioning fails
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-74
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-77
      */
     public function provision(Organisation $organisation, string $adminUserId): Organisation
     {
@@ -237,6 +245,8 @@ class TenantLifecycleService
      * @return Organisation The suspended organisation
      *
      * @throws Exception If transition is invalid
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
      */
     public function suspend(Organisation $organisation): Organisation
     {
@@ -264,6 +274,8 @@ class TenantLifecycleService
      * @return Organisation The reactivated organisation
      *
      * @throws Exception If transition is invalid
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
      */
     public function reactivate(Organisation $organisation): Organisation
     {
@@ -291,6 +303,8 @@ class TenantLifecycleService
      * @return Organisation The organisation in deprovisioning state
      *
      * @throws Exception If transition is invalid
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
      */
     public function deprovision(Organisation $organisation): Organisation
     {
@@ -318,6 +332,8 @@ class TenantLifecycleService
      * @return Organisation The archived organisation
      *
      * @throws Exception If transition is invalid
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
      */
     public function archive(Organisation $organisation): Organisation
     {
@@ -342,6 +358,9 @@ class TenantLifecycleService
      * @param string $environment The environment to validate
      *
      * @return bool Whether the environment is valid
+     *
+     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
      */
     public function isValidEnvironment(string $environment): bool
     {
@@ -355,6 +374,9 @@ class TenantLifecycleService
      * @param string $targetEnv Target environment
      *
      * @return bool Whether the promotion order is valid
+     *
+     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
      */
     public function isValidPromotionOrder(string $sourceEnv, string $targetEnv): bool
     {

@@ -67,6 +67,8 @@ class LinkedEntityPropertyHandler
      * Constructor for LinkedEntityPropertyHandler.
      *
      * @param LoggerInterface $logger Logger for logging operations
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -128,6 +130,8 @@ class LinkedEntityPropertyHandler
      * @param array  $extractedIds   Reference to the collected IDs (grouped by type)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function extractFromProperty(
         string $propertyName,
@@ -174,6 +178,8 @@ class LinkedEntityPropertyHandler
      * @param mixed $value The property value
      *
      * @return string|null The extracted ID or null
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function extractIdFromEnvelope(mixed $value): ?string
     {

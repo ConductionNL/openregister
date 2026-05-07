@@ -42,6 +42,8 @@ class RelationshipOptimizationHandler
      * Constructor for RelationshipOptimizationHandler.
      *
      * @param LoggerInterface $logger Logger for logging operations.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function __construct(
         private readonly LoggerInterface $logger
@@ -59,6 +61,8 @@ class RelationshipOptimizationHandler
      * @return array Array of unique relationship IDs.
      *
      * @psalm-return array<never, never>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function extractAllRelationshipIds(array $_objects, array $_extend): array
     {
@@ -76,6 +80,8 @@ class RelationshipOptimizationHandler
      * @return array Array mapping UUIDs to ObjectEntity objects.
      *
      * @psalm-return array<never, never>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function bulkLoadRelationshipsBatched(array $_relationshipIds): array
     {
@@ -93,6 +99,8 @@ class RelationshipOptimizationHandler
      * @return array Array mapping UUIDs to ObjectEntity objects.
      *
      * @psalm-return array<never, never>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function bulkLoadRelationshipsParallel(array $_relationshipIds): array
     {
@@ -110,6 +118,8 @@ class RelationshipOptimizationHandler
      * @return array Array mapping UUIDs to ObjectEntity objects.
      *
      * @psalm-return array<never, never>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function loadRelationshipChunkOptimized(array $_relationshipIds): array
     {
@@ -125,6 +135,8 @@ class RelationshipOptimizationHandler
      * @param array $_row Database row data.
      *
      * @return null Created object entity or null.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-3
      */
     public function createLightweightObjectEntity(array $_row)
     {

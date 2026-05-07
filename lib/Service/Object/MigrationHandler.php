@@ -53,6 +53,8 @@ class MigrationHandler
      * @param UtilityHandler          $utilityHandler   Handler for utility operations.
      * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
      * @param LoggerInterface         $logger           Logger for logging operations.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -86,6 +88,8 @@ class MigrationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Migration with validation requires multiple conditional checks
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple migration paths for different object types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive migration requires detailed processing
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function migrateObjects(
         string|int $sourceRegister,

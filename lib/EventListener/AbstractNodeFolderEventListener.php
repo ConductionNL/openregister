@@ -46,6 +46,8 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @param \OCA\OpenRegister\Service\FileService $fileService   The file service for file operations.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -61,6 +63,8 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @param Event $event The event to handle.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function handle(Event $event): void
     {
@@ -90,6 +94,8 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function handleNodeCreated(NodeCreatedEvent $_event): void
     {
@@ -107,6 +113,8 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function handleNodeDeleted(NodeDeletedEvent $_event): void
     {
@@ -124,6 +132,8 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function handleNodeTouched(NodeTouchedEvent $_event): void
     {
@@ -141,6 +151,8 @@ class AbstractNodeFolderEventListener implements IEventListener
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function handleNodeWritten(NodeWrittenEvent $_event): void
     {

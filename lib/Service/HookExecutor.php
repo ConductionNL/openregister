@@ -24,6 +24,7 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-70
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-71
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-72
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-71
  */
 
 declare(strict_types=1);
@@ -99,6 +100,7 @@ class HookExecutor
      * @return void
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-71
      */
     public function executeHooks(Event $event, Schema $schema): void
     {
@@ -197,6 +199,8 @@ class HookExecutor
      * @param Event $event The lifecycle event
      *
      * @return ObjectEntity|null The object entity or null
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
      */
     private function getObjectFromEvent(Event $event): ?ObjectEntity
     {
@@ -233,6 +237,8 @@ class HookExecutor
      * @param Event $event The lifecycle event
      *
      * @return bool True if propagation is stopped
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-68
      */
     private function isEventStopped(Event $event): bool
     {
@@ -300,6 +306,8 @@ class HookExecutor
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
      */
     private function executeSingleHook(
         array $hook,
@@ -597,6 +605,8 @@ class HookExecutor
      * @param array<string, mixed> $data  Modified data to merge
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-67
      */
     private function setModifiedDataOnEvent(Event $event, array $data): void
     {
@@ -752,6 +762,8 @@ class HookExecutor
      * @param string|null  $fallbackError Fallback error message
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-69
      */
     private function setValidationMetadata(
         ObjectEntity $object,

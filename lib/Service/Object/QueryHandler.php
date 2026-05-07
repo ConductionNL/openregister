@@ -70,6 +70,8 @@ class QueryHandler
      * @param IRequest                       $request            Request object.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -102,6 +104,8 @@ class QueryHandler
      *
      * @psalm-return   int
      * @phpstan-return int
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function countSearchObjects(
         array $query=[],
@@ -150,6 +154,8 @@ class QueryHandler
      * @phpstan-return array<int, ObjectEntity>|int
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function searchObjects(
         array $query=[],
@@ -259,6 +265,8 @@ class QueryHandler
      *
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -474,7 +482,15 @@ class QueryHandler
                 _multitenancy: $_multitenancy
             );
             $metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
-        }
+        } else if ($hasComplexRendering === false && is_array($results) === true) {
+            // Cheap path: rows did not go through renderEntities, so @self.files is
+            // absent or stale. Per the files-render-extension capability, every list
+            // row MUST carry @self.files (lightweight ID list by default). Issue a
+            // single batched FileMapper lookup and attach IDs to each row.
+            $filesStart = microtime(true);
+            $this->renderHandler->attachLightweightFilesToRows(rows: $results);
+            $metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
+        }//end if
 
         // Calculate total pages (avoid division by zero when limit=0).
         $pages = 0;

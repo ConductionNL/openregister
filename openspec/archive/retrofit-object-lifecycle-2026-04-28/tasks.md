@@ -1,0 +1,17 @@
+# Tasks
+
+- [x] task-1: object-lifecycle#REQ-001 — Object save pipeline (SaveObjects, SaveObject, CrudHandler, DeleteObject, GetObject, RenderObject, DataManipulationHandler, MigrationHandler) (retroactive annotation)
+- [x] task-2: object-lifecycle#REQ-002 — Object validation pipeline (ValidateObject, ValidationHandler, BulkValidationHandler, VectorizationHandler) (retroactive annotation)
+- [x] task-3: object-lifecycle#REQ-003 — Object cache management (CacheHandler, PerformanceHandler, PerformanceOptimizationHandler, RelationshipOptimizationHandler) (retroactive annotation)
+- [x] task-4: object-lifecycle#REQ-004 — Bulk object operations (PreparationHandler, ChunkProcessingHandler) (retroactive annotation)
+- [x] task-5: object-lifecycle#REQ-005 — Object metadata hydration (MetadataHydrationHandler, MetadataHandler, ComputedFieldHandler) (retroactive annotation)
+- [x] task-6: linked-entity-types#REQ-003 — Relation handling cross-cap (LinkedEntityEnricher, RelationHandler, RelationCascadeHandler, BulkRelationHandler, LinkedEntityPropertyHandler, CascadingHandler) (retroactive annotation)
+- [x] task-7: rbac-scopes#REQ-001 — PermissionHandler cross-cap (PermissionHandler) (retroactive annotation)
+- [x] task-8: audit-trail-immutable#REQ-002 — AuditHandler cross-cap (retroactive annotation)
+- [x] task-9: faceting-configuration#REQ-002 — FacetHandler + example files cross-cap (retroactive annotation)
+- [x] task-10: zoeken-filteren#REQ-001 — SearchQueryHandler, QueryHandler cross-cap (retroactive annotation)
+- [x] task-11: data-import-export#REQ-007 — ExportHandler cross-cap (retroactive annotation)
+- [x] task-12: content-versioning#REQ-005 — RevertHandler cross-cap (retroactive annotation)
+- [x] task-13: content-versioning#REQ-017 — FilePropertyHandler cross-cap (retroactive annotation)
+- [x] task-14: object-lifecycle#REQ-001 — UtilityHandler (object pipeline utility methods) (retroactive annotation)
+- [x] task-15: object-lifecycle#REQ-001 — TranslationHandler (retroactive annotation)

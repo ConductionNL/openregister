@@ -15,6 +15,8 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-89
  */
 
 declare(strict_types=1);
@@ -62,6 +64,8 @@ class WorkflowEngineController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
      */
     public function index(): JSONResponse
     {
@@ -104,6 +108,8 @@ class WorkflowEngineController extends Controller
      * @param int         $defaultTimeout Default timeout
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
      */
     public function create(
         string $name,
@@ -199,6 +205,7 @@ class WorkflowEngineController extends Controller
      * @return JSONResponse
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
      */
     public function health(int $id): JSONResponse
     {
@@ -217,6 +224,8 @@ class WorkflowEngineController extends Controller
      * List auto-discovered engine types from installed ExApps.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-89
      */
     public function available(): JSONResponse
     {
