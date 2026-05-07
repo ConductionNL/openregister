@@ -210,7 +210,8 @@ class PermissionHandler
             action: $action,
             userId: $userId,
             objectOwner: $objectOwner,
-            object: $object
+            object: $object,
+            schema: $schema
         );
         if ($cacheKey !== null && array_key_exists($cacheKey, $this->permissionCache) === true) {
             return $this->permissionCache[$cacheKey];
@@ -253,9 +254,21 @@ class PermissionHandler
         string $action,
         ?string $userId,
         ?string $objectOwner,
-        ?ObjectEntity $object
+        ?ObjectEntity $object,
+        ?Schema $schema=null
     ): ?string {
         if ($schemaId === null) {
+            return null;
+        }
+
+        // SECURITY: when the schema's authorization block contains any
+        // `match` rule, the verdict depends on the *current* object data
+        // — which may change within a single request via saveObject() /
+        // TransitionEngine. Cache reuse keyed on the (stable) object UUID
+        // would otherwise serve a pre-mutation verdict to a post-mutation
+        // re-check. Drop the cache for schemas with match rules so each
+        // call re-evaluates the rule chain against fresh data.
+        if ($schema !== null && $this->schemaHasMatchRule(schema: $schema) === true) {
             return null;
         }
 
@@ -277,6 +290,45 @@ class PermissionHandler
             $objectUuid ?? '_'
         );
     }//end buildPermissionCacheKey()
+
+    /**
+     * Detect whether a schema's authorization block contains any
+     * conditional `match` rules.
+     *
+     * Used to disable the per-request permission cache for schemas
+     * whose verdict depends on the current object data — see
+     * {@see buildPermissionCacheKey()}.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return bool True when at least one authorization entry carries
+     *              a non-empty `match` block.
+     */
+    private function schemaHasMatchRule(Schema $schema): bool
+    {
+        $authorization = $schema->getAuthorization();
+        if (is_array($authorization) === false || $authorization === []) {
+            return false;
+        }
+
+        foreach ($authorization as $action => $entries) {
+            if (is_array($entries) === false) {
+                continue;
+            }
+
+            foreach ($entries as $entry) {
+                if (is_array($entry) === true
+                    && isset($entry['match']) === true
+                    && empty($entry['match']) === false
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+    }//end schemaHasMatchRule()
 
     /**
      * Evaluate the full RBAC rule chain for a permission check.
