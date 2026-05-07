@@ -488,7 +488,7 @@ class MagicSearchHandler
                     continue;
                 }
 
-                $quotedCol = $this->quoteColumnName(name: $columnName);
+                $quotedCol          = $this->quoteColumnName(name: $columnName);
                 $searchConditions[] = "{$quotedCol}::text ILIKE {$likePattern}";
             }
         }
