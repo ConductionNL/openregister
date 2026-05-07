@@ -16,6 +16,7 @@ use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;
+use OCP\IServerContainer;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
@@ -42,6 +43,7 @@ class AnnotationNotificationDispatcherTest extends TestCase
     private IMailer&MockObject $mailer;
     private IActivityManager&MockObject $activityManager;
     private IClientService&MockObject $httpClient;
+    private IServerContainer&MockObject $serverContainer;
 
     protected function setUp(): void
     {
@@ -54,6 +56,7 @@ class AnnotationNotificationDispatcherTest extends TestCase
         $this->mailer              = $this->createMock(IMailer::class);
         $this->activityManager     = $this->createMock(IActivityManager::class);
         $this->httpClient          = $this->createMock(IClientService::class);
+        $this->serverContainer     = $this->createMock(IServerContainer::class);
     }
 
     public function testInlinePostSkippedWhenWebhookPersistent(): void
@@ -635,6 +638,7 @@ class AnnotationNotificationDispatcherTest extends TestCase
             $this->mailer,
             $this->activityManager,
             $this->httpClient,
+            $this->serverContainer,
             null,
             $config
         );
