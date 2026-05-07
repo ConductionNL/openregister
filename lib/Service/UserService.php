@@ -1231,9 +1231,18 @@ class UserService
         $tokenId    = $this->secureRandom->generate(16);
 
         // Calculate expiration.
+        // SECURITY: a non-matching `expiresIn` (e.g. "5x", "abc") used to
+        // fall through to `$expires = null` → non-expiring token. That is
+        // a perpetual API key minted from malformed input. Reject the
+        // request instead so the caller sees the typo.
         $expires = null;
         if ($expiresIn !== null && $expiresIn !== '') {
             $expires = $this->parseExpiration(expiresIn: $expiresIn);
+            if ($expires === null) {
+                throw new \InvalidArgumentException(
+                    'Invalid expiresIn value "'.$expiresIn.'" — expected a number followed by d (days), h (hours), or m (minutes), e.g. "90d".'
+                );
+            }
         }
 
         $now       = date('c');
