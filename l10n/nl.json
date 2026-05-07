@@ -1879,6 +1879,10 @@
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
+        "{count} email": [
+            "{count} e-mail",
+            "{count} e-mails"
+        ],
         "Purge {count} object from database": [
             "Verwijder {count} object uit de database",
             "Verwijder {count} objecten uit de database"
@@ -1886,6 +1890,10 @@
         "Restore {count} object": [
             "Herstel {count} object",
             "Herstel {count} objecten"
+        ],
+        "Successfully restored {count} object": [
+            "{count} object succesvol hersteld",
+            "{count} objecten succesvol hersteld"
         ],
         "Delete {count} object": [
             "Verwijder {count} object",

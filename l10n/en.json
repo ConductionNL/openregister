@@ -1878,6 +1878,10 @@
         "🔢 Vectorization Settings": "🔢 Vectorization Settings"
     },
     "plurals": {
+        "{count} email": [
+            "{count} email",
+            "{count} emails"
+        ],
         "Purge {count} object from database": [
             "Purge {count} object from database",
             "Purge {count} objects from database"
@@ -1885,6 +1889,10 @@
         "Restore {count} object": [
             "Restore {count} object",
             "Restore {count} objects"
+        ],
+        "Successfully restored {count} object": [
+            "Successfully restored {count} object",
+            "Successfully restored {count} objects"
         ],
         "Delete {count} object": [
             "Delete {count} object",
