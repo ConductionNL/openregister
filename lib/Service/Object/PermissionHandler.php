@@ -693,7 +693,11 @@ class PermissionHandler
      *
      * Result is cached per request, keyed by schema ID, to avoid repeated
      * cascade walks when the same schema is checked many times (listing
-     * filter + per-object follow-up).
+     * filter + per-object follow-up). Transient schemas without an ID
+     * (in-memory drafts, validation-loop fixtures, unit-test stubs) bypass
+     * the cache and re-walk the cascade on every call — correct, but the
+     * caller pays for it. Hot paths that re-use the same unsaved schema
+     * should either persist it or be aware that this is a no-cache path.
      *
      * @param Schema $schema The schema to resolve the flag for.
      *
@@ -711,9 +715,19 @@ class PermissionHandler
         $resolved = null;
 
         // Step 1: schema-level authorization.
+        // Strict-boolean check: anything that is not literally `true` or `false` is
+        // treated as "unset" (cascade falls through). PHP's loose `(bool) "false"`
+        // is `true`, which would silently invert the gate on any seed/migration/CLI
+        // write that bypasses the schema validator and stores a string. Strict
+        // matching closes that foot-gun — invalid storage skips the level rather
+        // than producing a misleading permissive default.
         $auth = $schema->getAuthorization();
-        if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true && $auth['inheritFromPublic'] !== null) {
-            $resolved = (bool) $auth['inheritFromPublic'];
+        if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true) {
+            $resolved = $this->coerceStrictBoolOrLog(
+                value: $auth['inheritFromPublic'],
+                level: 'schema',
+                schemaId: $schemaId
+            );
         }
 
         // Step 2: register-level authorization.
@@ -723,14 +737,22 @@ class PermissionHandler
                 $registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
                 if (is_array($registerAuth) === true
                     && array_key_exists('inheritFromPublic', $registerAuth) === true
-                    && $registerAuth['inheritFromPublic'] !== null
                 ) {
-                    $resolved = (bool) $registerAuth['inheritFromPublic'];
+                    $resolved = $this->coerceStrictBoolOrLog(
+                        value: $registerAuth['inheritFromPublic'],
+                        level: 'register',
+                        schemaId: $schemaId
+                    );
                 }
             }
         }
 
         // Step 3: tenant-wide IAppConfig default.
+        // IAppConfig::getValueBool tolerates the string forms ("true"/"false"/
+        // "1"/"0") at the storage layer — that tolerance is intentional for the
+        // CLI / occ surface. The schema- and register-level cascade is stricter
+        // because it sits behind validators that should already have rejected
+        // non-boolean values.
         if ($resolved === null) {
             $resolved = $this->appConfig->getValueBool(
                 app: 'openregister',
@@ -746,6 +768,47 @@ class PermissionHandler
         return $resolved;
 
     }//end resolveInheritFromPublic()
+
+
+    /**
+     * Strict-boolean coercion for cascade levels backed by JSON storage.
+     *
+     * Returns `true` or `false` only when the stored value is literally the
+     * boolean. Returns `null` (treated as "unset" by the cascade) for `null`
+     * or any non-boolean — and logs a warning in the latter case so operators
+     * can spot bad seed/migration writes. The previous loose `(bool)` cast
+     * silently turned `"false"` into `true`, which inverted the gate.
+     *
+     * @param mixed       $value    The raw value from the JSON authorization block.
+     * @param string      $level    Cascade level for the log message ("schema" or "register").
+     * @param int|null    $schemaId Schema id for the log context (null for transient).
+     *
+     * @return bool|null Strict boolean, or null when the value is null/invalid.
+     */
+    private function coerceStrictBoolOrLog(mixed $value, string $level, ?int $schemaId): ?bool
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value === true || $value === false) {
+            return $value;
+        }
+
+        $this->logger->warning(
+            message: '[PermissionHandler] '.$level.'-level inheritFromPublic is not a boolean — treating as unset and falling through cascade',
+            context: [
+                'file'      => __FILE__,
+                'line'      => __LINE__,
+                'level'     => $level,
+                'schemaId'  => $schemaId,
+                'valueType' => gettype($value),
+            ]
+        );
+        return null;
+
+    }//end coerceStrictBoolOrLog()
+
 
     /**
      * Get the parent register for a schema.

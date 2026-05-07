@@ -1414,8 +1414,16 @@ class MagicRbacHandler
      * Resolve the effective `inheritFromPublic` flag for a schema.
      *
      * Delegates to PermissionHandler::resolveInheritFromPublic() which walks the
-     * cascade (schema → register → IAppConfig → true). Falls back to true (the
-     * pre-change behaviour) if PermissionHandler is unavailable.
+     * cascade (schema → register → IAppConfig → true).
+     *
+     * **No exception swallowing.** A previous version returned `true` on
+     * `Throwable` from the cascade walk, which silently undid the gate the
+     * tenant explicitly opted out of and let this SQL path diverge from the
+     * PHP-side per-object check (which propagates). The spec requires those
+     * two paths to agree, so any failure must surface (5xx) rather than
+     * fall back to a more permissive default. The caller (applyRbacFilters /
+     * buildRbacConditionsSql) does not need a fallback — propagation is the
+     * correct behaviour because the request can no longer be safely answered.
      *
      * @param Schema $schema The schema to resolve the flag for.
      *
@@ -1425,15 +1433,8 @@ class MagicRbacHandler
      */
     private function resolveInheritFromPublic(Schema $schema): bool
     {
-        try {
-            $permissionHandler = $this->container->get(PermissionHandler::class);
-            return $permissionHandler->resolveInheritFromPublic($schema);
-        } catch (\Throwable $e) {
-            $this->logger->debug(
-                message: '[MagicRbacHandler] PermissionHandler unavailable, defaulting inheritFromPublic to true',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
-            return true;
-        }
+        $permissionHandler = $this->container->get(PermissionHandler::class);
+        return $permissionHandler->resolveInheritFromPublic($schema);
+
     }//end resolveInheritFromPublic()
 }//end class

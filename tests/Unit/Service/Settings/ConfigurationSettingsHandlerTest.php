@@ -1105,6 +1105,70 @@ class ConfigurationSettingsHandlerTest extends TestCase
         $this->handler->updateRbacSettingsOnly(['enabled' => false]);
     }
 
+    /**
+     * Test updateRbacSettingsOnly persists `inheritFromPublicDefault: false`
+     * to the dedicated IAppConfig key (not into the JSON `rbac` blob) so
+     * PermissionHandler::resolveInheritFromPublic finds it on the next request.
+     *
+     * @return void
+     */
+    public function testUpdateRbacSettingsOnlyPersistsInheritFromPublicDefaultBoolean(): void
+    {
+        $this->appConfig->expects($this->once())
+            ->method('setValueBool')
+            ->with('openregister', 'rbac.inherit_from_public_default', false);
+
+        $result = $this->handler->updateRbacSettingsOnly([
+            'enabled'                  => true,
+            'inheritFromPublicDefault' => false,
+        ]);
+
+        $this->assertFalse($result['rbac']['inheritFromPublicDefault']);
+    }
+
+    /**
+     * Test updateRbacSettingsOnly accepts the string "false" via the documented
+     * tolerance (filter_var coercion) and persists it as boolean false — NOT as
+     * `(bool) "false" === true`. Pins the security-relevant gate against the
+     * silent-flip foot-gun called out in PR #1440 review.
+     *
+     * @return void
+     */
+    public function testUpdateRbacSettingsOnlyCoercesStringFalseToBooleanFalse(): void
+    {
+        $this->appConfig->expects($this->once())
+            ->method('setValueBool')
+            ->with('openregister', 'rbac.inherit_from_public_default', false);
+
+        $result = $this->handler->updateRbacSettingsOnly([
+            'enabled'                  => true,
+            'inheritFromPublicDefault' => 'false',
+        ]);
+
+        $this->assertFalse(
+            $result['rbac']['inheritFromPublicDefault'],
+            'String "false" must coerce to boolean false, not (bool) "false" === true.'
+        );
+    }
+
+    /**
+     * Test updateRbacSettingsOnly rejects garbage strings rather than silently
+     * coercing them to a permissive default. Garbage in the API payload should
+     * surface as an exception, not as a silent setting flip.
+     *
+     * @return void
+     */
+    public function testUpdateRbacSettingsOnlyRejectsGarbageInheritFromPublicDefault(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('inheritFromPublicDefault');
+
+        $this->handler->updateRbacSettingsOnly([
+            'enabled'                  => true,
+            'inheritFromPublicDefault' => 'maybe',
+        ]);
+    }
+
     // =========================================================================
     // getOrganisationSettingsOnly
     // =========================================================================

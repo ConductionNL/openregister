@@ -570,9 +570,19 @@ first explicitly-set value is found:
 1. The schema's own `authorization.inheritFromPublic`.
 2. The parent register's `authorization.inheritFromPublic`.
 3. The tenant-wide IAppConfig key `openregister.rbac.inherit_from_public_default`
-   (read via `IAppConfig::getValueBool`, accepts `true`/`false`/`"true"`/
-   `"false"`/`"1"`/`"0"`/`1`/`0`).
+   (read via `IAppConfig::getValueBool`, which accepts `true`/`false`/`"true"`/
+   `"false"`/`"1"`/`"0"`/`1`/`0` at the storage layer).
 4. Hard-coded `true` (preserves pre-change behaviour).
+
+**Strict-boolean check at schema and register levels.** Steps 1 and 2 require
+the stored value to be a literal `true` or `false` — anything else (string
+forms, integers, mistyped JSON) is rejected as "unset" and the cascade
+falls through, with a warning logged. This closes a foot-gun where a seed
+write or migration that bypasses the schema validator could store the
+string `"false"` and silently invert the gate (`(bool) "false"` is `true`).
+Always store real JSON booleans on schema/register `authorization` blocks.
+The IAppConfig layer keeps its broader tolerance because the `occ` /
+operator surface intentionally accepts those forms.
 
 `null` at any level is treated as "unset" — the cascade falls through to
 the next level. The first explicit boolean wins; a schema that sets the

@@ -42,7 +42,7 @@
 
 ## 6. Cross-app integration check
 
-- [x] 6.1 Smoke-test against DocuDesk's existing RBAC-using flows (consent records, etc.). Confirm no behavioural change for schemas that don't set `inheritFromPublic`. Verified via `/api/settings/rbac` round-trip with default flag — schema 1 (Publication Consent) authorization stays null, no behaviour change.
+- [ ] 6.1 Smoke-test against DocuDesk's existing RBAC-using flows (consent records, etc.). Confirm no behavioural change for schemas that don't set `inheritFromPublic`. Persistence round-trip verified (settings endpoint preserves authorization-null on Publication Consent), but a behavioural smoke against DocuDesk's actual consent-fetch endpoint is deferred — to be exercised before promoting from `beta` to `main` or by the QA persona pass after merge.
 - [x] 6.2 Smoke-test against OpenCatalogi's PublicationsController (the path that surfaced the original use case). Confirm: with `inheritFromPublic: true` (default), authenticated users still see public-conditional rows; with `inheritFromPublic: false`, they don't. Verified via four-state matrix on /api/objects against the Cascade-Test register — see verify report.
 - [ ] 6.3 Smoke-test against Softwarecatalog or any other consuming app. Default behaviour unchanged.
 

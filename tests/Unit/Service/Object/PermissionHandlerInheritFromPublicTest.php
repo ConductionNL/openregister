@@ -374,6 +374,81 @@ class PermissionHandlerInheritFromPublicTest extends TestCase
 
     }//end testCachingReturnsSameResultOnRepeatedCalls()
 
+
+    /**
+     * String "false" at schema level is treated as "unset" (cascade falls through),
+     * NOT as boolean true via PHP's loose `(bool) "false" === true` cast. Closes a
+     * silent-gate-inversion foot-gun for direct mapper writes / migrations / seed
+     * data that bypass the schema validator.
+     *
+     * @return void
+     */
+    public function testCascadeStringFalseAtSchemaIsTreatedAsUnsetAndFallsThroughToRegister(): void
+    {
+        $schema   = $this->createSchema(id: 1, authorization: ['inheritFromPublic' => 'false']);
+        $register = $this->createRegister(id: 10, authorization: ['inheritFromPublic' => false]);
+        $this->wireRegister(registerId: 10, register: $register);
+
+        $result = $this->handler->resolveInheritFromPublic(schema: $schema);
+
+        $this->assertFalse(
+            condition: $result,
+            message: 'String "false" must be rejected as non-boolean and the cascade should reach the register-level explicit false.'
+        );
+
+    }//end testCascadeStringFalseAtSchemaIsTreatedAsUnsetAndFallsThroughToRegister()
+
+
+    /**
+     * String "false" at register level is also treated as unset — the cascade
+     * falls through to the IAppConfig tenant default rather than `(bool) "false"`
+     * silently turning into `true`.
+     *
+     * @return void
+     */
+    public function testCascadeStringFalseAtRegisterIsTreatedAsUnsetAndFallsThroughToTenant(): void
+    {
+        $schema   = $this->createSchema(id: 1, authorization: null);
+        $register = $this->createRegister(id: 10, authorization: ['inheritFromPublic' => 'false']);
+        $this->wireRegister(registerId: 10, register: $register);
+        $this->appConfig
+            ->method('getValueBool')
+            ->with('openregister', 'rbac.inherit_from_public_default', true)
+            ->willReturn(false);
+
+        $result = $this->handler->resolveInheritFromPublic(schema: $schema);
+
+        $this->assertFalse(
+            condition: $result,
+            message: 'Register-level string "false" must be rejected; the cascade should reach the tenant default.'
+        );
+
+    }//end testCascadeStringFalseAtRegisterIsTreatedAsUnsetAndFallsThroughToTenant()
+
+
+    /**
+     * Integer 0 at schema level is also non-boolean and treated as unset —
+     * pins the strict-equality contract beyond the most-feared "false" string.
+     *
+     * @return void
+     */
+    public function testCascadeIntegerZeroAtSchemaIsTreatedAsUnset(): void
+    {
+        $schema = $this->createSchema(id: 1, authorization: ['inheritFromPublic' => 0]);
+        $this->appConfig
+            ->method('getValueBool')
+            ->with('openregister', 'rbac.inherit_from_public_default', true)
+            ->willReturn(true);
+
+        $result = $this->handler->resolveInheritFromPublic(schema: $schema);
+
+        $this->assertTrue(
+            condition: $result,
+            message: 'Integer 0 must NOT match the strict boolean check; cascade should fall through to the tenant default.'
+        );
+
+    }//end testCascadeIntegerZeroAtSchemaIsTreatedAsUnset()
+
     // ---------- Four-state matrix on hasPermission ----------
 
     /**
