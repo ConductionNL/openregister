@@ -29,8 +29,11 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Class NotificationHistoryController.
@@ -49,7 +52,9 @@ class NotificationHistoryController extends Controller
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly NotificationHistoryMapper $mapper
+        private readonly NotificationHistoryMapper $mapper,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -70,9 +75,28 @@ class NotificationHistoryController extends Controller
      */
     public function index(): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required'],
+                statusCode: Http::STATUS_UNAUTHORIZED
+            );
+        }
+
         $filters = $this->extractFilters();
-        $limit   = $this->resolveLimit();
-        $offset  = $this->resolveOffset();
+
+        // SECURITY: non-admins may only read their OWN history. Force the
+        // `recipient` filter to the current UID regardless of any value
+        // the caller supplied — without this, any authed Bob could query
+        // `?recipient=alice` and read Alice's full notification stream
+        // (recipient list, channels, ruleId, dispatch timestamps), a
+        // privacy + recon vector across tenants.
+        if ($this->groupManager->isAdmin($user->getUID()) === false) {
+            $filters['recipient'] = $user->getUID();
+        }
+
+        $limit  = $this->resolveLimit();
+        $offset = $this->resolveOffset();
 
         $results = $this->mapper->findFiltered(filters: $filters, limit: $limit, offset: $offset);
         $total   = $this->mapper->countFiltered(filters: $filters);
