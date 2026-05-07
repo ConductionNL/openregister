@@ -14,6 +14,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
  */
 
 declare(strict_types=1);
@@ -254,6 +256,8 @@ class TaskService
      * @return array Array of task arrays in JSON-friendly format
      *
      * @throws Exception If no user is logged in or no calendar found
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function getTasksForObject(string $objectUuid): array
     {
@@ -320,6 +324,8 @@ class TaskService
      * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
      *
      * @throws Exception If no user is logged in or no calendar found
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function createTask(
         int $registerId,

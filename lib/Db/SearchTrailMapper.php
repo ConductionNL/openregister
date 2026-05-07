@@ -32,6 +32,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -61,14 +62,16 @@ class SearchTrailMapper extends QBMapper
     /**
      * Constructor for SearchTrailMapper
      *
-     * @param IDBConnection $db          Database connection
-     * @param IRequest      $request     Request object for getting request data
-     * @param IUserSession  $userSession User session for getting user information
+     * @param IDBConnection   $db          Database connection
+     * @param IRequest        $request     Request object for getting request data
+     * @param IUserSession    $userSession User session for getting user information
+     * @param LoggerInterface $logger      Logger
      */
     public function __construct(
         IDBConnection $db,
         private readonly IRequest $request,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly LoggerInterface $logger
     ) {
         parent::__construct(db: $db, tableName: 'openregister_search_trails', entityClass: SearchTrail::class);
     }//end __construct()
@@ -770,7 +773,7 @@ class SearchTrailMapper extends QBMapper
             return $result > 0;
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
-            \OC::$server->getLogger()->error(
+            $this->logger->error(
                 message: '[SearchTrailMapper] Failed to clear expired search trail logs: '.$e->getMessage(),
                 context: [
                     'file'      => __FILE__,
@@ -1033,7 +1036,7 @@ class SearchTrailMapper extends QBMapper
             return $qb->executeStatement();
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
-            \OC::$server->getLogger()->error(
+            $this->logger->error(
                 message: '[SearchTrailMapper] Failed to set expiry dates for search trails: '.$e->getMessage(),
                 context: [
                     'file'      => __FILE__,

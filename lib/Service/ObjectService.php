@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -52,6 +53,7 @@ use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -225,6 +227,7 @@ class ObjectService
      * @param LoggerInterface                $logger              Logger for performance monitoring.
      * @param CacheHandler                   $cacheHandler        Service for entity and query caching.
      * @param SettingsService                $settingsService     Service for settings operations.
+     * @param DateTimeNormalizer             $dateTimeNormalizer  Normaliser for user-supplied datetime input.
      * @param IAppContainer                  $container           Application container.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
@@ -277,6 +280,7 @@ class ObjectService
         private readonly LoggerInterface $logger,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
+        private readonly DateTimeNormalizer $dateTimeNormalizer,
         private readonly IAppContainer $container
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
@@ -1369,20 +1373,36 @@ class ObjectService
             }
 
             $format = $propertyDef['format'] ?? null;
-            if ($format !== 'date') {
+            if ($format !== 'date' && $format !== 'date-time') {
                 continue;
             }
 
-            // If the value is already a valid date (Y-m-d), skip.
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $object[$propertyName]) === 1) {
+            // Empty / whitespace-only strings normalise to null instead of silently
+            // becoming the current datetime via PHP's "new DateTime('')" footgun.
+            if (trim($object[$propertyName]) === '') {
+                $object[$propertyName] = null;
                 continue;
             }
 
-            // Try to parse as datetime and extract just the date part.
-            try {
-                $object[$propertyName] = (new DateTime($object[$propertyName]))->format('Y-m-d');
-            } catch (\Exception $e) {
-                // Leave the original value; validation will catch invalid formats.
+            if ($format === 'date') {
+                // If already a valid date (Y-m-d), skip.
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $object[$propertyName]) === 1) {
+                    continue;
+                }
+
+                $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
+                if ($parsed !== null) {
+                    $object[$propertyName] = $parsed->format('Y-m-d');
+                }
+
+                continue;
+            }
+
+            // For date-time: accept valid input; invalid/empty input → null.
+            // Leave otherwise-valid strings untouched so downstream validation runs.
+            $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
+            if ($parsed === null) {
+                $object[$propertyName] = null;
             }
         }//end foreach
 
@@ -1950,6 +1970,31 @@ class ObjectService
             $result['@self']['rbac']    = $_rbac;
             $result['@self']['multi']   = $_multitenancy;
             $result['@self']['deleted'] = $deleted;
+
+            // Per the files-render-extension capability, every list row MUST carry
+            // @self.files. The SOLR/index path does not route rows through renderEntities,
+            // so attach the lightweight ID list via a single batched FileMapper lookup.
+            // Note: the SOLR path does not currently support _extend[]=@self.files for
+            // full metadata; consumers needing full metadata should query the DB path.
+            if (isset($result['results']) === true && is_array($result['results']) === true) {
+                $this->renderHandler->attachLightweightFilesToRows(rows: $result['results']);
+            }
+
+            // Surface a machine-readable signal when the consumer asked for an
+            // extend value the SOLR path cannot honour, so they can detect the
+            // shape mismatch programmatically instead of diffing the response.
+            // Today this only applies to @self.files (and its shorthand _files).
+            $extendForSignal = $query['_extend'] ?? [];
+            if (is_string($extendForSignal) === true) {
+                $extendForSignal = array_filter(array_map('trim', explode(',', $extendForSignal)));
+            }
+
+            if (is_array($extendForSignal) === true
+                && (in_array('@self.files', $extendForSignal, true) === true
+                || in_array('_files', $extendForSignal, true) === true)
+            ) {
+                $result['@self']['extend_unsupported'] = ['@self.files'];
+            }
 
             // Add extended objects only if _extend is requested.
             // Normalize _extend to array (handles comma-separated string from URL).
@@ -3179,4 +3224,63 @@ class ObjectService
             offset: $offset
         );
     }//end validateAndSaveObjectsBySchema()
+
+    /**
+     * Reset the current register, schema, and object context.
+     *
+     * Called by external apps (e.g. OpenConnector) before performing a fresh
+     * lookup to prevent stale context from a previous request bleeding through.
+     *
+     * @return void
+     */
+    public function clearCurrents(): void
+    {
+        $this->currentRegister = null;
+        $this->currentSchema   = null;
+        $this->currentObject   = null;
+    }//end clearCurrents()
+
+    /**
+     * Return the internal object-validation handler.
+     *
+     * Exposed so adapters and external services can run validation without
+     * depending on ObjectService internals directly.
+     *
+     * @return ValidateObject
+     */
+    public function getValidateHandler(): ValidateObject
+    {
+        return $this->validateHandler;
+    }//end getValidateHandler()
+
+    /**
+     * Return a mapper-like adapter scoped to the given register and schema.
+     *
+     * Allows external apps to interact with OpenRegister objects through a
+     * familiar mapper contract without depending on ObjectService internals.
+     *
+     * When $register is a non-numeric string (e.g. the type hint 'objectEntity'
+     * passed by OpenConnector), it is treated as an unscoped request and both
+     * register and schema are set to null so the adapter searches globally.
+     *
+     * @param int|string|null $register Register ID, or a type-hint string that is ignored.
+     * @param int|string|null $schema   Schema ID.
+     *
+     * @return ObjectServiceMapperAdapter
+     */
+    public function getMapper(int|string|null $register=null, int|string|null $schema=null): ObjectServiceMapperAdapter
+    {
+        // A non-numeric string (e.g. 'objectEntity') is a type-hint from the caller, not a register ID.
+        // Return an unconstrained adapter so find() searches across all registers/schemas.
+        if (is_string($register) === true && is_numeric($register) === false) {
+            $register = null;
+            $schema   = null;
+        }
+
+        return new ObjectServiceMapperAdapter(
+            objectService: $this,
+            register: $register,
+            schema: $schema
+        );
+    }//end getMapper()
 }//end class

@@ -15,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -67,6 +69,8 @@ class SearchController extends Controller
      * @param IndexService $indexService The index search service instance
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function __construct(
         string $appName,
@@ -96,6 +100,8 @@ class SearchController extends Controller
      * @psalm-return JSONResponse<200, array{results: array<never, array{id: mixed|null, name: 'Unknown'|mixed,
      *                                type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|mixed,
      *                                facets: array<never, never>|mixed}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function search(): JSONResponse
     {
@@ -173,6 +179,8 @@ class SearchController extends Controller
      * @return string The processed search query ready for the SOLR search service
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
      */
     private function processSearchQuery(string $query): string
     {

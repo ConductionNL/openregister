@@ -1,4 +1,7 @@
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-90
+ */
 import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { navigationStore, objectStore, registerStore, schemaStore } from '../../store/store.js'
@@ -41,6 +44,9 @@ export default {
 		normalizedObjects() {
 			return normalizeObjects(objectStore.searchCollection)
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-90
+		 */
 		hasSelectedRegisters() {
 			return objectStore.searchParams.register != null
 		},
@@ -66,8 +72,23 @@ export default {
 		normalizedSchema() {
 			const schema = objectStore.searchSchema
 			if (!schema || !schema.properties) return schema
+			// Merge inherited properties from allOf parent schemas so extended schemas
+			// expose the full property set (own + inherited) for columns and form fields.
+			const allOf = schema.allOf || []
+			const inheritedProperties = {}
+			for (const ref of allOf) {
+				const schemaId = typeof ref === 'object' ? ref.id : ref
+				const parentSchema = schemaStore.schemaList.find(s =>
+					s.id === schemaId || s.uuid === schemaId || String(s.id) === String(schemaId),
+				)
+				if (parentSchema?.properties) {
+					Object.assign(inheritedProperties, parentSchema.properties)
+				}
+			}
+			// Own properties take precedence over inherited; normalize order values
+			const rawProperties = { ...inheritedProperties, ...schema.properties }
 			const properties = {}
-			for (const [key, prop] of Object.entries(schema.properties)) {
+			for (const [key, prop] of Object.entries(rawProperties)) {
 				properties[key] = prop.order !== undefined
 					? { ...prop, order: Number(prop.order) }
 					: prop

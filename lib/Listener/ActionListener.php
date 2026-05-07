@@ -46,6 +46,8 @@ class ActionListener implements IEventListener
      * @param ActionMapper    $actionMapper   Action mapper for finding matching actions
      * @param ActionExecutor  $actionExecutor Action executor for running actions
      * @param LoggerInterface $logger         Logger
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
      */
     public function __construct(
         private readonly ActionMapper $actionMapper,
@@ -60,6 +62,8 @@ class ActionListener implements IEventListener
      * @param Event $event The lifecycle event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
      */
     public function handle(Event $event): void
     {
@@ -131,6 +135,8 @@ class ActionListener implements IEventListener
      * @param Event $event The event
      *
      * @return string Short class name (e.g., 'ObjectCreatingEvent')
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
      */
     private function getEventTypeName(Event $event): string
     {
@@ -149,6 +155,8 @@ class ActionListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
      */
     private function extractPayload(Event $event): array
     {
@@ -226,6 +234,8 @@ class ActionListener implements IEventListener
      * @param array $payload Event payload
      *
      * @return array Filtered actions that match their filter conditions
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
      */
     private function applyFilterConditions(array $actions, array $payload): array
     {
@@ -264,6 +274,8 @@ class ActionListener implements IEventListener
      * @param string $key  Dot-notation key
      *
      * @return mixed The value or null
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-19
      */
     private function getNestedValue(array $data, string $key): mixed
     {

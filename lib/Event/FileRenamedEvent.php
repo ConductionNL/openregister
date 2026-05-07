@@ -43,6 +43,8 @@ class FileRenamedEvent extends Event
      * Get the object UUID.
      *
      * @return string The object UUID.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getObjectUuid(): string
     {
@@ -53,6 +55,8 @@ class FileRenamedEvent extends Event
      * Get the file ID.
      *
      * @return int The file ID.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getFileId(): int
     {
@@ -63,6 +67,8 @@ class FileRenamedEvent extends Event
      * Get additional event data.
      *
      * @return array The event data.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getData(): array
     {

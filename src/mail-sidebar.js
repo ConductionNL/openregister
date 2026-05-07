@@ -5,6 +5,8 @@
  * It creates a container element and mounts the Vue sidebar component.
  *
  * @package OpenRegister
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-51
  */
 
 import Vue from 'vue'

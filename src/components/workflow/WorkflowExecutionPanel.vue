@@ -48,6 +48,9 @@
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+ */
 import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -73,6 +76,9 @@ export default {
 		this.fetchExecutions()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+		 */
 		async fetchExecutions() {
 			this.loading = true
 			try {
@@ -88,14 +94,23 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+		 */
 		formatDate(dateStr) {
 			if (!dateStr) return '-'
 			return new Date(dateStr).toLocaleString()
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+		 */
 		prevPage() {
 			this.offset = Math.max(0, this.offset - this.limit)
 			this.fetchExecutions()
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
+		 */
 		nextPage() {
 			this.offset += this.limit
 			this.fetchExecutions()

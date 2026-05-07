@@ -77,6 +77,8 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface
      * Get the object entity being created
      *
      * @return ObjectEntity The object entity that is being created
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getObject(): ObjectEntity
     {
@@ -87,6 +89,8 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface
      * Check if propagation has been stopped by a hook
      *
      * @return bool True if propagation is stopped
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     public function isPropagationStopped(): bool
     {
@@ -97,6 +101,8 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface
      * Stop event propagation (used by hooks to reject creation)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     public function stopPropagation(): void
     {
@@ -109,6 +115,8 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface
      * @param array<string, mixed> $errors The error details
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     public function setErrors(array $errors): void
     {
@@ -119,6 +127,8 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface
      * Get errors from hooks
      *
      * @return array<string, mixed> The error details
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     public function getErrors(): array
     {
@@ -131,6 +141,8 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface
      * @param array<string, mixed> $data The modified data
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     public function setModifiedData(array $data): void
     {
@@ -141,6 +153,8 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface
      * Get modified data from hooks
      *
      * @return array<string, mixed> The modified data
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     public function getModifiedData(): array
     {

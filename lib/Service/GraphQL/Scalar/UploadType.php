@@ -53,6 +53,8 @@ class UploadType extends ScalarType
      * @param mixed $value The value to serialize
      *
      * @return mixed The serialized value
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function serialize(mixed $value): mixed
     {
@@ -69,6 +71,8 @@ class UploadType extends ScalarType
      * @return mixed The parsed value
      *
      * @throws Error If the value cannot be represented
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function parseValue(mixed $value): mixed
     {
@@ -92,6 +96,8 @@ class UploadType extends ScalarType
      * @return mixed The parsed value
      *
      * @throws Error Always, uploads must use multipart form
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables=null): mixed
     {

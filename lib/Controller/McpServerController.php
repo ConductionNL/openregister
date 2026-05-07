@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-54
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -119,6 +121,8 @@ class McpServerController extends Controller
      * @CORS
      *
      * @return Response JSON-RPC response or HTTP 202 for notifications
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-54
      */
     public function handle(): Response
     {

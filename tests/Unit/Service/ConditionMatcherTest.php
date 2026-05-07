@@ -315,4 +315,37 @@ class ConditionMatcherTest extends TestCase
 
         $this->assertTrue($result);
     }
+
+    // --- Resolved relation unwrapping ---
+
+    public function testObjectMatchesResolvedRelationViaIdKey(): void
+    {
+        // When a property has been expanded to its full related object,
+        // the 'id' key must be unwrapped so rules can compare against the scalar id.
+        $object = ['parent' => ['id' => 'uuid-123', 'name' => 'Parent']];
+        $match  = ['parent' => 'uuid-123'];
+
+        $this->assertTrue($this->matcher->objectMatchesConditions($object, $match));
+    }
+
+    public function testObjectMatchesResolvedRelationMismatch(): void
+    {
+        $object = ['parent' => ['id' => 'uuid-123', 'name' => 'Parent']];
+        $match  = ['parent' => 'uuid-456'];
+
+        $this->assertFalse($this->matcher->objectMatchesConditions($object, $match));
+    }
+
+    public function testObjectMatchesPlainArrayValueWithoutIdKeyStaysArray(): void
+    {
+        // Arrays without an 'id' key are NOT resolved relations — they stay as-is.
+        // The comparison falls into the "null/array" branch below and returns true
+        // (no null mismatch), which mirrors the pre-unification behaviour.
+        $object = ['tags' => ['tag-1', 'tag-2']];
+        $match  = ['tags' => 'tag-1'];
+
+        // This is denied because an array-valued property does NOT equal a scalar
+        // under strict comparison — the test documents the semantics explicitly.
+        $this->assertFalse($this->matcher->objectMatchesConditions($object, $match));
+    }
 }

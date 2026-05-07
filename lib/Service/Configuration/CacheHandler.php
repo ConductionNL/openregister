@@ -106,6 +106,8 @@ class CacheHandler
      * to support multi-tenancy.
      *
      * @return Configuration[] Array of configuration entities for active organisation
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-31
      */
     public function getConfigurationsForActiveOrganisation(): array
     {

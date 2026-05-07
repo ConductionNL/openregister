@@ -166,10 +166,13 @@ class OperatorEvaluatorTest extends TestCase
 
     // ── Unknown operator ──
 
-    public function testUnknownOperatorReturnsTrueAndLogsWarning(): void
+    public function testUnknownOperatorReturnsFalseAndLogsWarning(): void
     {
+        // Fail-closed: an unknown operator MUST reject the match so malformed
+        // rules cannot grant unintended access. This matches the SQL path,
+        // which drops unknown-operator conditions and cannot satisfy the rule.
         $this->logger->expects($this->once())->method('warning');
-        $this->assertTrue($this->evaluator->valueMatchesOperator(5, ['$unknown' => 1]));
+        $this->assertFalse($this->evaluator->valueMatchesOperator(5, ['$unknown' => 1]));
     }
 
     // ── Empty operators ──
@@ -177,5 +180,92 @@ class OperatorEvaluatorTest extends TestCase
     public function testEmptyOperatorsReturnsTrue(): void
     {
         $this->assertTrue($this->evaluator->valueMatchesOperator('anything', []));
+    }
+
+    // ── Null-value semantics: SQL three-valued logic ──
+    //
+    // These tests encode SQL's rule that `NULL <op> X` evaluates to NULL (UNKNOWN),
+    // which WHERE treats as false → the row is filtered out. The PHP evaluator
+    // MUST match so the list and find endpoints produce identical verdicts.
+    // Exceptions: $exists (explicit null check) and $eq with a null operand
+    // (kept for backward-compat with "match missing field" rules).
+
+    public function testGtAgainstNullValueReturnsFalse(): void
+    {
+        // SQL: NULL > 5 → NULL → filter out
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$gt' => 5]));
+    }
+
+    public function testGteAgainstNullValueReturnsFalse(): void
+    {
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$gte' => 5]));
+    }
+
+    public function testLtAgainstNullValueReturnsFalse(): void
+    {
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$lt' => 5]));
+    }
+
+    public function testLteAgainstNullValueReturnsFalse(): void
+    {
+        // The user-reported bug: publishedAt=null with $lte $now was returning true.
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$lte' => 5]));
+    }
+
+    public function testLteAgainstNullValueReturnsFalseForStringOperand(): void
+    {
+        // The exact reported shape: null publishedAt vs $now-resolved datetime string.
+        $this->assertFalse(
+            $this->evaluator->valueMatchesOperator(null, ['$lte' => '2026-04-24 14:00:00'])
+        );
+    }
+
+    public function testComparisonOperatorsAgainstNullOperandReturnFalse(): void
+    {
+        // Symmetric: if the operand is null, the comparison is undefined.
+        $this->assertFalse($this->evaluator->valueMatchesOperator(5, ['$gt' => null]));
+        $this->assertFalse($this->evaluator->valueMatchesOperator(5, ['$lte' => null]));
+    }
+
+    public function testInAgainstNullValueReturnsFalse(): void
+    {
+        // SQL: NULL IN ('a', 'b') → NULL → filter out
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$in' => ['a', 'b']]));
+    }
+
+    public function testInAgainstNullValueWithNullInOperandArrayStillReturnsFalse(): void
+    {
+        // Regression: PHP's in_array(null, [null, 'x'], true) returns true, but
+        // SQL NULL IN (NULL, 'x') evaluates to NULL → filter out. The explicit
+        // null guard on operatorIn keeps the PHP verdict aligned.
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$in' => [null, 'x']]));
+    }
+
+    public function testNinAgainstNullValueReturnsFalse(): void
+    {
+        // SQL: NULL NOT IN ('a', 'b') → NULL → filter out. Conservative: deny.
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$nin' => ['a', 'b']]));
+    }
+
+    public function testNeAgainstNullValueReturnsFalse(): void
+    {
+        // SQL: NULL != 'x' → NULL → filter out.
+        // Previously PHP returned true (null !== 'x'); now aligned with SQL.
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$ne' => 'x']));
+    }
+
+    public function testEqWithNullOperandAndNullValueStillMatchesForBackwardCompat(): void
+    {
+        // `$eq: null` is the only "match null" escape hatch in the grammar besides
+        // $exists:false. Preserved for backward-compat even though SQL would filter
+        // this out; rule authors who want strict-SQL behaviour should use $exists:false.
+        $this->assertTrue($this->evaluator->valueMatchesOperator(null, ['$eq' => null]));
+    }
+
+    public function testExistsStillHonoursExplicitNullCheck(): void
+    {
+        // Sanity: $exists is the canonical null-aware operator — unchanged.
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$exists' => true]));
+        $this->assertTrue($this->evaluator->valueMatchesOperator(null, ['$exists' => false]));
     }
 }

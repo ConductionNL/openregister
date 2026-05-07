@@ -16,6 +16,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
  */
 
 declare(strict_types=1);
@@ -128,6 +130,9 @@ class RegisterCalendarProvider implements ICalendarProvider
      * @param array  $calendarUris Optional URI filter to return only specific calendars
      *
      * @return array Array of ICalendar instances
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
      */
     public function getCalendars(string $principalUri, array $calendarUris=[]): array
     {
@@ -182,6 +187,8 @@ class RegisterCalendarProvider implements ICalendarProvider
      * Results are cached within the request to avoid repeated DB queries.
      *
      * @return array Array of ['schema' => Schema, 'config' => array] entries
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     private function getCalendarEnabledSchemas(): array
     {
@@ -223,6 +230,8 @@ class RegisterCalendarProvider implements ICalendarProvider
      * @param string $principalUri The principal URI
      *
      * @return bool True if the principal is a valid user
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     private function isValidUserPrincipal(string $principalUri): bool
     {

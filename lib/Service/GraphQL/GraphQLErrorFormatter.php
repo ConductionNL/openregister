@@ -65,6 +65,8 @@ class GraphQLErrorFormatter
      * @param array<string> $path  The field path
      *
      * @return Error The GraphQL error
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
      */
     public static function fieldForbidden(string $field, array $path): Error
     {
@@ -87,6 +89,8 @@ class GraphQLErrorFormatter
      * @param string $id   The object ID
      *
      * @return Error The GraphQL error
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
      */
     public static function notFound(string $type, string $id): Error
     {

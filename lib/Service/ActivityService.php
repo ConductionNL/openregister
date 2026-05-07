@@ -42,6 +42,8 @@ class ActivityService
      * @param IUserSession    $userSession     The user session.
      * @param IURLGenerator   $urlGenerator    The URL generator.
      * @param LoggerInterface $logger          The logger.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private IManager $activityManager,
@@ -57,6 +59,8 @@ class ActivityService
      * @param ObjectEntity $object The created object entity.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function publishObjectCreated(ObjectEntity $object): void
     {
@@ -84,6 +88,8 @@ class ActivityService
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $oldObject reserved for future diff support
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function publishObjectUpdated(ObjectEntity $newObject, ?ObjectEntity $oldObject=null): void
     {
@@ -108,6 +114,8 @@ class ActivityService
      * @param ObjectEntity $object The deleted object entity.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function publishObjectDeleted(ObjectEntity $object): void
     {
@@ -131,6 +139,8 @@ class ActivityService
      * @param Register $register The created register.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function publishRegisterCreated(Register $register): void
     {
@@ -155,6 +165,8 @@ class ActivityService
      * @param Register $register The updated register.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function publishRegisterUpdated(Register $register): void
     {
@@ -179,6 +191,8 @@ class ActivityService
      * @param Register $register The deleted register.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function publishRegisterDeleted(Register $register): void
     {
@@ -202,6 +216,8 @@ class ActivityService
      * @param Schema $schema The created schema.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function publishSchemaCreated(Schema $schema): void
     {
@@ -226,6 +242,8 @@ class ActivityService
      * @param Schema $schema The updated schema.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function publishSchemaUpdated(Schema $schema): void
     {
@@ -250,6 +268,8 @@ class ActivityService
      * @param Schema $schema The deleted schema.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function publishSchemaDeleted(Schema $schema): void
     {
@@ -273,6 +293,8 @@ class ActivityService
      * @param ObjectEntity $object The object entity.
      *
      * @return string The absolute URL to the object.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function buildObjectLink(ObjectEntity $object): string
     {
@@ -290,6 +312,8 @@ class ActivityService
      * @param Register $register The register entity.
      *
      * @return string The absolute URL to the register.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function buildRegisterLink(Register $register): string
     {
@@ -304,6 +328,8 @@ class ActivityService
      * @param Schema $schema The schema entity.
      *
      * @return string The absolute URL to the schema.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function buildSchemaLink(Schema $schema): string
     {
@@ -328,6 +354,8 @@ class ActivityService
      * @param ?string $ownerUserId The entity owner user ID for dual-notification.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function publish(
         string $subject,
@@ -414,6 +442,8 @@ class ActivityService
      * @param string $affectedUser The affected user ID.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function publishEvent(
         string $subject,
@@ -449,6 +479,8 @@ class ActivityService
      * @param string|null $fallback The fallback title candidate.
      *
      * @return string The resolved title.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function resolveTitle(?string $primary, ?string $fallback): string
     {

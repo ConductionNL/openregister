@@ -15,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
  */
 
 declare(strict_types=1);
@@ -113,6 +115,8 @@ class ObjectsProvider implements IFilteringProvider
      * @param RegisterMapper          $registerMapper   Register mapper for resolving register names
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function __construct(
         IL10N $l10n,
@@ -138,6 +142,8 @@ class ObjectsProvider implements IFilteringProvider
      * @return string Unique identifier for the search provider
      *
      * @psalm-return 'openregister_objects'
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function getId(): string
     {
@@ -148,6 +154,8 @@ class ObjectsProvider implements IFilteringProvider
      * Returns the human-readable name for this search provider
      *
      * @return string Display name for the search provider
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function getName(): string
     {
@@ -167,6 +175,8 @@ class ObjectsProvider implements IFilteringProvider
      * @psalm-return     10
      * @psalm-suppress   UnusedParam Parameters required by interface but not used
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function getOrder(string $route, array $routeParameters): ?int
     {
@@ -182,6 +192,8 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema'}
      * @phpstan-return array<string>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function getSupportedFilters(): array
     {
@@ -204,6 +216,8 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @psalm-return   array<never, never>
      * @phpstan-return array<string>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function getAlternateIds(): array
     {
@@ -217,6 +231,8 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @psalm-return   list{FilterDefinition, FilterDefinition}
      * @phpstan-return list<\OCP\Search\FilterDefinition>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function getCustomFilters(): array
     {
@@ -246,6 +262,8 @@ class ObjectsProvider implements IFilteringProvider
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Search filter building requires many conditional checks
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * Search requires handling many filters, building queries, and formatting results
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {
@@ -431,6 +449,8 @@ class ObjectsProvider implements IFilteringProvider
      * @param int $schemaId The schema ID
      *
      * @return string The schema title or the ID as fallback
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function resolveSchemaName(int $schemaId): string
     {
@@ -454,6 +474,8 @@ class ObjectsProvider implements IFilteringProvider
      * @param int $registerId The register ID
      *
      * @return string The register title or the ID as fallback
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function resolveRegisterName(int $registerId): string
     {
@@ -480,6 +502,8 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Description building requires multiple optional field checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Description building has multiple optional data paths
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function buildDescription(array $object): string
     {

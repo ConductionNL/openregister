@@ -13,6 +13,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
  */
 
 declare(strict_types=1);
@@ -122,6 +124,8 @@ class TasksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function index(
         string $register,
@@ -161,6 +165,8 @@ class TasksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function create(
         string $register,
@@ -214,6 +220,8 @@ class TasksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function update(
         string $register,
@@ -274,6 +282,8 @@ class TasksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
      */
     public function destroy(
         string $register,

@@ -1411,75 +1411,12 @@ class ObjectHandlersIntegrationTest extends TestCase
         $this->assertTrue($result);
     }
 
-    /**
-     * Test evaluateMatchConditions all pass.
-     */
-    public function testEvaluateMatchConditionsAllPass(): void
-    {
-        $result = $this->permissionHandler->evaluateMatchConditions(
-            ['status' => 'published'],
-            ['status' => 'published', 'title' => 'test'],
-            null,
-            null
-        );
-        $this->assertTrue($result);
-    }
-
-    /**
-     * Test evaluateMatchConditions with failing condition.
-     */
-    public function testEvaluateMatchConditionsFails(): void
-    {
-        $result = $this->permissionHandler->evaluateMatchConditions(
-            ['status' => 'published'],
-            ['status' => 'draft'],
-            null,
-            null
-        );
-        $this->assertFalse($result);
-    }
-
-    /**
-     * Test evaluateMatchConditions with $organisation variable.
-     */
-    public function testEvaluateMatchConditionsOrganisationVariable(): void
-    {
-        $result = $this->permissionHandler->evaluateMatchConditions(
-            ['_organisation' => '$organisation'],
-            null,
-            'org-123',
-            'org-123'
-        );
-        $this->assertTrue($result);
-    }
-
-    /**
-     * Test evaluateMatchConditions with $organisation but no active org.
-     */
-    public function testEvaluateMatchConditionsNoActiveOrg(): void
-    {
-        $result = $this->permissionHandler->evaluateMatchConditions(
-            ['_organisation' => '$organisation'],
-            null,
-            'org-123',
-            null
-        );
-        $this->assertFalse($result);
-    }
-
-    /**
-     * Test evaluateMatchConditions with resolved relation (id key).
-     */
-    public function testEvaluateMatchConditionsResolvedRelation(): void
-    {
-        $result = $this->permissionHandler->evaluateMatchConditions(
-            ['parent' => 'uuid-123'],
-            ['parent' => ['id' => 'uuid-123', 'name' => 'Parent']],
-            null,
-            null
-        );
-        $this->assertTrue($result);
-    }
+    // Note: tests for evaluateMatchConditions were removed when that method was deleted
+    // in the `unify-rbac-condition-matching` change. Conditional match evaluation now
+    // goes through ConditionMatcher; see tests/Unit/Service/ConditionMatcherTest.php
+    // for operator/variable coverage, and
+    // tests/Unit/Service/Object/PermissionHandlerRbacTest.php for the delegation
+    // contract at the PermissionHandler boundary.
 
     /**
      * Test checkPermission throws on denied access.

@@ -16,6 +16,12 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-13
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-86
  */
 
 namespace OCA\OpenRegister\Service\Configuration;
@@ -263,6 +269,8 @@ class ImportHandler
      * @param ObjectService $objectService The object service instance.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setObjectService(ObjectService $objectService): void
     {
@@ -278,6 +286,8 @@ class ImportHandler
      * @param mixed $service The OpenConnector configuration service.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setOpenConnectorConfigurationService(mixed $service): void
     {
@@ -317,6 +327,8 @@ class ImportHandler
      * @param MagicMapper $magicMapper The magic mapper instance.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setMagicMapper(MagicMapper $magicMapper): void
     {
@@ -332,6 +344,8 @@ class ImportHandler
      * @param MagicMapper $objectMapper The object mapper instance.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setObjectMapper(MagicMapper $objectMapper): void
     {
@@ -347,6 +361,8 @@ class ImportHandler
      * @return array|null The decoded array or null if decoding fails.
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function decode(string $data, ?string $type): ?array
     {
@@ -383,6 +399,8 @@ class ImportHandler
      * @param mixed $data The data to convert.
      *
      * @return array The converted array data.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function ensureArrayStructure(mixed $data): array
     {
@@ -412,6 +430,8 @@ class ImportHandler
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
@@ -443,6 +463,8 @@ class ImportHandler
      * @throws GuzzleException
      *
      * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -475,6 +497,8 @@ class ImportHandler
      * @return JSONResponse|array The processed array or error response.
      *
      * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
@@ -509,6 +533,8 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force flag to override version checks
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register import has multiple exception and version checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Version checking and update/create paths add complexity
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
      */
     public function importRegister(
         array $data,
@@ -638,6 +664,8 @@ class ImportHandler
      * @throws Exception If import fails.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-13
      */
     private function importMapping(
         array $data,
@@ -718,6 +746,8 @@ class ImportHandler
      * @return never
      *
      * @throws Exception Always throws with duplicate register information.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
      */
     private function handleDuplicateRegisterError(string $slug, string $appId, string $version)
     {
@@ -792,6 +822,8 @@ class ImportHandler
      * @return never
      *
      * @throws Exception Always throws with duplicate schema information.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
      */
     private function handleDuplicateSchemaError(string $slug, string $appId, string $version)
     {
@@ -874,6 +906,8 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Schema import requires many conditional transformations
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema property processing has many type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema import involves complex property transformations
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
      */
     public function importSchema(
         array $data,
@@ -1223,6 +1257,8 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       JSON import requires many conditional transformations
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component import has many branching conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full configuration import involves many entity types
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
      */
     public function importFromJson(
         array $data,
@@ -1960,6 +1996,8 @@ class ImportHandler
      * @param array<string, mixed>             $result            Current import result array
      *
      * @return array<string, mixed> Updated result array
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-86
      */
     private function processWorkflowHookWiring(
         array $workflows,
@@ -2086,6 +2124,8 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       App import requires many conditional transformations
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration lookup and metadata mapping has many branches
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) App import with entity tracking requires detailed logic
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -2411,6 +2451,8 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force flag to override version checks
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File path resolution has multiple fallback conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Path resolution and JSON parsing have multiple outcomes
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {

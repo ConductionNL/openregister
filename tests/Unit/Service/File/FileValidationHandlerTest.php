@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * FileValidationHandler Unit Tests
  *
  * @category Tests
@@ -17,10 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
-use OCP\Files\File;
-use OCP\Files\Folder;
 use OCP\Files\Node;
-use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -36,31 +33,40 @@ use Psr\Log\LoggerInterface;
  */
 class FileValidationHandlerTest extends TestCase
 {
-    /** @var FileValidationHandler */
+
+    /**
+     * @var FileValidationHandler
+     */
     private FileValidationHandler $handler;
 
-    /** @var FileMapper&MockObject */
+    /**
+     * @var FileMapper&MockObject
+     */
     private $fileMapper;
 
-    /** @var IUserSession&MockObject */
+    /**
+     * @var IUserSession&MockObject
+     */
     private $userSession;
 
-    /** @var LoggerInterface&MockObject */
+    /**
+     * @var LoggerInterface&MockObject
+     */
     private $logger;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->fileMapper = $this->createMock(FileMapper::class);
+        $this->fileMapper  = $this->createMock(FileMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->logger      = $this->createMock(LoggerInterface::class);
 
         $this->handler = new FileValidationHandler(
             $this->fileMapper,
             $this->userSession,
             $this->logger
         );
-    }
+    }//end setUp()
 
     // =========================================================================
     // blockExecutableFile - extension blocking
@@ -75,7 +81,7 @@ class FileValidationHandlerTest extends TestCase
         $this->expectExceptionMessage('executable file');
 
         $this->handler->blockExecutableFile($fileName, '');
-    }
+    }//end testBlockExecutableFileBlocksDangerousExtensions()
 
     /**
      * @return array<string, array{string}>
@@ -84,52 +90,52 @@ class FileValidationHandlerTest extends TestCase
     {
         return [
             // Windows executables.
-            'exe'     => ['malware.exe'],
-            'bat'     => ['script.bat'],
-            'cmd'     => ['script.cmd'],
-            'com'     => ['prog.com'],
-            'msi'     => ['installer.msi'],
-            'scr'     => ['screen.scr'],
-            'vbs'     => ['macro.vbs'],
-            'vbe'     => ['macro.vbe'],
-            'js'      => ['script.js'],
-            'jse'     => ['script.jse'],
-            'wsf'     => ['script.wsf'],
-            'wsh'     => ['script.wsh'],
-            'ps1'     => ['powershell.ps1'],
-            'dll'     => ['library.dll'],
+            'exe'      => ['malware.exe'],
+            'bat'      => ['script.bat'],
+            'cmd'      => ['script.cmd'],
+            'com'      => ['prog.com'],
+            'msi'      => ['installer.msi'],
+            'scr'      => ['screen.scr'],
+            'vbs'      => ['macro.vbs'],
+            'vbe'      => ['macro.vbe'],
+            'js'       => ['script.js'],
+            'jse'      => ['script.jse'],
+            'wsf'      => ['script.wsf'],
+            'wsh'      => ['script.wsh'],
+            'ps1'      => ['powershell.ps1'],
+            'dll'      => ['library.dll'],
             // Unix/Linux executables.
-            'sh'      => ['hack.sh'],
-            'bash'    => ['run.bash'],
-            'csh'     => ['run.csh'],
-            'ksh'     => ['run.ksh'],
-            'zsh'     => ['run.zsh'],
-            'run'     => ['installer.run'],
-            'bin'     => ['binary.bin'],
-            'app'     => ['program.app'],
-            'deb'     => ['package.deb'],
-            'rpm'     => ['package.rpm'],
+            'sh'       => ['hack.sh'],
+            'bash'     => ['run.bash'],
+            'csh'      => ['run.csh'],
+            'ksh'      => ['run.ksh'],
+            'zsh'      => ['run.zsh'],
+            'run'      => ['installer.run'],
+            'bin'      => ['binary.bin'],
+            'app'      => ['program.app'],
+            'deb'      => ['package.deb'],
+            'rpm'      => ['package.rpm'],
             // Scripts and code.
-            'php'     => ['shell.php'],
-            'phtml'   => ['page.phtml'],
-            'php3'    => ['old.php3'],
-            'php4'    => ['old.php4'],
-            'php5'    => ['old.php5'],
-            'phps'    => ['source.phps'],
-            'phar'    => ['archive.phar'],
-            'py'      => ['exploit.py'],
-            'pyc'     => ['compiled.pyc'],
-            'pyo'     => ['optimized.pyo'],
-            'pyw'     => ['window.pyw'],
-            'pl'      => ['script.pl'],
-            'pm'      => ['module.pm'],
-            'cgi'     => ['handler.cgi'],
-            'rb'      => ['script.rb'],
-            'rbw'     => ['script.rbw'],
-            'jar'     => ['app.jar'],
-            'war'     => ['webapp.war'],
-            'ear'     => ['enterprise.ear'],
-            'class'   => ['Main.class'],
+            'php'      => ['shell.php'],
+            'phtml'    => ['page.phtml'],
+            'php3'     => ['old.php3'],
+            'php4'     => ['old.php4'],
+            'php5'     => ['old.php5'],
+            'phps'     => ['source.phps'],
+            'phar'     => ['archive.phar'],
+            'py'       => ['exploit.py'],
+            'pyc'      => ['compiled.pyc'],
+            'pyo'      => ['optimized.pyo'],
+            'pyw'      => ['window.pyw'],
+            'pl'       => ['script.pl'],
+            'pm'       => ['module.pm'],
+            'cgi'      => ['handler.cgi'],
+            'rb'       => ['script.rb'],
+            'rbw'      => ['script.rbw'],
+            'jar'      => ['app.jar'],
+            'war'      => ['webapp.war'],
+            'ear'      => ['enterprise.ear'],
+            'class'    => ['Main.class'],
             // Containers and packages.
             'appimage' => ['app.appimage'],
             'snap'     => ['app.snap'],
@@ -147,7 +153,7 @@ class FileValidationHandlerTest extends TestCase
             'so'       => ['library.so'],
             'dylib'    => ['library.dylib'],
         ];
-    }
+    }//end dangerousExtensionsProvider()
 
     /**
      * @dataProvider safeExtensionsProvider
@@ -159,7 +165,7 @@ class FileValidationHandlerTest extends TestCase
 
         // If we get here, the assertion is that no exception was thrown.
         $this->assertTrue(true);
-    }
+    }//end testBlockExecutableFileAllowsSafeExtensions()
 
     /**
      * @return array<string, array{string}>
@@ -178,7 +184,7 @@ class FileValidationHandlerTest extends TestCase
             'xml'  => ['data.xml'],
             'zip'  => ['archive.zip'],
         ];
-    }
+    }//end safeExtensionsProvider()
 
     public function testBlockExecutableFileIsCaseInsensitive(): void
     {
@@ -186,7 +192,7 @@ class FileValidationHandlerTest extends TestCase
         $this->expectExceptionMessage('executable file');
 
         $this->handler->blockExecutableFile('malware.EXE', '');
-    }
+    }//end testBlockExecutableFileIsCaseInsensitive()
 
     public function testBlockExecutableFileLogsWarningOnBlock(): void
     {
@@ -198,20 +204,19 @@ class FileValidationHandlerTest extends TestCase
         } catch (Exception $e) {
             // Expected.
         }
-    }
+    }//end testBlockExecutableFileLogsWarningOnBlock()
 
     // =========================================================================
     // blockExecutableFile - combined extension + magic bytes
     // =========================================================================
-
     public function testBlockExecutableFileChecksContentAfterExtension(): void
     {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Windows executable');
 
         // Safe extension but dangerous content.
-        $this->handler->blockExecutableFile('innocent.pdf', 'MZ' . str_repeat("\0", 100));
-    }
+        $this->handler->blockExecutableFile('innocent.pdf', 'MZ'.str_repeat("\0", 100));
+    }//end testBlockExecutableFileChecksContentAfterExtension()
 
     public function testBlockExecutableFileEmptyContentAllowed(): void
     {
@@ -219,34 +224,33 @@ class FileValidationHandlerTest extends TestCase
         $this->handler->blockExecutableFile('document.pdf', '');
 
         $this->assertTrue(true);
-    }
+    }//end testBlockExecutableFileEmptyContentAllowed()
 
     public function testBlockExecutableFileSkipsMagicBytesForEmptyContent(): void
     {
         // Empty content should skip magic bytes check entirely.
         $this->handler->blockExecutableFile('file.txt', '');
         $this->assertTrue(true);
-    }
+    }//end testBlockExecutableFileSkipsMagicBytesForEmptyContent()
 
     // =========================================================================
     // detectExecutableMagicBytes - magic byte signatures
     // =========================================================================
-
     public function testDetectExecutableMagicBytesWindowsExe(): void
     {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Windows executable');
 
-        $this->handler->detectExecutableMagicBytes('MZ' . str_repeat("\0", 100), 'fake.pdf');
-    }
+        $this->handler->detectExecutableMagicBytes('MZ'.str_repeat("\0", 100), 'fake.pdf');
+    }//end testDetectExecutableMagicBytesWindowsExe()
 
     public function testDetectExecutableMagicBytesElfExecutable(): void
     {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Linux/Unix executable');
 
-        $this->handler->detectExecutableMagicBytes("\x7FELF" . str_repeat("\0", 100), 'fake.txt');
-    }
+        $this->handler->detectExecutableMagicBytes("\x7FELF".str_repeat("\0", 100), 'fake.txt');
+    }//end testDetectExecutableMagicBytesElfExecutable()
 
     public function testDetectExecutableMagicBytesShellScript(): void
     {
@@ -254,7 +258,7 @@ class FileValidationHandlerTest extends TestCase
         $this->expectExceptionMessage('Shell script');
 
         $this->handler->detectExecutableMagicBytes("#!/bin/sh\necho hello", 'script.txt');
-    }
+    }//end testDetectExecutableMagicBytesShellScript()
 
     public function testDetectExecutableMagicBytesBashScript(): void
     {
@@ -262,7 +266,7 @@ class FileValidationHandlerTest extends TestCase
         $this->expectExceptionMessage('Bash script');
 
         $this->handler->detectExecutableMagicBytes("#!/bin/bash\necho hello", 'script.txt');
-    }
+    }//end testDetectExecutableMagicBytesBashScript()
 
     public function testDetectExecutableMagicBytesEnvShebang(): void
     {
@@ -270,7 +274,7 @@ class FileValidationHandlerTest extends TestCase
         $this->expectExceptionMessage('Script with env shebang');
 
         $this->handler->detectExecutableMagicBytes("#!/usr/bin/env python\nprint('hi')", 'script.txt');
-    }
+    }//end testDetectExecutableMagicBytesEnvShebang()
 
     public function testDetectExecutableMagicBytesPhpScript(): void
     {
@@ -278,15 +282,15 @@ class FileValidationHandlerTest extends TestCase
         $this->expectExceptionMessage('PHP script');
 
         $this->handler->detectExecutableMagicBytes("<?php echo 'test';", 'data.txt');
-    }
+    }//end testDetectExecutableMagicBytesPhpScript()
 
     public function testDetectExecutableMagicBytesJavaClass(): void
     {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('Java class file');
 
-        $this->handler->detectExecutableMagicBytes("\xCA\xFE\xBA\xBE" . str_repeat("\0", 100), 'App.class');
-    }
+        $this->handler->detectExecutableMagicBytes("\xCA\xFE\xBA\xBE".str_repeat("\0", 100), 'App.class');
+    }//end testDetectExecutableMagicBytesJavaClass()
 
     public function testDetectExecutableMagicBytesSafeContent(): void
     {
@@ -294,7 +298,7 @@ class FileValidationHandlerTest extends TestCase
         $this->handler->detectExecutableMagicBytes('Hello, World! This is a text file.', 'readme.txt');
 
         $this->assertTrue(true);
-    }
+    }//end testDetectExecutableMagicBytesSafeContent()
 
     public function testDetectExecutableMagicBytesSignatureNotAtStart(): void
     {
@@ -302,7 +306,7 @@ class FileValidationHandlerTest extends TestCase
         $this->handler->detectExecutableMagicBytes('Some text then MZ more text', 'document.txt');
 
         $this->assertTrue(true);
-    }
+    }//end testDetectExecutableMagicBytesSignatureNotAtStart()
 
     // =========================================================================
     // detectExecutableMagicBytes - shebang detection in first lines
@@ -317,7 +321,7 @@ class FileValidationHandlerTest extends TestCase
         $this->expectExceptionMessage('shebang');
 
         $this->handler->detectExecutableMagicBytes($content, 'file.txt');
-    }
+    }//end testDetectExecutableMagicBytesShebangInFirstLines()
 
     /**
      * @return array<string, array{string}>
@@ -334,12 +338,11 @@ class FileValidationHandlerTest extends TestCase
             'ksh shebang'           => ["text\n#!/bin/ksh\ncode"],
             'csh shebang'           => ["text\n#!/bin/csh\ncode"],
         ];
-    }
+    }//end shebangProvider()
 
     // =========================================================================
     // detectExecutableMagicBytes - embedded PHP detection
     // =========================================================================
-
     public function testDetectExecutableMagicBytesEmbeddedPhpTag(): void
     {
         $this->expectException(Exception::class);
@@ -347,7 +350,7 @@ class FileValidationHandlerTest extends TestCase
 
         $content = "<html><body><?php system('whoami'); ?></body></html>";
         $this->handler->detectExecutableMagicBytes($content, 'page.html');
-    }
+    }//end testDetectExecutableMagicBytesEmbeddedPhpTag()
 
     public function testDetectExecutableMagicBytesPhpShortEchoTag(): void
     {
@@ -356,7 +359,7 @@ class FileValidationHandlerTest extends TestCase
 
         $content = "<html><body><?= 'hello' ?></body></html>";
         $this->handler->detectExecutableMagicBytes($content, 'page.html');
-    }
+    }//end testDetectExecutableMagicBytesPhpShortEchoTag()
 
     public function testDetectExecutableMagicBytesPhpScriptTag(): void
     {
@@ -365,7 +368,7 @@ class FileValidationHandlerTest extends TestCase
 
         $content = '<script language="php">echo "hello";</script>';
         $this->handler->detectExecutableMagicBytes($content, 'page.html');
-    }
+    }//end testDetectExecutableMagicBytesPhpScriptTag()
 
     public function testDetectExecutableMagicBytesPhpScriptTagSingleQuotes(): void
     {
@@ -374,7 +377,7 @@ class FileValidationHandlerTest extends TestCase
 
         $content = "<script language='php'>echo 'hello';</script>";
         $this->handler->detectExecutableMagicBytes($content, 'page.html');
-    }
+    }//end testDetectExecutableMagicBytesPhpScriptTagSingleQuotes()
 
     public function testDetectExecutableMagicBytesLogsWarningOnDetection(): void
     {
@@ -382,136 +385,19 @@ class FileValidationHandlerTest extends TestCase
             ->method('warning');
 
         try {
-            $this->handler->detectExecutableMagicBytes('MZ' . str_repeat("\0", 50), 'test.pdf');
+            $this->handler->detectExecutableMagicBytes('MZ'.str_repeat("\0", 50), 'test.pdf');
         } catch (Exception $e) {
             // Expected.
         }
-    }
+    }//end testDetectExecutableMagicBytesLogsWarningOnDetection()
 
     // =========================================================================
-    // checkOwnership - File accessible (happy path)
+    // checkOwnership - Readable/unreadable (isReadable() probe, see design.md Decision 1)
     // =========================================================================
-
-    public function testCheckOwnershipFileAccessible(): void
+    public function testCheckOwnershipReadableFileWithCorrectOwnerIsNoOp(): void
     {
-        $file = $this->createMock(File::class);
-        $file->method('getContent')->willReturn('file content');
-        $file->method('getName')->willReturn('test.pdf');
-        $file->method('getId')->willReturn(42);
-
-        $this->logger->expects($this->once())
-            ->method('debug');
-
-        $this->handler->checkOwnership($file);
-
-        // No exception means success.
-        $this->assertTrue(true);
-    }
-
-    public function testCheckOwnershipFolderAccessible(): void
-    {
-        $folder = $this->createMock(Folder::class);
-        $folder->method('getDirectoryListing')->willReturn([]);
-        $folder->method('getName')->willReturn('testfolder');
-        $folder->method('getId')->willReturn(43);
-
-        $this->handler->checkOwnership($folder);
-
-        $this->assertTrue(true);
-    }
-
-    public function testCheckOwnershipGenericNodeAccessible(): void
-    {
-        // A Node that is neither File nor Folder.
-        $node = $this->createMock(Node::class);
-        $node->method('getName')->willReturn('generic-node');
-        $node->method('getId')->willReturn(44);
-
-        $this->handler->checkOwnership($node);
-
-        $this->assertTrue(true);
-    }
-
-    // =========================================================================
-    // checkOwnership - NotFoundException path (ownership fix)
-    // =========================================================================
-
-    public function testCheckOwnershipNotFoundExceptionFixesOwnership(): void
-    {
-        $file = $this->createMock(File::class);
-        $file->method('getContent')
-            ->willThrowException(new NotFoundException('not found'));
-        $file->method('getName')->willReturn('test.pdf');
-        $file->method('getId')->willReturn(42);
-
-        $fileOwner = $this->createMock(IUser::class);
-        $fileOwner->method('getUID')->willReturn('wrong-user');
-        $file->method('getOwner')->willReturn($fileOwner);
-
-        $currentUser = $this->createMock(IUser::class);
-        $currentUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($currentUser);
-
-        $this->fileMapper->method('setFileOwnership')
-            ->with(42, 'admin')
-            ->willReturn(true);
-
-        $this->handler->checkOwnership($file);
-
-        $this->assertTrue(true);
-    }
-
-    public function testCheckOwnershipNotFoundExceptionNullOwnerFixesOwnership(): void
-    {
-        $file = $this->createMock(File::class);
-        $file->method('getContent')
-            ->willThrowException(new NotFoundException('not found'));
-        $file->method('getName')->willReturn('test.pdf');
-        $file->method('getId')->willReturn(42);
-        $file->method('getOwner')->willReturn(null);
-
-        $currentUser = $this->createMock(IUser::class);
-        $currentUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($currentUser);
-
-        $this->fileMapper->method('setFileOwnership')
-            ->willReturn(true);
-
-        $this->handler->checkOwnership($file);
-
-        $this->assertTrue(true);
-    }
-
-    public function testCheckOwnershipNotFoundExceptionOwnershipFixFails(): void
-    {
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Ownership check failed');
-
-        $file = $this->createMock(File::class);
-        $file->method('getContent')
-            ->willThrowException(new NotFoundException('not found'));
-        $file->method('getName')->willReturn('test.pdf');
-        $file->method('getId')->willReturn(42);
-
-        $fileOwner = $this->createMock(IUser::class);
-        $fileOwner->method('getUID')->willReturn('wrong-user');
-        $file->method('getOwner')->willReturn($fileOwner);
-
-        $currentUser = $this->createMock(IUser::class);
-        $currentUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($currentUser);
-
-        $this->fileMapper->method('setFileOwnership')
-            ->willReturn(false);
-
-        $this->handler->checkOwnership($file);
-    }
-
-    public function testCheckOwnershipNotFoundExceptionCorrectOwnerButNotAccessible(): void
-    {
-        $file = $this->createMock(File::class);
-        $file->method('getContent')
-            ->willThrowException(new NotFoundException('not found'));
+        $file = $this->createMock(Node::class);
+        $file->method('isReadable')->willReturn(true);
         $file->method('getName')->willReturn('test.pdf');
         $file->method('getId')->willReturn(42);
 
@@ -523,126 +409,111 @@ class FileValidationHandlerTest extends TestCase
         $currentUser->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($currentUser);
 
-        // Same owner - should log and return without fixing.
-        $this->handler->checkOwnership($file);
+        // Owner matches — no repair call should be made.
+        $this->fileMapper->expects($this->never())
+            ->method('setFileOwnership');
+
+        $this->handler->checkOwnership(file: $file);
 
         $this->assertTrue(true);
-    }
+    }//end testCheckOwnershipReadableFileWithCorrectOwnerIsNoOp()
 
-    public function testCheckOwnershipNotFoundExceptionOwnershipCheckThrows(): void
+    public function testCheckOwnershipUnreadableFileThrowsNotPermitted(): void
     {
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Ownership check failed');
+        $this->expectException(NotPermittedException::class);
+        $this->expectExceptionMessage('is not readable');
 
-        $file = $this->createMock(File::class);
-        $file->method('getContent')
-            ->willThrowException(new NotFoundException('not found'));
+        $file = $this->createMock(Node::class);
+        $file->method('isReadable')->willReturn(false);
         $file->method('getName')->willReturn('test.pdf');
         $file->method('getId')->willReturn(42);
-        $file->method('getOwner')
-            ->willThrowException(new Exception('Cannot get owner'));
 
-        $this->handler->checkOwnership($file);
-    }
+        // No repair should be attempted on unreadable files.
+        $this->fileMapper->expects($this->never())
+            ->method('setFileOwnership');
 
-    public function testCheckOwnershipNotFoundExceptionNoUserLoggedIn(): void
+        $this->handler->checkOwnership(file: $file);
+    }//end testCheckOwnershipUnreadableFileThrowsNotPermitted()
+
+    public function testCheckOwnershipReadableFileWithDriftedOwnerTriggersRepair(): void
     {
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Ownership check failed');
-
-        $file = $this->createMock(File::class);
-        $file->method('getContent')
-            ->willThrowException(new NotFoundException('not found'));
+        $file = $this->createMock(Node::class);
+        $file->method('isReadable')->willReturn(true);
         $file->method('getName')->willReturn('test.pdf');
         $file->method('getId')->willReturn(42);
 
         $fileOwner = $this->createMock(IUser::class);
-        $fileOwner->method('getUID')->willReturn('wrong-user');
+        $fileOwner->method('getUID')->willReturn('old-owner');
         $file->method('getOwner')->willReturn($fileOwner);
 
-        // No user logged in.
-        $this->userSession->method('getUser')->willReturn(null);
-
-        $this->handler->checkOwnership($file);
-    }
-
-    // =========================================================================
-    // checkOwnership - NotPermittedException path
-    // =========================================================================
-
-    public function testCheckOwnershipNotPermittedExceptionFixesOwnership(): void
-    {
-        $file = $this->createMock(File::class);
-        $file->method('getContent')
-            ->willThrowException(new NotPermittedException('permission denied'));
-        $file->method('getName')->willReturn('test.pdf');
-        $file->method('getId')->willReturn(42);
-
         $currentUser = $this->createMock(IUser::class);
         $currentUser->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($currentUser);
 
-        $this->fileMapper->method('setFileOwnership')
+        // Readable but drifted owner — repair must be attempted.
+        $this->fileMapper->expects($this->once())
+            ->method('setFileOwnership')
+            ->with(42, 'admin')
             ->willReturn(true);
 
-        $this->handler->checkOwnership($file);
+        $this->handler->checkOwnership(file: $file);
 
         $this->assertTrue(true);
-    }
+    }//end testCheckOwnershipReadableFileWithDriftedOwnerTriggersRepair()
 
-    public function testCheckOwnershipNotPermittedExceptionFixFails(): void
+    public function testCheckOwnershipReadableFileWithNullOwnerTriggersRepair(): void
     {
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Ownership fix failed');
-
-        $file = $this->createMock(File::class);
-        $file->method('getContent')
-            ->willThrowException(new NotPermittedException('permission denied'));
+        $file = $this->createMock(Node::class);
+        $file->method('isReadable')->willReturn(true);
         $file->method('getName')->willReturn('test.pdf');
         $file->method('getId')->willReturn(42);
+        $file->method('getOwner')->willReturn(null);
 
         $currentUser = $this->createMock(IUser::class);
         $currentUser->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($currentUser);
 
+        $this->fileMapper->expects($this->once())
+            ->method('setFileOwnership')
+            ->with(42, 'admin')
+            ->willReturn(true);
+
+        $this->handler->checkOwnership(file: $file);
+
+        $this->assertTrue(true);
+    }//end testCheckOwnershipReadableFileWithNullOwnerTriggersRepair()
+
+    public function testCheckOwnershipRepairFailureIsSwallowed(): void
+    {
+        $file = $this->createMock(Node::class);
+        $file->method('isReadable')->willReturn(true);
+        $file->method('getName')->willReturn('test.pdf');
+        $file->method('getId')->willReturn(42);
+
+        $fileOwner = $this->createMock(IUser::class);
+        $fileOwner->method('getUID')->willReturn('old-owner');
+        $file->method('getOwner')->willReturn($fileOwner);
+
+        $currentUser = $this->createMock(IUser::class);
+        $currentUser->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($currentUser);
+
+        // Repair fails — checkOwnership must NOT propagate the failure (best-effort).
         $this->fileMapper->method('setFileOwnership')
             ->willThrowException(new Exception('DB error'));
 
-        $this->handler->checkOwnership($file);
-    }
+        $this->logger->expects($this->atLeastOnce())
+            ->method('warning');
 
-    // =========================================================================
-    // checkOwnership - Folder with NotFoundException
-    // =========================================================================
-
-    public function testCheckOwnershipFolderNotFoundFixesOwnership(): void
-    {
-        $folder = $this->createMock(Folder::class);
-        $folder->method('getDirectoryListing')
-            ->willThrowException(new NotFoundException('not found'));
-        $folder->method('getName')->willReturn('testfolder');
-        $folder->method('getId')->willReturn(43);
-
-        $fileOwner = $this->createMock(IUser::class);
-        $fileOwner->method('getUID')->willReturn('wrong-user');
-        $folder->method('getOwner')->willReturn($fileOwner);
-
-        $currentUser = $this->createMock(IUser::class);
-        $currentUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($currentUser);
-
-        $this->fileMapper->method('setFileOwnership')
-            ->willReturn(true);
-
-        $this->handler->checkOwnership($folder);
+        // No exception thrown despite repair failure.
+        $this->handler->checkOwnership(file: $file);
 
         $this->assertTrue(true);
-    }
+    }//end testCheckOwnershipRepairFailureIsSwallowed()
 
     // =========================================================================
     // ownFile
     // =========================================================================
-
     public function testOwnFileSuccess(): void
     {
         $file = $this->createMock(Node::class);
@@ -661,7 +532,7 @@ class FileValidationHandlerTest extends TestCase
         $result = $this->handler->ownFile($file);
 
         $this->assertTrue($result);
-    }
+    }//end testOwnFileSuccess()
 
     public function testOwnFileReturnsFalse(): void
     {
@@ -679,7 +550,7 @@ class FileValidationHandlerTest extends TestCase
         $result = $this->handler->ownFile($file);
 
         $this->assertFalse($result);
-    }
+    }//end testOwnFileReturnsFalse()
 
     public function testOwnFileThrowsOnMapperException(): void
     {
@@ -698,7 +569,7 @@ class FileValidationHandlerTest extends TestCase
             ->willThrowException(new Exception('DB connection failed'));
 
         $this->handler->ownFile($file);
-    }
+    }//end testOwnFileThrowsOnMapperException()
 
     public function testOwnFileThrowsWhenNoUserLoggedIn(): void
     {
@@ -712,7 +583,7 @@ class FileValidationHandlerTest extends TestCase
         $this->userSession->method('getUser')->willReturn(null);
 
         $this->handler->ownFile($file);
-    }
+    }//end testOwnFileThrowsWhenNoUserLoggedIn()
 
     public function testOwnFileLogsInfoOnSuccess(): void
     {
@@ -731,7 +602,7 @@ class FileValidationHandlerTest extends TestCase
             ->method('info');
 
         $this->handler->ownFile($file);
-    }
+    }//end testOwnFileLogsInfoOnSuccess()
 
     public function testOwnFileLogsWarningOnFailure(): void
     {
@@ -749,7 +620,7 @@ class FileValidationHandlerTest extends TestCase
             ->method('warning');
 
         $this->handler->ownFile($file);
-    }
+    }//end testOwnFileLogsWarningOnFailure()
 
     public function testOwnFileLogsErrorOnException(): void
     {
@@ -772,70 +643,48 @@ class FileValidationHandlerTest extends TestCase
         } catch (Exception $e) {
             // Expected.
         }
-    }
-
-    // =========================================================================
-    // checkOwnership - NotPermittedException with no user logged in
-    // =========================================================================
-
-    public function testCheckOwnershipNotPermittedNoUserLoggedIn(): void
-    {
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Ownership fix failed');
-
-        $file = $this->createMock(File::class);
-        $file->method('getContent')
-            ->willThrowException(new NotPermittedException('denied'));
-        $file->method('getName')->willReturn('test.pdf');
-        $file->method('getId')->willReturn(42);
-
-        // No user logged in - ownFile will throw.
-        $this->userSession->method('getUser')->willReturn(null);
-
-        $this->handler->checkOwnership($file);
-    }
+    }//end testOwnFileLogsErrorOnException()
 
     // =========================================================================
     // Edge cases
     // =========================================================================
-
     public function testBlockExecutableFileUpperCaseExtension(): void
     {
         $this->expectException(Exception::class);
         $this->handler->blockExecutableFile('VIRUS.PHP', '');
-    }
+    }//end testBlockExecutableFileUpperCaseExtension()
 
     public function testBlockExecutableFileMixedCaseExtension(): void
     {
         $this->expectException(Exception::class);
         $this->handler->blockExecutableFile('hack.PhP', '');
-    }
+    }//end testBlockExecutableFileMixedCaseExtension()
 
     public function testBlockExecutableFileDoubleExtension(): void
     {
         $this->expectException(Exception::class);
         $this->handler->blockExecutableFile('document.pdf.exe', '');
-    }
+    }//end testBlockExecutableFileDoubleExtension()
 
     public function testBlockExecutableFileNoExtension(): void
     {
         // File with no extension should pass.
         $this->handler->blockExecutableFile('Makefile', 'content');
         $this->assertTrue(true);
-    }
+    }//end testBlockExecutableFileNoExtension()
 
     public function testDetectExecutableMagicBytesEmptyContent(): void
     {
         // Empty content should pass.
         $this->handler->detectExecutableMagicBytes('', 'empty.txt');
         $this->assertTrue(true);
-    }
+    }//end testDetectExecutableMagicBytesEmptyContent()
 
     public function testDetectMagicBytesShebangBeyond1024BytesNotDetected(): void
     {
         // Shebang beyond first 1024 bytes should not be detected.
-        $content = str_repeat('a', 1025) . "\n#!/bin/bash\necho hi";
+        $content = str_repeat('a', 1025)."\n#!/bin/bash\necho hi";
         $this->handler->detectExecutableMagicBytes($content, 'safe.txt');
         $this->assertTrue(true);
-    }
-}
+    }//end testDetectMagicBytesShebangBeyond1024BytesNotDetected()
+}//end class

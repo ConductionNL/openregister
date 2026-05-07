@@ -34,6 +34,8 @@ class NewFacetingExample
      * Constructor for NewFacetingExample
      *
      * @param ObjectService $objectService The object service instance
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function __construct(
         private readonly ObjectService $objectService
@@ -48,6 +50,8 @@ class NewFacetingExample
      * @return array Basic facet results
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function basicTermsFaceting(): array
     {
@@ -75,6 +79,8 @@ class NewFacetingExample
      * @return array Date histogram facet results
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function dateHistogramFaceting(): array
     {
@@ -109,6 +115,8 @@ class NewFacetingExample
      * @return array Range facet results
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function rangeFaceting(): array
     {
@@ -146,6 +154,8 @@ class NewFacetingExample
      * @return array Complete e-commerce facet results
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function ecommerceFaceting(): array
     {
@@ -217,6 +227,8 @@ class NewFacetingExample
      * @return array Complete paginated results with facets
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function paginatedSearchWithFacets(): array
     {
@@ -254,6 +266,8 @@ class NewFacetingExample
      * Shows how to migrate from the old getFacets approach to the new system.
      *
      * @return array Migration notes and new facets configuration.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function migrationExample(): array
     {
@@ -302,6 +316,8 @@ class NewFacetingExample
      * @return array Advanced faceting results
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function advancedFilteringWithFacets(): array
     {
@@ -366,6 +382,8 @@ class NewFacetingExample
      * @return array Performance optimized facet results
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function performanceOptimizedFaceting(): array
     {

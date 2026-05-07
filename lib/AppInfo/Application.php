@@ -228,6 +228,8 @@ class Application extends App implements IBootstrap
      * Constructor for the Application class
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     public function __construct()
     {
@@ -240,6 +242,8 @@ class Application extends App implements IBootstrap
      * @param IRegistrationContext $context The registration context
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     public function register(IRegistrationContext $context): void
     {
@@ -284,6 +288,8 @@ class Application extends App implements IBootstrap
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
     {
@@ -320,7 +326,9 @@ class Application extends App implements IBootstrap
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     avatarManager: $container->get('OCP\IAvatarManager'),
                     auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-                    secureRandom: $container->get('OCP\Security\ISecureRandom')
+                    secureRandom: $container->get('OCP\Security\ISecureRandom'),
+                    db: $container->get('OCP\IDBConnection'),
+                    l10nFactory: $container->get('OCP\L10N\IFactory')
                 );
             }
         );
@@ -397,6 +405,8 @@ class Application extends App implements IBootstrap
      * @param IRegistrationContext $context The registration context
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     private function registerCacheAndFileHandlers(IRegistrationContext $context): void
     {
@@ -440,6 +450,8 @@ class Application extends App implements IBootstrap
      * @param IRegistrationContext $context The registration context
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     private function registerConfigurationServices(IRegistrationContext $context): void
     {
@@ -571,6 +583,8 @@ class Application extends App implements IBootstrap
      * @param IRegistrationContext $context The registration context
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     private function registerSettingsServices(IRegistrationContext $context): void
     {
@@ -624,6 +638,8 @@ class Application extends App implements IBootstrap
      * @param IRegistrationContext $context The registration context
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     private function registerSearchBackend(IRegistrationContext $context): void
     {
@@ -652,6 +668,8 @@ class Application extends App implements IBootstrap
      * @param IRegistrationContext $context The registration context
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     private function registerVectorizationService(IRegistrationContext $context): void
     {
@@ -681,6 +699,8 @@ class Application extends App implements IBootstrap
      * @param IRegistrationContext $context The registration context
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     private function registerObjectInteractionServices(IRegistrationContext $context): void
     {
@@ -714,6 +734,8 @@ class Application extends App implements IBootstrap
      * @param IRegistrationContext $context The registration context
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     private function registerEventListeners(IRegistrationContext $context): void
     {
@@ -787,6 +809,8 @@ class Application extends App implements IBootstrap
      * @param IBootContext $context The boot context
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     public function boot(IBootContext $context): void
     {

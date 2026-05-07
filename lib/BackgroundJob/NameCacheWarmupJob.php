@@ -17,6 +17,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-30
  */
 
 declare(strict_types=1);

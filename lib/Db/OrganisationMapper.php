@@ -34,6 +34,7 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
+use OCP\IConfig;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -71,12 +72,14 @@ class OrganisationMapper extends QBMapper
      * @param LoggerInterface  $logger          Logger interface
      * @param IEventDispatcher $eventDispatcher Event dispatcher
      * @param IAppConfig       $appConfig       App configuration for reading default org
+     * @param IConfig          $config          System configuration (used for the DB table prefix)
      */
     public function __construct(
         IDBConnection $db,
         private readonly LoggerInterface $logger,
         private readonly IEventDispatcher $eventDispatcher,
-        private readonly IAppConfig $appConfig
+        private readonly IAppConfig $appConfig,
+        private readonly IConfig $config
     ) {
         parent::__construct(db: $db, tableName: 'openregister_organisations', entityClass: Organisation::class);
     }//end __construct()
@@ -871,9 +874,7 @@ class OrganisationMapper extends QBMapper
      */
     private function getTablePrefix(): string
     {
-        // Get table prefix from Nextcloud system configuration.
-        // Default is 'oc_' but can be customized per installation.
-        return \OC::$server->getSystemConfig()->getValue('dbtableprefix', 'oc_');
+        return $this->config->getSystemValue('dbtableprefix', 'oc_');
     }//end getTablePrefix()
 
     /**

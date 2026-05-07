@@ -17,6 +17,14 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-12
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-15
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-17
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-81
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-82
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-83
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -67,6 +75,8 @@ class AuditTrailController extends Controller
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     private function extractRequestParameters(): array
     {
@@ -180,6 +190,9 @@ class AuditTrailController extends Controller
      *     array{results: array<\OCA\OpenRegister\Db\AuditTrail>,
      *     total: int<0, max>, page: int|null, pages: float, limit: int,
      *     offset: int|null}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-17
      */
     public function index(): JSONResponse
     {
@@ -225,6 +238,9 @@ class AuditTrailController extends Controller
      *     array{error: 'Audit trail not found'},
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-15
      */
     public function show(int $id): JSONResponse
     {
@@ -247,6 +263,8 @@ class AuditTrailController extends Controller
      * @NoCSRFRequired
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     public function update(int $id): JSONResponse
     {
@@ -274,6 +292,8 @@ class AuditTrailController extends Controller
      *     results?: array<\OCA\OpenRegister\Db\AuditTrail>,
      *     total?: int<0, max>, page?: int|null, pages?: float, limit?: int,
      *     offset?: int|null}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     public function objects(string $register, string $schema, string $id): JSONResponse
     {
@@ -318,6 +338,9 @@ class AuditTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with export data or error
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-81
      */
     public function export(): JSONResponse
     {
@@ -387,6 +410,8 @@ class AuditTrailController extends Controller
      * @NoCSRFRequired
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     public function destroy(int $id): JSONResponse
     {
@@ -397,61 +422,21 @@ class AuditTrailController extends Controller
     }//end destroy()
 
     /**
-     * Delete multiple audit trail logs based on filters or specific IDs
+     * Reject audit trail bulk deletion (immutability enforcement).
+     *
+     * @return JSONResponse HTTP 405 Method Not Allowed
      *
      * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with deletion results or error
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     public function destroyMultiple(): JSONResponse
     {
-        // Extract request parameters.
-        $params = $this->extractRequestParameters();
-
-        // Get specific parameters for mass deletion.
-        $ids = $this->request->getParam('ids', null);
-
-        try {
-            // Build deletion configuration.
-            $deleteConfig = [
-                'filters' => $params['filters'],
-                'search'  => $params['search'],
-            ];
-
-            // Add specific IDs if provided.
-            if ($ids !== null) {
-                // Handle both comma-separated string and array.
-                if (is_string($ids) === true) {
-                    $deleteConfig['ids'] = array_map('intval', explode(',', $ids));
-                } else if (is_array($ids) === true) {
-                    $deleteConfig['ids'] = array_map('intval', $ids);
-                }
-            }
-
-            // Delete logs using service.
-            $result = $this->logService->deleteLogs($deleteConfig);
-
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'results' => $result,
-                    'message' => sprintf(
-                        'Deleted %d audit trails successfully. %d failed.',
-                        $result['deleted'],
-                        $result['failed']
-                    ),
-                ]
-            );
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'error' => 'Mass deletion failed: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
+        return new JSONResponse(
+            data: ['error' => 'Audit trail entries cannot be deleted'],
+            statusCode: Http::STATUS_METHOD_NOT_ALLOWED
+        );
     }//end destroyMultiple()
 
     /**
@@ -462,6 +447,8 @@ class AuditTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response confirming clear or error
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     public function clearAll(): JSONResponse
     {
@@ -506,6 +493,9 @@ class AuditTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Verification result with valid/invalid status
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-12
      */
     public function verify(): JSONResponse
     {
@@ -538,6 +528,9 @@ class AuditTrailController extends Controller
      * @return JSONResponse List of processing activities
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-83
      */
     public function verwerkingsregister(): JSONResponse
     {
@@ -564,6 +557,9 @@ class AuditTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Matching audit trail entries grouped by schema
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-82
      */
     public function inzageverzoek(): JSONResponse
     {

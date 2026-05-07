@@ -15,6 +15,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
  */
 
 declare(strict_types=1);
@@ -25,7 +28,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
@@ -58,14 +61,14 @@ class TransferListService
     /**
      * Constructor.
      *
-     * @param ObjectEntityMapper   $objectMapper        The object mapper.
+     * @param MagicMapper          $objectMapper        The object mapper.
      * @param AuditTrailMapper     $auditTrailMapper    The audit trail mapper.
      * @param IAppConfig           $appConfig           The app configuration.
      * @param INotificationManager $notificationManager The notification manager.
      * @param LoggerInterface      $logger              Logger.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly IAppConfig $appConfig,
         private readonly INotificationManager $notificationManager,
@@ -87,6 +90,9 @@ class TransferListService
      * } The transfer list data.
      *
      * @throws InvalidArgumentException If no objects provided.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
      */
     public function createTransferList(array $objects): array
     {
@@ -134,6 +140,9 @@ class TransferListService
      * @return array<string,mixed> The updated transfer list data.
      *
      * @throws InvalidArgumentException If the list is not in review status.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
      */
     public function approveTransferList(array $transferList, string $archivistId): array
     {
@@ -170,6 +179,9 @@ class TransferListService
      * @return array<string,mixed> The updated transfer list data.
      *
      * @throws InvalidArgumentException If the list is not in review status.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
      */
     public function rejectTransferList(array $transferList, string $archivistId, string $reason): array
     {
@@ -210,6 +222,8 @@ class TransferListService
      * @param string              $reason       The reason for exclusion.
      *
      * @return array<string,mixed> The updated transfer list data.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
      */
     public function excludeObjects(array $transferList, array $objectUuids, string $reason): array
     {
@@ -264,6 +278,8 @@ class TransferListService
      * @param array<int, array<string,mixed>> $activeTransferLists Active transfer list data.
      *
      * @return array<int, string> UUIDs of objects on active transfer lists.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
      */
     public function getObjectsOnActiveTransferLists(array $activeTransferLists): array
     {
@@ -289,6 +305,8 @@ class TransferListService
      * @param array<string,mixed> $transferList The transfer list data.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
      */
     public function notifyArchivists(array $transferList): void
     {

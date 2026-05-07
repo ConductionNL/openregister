@@ -275,6 +275,12 @@ export const useSchemaStore = defineStore('schema', {
 			delete cleaned.archive
 			delete cleaned.version // Backend determines version
 
+			// New schemas have id: '' — omit it entirely so the backend unambiguously
+			// treats the request as a create rather than an update with an empty id.
+			if (!cleaned.id) {
+				delete cleaned.id
+			}
+
 			// Keep configuration object intact - backend should handle it
 			// Ensure configuration object exists with default values if not present
 			if (!cleaned.configuration) {

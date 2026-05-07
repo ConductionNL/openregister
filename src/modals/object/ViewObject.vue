@@ -124,10 +124,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														<!-- Date/Time properties -->
 														<NcDateTimePickerNative
 															v-else-if="getPropertyInputComponent(key) === 'NcDateTimePickerNative'"
-															:value="formData[key] !== undefined ? formData[key] : value"
+															:value="stringToDate(formData[key] !== undefined ? formData[key] : value, currentSchema.properties[key].format) || undefined"
 															:type="getPropertyInputType(key)"
 															:label="getPropertyDisplayName(key)"
-															@update:value="updatePropertyValue(key, $event)" />
+															@input="updatePropertyValue(key, $event)" />
 
 														<!-- Text/Number properties -->
 														<NcTextField
@@ -621,6 +621,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import { stringToDate, dateToString } from '../../services/dateUtils.js'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -631,9 +632,9 @@ export default {
 		NcTextField,
 		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
+		NcDateTimePickerNative,
 		NcActions,
 		NcActionButton,
-		NcDateTimePickerNative,
 		NcEmptyContent,
 		NcSelect,
 		CodeMirror,
@@ -817,7 +818,23 @@ export default {
 			return registerStore.registerItem
 		},
 		currentSchema() {
-			return schemaStore.schemaItem
+			const schema = schemaStore.schemaItem
+			if (!schema) return schema
+			const allOf = schema.allOf || []
+			if (!allOf.length) return schema
+			// Merge inherited properties from allOf parent schemas so extended schemas
+			// expose the full property set (own + inherited) in the form dialog.
+			const inherited = {}
+			for (const ref of allOf) {
+				const schemaId = typeof ref === 'object' ? ref.id : ref
+				const parentSchema = schemaStore.schemaList.find(s =>
+					s.id === schemaId || s.uuid === schemaId || String(s.id) === String(schemaId),
+				)
+				if (parentSchema?.properties) {
+					Object.assign(inherited, parentSchema.properties)
+				}
+			}
+			return { ...schema, properties: { ...inherited, ...(schema.properties || {}) } }
 		},
 		selectedPublishedCount() {
 			return this.selectedAttachments.filter((a) => {
@@ -1026,8 +1043,29 @@ export default {
 		},
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
-			handler(newSchema) {
+			async handler(newSchema) {
 				console.info('Schema changed in ViewObject:', newSchema)
+
+				// The schema list endpoint returns un-resolved schemas — for schemas
+				// using composition (allOf/oneOf/anyOf) `properties` is empty until
+				// the detail endpoint merges in the parent's properties. When the
+				// active schema looks un-resolved, refetch via the detail endpoint
+				// and let the watcher fire again with merged properties.
+				if (newSchema?.id) {
+					const usesComposition = (newSchema.allOf?.length || 0) > 0
+						|| (newSchema.oneOf?.length || 0) > 0
+						|| (newSchema.anyOf?.length || 0) > 0
+					const propsCount = Object.keys(newSchema.properties || {}).length
+					if (usesComposition && propsCount === 0) {
+						try {
+							await schemaStore.getSchema(newSchema.id, { setItem: true })
+							return
+						} catch (error) {
+							console.warn('Failed to fetch resolved schema:', error)
+						}
+					}
+				}
+
 				if (newSchema && this.isNewObject) {
 					// Re-initialize data when schema becomes available for new objects
 					this.initializeData()
@@ -1064,7 +1102,7 @@ export default {
 			deep: true,
 		},
 	},
-	mounted() {
+	async mounted() {
 		// Debug: Log current state when modal opens
 		console.info('ViewObject mounted:', {
 			objectItem: objectStore.objectItem,
@@ -1072,6 +1110,18 @@ export default {
 			registerItem: registerStore.registerItem,
 			isNewObject: this.isNewObject,
 		})
+
+		// Refetch the active schema by id so the store holds the resolved version
+		// (with allOf/oneOf/anyOf composition merged in by the backend). The schema
+		// list endpoint returns raw schemas with empty properties for extended
+		// schemas — the detail endpoint resolves composition.
+		if (schemaStore.schemaItem?.id) {
+			try {
+				await schemaStore.getSchema(schemaStore.schemaItem.id, { setItem: true })
+			} catch (error) {
+				console.warn('Failed to fetch resolved schema:', error)
+			}
+		}
 
 		// Initialize data when modal opens
 		this.initializeData()
@@ -1828,7 +1878,11 @@ export default {
 					break
 				case 'string':
 				default:
-					convertedValue = newValue
+					if (newValue instanceof Date && schemaProperty?.format) {
+						convertedValue = dateToString(newValue, schemaProperty.format)
+					} else {
+						convertedValue = newValue
+					}
 					break
 				}
 			}
@@ -1936,6 +1990,9 @@ export default {
 			}
 
 			return null
+		},
+		stringToDate(value, format) {
+			return stringToDate(value, format)
 		},
 		getPropertyInputType(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]

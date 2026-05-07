@@ -15,6 +15,11 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-87
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-39
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
  */
 
 declare(strict_types=1);
@@ -131,6 +136,8 @@ class WebhooksController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -283,6 +290,8 @@ class WebhooksController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -362,6 +371,8 @@ class WebhooksController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -434,6 +445,8 @@ class WebhooksController extends Controller
      *     array{error: 'Failed to delete webhook'|'Webhook not found'},
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-88
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -491,6 +504,8 @@ class WebhooksController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-87
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -608,6 +623,8 @@ class WebhooksController extends Controller
      * @NoCSRFRequired
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-39
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1185,6 +1202,8 @@ class WebhooksController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
