@@ -25,7 +25,9 @@
 				<div
 					v-for="obj in objects"
 					:key="obj.uuid"
-					class="or-mail-object-card">
+					class="or-mail-object-card"
+					@dragover.prevent="onAttachmentDragOver"
+					@drop.prevent="onAttachmentDrop($event, obj)">
 					<div class="or-mail-object-card__header">
 						<div class="or-mail-object-card__title">
 							<a
@@ -74,6 +76,7 @@ import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
 
 export default {
 	name: 'ObjectsTab',
@@ -93,6 +96,7 @@ export default {
 		return {
 			objects: [],
 			loading: false,
+			uploadingObjectUuid: null,
 		}
 	},
 	watch: {
@@ -148,6 +152,55 @@ export default {
 				showError(t('openregister', 'Failed to remove link'))
 				console.error('[ObjectsTab] Unlink failed:', err)
 			}
+		},
+		onAttachmentDragOver(event) {
+			if (event.dataTransfer) {
+				event.dataTransfer.dropEffect = 'copy'
+			}
+		},
+		async onAttachmentDrop(event, obj) {
+			const raw = event.dataTransfer?.getData(ATTACHMENT_MIME)
+			if (!raw) {
+				return
+			}
+			const register = obj.register
+			const schema = obj.schemaId || obj.schema
+			const objectId = obj.id || obj.uuid
+			if (!register || !schema || !objectId) {
+				showError(t('openregister', 'Object metadata incomplete for file upload'))
+				return
+			}
+			try {
+				const attachment = JSON.parse(raw)
+				this.uploadingObjectUuid = obj.uuid
+				await this.uploadAttachmentToObject(attachment, { register, schema, objectId })
+				showSuccess(t('openregister', 'Attachment added to {name}', { name: obj.name || obj.uuid }))
+			} catch (err) {
+				showError(t('openregister', 'Failed to add attachment to object'))
+				console.error('[ObjectsTab] Attachment drop upload failed:', err)
+			} finally {
+				this.uploadingObjectUuid = null
+			}
+		},
+		async uploadAttachmentToObject(attachment, target) {
+			const response = await fetch(attachment.downloadUrl, { credentials: 'same-origin' })
+			if (!response.ok) {
+				throw new Error(`Attachment download failed with status ${response.status}`)
+			}
+			const blob = await response.blob()
+			const fileName = attachment.fileName || `attachment-${attachment.attachmentId}`
+			const file = new File([blob], fileName, { type: attachment.mime || blob.type || 'application/octet-stream' })
+			const formData = new FormData()
+			formData.append('files[]', file)
+			const uploadUrl = generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart', {
+				register: target.register,
+				schema: target.schema,
+				id: target.objectId,
+			})
+			await axios.post(uploadUrl, formData, {
+				headers: { 'Content-Type': 'multipart/form-data' },
+				timeout: 20000,
+			})
 		},
 	},
 }

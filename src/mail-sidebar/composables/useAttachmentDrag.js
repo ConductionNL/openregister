@@ -6,7 +6,8 @@
  * dragstart listener that writes attachment metadata into dataTransfer.
  *
  * This is intentionally brittle — it depends on Mail's `.attachment` CSS class
- * and Vue component props. Track 2 (upstream PR) will retire this composable.
+ * and Vue component props. Track 2 (upstream): https://github.com/nextcloud/mail/pull/10509
+ * should retire this composable when native drag support lands.
  *
  * @package OpenRegister
  */

@@ -14,6 +14,7 @@ import MailSidebar from './mail-sidebar/MailSidebar.vue'
 
 const MOUNT_RETRY_INTERVAL = 1000
 const MOUNT_MAX_RETRIES = 30
+const SIDEBAR_ROOT_ID = 'openregister-mail-sidebar'
 
 /**
  * Verify that we're on a Mail app page before mounting.
@@ -48,8 +49,8 @@ function mountSidebar() {
 			return
 		}
 
-		// Check if already mounted.
-		if (document.querySelector('.or-mail-sidebar')) {
+		// Check if already mounted (works for both expanded and collapsed sidebar).
+		if (document.getElementById(SIDEBAR_ROOT_ID)) {
 			return
 		}
 
@@ -57,6 +58,7 @@ function mountSidebar() {
 			const app = new Vue({
 				render: (h) => h(MailSidebar),
 			}).$mount()
+			app.$el.id = SIDEBAR_ROOT_ID
 			document.body.appendChild(app.$el)
 			return app
 		} catch (err) {
