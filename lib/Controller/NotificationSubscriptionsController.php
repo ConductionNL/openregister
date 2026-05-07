@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\NotificationSubscriptionMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IUserSession;
 
 class NotificationSubscriptionsController extends Controller
@@ -44,16 +46,20 @@ class NotificationSubscriptionsController extends Controller
     /**
      * Constructor.
      *
-     * @param string                         $appName     App name.
-     * @param IRequest                       $request     Request.
-     * @param NotificationSubscriptionMapper $mapper      Subscription mapper.
-     * @param IUserSession                   $userSession Current-user session.
+     * @param string                         $appName        App name.
+     * @param IRequest                       $request        Request.
+     * @param NotificationSubscriptionMapper $mapper         Subscription mapper.
+     * @param IUserSession                   $userSession    Current-user session.
+     * @param RegisterMapper                 $registerMapper Register mapper for permission check.
+     * @param SchemaMapper                   $schemaMapper   Schema mapper for permission check.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly NotificationSubscriptionMapper $mapper,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -104,6 +110,34 @@ class NotificationSubscriptionsController extends Controller
         $params     = $this->request->getParams();
         $registerId = $this->coerceNullableInt(value: ($params['registerId'] ?? null));
         $schemaId   = $this->coerceNullableInt(value: ($params['schemaId'] ?? null));
+
+        // SECURITY: load the referenced register/schema through the
+        // standard RBAC + multitenancy filter before persisting the
+        // subscription. Without this gate the mapper accepted any
+        // (registerId, schemaId) pair — letting a caller subscribe
+        // themselves to objects in other tenants and confirming the
+        // existence of arbitrary IDs via the success/404 channel.
+        if ($registerId !== null) {
+            try {
+                $this->registerMapper->find($registerId);
+            } catch (\Throwable $e) {
+                return new JSONResponse(
+                    data: ['error' => 'Register not found or not accessible'],
+                    statusCode: 404
+                );
+            }
+        }
+
+        if ($schemaId !== null) {
+            try {
+                $this->schemaMapper->find($schemaId);
+            } catch (\Throwable $e) {
+                return new JSONResponse(
+                    data: ['error' => 'Schema not found or not accessible'],
+                    statusCode: 404
+                );
+            }
+        }
 
         try {
             $entity = $this->mapper->subscribe(
