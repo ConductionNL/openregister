@@ -1,5 +1,16 @@
 # Tasks — Aggregations and Calculations
 
+> **⚠️ ADR-028 gating note (MUST READ before merge)**
+>
+> This change currently bundles two independent mechanisms (aggregations + calculations) and exceeds the ADR-028 ≤15-tasks-per-mechanism limit. Per ADR-028 it MUST NOT merge in this form.
+>
+> **Resolution path:** the split lives in companion PR **#1354** (separate `aggregations-only` and `calculations-only` change directories, each ≤15 tasks). This PR (#1353) MUST either:
+>
+> 1. wait for **#1354** to land first and then drop this directory in favour of the split, or
+> 2. be reduced in scope to a single mechanism here before merge.
+>
+> The self-acknowledgement in the PR description does **not** waive the ADR — it only tracks the violation. CI / supervisor MUST treat this directory as blocked until the split lands. See review comment [#3200745243](https://github.com/ConductionNL/openregister/pull/1353#discussion_r3200745243).
+
 ## 1. Schema validation
 
 - [ ] 1.1 Add `x-openregister-aggregations` validation to `SchemaService::saveSchema()` — every filter/field/groupBy field exists, every operator known, every placeholder known, every metric known, no two aggregations share a name.
@@ -70,3 +81,4 @@
 
 - [ ] 12.1 Add `x-openregister-aggregations` and `x-openregister-calculations` annotations to `openspec/platform-capabilities.md`.
 - [ ] 12.2 Add the `GET /api/objects/aggregations/{name}` endpoint and the `_aggregate=` and `_include=calculations` query params to the same catalog.
+- [ ] 12.3 Add a CHANGELOG entry under "Unreleased → Added" when this change graduates from `proposed` to `implemented`. Entry covers: `x-openregister-aggregations` and `x-openregister-calculations` annotations, `GET /api/objects/aggregations/{name}` endpoint, `_aggregate=` and `_include=calculations` query params, `ObjectTransitionedEvent` cache-invalidation hook. (Spec-only PRs MAY defer the entry to the implementing PR; this task tracks the obligation.)

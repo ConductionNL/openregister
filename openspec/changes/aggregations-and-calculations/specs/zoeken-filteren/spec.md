@@ -34,6 +34,8 @@ A schema MAY include a top-level `x-openregister-aggregations` block: a map of a
 - AND return up to 12 most-recent buckets keyed by `YYYY-MM`
 - AND results MUST be sorted descending
 
+**Timezone semantics (v1).** Bucket boundaries MUST use UTC. Per-schema timezone-aware bucketing (e.g. boundaries in `Europe/Amsterdam`) is deferred to v2 — when a schema declares a top-level `x-openregister-timezone` attribute, the v2 implementation will pass the IANA zone to the backend (`date_trunc('month', completedAt, 'Europe/Amsterdam')` in Postgres, `time_zone` parameter on the ES `date_histogram`). For v1, implementers MUST document that callers expecting local-time boundaries must shift the input timestamps client-side, or use a calculation field to project into the desired zone before aggregating. Schema-save validation MUST reject `x-openregister-timezone` with `{ code: "calculation-timezone-deferred-to-v2" }` rather than silently accept it.
+
 #### Scenario: Aggregation with placeholders resolves at request time
 - GIVEN an aggregation `myOverdue: { metric: "count", filter: { assignee: "$currentUser", dueDate: { $lt: "$now" }, taskStatus: { $ne: "completed" } } }`
 - WHEN user `alice` GETs the aggregation endpoint
@@ -48,6 +50,23 @@ The filter compiler's RBAC mechanism (already used by `findObjects`) MUST be app
 - WHEN alice GETs `count` of all action items
 - THEN the response MUST be `7`, not `100`
 - AND no exception or 403 is returned (the filter just narrows)
+
+### Requirement: Aggregations MUST be scoped to the caller's organisation and register
+Aggregation queries MUST apply the same multi-tenancy constraint enforced by `findObjects` via the `MultiTenancyTrait` in the `saas-multi-tenant` spec — i.e. the query MUST be filtered to the caller's organisation and the resolved `(register, schema)` pair. A user in organisation A MUST NOT see counts that include objects from organisation B even when the schema name is identical, AND MUST NOT see counts from a different register on the same schema unless explicitly authorised. The implementation MUST NOT bypass `MultiTenancyTrait` when issuing the aggregate SQL/Solr/ES query.
+
+#### Scenario: Cross-organisation isolation is enforced on aggregate queries
+- GIVEN organisation A has 50 action items and organisation B has 30 action items (same schema name `action-item`)
+- AND user `alice` is a member of organisation A only
+- WHEN alice GETs `totalOpen` (a count aggregation) for `action-item`
+- THEN the response value MUST count only organisation A's items
+- AND MUST NOT include any of organisation B's items
+- AND the SQL/Solr/ES query MUST include the organisation predicate from `MultiTenancyTrait` (verified by integration test that asserts the compiled WHERE clause)
+
+#### Scenario: Cross-register isolation on the same schema name
+- GIVEN registers `decidesk` and `pipelinq` both have a `task` schema
+- AND a query is dispatched against `decidesk.task`
+- WHEN the aggregation is computed
+- THEN only `decidesk.task` rows MUST be counted; `pipelinq.task` rows MUST NOT contribute
 
 ### Requirement: Aggregations MUST be cacheable with invalidation on writes
 The implementation MUST cache aggregation results keyed by `(register, schema, name, resolved-placeholders-hash, rbac-scope-hash)` with default TTL 60 seconds. The cache MUST invalidate when any `ObjectCreatedEvent` / `ObjectUpdatedEvent` / `ObjectDeletedEvent` / `ObjectTransitionedEvent` fires for the affected `(register, schema)`.
@@ -74,7 +93,13 @@ The existing `searchObjectsPaginated` endpoint MUST accept a `_aggregate=name1,n
 - AND `aggregations: { totalOpen: { value: 42 }, totalOverdue: { value: 3 } }`
 
 ### Requirement: Schemas MAY declare calculations via `x-openregister-calculations`
-A schema MAY include a top-level `x-openregister-calculations` block: a map of calculation name → spec. Each spec declares `type` (string/integer/boolean/number/array), `expression` (a v1 DSL string), optional `materialise: bool` (default false = virtual; true = persisted at save), and optional `computeOn: ["save", "transition:<name>"]` (when materialised, controls when to recompute). Schema-save validation MUST verify every property reference, every function in the v1 vocabulary, no cyclic dependencies between calculations.
+A schema MAY include a top-level `x-openregister-calculations` block: a map of calculation name → spec. Each spec declares `type` (string/integer/boolean/number/array), `expression` (a v1 DSL string), optional `materialise: bool` (default false = virtual; true = persisted at save), and optional `computeOn` (when materialised, controls when to recompute). Schema-save validation MUST verify every property reference, every function in the v1 vocabulary, no cyclic dependencies between calculations.
+
+**`computeOn` value vocabulary.** The v1 vocabulary is `["save"]` (the default — recompute on every `ObjectCreating`/`ObjectUpdating`). Additional values are introduced by sibling specs:
+
+- `transition:<name>` — recompute when `ObjectTransitionedEvent` fires for the named action. **This depends on `lifecycle-annotation` being implemented.** If the schema does not declare `x-openregister-lifecycle`, schema-save validation MUST reject `computeOn` values starting with `transition:` with `{ code: "calculation-computeon-requires-lifecycle" }`. If `lifecycle-annotation` has not yet been merged at the time this change ships, `transition:<name>` MUST be deferred to a follow-up change rather than silently accepted — the implementation MUST fail-fast at schema save.
+
+This forms an explicit cross-spec dependency: the calculations evaluator needs the lifecycle change for `transition:`-flavoured triggers. Implementers MUST NOT ship `transition:` support until `lifecycle-annotation` lands.
 
 #### Scenario: A virtual calculation renders at response time
 - GIVEN schema `meeting` with calculation `displayTitle: { type: "string", expression: "concat(title, ' (', formatDate(scheduledDate, 'yyyy-MM-dd'), ')')" }` and `materialise: false`

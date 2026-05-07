@@ -6,7 +6,7 @@ The file is the single source of truth read by:
 
 - **Specter's `specter-prepare-context`** — when generating a context brief for a spec, the relevant rows are surfaced so the spec writer references the existing capability instead of prescribing bespoke code.
 - **Hydra's builder + reviewer skills** (`team-backend`, `team-frontend`, `team-architect`) — when implementing or reviewing a spec, the builder reads this catalog to pick the right consumption mechanism.
-- **Hydra's spec linter** (`scripts/lib/lint-spec-for-redundant-crud.py`) — when a spec references a capability listed here, the linter treats it as a positive signal (the spec is using the platform path) and does not flag it as a redundant wrapper.
+- **Hydra's spec linter** (`scripts/lib/lint-spec-for-redundant-crud.py` — *planned, not yet shipped*) — when implemented, the linter will treat a spec's reference to a capability listed here as a positive signal (the spec is using the platform path) and will not flag it as a redundant wrapper. Until the linter ships, catalog maintenance is enforced manually by PR reviewers.
 
 When OpenRegister adds a new capability, the implementer updates this file in the same PR. A capability that doesn't appear here is not yet platform-provided.
 
@@ -53,7 +53,7 @@ Each provider integrates OpenRegister objects with a Nextcloud app's native UI. 
 | Activity provider | proposed | `activity-provider` change | NC Activity app | Object create/update/delete events appear in the standard activity stream + dashboard widget + email digest. No per-app integration. |
 | Calendar provider | proposed | `calendar-provider` change | NC Calendar | Object date fields surface as read-only calendar events. Schemas declare which date field is the calendar source via the annotation. |
 | Contacts actions | proposed | `contacts-actions` change | NC Contacts | `ContactsMenu\IProvider` adds actions to contact entries: jump to OR object, link to existing object, create new from contact. Matching by email / display name / org. |
-| Mail sidebar | proposed | `mail-sidebar` change | NC Mail | Viewing an email shows OR objects linked to that email (uses existing `openregister_email_links`). |
+| Mail sidebar | implemented | `mail-sidebar` | NC Mail | Viewing an email shows OR objects linked to that email (uses existing `openregister_email_links`). |
 | Mail Smart Picker | proposed | `mail-smart-picker` change | Mail / Talk / Text / Collectives | Reference Provider that lets users search + insert OR object references with rich-preview cards. |
 | File actions | proposed | `file-actions` change | NC Files | File rename / copy / move / version on object-attached files. Extends the existing FileService. |
 | Profile actions | proposed | `profile-actions` change | NC user profile | Self-service GDPR export, password change, API token management, notification preferences. |
@@ -87,11 +87,11 @@ OpenRegister wraps Nextcloud's native subsystems behind a unified API. Every obj
 | Event-driven architecture | implemented | `event-driven-architecture` | 39+ typed event classes (`ObjectCreatingEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, etc.). `IEventDispatcher` registration. `StoppableEventInterface` for pre-mutation hooks. |
 | Webhooks with payload mapping | implemented | `webhook-payload-mapping` | `WebhookService`, `WebhookDeliveryJob`, `CloudEventFormatter`. Twig template payload mapping. HMAC, retry/backoff, dead-letter queue, multi-tenancy. |
 | Notification delivery | implemented (extending) | `notificatie-engine` | `Notifier`, `NotificationService`, INotificationManager integration, channel adapters, user preferences. |
-| RBAC (per-object ACLs) | implemented | `authorization-rbac-enhancement` + `rbac-scopes` | Per-object permissions, scoped roles, RBAC-aware queries. |
-| Multi-tenancy | implemented | `saas-multi-tenant` | Organisation scoping on every entity (`MultiTenancyTrait`). |
+| RBAC (per-object ACLs) | implemented | `rbac-scopes` (active spec); `authorization-rbac-enhancement` (archived 2026-03-22) | Per-object permissions, scoped roles, RBAC-aware queries. |
+| Multi-tenancy | implemented | `tenant-isolation-audit` + `tenant-lifecycle` + `tenant-quotas` (active specs); `saas-multi-tenant` (archived 2026-05-01) | Organisation scoping on every entity (`MultiTenancyTrait`). |
 | Search + filter + facet | implemented | `zoeken-filteren` | `findObjects` with full-text search, faceted drill-down, multi-field sort, cursor + offset pagination. Backend-agnostic (Postgres / Solr / Elasticsearch). |
 | Mappings (cross-system transformation) | implemented | (mappings spec) | Twig-based payload transformation between source + target schemas. |
-| Geospatial metadata + map view | implemented | `geo-metadata-kaart` | Lat/long extraction, map sidebar, geo-search. |
+| Geospatial metadata + map view | proposed | `geo-metadata-kaart` change | Lat/long extraction, map sidebar, geo-search. (Spec is in `openspec/changes/`; status reverts to `implemented` when it graduates to `openspec/specs/`.) |
 | MCP discovery (AI agents) | implemented | `mcp-discovery` | AI-agent discovery endpoint exposing every OR-backed capability. |
 | GraphQL API + SSE | implemented | `graphql-api` + `realtime-updates` | GraphQL surface over registers; subscriptions via Server-Sent Events. |
 | OAS / OpenAPI generation | implemented | `openapi-generation` + `oas-validation` | Per-register OpenAPI 3 spec auto-generated from schemas. |
@@ -137,7 +137,9 @@ Every other feature fits one of buckets 1–5 above.
 
 ## Catalog maintenance
 
-This file is updated as part of every change that adds, modifies, or removes a platform capability. The change's `tasks.md` MUST include a step to update the catalog. CI checks for changes to capability-providing specs that don't update this file.
+This file is updated as part of every change that adds, modifies, or removes a platform capability. The change's `tasks.md` MUST include a step to update the catalog. *(Planned: a CI check for spec PRs that touch capability-providing specs without updating this file. Until that lands, enforcement is manual via PR reviewers — see review comment [#3200795013](https://github.com/ConductionNL/openregister/pull/1353#discussion_r3200795013).)*
+
+**Spec column resolution rule.** Every value in the `Spec` column MUST resolve to either (a) a directory under `openspec/specs/`, (b) a directory under `openspec/changes/` (with the row's `Status = proposed`), or (c) an explicit archive note `archived <date>` for slugs whose only artefact lives under `openspec/changes/archive/`. A row whose Spec column references nothing resolvable is a catalog bug — fix the reference rather than leaving it dangling.
 
 When adding a row:
 
