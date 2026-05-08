@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkopenregister_docs=self.webpackChunkopenregister_docs||[]).push([[890],{10890:(e,s,r)=>{r.d(s,{createInfoServices:()=>c.v});var c=r(97021);r(19369)}}]);

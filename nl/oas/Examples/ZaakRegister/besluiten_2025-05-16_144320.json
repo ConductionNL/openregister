@@ -1,0 +1,634 @@
+{
+    "openapi": "3.0.0",
+    "components": {
+        "registers": {
+            "besluiten": {
+                "slug": "besluiten",
+                "title": "Besluiten",
+                "version": "0.0.2",
+                "description": "",
+                "schemas": [
+                    "besluit",
+                    "besluitinformatieobject"
+                ],
+                "source": "",
+                "tablePrefix": "",
+                "folder": "",
+                "updated": "2025-05-16T11:36:05+00:00",
+                "created": "2025-05-15T11:47:09+00:00",
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null
+            }
+        },
+        "schemas": {
+            "besluit": {
+                "slug": "besluit",
+                "title": "Besluit",
+                "description": "",
+                "version": "0.0.4",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "verantwoordelijkeOrganisatie",
+                    "besluittype",
+                    "datum",
+                    "ingangsdatum"
+                ],
+                "properties": {
+                    "url": {
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "maxLength": 1000,
+                        "minLength": 1
+                    },
+                    "identificatie": {
+                        "title": "identificatie",
+                        "description": "Identificatie van het besluit binnen de organisatie die het besluit heeft vastgesteld. Indien deze niet opgegeven is, dan wordt die gegenereerd.",
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "verantwoordelijkeOrganisatie": {
+                        "title": "verantwoordelijkeOrganisatie",
+                        "description": "Het RSIN van de niet-natuurlijk persoon zijnde de organisatie die het besluit heeft vastgesteld.",
+                        "type": "string",
+                        "maxLength": 9,
+                        "minLength": 1
+                    },
+                    "datum": {
+                        "title": "datum",
+                        "description": "De beslisdatum (AWB) van het besluit.",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "toelichting": {
+                        "title": "toelichting",
+                        "description": "Toelichting bij het besluit.",
+                        "type": "string"
+                    },
+                    "bestuursorgaan": {
+                        "title": "bestuursorgaan",
+                        "description": "Een orgaan van een rechtspersoon krachtens publiekrecht ingesteld of een persoon of college, met enig openbaar gezag bekleed onder wiens verantwoordelijkheid het besluit vastgesteld is.",
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "ingangsdatum": {
+                        "title": "ingangsdatum",
+                        "description": "Ingangsdatum van de werkingsperiode van het besluit.",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "vervaldatum": {
+                        "title": "vervaldatum",
+                        "description": "Datum waarop de werkingsperiode van het besluit eindigt.",
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "vervalreden": {
+                        "title": "vervalreden",
+                        "description": "De omschrijving die aangeeft op grond waarvan het besluit is of komt te vervallen.\n\nUitleg bij mogelijke waarden:\n\n* `tijdelijk` - Besluit met tijdelijke werking\n* `ingetrokken_overheid` - Besluit ingetrokken door overheid\n* `ingetrokken_belanghebbende` - Besluit ingetrokken o.v.v. belanghebbende",
+                        "type": "string",
+                        "enum": [
+                            "tijdelijk",
+                            "ingetrokken_overheid",
+                            "ingetrokken_belanghebbende"
+                        ]
+                    },
+                    "vervalredenWeergave": {
+                        "title": "vervalredenWeergave",
+                        "type": "string",
+                        "readOnly": true,
+                        "minLength": 1
+                    },
+                    "publicatiedatum": {
+                        "title": "publicatiedatum",
+                        "description": "Datum waarop het besluit gepubliceerd wordt.",
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "verzenddatum": {
+                        "title": "verzenddatum",
+                        "description": "Datum waarop het besluit verzonden is.",
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "uiterlijkeReactiedatum": {
+                        "title": "uiterlijkeReactiedatum",
+                        "description": "De datum tot wanneer verweer tegen het besluit mogelijk is.",
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "besluittype": {
+                        "description": "URL-referentie naar het BESLUITTYPE (in de Catalogi API).",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "besluittype",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "besluittype"
+                    },
+                    "zaak": {
+                        "description": "URL-referentie naar de ZAAK (in de Zaken API) waarvan dit besluit uitkomst is.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": 200,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "zaak",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "zaak"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T11:05:05+00:00",
+                "created": "2025-05-15T11:47:20+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            },
+            "besluitinformatieobject": {
+                "slug": "besluitinformatieobject",
+                "title": "BesluitInformatieObject",
+                "description": "",
+                "version": "0.0.4",
+                "summary": "",
+                "icon": null,
+                "required": [
+                    "informatieobject",
+                    "besluit"
+                ],
+                "properties": {
+                    "url": {
+                        "title": "url",
+                        "description": "URL-referentie naar dit object. Dit is de unieke identificatie en locatie van dit object.",
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true,
+                        "maxLength": 1000,
+                        "minLength": 1
+                    },
+                    "informatieobject": {
+                        "description": "URL-referentie naar het INFORMATIEOBJECT (in de Documenten API) waarin (een deel van) het besluit beschreven is.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "enkelvoudiginformatieobject",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "informatieobject"
+                    },
+                    "besluit": {
+                        "description": "URL-referentie naar het BESLUIT.",
+                        "type": "object",
+                        "format": "uri",
+                        "pattern": "",
+                        "default": "",
+                        "behavior": "",
+                        "required": false,
+                        "deprecated": false,
+                        "visible": true,
+                        "hideOnCollection": false,
+                        "minLength": null,
+                        "maxLength": null,
+                        "example": "",
+                        "immutable": false,
+                        "minimum": null,
+                        "maximum": null,
+                        "multipleOf": null,
+                        "exclusiveMin": false,
+                        "exclusiveMax": false,
+                        "minItems": null,
+                        "maxItems": null,
+                        "cascadeDelete": false,
+                        "inversedBy": "",
+                        "$ref": "besluit",
+                        "objectConfiguration": {
+                            "handling": "uri",
+                            "schema": ""
+                        },
+                        "fileConfiguration": {
+                            "handling": "ignore",
+                            "allowedMimeTypes": [],
+                            "location": "",
+                            "maxSize": 0
+                        },
+                        "oneOf": [],
+                        "title": "besluit"
+                    }
+                },
+                "archive": [],
+                "source": "",
+                "hardValidation": false,
+                "updated": "2025-05-16T11:06:16+00:00",
+                "created": "2025-05-15T11:47:20+00:00",
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "deleted": null,
+                "configuration": null
+            }
+        },
+        "endpoints": {
+            "besluiten-get": {
+                "name": "Besluiten GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-get-collection"
+            },
+            "besluit-post": {
+                "name": "Besluiten POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-post"
+            },
+            "besluit-audittrails-get": {
+                "name": "Besluit Audittrails GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten/{{id}}/audittrail",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}",
+                    "audittrail"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?/audittrail$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-audittrail-get-collection"
+            },
+            "besluit-audittrail-get": {
+                "name": "Besluit Audittrail GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten/{{id}}/audittrail/{{audittrail-id}}",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}",
+                    "audittrail",
+                    "{{audittrail-id}}"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?/audittrail(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-audittrail-get-item"
+            },
+            "besluit-get": {
+                "name": "Besluit GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten/{{id}}",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-get-item"
+            },
+            "besluit-put": {
+                "name": "Besluit PUT",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten/{{id}}",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?$#",
+                "method": "PUT",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-put"
+            },
+            "besluit-patch": {
+                "name": "Besluit PATCH",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten/{{id}}",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?$#",
+                "method": "PATCH",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-patch"
+            },
+            "besluit-delete": {
+                "name": "Besluit DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluiten/{{id}}",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluiten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluiten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluit",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluit-delete"
+            },
+            "besluitinformatieobjecten-get": {
+                "name": "BesluitInformatieObject GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluitinformatieobjecten",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluitinformatieobjecten"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluitinformatieobjecten$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluitinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluitinformatieobject-get-collection"
+            },
+            "besluitinformatieobject-post": {
+                "name": "BesluitInformatieObject POST",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluitinformatieobjecten",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluitinformatieobjecten"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluitinformatieobjecten$#",
+                "method": "POST",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluitinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluitinformatieobject-post"
+            },
+            "besluitinformatieobject-get": {
+                "name": "BesluitInformatieObject GET",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluitinformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluitinformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluitinformatieobjecten(?:/([^/]+))?$#",
+                "method": "GET",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluitinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluitinformatieobject-get-item"
+            },
+            "besluitinformatieobject-delete": {
+                "name": "BesluitInformatieObject DELETE",
+                "description": "",
+                "reference": "",
+                "version": "0.0.1",
+                "endpoint": "brc/api/v1/besluitinformatieobjecten/{{id}}",
+                "endpointArray": [
+                    "brc",
+                    "api",
+                    "v1",
+                    "besluitinformatieobjecten",
+                    "{{id}}"
+                ],
+                "endpointRegex": "#^brc/api/v1/besluitinformatieobjecten(?:/([^/]+))?$#",
+                "method": "DELETE",
+                "targetType": "register/schema",
+                "targetId": "besluiten/besluitinformatieobject",
+                "conditions": [],
+                "inputMapping": null,
+                "outputMapping": null,
+                "rules": [],
+                "configurations": [],
+                "slug": "besluitinformatieobject-delete"
+            }
+        },
+        "sources": [],
+        "mappings": [],
+        "jobs": [],
+        "synchronizations": [],
+        "rules": [],
+        "objects": []
+    },
+    "info": {
+        "id": 5,
+        "title": "Besluiten",
+        "description": "",
+        "version": "0.0.2"
+    }
+}

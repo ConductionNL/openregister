@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-86.6 -100 173.2 200" role="img" aria-label="Conduction avatar, white">
+  <title>Conduction avatar, white, drawn as polygons (no background)</title>
+  <!-- For dark grounds. The cobalt-on-light cousin draws an inner
+       white polygon to force the interior; here the ground is
+       already dark so we let it show through, and the frame
+       collapses to a single hex with a hole, drawn via even-odd
+       fill of one path. Plus the C-shape on top in white. -->
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M0,-100 L86.6,-50 L86.6,50 L0,100 L-86.6,50 L-86.6,-50 Z M0,-74.5 L64.5,-37.3 L64.5,37.3 L0,74.5 L-64.5,37.3 L-64.5,-37.3 Z"/>
+  <polygon fill="#FFFFFF" points="-0.2,-25.2 20.1,-13.5 43.7,-27.1 -0.2,-52.4 -45.6,-26.2 -45.6,26.2 -0.2,52.4 43.7,27.1 20.1,13.5 -0.2,25.2 -22,12.6 -22,-12.6"/>
+</svg>

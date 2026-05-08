@@ -1,0 +1,50 @@
+/* ============================================================
+   Conduction background — reusable parallax honeycomb depth field
+   ------------------------------------------------------------
+   Drop <div class="conduction-bg" aria-hidden="true"></div> as
+   the first child of any position:relative + overflow:hidden
+   container. The hydrator (conduction-bg.js) generates
+   depth-tiered hexes that parallax on scroll and slowly
+   breathe in opacity.
+
+   Themes (set by class on .conduction-bg):
+     (default)            white hexes — for cobalt / cobalt-800 surfaces
+     .conduction-bg.on-light   cobalt hexes — for white / cobalt-50 surfaces
+
+   Per huisstijl: hexes are always pointy-top, never rotated.
+   Requires tokens.css to provide --hex-pointy-top, --c-blue-cobalt,
+   and --c-orange-knvb.
+   ============================================================ */
+.conduction-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --cbg-hex: #ffffff;
+  --cbg-accent: var(--c-orange-knvb);
+}
+.conduction-bg.on-light {
+  --cbg-hex: var(--c-blue-cobalt);
+  --cbg-accent: var(--c-orange-knvb);
+}
+.conduction-bg .hex {
+  position: absolute;
+  clip-path: var(--hex-pointy-top);
+  background: var(--cbg-hex);
+  will-change: transform, opacity;
+  transform: translate(-50%, -50%);
+  animation: conduction-hex-breathe var(--cbg-dur, 14s) ease-in-out var(--cbg-delay, 0s) infinite;
+}
+.conduction-bg .hex.accent {
+  background: var(--cbg-accent);
+}
+@keyframes conduction-hex-breathe {
+  0%, 100% { opacity: var(--cbg-opa-min, 0.04); }
+  50%      { opacity: var(--cbg-opa-max, 0.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .conduction-bg .hex {
+    animation: none;
+    opacity: var(--cbg-opa-max, 0.12);
+  }
+}

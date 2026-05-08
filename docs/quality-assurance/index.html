@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-quality-assurance" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.7.0">
+<title data-rh="true">Quality Assurance | OpenRegister</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://openregister.conduction.nl/docs/quality-assurance/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" property="og:locale:alternate" content="nl"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Quality Assurance | OpenRegister"><meta data-rh="true" name="description" content="This document describes the quality assurance tools and processes used in the OpenRegister application and all Conduction Nextcloud apps."><meta data-rh="true" property="og:description" content="This document describes the quality assurance tools and processes used in the OpenRegister application and all Conduction Nextcloud apps."><link data-rh="true" rel="icon" href="/img/favicon.svg"><link data-rh="true" rel="canonical" href="https://openregister.conduction.nl/docs/quality-assurance/"><link data-rh="true" rel="alternate" href="https://openregister.conduction.nl/docs/quality-assurance/" hreflang="en"><link data-rh="true" rel="alternate" href="https://openregister.conduction.nl/nl/docs/quality-assurance/" hreflang="nl"><link data-rh="true" rel="alternate" href="https://openregister.conduction.nl/docs/quality-assurance/" hreflang="x-default"><link data-rh="true" rel="stylesheet" href="/lib/canal-footer.css"><link data-rh="true" rel="stylesheet" href="/lib/kade-cyclist.css"><link rel="stylesheet" href="/assets/css/styles.2eeda6a3.css">
+<script src="/assets/js/runtime~main.b5c972c1.js" defer="defer"></script>
+<script src="/assets/js/main.ed24b472.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();null!==e?t(e):window.matchMedia("(prefers-color-scheme: dark)").matches?t("dark"):(window.matchMedia("(prefers-color-scheme: light)").matches,t("light"))}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav class="navbar nav_MuJ0" role="navigation" aria-label="Main"><div class="left__6eY"><a class="wordmark_mhs1" href="/">OpenRegister</a><div class="links_cXJT"></div></div><div class="ctas_jpo4"><a href="/api" class="ghost_SGJf">API Documentation</a><a href="https://github.com/ConductionNL/openregister" class="ghost_SGJf" target="_blank" rel="noopener noreferrer">GitHub</a><div class="localeWrapper__Pip"><div class="navbar__item dropdown dropdown--hoverable dropdown--right"><a href="#" aria-haspopup="true" aria-expanded="false" role="button" class="navbar__link" type="localeDropdown"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="iconLanguage_nlXk"><path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"></path></svg>English</a><ul class="dropdown__menu"><li><a href="/docs/quality-assurance/" target="_self" rel="noopener noreferrer" class="dropdown__link dropdown__link--active" lang="en">English</a></li><li><a href="/nl/docs/quality-assurance/" target="_self" rel="noopener noreferrer" class="dropdown__link" lang="nl">Nederlands</a></li></ul></div></div></div></nav><div id="__docusaurus_skipToContent_fallback" class="main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/Integrations/">Integrations Overview</a><button aria-label="Expand sidebar category &#x27;Integrations Overview&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/Features/">Core Features</a><button aria-label="Expand sidebar category &#x27;Core Features&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/Technical/vectorization-architecture/">Technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/UseCases/clientRegisters/">UseCases</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/api/bulk-operations/">api</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/development/Services/">development</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/development-notes/AUDIT_2026-05-01/">development-notes</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/docs/features/">OpenRegister Feature Documentation</a><button aria-label="Expand sidebar category &#x27;OpenRegister Feature Documentation&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/">Introduction</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/installation/">Installation Guide</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/intro/">Introduction</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" href="/docs/quality-assurance/">Quality Assurance</a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/static/oas/Examples/ZaakRegister/project/">static</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/technical/n8n-mcp/">technical</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/testing/agent-testing-guide/">testing</a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/testing/">Testing</a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/user/ai-conversations/">user</a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/docs/user-guide/configuration/api-tokens/">user-guide</a></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs" itemscope="" itemtype="https://schema.org/BreadcrumbList"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link" itemprop="name">Quality Assurance</span><meta itemprop="position" content="1"></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Quality Assurance</h1></header>
+<p>This document describes the quality assurance tools and processes used in the OpenRegister application and all Conduction Nextcloud apps.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="overview">Overview<a href="#overview" class="hash-link" aria-label="Direct link to Overview" title="Direct link to Overview">​</a></h2>
+<p>We use two main tools for quality assurance:</p>
+<ol>
+<li><strong>PHPQA</strong> - Generates comprehensive quality reports and metrics</li>
+<li><strong>GrumPHP</strong> - Enforces quality standards through git hooks</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="phpqa---php-quality-analyzer">PHPQA - PHP Quality Analyzer<a href="#phpqa---php-quality-analyzer" class="hash-link" aria-label="Direct link to PHPQA - PHP Quality Analyzer" title="Direct link to PHPQA - PHP Quality Analyzer">​</a></h2>
+<p>PHPQA is our primary tool for analyzing code quality. It runs multiple analyzers and generates a comprehensive report showing the health of our codebase.</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="what-phpqa-checks">What PHPQA Checks<a href="#what-phpqa-checks" class="hash-link" aria-label="Direct link to What PHPQA Checks" title="Direct link to What PHPQA Checks">​</a></h3>
+<p>PHPQA runs the following analyzers:</p>
+<ul>
+<li><strong>PHPCS</strong> (PHP CodeSniffer) - Coding standards compliance</li>
+<li><strong>PHPMD</strong> (PHP Mess Detector) - Code smells and potential issues</li>
+<li><strong>PHPLoc</strong> - Lines of code and project size metrics</li>
+<li><strong>PHPMetrics</strong> - Complexity, maintainability, and quality metrics</li>
+<li><strong>PHPCPD</strong> (Copy/Paste Detector) - Duplicate code detection</li>
+<li><strong>Parallel Lint</strong> - PHP syntax checking</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="running-phpqa">Running PHPQA<a href="#running-phpqa" class="hash-link" aria-label="Direct link to Running PHPQA" title="Direct link to Running PHPQA">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="quick-check">Quick Check<a href="#quick-check" class="hash-link" aria-label="Direct link to Quick Check" title="Direct link to Quick Check">​</a></h4>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer phpqa</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p>or</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer qa:check</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p>This generates reports in the &#x27;phpqa&#x27; directory.</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="full-analysis">Full Analysis<a href="#full-analysis" class="hash-link" aria-label="Direct link to Full Analysis" title="Direct link to Full Analysis">​</a></h4>
+<p>For a complete analysis with all tools:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer qa:full</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="cicd-mode">CI/CD Mode<a href="#cicd-mode" class="hash-link" aria-label="Direct link to CI/CD Mode" title="Direct link to CI/CD Mode">​</a></h4>
+<p>For continuous integration environments:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer phpqa:ci</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p>This mode fails the build if quality thresholds are not met.</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="understanding-phpqa-reports">Understanding PHPQA Reports<a href="#understanding-phpqa-reports" class="hash-link" aria-label="Direct link to Understanding PHPQA Reports" title="Direct link to Understanding PHPQA Reports">​</a></h3>
+<p>After running PHPQA, you will find several reports:</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="html-report">HTML Report<a href="#html-report" class="hash-link" aria-label="Direct link to HTML Report" title="Direct link to HTML Report">​</a></h4>
+<p>Open &#x27;phpqa/phpqa-offline.html&#x27; in your browser for an interactive dashboard showing:</p>
+<ul>
+<li>Overall quality score</li>
+<li>Issues per analyzer</li>
+<li>Trends over time (if run multiple times)</li>
+<li>Detailed breakdown by file</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="json-report">JSON Report<a href="#json-report" class="hash-link" aria-label="Direct link to JSON Report" title="Direct link to JSON Report">​</a></h4>
+<p>The file &#x27;phpqa/phpqa.json&#x27; contains machine-readable metrics useful for:</p>
+<ul>
+<li>CI/CD pipelines</li>
+<li>Custom reporting tools</li>
+<li>Tracking quality over time</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="phpmetrics-report">PHPMetrics Report<a href="#phpmetrics-report" class="hash-link" aria-label="Direct link to PHPMetrics Report" title="Direct link to PHPMetrics Report">​</a></h4>
+<p>The &#x27;phpqa/phpmetrics&#x27; directory contains detailed complexity metrics:</p>
+<ul>
+<li>Cyclomatic complexity per method</li>
+<li>Maintainability index</li>
+<li>Coupling and cohesion metrics</li>
+<li>Dependency graphs</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="quality-thresholds">Quality Thresholds<a href="#quality-thresholds" class="hash-link" aria-label="Direct link to Quality Thresholds" title="Direct link to Quality Thresholds">​</a></h3>
+<p>We aim for the following quality standards:</p>
+<table><thead><tr><th>Metric</th><th>Target</th><th>Critical</th></tr></thead><tbody><tr><td>PHPCS Errors</td><td>0</td><td>Must fix</td></tr><tr><td>PHPMD Violations</td><td>&lt; 10 per file</td><td>Review critical</td></tr><tr><td>Code Duplication</td><td>&lt; 5%</td><td>&lt; 10%</td></tr><tr><td>Cyclomatic Complexity</td><td>&lt; 10 per method</td><td>&lt; 20 per method</td></tr><tr><td>Maintainability Index</td><td>&gt; 85</td><td>&gt; 70</td></tr></tbody></table>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="when-to-run-phpqa">When to Run PHPQA<a href="#when-to-run-phpqa" class="hash-link" aria-label="Direct link to When to Run PHPQA" title="Direct link to When to Run PHPQA">​</a></h3>
+<p>PHPQA should be run:</p>
+<p>✅ After implementing new features
+✅ After refactoring code
+✅ After fixing bugs
+✅ Before marking todos as complete
+✅ Before requesting code review
+✅ Before merging to development or main branches</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="addressing-phpqa-issues">Addressing PHPQA Issues<a href="#addressing-phpqa-issues" class="hash-link" aria-label="Direct link to Addressing PHPQA Issues" title="Direct link to Addressing PHPQA Issues">​</a></h3>
+<p>When PHPQA finds issues:</p>
+<ol>
+<li><strong>Review the HTML report</strong> to understand the problems</li>
+<li><strong>Prioritize critical issues</strong> (PHPCS errors, high complexity)</li>
+<li><strong>Fix coding standards</strong> automatically with &#x27;composer cs<!-- -->:fix<!-- -->&#x27;</li>
+<li><strong>Refactor complex code</strong> to improve maintainability</li>
+<li><strong>Reduce duplication</strong> by extracting common code</li>
+<li><strong>Re-run PHPQA</strong> to verify fixes</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="grumphp---git-hooks-for-quality">GrumPHP - Git Hooks for Quality<a href="#grumphp---git-hooks-for-quality" class="hash-link" aria-label="Direct link to GrumPHP - Git Hooks for Quality" title="Direct link to GrumPHP - Git Hooks for Quality">​</a></h2>
+<p>GrumPHP automatically runs quality checks when you commit or push code, preventing bad code from reaching the repository.</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="what-grumphp-checks">What GrumPHP Checks<a href="#what-grumphp-checks" class="hash-link" aria-label="Direct link to What GrumPHP Checks" title="Direct link to What GrumPHP Checks">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="pre-commit-hook">Pre-Commit Hook<a href="#pre-commit-hook" class="hash-link" aria-label="Direct link to Pre-Commit Hook" title="Direct link to Pre-Commit Hook">​</a></h4>
+<p>Runs on every &#x27;git commit&#x27;:</p>
+<ul>
+<li><strong>PHP Lint</strong> - Syntax errors</li>
+<li><strong>PHPCS</strong> - Coding standards</li>
+<li><strong>JSON Lint</strong> - JSON file validation</li>
+<li><strong>YAML Lint</strong> - YAML file validation</li>
+<li><strong>Composer</strong> - Composer.json validation</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="pre-push-hook">Pre-Push Hook<a href="#pre-push-hook" class="hash-link" aria-label="Direct link to Pre-Push Hook" title="Direct link to Pre-Push Hook">​</a></h4>
+<p>Runs on every &#x27;git push&#x27;:</p>
+<ul>
+<li>All pre-commit checks</li>
+<li><strong>PHPMD</strong> - Code quality issues</li>
+<li><strong>PHPUnit</strong> - Unit tests</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="setting-up-grumphp">Setting Up GrumPHP<a href="#setting-up-grumphp" class="hash-link" aria-label="Direct link to Setting Up GrumPHP" title="Direct link to Setting Up GrumPHP">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="initialize-git-hooks">Initialize Git Hooks<a href="#initialize-git-hooks" class="hash-link" aria-label="Direct link to Initialize Git Hooks" title="Direct link to Initialize Git Hooks">​</a></h4>
+<p>After installing dependencies, initialize GrumPHP:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer grumphp:init</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p>This creates git hooks in &#x27;.git/hooks/&#x27; directory.</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="remove-git-hooks">Remove Git Hooks<a href="#remove-git-hooks" class="hash-link" aria-label="Direct link to Remove Git Hooks" title="Direct link to Remove Git Hooks">​</a></h4>
+<p>If needed, remove GrumPHP hooks:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer grumphp:deinit</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="running-grumphp-manually">Running GrumPHP Manually<a href="#running-grumphp-manually" class="hash-link" aria-label="Direct link to Running GrumPHP Manually" title="Direct link to Running GrumPHP Manually">​</a></h3>
+<p>Test what GrumPHP would check without committing:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer grumphp</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="bypassing-grumphp-emergency-only">Bypassing GrumPHP (Emergency Only)<a href="#bypassing-grumphp-emergency-only" class="hash-link" aria-label="Direct link to Bypassing GrumPHP (Emergency Only)" title="Direct link to Bypassing GrumPHP (Emergency Only)">​</a></h3>
+<p>In rare emergencies, you can bypass GrumPHP:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">git commit --no-verify</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p><strong>⚠️ Warning:</strong> Only bypass GrumPHP when absolutely necessary. Always fix issues properly rather than bypassing checks.</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="understanding-grumphp-errors">Understanding GrumPHP Errors<a href="#understanding-grumphp-errors" class="hash-link" aria-label="Direct link to Understanding GrumPHP Errors" title="Direct link to Understanding GrumPHP Errors">​</a></h3>
+<p>When GrumPHP fails, it shows:</p>
+<ol>
+<li><strong>Which task failed</strong> (e.g., phpcs, phpmd, phpunit)</li>
+<li><strong>Error details</strong> from that tool</li>
+<li><strong>Files that caused the failure</strong></li>
+</ol>
+<p>Fix the errors and commit again. The hooks will run automatically.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="quality-workflow">Quality Workflow<a href="#quality-workflow" class="hash-link" aria-label="Direct link to Quality Workflow" title="Direct link to Quality Workflow">​</a></h2>
+<p>Follow this workflow for maintaining high code quality:</p>
+<!-- -->
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="step-by-step-guide">Step-by-Step Guide<a href="#step-by-step-guide" class="hash-link" aria-label="Direct link to Step-by-Step Guide" title="Direct link to Step-by-Step Guide">​</a></h3>
+<ol>
+<li>
+<p><strong>Write or modify code</strong></p>
+<ul>
+<li>Follow coding standards</li>
+<li>Add docblocks and type hints</li>
+<li>Write inline comments</li>
+</ul>
+</li>
+<li>
+<p><strong>Auto-fix coding standards</strong></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer cs:fix</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+</li>
+<li>
+<p><strong>Check code quality</strong></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer phpqa</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+</li>
+<li>
+<p><strong>Review PHPQA report</strong></p>
+<ul>
+<li>Open &#x27;phpqa/phpqa-offline.html&#x27;</li>
+<li>Address critical issues</li>
+<li>Refactor complex code</li>
+</ul>
+</li>
+<li>
+<p><strong>Run tests</strong></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer test:unit</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+</li>
+<li>
+<p><strong>Commit changes</strong></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">git add .</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">git commit -m &quot;feat: description of changes&quot;</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<ul>
+<li>GrumPHP runs pre-commit checks automatically</li>
+<li>Fix any issues that are found</li>
+</ul>
+</li>
+<li>
+<p><strong>Push changes</strong></p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">git push</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<ul>
+<li>GrumPHP runs pre-push checks automatically</li>
+<li>Fix any issues that are found</li>
+</ul>
+</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="configuration-files">Configuration Files<a href="#configuration-files" class="hash-link" aria-label="Direct link to Configuration Files" title="Direct link to Configuration Files">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phpqayml">.phpqa.yml<a href="#phpqayml" class="hash-link" aria-label="Direct link to .phpqa.yml" title="Direct link to .phpqa.yml">​</a></h3>
+<p>PHPQA configuration file that defines:</p>
+<ul>
+<li>Directories to analyze</li>
+<li>Tools to run</li>
+<li>Report formats</li>
+<li>Thresholds</li>
+</ul>
+<p>Located at: &#x27;.phpqa.yml&#x27;</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="grumphpyml">grumphp.yml<a href="#grumphpyml" class="hash-link" aria-label="Direct link to grumphp.yml" title="Direct link to grumphp.yml">​</a></h3>
+<p>GrumPHP configuration file that defines:</p>
+<ul>
+<li>Git hooks to install</li>
+<li>Tasks to run on each hook</li>
+<li>Task configuration</li>
+<li>Test suites</li>
+</ul>
+<p>Located at: &#x27;grumphp.yml&#x27;</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phpcsxml">phpcs.xml<a href="#phpcsxml" class="hash-link" aria-label="Direct link to phpcs.xml" title="Direct link to phpcs.xml">​</a></h3>
+<p>PHP CodeSniffer ruleset defining coding standards.</p>
+<p>Located at: &#x27;phpcs.xml&#x27;</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phpmdxml">phpmd.xml<a href="#phpmdxml" class="hash-link" aria-label="Direct link to phpmd.xml" title="Direct link to phpmd.xml">​</a></h3>
+<p>PHP Mess Detector ruleset defining code quality rules.</p>
+<p>Located at: &#x27;phpmd.xml&#x27;</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="cicd-integration">CI/CD Integration<a href="#cicd-integration" class="hash-link" aria-label="Direct link to CI/CD Integration" title="Direct link to CI/CD Integration">​</a></h2>
+<p>We use GitHub Actions workflows to enforce quality standards and prevent low-quality code from being merged.</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="automated-workflows">Automated Workflows<a href="#automated-workflows" class="hash-link" aria-label="Direct link to Automated Workflows" title="Direct link to Automated Workflows">​</a></h3>
+<p>Our repository includes three main quality workflows:</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="1-quality-check-workflow">1. Quality Check Workflow<a href="#1-quality-check-workflow" class="hash-link" aria-label="Direct link to 1. Quality Check Workflow" title="Direct link to 1. Quality Check Workflow">​</a></h4>
+<p><strong>File:</strong> &#x27;.github/workflows/quality-check.yml&#x27;</p>
+<p>Runs on every push and pull request. Performs:</p>
+<ul>
+<li>PHPCS (Coding Standards) analysis</li>
+<li>PHPMD (Mess Detection) analysis</li>
+<li>PHPQA (Full Quality Analysis)</li>
+<li>Generates and uploads quality reports</li>
+<li>Posts results as PR comments</li>
+</ul>
+<p><strong>Quality Requirements:</strong></p>
+<ul>
+<li>PHPCS Errors: Must be 0</li>
+<li>PHPMD Score: Should be ≥ 80%</li>
+<li>Overall Quality Score: Must be ≥ 90%</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="2-tests-workflow">2. Tests Workflow<a href="#2-tests-workflow" class="hash-link" aria-label="Direct link to 2. Tests Workflow" title="Direct link to 2. Tests Workflow">​</a></h4>
+<p><strong>File:</strong> &#x27;.github/workflows/tests.yml&#x27;</p>
+<p>Runs on every push and pull request. Performs:</p>
+<ul>
+<li>Unit tests on PHP 8.1, 8.2, and 8.3</li>
+<li>Integration tests (if Nextcloud environment available)</li>
+<li>Code coverage analysis</li>
+<li>Posts coverage report as PR comment</li>
+</ul>
+<p><strong>Coverage Requirements:</strong></p>
+<ul>
+<li>Minimum: 75% (warning if below)</li>
+<li>Recommended: 85%</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="3-branch-protection-workflow">3. Branch Protection Workflow<a href="#3-branch-protection-workflow" class="hash-link" aria-label="Direct link to 3. Branch Protection Workflow" title="Direct link to 3. Branch Protection Workflow">​</a></h4>
+<p><strong>File:</strong> &#x27;.github/workflows/branch-protection.yml&#x27;</p>
+<p>Runs on pull requests to protected branches. This is the <strong>quality gate</strong> that blocks merges.</p>
+<p><strong>Quality Gate Checks:</strong></p>
+<table><thead><tr><th>Check</th><th>Requirement</th><th>Blocks Merge</th></tr></thead><tbody><tr><td>PHP Syntax</td><td>No errors</td><td>Yes</td></tr><tr><td>PHPCS Errors</td><td>Must be 0</td><td>Yes</td></tr><tr><td>PHPMD Violations</td><td>Max 50</td><td>Yes</td></tr><tr><td>Overall Quality Score</td><td>≥ 90%</td><td>Yes</td></tr><tr><td>Unit Tests</td><td>Must pass</td><td>No (warning only)</td></tr></tbody></table>
+<p><strong>Quality Score Calculation:</strong></p>
+<p>The overall quality score is calculated as:</p>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">Score = 100 - (PHPCS_Errors × 2) - (PHPMD_Violations × 0.1)</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p>Examples:</p>
+<ul>
+<li>0 PHPCS errors, 0 PHPMD violations = 100%</li>
+<li>0 PHPCS errors, 50 PHPMD violations = 95%</li>
+<li>1 PHPCS error, 0 PHPMD violations = 98%</li>
+<li>0 PHPCS errors, 100 PHPMD violations = 90%</li>
+<li>1 PHPCS error, 100 PHPMD violations = 88% (FAIL)</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="setting-up-branch-protection">Setting Up Branch Protection<a href="#setting-up-branch-protection" class="hash-link" aria-label="Direct link to Setting Up Branch Protection" title="Direct link to Setting Up Branch Protection">​</a></h3>
+<p>To enable quality gates on GitHub:</p>
+<ol>
+<li>Go to <strong>Settings</strong> → <strong>Branches</strong> → <strong>Add rule</strong></li>
+<li>Branch name pattern: &#x27;main&#x27;, &#x27;master&#x27;, or &#x27;development&#x27;</li>
+<li>Enable <strong>Require status checks to pass before merging</strong></li>
+<li>Select required checks:<!-- -->
+<ul>
+<li>&#x27;Quality Gate Check&#x27;</li>
+<li>&#x27;Code Quality Analysis&#x27;</li>
+<li>&#x27;PHPUnit Tests&#x27; (optional)</li>
+</ul>
+</li>
+<li>Enable <strong>Require branches to be up to date before merging</strong></li>
+<li>Save changes</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="workflow-integration-diagram">Workflow Integration Diagram<a href="#workflow-integration-diagram" class="hash-link" aria-label="Direct link to Workflow Integration Diagram" title="Direct link to Workflow Integration Diagram">​</a></h3>
+<!-- -->
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="understanding-workflow-results">Understanding Workflow Results<a href="#understanding-workflow-results" class="hash-link" aria-label="Direct link to Understanding Workflow Results" title="Direct link to Understanding Workflow Results">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="success-example">Success Example<a href="#success-example" class="hash-link" aria-label="Direct link to Success Example" title="Direct link to Success Example">​</a></h4>
+<p>When a PR meets all requirements:</p>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">🚦 Quality Gate Status: ✅ PASSED</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Check | Status | Details |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">|-------|--------|---------|</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| PHP Syntax | ✅ PASS | All PHP files are valid |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Coding Standards (PHPCS) | ✅ PASS | Errors: 0 (must be 0) |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Code Quality (PHPMD) | ✅ PASS | Violations: 12 (max 50) |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Overall Quality Score | ✅ PASS | Score: 98.8% (min 90%) |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Unit Tests | ✅ PASS | Test suite passed |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">✅ All quality checks passed! This PR meets the requirements for merging.</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="failure-example">Failure Example<a href="#failure-example" class="hash-link" aria-label="Direct link to Failure Example" title="Direct link to Failure Example">​</a></h4>
+<p>When a PR does not meet requirements:</p>
+<div class="codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">🚦 Quality Gate Status: ❌ FAILED</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Check | Status | Details |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">|-------|--------|---------|</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| PHP Syntax | ✅ PASS | All PHP files are valid |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Coding Standards (PHPCS) | ❌ FAIL | Errors: 5 (must be 0) |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Code Quality (PHPMD) | ✅ PASS | Violations: 23 (max 50) |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Overall Quality Score | ❌ FAIL | Score: 87.7% (min 90%) |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">| Unit Tests | ✅ PASS | Test suite passed |</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">❌ Quality gate failed. Please address the issues above before merging.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Required actions:</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">- Fix PHPCS errors (run &#x27;composer cs:fix&#x27;)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">- Improve overall code quality to reach 90% score</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="local-testing-before-push">Local Testing Before Push<a href="#local-testing-before-push" class="hash-link" aria-label="Direct link to Local Testing Before Push" title="Direct link to Local Testing Before Push">​</a></h3>
+<p>Always test locally before pushing to avoid failed workflows:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># 1. Fix coding standards</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer cs:fix</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># 2. Run quality analysis</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer phpqa</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># 3. Run tests</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer test:unit</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># 4. Review quality report</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">open phpqa/phpqa-offline.html</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="bypassing-workflows-not-recommended">Bypassing Workflows (Not Recommended)<a href="#bypassing-workflows-not-recommended" class="hash-link" aria-label="Direct link to Bypassing Workflows (Not Recommended)" title="Direct link to Bypassing Workflows (Not Recommended)">​</a></h3>
+<p>Workflows cannot be bypassed for pull requests to protected branches. This is intentional to maintain code quality.</p>
+<p>If you need to merge urgent fixes:</p>
+<ol>
+<li><strong>Create a hotfix branch</strong> from main/master</li>
+<li><strong>Fix the urgent issue</strong></li>
+<li><strong>Ensure quality checks pass</strong></li>
+<li><strong>Merge with fast-forward</strong> (if branch protection allows)</li>
+</ol>
+<p>Alternatively, repository admins can:</p>
+<ul>
+<li>Temporarily disable branch protection (not recommended)</li>
+<li>Override required status checks (requires admin privileges)</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="viewing-workflow-artifacts">Viewing Workflow Artifacts<a href="#viewing-workflow-artifacts" class="hash-link" aria-label="Direct link to Viewing Workflow Artifacts" title="Direct link to Viewing Workflow Artifacts">​</a></h3>
+<p>Each workflow run generates artifacts:</p>
+<ol>
+<li>Go to <strong>Actions</strong> tab on GitHub</li>
+<li>Click on the workflow run</li>
+<li>Scroll to <strong>Artifacts</strong> section</li>
+<li>Download:<!-- -->
+<ul>
+<li>&#x27;phpqa-reports&#x27; - Full quality analysis</li>
+<li>&#x27;coverage-report&#x27; - Test coverage data</li>
+<li>&#x27;quality-gate-reports&#x27; - Quality gate details</li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="troubleshooting-workflow-failures">Troubleshooting Workflow Failures<a href="#troubleshooting-workflow-failures" class="hash-link" aria-label="Direct link to Troubleshooting Workflow Failures" title="Direct link to Troubleshooting Workflow Failures">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="workflow-fails-on-dependencies">Workflow Fails on Dependencies<a href="#workflow-fails-on-dependencies" class="hash-link" aria-label="Direct link to Workflow Fails on Dependencies" title="Direct link to Workflow Fails on Dependencies">​</a></h4>
+<p>If &#x27;composer install&#x27; fails:</p>
+<ul>
+<li>Check &#x27;composer.json&#x27; syntax</li>
+<li>Ensure &#x27;composer.lock&#x27; is committed</li>
+<li>Verify PHP version compatibility</li>
+</ul>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="workflow-fails-on-phpcs">Workflow Fails on PHPCS<a href="#workflow-fails-on-phpcs" class="hash-link" aria-label="Direct link to Workflow Fails on PHPCS" title="Direct link to Workflow Fails on PHPCS">​</a></h4>
+<p>If PHPCS finds errors:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Locally fix issues</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer cs:fix</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Verify fixes</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer cs:check</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Commit and push</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">git add .</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">git commit -m &quot;fix: coding standards&quot;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">git push</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="workflow-fails-on-quality-score">Workflow Fails on Quality Score<a href="#workflow-fails-on-quality-score" class="hash-link" aria-label="Direct link to Workflow Fails on Quality Score" title="Direct link to Workflow Fails on Quality Score">​</a></h4>
+<p>If overall score is below 90%:</p>
+<ol>
+<li>Review PHPQA report locally</li>
+<li>Fix critical issues first</li>
+<li>Refactor complex code</li>
+<li>Reduce code duplication</li>
+<li>Re-run PHPQA to verify improvements</li>
+</ol>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="workflow-times-out">Workflow Times Out<a href="#workflow-times-out" class="hash-link" aria-label="Direct link to Workflow Times Out" title="Direct link to Workflow Times Out">​</a></h4>
+<p>If workflows take too long:</p>
+<ul>
+<li>Check for infinite loops in tests</li>
+<li>Reduce parallel processes in &#x27;.phpqa.yml&#x27;</li>
+<li>Optimize heavy analyzers</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="for-ai-agents">For AI Agents<a href="#for-ai-agents" class="hash-link" aria-label="Direct link to For AI Agents" title="Direct link to For AI Agents">​</a></h2>
+<p>When you are an AI agent working on this codebase:</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="mandatory-steps">Mandatory Steps<a href="#mandatory-steps" class="hash-link" aria-label="Direct link to Mandatory Steps" title="Direct link to Mandatory Steps">​</a></h3>
+<ol>
+<li><strong>Always run PHPQA</strong> after completing code changes</li>
+<li><strong>Review the generated report</strong> at &#x27;phpqa/phpqa-offline.html&#x27;</li>
+<li><strong>Address critical issues</strong> before marking work complete</li>
+<li><strong>Run tests</strong> to ensure functionality</li>
+<li><strong>Document changes</strong> in the appropriate documentation files</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="quality-commands-reference">Quality Commands Reference<a href="#quality-commands-reference" class="hash-link" aria-label="Direct link to Quality Commands Reference" title="Direct link to Quality Commands Reference">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain"># Fix coding standards automatically</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer cs:fix</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Check code quality</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer phpqa</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Check quality with full analysis</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer qa:full</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run unit tests</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer test:unit</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run all checks (lint, phpcs, psalm, tests)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer check</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run full checks (includes phpstan)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer check:full</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain"># Run strict checks (includes phpmd)</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer check:strict</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="quality-checklist">Quality Checklist<a href="#quality-checklist" class="hash-link" aria-label="Direct link to Quality Checklist" title="Direct link to Quality Checklist">​</a></h3>
+<p>Before completing a task:</p>
+<ul class="contains-task-list containsTaskList_mC6p">
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Code follows PSR-12 coding standards</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->All methods have docblocks</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->All methods have type hints and return types</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Inline comments explain complex logic</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->PHPQA report shows no critical issues</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->PHPUnit tests pass</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Code duplication is minimal</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Cyclomatic complexity is acceptable</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Documentation is updated</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="interpreting-quality-scores">Interpreting Quality Scores<a href="#interpreting-quality-scores" class="hash-link" aria-label="Direct link to Interpreting Quality Scores" title="Direct link to Interpreting Quality Scores">​</a></h3>
+<p>When reviewing PHPQA output:</p>
+<ul>
+<li>
+<p><strong>PHPCS Score: 1000</strong> = Perfect (0 errors, 0 warnings)</p>
+</li>
+<li>
+<p><strong>PHPCS Score: 950+</strong> = Good (minor warnings only)</p>
+</li>
+<li>
+<p><strong>PHPCS Score: &lt; 900</strong> = Needs improvement (errors present)</p>
+</li>
+<li>
+<p><strong>PHPMD Score: 1000</strong> = Perfect (0 violations)</p>
+</li>
+<li>
+<p><strong>PHPMD Score: 900+</strong> = Good (minor issues)</p>
+</li>
+<li>
+<p><strong>PHPMD Score: &lt; 800</strong> = Needs refactoring</p>
+</li>
+<li>
+<p><strong>Code Coverage: 100%</strong> = All code tested</p>
+</li>
+<li>
+<p><strong>Code Coverage: 75%+</strong> = Good coverage (our minimum)</p>
+</li>
+<li>
+<p><strong>Code Coverage: &lt; 75%</strong> = More tests needed</p>
+</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="troubleshooting">Troubleshooting<a href="#troubleshooting" class="hash-link" aria-label="Direct link to Troubleshooting" title="Direct link to Troubleshooting">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="grumphp-not-running">GrumPHP Not Running<a href="#grumphp-not-running" class="hash-link" aria-label="Direct link to GrumPHP Not Running" title="Direct link to GrumPHP Not Running">​</a></h3>
+<p>If GrumPHP hooks don&#x27;t run:</p>
+<ol>
+<li>
+<p>Check hooks are installed:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">ls -la .git/hooks/</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+</li>
+<li>
+<p>Reinitialize:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer grumphp:deinit</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">composer grumphp:init</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="phpqa-fails-to-run">PHPQA Fails to Run<a href="#phpqa-fails-to-run" class="hash-link" aria-label="Direct link to PHPQA Fails to Run" title="Direct link to PHPQA Fails to Run">​</a></h3>
+<p>If PHPQA fails:</p>
+<ol>
+<li>
+<p>Ensure dependencies are installed:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">composer install</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+</li>
+<li>
+<p>Check PHP version:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">php -v</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<p>(Requires PHP 8.1+)</p>
+</li>
+<li>
+<p>Clear previous reports:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">rm -rf phpqa/</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+</li>
+</ol>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="out-of-memory-errors">Out of Memory Errors<a href="#out-of-memory-errors" class="hash-link" aria-label="Direct link to Out of Memory Errors" title="Direct link to Out of Memory Errors">​</a></h3>
+<p>If analyzers run out of memory:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">php -d memory_limit=1G vendor/bin/phpqa --report</span><br></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn"><span class="copyButtonIcons_eSgA" aria-hidden="true"><svg viewBox="0 0 24 24" class="copyButtonIcon_y97N"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path></svg><svg viewBox="0 0 24 24" class="copyButtonSuccessIcon_LjdS"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"></path></svg></span></button></div></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="best-practices">Best Practices<a href="#best-practices" class="hash-link" aria-label="Direct link to Best Practices" title="Direct link to Best Practices">​</a></h2>
+<ol>
+<li><strong>Run PHPQA regularly</strong> - Don&#x27;t wait for CI/CD to catch issues</li>
+<li><strong>Fix issues immediately</strong> - Don&#x27;t let quality debt accumulate</li>
+<li><strong>Use auto-fixers</strong> - Let tools fix simple issues automatically</li>
+<li><strong>Understand the rules</strong> - Know why rules exist, don&#x27;t just follow blindly</li>
+<li><strong>Refactor proactively</strong> - Improve code quality continuously</li>
+<li><strong>Test thoroughly</strong> - Quality isn&#x27;t just about standards, it&#x27;s about correctness</li>
+<li><strong>Document changes</strong> - Keep documentation in sync with code</li>
+</ol>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="resources">Resources<a href="#resources" class="hash-link" aria-label="Direct link to Resources" title="Direct link to Resources">​</a></h2>
+<ul>
+<li><a href="https://github.com/squizlabs/PHP_CodeSniffer/wiki" target="_blank" rel="noopener noreferrer">PHP CodeSniffer Documentation</a></li>
+<li><a href="https://phpmd.org/rules/index.html" target="_blank" rel="noopener noreferrer">PHPMD Rules</a></li>
+<li><a href="https://phpmetrics.github.io/website/" target="_blank" rel="noopener noreferrer">PHPMetrics Documentation</a></li>
+<li><a href="https://github.com/phpro/grumphp" target="_blank" rel="noopener noreferrer">GrumPHP Documentation</a></li>
+<li><a href="https://github.com/EdgedesignCZ/phpqa" target="_blank" rel="noopener noreferrer">PHPQA Documentation</a></li>
+<li><a href="https://www.php-fig.org/psr/psr-12/" target="_blank" rel="noopener noreferrer">PSR-12 Coding Standard</a></li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col"><a href="https://github.com/ConductionNL/openregister/tree/main/docs/quality-assurance.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs/intro/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Introduction</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs/static/oas/Examples/ZaakRegister/project/"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Plan Zaakregister</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#overview" class="table-of-contents__link toc-highlight">Overview</a></li><li><a href="#phpqa---php-quality-analyzer" class="table-of-contents__link toc-highlight">PHPQA - PHP Quality Analyzer</a><ul><li><a href="#what-phpqa-checks" class="table-of-contents__link toc-highlight">What PHPQA Checks</a></li><li><a href="#running-phpqa" class="table-of-contents__link toc-highlight">Running PHPQA</a></li><li><a href="#understanding-phpqa-reports" class="table-of-contents__link toc-highlight">Understanding PHPQA Reports</a></li><li><a href="#quality-thresholds" class="table-of-contents__link toc-highlight">Quality Thresholds</a></li><li><a href="#when-to-run-phpqa" class="table-of-contents__link toc-highlight">When to Run PHPQA</a></li><li><a href="#addressing-phpqa-issues" class="table-of-contents__link toc-highlight">Addressing PHPQA Issues</a></li></ul></li><li><a href="#grumphp---git-hooks-for-quality" class="table-of-contents__link toc-highlight">GrumPHP - Git Hooks for Quality</a><ul><li><a href="#what-grumphp-checks" class="table-of-contents__link toc-highlight">What GrumPHP Checks</a></li><li><a href="#setting-up-grumphp" class="table-of-contents__link toc-highlight">Setting Up GrumPHP</a></li><li><a href="#running-grumphp-manually" class="table-of-contents__link toc-highlight">Running GrumPHP Manually</a></li><li><a href="#bypassing-grumphp-emergency-only" class="table-of-contents__link toc-highlight">Bypassing GrumPHP (Emergency Only)</a></li><li><a href="#understanding-grumphp-errors" class="table-of-contents__link toc-highlight">Understanding GrumPHP Errors</a></li></ul></li><li><a href="#quality-workflow" class="table-of-contents__link toc-highlight">Quality Workflow</a><ul><li><a href="#step-by-step-guide" class="table-of-contents__link toc-highlight">Step-by-Step Guide</a></li></ul></li><li><a href="#configuration-files" class="table-of-contents__link toc-highlight">Configuration Files</a><ul><li><a href="#phpqayml" class="table-of-contents__link toc-highlight">.phpqa.yml</a></li><li><a href="#grumphpyml" class="table-of-contents__link toc-highlight">grumphp.yml</a></li><li><a href="#phpcsxml" class="table-of-contents__link toc-highlight">phpcs.xml</a></li><li><a href="#phpmdxml" class="table-of-contents__link toc-highlight">phpmd.xml</a></li></ul></li><li><a href="#cicd-integration" class="table-of-contents__link toc-highlight">CI/CD Integration</a><ul><li><a href="#automated-workflows" class="table-of-contents__link toc-highlight">Automated Workflows</a></li><li><a href="#setting-up-branch-protection" class="table-of-contents__link toc-highlight">Setting Up Branch Protection</a></li><li><a href="#workflow-integration-diagram" class="table-of-contents__link toc-highlight">Workflow Integration Diagram</a></li><li><a href="#understanding-workflow-results" class="table-of-contents__link toc-highlight">Understanding Workflow Results</a></li><li><a href="#local-testing-before-push" class="table-of-contents__link toc-highlight">Local Testing Before Push</a></li><li><a href="#bypassing-workflows-not-recommended" class="table-of-contents__link toc-highlight">Bypassing Workflows (Not Recommended)</a></li><li><a href="#viewing-workflow-artifacts" class="table-of-contents__link toc-highlight">Viewing Workflow Artifacts</a></li><li><a href="#troubleshooting-workflow-failures" class="table-of-contents__link toc-highlight">Troubleshooting Workflow Failures</a></li></ul></li><li><a href="#for-ai-agents" class="table-of-contents__link toc-highlight">For AI Agents</a><ul><li><a href="#mandatory-steps" class="table-of-contents__link toc-highlight">Mandatory Steps</a></li><li><a href="#quality-commands-reference" class="table-of-contents__link toc-highlight">Quality Commands Reference</a></li><li><a href="#quality-checklist" class="table-of-contents__link toc-highlight">Quality Checklist</a></li><li><a href="#interpreting-quality-scores" class="table-of-contents__link toc-highlight">Interpreting Quality Scores</a></li></ul></li><li><a href="#troubleshooting" class="table-of-contents__link toc-highlight">Troubleshooting</a><ul><li><a href="#grumphp-not-running" class="table-of-contents__link toc-highlight">GrumPHP Not Running</a></li><li><a href="#phpqa-fails-to-run" class="table-of-contents__link toc-highlight">PHPQA Fails to Run</a></li><li><a href="#out-of-memory-errors" class="table-of-contents__link toc-highlight">Out of Memory Errors</a></li></ul></li><li><a href="#best-practices" class="table-of-contents__link toc-highlight">Best Practices</a></li><li><a href="#resources" class="table-of-contents__link toc-highlight">Resources</a></li></ul></div></div></div></div></main></div></div></div><footer class="canal-footer" aria-label="Site footer"><div class="skyline" role="presentation"></div><div class="kade"><div class="kade-items"><svg class="ki ki-bike-1" width="22" height="16" viewBox="0 -2 22 18" aria-hidden="true"><g stroke="var(--c-cobalt-900)" stroke-width="1.4" fill="none" stroke-linecap="round"><circle cx="4" cy="12" r="3"></circle><circle cx="18" cy="12" r="3"></circle><line x1="4" y1="12" x2="11" y2="6"></line><line x1="11" y1="6" x2="18" y2="12"></line><line x1="11" y1="6" x2="14" y2="12"></line><line x1="11" y1="6" x2="11" y2="3"></line><line x1="11" y1="3" x2="14" y2="6"></line></g><circle cx="11" cy="1.5" r="1.6" fill="var(--c-cobalt-900)"></circle></svg><svg class="ki ki-car-1" width="38" height="16" viewBox="0 0 38 16" aria-hidden="true"><rect x="0" y="6" width="38" height="6" rx="2" fill="#C8482F"></rect><path d="M 5,6 L 9,2 L 29,2 L 33,6 Z" fill="#C8482F"></path><rect x="11" y="3" width="6" height="3" fill="rgba(255,255,255,0.5)"></rect><rect x="20" y="3" width="6" height="3" fill="rgba(255,255,255,0.5)"></rect><circle cx="9" cy="13" r="2" fill="var(--c-cobalt-900)"></circle><circle cx="29" cy="13" r="2" fill="var(--c-cobalt-900)"></circle></svg><svg class="ki ki-bike-2" width="22" height="16" viewBox="0 -2 22 18" aria-hidden="true"><g stroke="var(--c-cobalt-900)" stroke-width="1.4" fill="none" stroke-linecap="round"><circle cx="4" cy="12" r="3"></circle><circle cx="18" cy="12" r="3"></circle><line x1="4" y1="12" x2="11" y2="6"></line><line x1="11" y1="6" x2="18" y2="12"></line><line x1="11" y1="6" x2="14" y2="12"></line><line x1="11" y1="6" x2="11" y2="3"></line><line x1="11" y1="3" x2="14" y2="6"></line></g><circle cx="11" cy="1.5" r="1.6" fill="var(--c-cobalt-900)"></circle></svg><svg class="ki ki-car-2" width="38" height="16" viewBox="0 0 38 16" aria-hidden="true"><rect x="0" y="6" width="38" height="6" rx="2" fill="var(--c-cobalt-900)"></rect><path d="M 5,6 L 9,2 L 29,2 L 33,6 Z" fill="var(--c-cobalt-900)"></path><rect x="11" y="3" width="6" height="3" fill="rgba(255,255,255,0.4)"></rect><rect x="20" y="3" width="6" height="3" fill="rgba(255,255,255,0.4)"></rect><circle cx="9" cy="13" r="2" fill="#C8482F"></circle><circle cx="29" cy="13" r="2" fill="#C8482F"></circle></svg></div></div><div class="water"><div class="canal-items"><svg class="ci ci-cruise" width="120" height="28" viewBox="0 -10 120 28" aria-hidden="true"><line x1="2" y1="14" x2="2" y2="-9" stroke="var(--c-orange-knvb)" stroke-width="0.9"></line><rect x="2.5" y="-9" width="9" height="2" fill="#AE1C28"></rect><rect x="2.5" y="-7" width="9" height="2" fill="#FFFFFF"></rect><rect x="2.5" y="-5" width="9" height="2" fill="#21468B"></rect><path d="M 0,16 L 6,18 L 114,18 L 120,16 L 120,11 L 0,11 Z" fill="var(--c-orange-knvb)"></path><rect x="8" y="5" width="104" height="6" fill="var(--c-orange-knvb)"></rect><path d="M 8,5 Q 60,0 112,5 L 8,5 Z" fill="var(--c-orange-knvb)"></path><g fill="rgba(255,247,210,0.85)"><rect x="14" y="7" width="6" height="3"></rect><rect x="22" y="7" width="6" height="3"></rect><rect x="30" y="7" width="6" height="3"></rect><rect x="38" y="7" width="6" height="3"></rect><rect x="46" y="7" width="6" height="3"></rect><rect x="54" y="7" width="6" height="3"></rect><rect x="62" y="7" width="6" height="3"></rect><rect x="70" y="7" width="6" height="3"></rect><rect x="78" y="7" width="6" height="3"></rect><rect x="86" y="7" width="6" height="3"></rect><rect x="94" y="7" width="6" height="3"></rect><rect x="102" y="7" width="6" height="3"></rect></g></svg><svg class="ci ci-sloep" width="50" height="20" viewBox="0 -2 50 20" aria-hidden="true"><path d="M 0,12 L 4,16 L 46,16 L 50,12 L 50,8 L 0,8 Z" fill="var(--c-orange-knvb)"></path><rect x="20" y="2" width="12" height="6" rx="1" fill="var(--c-orange-knvb)"></rect><circle cx="26" cy="0" r="1.4" fill="var(--c-orange-knvb)"></circle></svg><svg class="ci ci-row" width="44" height="16" viewBox="-2 0 48 16" aria-hidden="true"><path d="M 0,10 L 4,14 L 40,14 L 44,10 Z" fill="var(--c-orange-knvb)"></path><line x1="8" y1="10" x2="0" y2="3" stroke="var(--c-orange-knvb)" stroke-width="1.2" stroke-linecap="round"></line><line x1="36" y1="10" x2="44" y2="3" stroke="var(--c-orange-knvb)" stroke-width="1.2" stroke-linecap="round"></line><circle cx="22" cy="7" r="1.6" fill="var(--c-orange-knvb)"></circle></svg><svg class="ci ci-swim" width="26" height="10" viewBox="-3 0 30 10" aria-hidden="true"><ellipse cx="13" cy="6" rx="7" ry="1.4" fill="var(--c-orange-knvb)"></ellipse><circle cx="17" cy="4" r="1.7" fill="var(--c-orange-knvb)"></circle><line x1="13" y1="5" x2="11" y2="3" stroke="var(--c-orange-knvb)" stroke-width="1" stroke-linecap="round"></line><line x1="-3" y1="6" x2="2" y2="6" stroke="var(--c-orange-knvb)" stroke-width="0.7" opacity="0.55"></line><line x1="0" y1="8" x2="3" y2="8" stroke="var(--c-orange-knvb)" stroke-width="0.7" opacity="0.4"></line></svg><svg class="ci ci-periscope" width="14" height="26" viewBox="-3 -2 18 28" aria-hidden="true"><rect x="4" y="4" width="2" height="18" fill="var(--c-orange-knvb)"></rect><rect x="0" y="0" width="9" height="3" fill="var(--c-orange-knvb)"></rect><rect x="4" y="3" width="2" height="2" fill="var(--c-orange-knvb)"></rect><ellipse cx="5" cy="24" rx="7" ry="0.9" fill="var(--c-orange-knvb)" opacity="0.5"></ellipse></svg><svg class="ci ci-whale" width="76" height="18" viewBox="-3 -4 82 22" aria-hidden="true"><path d="M 0,12 Q 0,4 26,3 Q 54,2 64,7 L 72,4 L 68,9 L 72,14 L 64,11 Q 54,14 26,14 Q 6,14 0,12 Z" fill="var(--c-orange-knvb)"></path><g opacity="0.55" stroke="var(--c-orange-knvb)" stroke-width="1" stroke-linecap="round"><line x1="22" y1="2" x2="20" y2="-3"></line><line x1="25" y1="2" x2="25" y2="-4"></line><line x1="28" y1="2" x2="30" y2="-3"></line></g></svg><svg class="ci ci-hover" width="74" height="26" viewBox="0 -4 74 28" aria-hidden="true"><ellipse cx="37" cy="22" rx="37" ry="2.5" fill="var(--c-orange-knvb)" opacity="0.4"></ellipse><path d="M 6,18 L 10,10 L 64,10 L 68,18 Z" fill="var(--c-orange-knvb)"></path><path d="M 14,10 Q 37,-4 60,10 L 14,10 Z" fill="var(--c-orange-knvb)"></path><ellipse cx="37" cy="4" rx="16" ry="3.2" fill="rgba(255,247,210,0.7)"></ellipse><polygon points="37,11 42,13.5 42,16.5 37,19 32,16.5 32,13.5" fill="#FFFFFF"></polygon><text x="37" y="17.4" font-size="4" text-anchor="middle" fill="var(--c-orange-knvb)" font-family="sans-serif" font-weight="900">C</text><g stroke="var(--c-orange-knvb)" stroke-width="0.7" opacity="0.6"><line x1="8" y1="22" x2="12" y2="22"></line><line x1="16" y1="22" x2="20" y2="22"></line><line x1="26" y1="22" x2="30" y2="22"></line><line x1="36" y1="22" x2="40" y2="22"></line><line x1="46" y1="22" x2="50" y2="22"></line><line x1="56" y1="22" x2="60" y2="22"></line></g></svg></div><svg class="canal-waves" viewBox="0 0 1400 500" preserveAspectRatio="none" aria-hidden="true"><path class="w1" d="M 0,96 L 140,82 L 280,96 L 420,82 L 560,96 L 700,82 L 840,96 L 980,82 L 1120,96 L 1260,82 L 1400,96"></path><path class="w2" d="M 0,206 L 180,182 L 360,206 L 540,182 L 720,206 L 900,182 L 1080,206 L 1260,182 L 1400,200"></path><path class="w3" d="M 0,362 L 220,332 L 440,362 L 660,332 L 880,362 L 1100,332 L 1320,362 L 1400,348"></path></svg><div class="footer-grid"><div class="brand"><div class="wm">Conduction</div><p>Open-source apps for <span class="next-blue">Nextcloud</span>. Built and maintained by Conduction in Amsterdam, released under EUPL-1.2.</p><div class="triad"><span><span class="h"></span>Conduction<!-- --> <!-- -->· <span class="next-blue">Nextcloud</span></span></div><div class="socials"><a href="https://github.com/ConductionNL" aria-label="GitHub" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="filled" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.04 1.53 1.04.9 1.53 2.36 1.09 2.93.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.93.36.31.68.92.68 1.86v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2z"></path></svg></a><a href="https://www.linkedin.com/company/conduction" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle class="filled" cx="4" cy="4" r="2"></circle></svg></a><a href="mailto:info@conduction.nl" aria-label="Email info@conduction.nl"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg></a><a href="tel:+31853036840" aria-label="Phone +31 (0)85 303 6840"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"></path></svg></a><a href="https://maps.google.com/?q=Lauriergracht+14h+Amsterdam" aria-label="Lauriergracht 14h, Amsterdam, open in Google Maps" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></a></div></div><div><h4>Conduction</h4><ul><li><a href="https://conduction.nl/about" target="_blank" rel="noopener noreferrer">About</a></li><li><a href="https://conduction.nl/about#opensource" target="_blank" rel="noopener noreferrer">Open source</a></li><li><a href="https://conduction.nl/about#team" target="_blank" rel="noopener noreferrer">Team</a></li><li><a href="https://conduction.nl/iso" target="_blank" rel="noopener noreferrer">ISO</a></li></ul></div></div><div class="legal-bar"><div class="left"><span>Conduction B.V. · KvK 76741850 · BTW NL860784241B01 · IBAN NL51 ABNA 0868951550 · Lauriergracht 14h, 1016 RR Amsterdam · 2026</span><span class="legal-links"><a href="/privacy/">Privacy</a><span class="sep">·</span><a href="/terms/">Terms</a><span class="sep">·</span><a href="/iso/">ISO</a></span></div><div class="right"><a class="iso-badge" aria-label="ISO 9001:2015 certified, see details" href="/iso/"><span class="iso-mark">ISO</span><span class="iso-num">9001:2015</span></a><a class="iso-badge" aria-label="ISO 27001:2022 certified, see details" href="/iso/"><span class="iso-mark">ISO</span><span class="iso-num">27001:2022</span></a></div></div></div></footer><div style="display:none" aria-hidden="true">
+      <template id="tpl-h-a">
+        <svg class="house h-a" viewBox="0 -2 80 202" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 0,200 L 0,38 L 8,38 L 8,26 L 16,26 L 16,14 L 24,14 L 24,8 L 56,8 L 56,14 L 64,14 L 64,26 L 72,26 L 72,38 L 80,38 L 80,200 Z" fill="var(--c-orange-knvb)"/>
+          <rect x="22" y="68" width="10" height="16" fill="rgba(255,247,210,0.95)"/>
+          <rect x="48" y="68" width="10" height="16" fill="rgba(11,32,73,0.35)"/>
+          <rect x="22" y="98" width="10" height="16" fill="rgba(11,32,73,0.35)"/>
+          <rect x="48" y="98" width="10" height="16" fill="rgba(255,247,210,0.6)"/>
+          <rect x="22" y="128" width="10" height="16" fill="rgba(11,32,73,0.35)"/>
+          <rect x="48" y="128" width="10" height="16" fill="rgba(11,32,73,0.35)"/>
+          <rect x="32" y="160" width="16" height="34" fill="rgba(11,32,73,0.55)"/>
+        </svg>
+      </template>
+      <template id="tpl-h-b">
+        <svg class="house h-b" viewBox="0 0 100 220" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 0,220 L 0,58 L 8,58 L 8,47 L 16,47 L 16,36 L 24,36 L 24,25 L 32,25 L 32,14 L 50,4 L 68,14 L 68,25 L 76,25 L 76,36 L 84,36 L 84,47 L 92,47 L 92,58 L 100,58 L 100,220 Z" fill="var(--c-orange-knvb)"/>
+          <rect x="14" y="80" width="14" height="20" fill="rgba(255,247,210,0.85)"/>
+          <rect x="43" y="80" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="72" y="80" width="14" height="20" fill="rgba(255,247,210,0.55)"/>
+          <rect x="14" y="115" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="43" y="115" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="72" y="115" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="14" y="150" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="43" y="150" width="14" height="20" fill="rgba(255,247,210,0.7)"/>
+          <rect x="72" y="150" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="42" y="180" width="16" height="34" fill="rgba(11,32,73,0.55)"/>
+        </svg>
+      </template>
+      <template id="tpl-h-c">
+        <svg class="house h-c" viewBox="0 0 70 240" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 0,240 L 0,48 L 5,48 L 5,41 L 10,41 L 10,34 L 15,34 L 15,27 L 20,27 L 20,20 L 25,20 L 25,15 L 45,15 L 45,20 L 50,20 L 50,27 L 55,27 L 55,34 L 60,34 L 60,41 L 65,41 L 65,48 L 70,48 L 70,240 Z" fill="var(--c-orange-knvb)"/>
+          <rect x="14" y="70" width="12" height="18" fill="rgba(255,247,210,0.55)"/>
+          <rect x="44" y="70" width="12" height="18" fill="rgba(255,247,210,0.85)"/>
+          <rect x="14" y="100" width="12" height="18" fill="rgba(11,32,73,0.35)"/>
+          <rect x="44" y="100" width="12" height="18" fill="rgba(11,32,73,0.35)"/>
+          <rect x="14" y="130" width="12" height="18" fill="rgba(255,247,210,0.7)"/>
+          <rect x="44" y="130" width="12" height="18" fill="rgba(11,32,73,0.35)"/>
+          <rect x="14" y="160" width="12" height="18" fill="rgba(11,32,73,0.35)"/>
+          <rect x="44" y="160" width="12" height="18" fill="rgba(11,32,73,0.35)"/>
+          <rect x="27" y="200" width="16" height="34" fill="rgba(11,32,73,0.55)"/>
+        </svg>
+      </template>
+      <template id="tpl-h-d">
+        <svg class="house h-d" viewBox="0 -10 90 180" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 0,170 L 0,30 L 8,30 L 8,20 L 16,20 L 16,10 L 24,10 L 24,4 L 66,4 L 66,10 L 74,10 L 74,20 L 82,20 L 82,30 L 90,30 L 90,170 Z" fill="var(--c-orange-knvb)"/>
+          <rect x="12" y="60" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="38" y="60" width="14" height="20" fill="rgba(255,247,210,0.85)"/>
+          <rect x="64" y="60" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="12" y="100" width="14" height="20" fill="rgba(255,247,210,0.6)"/>
+          <rect x="38" y="100" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="64" y="100" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="37" y="130" width="16" height="34" fill="rgba(11,32,73,0.55)"/>
+        </svg>
+      </template>
+      <template id="tpl-h-e">
+        <svg class="house h-e" viewBox="0 0 95 210" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 0,210 L 0,55 L 8,55 L 8,44 L 16,44 L 16,33 L 24,33 L 24,22 L 32,22 L 32,11 L 35,11 L 35,6 L 59,6 L 59,11 L 63,11 L 63,22 L 71,22 L 71,33 L 79,33 L 79,44 L 87,44 L 87,55 L 95,55 L 95,210 Z" fill="var(--c-orange-knvb)"/>
+          <rect x="13" y="75" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="40" y="75" width="14" height="20" fill="rgba(255,247,210,0.65)"/>
+          <rect x="68" y="75" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="13" y="110" width="14" height="20" fill="rgba(255,247,210,0.8)"/>
+          <rect x="40" y="110" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="68" y="110" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="13" y="145" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="40" y="145" width="14" height="20" fill="rgba(11,32,73,0.35)"/>
+          <rect x="68" y="145" width="14" height="20" fill="rgba(255,247,210,0.55)"/>
+          <rect x="39.5" y="175" width="16" height="34" fill="rgba(11,32,73,0.55)"/>
+        </svg>
+      </template>
+</div></div>
+</body>
+</html>

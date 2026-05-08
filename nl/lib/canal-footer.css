@@ -1,0 +1,418 @@
+/* ============================================================
+   Canal footer — randomised Amsterdam trapgevel skyline above a
+   gray kade above the cobalt-900 canal. Each house is rendered
+   as a standalone <svg> (cloned from a <template> by footer.js)
+   so the skyline rolls a fresh sequence on every page-load.
+   Adjacent house wrappers overlap by 1px (margin-right: -1px)
+   to kill the white seam.
+
+   Colour rule: items IN the canal are KNVB orange, items ON the
+   kade are cobalt or vermilion. A handful of houses fly the
+   Dutch flag from a flagpole over their gable; the cruise boat
+   flies one too at the stern.
+   ============================================================ */
+
+.canal-footer { position: relative; color: white; isolation: isolate; }
+
+/* ---- Skyline (random row of standalone trapgevel SVGs) ---- */
+.canal-footer .skyline {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  height: 152px;
+  overflow: hidden;
+}
+.canal-footer .house-wrap {
+  position: relative;
+  flex-shrink: 0;
+  margin-right: -2px;        /* 2-px overlap closes the AA seam between facades */
+}
+.canal-footer .house {
+  display: block;
+  shape-rendering: geometricPrecision;
+}
+/* Each house's CSS dimensions = ~0.6 of viewBox dims so the row stays compact. */
+.canal-footer .h-a { width: 48px; height: 120px; }
+.canal-footer .h-b { width: 60px; height: 132px; }
+.canal-footer .h-c { width: 42px; height: 144px; }
+.canal-footer .h-d { width: 54px; height: 102px; }
+.canal-footer .h-e { width: 57px; height: 126px; }
+.canal-footer .house.flipped { transform: scaleX(-1); }
+
+/* "House #14" — the Conduction office. Centre of the skyline, painted
+   in light cobalt blue with a small white house-number next to the door. */
+.canal-footer .house-conduction .house path { fill: var(--c-blue-cobalt); }
+.canal-footer .house-conduction::after {
+  content: '14';
+  position: absolute;
+  bottom: 8px;
+  left: calc(50% + 12px);
+  color: white;
+  font-family: var(--conduction-typography-font-family-base, 'Inter', system-ui, sans-serif);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ---- Kade (gray quay) with bikes + cars drifting along it ---- */
+.canal-footer .kade {
+  position: relative;
+  height: 30px;
+  background: #9b9da3;
+  overflow: hidden;
+}
+.canal-footer .kade::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: rgba(0,0,0,0.16);
+}
+.canal-footer .kade-items {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.canal-footer .ki {
+  position: absolute;
+  bottom: 4px;
+  will-change: transform;
+}
+/* Per-item animation directions; durations + delays come from inline-style
+   (set by the script so they're random + slow). */
+.canal-footer .ki-bike-1 { animation: ki-drift-r 90s linear infinite; }
+.canal-footer .ki-bike-2 { animation: ki-drift-l 90s linear infinite; }
+.canal-footer .ki-car-1  { animation: ki-drift-l 100s linear infinite; bottom: 6px; }
+.canal-footer .ki-car-2  { animation: ki-drift-r 100s linear infinite; bottom: 6px; }
+@keyframes ki-drift-r {
+  from { transform: translateX(-60px); }
+  to   { transform: translateX(100vw); }
+}
+@keyframes ki-drift-l {
+  from { transform: translateX(100vw); }
+  to   { transform: translateX(-60px); }
+}
+
+/* ---- Water (cobalt-900) with canal items + waves + footer text ---- */
+.canal-footer .water {
+  background: var(--c-cobalt-900);
+  padding: 88px 56px 28px;        /* extra top room reserves a band for the boats */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Boats, swimmer, hovercraft drifting on the canal surface. All orange. */
+.canal-footer .canal-items {
+  position: absolute;
+  left: 0; right: 0;
+  top: 0;
+  height: 76px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+.canal-footer .ci {
+  position: absolute;
+  bottom: 6px;
+  will-change: transform;
+}
+.canal-footer .ci-cruise    { animation: ci-drift-r 220s linear infinite; bottom: 12px; }
+.canal-footer .ci-sloep     { animation: ci-drift-l 160s linear infinite; bottom: 18px; }
+.canal-footer .ci-row       { animation: ci-drift-r 260s linear infinite; bottom: 22px; }
+.canal-footer .ci-swim      { animation: ci-drift-r 400s linear infinite; bottom: 32px; }
+.canal-footer .ci-hover     { animation: ci-drift-l 120s linear infinite; bottom: 8px;  }
+.canal-footer .ci-periscope { animation: ci-drift-r 320s linear infinite; bottom: 4px;  }
+.canal-footer .ci-whale     { animation: ci-drift-l 280s linear infinite; bottom: 14px; }
+@keyframes ci-drift-r {
+  from { transform: translateX(-260px); }
+  to   { transform: translateX(calc(100vw + 60px)); }
+}
+@keyframes ci-drift-l {
+  from { transform: translateX(calc(100vw + 60px)); }
+  to   { transform: translateX(-260px); }
+}
+
+.canal-footer .canal-waves {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.11;
+  z-index: 0;
+}
+.canal-footer .canal-waves path {
+  fill: none;
+  stroke: white;
+  stroke-width: 2;
+  stroke-linejoin: miter;
+  stroke-linecap: round;
+}
+.canal-footer .canal-waves .w1 { stroke-dasharray: 14 22; animation: canal-wave-flow  60s linear infinite; }
+.canal-footer .canal-waves .w2 { stroke-dasharray: 18 28; animation: canal-wave-flow 110s linear infinite reverse; }
+.canal-footer .canal-waves .w3 { stroke-dasharray: 22 36; animation: canal-wave-flow 160s linear infinite; }
+@keyframes canal-wave-flow { to { stroke-dashoffset: -360; } }
+
+.canal-footer .footer-grid,
+.canal-footer .legal-bar { position: relative; z-index: 2; }
+
+.canal-footer .footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
+  gap: 48px;
+  max-width: 1280px;
+  margin: 0 auto 48px;
+}
+.canal-footer .brand .wm {
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.02em; color: white;
+  margin: 0 0 12px;
+}
+.canal-footer .next-blue { color: var(--c-nextcloud-blue); }
+.canal-footer .brand p {
+  font-size: 14px; line-height: 1.55;
+  color: rgba(255,255,255,0.7);
+  max-width: 32ch; margin: 0 0 24px;
+}
+.canal-footer .brand .triad {
+  display: flex; gap: 16px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+}
+.canal-footer .brand .triad .h {
+  width: 10px; height: 12px;
+  clip-path: var(--hex-pointy-top);
+  background: var(--c-orange-knvb);
+  display: inline-block; margin-right: 6px;
+  vertical-align: middle;
+}
+.canal-footer .brand .socials {
+  display: flex; gap: 10px;
+  margin-top: 18px;
+}
+.canal-footer .brand .socials a {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.78);
+  text-decoration: none;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+.canal-footer .brand .socials a:hover {
+  color: var(--c-orange-knvb);
+  border-color: var(--c-orange-knvb);
+  background: rgba(255,107,0,0.08);
+}
+.canal-footer .brand .socials svg {
+  width: 16px; height: 16px;
+  stroke: currentColor; stroke-width: 1.8; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.canal-footer .brand .socials svg .filled { fill: currentColor; stroke: none; }
+
+/* House #14 (Conduction office) is clickable. */
+.canal-footer .house-conduction { cursor: pointer; }
+.canal-footer .house-conduction:hover .house path { filter: brightness(1.12); }
+
+/* Canal items respond to clicks (override the overlay's pointer-events). */
+.canal-footer .ci { cursor: pointer; pointer-events: auto; }
+.canal-footer h4 {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  font-weight: 500; margin: 0 0 16px;
+}
+.canal-footer ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.canal-footer ul a {
+  color: rgba(255,255,255,0.85);
+  text-decoration: none; font-size: 14px;
+}
+.canal-footer ul a:hover { color: var(--c-orange-knvb); }
+
+.canal-footer .legal-bar {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-top: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  font-family: var(--conduction-typography-font-family-code);
+}
+.canal-footer .legal-bar .left, .canal-footer .legal-bar .right {
+  display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+}
+.canal-footer .legal-bar a { color: rgba(255,255,255,0.65); text-decoration: none; }
+.canal-footer .legal-bar a:hover { color: var(--c-orange-knvb); }
+.canal-footer .legal-bar .legal-links {
+  display: inline-flex; gap: 8px; align-items: center;
+}
+.canal-footer .legal-bar .legal-links .sep { opacity: 0.4; }
+.canal-footer .legal-bar .iso-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 4px;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.85);
+  transition: border-color 120ms ease, color 120ms ease;
+}
+.canal-footer .legal-bar .iso-badge:hover {
+  border-color: var(--c-orange-knvb);
+  color: var(--c-orange-knvb);
+}
+.canal-footer .legal-bar .iso-badge .iso-mark {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.canal-footer .legal-bar .iso-badge .iso-num {
+  opacity: 0.85;
+}
+.canal-footer .nlds-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: rgba(255,255,255,0.85);
+}
+.canal-footer .nlds-badge svg { width: 12px; height: 12px; stroke: var(--c-mint-500, #2E9866); stroke-width: 2; fill: none; }
+
+/* ============================================================
+   Mini-game HUD: timer (60s) + counter (100 → 0). Lives in the
+   top-right of the canal band. Hidden until the player sinks
+   their first boat — first sink kicks the game off. Every sink
+   (including the original fleet drifting at page load) ticks
+   the counter down by 1; the counter flashes orange on each tick.
+
+   Boss waves trigger off counter milestones:
+     - score === 10  → cruise-ship swarm (5 ships, HP 5 each)
+     - score === 1   → battleship boss (HP 10)
+   Spawned boats use Web Animations API so their drift duration
+   can scale with the per-game speed multiplier.
+   ============================================================ */
+.canal-footer .game-hud {
+  position: absolute;
+  top: 14px;
+  right: 56px;
+  z-index: 3;
+  display: flex;
+  gap: 36px;
+  font-family: var(--conduction-typography-font-family-code);
+  color: white;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+.canal-footer .game-hud.active { opacity: 1; transform: translateY(0); }
+.canal-footer .game-hud .hud-block { text-align: right; }
+.canal-footer .game-hud .hud-num {
+  display: block;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  transition: color 200ms ease;
+  /* Dark glow keeps the digits legible while bosses drift behind them. */
+  text-shadow: 0 1px 10px rgba(11,32,73,0.95), 0 0 4px rgba(11,32,73,0.7);
+}
+.canal-footer .game-hud .hud-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  margin-top: 6px;
+  text-shadow: 0 1px 6px rgba(11,32,73,0.95);
+}
+.canal-footer .game-hud .hud-counter.tick .hud-num { animation: hud-tick 420ms ease; }
+@keyframes hud-tick {
+  0%   { transform: scale(1);    color: white; }
+  35%  { transform: scale(1.45); color: var(--c-orange-knvb); }
+  100% { transform: scale(1);    color: white; }
+}
+.canal-footer .game-hud .hud-timer.urgent .hud-num {
+  color: #ff5544;
+  animation: hud-pulse 800ms ease infinite;
+}
+@keyframes hud-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+/* Game-over panel — appears below the HUD when timer hits 0
+   or the counter reaches 0 (battleship sunk = victory). */
+.canal-footer .game-over {
+  position: absolute;
+  top: 14px;
+  right: 56px;
+  z-index: 4;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-family: var(--conduction-typography-font-family-code);
+  color: white;
+  pointer-events: auto;
+  text-align: right;
+  display: none;
+  min-width: 160px;
+}
+.canal-footer .game-over.show { display: block; }
+.canal-footer .game-over .go-title {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-orange-knvb);
+  margin: 0 0 6px;
+}
+.canal-footer .game-over .go-stat {
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 12px;
+  font-variant-numeric: tabular-nums;
+}
+.canal-footer .game-over button {
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--c-orange-knvb);
+  color: var(--c-cobalt-900);
+  border: 0;
+  border-radius: 4px;
+  padding: 7px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.canal-footer .game-over button:hover { filter: brightness(1.1); }
+
+/* Boss ships sit one layer above their spawned siblings so the
+   cruise-swarm and battleship draw on top of the regular drift. */
+.canal-footer .ci.boss { z-index: 2; }
+
+/* Damage flash on a multi-HP ship hit — pure filter so we don't
+   fight the WAAPI translateX animation. */
+.canal-footer .ci.damaged { animation: ci-damage 240ms ease; }
+@keyframes ci-damage {
+  0%, 100% { filter: none; }
+  35%      { filter: brightness(2.6) saturate(0.4) drop-shadow(0 0 6px rgba(255,255,255,0.7)); }
+}
+
+/* HP pips above bosses — orange dots that fade out on each hit. */
+.canal-footer .ci .hp-pips .pip {
+  transition: opacity 200ms ease, fill 200ms ease;
+}
+.canal-footer .ci .hp-pips .pip.hit {
+  opacity: 0.18;
+  fill: rgba(255,255,255,0.4);
+}

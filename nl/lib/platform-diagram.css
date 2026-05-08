@@ -1,0 +1,458 @@
+/* ============================================================
+   <platform-diagram> — workspace + corner hexes + lists + flows.
+   ----------------------------------------------------------------
+   All selectors are scoped to the <platform-diagram> element so
+   the component can drop in anywhere without leaking.
+
+   Coordinate model used by flow paths:
+     • Origin (0,0) is the workspace centre.
+     • Workspace hex is 360×416 (centred on grid cell).
+     • Corner hexes are 160×185, sit at cx=±204, cy=±104
+       (= workspace half-width 180 + 24px outward shift).
+     • App-builder (bottom-centre) hex sits at cx=0, cy=+232
+       (= workspace half-height 208 + 24px outward shift).
+     • Hex side midpoints: (cx±80, cy); peaks: (cx, cy±92.5).
+
+   When porting to Docusaurus / React, this file moves to a CSS
+   module; the same class names get hashed automatically.
+   ============================================================ */
+
+platform-diagram {
+  display: block;
+  position: relative;
+
+  /* Scroll-linked entrance progress (0 = far out / invisible, 1 = settled).
+     Defaults are 1 so the diagram looks normal without JS. The scroll
+     handler in platform-diagram.js writes these on every scroll, so
+     scrolling up reverses the entrance.
+     Stages overlap intentionally:
+       hex   covers 0.00 → 0.40 of the entrance window
+       list  covers 0.30 → 0.75
+       flow  covers 0.75 → 1.00 */
+  --pd-hex-progress:  1;
+  --pd-list-progress: 1;
+  --pd-flow-progress: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Force settled state regardless of any value JS might write. */
+  platform-diagram {
+    --pd-hex-progress:  1 !important;
+    --pd-list-progress: 1 !important;
+    --pd-flow-progress: 1 !important;
+  }
+}
+
+/* ---- Diagram grid ---- */
+platform-diagram .diagram-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 64px;
+  row-gap: 240px;     /* room for the corner-anchored hexes — they extend ~162px above/below their wrap */
+  align-items: start;
+  position: relative;
+  z-index: 1;
+  /* extra top + bottom padding to accommodate the workspace-attached
+     workspace + app-builder lists, which translate above and below
+     the grid via CSS transforms. */
+  padding: 240px 0 320px;
+  overflow: visible;
+}
+
+/* ---- Workspace hex ----
+   Selector deliberately scoped to the direct centre hex via :not(.box-wrap)
+   because .box-wrap.workspace (the WORKSPACE APPS list wrap) shares the
+   "workspace" class for grid placement — without the guard this rule
+   would clip the apps-list wrap with the same Nextcloud-blue hex shape. */
+platform-diagram > .workspace,
+platform-diagram .workspace:not(.box-wrap):not(.workspace-corner-hex) {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: center;
+  box-sizing: border-box;
+  width: 360px;
+  aspect-ratio: 1.7320508 / 2;
+  clip-path: var(--hex-pointy-top);
+  background: var(--gradient-nextcloud);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: white;
+  text-align: center;
+  padding: 0 32px;
+  position: relative;
+  z-index: 1;
+  /* Subtle scale + fade with hex progress (0.92 → 1.00). */
+  transform: scale(calc(0.92 + 0.08 * var(--pd-hex-progress)));
+  opacity: var(--pd-hex-progress);
+}
+platform-diagram .workspace-logo { width: 140px; height: auto; margin-bottom: 14px; }
+platform-diagram > .workspace .role,
+platform-diagram .workspace:not(.box-wrap):not(.workspace-corner-hex) .role {
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+  opacity: 0.85;
+  margin-top: 14px;
+}
+
+/* ---- Box-wrap (positioning shell for each list) ---- */
+platform-diagram .box-wrap { position: relative; }
+
+/* ---- List-box ---- */
+platform-diagram .box {
+  background: white;
+  border: 1px solid var(--c-cobalt-200);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-1);
+  position: relative;
+  z-index: 3;
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+platform-diagram .box-wrap:hover .box {
+  box-shadow: var(--shadow-3);
+  transform: translateY(-2px);
+}
+
+platform-diagram .row {
+  display: flex; align-items: center; gap: 10px;
+  /* Reset margin + force border-box so Infima's grid `.row { margin: 0 -24px }`
+     (shipped by Docusaurus on connext) doesn't blow our row out 48px past
+     the parent .box. Kept here, not in :where(), so it wins specificity. */
+  margin: 0;
+  box-sizing: border-box;
+  padding: 6px 0;
+  font-size: 13px; color: var(--c-cobalt-700);
+  cursor: default;
+  flex-wrap: nowrap;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+platform-diagram .row .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+platform-diagram .row + .row { border-top: 1px solid var(--c-cobalt-50); }
+
+/* Multi-column box: rows are wrapped in <.col> so the .row+.row border only
+   draws within a single column. The columns sit side by side with a thin
+   divider between them. */
+platform-diagram .box.cols-2 { display: flex; gap: 16px; padding: 14px 16px; }
+platform-diagram .box.cols-2 .col { flex: 1 1 0; min-width: 0; }
+platform-diagram .box.cols-2 .col + .col { border-left: 1px solid var(--c-cobalt-50); padding-left: 16px; }
+platform-diagram .row .name { font-weight: 500; transition: color 140ms ease; }
+platform-diagram .row .meta {
+  margin-left: auto;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 10px; color: var(--c-cobalt-400);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+platform-diagram .row:hover .name { color: var(--c-blue-cobalt); }
+
+/* App description: absolute-positioned tooltip below the row, so hover
+   doesn't change the box's height (keeps neighbouring components still). */
+platform-diagram .row .desc {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 28px;
+  right: 8px;
+  background: var(--c-cobalt-700);
+  color: rgba(255,255,255,0.95);
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(33, 70, 139, 0.18);
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+  z-index: 8;
+  white-space: normal;
+}
+platform-diagram .row:hover .desc { opacity: 1; transform: translateY(0); }
+
+/* ---- Glyph (hex-clipped icon swatch) ---- */
+platform-diagram .glyph {
+  width: 18px; height: 21px;
+  clip-path: var(--hex-pointy-top);
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: white;
+}
+platform-diagram .glyph svg {
+  width: 11px; height: 11px;
+  stroke-width: 2; stroke: currentColor; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* Brand variant: real app logos in their own brand colour. Drop the hex clip
+   so the brand marks aren't cropped at the corners; use a subtle rounded
+   square (standard app-icon presentation) instead. Per-row colour comes
+   through `style="color: #brand"` on the .glyph wrapper. */
+platform-diagram .glyph.brand {
+  background: white !important;
+  clip-path: none;
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--c-cobalt-50);
+}
+platform-diagram .glyph.brand svg {
+  width: 14px; height: 14px;
+  stroke: none;
+}
+platform-diagram .glyph.brand svg > * { fill: currentColor; stroke: none; }
+
+/* ---- Corner-anchor (named) hex tag ----
+   The 160x185 family-coloured hex sits beside each list as the visual
+   anchor for that quadrant. Family tint comes from .fam-* classes
+   below; positioning per-list lower in this file. */
+platform-diagram .workspace-corner-hex {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  width: 160px;
+  aspect-ratio: 1.7320508 / 2;
+  box-sizing: border-box;
+  clip-path: var(--hex-pointy-top);
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  color: white;
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  line-height: 1.2;
+  padding: 0 14px;
+  z-index: 2;
+  filter: drop-shadow(0 2px 6px rgba(33, 70, 139, 0.22));
+  /* Transform is driven by scroll progress; no transition (would smear
+     every scroll tick). Filter still transitions for hover shadow lift. */
+  transition: filter 160ms ease;
+  cursor: default;
+}
+platform-diagram .workspace-corner-hex:hover { filter: drop-shadow(0 6px 14px rgba(33, 70, 139, 0.32)); }
+
+/* ---- Family colour tints ---- Apply to .box-hex, glyph, and corner hex.
+   Mirrors the family palette; one place to swap when you fork the
+   diagram for a different domain. */
+platform-diagram .fam-core      .glyph,
+platform-diagram .workspace-corner-hex.fam-core      { background: var(--c-blue-cobalt); }
+platform-diagram .fam-workspace  .glyph,
+platform-diagram .workspace-corner-hex.fam-workspace { background: var(--c-blue-cobalt); }
+platform-diagram .fam-solutions  .glyph,
+platform-diagram .workspace-corner-hex.fam-solutions { background: #E34234; }
+platform-diagram .fam-integrate  .glyph,
+platform-diagram .workspace-corner-hex.fam-integrate { background: var(--c-cobalt-400); }
+platform-diagram .fam-builder    .glyph,
+platform-diagram .workspace-corner-hex.fam-builder   { background: var(--c-cobalt-300); }
+/* App Builder hex: KNVB orange (override fam-builder) */
+platform-diagram .workspace-corner-hex.app-builder   { background: var(--c-orange-knvb); }
+platform-diagram .fam-nextcloud  .glyph,
+platform-diagram .workspace-corner-hex.fam-nextcloud { background: var(--c-nextcloud-blue); }
+
+/* ---- Position-specific placement ----
+   tech-core / ai sit on the workspace's top corners; workspace / integrated
+   on the bottom corners. Translates use the workspace-relative arithmetic
+   documented at the top of this file. */
+platform-diagram .box-wrap.tech-core  { grid-column: 1; grid-row: 1; justify-self: end;   align-self: end;   min-width: 240px; max-width: 280px; width: 100%; }
+platform-diagram .box-wrap.solutions  { grid-column: 3; grid-row: 1; justify-self: start; align-self: end;   min-width: 220px; max-width: 260px; width: 100%; }
+platform-diagram .box-wrap.workspace  { grid-column: 1; grid-row: 2; justify-self: end;   align-self: start; min-width: 240px; max-width: 280px; width: 100%; }
+platform-diagram .box-wrap.integrated { grid-column: 3; grid-row: 2; justify-self: start; align-self: start; min-width: 220px; max-width: 260px; width: 100%; }
+/* 2-column variant needs more horizontal room — grows leftward into the gap */
+platform-diagram .box-wrap.integrated.cols-2 { max-width: 460px; }
+
+/* List inner corner anchors near the midpoint of the corresponding hex side,
+   nudged inward so the list overlaps its hex on both axes. Top lists are
+   anchored to row 1 bottom (align-self: end) — translateY is negative so
+   the list bottom lands at the hex's top-right (or top-left) vertex,
+   mirroring the bottom-row docking. Bottom lists are anchored to row 2
+   top (align-self: start) with a small positive translateY so the list
+   top lands at the hex's bottom-right (or bottom-left) vertex.
+   The (±80px * (1 - --pd-list-progress)) term is the scroll-entrance
+   shift: at progress=1 it's 0 (settled); at progress=0 lists start 80px
+   further outward and fade from 0 → 1 opacity. */
+platform-diagram .box-wrap.tech-core    {
+  transform: translate(calc( 15px + (-80px * (1 - var(--pd-list-progress)))), -30px);
+  opacity: var(--pd-list-progress);
+}
+platform-diagram .box-wrap.solutions    {
+  transform: translate(calc(-15px + ( 80px * (1 - var(--pd-list-progress)))), -30px);
+  opacity: var(--pd-list-progress);
+}
+platform-diagram .box-wrap.workspace    {
+  transform: translate(calc( 15px + (-80px * (1 - var(--pd-list-progress)))),  30px);
+  opacity: var(--pd-list-progress);
+}
+platform-diagram .box-wrap.integrated   {
+  transform: translate(calc(-15px + ( 80px * (1 - var(--pd-list-progress)))),  30px);
+  opacity: var(--pd-list-progress);
+}
+
+/* Corner hex placement around the workspace polygon (top-left, top-right,
+   bottom-left, bottom-right). 24px outward from the workspace edge.
+   The (±120px * (1 - --pd-hex-progress)) terms are the scroll-entrance
+   shift: hexes start 120px further outward + 100px further from workspace
+   centre, fade in as progress goes 0 → 1. Hover preserves the shift so
+   the lift composes correctly during entrance. */
+platform-diagram .workspace-corner-hex.tech-core   {
+  justify-self: start;
+  transform: translate(
+    calc(-50% - 24px + (-120px * (1 - var(--pd-hex-progress)))),
+    calc(-104px      + (-100px * (1 - var(--pd-hex-progress))))
+  );
+  opacity: var(--pd-hex-progress);
+}
+platform-diagram .workspace-corner-hex.solutions   {
+  justify-self: end;
+  transform: translate(
+    calc( 50% + 24px + ( 120px * (1 - var(--pd-hex-progress)))),
+    calc(-104px      + (-100px * (1 - var(--pd-hex-progress))))
+  );
+  opacity: var(--pd-hex-progress);
+}
+platform-diagram .workspace-corner-hex.workspace   {
+  justify-self: start;
+  transform: translate(
+    calc(-50% - 24px + (-120px * (1 - var(--pd-hex-progress)))),
+    calc( 104px      + ( 100px * (1 - var(--pd-hex-progress))))
+  );
+  opacity: var(--pd-hex-progress);
+}
+platform-diagram .workspace-corner-hex.integrated  {
+  justify-self: end;
+  transform: translate(
+    calc( 50% + 24px + ( 120px * (1 - var(--pd-hex-progress)))),
+    calc( 104px      + ( 100px * (1 - var(--pd-hex-progress))))
+  );
+  opacity: var(--pd-hex-progress);
+}
+/* App Builder hex centred on workspace's bottom peak + 24px outward */
+platform-diagram .workspace-corner-hex.app-builder {
+  justify-self: center;
+  align-self: center;
+  transform: translateY(calc(208px + 24px + (120px * (1 - var(--pd-hex-progress)))));
+  opacity: var(--pd-hex-progress);
+}
+
+/* Hover lift composed on top of entrance shift */
+platform-diagram .workspace-corner-hex.tech-core:hover   {
+  transform: translate(
+    calc(-50% - 24px + (-120px * (1 - var(--pd-hex-progress)))),
+    calc(-104px - 4px + (-100px * (1 - var(--pd-hex-progress))))
+  );
+}
+platform-diagram .workspace-corner-hex.solutions:hover   {
+  transform: translate(
+    calc( 50% + 24px + ( 120px * (1 - var(--pd-hex-progress)))),
+    calc(-104px - 4px + (-100px * (1 - var(--pd-hex-progress))))
+  );
+}
+platform-diagram .workspace-corner-hex.workspace:hover   {
+  transform: translate(
+    calc(-50% - 24px + (-120px * (1 - var(--pd-hex-progress)))),
+    calc( 104px - 4px + ( 100px * (1 - var(--pd-hex-progress))))
+  );
+}
+platform-diagram .workspace-corner-hex.integrated:hover  {
+  transform: translate(
+    calc( 50% + 24px + ( 120px * (1 - var(--pd-hex-progress)))),
+    calc( 104px - 4px + ( 100px * (1 - var(--pd-hex-progress))))
+  );
+}
+platform-diagram .workspace-corner-hex.app-builder:hover {
+  transform: translateY(calc(208px + 24px - 4px + (120px * (1 - var(--pd-hex-progress)))));
+}
+
+/* Hover lift composed on top of entrance shift */
+/* No :hover lift on the labels: pointer-events: none on the parent
+   means hover doesn't fire on them anyway, and the old 4px lift was
+   tuned for the hex shape, not text. */
+
+/* Workspace-attachment lists — workspace-functions (above workspace) and
+   app-builder (below workspace). Both share the workspace's grid cell and
+   translate vertically so they sit just past the workspace's top/bottom peak. */
+platform-diagram .box-wrap.nextcloud-workspace,
+platform-diagram .box-wrap.app-builder {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: center;
+  width: 100%;
+  max-width: 280px;
+}
+/* Bottom edge overlaps workspace hex top peak by 24px (mirror of side-midpoint
+   inward-overlap pattern). Math: row_centre - workspace_half_height (208) + 24 = -184. */
+platform-diagram .box-wrap.nextcloud-workspace {
+  transform: translateY(calc(-50% - 184px + (-80px * (1 - var(--pd-list-progress)))));
+  opacity: var(--pd-list-progress);
+}
+/* App Builder list: top-centre at app-builder hex's bottom peak + 24px inward overlap */
+platform-diagram .box-wrap.app-builder {
+  transform: translateY(calc(50% + 300.5px + (80px * (1 - var(--pd-list-progress)))));
+  opacity: var(--pd-list-progress);
+}
+
+/* App Builder list: dashed coming-soon styling */
+platform-diagram .box-wrap.app-builder .box {
+  border-style: dashed;
+  background: var(--c-cobalt-50);
+  opacity: 0.92;
+}
+platform-diagram .box-wrap.app-builder .row { color: var(--c-cobalt-400); font-style: italic; }
+platform-diagram .box-wrap.app-builder .row .desc { font-style: normal; }
+platform-diagram .box-wrap.app-builder .row:hover .name { color: var(--c-cobalt-700); }
+
+/* Badge (e.g. COMING SOON) — generic, attaches to any .box-wrap */
+platform-diagram .box-wrap .badge {
+  position: absolute;
+  top: -8px; right: 16px;
+  background: var(--c-orange-knvb);
+  color: white;
+  font-family: var(--conduction-typography-font-family-code);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.08em;
+  z-index: 4;
+}
+
+/* ---- Flow connectors ---- Animated dashed lines over the workspace cell.
+   viewBox is workspace-relative (origin at workspace centre), so paths can use
+   the same arithmetic the corner hexes use. */
+platform-diagram .flow-overlay {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: center;
+  /* Height must match the viewBox set in JS (650) so SVG (0,0) lands exactly
+     on the workspace centre. Width matches viewBox (680) too. */
+  width: 680px;
+  height: 650px;
+  pointer-events: none;
+  z-index: 3;
+  overflow: visible;
+  /* Scroll-entrance: fade in last, after hexes & lists are in place. */
+  opacity: var(--pd-flow-progress);
+}
+platform-diagram .flow-overlay .flow-line {
+  fill: none;
+  stroke: var(--c-orange-knvb);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 6 6;
+  animation: pd-flow-dash 1.4s linear infinite;
+}
+@keyframes pd-flow-dash {
+  to { stroke-dashoffset: -12; }   /* one dash+gap cycle, in path-direction */
+}
+
+/* The scroll-entrance animation is fully expressed inline above via the
+   `--pd-hex-progress`, `--pd-list-progress`, `--pd-flow-progress` custom
+   properties. JS writes them on every scroll (rAF-throttled) so scrolling
+   up reverses the entrance. There is no discrete state machine. */

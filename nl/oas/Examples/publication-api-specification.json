@@ -1,0 +1,3666 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Nextcloud OpenRegister API",
+    "version": "1.0",
+    "description": "API for managing registers, schemas, sources, objects, and audit trails in a Nextcloud environment."
+  },
+  "servers": [
+    {
+      "url": "http://nextcloud.local/apps/openregister/api",
+      "description": "OpenRegister API Server"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    },
+    {
+      "oauth2": [
+        "read",
+        "write"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Catalog",
+      "description": "A catalog represents a curated collection of publications that can be organized by themes and schemas. It serves as the main organizational unit for content, allowing administrators to group related publications together and make them accessible through a unified interface. Catalogs can be public or private and can be associated with specific organizations."
+    },
+    {
+      "name": "Listing",
+      "description": "A listing provides a customizable view of publications within a catalog. It allows for the creation of specific publication collections based on filters, sorting, and presentation preferences. Listings can be used to create featured sections, topic-based collections, or any other organized view of publications."
+    },
+    {
+      "name": "Organization",
+      "description": "Organizations represent entities that publish or manage catalogs. They can be government agencies, companies, or other institutions. Each organization can have multiple catalogs and is identified by various standardized identifiers like OIN, RSIN, and PKI certificates."
+    },
+    {
+      "name": "Theme",
+      "description": "Themes are used to categorize publications within catalogs. They provide a way to group related publications together, making it easier for users to find content they're interested in. Themes can be hierarchical and can be used for navigation and filtering purposes."
+    },
+    {
+      "name": "Page",
+      "description": "Pages are used to create static content within the catalog website. They can contain information about how to use the catalog, contact information, about pages, or any other static content that needs to be accessible through the website. Pages are accessible through their unique slugs and can be organized in the navigation menu."
+    },
+    {
+      "name": "Menu",
+      "description": "Menus define the navigation structure of the catalog website. They allow administrators to organize pages, listings, and other content into a hierarchical navigation system. Multiple menus can be created for different purposes, such as main navigation, footer links, or specialized content groupings."
+    },
+    {
+      "name": "Glossary",
+      "description": "The glossary provides definitions and explanations for terms used throughout the catalog. It helps users understand specialized terminology, acronyms, and concepts. Each glossary entry can include detailed explanations, external references, and related keywords to help users find and understand relevant information."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic authentication using username and password. Not recommended for production use."
+      },
+      "oauth2": {
+        "type": "oauth2",
+        "description": "OAuth2 authentication using Nextcloud's authentication server.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "/apps/oauth2/authorize",
+            "tokenUrl": "/apps/oauth2/api/v1/token",
+            "refreshUrl": "/apps/oauth2/api/v1/token",
+            "scopes": {
+              "read": "Read access to all resources",
+              "write": "Write access to all resources"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Lock": {
+        "type": "object",
+        "x-tag": "generic",
+        "description": "Lock information object for concurrent access control. Objects can be locked to prevent concurrent editing, ensuring data integrity in multi-user environments.",
+        "properties": {
+          "user": {
+            "type": "string",
+            "description": "User ID that created the lock",
+            "example": "user_id"
+          },
+          "process": {
+            "type": "string",
+            "description": "Optional process name associated with the lock",
+            "example": "optional_process_name"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the lock was created",
+            "example": "timestamp"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Duration of the lockin seconds",
+            "example": "seconds"
+          },
+          "expiration": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the object expires (is autmaticly removed)",
+            "example": "timestamp"
+          }
+        }
+      },
+      "Deletion": {
+        "type": "object",
+        "x-tag": "generic",
+        "properties": {
+          "deleted": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the object was marked as deleted",
+            "example": "2023-01-01T00:00:00Z"
+          },
+          "deletedBy": {
+            "type": "string",
+            "description": "User ID who performed the deletion",
+            "example": "user-12345"
+          },
+          "deletedReason": {
+            "type": "string",
+            "description": "Optional reason for deletion",
+            "example": "No longer needed"
+          },
+          "retentionPeriod": {
+            "type": "integer",
+            "description": "How long to keep the deleted object (in days)",
+            "example": 30,
+            "default": 30
+          },
+          "purgeDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the object will be permanently deleted",
+            "example": "2023-01-31T00:00:00Z"
+          }
+        }
+      },
+      "@self": {
+        "type": "object",
+        "x-tag": "generic",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the object",
+            "example": 123
+          },
+          "uuid": {
+            "type": "string",
+            "description": "Unique universal identifier for globally unique object identification",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "uri": {
+            "type": "string",
+            "description": "Uniform Resource Identifier for unique addressable location",
+            "example": "/api/objects/123e4567-e89b-12d3-a456-426614174000"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semantic version number to track object versions",
+            "example": "1.0"
+          },
+          "register": {
+            "type": "integer",
+            "description": "Register identifier for object categorization/grouping",
+            "example": 123
+          },
+          "schema": {
+            "type": "integer",
+            "description": "Schema identifier for data validation reference",
+            "example": 123
+          },
+          "textRepresentation": {
+            "type": "string",
+            "description": "Text representation of object for search and display optimization",
+            "example": "John Doe, born 1980-01-15, email: john.doe@example.com"
+          },
+          "locked": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Lock"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Contains either a lock object or the value null"
+          },
+          "deleted": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Deletion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Contains either a deletion object or the value null"
+          },
+          "owner": {
+            "type": "string",
+            "description": "Nextcloud user identifier for object ownership",
+            "example": "user-12345"
+          },
+          "authorization": {
+            "type": "object",
+            "description": "Authorization rules for access control configuration",
+            "example": {
+              "read": true,
+              "write": false
+            }
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last modification timestamp for change tracking",
+            "example": "2023-05-20T10:15:00Z"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp for lifecycle management",
+            "example": "2023-02-15T14:30:00Z"
+          },
+          "folder": {
+            "type": "string",
+            "description": "Storage folder path for file organization",
+            "example": "/persons/john-doe"
+          },
+          "files": {
+            "type": "array",
+            "description": "Array of related files to track associated files",
+            "items": {
+              "$ref": "#/components/schemas/File"
+            },
+            "example": [
+              {
+                "id": 123,
+                "uuid": "123e4567-e89b-12d3-a456-426614174000",
+                "filename": "profile.jpg",
+                "downloadUrl": "https://example.com/download/123",
+                "shareUrl": "https://example.com/share/123",
+                "accessUrl": "https://example.com/access/123",
+                "extension": "jpg",
+                "checksum": "abc123",
+                "source": 1,
+                "userId": "user-12345",
+                "base64": "base64encodedstring",
+                "filePath": "/files/profile.jpg",
+                "created": "2023-02-15T14:30:00Z",
+                "updated": "2023-05-20T10:15:00Z"
+              },
+              {
+                "id": 124,
+                "uuid": "123e4567-e89b-12d3-a456-426614174001",
+                "filename": "resume.pdf",
+                "downloadUrl": "https://example.com/download/124",
+                "shareUrl": "https://example.com/share/124",
+                "accessUrl": "https://example.com/access/124",
+                "extension": "pdf",
+                "checksum": "def456",
+                "source": 1,
+                "userId": "user-12345",
+                "base64": "base64encodedstring",
+                "filePath": "/files/resume.pdf",
+                "created": "2023-02-16T14:30:00Z",
+                "updated": "2023-05-21T10:15:00Z"
+              }
+            ]
+          },
+          "relations": {
+            "type": "array",
+            "description": "Array of related object IDs to track object relationships",
+            "items": {
+              "type": "string"
+            },
+            "example": {
+              "spouse": "123e4567-e89b-12d3-a456-426614174000"
+            }
+          },
+          "errors": {
+            "type": "array",
+            "description": "Array of error messages encounterd during the rendering process of this object",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Property 'spouse' could not be extended because it does not exist."
+            ]
+          }
+        }
+      },
+      "File": {
+        "type": "object",
+        "x-tag": "generic",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier of the file in Nextcloud",
+            "example": 123
+          },
+          "uuid": {
+            "type": "string",
+            "description": "Unique identifier for the file",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Name of the file",
+            "example": "profile.jpg"
+          },
+          "downloadUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Direct download URL for the file",
+            "example": "https://example.com/download/123"
+          },
+          "shareUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to access the file via share link",
+            "example": "https://example.com/share/123"
+          },
+          "accessUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to access the file",
+            "example": "https://example.com/access/123"
+          },
+          "extension": {
+            "type": "string",
+            "description": "File extension",
+            "example": "jpg"
+          },
+          "checksum": {
+            "type": "string",
+            "description": "ETag hash for file versioning",
+            "example": "abc123"
+          },
+          "source": {
+            "type": "integer",
+            "description": "Source identifier",
+            "example": 1
+          },
+          "userId": {
+            "type": "string",
+            "description": "ID of the user who owns the file",
+            "example": "user-12345"
+          },
+          "base64": {
+            "type": "string",
+            "description": "Base64 encoded content of the file",
+            "example": "base64encodedstring"
+          },
+          "filePath": {
+            "type": "string",
+            "description": "Full path to the file in Nextcloud",
+            "example": "/files/profile.jpg"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp when file was first shared",
+            "example": "2023-02-15T14:30:00Z"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of last modification",
+            "example": "2023-05-20T10:15:00Z"
+          }
+        }
+      },
+      "AuditTrail": {
+        "type": "object",
+        "x-tag": "generic",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Unique identifier for the audit entry",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "schema": {
+            "type": "integer",
+            "description": "Schema ID of the modified object",
+            "example": 42
+          },
+          "register": {
+            "type": "integer",
+            "description": "Register ID of the modified object",
+            "example": 123
+          },
+          "object": {
+            "type": "integer",
+            "description": "Object ID that was modified",
+            "example": 456
+          },
+          "action": {
+            "type": "string",
+            "description": "Type of change that occurred",
+            "example": "create"
+          },
+          "changed": {
+            "type": "object",
+            "description": "Array of modified fields with old/new values",
+            "example": {
+              "name": {
+                "old": "John",
+                "new": "Jane"
+              }
+            }
+          },
+          "user": {
+            "type": "string",
+            "description": "ID of the user who made the change",
+            "example": "admin"
+          },
+          "userName": {
+            "type": "string",
+            "description": "Display name of the user",
+            "example": "Administrator"
+          },
+          "session": {
+            "type": "string",
+            "description": "Session ID when change occurred",
+            "example": "sess_89d7h2"
+          },
+          "request": {
+            "type": "string",
+            "description": "Request ID for tracing",
+            "example": "req_7d8h3j"
+          },
+          "ipAddress": {
+            "type": "string",
+            "description": "IP address of the request",
+            "example": "192.168.1.1"
+          },
+          "version": {
+            "type": "string",
+            "description": "Object version after change",
+            "example": "1.0.0"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the change",
+            "example": "2024-03-15T14:30:00Z"
+          },
+          "processingActivity": {
+            "type": "string",
+            "description": "The processing activity from the registry"
+          },
+          "processing": {
+            "type": "string",
+            "description": "The specific task being performed"
+          },
+          "operation": {
+            "type": "string",
+            "description": "The step in the processing task"
+          },
+          "legalBasis": {
+            "type": "string",
+            "description": "Legal basis for the processing"
+          },
+          "retentionPeriod": {
+            "type": "string",
+            "description": "Retention period for the data"
+          },
+          "executor": {
+            "type": "string",
+            "description": "The system or person executing the action"
+          },
+          "system": {
+            "type": "string",
+            "description": "The system where the action occurred"
+          },
+          "dataSource": {
+            "type": "string",
+            "description": "The source of the data"
+          }
+        }
+      },
+      "Catalog": {
+        "type": "object",
+        "x-tags": [
+          "Catalog"
+        ],
+        "properties": {
+          "@self": {
+            "$ref": "#/components/schemas/@self",
+            "readOnly": true,
+            "description": "The metadata of the object e.g. owner, created, modified, etc."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true,
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "The unique identifier for the object"
+          },
+          "title": {
+            "type": "string",
+            "description": "The title of the catalog",
+            "maxLength": 255,
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief description of the catalog",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the catalog",
+            "maxLength": 2555
+          },
+          "image": {
+            "type": "string",
+            "description": "URL to the catalog's image",
+            "maxLength": 255
+          },
+          "listed": {
+            "type": "boolean",
+            "description": "Whether the catalog is publicly listed"
+          },
+          "organization": {
+            "type": "string",
+            "description": "Reference to the organization that owns this catalog"
+          },
+          "registers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of register IDs associated with this catalog"
+          },
+          "schemas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of schema IDs associated with this catalog"
+          },
+          "filters": {
+            "type": "object",
+            "description": "Custom filters for the catalog",
+            "additionalProperties": true
+          }
+        }
+      },
+      "Listing": {
+        "type": "object",
+        "x-tags": [
+          "Listing"
+        ],
+        "properties": {
+          "@self": {
+            "$ref": "#/components/schemas/@self",
+            "readOnly": true,
+            "description": "The metadata of the object e.g. owner, created, modified, etc."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true,
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "The unique identifier for the object"
+          },
+          "catalogusId": {
+            "type": "string",
+            "description": "ID of the catalog this listing belongs to"
+          },
+          "title": {
+            "type": "string",
+            "description": "The title of the listing",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief description of the listing",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the listing"
+          },
+          "search": {
+            "type": "string",
+            "description": "Search URL for the listing",
+            "format": "url"
+          },
+          "directory": {
+            "type": "string",
+            "description": "Directory URL for the listing",
+            "format": "url"
+          },
+          "metadata": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Metadata fields for the listing"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the listing"
+          },
+          "statusCode": {
+            "type": "number",
+            "description": "HTTP status code of the listing",
+            "minimum": 200
+          },
+          "lastSync": {
+            "type": "string",
+            "description": "Timestamp of the last synchronization",
+            "format": "date-time"
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Whether the listing is available"
+          },
+          "default": {
+            "type": "boolean",
+            "description": "Whether this is the default listing"
+          },
+          "organization": {
+            "type": "object",
+            "description": "An organization object"
+          },
+          "schemas": {
+            "type": "array",
+            "description": "Types of publications in this listing"
+          }
+        }
+      },
+      "Organization": {
+        "type": "object",
+        "x-tags": [
+          "Organization"
+        ],
+        "properties": {
+          "@self": {
+            "$ref": "#/components/schemas/@self",
+            "readOnly": true,
+            "description": "The metadata of the object e.g. owner, created, modified, etc."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true,
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "The unique identifier for the object"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the organization",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief description of the organization",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the organization"
+          },
+          "oin": {
+            "type": "string",
+            "description": "Organization Identification Number (OIN)",
+            "pattern": "^0000000\\d{10}000$"
+          },
+          "tooi": {
+            "type": "string",
+            "description": "TOOI identifier for the organization",
+            "pattern": "^\\w{2,}\\d{4}$"
+          },
+          "rsin": {
+            "type": "string",
+            "description": "RSIN number for tax identification",
+            "pattern": "^\\d{9}$"
+          },
+          "pki": {
+            "type": "string",
+            "description": "PKI certificate information",
+            "pattern": "^\\d{1,}$"
+          },
+          "image": {
+            "type": "string",
+            "description": "URL to the organization's logo or image"
+          }
+        }
+      },
+      "Theme": {
+        "type": "object",
+        "x-tags": [
+          "Theme"
+        ],
+        "properties": {
+          "@self": {
+            "$ref": "#/components/schemas/@self",
+            "readOnly": true,
+            "description": "The metadata of the object e.g. owner, created, modified, etc."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true,
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "The unique identifier for the object"
+          },
+          "title": {
+            "type": "string",
+            "description": "The name of the theme",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief description of the theme",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the theme"
+          },
+          "image": {
+            "type": "string",
+            "description": "URL to the theme's image"
+          }
+        }
+      },
+      "Page": {
+        "type": "object",
+        "x-tags": [
+          "Page"
+        ],
+        "properties": {
+          "@self": {
+            "$ref": "#/components/schemas/@self",
+            "readOnly": true,
+            "description": "The metadata of the object e.g. owner, created, modified, etc."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true,
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "The unique identifier for the object"
+          },
+          "title": {
+            "type": "string",
+            "description": "The title of the page",
+            "minLength": 1
+          },
+          "slug": {
+            "type": "string",
+            "description": "URL-friendly version of the page name",
+            "pattern": "^[a-z0-9-]+$",
+            "minLength": 1
+          },
+          "contents": {
+            "type": "array",
+            "description": "Content blocks of the page",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Type of content block",
+                  "minLength": 1
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Identifier for the content block"
+                },
+                "data": {
+                  "type": "object",
+                  "description": "Content block data",
+                  "additionalProperties": true
+                }
+              },
+              "required": [
+                "type"
+              ]
+            }
+          }
+        }
+      },
+      "Menu": {
+        "type": "object",
+        "x-tags": [
+          "Menu"
+        ],
+        "properties": {
+          "@self": {
+            "$ref": "#/components/schemas/@self",
+            "readOnly": true,
+            "description": "The metadata of the object e.g. owner, created, modified, etc."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true,
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "The unique identifier for the object"
+          },
+          "title": {
+            "type": "string",
+            "description": "The name of the menu",
+            "minLength": 1
+          },
+          "position": {
+            "type": "number",
+            "description": "Order position of the menu",
+            "minimum": 0
+          },
+          "items": {
+            "type": "array",
+            "description": "Menu items and their structure",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the menu item",
+                  "minLength": 1
+                },
+                "slug": {
+                  "type": "string",
+                  "description": "URL-friendly version of the item name",
+                  "minLength": 1
+                },
+                "link": {
+                  "type": "string",
+                  "description": "URL or path for the menu item"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Description of the menu item"
+                },
+                "icon": {
+                  "type": "string",
+                  "description": "Icon for the menu item"
+                },
+                "items": {
+                  "type": "array",
+                  "description": "Submenu items",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "Name of the submenu item",
+                        "minLength": 1
+                      },
+                      "slug": {
+                        "type": "string",
+                        "description": "URL-friendly version of the submenu item name",
+                        "minLength": 1
+                      },
+                      "link": {
+                        "type": "string",
+                        "description": "URL or path for the submenu item"
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "Description of the submenu item"
+                      },
+                      "icon": {
+                        "type": "string",
+                        "description": "Icon for the submenu item"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "slug"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "slug"
+              ]
+            }
+          }
+        }
+      },
+      "Glossary": {
+        "type": "object",
+        "x-tags": [
+          "Glossary"
+        ],
+        "properties": {
+          "@self": {
+            "$ref": "#/components/schemas/@self",
+            "readOnly": true,
+            "description": "The metadata of the object e.g. owner, created, modified, etc."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true,
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "The unique identifier for the object"
+          },
+          "title": {
+            "type": "string",
+            "description": "The term being defined",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief definition of the term",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed explanation of the term",
+            "maxLength": 2555
+          },
+          "externalLink": {
+            "type": "string",
+            "description": "URL to external reference or documentation",
+            "format": "url",
+            "maxLength": 255
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Related search terms and synonyms"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/publication/catalog": {
+      "tags": [
+        "Catalog"
+      ],
+      "get": {
+        "summary": "Get all Catalog objects",
+        "operationId": "getAllCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Retrieve a list of all Catalog objects",
+        "responses": {
+          "200": {
+            "description": "List of Catalog objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Catalog"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Catalog object",
+        "operationId": "createCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Create a new Catalog object with the provided data",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Catalog"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Catalog created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/publication/catalog/{id}": {
+      "tags": [
+        "Catalog"
+      ],
+      "get": {
+        "summary": "Get a Catalog object by ID",
+        "operationId": "getCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Retrieve a specific Catalog object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Catalog object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catalog found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Catalog not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Catalog object",
+        "operationId": "updateCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Update an existing Catalog object with the provided data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Catalog object to update",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Catalog"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Catalog updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Catalog not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Catalog object",
+        "operationId": "deleteCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Delete a specific Catalog object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Catalog object to delete",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Catalog deleted successfully"
+          },
+          "404": {
+            "description": "Catalog not found"
+          }
+        }
+      }
+    },
+    "/publication/catalog/{id}/audit-trails": {
+      "tags": [
+        "Catalog"
+      ],
+      "get": {
+        "summary": "Get audit logs for a Catalog object",
+        "operationId": "getLogsCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Retrieve the audit trail for a specific Catalog object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Catalog object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditTrail"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Catalog not found"
+          }
+        }
+      }
+    },
+    "/publication/catalog/{id}/files": {
+      "tags": [
+        "Catalog"
+      ],
+      "get": {
+        "summary": "Get files for a Catalog object",
+        "operationId": "getFilesCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Retrieve all files associated with a specific Catalog object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Catalog object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Files retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/File"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Catalog not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload a file for a Catalog object",
+        "operationId": "uploadFileCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Upload a new file and associate it with a specific Catalog object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Catalog object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file to upload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Catalog not found"
+          }
+        }
+      }
+    },
+    "/publication/catalog/{id}/lock": {
+      "tags": [
+        "Catalog"
+      ],
+      "post": {
+        "summary": "Lock a Catalog object",
+        "operationId": "lockCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Lock a specific Catalog object to prevent concurrent modifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Catalog object to lock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object locked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lock"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Catalog not found"
+          },
+          "409": {
+            "description": "Object is already locked"
+          }
+        }
+      }
+    },
+    "/publication/catalog/{id}/unlock": {
+      "tags": [
+        "Catalog"
+      ],
+      "post": {
+        "summary": "Unlock a Catalog object",
+        "operationId": "unlockCatalog",
+        "tags": [
+          "Catalog"
+        ],
+        "description": "Remove the lock from a specific Catalog object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Catalog object to unlock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object unlocked successfully"
+          },
+          "404": {
+            "description": "Catalog not found"
+          },
+          "409": {
+            "description": "Object is not locked or locked by another user"
+          }
+        }
+      }
+    },
+    "/publication/listing": {
+      "tags": [
+        "Listing"
+      ],
+      "get": {
+        "summary": "Get all Listing objects",
+        "operationId": "getAllListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Retrieve a list of all Listing objects",
+        "responses": {
+          "200": {
+            "description": "List of Listing objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Listing"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Listing object",
+        "operationId": "createListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Create a new Listing object with the provided data",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Listing"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Listing created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Listing"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/publication/listing/{id}": {
+      "tags": [
+        "Listing"
+      ],
+      "get": {
+        "summary": "Get a Listing object by ID",
+        "operationId": "getListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Retrieve a specific Listing object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Listing object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listing found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Listing"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Listing not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Listing object",
+        "operationId": "updateListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Update an existing Listing object with the provided data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Listing object to update",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Listing"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Listing updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Listing"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Listing not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Listing object",
+        "operationId": "deleteListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Delete a specific Listing object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Listing object to delete",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Listing deleted successfully"
+          },
+          "404": {
+            "description": "Listing not found"
+          }
+        }
+      }
+    },
+    "/publication/listing/{id}/audit-trails": {
+      "tags": [
+        "Listing"
+      ],
+      "get": {
+        "summary": "Get audit logs for a Listing object",
+        "operationId": "getLogsListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Retrieve the audit trail for a specific Listing object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Listing object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditTrail"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Listing not found"
+          }
+        }
+      }
+    },
+    "/publication/listing/{id}/files": {
+      "tags": [
+        "Listing"
+      ],
+      "get": {
+        "summary": "Get files for a Listing object",
+        "operationId": "getFilesListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Retrieve all files associated with a specific Listing object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Listing object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Files retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/File"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Listing not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload a file for a Listing object",
+        "operationId": "uploadFileListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Upload a new file and associate it with a specific Listing object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Listing object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file to upload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Listing not found"
+          }
+        }
+      }
+    },
+    "/publication/listing/{id}/lock": {
+      "tags": [
+        "Listing"
+      ],
+      "post": {
+        "summary": "Lock a Listing object",
+        "operationId": "lockListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Lock a specific Listing object to prevent concurrent modifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Listing object to lock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object locked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lock"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Listing not found"
+          },
+          "409": {
+            "description": "Object is already locked"
+          }
+        }
+      }
+    },
+    "/publication/listing/{id}/unlock": {
+      "tags": [
+        "Listing"
+      ],
+      "post": {
+        "summary": "Unlock a Listing object",
+        "operationId": "unlockListing",
+        "tags": [
+          "Listing"
+        ],
+        "description": "Remove the lock from a specific Listing object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Listing object to unlock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object unlocked successfully"
+          },
+          "404": {
+            "description": "Listing not found"
+          },
+          "409": {
+            "description": "Object is not locked or locked by another user"
+          }
+        }
+      }
+    },
+    "/publication/organization": {
+      "tags": [
+        "Organization"
+      ],
+      "get": {
+        "summary": "Get all Organization objects",
+        "operationId": "getAllOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Retrieve a list of all Organization objects",
+        "responses": {
+          "200": {
+            "description": "List of Organization objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Organization"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Organization object",
+        "operationId": "createOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Create a new Organization object with the provided data",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Organization"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Organization created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/publication/organization/{id}": {
+      "tags": [
+        "Organization"
+      ],
+      "get": {
+        "summary": "Get a Organization object by ID",
+        "operationId": "getOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Retrieve a specific Organization object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Organization object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Organization object",
+        "operationId": "updateOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Update an existing Organization object with the provided data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Organization object to update",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Organization"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Organization updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Organization object",
+        "operationId": "deleteOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Delete a specific Organization object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Organization object to delete",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Organization deleted successfully"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      }
+    },
+    "/publication/organization/{id}/audit-trails": {
+      "tags": [
+        "Organization"
+      ],
+      "get": {
+        "summary": "Get audit logs for a Organization object",
+        "operationId": "getLogsOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Retrieve the audit trail for a specific Organization object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Organization object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditTrail"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      }
+    },
+    "/publication/organization/{id}/files": {
+      "tags": [
+        "Organization"
+      ],
+      "get": {
+        "summary": "Get files for a Organization object",
+        "operationId": "getFilesOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Retrieve all files associated with a specific Organization object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Organization object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Files retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/File"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload a file for a Organization object",
+        "operationId": "uploadFileOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Upload a new file and associate it with a specific Organization object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Organization object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file to upload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      }
+    },
+    "/publication/organization/{id}/lock": {
+      "tags": [
+        "Organization"
+      ],
+      "post": {
+        "summary": "Lock a Organization object",
+        "operationId": "lockOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Lock a specific Organization object to prevent concurrent modifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Organization object to lock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object locked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lock"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found"
+          },
+          "409": {
+            "description": "Object is already locked"
+          }
+        }
+      }
+    },
+    "/publication/organization/{id}/unlock": {
+      "tags": [
+        "Organization"
+      ],
+      "post": {
+        "summary": "Unlock a Organization object",
+        "operationId": "unlockOrganization",
+        "tags": [
+          "Organization"
+        ],
+        "description": "Remove the lock from a specific Organization object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Organization object to unlock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object unlocked successfully"
+          },
+          "404": {
+            "description": "Organization not found"
+          },
+          "409": {
+            "description": "Object is not locked or locked by another user"
+          }
+        }
+      }
+    },
+    "/publication/theme": {
+      "tags": [
+        "Theme"
+      ],
+      "get": {
+        "summary": "Get all Theme objects",
+        "operationId": "getAllTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Retrieve a list of all Theme objects",
+        "responses": {
+          "200": {
+            "description": "List of Theme objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Theme"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Theme object",
+        "operationId": "createTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Create a new Theme object with the provided data",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Theme"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Theme created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Theme"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/publication/theme/{id}": {
+      "tags": [
+        "Theme"
+      ],
+      "get": {
+        "summary": "Get a Theme object by ID",
+        "operationId": "getTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Retrieve a specific Theme object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Theme object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Theme found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Theme"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Theme not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Theme object",
+        "operationId": "updateTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Update an existing Theme object with the provided data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Theme object to update",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Theme"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Theme updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Theme"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Theme not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Theme object",
+        "operationId": "deleteTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Delete a specific Theme object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Theme object to delete",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Theme deleted successfully"
+          },
+          "404": {
+            "description": "Theme not found"
+          }
+        }
+      }
+    },
+    "/publication/theme/{id}/audit-trails": {
+      "tags": [
+        "Theme"
+      ],
+      "get": {
+        "summary": "Get audit logs for a Theme object",
+        "operationId": "getLogsTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Retrieve the audit trail for a specific Theme object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Theme object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditTrail"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Theme not found"
+          }
+        }
+      }
+    },
+    "/publication/theme/{id}/files": {
+      "tags": [
+        "Theme"
+      ],
+      "get": {
+        "summary": "Get files for a Theme object",
+        "operationId": "getFilesTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Retrieve all files associated with a specific Theme object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Theme object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Files retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/File"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Theme not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload a file for a Theme object",
+        "operationId": "uploadFileTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Upload a new file and associate it with a specific Theme object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Theme object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file to upload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Theme not found"
+          }
+        }
+      }
+    },
+    "/publication/theme/{id}/lock": {
+      "tags": [
+        "Theme"
+      ],
+      "post": {
+        "summary": "Lock a Theme object",
+        "operationId": "lockTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Lock a specific Theme object to prevent concurrent modifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Theme object to lock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object locked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lock"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Theme not found"
+          },
+          "409": {
+            "description": "Object is already locked"
+          }
+        }
+      }
+    },
+    "/publication/theme/{id}/unlock": {
+      "tags": [
+        "Theme"
+      ],
+      "post": {
+        "summary": "Unlock a Theme object",
+        "operationId": "unlockTheme",
+        "tags": [
+          "Theme"
+        ],
+        "description": "Remove the lock from a specific Theme object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Theme object to unlock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object unlocked successfully"
+          },
+          "404": {
+            "description": "Theme not found"
+          },
+          "409": {
+            "description": "Object is not locked or locked by another user"
+          }
+        }
+      }
+    },
+    "/publication/page": {
+      "tags": [
+        "Page"
+      ],
+      "get": {
+        "summary": "Get all Page objects",
+        "operationId": "getAllPage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Retrieve a list of all Page objects",
+        "responses": {
+          "200": {
+            "description": "List of Page objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Page"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Page object",
+        "operationId": "createPage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Create a new Page object with the provided data",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Page"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Page created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/publication/page/{id}": {
+      "tags": [
+        "Page"
+      ],
+      "get": {
+        "summary": "Get a Page object by ID",
+        "operationId": "getPage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Retrieve a specific Page object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Page object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Page not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Page object",
+        "operationId": "updatePage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Update an existing Page object with the provided data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Page object to update",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Page"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Page updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Page not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Page object",
+        "operationId": "deletePage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Delete a specific Page object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Page object to delete",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Page deleted successfully"
+          },
+          "404": {
+            "description": "Page not found"
+          }
+        }
+      }
+    },
+    "/publication/page/{id}/audit-trails": {
+      "tags": [
+        "Page"
+      ],
+      "get": {
+        "summary": "Get audit logs for a Page object",
+        "operationId": "getLogsPage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Retrieve the audit trail for a specific Page object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Page object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditTrail"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Page not found"
+          }
+        }
+      }
+    },
+    "/publication/page/{id}/files": {
+      "tags": [
+        "Page"
+      ],
+      "get": {
+        "summary": "Get files for a Page object",
+        "operationId": "getFilesPage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Retrieve all files associated with a specific Page object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Page object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Files retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/File"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Page not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload a file for a Page object",
+        "operationId": "uploadFilePage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Upload a new file and associate it with a specific Page object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Page object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file to upload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Page not found"
+          }
+        }
+      }
+    },
+    "/publication/page/{id}/lock": {
+      "tags": [
+        "Page"
+      ],
+      "post": {
+        "summary": "Lock a Page object",
+        "operationId": "lockPage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Lock a specific Page object to prevent concurrent modifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Page object to lock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object locked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lock"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Page not found"
+          },
+          "409": {
+            "description": "Object is already locked"
+          }
+        }
+      }
+    },
+    "/publication/page/{id}/unlock": {
+      "tags": [
+        "Page"
+      ],
+      "post": {
+        "summary": "Unlock a Page object",
+        "operationId": "unlockPage",
+        "tags": [
+          "Page"
+        ],
+        "description": "Remove the lock from a specific Page object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Page object to unlock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object unlocked successfully"
+          },
+          "404": {
+            "description": "Page not found"
+          },
+          "409": {
+            "description": "Object is not locked or locked by another user"
+          }
+        }
+      }
+    },
+    "/publication/menu": {
+      "tags": [
+        "Menu"
+      ],
+      "get": {
+        "summary": "Get all Menu objects",
+        "operationId": "getAllMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Retrieve a list of all Menu objects",
+        "responses": {
+          "200": {
+            "description": "List of Menu objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Menu"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Menu object",
+        "operationId": "createMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Create a new Menu object with the provided data",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Menu"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Menu created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Menu"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/publication/menu/{id}": {
+      "tags": [
+        "Menu"
+      ],
+      "get": {
+        "summary": "Get a Menu object by ID",
+        "operationId": "getMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Retrieve a specific Menu object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Menu object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Menu found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Menu"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Menu not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Menu object",
+        "operationId": "updateMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Update an existing Menu object with the provided data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Menu object to update",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Menu"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Menu updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Menu"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Menu not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Menu object",
+        "operationId": "deleteMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Delete a specific Menu object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Menu object to delete",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Menu deleted successfully"
+          },
+          "404": {
+            "description": "Menu not found"
+          }
+        }
+      }
+    },
+    "/publication/menu/{id}/audit-trails": {
+      "tags": [
+        "Menu"
+      ],
+      "get": {
+        "summary": "Get audit logs for a Menu object",
+        "operationId": "getLogsMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Retrieve the audit trail for a specific Menu object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Menu object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditTrail"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Menu not found"
+          }
+        }
+      }
+    },
+    "/publication/menu/{id}/files": {
+      "tags": [
+        "Menu"
+      ],
+      "get": {
+        "summary": "Get files for a Menu object",
+        "operationId": "getFilesMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Retrieve all files associated with a specific Menu object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Menu object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Files retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/File"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Menu not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload a file for a Menu object",
+        "operationId": "uploadFileMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Upload a new file and associate it with a specific Menu object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Menu object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file to upload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Menu not found"
+          }
+        }
+      }
+    },
+    "/publication/menu/{id}/lock": {
+      "tags": [
+        "Menu"
+      ],
+      "post": {
+        "summary": "Lock a Menu object",
+        "operationId": "lockMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Lock a specific Menu object to prevent concurrent modifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Menu object to lock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object locked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lock"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Menu not found"
+          },
+          "409": {
+            "description": "Object is already locked"
+          }
+        }
+      }
+    },
+    "/publication/menu/{id}/unlock": {
+      "tags": [
+        "Menu"
+      ],
+      "post": {
+        "summary": "Unlock a Menu object",
+        "operationId": "unlockMenu",
+        "tags": [
+          "Menu"
+        ],
+        "description": "Remove the lock from a specific Menu object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Menu object to unlock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object unlocked successfully"
+          },
+          "404": {
+            "description": "Menu not found"
+          },
+          "409": {
+            "description": "Object is not locked or locked by another user"
+          }
+        }
+      }
+    },
+    "/publication/glossary": {
+      "tags": [
+        "Glossary"
+      ],
+      "get": {
+        "summary": "Get all Glossary objects",
+        "operationId": "getAllGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Retrieve a list of all Glossary objects",
+        "responses": {
+          "200": {
+            "description": "List of Glossary objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Glossary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new Glossary object",
+        "operationId": "createGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Create a new Glossary object with the provided data",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Glossary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Glossary created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Glossary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/publication/glossary/{id}": {
+      "tags": [
+        "Glossary"
+      ],
+      "get": {
+        "summary": "Get a Glossary object by ID",
+        "operationId": "getGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Retrieve a specific Glossary object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Glossary object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Glossary found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Glossary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Glossary not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Glossary object",
+        "operationId": "updateGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Update an existing Glossary object with the provided data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Glossary object to update",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Glossary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Glossary updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Glossary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Glossary not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Glossary object",
+        "operationId": "deleteGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Delete a specific Glossary object by its unique identifier",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Glossary object to delete",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Glossary deleted successfully"
+          },
+          "404": {
+            "description": "Glossary not found"
+          }
+        }
+      }
+    },
+    "/publication/glossary/{id}/audit-trails": {
+      "tags": [
+        "Glossary"
+      ],
+      "get": {
+        "summary": "Get audit logs for a Glossary object",
+        "operationId": "getLogsGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Retrieve the audit trail for a specific Glossary object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Glossary object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditTrail"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Glossary not found"
+          }
+        }
+      }
+    },
+    "/publication/glossary/{id}/files": {
+      "tags": [
+        "Glossary"
+      ],
+      "get": {
+        "summary": "Get files for a Glossary object",
+        "operationId": "getFilesGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Retrieve all files associated with a specific Glossary object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Glossary object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Files retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/File"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Glossary not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload a file for a Glossary object",
+        "operationId": "uploadFileGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Upload a new file and associate it with a specific Glossary object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Glossary object",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file to upload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Glossary not found"
+          }
+        }
+      }
+    },
+    "/publication/glossary/{id}/lock": {
+      "tags": [
+        "Glossary"
+      ],
+      "post": {
+        "summary": "Lock a Glossary object",
+        "operationId": "lockGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Lock a specific Glossary object to prevent concurrent modifications",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Glossary object to lock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object locked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lock"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Glossary not found"
+          },
+          "409": {
+            "description": "Object is already locked"
+          }
+        }
+      }
+    },
+    "/publication/glossary/{id}/unlock": {
+      "tags": [
+        "Glossary"
+      ],
+      "post": {
+        "summary": "Unlock a Glossary object",
+        "operationId": "unlockGlossary",
+        "tags": [
+          "Glossary"
+        ],
+        "description": "Remove the lock from a specific Glossary object",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the Glossary object to unlock",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object unlocked successfully"
+          },
+          "404": {
+            "description": "Glossary not found"
+          },
+          "409": {
+            "description": "Object is not locked or locked by another user"
+          }
+        }
+      }
+    }
+  }
+}

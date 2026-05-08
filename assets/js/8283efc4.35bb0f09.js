@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkopenregister_docs=self.webpackChunkopenregister_docs||[]).push([[7546],{36212:e=>{e.exports=JSON.parse('{"name":"docusaurus-plugin-redoc","id":"client-registers"}')}}]);

@@ -1,0 +1,264 @@
+/* Kade Cyclist minigame styles. Pairs with kade-cyclist.js. The stage
+   overlays the .kade strip; while the game is active the kade flips to
+   overflow: visible so the HUD and game-over panel can extend above
+   into the skyline area. Hazards are absolutely positioned within the
+   track and animated leftward via the kc-drift-l keyframe (duration is
+   set inline by the script so the difficulty ramp can shorten it).
+   Tokens used: --c-cobalt-900, --c-cobalt-700, --c-orange-knvb,
+   --conduction-typography-font-family-body. */
+
+/* Active state: let the HUD and game-over banner rise above the kade. */
+.canal-footer .kade:has(.kc-stage) { overflow: visible; }
+
+.kc-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  font-family: var(--conduction-typography-font-family-body, 'Figtree', system-ui, sans-serif);
+}
+
+/* ============ Track + lanes ============ */
+
+.kc-track {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.kc-lane {
+  position: absolute;
+  left: 0; right: 0;
+  height: 50%;
+  pointer-events: none;
+  /* Subtle dashed divider hint between lanes once the game is on */
+}
+.kc-lane-top    { top: 0; }
+.kc-lane-bottom { bottom: 0; }
+/* Lane divider — kept always visible during gameplay (more prominent
+   than the original ambient kade) so the player can read which lane
+   each hazard is in at a glance. */
+.kc-track::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(10, 23, 47, 0.45) 0 8px,
+    transparent 8px 14px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============ Player ============ */
+
+.kc-player {
+  position: absolute;
+  /* The runtime sets --kc-player-x to the centre x of the blue
+     Conduction house in the skyline, so the cyclist visually sits
+     under the brand-anchor house. Fallback covers the case where the
+     skyline hasn't been built yet. */
+  left: var(--kc-player-x, 14%);
+  width: 22px;
+  height: 16px;
+  z-index: 6;
+  transition: top 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              bottom 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 1px 0 rgba(247, 127, 14, 0.4));
+}
+.kc-player[data-lane="top"]    { top: 0px; bottom: auto; }
+.kc-player[data-lane="bottom"] { bottom: 0px; top: auto; }
+.kc-player-svg { display: block; }
+
+.kc-player.crashed {
+  animation: kc-crash 480ms ease both;
+}
+@keyframes kc-crash {
+  0%   { transform: rotate(0deg) translateY(0); }
+  20%  { transform: rotate(-18deg) translateY(-3px); }
+  50%  { transform: rotate(28deg) translateY(2px); }
+  80%  { transform: rotate(-8deg) translateY(0); }
+  100% { transform: rotate(20deg) translateY(0); }
+}
+
+/* ============ Hazards ============ */
+
+.kc-hazard {
+  position: absolute;
+  right: -64px;
+  height: 16px;
+  z-index: 5;
+  animation-name: kc-drift-l;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+.kc-hazard[data-lane="top"]    { top: 0px; }
+.kc-hazard[data-lane="bottom"] { bottom: 0px; }
+
+@keyframes kc-drift-l {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(-100vw - 200px)); }
+}
+.kc-hazard-svg { display: block; }
+
+/* ============ HUD ============ */
+
+.kc-hud {
+  position: absolute;
+  top: -28px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  z-index: 10;
+  background: rgba(10, 23, 47, 0.92);
+  -webkit-backdrop-filter: blur(4px);
+          backdrop-filter: blur(4px);
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+.kc-score-block {
+  display: flex; align-items: baseline; gap: 4px;
+  padding: 0 4px;
+}
+.kc-score-num {
+  color: var(--c-orange-knvb, #F77F0E);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.kc-score-label {
+  font-size: 9px;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+.kc-controls {
+  font-size: 10px;
+  opacity: 0.7;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  padding-left: 8px;
+}
+.kc-controls kbd {
+  background: rgba(255, 255, 255, 0.16);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 600;
+}
+.kc-close {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  border: 0;
+  color: white;
+  cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 14px;
+  line-height: 1;
+  font-family: inherit;
+  transition: background 150ms ease;
+}
+.kc-close:hover,
+.kc-close:focus-visible {
+  background: var(--c-orange-knvb, #F77F0E);
+}
+
+/* ============ Game over panel ============ */
+
+.kc-over {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  background: var(--c-cobalt-900, #0A172F);
+  color: white;
+  padding: 14px 24px;
+  border-radius: 10px;
+  text-align: center;
+  pointer-events: auto;
+  z-index: 11;
+  min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: kc-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes kc-pop {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.85); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+.kc-over-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--c-orange-knvb, #F77F0E);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+.kc-over-stat {
+  font-size: 13px;
+  margin: 0 0 14px;
+  opacity: 0.85;
+  font-weight: 500;
+}
+.kc-over-stat span {
+  color: var(--c-orange-knvb, #F77F0E);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-right: 2px;
+}
+.kc-over button {
+  border: 0;
+  background: var(--c-orange-knvb, #F77F0E);
+  color: white;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 150ms ease, filter 150ms ease;
+}
+.kc-over button:hover,
+.kc-over button:focus-visible {
+  transform: scale(1.05);
+  filter: brightness(1.08);
+}
+
+/* ============ Hover hint on bikes (subtle, only when ambient) ============ */
+
+.canal-footer:not(:has(.kc-stage)) .ki-bike-1,
+.canal-footer:not(:has(.kc-stage)) .ki-bike-2 {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* ============ Reduced motion ============ */
+
+@media (prefers-reduced-motion: reduce) {
+  .kc-player,
+  .kc-over,
+  .kc-player.crashed {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ============ Mobile ============ */
+
+@media (max-width: 720px) {
+  .kc-hud { top: -26px; right: 4px; padding: 3px 6px; }
+  .kc-controls { display: none; }
+  .kc-over { padding: 10px 16px; min-width: 160px; }
+  .kc-over-title { font-size: 18px; }
+}

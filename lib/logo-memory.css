@@ -1,0 +1,219 @@
+/* Logo Memory in-place styles. Pairs with logo-memory.js.
+   The runtime uses the actual <a class="hex"> anchors that already
+   render in the marquee — no overlay div, no separately-built tiles.
+   This CSS handles the visual phases:
+     1. .marquee.lm-active        pause tracks + restore colour
+     2. .marquee.lm-overflow      let the 6-row cluster extend below
+                                  the marquee's original 3-row band
+     3. .lm-tile / .lm-flipper    3D rotateY flip (front=logo, back=
+                                  cobalt + Conduction C-in-hex)
+     4. .lm-back-up               flipped to back (the face-down state
+                                  before the player reveals)
+     5. .lm-matched               orange ring + pulse on a matched pair
+     6. .lm-hud                   score pill above the cluster
+*/
+
+/* ============ Phase 1+2: pause + colourise + overflow ============ */
+
+.marquee.lm-active .track,
+[data-memory-marquee].lm-active .track,
+[data-memory-marquee].lm-active > div > div {
+  animation-play-state: paused !important;
+}
+[data-memory-marquee].lm-active a img {
+  filter: none !important;
+  opacity: 1 !important;
+  transition: filter 220ms ease, opacity 220ms ease;
+}
+
+.marquee.lm-overflow,
+[data-memory-marquee].lm-overflow {
+  overflow: visible !important;
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+  min-height: 760px;
+  position: relative;
+}
+
+/* ============ Phase 3: tile flip structure ============ */
+
+.lm-tile {
+  perspective: 900px;
+  cursor: pointer;
+}
+/* The runtime moves the original img into .lm-front during enhance,
+   so the tile's only direct children are the .lm-flipper. The hex's
+   ::before (cobalt-50 ring) + ::after (white inner) still render
+   behind the flipper as the resting frame. */
+
+.lm-flipper {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 600ms cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: 3;
+}
+.lm-tile.lm-back-up .lm-flipper {
+  transform: rotateY(180deg);
+}
+
+.lm-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+  clip-path: var(--hex-pointy-top, polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%));
+}
+
+/* Front: transparent so the existing .hex::before (cobalt-50 ring) +
+   .hex::after (white interior) keep showing through. The img sits on
+   top. */
+.lm-front {
+  background: transparent;
+}
+.lm-front img {
+  max-width: 60%;
+  max-height: 50%;
+  object-fit: contain;
+  filter: none;
+  opacity: 1;
+  transition: opacity 220ms ease;
+}
+
+/* Back: solid brand cobalt with the Conduction C-in-hex avatar. No
+   inset frame — the hex clip-path of .lm-face already shapes the
+   tile, and a darker outer ring read as a black border. */
+.lm-back {
+  transform: rotateY(180deg);
+  background: var(--c-cobalt-500, #21468B);
+}
+.lm-back-svg {
+  width: 56%;
+  height: 56%;
+}
+
+/* ============ Matched state ============ */
+
+/* Replace the cobalt-50 outer ring with KNVB orange when matched.
+   Inner white (::after, 1.5px inset) still covers the interior, so
+   the visible orange is just the rim — the same shape as the rest
+   of the hex pattern, no layout shift. */
+.lm-tile.lm-matched::before {
+  background: var(--c-orange-knvb, #F77F0E) !important;
+}
+.lm-tile.lm-matched {
+  animation: lmMatchPulse 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+}
+@keyframes lmMatchPulse {
+  0%   { transform: translateY(0) scale(1); }
+  35%  { transform: translateY(0) scale(1.08); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* Hover hint while face-down: NEVER touch the flipper's transform.
+   Animating between rotateY(180deg) and rotateY(180deg) <translate>
+   triggers quaternion-decomposition ambiguity at the 180° pole, and
+   browsers sometimes interpolate through rotateY(0) — which would
+   reveal the front face on hover and let the player cheat the game.
+   Use filter only; the tile is only "pushed" face-up via the click
+   handler, never via hover or focus. */
+.lm-tile.lm-back-up:not(.lm-matched):hover {
+  filter: drop-shadow(0 4px 8px rgba(33, 70, 139, 0.28));
+}
+.lm-tile.lm-back-up:focus-visible {
+  outline: 2px solid var(--c-orange-knvb, #F77F0E);
+  outline-offset: 4px;
+}
+
+/* ============ Phase 6: HUD ============ */
+
+.lm-hud {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 20;
+  font-family: var(--conduction-typography-font-family-body, 'Figtree', system-ui, sans-serif);
+  pointer-events: auto;
+  animation: lmHudIn 360ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes lmHudIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.lm-counter,
+.lm-moves {
+  background: var(--c-cobalt-900, #0A172F);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.lm-counter [data-matched] {
+  color: var(--c-orange-knvb, #F77F0E);
+  font-weight: 700;
+  margin-right: 2px;
+}
+.lm-moves [data-moves] {
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+.lm-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--c-cobalt-900, #0A172F);
+  background: white;
+  color: var(--c-cobalt-900, #0A172F);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+}
+.lm-close:hover,
+.lm-close:focus-visible {
+  background: var(--c-cobalt-900, #0A172F);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* ============ Reduced motion ============ */
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-flipper,
+  .lm-tile.lm-matched,
+  .lm-hud,
+  .marquee.lm-active .hexLogo,
+  .marquee.lm-active a.hex img,
+  [data-memory-marquee].lm-active .hexLogo,
+  [data-memory-marquee].lm-active a.hex img {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ============ Responsive: keep the cluster legible on small screens ============ */
+
+@media (max-width: 720px) {
+  .marquee.lm-overflow,
+  [data-memory-marquee].lm-overflow {
+    min-height: 600px;
+  }
+  .lm-counter,
+  .lm-moves {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

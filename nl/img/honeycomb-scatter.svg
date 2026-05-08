@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hex scatter overlay">
+  <title>Hex scatter, solid-fill cobalt tones</title>
+  <!-- Twelve pointy-top hexes, all solid fills from the cobalt ramp.
+       Mix of cobalt-700 and cobalt-800 reads as "darker" against
+       cobalt-900 grounds and "darker still" against blue-cobalt
+       grounds, giving a visible but quiet hex texture either way.
+       No transparency, no gradients. One orange accent per scene
+       is added by the foreground, never here. -->
+  <g>
+    <polygon points="120,40 165,66 165,118 120,144 75,118 75,66" fill="#152D5C"/>
+    <polygon points="280,80 325,106 325,158 280,184 235,158 235,106" fill="#102246"/>
+    <polygon points="450,30 510,64 510,132 450,166 390,132 390,64" fill="#152D5C"/>
+    <polygon points="630,90 675,116 675,168 630,194 585,168 585,116" fill="#102246"/>
+    <polygon points="760,40 800,63 800,109 760,132 720,109 720,63" fill="#152D5C"/>
+    <polygon points="60,200 90,217 90,253 60,270 30,253 30,217" fill="#102246"/>
+    <polygon points="200,260 245,286 245,338 200,364 155,338 155,286" fill="#152D5C"/>
+    <polygon points="370,310 410,333 410,379 370,402 330,379 330,333" fill="#102246"/>
+    <polygon points="540,290 590,318 590,374 540,402 490,374 490,318" fill="#152D5C"/>
+    <polygon points="700,260 740,283 740,329 700,352 660,329 660,283" fill="#102246"/>
+    <polygon points="100,360 140,383 140,429 100,452 60,429 60,383" fill="#152D5C"/>
+    <polygon points="380,150 410,167 410,203 380,220 350,203 350,167" fill="#102246"/>
+  </g>
+</svg>

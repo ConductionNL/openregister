@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" width="210mm" height="297mm" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Honeycomb watermark for A4 stationery">
+  <title>Honeycomb watermark, point-up hexes with scattered orange accents</title>
+  <!-- A4 watermark. Real honeycomb tiling with R=20mm.
+       Bulk hexes are stroked in cobalt-100 (solid colour), the
+       scattered accents are filled solid in KNVB orange. No fill-
+       opacity, no rgba, no gradients. All hexes point up. -->
+  <defs>
+    <!-- R=14 drawn hexes on a grid spaced for R=20: 6mm of breathing
+         room around each hex, never touching, still reading as a
+         honeycomb arrangement. -->
+    <polygon id="hx" points="0,-14 12.124,-7 12.124,7 0,14 -12.124,7 -12.124,-7"/>
+  </defs>
+
+  <!-- Cobalt-outlined hexes — the comb -->
+  <g fill="none" stroke="#DCE3F0" stroke-width="0.4">
+    <!-- Row 0 (type A, y=20) -->
+    <use href="#hx" x="17.32"  y="20"/>
+    <use href="#hx" x="51.96"  y="20"/>
+    <use href="#hx" x="86.6"   y="20"/>
+    <use href="#hx" x="121.24" y="20"/>
+    <use href="#hx" x="155.88" y="20"/>
+    <use href="#hx" x="190.52" y="20"/>
+
+    <!-- Row 1 (type B, y=50) -->
+    <use href="#hx" x="0"      y="50"/>
+    <use href="#hx" x="34.64"  y="50"/>
+    <use href="#hx" x="103.92" y="50"/>
+    <use href="#hx" x="138.56" y="50"/>
+    <use href="#hx" x="173.2"  y="50"/>
+    <use href="#hx" x="207.84" y="50"/>
+
+    <!-- Row 2 (type A, y=80) -->
+    <use href="#hx" x="17.32"  y="80"/>
+    <use href="#hx" x="51.96"  y="80"/>
+    <use href="#hx" x="86.6"   y="80"/>
+    <use href="#hx" x="121.24" y="80"/>
+    <use href="#hx" x="155.88" y="80"/>
+    <use href="#hx" x="190.52" y="80"/>
+
+    <!-- Row 3 (type B, y=110) -->
+    <use href="#hx" x="0"      y="110"/>
+    <use href="#hx" x="34.64"  y="110"/>
+    <use href="#hx" x="69.28"  y="110"/>
+    <use href="#hx" x="103.92" y="110"/>
+    <use href="#hx" x="138.56" y="110"/>
+    <use href="#hx" x="207.84" y="110"/>
+
+    <!-- Row 4 (type A, y=140) -->
+    <use href="#hx" x="17.32"  y="140"/>
+    <use href="#hx" x="51.96"  y="140"/>
+    <use href="#hx" x="86.6"   y="140"/>
+    <use href="#hx" x="121.24" y="140"/>
+    <use href="#hx" x="155.88" y="140"/>
+    <use href="#hx" x="190.52" y="140"/>
+
+    <!-- Row 5 (type B, y=170) -->
+    <use href="#hx" x="0"      y="170"/>
+    <use href="#hx" x="69.28"  y="170"/>
+    <use href="#hx" x="103.92" y="170"/>
+    <use href="#hx" x="138.56" y="170"/>
+    <use href="#hx" x="173.2"  y="170"/>
+    <use href="#hx" x="207.84" y="170"/>
+
+    <!-- Row 6 (type A, y=200) -->
+    <use href="#hx" x="17.32"  y="200"/>
+    <use href="#hx" x="51.96"  y="200"/>
+    <use href="#hx" x="86.6"   y="200"/>
+    <use href="#hx" x="121.24" y="200"/>
+    <use href="#hx" x="155.88" y="200"/>
+    <use href="#hx" x="190.52" y="200"/>
+
+    <!-- Row 7 (type B, y=230) -->
+    <use href="#hx" x="0"      y="230"/>
+    <use href="#hx" x="34.64"  y="230"/>
+    <use href="#hx" x="69.28"  y="230"/>
+    <use href="#hx" x="103.92" y="230"/>
+    <use href="#hx" x="173.2"  y="230"/>
+    <use href="#hx" x="207.84" y="230"/>
+
+    <!-- Row 8 (type A, y=260) -->
+    <use href="#hx" x="17.32"  y="260"/>
+    <use href="#hx" x="51.96"  y="260"/>
+    <use href="#hx" x="86.6"   y="260"/>
+    <use href="#hx" x="121.24" y="260"/>
+    <use href="#hx" x="155.88" y="260"/>
+    <use href="#hx" x="190.52" y="260"/>
+
+    <!-- Row 9 (type B, y=290) -->
+    <use href="#hx" x="0"      y="290"/>
+    <use href="#hx" x="34.64"  y="290"/>
+    <use href="#hx" x="69.28"  y="290"/>
+    <use href="#hx" x="138.56" y="290"/>
+    <use href="#hx" x="173.2"  y="290"/>
+    <use href="#hx" x="207.84" y="290"/>
+  </g>
+
+  <!-- Scattered cobalt accents — five, outline only.
+       Same stroke-width as the cobalt-100 bulk hexes; the brand
+       cobalt is naturally darker than cobalt-100 so the accents
+       read as a quieter highlight without overpowering body text. -->
+  <g fill="none" stroke="#21468B" stroke-width="0.4">
+    <use href="#hx" x="69.28"  y="50"/>
+    <use href="#hx" x="173.2"  y="110"/>
+    <use href="#hx" x="34.64"  y="170"/>
+    <use href="#hx" x="138.56" y="230"/>
+    <use href="#hx" x="103.92" y="290"/>
+  </g>
+</svg>
