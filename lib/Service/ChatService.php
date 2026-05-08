@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
  */
 
 namespace OCA\OpenRegister\Service;
@@ -192,7 +192,7 @@ class ChatService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
      */
     public function processMessage(
         int $conversationId,

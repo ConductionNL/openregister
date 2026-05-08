@@ -851,13 +851,14 @@ class TextExtractionServiceDeepTest extends TestCase
         $this->objectMapper->method('find')
             ->willThrowException(new DoesNotExistException('not found'));
 
-        // Should not throw — gracefully skips.
-        $this->service->extractObject(999);
-
-        // Verify logger was called with skip message.
+        // Expect the skip-info log before triggering the call so the
+        // invocation is recorded against the expectation (PHPUnit does not
+        // retroactively match expects() set after the mocked call).
         $this->logger->expects($this->atLeastOnce())
             ->method('info');
 
+        // Should not throw — gracefully skips.
+        $this->service->extractObject(999);
     }//end testExtractObjectDeletedObject()
 
 

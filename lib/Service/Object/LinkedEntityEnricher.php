@@ -23,6 +23,14 @@ use Psr\Log\LoggerInterface;
  * Follows the same pattern as RenderObject::renderFiles() — resolves IDs from
  * metadata columns into display objects using Nextcloud's native APIs.
  *
+ * Raw-SQL note: each enrich*() helper queries a cross-app table (Mail,
+ * Contacts/CardDAV, Calendar/CalDAV, Talk, Deck) whose schema is owned by the
+ * other app, not openregister. Nextcloud's QueryBuilder substitutes the
+ * `*PREFIX*` placeholder for the instance's table prefix; the literal `oc_`
+ * prefix is used here because these are foreign tables read by name. All
+ * statements use parameter binding and standard SQL that is MariaDB / MySQL /
+ * PostgreSQL compatible.
+ *
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
@@ -30,6 +38,7 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Enrichment requires multiple NC APIs
+ * @SuppressWarnings(PHPMD.UnusedPrivateMethod)    Enricher methods dispatched via ENRICHER_MAP lookup
  */
 class LinkedEntityEnricher
 {
@@ -54,7 +63,7 @@ class LinkedEntityEnricher
      * @param IUserManager     $userManager     User manager for resolving display names
      * @param LoggerInterface  $logger          Logger
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -72,7 +81,7 @@ class LinkedEntityEnricher
      *
      * @return array The object data with enriched linked entities
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function enrich(array $objectData, array $extend): array
     {
@@ -101,7 +110,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched mail objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichMail(array $ids): array
     {
@@ -114,9 +123,10 @@ class LinkedEntityEnricher
                 continue;
             }
 
-            [$accountId, $messageId] = $parts;
+            [, $messageId] = $parts;
 
             try {
+                // Raw SQL: foreign Mail-app table (see class docblock).
                 $sql  = "SELECT subject, `from` AS sender, sent_at FROM oc_mail_messages WHERE id = ? LIMIT 1";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([(int) $messageId]);
@@ -149,7 +159,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched contact objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichContacts(array $ids): array
     {
@@ -157,6 +167,7 @@ class LinkedEntityEnricher
 
         foreach ($ids as $id) {
             try {
+                // Raw SQL: foreign DAV/Contacts table (see class docblock).
                 $sql  = "SELECT carddata FROM oc_cards WHERE uid = ? LIMIT 1";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([$id]);
@@ -193,7 +204,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched note objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichNotes(array $ids): array
     {
@@ -227,7 +238,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched todo objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichTodos(array $ids): array
     {
@@ -243,6 +254,7 @@ class LinkedEntityEnricher
             [$calendarId, $uid] = $parts;
 
             try {
+                // Raw SQL: foreign DAV/Calendar table (see class docblock).
                 $sql  = "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([(int) $calendarId, $uid]);
@@ -281,7 +293,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched event objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichCalendar(array $ids): array
     {
@@ -297,6 +309,7 @@ class LinkedEntityEnricher
             [$calendarId, $uid] = $parts;
 
             try {
+                // Raw SQL: foreign DAV/Calendar table (see class docblock).
                 $sql  = "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([(int) $calendarId, $uid]);
@@ -335,7 +348,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched Talk objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichTalk(array $ids): array
     {
@@ -343,6 +356,7 @@ class LinkedEntityEnricher
 
         foreach ($ids as $id) {
             try {
+                // Raw SQL: foreign Talk-app table (see class docblock).
                 $sql  = "SELECT name, type FROM oc_talk_rooms WHERE token = ? LIMIT 1";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([$id]);
@@ -375,7 +389,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched Deck objects
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function enrichDeck(array $ids): array
     {
@@ -391,6 +405,7 @@ class LinkedEntityEnricher
             [$boardId, $cardId] = $parts;
 
             try {
+                // Raw SQL: foreign Deck-app tables joined together (see class docblock).
                 $sql  = "SELECT c.title, b.title AS board_title, s.title AS stack_title
                          FROM oc_deck_cards c
                          JOIN oc_deck_stacks s ON c.stack_id = s.id
@@ -427,7 +442,7 @@ class LinkedEntityEnricher
      *
      * @return array The fallback result
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function notFoundResult(string $id): array
     {
@@ -445,7 +460,7 @@ class LinkedEntityEnricher
      *
      * @return string|null The field value or null
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function extractVcardField(string $carddata, string $field): ?string
     {
@@ -464,7 +479,7 @@ class LinkedEntityEnricher
      *
      * @return string|null The field value or null
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function extractIcalField(string $caldata, string $field): ?string
     {

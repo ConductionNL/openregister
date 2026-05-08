@@ -1,6 +1,7 @@
 ---
 status: implemented
-retrofit_extensions: [REQ-017]
+retrofit_extensions:
+  - REQ-017
 ---
 # Content Versioning
 
@@ -40,9 +41,9 @@ Each create or update operation on an object MUST increment the object's semanti
 
 ### Requirement: Objects MUST support a draft/published lifecycle
 
-> **Status: deferred** — No DraftService or draft version entity found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
-
 Each object MUST have a published version (the current live data) and support one or more named draft versions for work-in-progress changes. Drafts MUST store only the delta (changed fields) relative to the published version to optimize storage. The published version MUST remain accessible and unmodified while drafts exist.
+
+> **Status: deferred** — No DraftService or draft version entity found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
 
 #### Scenario: Create a draft version
 - **GIVEN** a published object `melding-1` with title `Geluidsoverlast` and status `nieuw` at version `1.0.3`
@@ -77,9 +78,9 @@ Each object MUST have a published version (the current live data) and support on
 
 ### Requirement: Drafts MUST be promotable to published version
 
-> **Status: deferred** — Depends on draft/published lifecycle (see above). Not implemented as of 2026-04-30.
-
 A draft version MUST be mergeable into the published version, replacing the current live data with the draft changes. Promotion MUST create a new version entry in the audit trail and MUST increment the MINOR version number.
+
+> **Status: deferred** — Depends on draft/published lifecycle (see above). Not implemented as of 2026-04-30.
 
 #### Scenario: Promote a draft to published
 - **GIVEN** draft `status-update` for `melding-1` (published at `1.0.3`) with status changed to `in_behandeling`
@@ -110,9 +111,9 @@ A draft version MUST be mergeable into the published version, replacing the curr
 
 ### Requirement: The system MUST support version comparison with visual diffs
 
-> **Status: deferred** — No diffing service found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
-
 Users MUST be able to compare any two versions (draft vs published, any two historical versions) with field-level diffs. The diff MUST identify added, removed, and modified fields with their old and new values.
+
+> **Status: deferred** — No diffing service found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
 
 #### Scenario: Compare draft with published version
 - **GIVEN** published `melding-1` has title `Overlast` and status `nieuw`
@@ -238,9 +239,9 @@ Every version (audit trail entry) MUST record who made the change, when, from wh
 
 ### Requirement: Version storage MUST use a delta strategy for drafts and full snapshots for published versions
 
-> **Status: deferred** — Draft delta storage not implemented as of 2026-04-30. Audit trail stores full diffs (implemented); draft-specific delta storage is not.
-
 Published version history MUST store the full changed-field diff (old and new values) in the audit trail as currently implemented by `AuditTrailMapper.createAuditTrail()`. Draft versions MUST store only the delta (changed fields with new values only) relative to the current published version to minimize storage overhead.
+
+> **Status: deferred** — Draft delta storage not implemented as of 2026-04-30. Audit trail stores full diffs (implemented); draft-specific delta storage is not.
 
 #### Scenario: Audit trail stores full diff for published versions
 - **GIVEN** object `melding-1` at version `1.0.3` has title `Overlast` and status `nieuw`

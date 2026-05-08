@@ -58,9 +58,29 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class AuditTrailMapper extends QBMapper
 {
+
+    /**
+     * Request-scoped import-job tag.
+     *
+     * Set by `ImportService` at the start of a bulk import via
+     * `setRequestImportJobId()` and cleared in the import's `finally`
+     * block. Read by `createAuditTrail()` as a fallback when the
+     * `ObjectEntity` does not carry its own per-entity override. The
+     * mapper is request-bound under the standard NC DI container, so
+     * the value is request-local; a leaked value across requests would
+     * still be a benign mistag because the next import either sets a
+     * new UUID (overrides) or no UUID (single-object writes never
+     * resolve through this fallback because they go through
+     * `saveObject` not `saveObjects`).
+     *
+     * @var string|null
+     */
+    private ?string $requestImportJobId = null;
+
     /**
      * Constructor for the AuditTrailMapper
      *
@@ -79,6 +99,66 @@ class AuditTrailMapper extends QBMapper
     ) {
         parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
     }//end __construct()
+
+    /**
+     * Set the request-scoped import-job UUID stamped on all
+     * `createAuditTrail()` rows for the duration of an import. Pass
+     * `null` to clear (typically in the import's `finally` block).
+     *
+     * @param string|null $importJobId UUID v4 of the active import job, or null to clear.
+     *
+     * @return void
+     */
+    public function setRequestImportJobId(?string $importJobId): void
+    {
+        $this->requestImportJobId = $importJobId;
+    }//end setRequestImportJobId()
+
+    /**
+     * Get the currently-active request-scoped import-job UUID. Returns
+     * null when no import is in flight.
+     *
+     * @return string|null
+     */
+    public function getRequestImportJobId(): ?string
+    {
+        return $this->requestImportJobId;
+    }//end getRequestImportJobId()
+
+    /**
+     * Find audit-trail entries tagged with the given import-job UUID.
+     *
+     * Used by `ImportService::softDeleteByImportJobId()` to identify
+     * the objects created during a specific import for rollback.
+     *
+     * @param string      $importJobId UUID of the import job to look up.
+     * @param string|null $action      Optional action filter (e.g. `'create'`); null returns all actions.
+     *
+     * @return AuditTrail[] Matching audit trail rows.
+     */
+    public function findByImportJobId(string $importJobId, ?string $action='create'): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_audit_trails')
+            ->where(
+                $qb->expr()->eq(
+                    'import_job_id',
+                    $qb->createNamedParameter($importJobId, IQueryBuilder::PARAM_STR)
+                )
+            );
+
+        if ($action !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq('action', $qb->createNamedParameter($action, IQueryBuilder::PARAM_STR))
+            );
+        }
+
+        $qb->orderBy('created', 'ASC');
+
+        return $this->findEntities(query: $qb);
+    }//end findByImportJobId()
 
 
 
@@ -254,9 +334,10 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail The created audit trail
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4 is standard Symfony UID pattern
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Audit trail creation requires handling many optional fields
+     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Audit trail creation requires handling many optional fields
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {
@@ -272,19 +353,27 @@ class AuditTrailMapper extends QBMapper
             $objectEntity = $new;
         }
 
-        if ($action === 'delete') {
+        if ($action === 'delete' || str_starts_with((string) $action, 'referential_integrity.') === true) {
             $objectEntity = $old;
         }
 
         // Initialize an array to store changed fields.
         $changed = [];
-        if ($action !== 'delete' && $action !== 'read') {
+        // Treat delete-ish actions (including referential_integrity.*_delete /
+        // set_null / set_default / restrict_blocked) as "no new state" — $new
+        // is legitimately null here and the per-field diff below would blow up.
+        $isDeleteAction = (
+            $action === 'delete'
+            || $action === 'read'
+            || str_starts_with($action, 'referential_integrity.') === true
+        );
+        if ($isDeleteAction === false) {
             $oldArray = [];
             if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
             }
 
-            $newArray = $new->jsonSerialize();
+            $newArray = ($new !== null) ? $new->jsonSerialize() : [];
 
             // Compare old and new values to detect changes.
             foreach ($newArray as $key => $value) {
@@ -334,6 +423,27 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setCreated(new DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
+
+        // AVG / GDPR Art 30 trigger contract — resolve the
+        // processing-activity reference and tag the audit row. Resolution
+        // order is action-override > schema-default > register-default;
+        // see openspec/changes/avg-verwerkingsregister/design.md.
+        $processingActivityId = $this->resolveProcessingActivityId(objectEntity: $objectEntity);
+        if ($processingActivityId !== null) {
+            $auditTrail->setProcessingActivityId($processingActivityId);
+        }
+
+        // Import-job tag — stamped by `ImportService` on every object it
+        // creates so the rollback contract can find them by audit row.
+        // Resolution order: entity-level override > request-scoped scope.
+        // Single-object writes use the entity field; bulk saves go through
+        // the request scope so we don't have to thread the UUID through
+        // `saveObjects` and the SaveObjects handler.
+        $importJobId = ($objectEntity->getImportJobId() ?? $this->requestImportJobId);
+        if ($importJobId !== null) {
+            $auditTrail->setImportJobId($importJobId);
+        }
+
         // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
         $serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
         $auditTrail->setSize(max($serializedSize, 14));
@@ -344,6 +454,181 @@ class AuditTrailMapper extends QBMapper
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);
     }//end createAuditTrail()
+
+    /**
+     * Resolve the AVG / GDPR Art 30 processing-activity uuid for this
+     * write.
+     *
+     * Order of precedence (action > schema > register):
+     *
+     *   1. Transient override on the `ObjectEntity` itself
+     *      (`getProcessingActivityId()`).
+     *   2. Schema configuration key
+     *      `x-openregister-processing-activity`.
+     *   3. Register configuration key (same key).
+     *
+     * Each candidate is run through
+     * `VerwerkingsactiviteitMapper::resolveReference` so operators can
+     * use either the short readable `code` or the canonical `uuid`. A
+     * miss is logged at debug level (typo guard) and falls through to
+     * the next candidate; a fully-unresolved chain returns `null` and
+     * the audit row's `processing_activity_id` stays unset — preserves
+     * the existing behaviour for callers that haven't opted in.
+     *
+     * @param ObjectEntity $objectEntity The entity being audited.
+     *
+     * @return string|null Resolved verwerkingsactiviteit uuid, or null.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function resolveProcessingActivityId(ObjectEntity $objectEntity): ?string
+    {
+        try {
+            /*
+             * @var VerwerkingsactiviteitMapper $vrwMapper
+             */
+
+            $vrwMapper = $this->container->get(VerwerkingsactiviteitMapper::class);
+        } catch (\Throwable $e) {
+            // Mapper not registered yet (e.g. during migration before
+            // service registration completes). Fail open — audit-trail
+            // tagging is additive, not required.
+            return null;
+        }
+
+        // 1. Per-action override on the ObjectEntity itself.
+        $override = $objectEntity->getProcessingActivityId();
+        if ($override !== null && $override !== '') {
+            $resolved = $vrwMapper->resolveReference(reference: $override);
+            if ($resolved !== null) {
+                return $resolved->getUuid();
+            }
+
+            $this->logger->debug(
+                message: '[AVG] Per-action processing-activity override did not resolve',
+                context: ['reference' => $override]
+            );
+        }
+
+        // 2. Schema-level annotation.
+        $schemaRef = $this->readProcessingActivityFromSchema(schemaId: $objectEntity->getSchema());
+        if ($schemaRef !== null && $schemaRef !== '') {
+            $resolved = $vrwMapper->resolveReference(reference: $schemaRef);
+            if ($resolved !== null) {
+                return $resolved->getUuid();
+            }
+
+            $this->logger->warning(
+                message: '[AVG] Schema annotation references unknown verwerkingsactiviteit',
+                context: ['reference' => $schemaRef, 'schemaId' => $objectEntity->getSchema()]
+            );
+        }
+
+        // 3. Register-level fallback.
+        $registerRef = $this->readProcessingActivityFromRegister(registerId: $objectEntity->getRegister());
+        if ($registerRef !== null && $registerRef !== '') {
+            $resolved = $vrwMapper->resolveReference(reference: $registerRef);
+            if ($resolved !== null) {
+                return $resolved->getUuid();
+            }
+
+            $this->logger->warning(
+                message: '[AVG] Register annotation references unknown verwerkingsactiviteit',
+                context: ['reference' => $registerRef, 'registerId' => $objectEntity->getRegister()]
+            );
+        }
+
+        return null;
+
+    }//end resolveProcessingActivityId()
+
+    /**
+     * Read the `x-openregister-processing-activity` annotation from a
+     * schema's configuration column. Null when not set or the schema
+     * cannot be loaded.
+     *
+     * @param string|int|null $schemaId Schema identifier (numeric id or uuid).
+     *
+     * @return string|null Annotation value (code or uuid), or null.
+     */
+    private function readProcessingActivityFromSchema($schemaId): ?string
+    {
+        if ($schemaId === null || $schemaId === '' || $schemaId === 0) {
+            return null;
+        }
+
+        try {
+            /*
+             * @var SchemaMapper $schemaMapper
+             */
+
+            $schemaMapper = $this->container->get(SchemaMapper::class);
+            $schema       = $schemaMapper->find(
+                $schemaId,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $config = $schema->getConfiguration();
+        if (is_array($config) === false) {
+            return null;
+        }
+
+        $ref = $config['x-openregister-processing-activity'] ?? null;
+        if (is_string($ref) === true && $ref !== '') {
+            return $ref;
+        }
+
+        return null;
+
+    }//end readProcessingActivityFromSchema()
+
+    /**
+     * Read the `x-openregister-processing-activity` annotation from a
+     * register's configuration column. Null when not set or the
+     * register cannot be loaded.
+     *
+     * @param string|int|null $registerId Register identifier (numeric id or uuid).
+     *
+     * @return string|null Annotation value (code or uuid), or null.
+     */
+    private function readProcessingActivityFromRegister($registerId): ?string
+    {
+        if ($registerId === null || $registerId === '' || $registerId === 0) {
+            return null;
+        }
+
+        try {
+            /*
+             * @var RegisterMapper $registerMapper
+             */
+
+            $registerMapper = $this->container->get(RegisterMapper::class);
+            $register       = $registerMapper->find(
+                $registerId,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $config = $register->getConfiguration();
+        if (is_array($config) === false) {
+            return null;
+        }
+
+        $ref = $config['x-openregister-processing-activity'] ?? null;
+        if (is_string($ref) === true && $ref !== '') {
+            return $ref;
+        }
+
+        return null;
+
+    }//end readProcessingActivityFromRegister()
 
 
     /**
@@ -1220,6 +1505,16 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setAction($action);
         $auditTrail->setChanged($context);
         $auditTrail->setUser($userId);
+
+        // SECURITY / AVG: keep `user_name` populated even though the
+        // migration (Version1Date20260423100000) relaxed NOT NULL on
+        // the column to support referential-integrity rows that have
+        // no displayable actor. Without this default, every audit row
+        // produced through this entry point would persist with a NULL
+        // `user_name` — undermining GDPR Art 30 §4 supervisor review.
+        $userName = $user !== null ? $user->getDisplayName() : 'System';
+        $auditTrail->setUserName($userName);
+
         $auditTrail->setCreated(new DateTime());
 
         return $this->insert(entity: $auditTrail);
@@ -1295,9 +1590,10 @@ class AuditTrailMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
+        $likeParam = $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($identifier).'%');
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->like('changed', $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($identifier).'%')))
+            ->where($qb->expr()->like('changed', $likeParam))
             ->orderBy('created', 'DESC');
 
         $result = $qb->executeQuery();
@@ -1317,6 +1613,84 @@ class AuditTrailMapper extends QBMapper
 
         return $grouped;
     }//end findByIdentifier()
+
+
+    /**
+     * Find audit trail entries by the actor (user UID) that produced them.
+     *
+     * Returns an associative array with `results` (array of AuditTrail entities)
+     * and `total` (unbounded count matching the filters).
+     *
+     * @param string      $userId The actor UID to filter on.
+     * @param int         $limit  Maximum number of rows to return.
+     * @param int         $offset Row offset for pagination.
+     * @param string|null $action Optional action filter (create|update|delete).
+     * @param string|null $from   Optional ISO-8601 start date (inclusive).
+     * @param string|null $to     Optional ISO-8601 end date (inclusive).
+     *
+     * @return array{results: array<int, AuditTrail>, total: int}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    public function findByActor(
+        string $userId,
+        int $limit=25,
+        int $offset=0,
+        ?string $action=null,
+        ?string $from=null,
+        ?string $to=null
+    ): array {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('user', $qb->createNamedParameter($userId)))
+            ->orderBy('created', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        if ($action !== null && $action !== '') {
+            $qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
+        }
+
+        if ($from !== null && $from !== '') {
+            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from)));
+        }
+
+        if ($to !== null && $to !== '') {
+            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to)));
+        }
+
+        $results = $this->findEntities(query: $qb);
+
+        // Count total matches (unbounded).
+        $count = $this->db->getQueryBuilder();
+        $count->select($count->func()->count('*', 'total_count'))
+            ->from($this->getTableName())
+            ->where($count->expr()->eq('user', $count->createNamedParameter($userId)));
+
+        if ($action !== null && $action !== '') {
+            $count->andWhere($count->expr()->eq('action', $count->createNamedParameter($action)));
+        }
+
+        if ($from !== null && $from !== '') {
+            $count->andWhere($count->expr()->gte('created', $count->createNamedParameter($from)));
+        }
+
+        if ($to !== null && $to !== '') {
+            $count->andWhere($count->expr()->lte('created', $count->createNamedParameter($to)));
+        }
+
+        $result = $count->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        return [
+            'results' => $results,
+            'total'   => (int) ($row['total_count'] ?? 0),
+        ];
+    }//end findByActor()
 
 
 }//end class

@@ -16,12 +16,12 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-74
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-77
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-73
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-74
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-77
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-74
  */
 
 declare(strict_types=1);
@@ -112,18 +112,21 @@ class TenantLifecycleService
      *
      * @throws Exception If the transition is invalid
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-73
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
      */
     public function validateTransition(string $currentStatus, string $targetStatus): void
     {
         $allowedTransitions = self::STATE_TRANSITIONS[$currentStatus] ?? [];
 
         if (in_array($targetStatus, $allowedTransitions, true) === false) {
-            throw new Exception(
-                "Invalid state transition from '{$currentStatus}' to '{$targetStatus}'. ".'Valid transitions: '.implode(', ', $allowedTransitions),
-                Response::HTTP_CONFLICT
+            $message = sprintf(
+                "Invalid state transition from '%s' to '%s'. Valid transitions: %s",
+                $currentStatus,
+                $targetStatus,
+                implode(', ', $allowedTransitions)
             );
+            throw new Exception($message, Response::HTTP_CONFLICT);
         }
     }//end validateTransition()
 
@@ -134,7 +137,7 @@ class TenantLifecycleService
      *
      * @return string[] Valid next states
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-73
      */
     public function getValidTransitions(string $status): array
     {
@@ -151,8 +154,10 @@ class TenantLifecycleService
      *
      * @throws Exception If provisioning fails
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-74
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-77
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-74
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-77
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function provision(Organisation $organisation, string $adminUserId): Organisation
     {
@@ -197,7 +202,7 @@ class TenantLifecycleService
 
             // Set default authorization RBAC rules.
             $authorization = $organisation->getAuthorization();
-            foreach ($authorization as $entityType => &$permissions) {
+            foreach ($authorization as &$permissions) {
                 if (is_array($permissions) === false) {
                     continue;
                 }
@@ -246,7 +251,7 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
      */
     public function suspend(Organisation $organisation): Organisation
     {
@@ -275,7 +280,7 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
      */
     public function reactivate(Organisation $organisation): Organisation
     {
@@ -304,7 +309,7 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
      */
     public function deprovision(Organisation $organisation): Organisation
     {
@@ -333,7 +338,7 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
      */
     public function archive(Organisation $organisation): Organisation
     {
@@ -359,8 +364,8 @@ class TenantLifecycleService
      *
      * @return bool Whether the environment is valid
      *
-     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
+     * @spec openspec/changes/retrofit-2026-04-28-tenant-lifecycle/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-74
      */
     public function isValidEnvironment(string $environment): bool
     {
@@ -375,8 +380,8 @@ class TenantLifecycleService
      *
      * @return bool Whether the promotion order is valid
      *
-     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-74
+     * @spec openspec/changes/retrofit-2026-04-28-tenant-lifecycle/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-74
      */
     public function isValidPromotionOrder(string $sourceEnv, string $targetEnv): bool
     {

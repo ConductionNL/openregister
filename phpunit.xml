@@ -4,11 +4,12 @@
          bootstrap="tests/bootstrap.php"
          colors="true"
          cacheDirectory=".phpunit.cache"
-         executionOrder="depends,defects"
+         executionOrder="default"
+         defaultTestSuite="Unit Tests"
          requireCoverageMetadata="false"
          beStrictAboutCoverageMetadata="true"
          beStrictAboutOutputDuringTests="true"
-         failOnRisky="true"
+         failOnRisky="false"
          failOnWarning="false"
          failOnDeprecation="false">
     

@@ -150,6 +150,7 @@ use OCA\OpenRegister\Exception\HookStoppedException;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class MagicMapper extends AbstractObjectMapper
 {
@@ -1195,12 +1196,7 @@ class MagicMapper extends AbstractObjectMapper
                 if ($field === '_relevance') {
                     // Only use _search_score if we have a search term.
                     if ($hasSearch === true) {
-                        if (strtoupper($direction) === 'DESC') {
-                            $dir = 'DESC';
-                        } else {
-                            $dir = 'ASC';
-                        }
-
+                        $dir            = (strtoupper($direction) === 'DESC') ? 'DESC' : 'ASC';
                         $orderClauses[] = "_search_score {$dir}";
                     }
 
@@ -1222,12 +1218,7 @@ class MagicMapper extends AbstractObjectMapper
                     );
                 }
 
-                if (strtoupper($direction) === 'DESC') {
-                    $dir = 'DESC';
-                } else {
-                    $dir = 'ASC';
-                }
-
+                $dir            = (strtoupper($direction) === 'DESC') ? 'DESC' : 'ASC';
                 $orderClauses[] = "{$columnName} {$dir}";
             }//end foreach
 
@@ -1337,10 +1328,9 @@ class MagicMapper extends AbstractObjectMapper
                 isPostgres: $isPostgres
             );
             // Absent column: emit a typed NULL placeholder.
+            $colExpr = "NULL AS {$quotedCol}";
             if ($isPostgres === true) {
                 $colExpr = "NULL::text AS {$quotedCol}";
-            } else {
-                $colExpr = "NULL AS {$quotedCol}";
             }
 
             $columnInTable = $this->columnExistsInTable(
@@ -1349,10 +1339,9 @@ class MagicMapper extends AbstractObjectMapper
             );
             if ($columnInTable === true) {
                 // Present column: cast to text for cross-schema type compatibility.
+                $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
                 if ($isPostgres === true) {
                     $colExpr = "{$quotedCol}::text AS {$quotedCol}";
-                } else {
-                    $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
                 }
 
                 $existingColumns[] = $columnName;
@@ -1397,6 +1386,9 @@ class MagicMapper extends AbstractObjectMapper
                         isPostgres: $isPostgres
                     );
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
+                    // MariaDB/MySQL default: ILIKE and similarity() are unavailable;
+                    // use case-sensitive LIKE with a standard CAST instead.
+                    $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
                     if ($isPostgres === true) {
                         // PostgreSQL: pg_trgm similarity() for fuzzy relevance;
                         // fall back to ILIKE when pg_trgm is unavailable.
@@ -1404,10 +1396,6 @@ class MagicMapper extends AbstractObjectMapper
                         if ($hasTrgm === true) {
                             $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
                         }
-                    } else {
-                        // MariaDB/MySQL: ILIKE and similarity() are unavailable;
-                        // use case-sensitive LIKE with a standard CAST instead.
-                        $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
                     }
 
                     $searchColumns[] = $scoreExpr;
@@ -3195,10 +3183,9 @@ class MagicMapper extends AbstractObjectMapper
                             $cleanedArray[] = $item;
                         }
 
+                        $value = $cleanedArray;
                         if (empty($cleanedArray) === true) {
                             $value = null;
-                        } else {
-                            $value = $cleanedArray;
                         }
                     }//end if
 
@@ -3218,11 +3205,7 @@ class MagicMapper extends AbstractObjectMapper
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
                     // Using 0/1 integers ensures PostgreSQL and other databases handle booleans correctly.
                     if (is_bool($value) === true) {
-                        if ($value === true) {
-                            $value = 1;
-                        } else {
-                            $value = 0;
-                        }
+                        $value = ($value === true) ? 1 : 0;
                     }
 
                     // Convert complex types to JSON.
@@ -5869,19 +5852,18 @@ class MagicMapper extends AbstractObjectMapper
         $isPostgres    = stripos($platform::class, 'PostgreSQL') !== false;
 
         try {
+            // MySQL default: use JSON_SEARCH to find the ID as a value in the array.
+            $sql = "SELECT * FROM {$fullTableName}
+                    WHERE _deleted IS NULL
+                    AND {$columnName} IS NOT NULL
+                    AND JSON_SEARCH({$columnName}, 'one', ?) IS NOT NULL
+                    LIMIT 100";
             if ($isPostgres === true) {
                 // PostgreSQL: use JSONB containment operator.
                 $sql = "SELECT * FROM {$fullTableName}
                         WHERE (_deleted IS NULL OR _deleted::text = 'null')
                         AND {$columnName} IS NOT NULL
                         AND {$columnName}::jsonb @> to_jsonb(?::text)
-                        LIMIT 100";
-            } else {
-                // MySQL: use JSON_SEARCH to find the ID as a value in the array.
-                $sql = "SELECT * FROM {$fullTableName}
-                        WHERE _deleted IS NULL
-                        AND {$columnName} IS NOT NULL
-                        AND JSON_SEARCH({$columnName}, 'one', ?) IS NOT NULL
                         LIMIT 100";
             }
 
@@ -6522,7 +6504,8 @@ class MagicMapper extends AbstractObjectMapper
                 register: $register,
                 schema: $schema,
                 _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+                _multitenancy: $_multitenancy,
+                includeDeleted: $includeDeleted
             );
             $entity->setSource('orm');
             return $entity;

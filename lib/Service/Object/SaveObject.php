@@ -50,8 +50,15 @@ use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Event\ReferenceValidatedEvent;
+use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -113,6 +120,7 @@ use Twig\Loader\ArrayLoader;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Object save logic requires comprehensive relationship handling
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for full object save functionality
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cascading and relation logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires many service and mapper dependencies
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
@@ -120,10 +128,29 @@ use Twig\Loader\ArrayLoader;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class SaveObject
 {
     private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
+
+    /**
+     * App identifier used for `IAppConfig` lookups.
+     *
+     * @var string
+     */
+    private const APP_ID = 'openregister';
+
+    /**
+     * App-config key controlling whether admins bypass reference
+     * existence validation. When the stored value parses to `true`
+     * (default), members of the `admin` group skip the check; when
+     * `false`, admins are validated like any other user. Operators
+     * can flip the flag at runtime via `occ config:app:set`.
+     *
+     * @var string
+     */
+    private const CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS = 'reference_validation_admin_bypass';
 
     /**
      * Twig template engine instance
@@ -174,6 +201,56 @@ class SaveObject
     private array $schemaReferenceCache = [];
 
     /**
+     * Request-scoped cache for reference-existence verdicts.
+     *
+     * Caches the result of `validateReferenceExists()` keyed on
+     * `{targetSchemaId}:{uuid}`. Stores `true` for "exists" and `false`
+     * for "does not exist". Closes the spec's
+     * "Validation results cached within a request scope" + bulk-import
+     * batch optimisation requirements: a 1000-row import that points at
+     * the same 50 organisations now hits the database 50 times instead
+     * of 1000.
+     *
+     * The verdict is intentionally request-scoped (no distributed
+     * cache): cross-request consistency is enforced by re-running
+     * validation on every save, and an in-flight cascade can rely on
+     * the cache covering the lifetime of the cascade. Listeners only
+     * fire on cache misses to avoid duplicate event emission.
+     *
+     * @var array<string, bool>
+     */
+    private array $referenceValidationCache = [];
+
+    /**
+     * Stack of `(targetSchemaSlug, uuid)` entries currently being saved.
+     *
+     * Pushed when `saveObject()` enters, popped when it exits. Each
+     * entry is keyed on `<targetSchemaSlug>:<uuid>` for fast O(1)
+     * membership lookup. Used by `validateReferences()` to detect
+     * circular reference chains (A->B->A) — when the value of a
+     * `validateReference` property equals one of the in-flight
+     * UUIDs, we throw `CircularReferenceException` instead of a
+     * regular reference-existence check.
+     *
+     * Closes the `reference-existence-validation` spec's
+     * "Circular reference chains detected during validation"
+     * requirement.
+     *
+     * @var array<int, array{schemaSlug:string,uuid:string,register:string|null}>
+     */
+    private array $saveCallStack = [];
+
+    /**
+     * Fast membership index for `$saveCallStack`. Keys are
+     * `<schemaSlug>:<uuid>`; values are integers (the depth at which
+     * the entry was pushed) so we can detect re-entries without
+     * iterating the stack.
+     *
+     * @var array<string, int>
+     */
+    private array $saveCallStackIndex = [];
+
+    /**
      * Constructor for SaveObject handler.
      *
      * @param MagicMapper                 $objectEntityMapper   Object entity mapper
@@ -195,10 +272,13 @@ class SaveObject
      * @param LoggerInterface             $logger               Logger interface for logging operations
      * @param TmloService                 $tmloService          TMLO archival metadata service
      * @param ArrayLoader                 $arrayLoader          Twig array loader for template rendering
+     * @param IGroupManager|null          $groupManager         Group manager for admin-bypass detection
+     * @param IAppConfig|null             $appConfig            App-config reader for the admin-bypass toggle
+     * @param IEventDispatcher|null       $eventDispatcher      Event dispatcher for reference validation events
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -220,6 +300,9 @@ class SaveObject
         private readonly LoggerInterface $logger,
         private readonly TmloService $tmloService,
         ArrayLoader $arrayLoader,
+        private readonly ?IGroupManager $groupManager=null,
+        private readonly ?IAppConfig $appConfig=null,
+        private readonly ?IEventDispatcher $eventDispatcher=null,
     ) {
         $this->twig = new Environment($arrayLoader);
     }//end __construct()
@@ -232,7 +315,7 @@ class SaveObject
      *
      * @return array<string, array> Sub-objects indexed by UUID
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function getCreatedSubObjects(): array
     {
@@ -247,7 +330,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function clearCreatedSubObjects(): void
     {
@@ -266,7 +349,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function clearAllCaches(): void
     {
@@ -285,7 +368,7 @@ class SaveObject
      *
      * @throws DoesNotExistException If schema not found
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getCachedSchema(int|string $schemaId): Schema
     {
@@ -306,7 +389,7 @@ class SaveObject
      *
      * @throws DoesNotExistException If register not found
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getCachedRegister(int|string $registerId): Register
     {
@@ -329,7 +412,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function trackCreatedSubObject(string $uuid, array $objectData): void
     {
@@ -353,7 +436,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function resolveSchemaReference(string $reference): string|null
     {
@@ -446,7 +529,7 @@ class SaveObject
      *
      * @return string The reference string without query parameters
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -474,7 +557,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function resolveRegisterReference(string $reference): string|null
     {
@@ -544,7 +627,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple detection paths for different value types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relation scanning requires extended logic
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
@@ -668,7 +751,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference pattern checks required
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function isReference(string $value): bool
     {
@@ -735,7 +818,7 @@ class SaveObject
      *
      * @return ObjectEntity The updated object entity
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
@@ -763,17 +846,16 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation handling requires per-type branching
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void
     {
         $relations = $savedEntity->getRelations();
         $savedUuid = $savedEntity->getUuid();
 
+        $relationsCount = 0;
         if ($relations !== null) {
             $relationsCount = count($relations);
-        } else {
-            $relationsCount = 0;
         }
 
         $this->logger->debug(
@@ -962,7 +1044,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple field types and formats require branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive metadata hydration logic
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
@@ -1081,7 +1163,7 @@ class SaveObject
      *
      * @return mixed The value at the path or null if not found
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function getValueFromPath(array $data, string $path)
     {
@@ -1123,7 +1205,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property types and behaviors require branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive default value handling
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function setDefaultValues(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -1277,7 +1359,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default value resolution requires template + type branching
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function applyAlwaysDefaults(Schema $schema, array $data): array
     {
@@ -1335,7 +1417,7 @@ class SaveObject
      *
      * @return array The data with defaults applied.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function applyPropertyDefaults(Schema $schema, array $data): array
     {
@@ -1391,7 +1473,7 @@ class SaveObject
      *
      * @return bool True if the default should be applied.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function shouldApplyDefault(string $behavior, array $data, string $key): bool
     {
@@ -1425,7 +1507,7 @@ class SaveObject
      *
      * @return mixed The resolved value, or null if resolution failed.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function resolveDefaultTemplateValue($defaultValue, array $context, array $schemaProperties)
     {
@@ -1473,7 +1555,7 @@ class SaveObject
      *
      * @return null|string The generated slug or null if no slug could be generated
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function generateSlug(array $data, Schema $schema): string|null
     {
@@ -1511,7 +1593,7 @@ class SaveObject
      *
      * @return string The generated slug
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function createSlug(string $text): string
     {
@@ -1558,7 +1640,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple cascading paths and configurations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive cascading for objects and arrays
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -1706,22 +1788,19 @@ class SaveObject
                 if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
                     // Resolve the sub-object's schema and register for magic-mapped lookups.
                     $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
+                    $subSchemaId  = null;
                     if ($subSchemaRef !== null) {
                         $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-                    } else {
-                        $subSchemaId = null;
                     }
 
+                    $subSchema = null;
                     if ($subSchemaId !== null) {
                         $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-                    } else {
-                        $subSchema = null;
                     }
 
+                    $subRegister = null;
                     if ($objectEntity->getRegister() !== null) {
                         $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-                    } else {
-                        $subRegister = null;
                     }
 
                     $this->deleteOrphanedRelatedObjects(
@@ -1792,22 +1871,19 @@ class SaveObject
                         if (empty($orphanedUuids) === false) {
                             // Resolve the sub-object's schema and register for magic-mapped lookups.
                             $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
+                            $subSchemaId  = null;
                             if ($subSchemaRef !== null) {
                                 $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-                            } else {
-                                $subSchemaId = null;
                             }
 
+                            $subSchema = null;
                             if ($subSchemaId !== null) {
                                 $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-                            } else {
-                                $subSchema = null;
                             }
 
+                            $subRegister = null;
                             if ($objectEntity->getRegister() !== null) {
                                 $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-                            } else {
-                                $subRegister = null;
                             }
 
                             $this->deleteOrphanedRelatedObjects(
@@ -1874,7 +1950,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex array object cascading logic
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation and processing paths
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
@@ -2005,7 +2081,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex single object cascading with relation handling
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple configuration and validation paths
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string
     {
@@ -2121,7 +2197,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function deleteOrphanedRelatedObjects(
         array $orphanedUuids,
@@ -2140,11 +2216,10 @@ class SaveObject
                 );
 
                 // Soft delete: set deletion metadata and update (consistent with DeleteObject).
-                $user = $this->userSession->getUser();
+                $user   = $this->userSession->getUser();
+                $userId = 'system';
                 if ($user !== null) {
                     $userId = $user->getUID();
-                } else {
-                    $userId = 'system';
                 }
 
                 $deletionData = [
@@ -2200,7 +2275,7 @@ class SaveObject
      *
      * @return array The data with all schema properties present (missing ones set to null).
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function fillMissingSchemaPropertiesWithNull(array $data, int|string $schemaId): array
     {
@@ -2244,7 +2319,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property and item level configurations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive write-back handling for all relation types
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -2458,7 +2533,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex sanitization logic for multiple property types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple property types and required states
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array
     {
@@ -2566,7 +2641,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function saveObject(
         Register | int | string | null $register,
@@ -2680,16 +2755,30 @@ class SaveObject
                         'objectId' => $existingObject->getId(),
                     ]
                 );
-                return $this->handleObjectUpdate(
-                    existingObject: $existingObject,
-                    register: $register,
-                    schema: $schema,
-                    data: $data,
-                    selfData: $selfData,
-                    folderId: $folderId,
-                    persist: $persist,
-                    silent: $silent
+
+                // Push the in-flight save onto the call stack so
+                // cascade descendants can detect cycles back to
+                // ancestors via `validateReferences()`. Popped in
+                // finally regardless of success/failure.
+                $frameKey = $this->pushSaveCallFrame(
+                    schemaSlug: ((string) ($schema->getSlug() ?? $schema->getId())),
+                    uuid: (string) $uuid,
+                    register: ($register?->getId() !== null ? (string) $register->getId() : null)
                 );
+                try {
+                    return $this->handleObjectUpdate(
+                        existingObject: $existingObject,
+                        register: $register,
+                        schema: $schema,
+                        data: $data,
+                        selfData: $selfData,
+                        folderId: $folderId,
+                        persist: $persist,
+                        silent: $silent
+                    );
+                } finally {
+                    $this->popSaveCallFrame(key: $frameKey);
+                }
             }//end if
         } else if ($isAutoGeneratedUuid === true) {
             $this->logger->debug(
@@ -2704,20 +2793,32 @@ class SaveObject
             );
         }//end if
 
-        // Create new object if no existing object found.
-        return $this->handleObjectCreation(
-            registerId: $registerId,
-            schemaId: $schemaId,
-            register: $register,
-            schema: $schema,
-            data: $data,
-            selfData: $selfData,
-            uuid: $uuid,
-            folderId: $folderId,
-            persist: $persist,
-            silent: $silent,
-            _multitenancy: $_multitenancy
+        // Push the in-flight save onto the call stack so cascade
+        // descendants can detect cycles via `validateReferences()`.
+        // Popped in finally regardless of success/failure.
+        $frameKey = $this->pushSaveCallFrame(
+            schemaSlug: ((string) ($schema->getSlug() ?? $schema->getId())),
+            uuid: ($uuid ?? ''),
+            register: ($register?->getId() !== null ? (string) $register->getId() : null)
         );
+        try {
+            // Create new object if no existing object found.
+            return $this->handleObjectCreation(
+                registerId: $registerId,
+                schemaId: $schemaId,
+                register: $register,
+                schema: $schema,
+                data: $data,
+                selfData: $selfData,
+                uuid: $uuid,
+                folderId: $folderId,
+                persist: $persist,
+                silent: $silent,
+                _multitenancy: $_multitenancy
+            );
+        } finally {
+            $this->popSaveCallFrame(key: $frameKey);
+        }
     }//end saveObject()
 
     /**
@@ -2729,7 +2830,7 @@ class SaveObject
      *
      * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, cleanedData]
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function extractUuidAndSelfData(
         array $data,
@@ -2779,7 +2880,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple type resolution paths for schema and register
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function resolveSchemaAndRegister(
         Schema | int | string $schema,
@@ -2849,7 +2950,7 @@ class SaveObject
      *
      * @throws Exception If object is locked by another user.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function findAndValidateExistingObject(
         string $uuid,
@@ -2907,7 +3008,7 @@ class SaveObject
      *
      * @return ObjectEntity Updated object
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function handleObjectUpdate(
         ObjectEntity $existingObject,
@@ -2989,7 +3090,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible object creation
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function handleObjectCreation(
         int $registerId,
@@ -3094,7 +3195,7 @@ class SaveObject
      *
      * @throws Exception If file processing fails
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function processFilePropertiesWithRollback(
         ObjectEntity $savedEntity,
@@ -3218,7 +3319,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function clearImageMetadataIfFileProperty(
         ObjectEntity $savedEntity,
@@ -3259,7 +3360,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional configuration paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive preparation requires extended logic
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function prepareObjectForCreation(
         ObjectEntity $objectEntity,
@@ -3358,7 +3459,7 @@ class SaveObject
      *
      * @throws Exception If there is an error during preparation.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function prepareObjectForUpdate(
         ObjectEntity $existingObject,
@@ -3375,12 +3476,19 @@ class SaveObject
             $existingObject->setFolder((string) $folderId);
         }
 
+        // Snapshot the object's pre-update data BEFORE prepareObjectData runs.
+        // prepareObjectData calls preCacheParentName which writes the incoming
+        // data back into $existingObject via setObject() so cascade descendants
+        // can resolve the parent's name template; reading getObject() afterwards
+        // would yield the new data, not the original. Capturing here keeps the
+        // "skip validation when reference unchanged" check honest.
+        $oldData = $existingObject->getObject();
+
         // Prepare the data.
         $preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
 
         // Validate reference existence for properties with validateReference: true.
         // On updates, skip validation for unchanged values to avoid re-validating existing references.
-        $oldData = $existingObject->getObject();
         $this->validateReferences(
             schema: $schema,
             data: $preparedData,
@@ -3437,7 +3545,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction from multiple sources
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional metadata fields with validation
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function setSelfMetadata(ObjectEntity $objectEntity, array $selfData, array $data=[]): void
     {
@@ -3470,7 +3578,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema, array $selfData): void
     {
@@ -3516,7 +3624,7 @@ class SaveObject
      *
      * @throws Exception If TMLO validation fails
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function validateTmloOnUpdate(ObjectEntity $existingObject, array $selfData): void
     {
@@ -3568,7 +3676,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property type checks
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function validateReferences(
         Schema $schema,
@@ -3576,14 +3684,30 @@ class SaveObject
         ?string $register,
         ?array $oldData=null
     ): void {
+        // Operator-controlled admin bypass: when the current user is in
+        // the admin group AND the bypass flag is on (default true), skip
+        // reference existence validation entirely. Mirrors the
+        // `MultiTenancyTrait::isCurrentUserAdmin()` short-circuit so
+        // admins can repair broken cross-references during migrations or
+        // bulk imports without tripping 422s. Operators can flip the
+        // flag off via `occ config:app:set openregister
+        // reference_validation_admin_bypass --value=false` to enforce
+        // validation for every user.
+        if ($this->shouldBypassValidationForAdmin() === true) {
+            return;
+        }
+
         $properties = $schema->getProperties();
         if ($properties === null) {
             return;
         }
 
         foreach ($properties as $propertyName => $property) {
-            // Check if validateReference is enabled for this property.
-            if (($property['validateReference'] ?? false) !== true) {
+            // Resolve the configured strictness level for this property.
+            // Returns null when validation is not enabled — short-circuit
+            // so legacy `validateReference: false` (or absent) costs zero.
+            $strictness = $this->resolveReferenceStrictness(property: $property);
+            if ($strictness === null) {
                 continue;
             }
 
@@ -3614,10 +3738,9 @@ class SaveObject
             $targetRegister = $property['register'] ?? $register;
 
             // Normalize to array for uniform validation.
+            $uuidsToValidate = [$value];
             if ($isArray === true && is_array($value) === true) {
                 $uuidsToValidate = $value;
-            } else {
-                $uuidsToValidate = [$value];
             }
 
             foreach ($uuidsToValidate as $uuid) {
@@ -3625,15 +3748,235 @@ class SaveObject
                     continue;
                 }
 
-                $this->validateReferenceExists(
-                    propertyName: $propertyName,
-                    uuid: (string) $uuid,
-                    schemaRef: $ref,
-                    register: $targetRegister
-                );
-            }
+                try {
+                    // Cross-app references can be expressed as HTTP(S)
+                    // URLs (the canonical resource address of an object
+                    // owned by another app or instance). Components are
+                    // designed to operate individually — component A may
+                    // not have read access to component B for security
+                    // or tenancy reasons, so we MUST NOT fetch the URL
+                    // to verify existence. Instead, validate syntax only:
+                    // scheme is http/https and host parses. Decision
+                    // recorded in `reference-existence-validation`
+                    // tasks.md (2026-05-02).
+                    if ($this->looksLikeHttpUrl(value: (string) $uuid) === true) {
+                        $this->validateExternalUrlSyntax(
+                            propertyName: $propertyName,
+                            value: (string) $uuid,
+                            schemaRef: $ref,
+                            register: $targetRegister
+                        );
+                        continue;
+                    }
+
+                    $this->validateReferenceExists(
+                        propertyName: $propertyName,
+                        uuid: (string) $uuid,
+                        schemaRef: $ref,
+                        register: $targetRegister
+                    );
+                } catch (ReferenceValidationException $exception) {
+                    // Strict mode (`error`) re-raises the 422 so the save
+                    // is rejected. `warn` mode swallows the exception
+                    // after the failure event has already fired in
+                    // `validateReferenceExists()` — listeners still see
+                    // the miss, the warning is logged for ops visibility,
+                    // and the save proceeds. This lets schema authors
+                    // adopt reference validation gradually on registers
+                    // with known dirty data without forcing every save
+                    // through an HTTP 422.
+                    if ($strictness === 'warn') {
+                        $this->logger->warning(
+                            message: '[SaveObject] Reference validation failed (warn-only)',
+                            context: [
+                                'file'           => __FILE__,
+                                'line'           => __LINE__,
+                                'property'       => $propertyName,
+                                'uuid'           => $uuid,
+                                'targetSchema'   => $exception->getTargetSchemaSlug(),
+                                'targetRegister' => $exception->getTargetRegister(),
+                            ]
+                        );
+                        continue;
+                    }
+
+                    throw $exception;
+                }//end try
+            }//end foreach
         }//end foreach
     }//end validateReferences()
+
+    /**
+     * Resolve the configured strictness level for a schema property.
+     *
+     * Schema authors declare reference validation in two related fields:
+     *
+     * - `validateReference` — the on/off toggle (boolean) or a shorthand
+     *   string carrying both the on/off bit AND the severity:
+     *   `true` / `'error'` / `'strict'` / `'block'` enable strict
+     *   validation; `'warn'` enables warn-only mode; `false` or
+     *   `'off'` disables validation entirely.
+     * - `validationStrictness` — optional explicit severity field
+     *   (`'strict'`, `'warn'`, `'off'`) that overrides the default
+     *   strict severity when `validateReference` is just the boolean
+     *   `true`. Matches the spec's documented schema shape.
+     *
+     * Returns `'error'` when validation is strict, `'warn'` when
+     * warn-only, and `null` when validation is disabled — the caller
+     * uses `null` as the short-circuit signal to skip the property
+     * without paying for the database round trip.
+     *
+     * @param array $property The schema property definition.
+     *
+     * @return string|null Returns `'error'` for strict mode, `'warn'` for
+     *                     warn-only, `null` when validation is disabled.
+     *
+     * @spec openspec/changes/reference-existence-validation/tasks.md
+     */
+    private function resolveReferenceStrictness(array $property): ?string
+    {
+        $configured = ($property['validateReference'] ?? false);
+        $explicit   = ($property['validationStrictness'] ?? null);
+
+        // Explicit strictness field can disable validation outright,
+        // mirroring the spec's "off" level even when the boolean toggle
+        // is true.
+        if (is_string($explicit) === true && strtolower($explicit) === 'off') {
+            return null;
+        }
+
+        // Map the optional explicit strictness onto our internal verdict.
+        $explicitNormalized = null;
+        if (is_string($explicit) === true) {
+            $candidate = strtolower($explicit);
+            if ($candidate === 'strict' || $candidate === 'error' || $candidate === 'block') {
+                $explicitNormalized = 'error';
+            } else if ($candidate === 'warn') {
+                $explicitNormalized = 'warn';
+            }
+        }
+
+        // Boolean true: validation enabled, default strict, but defer
+        // to explicit strictness when present.
+        if ($configured === true) {
+            return $explicitNormalized ?? 'error';
+        }
+
+        // String shorthand on `validateReference` carries both the
+        // on/off bit and the severity.
+        if (is_string($configured) === true) {
+            $normalized = strtolower($configured);
+            if ($normalized === 'off' || $normalized === 'false') {
+                return null;
+            }
+
+            if ($normalized === 'error' || $normalized === 'block' || $normalized === 'strict') {
+                return $explicitNormalized ?? 'error';
+            }
+
+            if ($normalized === 'warn') {
+                return $explicitNormalized ?? 'warn';
+            }
+        }
+
+        return null;
+    }//end resolveReferenceStrictness()
+
+    /**
+     * Detect whether a reference value expresses HTTP(S) URL intent.
+     *
+     * Scheme-prefix only — once the user writes `http://` or `https://`
+     * they've signalled a URL and we want strict syntax validation to
+     * speak in URL terms (so a missing host gets the URL-shaped error,
+     * not the UUID-not-found error). Strict checks happen in
+     * `validateExternalUrlSyntax()`.
+     *
+     * @param string $value Reference value to inspect.
+     *
+     * @return bool True when the value declares HTTP(S) URL intent.
+     */
+    private function looksLikeHttpUrl(string $value): bool
+    {
+        return str_starts_with($value, 'http://') === true
+            || str_starts_with($value, 'https://') === true;
+    }//end looksLikeHttpUrl()
+
+    /**
+     * Validate that an external URL reference is syntactically well-formed.
+     *
+     * Components are designed to operate individually; component A may
+     * not have read access to component B for security or tenancy
+     * reasons. Fetching the URL to verify existence would either pass
+     * falsely (no read = "not found") or block legitimate writes, so
+     * the design decision (`reference-existence-validation` tasks.md
+     * 2026-05-02) is to validate syntax only:
+     *
+     * - Scheme MUST be `http` or `https`.
+     * - Host MUST parse (non-empty after `parse_url`).
+     * - Host MUST NOT be a literal IP without port-and-path (defensive
+     *   against trivially malformed inputs that pass the scheme check
+     *   but are clearly broken).
+     *
+     * On miss: dispatches `ReferenceValidationFailedEvent` (so warn-mode
+     * listeners observe the rejection like they would for a UUID miss)
+     * and throws `ReferenceValidationException` carrying HTTP 422.
+     *
+     * @param string      $propertyName The property holding the reference.
+     * @param string      $value        The URL value to validate.
+     * @param string      $schemaRef    The schema $ref the URL is supposed to address.
+     * @param string|null $register     The register the URL is supposed to address.
+     *
+     * @return void
+     *
+     * @throws ReferenceValidationException When the URL syntax is invalid.
+     */
+    private function validateExternalUrlSyntax(
+        string $propertyName,
+        string $value,
+        string $schemaRef,
+        ?string $register
+    ): void {
+        $valid = false;
+        $parts = parse_url($value);
+        if ($parts !== false && is_array($parts) === true) {
+            $scheme   = ($parts['scheme'] ?? '');
+            $host     = ($parts['host'] ?? '');
+            $hasHost  = ($host !== '');
+            $okScheme = ($scheme === 'http' || $scheme === 'https');
+            $valid    = ($okScheme === true && $hasHost === true);
+        }
+
+        if ($valid === true) {
+            return;
+        }
+
+        // Reduce `#/components/schemas/foo` to `foo` for the failure
+        // payload — the bare slug matches the convention used by the
+        // UUID-existence path so listeners see a consistent shape.
+        $targetSlug = $schemaRef;
+        $prefix     = '#/components/schemas/';
+        if (str_starts_with($schemaRef, $prefix) === true) {
+            $targetSlug = substr($schemaRef, strlen($prefix));
+        }
+
+        $this->dispatchReferenceValidationFailedEvent(
+            propertyName: $propertyName,
+            referencedUuid: $value,
+            targetSchemaSlug: $targetSlug,
+            targetRegister: $register
+        );
+
+        throw new ReferenceValidationException(
+            propertyName: $propertyName,
+            referencedUuid: $value,
+            targetSchemaSlug: $targetSlug,
+            targetRegister: $register,
+            message: sprintf(
+                'External URL reference "%s" is malformed: scheme MUST be http or https and host MUST parse.',
+                $value
+            )
+        );
+    }//end validateExternalUrlSyntax()
 
     /**
      * Validate that a referenced object exists in the target schema.
@@ -3647,7 +3990,7 @@ class SaveObject
      *
      * @throws ValidationException If the referenced object does not exist (HTTP 422).
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function validateReferenceExists(
         string $propertyName,
@@ -3655,6 +3998,41 @@ class SaveObject
         string $schemaRef,
         ?string $register
     ): void {
+        // Circular reference short-circuit: if the UUID we're about
+        // to validate is already on the in-flight save call stack,
+        // we have a cycle (A -> B -> A). Reject before hitting the
+        // database — a cycle on otherwise-valid UUIDs would silently
+        // pass the existence check, but cascading the save would
+        // recurse forever.
+        $cycle = $this->detectCircularReference(uuid: $uuid);
+        if ($cycle !== null) {
+            $this->logger->warning(
+                message: '[SaveObject] Circular reference detected during validation',
+                context: [
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
+                    'property'     => $propertyName,
+                    'uuid'         => $uuid,
+                    'targetSchema' => $schemaRef,
+                    'cycleDepth'   => count($cycle),
+                ]
+            );
+
+            throw new CircularReferenceException(
+                referencedUuid: $uuid,
+                targetSchemaSlug: $schemaRef,
+                cycle: array_map(
+                    static fn (array $frame): array => [
+                        'schema'   => $frame['schemaSlug'],
+                        'uuid'     => $frame['uuid'],
+                        'register' => $frame['register'],
+                    ],
+                    $cycle
+                ),
+                code: 422
+            );
+        }//end if
+
         // Resolve the target schema ID.
         $targetSchemaId = $this->resolveSchemaReference(reference: $schemaRef);
         if ($targetSchemaId === null) {
@@ -3668,6 +4046,29 @@ class SaveObject
                 ]
             );
             return;
+        }
+
+        // Request-scoped cache short-circuit: if we already validated this
+        // (targetSchemaId, uuid) pair during this request — typically
+        // during a bulk import or cascade save — skip the database round
+        // trip and replay the verdict. We still raise/return without
+        // re-emitting events so listeners observe each unique reference
+        // exactly once per request.
+        $cacheKey = $targetSchemaId.':'.$uuid;
+        if (array_key_exists($cacheKey, $this->referenceValidationCache) === true) {
+            if ($this->referenceValidationCache[$cacheKey] === true) {
+                return;
+            }
+
+            // Cached negative verdict — re-raise without dispatching the
+            // failure event again (already dispatched on first miss).
+            throw new ReferenceValidationException(
+                propertyName: $propertyName,
+                referencedUuid: $uuid,
+                targetSchemaSlug: $schemaRef,
+                targetRegister: $register,
+                code: 422
+            );
         }
 
         // Get the target schema for the error message.
@@ -3701,20 +4102,50 @@ class SaveObject
         $targetSchemaEntity = $targetSchema ?? null;
 
         // Check if the object exists.
+        // Explicitly pass `includeDeleted: false` so soft-deleted target
+        // objects are treated as nonexistent — closes the spec's
+        // "Soft-deleted references treated as nonexistent" requirement.
+        // The MagicMapper default is already `false`, but pinning it
+        // here keeps the validation contract local + survives mapper
+        // signature changes.
         try {
             $this->unifiedObjectMapper->find(
                 identifier: $uuid,
                 register: $registerEntity,
                 schema: $targetSchemaEntity,
+                includeDeleted: false,
                 _rbac: false,
                 _multitenancy: false
             );
         } catch (DoesNotExistException $e) {
-            // phpcs:ignore Generic.Files.LineLength.TooLong -- validation message with 3 dynamic parts cannot be shortened
-            $validMsg = "Referenced object '{$uuid}' not found in schema '{$targetSchemaSlug}' for property '{$propertyName}'";
-            throw new ValidationException(
-                message: $validMsg,
-                code: 422
+            // Cache the negative verdict before the throw so subsequent
+            // checks for the same UUID short-circuit cheaply (and don't
+            // re-dispatch the failure event).
+            $this->referenceValidationCache[$cacheKey] = false;
+
+            // Side-channel notification for monitoring / extensibility.
+            // Dispatched BEFORE the exception so listeners observe every
+            // failure regardless of whether the controller layer
+            // recovers or surfaces the 422.
+            $this->dispatchReferenceValidationFailedEvent(
+                propertyName: $propertyName,
+                referencedUuid: $uuid,
+                targetSchemaSlug: $targetSchemaSlug,
+                targetRegister: $register
+            );
+
+            // Throw a structured exception so API clients can render
+            // actionable error UI without parsing the message string —
+            // closes the spec's "structured diagnostic information"
+            // requirement. Subclasses ValidationException so existing
+            // 422 handlers route it correctly.
+            throw new ReferenceValidationException(
+                propertyName: $propertyName,
+                referencedUuid: $uuid,
+                targetSchemaSlug: $targetSchemaSlug,
+                targetRegister: $register,
+                code: 422,
+                previous: $e
             );
         } catch (Exception $e) {
             // Non-existence errors (e.g., database errors) — log warning but don't block.
@@ -3728,8 +4159,432 @@ class SaveObject
                     'error'    => $e->getMessage(),
                 ]
             );
+            return;
         }//end try
+
+        // Cache the positive verdict so subsequent checks for the same
+        // (target schema, UUID) inside the same request — bulk imports,
+        // cascading saves — skip the database round trip.
+        $this->referenceValidationCache[$cacheKey] = true;
+
+        // Lookup succeeded — emit a success event so listeners can hook
+        // into accepted references (analytics, cache warming, etc.)
+        // without changing the save flow.
+        $this->dispatchReferenceValidatedEvent(
+            propertyName: $propertyName,
+            referencedUuid: $uuid,
+            targetSchemaSlug: $targetSchemaSlug,
+            targetRegister: $register
+        );
     }//end validateReferenceExists()
+
+    /**
+     * Clear the request-scoped reference-existence cache.
+     *
+     * Provided for long-running CLI processes (e.g. background jobs that
+     * iterate over hundreds of objects) that should not let cached
+     * verdicts leak across logical request boundaries.
+     *
+     * @return void
+     */
+    public function clearReferenceValidationCache(): void
+    {
+        $this->referenceValidationCache = [];
+    }//end clearReferenceValidationCache()
+
+    /**
+     * Streaming bulk-upsert primitive — closes 2c on the
+     * `reference-existence-validation` change.
+     *
+     * Iterates `$rows` one-at-a-time through the standard
+     * `saveObject()` write path (NOT through MagicMapper's
+     * ultraFastBulkSave) so the request-scoped reference-validation
+     * cache is engaged for every row. The cache reduces per-row
+     * reference checks to O(1) lookup against the in-memory map for
+     * the second-and-subsequent occurrences of any given target UUID,
+     * eliminating the N×M database round-trips that the unstreamed
+     * bulk path incurs.
+     *
+     * The returned `BatchOperationStatus` aggregates per-row
+     * outcomes (created/updated/unchanged/failed) plus reference-
+     * cache hit/miss counters, suitable for surfacing as a job
+     * dashboard entry, a streaming response body, or telemetry.
+     *
+     * Failure isolation: per-row exceptions are caught and recorded
+     * on the status; the batch continues. Callers that need
+     * fail-fast semantics can iterate the `failed` array on the
+     * returned status and abort early.
+     *
+     * Out of scope (this is the prerequisite, not the feature):
+     * async dispatch of the streaming loop. Async post-save
+     * re-validation is sequenced after this primitive lands and is
+     * tracked separately.
+     *
+     * @param Register|null             $register Register context for the batch.
+     * @param Schema|int|string|null    $schema   Schema context for the batch.
+     * @param iterable                  $rows     Input rows (each is the same
+     *                                            shape `saveObject` accepts).
+     * @param BatchOperationStatus|null $status   Optional pre-existing status
+     *                                            (for callers that want to
+     *                                            accumulate across multiple
+     *                                            calls).
+     *
+     * @return BatchOperationStatus
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    public function saveObjectsStreaming(
+        Register | int | string | null $register,
+        Schema | int | string | null $schema,
+        iterable $rows,
+        ?BatchOperationStatus $status=null
+    ): BatchOperationStatus {
+        $status ??= new BatchOperationStatus();
+        $status->start();
+
+        foreach ($rows as $row) {
+            $cacheBefore = count($this->referenceValidationCache);
+
+            try {
+                $entity = $this->saveObject(
+                    register: $register,
+                    schema: $schema,
+                    data: (is_array($row) === true ? $row : [])
+                );
+
+                $uuid = ((string) $entity->getUuid());
+
+                // Outcome bucket — distinguishing create vs update
+                // requires comparing the input UUID to the resulting
+                // entity's UUID. When the input has no UUID, the save
+                // path generates one — that's a create. When the
+                // input carries a UUID and an existing object was
+                // matched, that's an update. The unchanged bucket is
+                // a future enhancement (would need a deep diff against
+                // the previous state) and is out of scope here; for
+                // now treat all non-create paths as updates.
+                $hadUuid = (
+                    is_array($row) === true
+                    && (isset($row['@self']['id']) === true
+                    || isset($row['id']) === true
+                    || isset($row['uuid']) === true)
+                );
+                if ($hadUuid === true) {
+                    $status->recordUpdated(uuid: $uuid);
+                }
+
+                if ($hadUuid === false) {
+                    $status->recordCreated(uuid: $uuid);
+                }
+            } catch (Exception $e) {
+                $rowUuid = null;
+                if (is_array($row) === true) {
+                    $rowUuid = (
+                        $row['@self']['id'] ?? $row['id'] ?? $row['uuid'] ?? null
+                    );
+                    if (is_string($rowUuid) === false) {
+                        $rowUuid = null;
+                    }
+                }
+
+                $status->recordFailed(
+                    uuid: $rowUuid,
+                    message: $e->getMessage(),
+                    exceptionClass: $e::class
+                );
+
+                $this->logger->warning(
+                    message: '[SaveObject] saveObjectsStreaming row failed',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'uuid'  => $rowUuid,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }//end try
+
+            // Each row's reference checks either grew the cache (miss)
+            // or hit existing entries (hit). Comparing cache size
+            // before/after the row gives us a cheap proxy: any growth
+            // is a miss; rows that didn't grow the cache resolved
+            // their references via existing entries (hit).
+            $cacheAfter = count($this->referenceValidationCache);
+            $delta      = ($cacheAfter - $cacheBefore);
+            if ($delta > 0) {
+                for ($i = 0; $i < $delta; $i++) {
+                    $status->recordReferenceCacheMiss();
+                }
+            }
+
+            if ($delta <= 0) {
+                $status->recordReferenceCacheHit();
+            }
+        }//end foreach
+
+        $status->complete();
+        return $status;
+    }//end saveObjectsStreaming()
+
+    /**
+     * Push an in-flight save onto the call stack used for circular
+     * reference detection.
+     *
+     * Returns the unique key under which the frame is recorded so
+     * `popSaveCallFrame()` can remove it cleanly even when the caller
+     * is in a nested cascade (we may have multiple frames on the stack
+     * at once). Empty UUIDs are skipped — pre-persist creates have no
+     * stable identifier yet, so they cannot be re-encountered as a
+     * back-reference within the same chain.
+     *
+     * @param string      $schemaSlug Schema slug (or id when slug is null).
+     * @param string      $uuid       Object UUID. Empty string when not yet known.
+     * @param string|null $register   Register identifier.
+     *
+     * @return string|null The stack frame key, or null when nothing was pushed.
+     *
+     * @spec openspec/changes/reference-existence-validation/tasks.md
+     */
+    private function pushSaveCallFrame(string $schemaSlug, string $uuid, ?string $register): ?string
+    {
+        if ($uuid === '') {
+            return null;
+        }
+
+        $key = $schemaSlug.':'.$uuid;
+        if (array_key_exists($key, $this->saveCallStackIndex) === true) {
+            // Already on the stack — re-entry without going through
+            // a child save. This is unusual but harmless; just refuse
+            // to double-push so pop semantics stay balanced.
+            return null;
+        }
+
+        $this->saveCallStack[]          = [
+            'schemaSlug' => $schemaSlug,
+            'uuid'       => $uuid,
+            'register'   => $register,
+        ];
+        $this->saveCallStackIndex[$key] = (count($this->saveCallStack) - 1);
+
+        return $key;
+
+    }//end pushSaveCallFrame()
+
+    /**
+     * Pop a frame previously pushed by `pushSaveCallFrame()`.
+     *
+     * Tolerant of null keys (pushSaveCallFrame returns null when the
+     * frame couldn't be pushed) so callers can wrap unconditional
+     * `try { … } finally { popSaveCallFrame($key); }` without checking.
+     *
+     * @param string|null $key The frame key returned by pushSaveCallFrame, or null.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/reference-existence-validation/tasks.md
+     */
+    private function popSaveCallFrame(?string $key): void
+    {
+        if ($key === null) {
+            return;
+        }
+
+        if (array_key_exists($key, $this->saveCallStackIndex) === false) {
+            return;
+        }
+
+        $depth = $this->saveCallStackIndex[$key];
+        unset($this->saveCallStackIndex[$key]);
+
+        // Pop only the frames at or above the recorded depth so
+        // unbalanced finallys (e.g. an exception that skipped a pop
+        // somewhere) self-heal instead of leaking entries forever.
+        $stackSize = count($this->saveCallStack);
+        while ($stackSize > $depth) {
+            $frame = array_pop($this->saveCallStack);
+            if ($frame === null) {
+                break;
+            }
+
+            $stackSize--;
+
+            $existing = $frame['schemaSlug'].':'.$frame['uuid'];
+            if ($existing !== $key) {
+                unset($this->saveCallStackIndex[$existing]);
+            }
+        }
+
+    }//end popSaveCallFrame()
+
+    /**
+     * Detect whether the supplied UUID is currently being saved
+     * higher up the cascade chain.
+     *
+     * Returns the cycle path (the visited stack) when re-entry is
+     * detected, otherwise null. Schema match is loose — if any frame
+     * on the stack carries the same UUID (regardless of schema), we
+     * consider it a cycle. This is the right shape for the spec's
+     * "A->B->A" example: the schema may legitimately differ between
+     * the parent and child cascades but the UUID is what closes the
+     * loop.
+     *
+     * @param string $uuid Candidate UUID being referenced.
+     *
+     * @return array<int, array{schemaSlug:string,uuid:string,register:string|null}>|null
+     *         Cycle path when detected, null otherwise.
+     *
+     * @spec openspec/changes/reference-existence-validation/tasks.md
+     */
+    private function detectCircularReference(string $uuid): ?array
+    {
+        if ($uuid === '') {
+            return null;
+        }
+
+        foreach ($this->saveCallStack as $frame) {
+            if ($frame['uuid'] === $uuid) {
+                return $this->saveCallStack;
+            }
+        }
+
+        return null;
+
+    }//end detectCircularReference()
+
+    /**
+     * Decide whether the current user should bypass reference validation.
+     *
+     * Returns true when the current session user is in the `admin`
+     * group AND the `reference_validation_admin_bypass` app-config flag
+     * resolves to `true` (the default). The dependencies are optional
+     * to keep older test fixtures working — when either is missing the
+     * method returns false so validation runs as before.
+     *
+     * @return bool True when admin bypass applies.
+     */
+    private function shouldBypassValidationForAdmin(): bool
+    {
+        if ($this->groupManager === null || $this->appConfig === null) {
+            return false;
+        }
+
+        $bypassEnabled = filter_var(
+            $this->appConfig->getValueString(
+                app: self::APP_ID,
+                key: self::CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS,
+                default: 'true'
+            ),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        if ($bypassEnabled === false) {
+            return false;
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+
+    }//end shouldBypassValidationForAdmin()
+
+    /**
+     * Dispatch a `ReferenceValidatedEvent` if a dispatcher is wired.
+     *
+     * Encapsulates the null-check so call-sites stay readable. Failures
+     * inside listeners are caught and logged so a misbehaving listener
+     * cannot block a save.
+     *
+     * @param string      $propertyName     Schema property name.
+     * @param string      $referencedUuid   UUID that resolved.
+     * @param string      $targetSchemaSlug Target schema slug.
+     * @param string|null $targetRegister   Register the lookup ran in.
+     *
+     * @return void
+     */
+    private function dispatchReferenceValidatedEvent(
+        string $propertyName,
+        string $referencedUuid,
+        string $targetSchemaSlug,
+        ?string $targetRegister
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new ReferenceValidatedEvent(
+                    propertyName: $propertyName,
+                    referencedUuid: $referencedUuid,
+                    targetSchemaSlug: $targetSchemaSlug,
+                    targetRegister: $targetRegister
+                )
+            );
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[SaveObject] ReferenceValidatedEvent dispatch failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'uuid'     => $referencedUuid,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+    }//end dispatchReferenceValidatedEvent()
+
+    /**
+     * Dispatch a `ReferenceValidationFailedEvent` if a dispatcher is wired.
+     *
+     * Encapsulates the null-check so call-sites stay readable. Failures
+     * inside listeners are caught and logged so a misbehaving listener
+     * cannot mask the underlying validation failure.
+     *
+     * @param string      $propertyName     Schema property name.
+     * @param string      $referencedUuid   UUID that did not resolve.
+     * @param string      $targetSchemaSlug Target schema slug.
+     * @param string|null $targetRegister   Register the lookup ran in.
+     *
+     * @return void
+     */
+    private function dispatchReferenceValidationFailedEvent(
+        string $propertyName,
+        string $referencedUuid,
+        string $targetSchemaSlug,
+        ?string $targetRegister
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new ReferenceValidationFailedEvent(
+                    propertyName: $propertyName,
+                    referencedUuid: $referencedUuid,
+                    targetSchemaSlug: $targetSchemaSlug,
+                    targetRegister: $targetRegister
+                )
+            );
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[SaveObject] ReferenceValidationFailedEvent dispatch failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'uuid'     => $referencedUuid,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+    }//end dispatchReferenceValidationFailedEvent()
 
     /**
      * Prepares object data by applying all necessary transformations.
@@ -3742,7 +4597,7 @@ class SaveObject
      *
      * @throws Exception If there is an error during preparation.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function prepareObjectData(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -3804,7 +4659,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function preCacheParentName(ObjectEntity $objectEntity, Schema $schema, array $data): void
     {
@@ -3868,7 +4723,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive update with file handling
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     public function updateObject(
         Register | int | string $register,
@@ -4039,7 +4894,7 @@ class SaveObject
      *
      * @return bool True if the object is effectively empty, false otherwise
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function isEffectivelyEmptyObject(array $object): bool
     {
@@ -4074,7 +4929,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple value type checks required
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function isValueNotEmpty($value): bool
     {
@@ -4119,7 +4974,7 @@ class SaveObject
      *
      * @return bool True if audit trails are enabled, false otherwise
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
     private function isAuditTrailsEnabled(): bool
     {

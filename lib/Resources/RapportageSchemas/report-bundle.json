@@ -1,0 +1,242 @@
+{
+  "$schema": "https://docs.conduction.nl/openregister/configuration/schema.json",
+  "title": "Rapportage Bundle (Dashboards)",
+  "description": "Operator-importable bundle of the `reports` register + `dashboard` schema. Dashboards are first-class objects: each carries a layout grid + a widgets array describing which charts / KPIs / tables to render and where to fetch their data. The frontend ReportView renders these via CnDashboardPage and the existing nextcloud-vue Cn*Widget components, feeding them from the AggregationRunner output. Operators get the standard schema/object UI for free; can RBAC dashboards per-group; can extend with custom properties.",
+  "version": "1.0.0",
+  "components": {
+    "registers": [
+      {
+        "title": "Reports",
+        "slug": "reports",
+        "description": "Operator-defined dashboards and scheduled reports. Each dashboard object describes which widgets to render and where to fetch their data; a Phase 2 ReportRenderJob can render scheduled dashboards to PDF/Excel/ODS and dispatch via email or Files.",
+        "version": "1.0.0",
+        "schemas": ["dashboard"],
+        "configuration": {
+          "x-openregister-processing-activity": "rapportage-rendering"
+        }
+      }
+    ],
+    "schemas": {
+      "dashboard": {
+        "title": "Dashboard",
+        "slug": "dashboard",
+        "description": "Operator-defined dashboard / report. Layout is a CnDashboardPage grid; widgets is an array of widget descriptors that the frontend maps to nextcloud-vue Cn*Widget components. Each widget references a target (register, schema, aggregation) on the source data.",
+        "version": "1.0.0",
+        "type": "object",
+        "configuration": {
+          "x-openregister-processing-activity": "rapportage-rendering",
+          "objectNameField": "titel"
+        },
+        "properties": {
+          "titel": {
+            "type": "string",
+            "title": "Titel",
+            "description": "Display title shown in the dashboard list + as the page header when rendered."
+          },
+          "beschrijving": {
+            "type": "string",
+            "title": "Beschrijving",
+            "description": "Free-form description; surfaced as a subheader on the rendered dashboard."
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "enum": ["operational", "compliance", "transparency", "audit", "custom"],
+            "description": "Coarse grouping for the dashboard list — operators can filter by it.",
+            "default": "operational"
+          },
+          "layout": {
+            "type": "object",
+            "title": "Layout",
+            "description": "CnDashboardPage layout descriptor. `cols` controls grid width; `rows` is computed from widget count when omitted.",
+            "properties": {
+              "cols": {
+                "type": "integer",
+                "title": "Columns",
+                "minimum": 1,
+                "maximum": 12,
+                "default": 4
+              },
+              "compact": {
+                "type": "boolean",
+                "title": "Compact spacing",
+                "default": false
+              }
+            }
+          },
+          "widgets": {
+            "type": "array",
+            "title": "Widgets",
+            "description": "Ordered list of widget descriptors. The frontend maps `type` to the matching CnWidget component; `dataSource` declares where to fetch the widget's data; `options` carries per-widget configuration. Validated by WidgetAnnotationValidator at save time.",
+            "items": {
+              "type": "object",
+              "required": ["type", "title", "dataSource"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "title": "Widget type",
+                  "enum": ["kpi", "chart", "table", "sparkline", "tile", "stats"],
+                  "description": "Maps to the corresponding Cn*Widget. `kpi` -> CnKpiGrid (single number), `chart` -> CnChartWidget, `table` -> CnTableWidget, `sparkline` -> CnSparklineWidget, `tile` -> CnTileWidget, `stats` -> CnStatsBlock."
+                },
+                "title": {
+                  "type": "string",
+                  "title": "Widget title"
+                },
+                "subtitle": {
+                  "type": "string",
+                  "title": "Widget subtitle"
+                },
+                "dataSource": {
+                  "type": "object",
+                  "title": "Data source",
+                  "description": "References an x-openregister-aggregations declaration on a target schema, or a GraphQL query for cross-register widgets.",
+                  "properties": {
+                    "mode": {
+                      "type": "string",
+                      "title": "Source mode",
+                      "enum": ["aggregation", "graphql", "statistics"],
+                      "default": "aggregation",
+                      "description": "`aggregation` -> calls /api/objects/aggregations/{register}/{schema}/{name}; `graphql` -> POSTs to /api/graphql with the supplied query; `statistics` -> calls MagicStatisticsHandler-backed register/schema chart endpoint."
+                    },
+                    "register": {
+                      "type": "string",
+                      "title": "Register identifier (id|uuid|slug)"
+                    },
+                    "schema": {
+                      "type": "string",
+                      "title": "Schema identifier (id|uuid|slug)"
+                    },
+                    "aggregation": {
+                      "type": "string",
+                      "title": "Aggregation name",
+                      "description": "Name of the aggregation declared under x-openregister-aggregations on the target schema. Required when mode is `aggregation`."
+                    },
+                    "graphqlQuery": {
+                      "type": "string",
+                      "title": "GraphQL query",
+                      "description": "Required when mode is `graphql`. Use template variables {{startDate}} / {{endDate}} for date-range widgets."
+                    }
+                  }
+                },
+                "options": {
+                  "type": "object",
+                  "title": "Widget options",
+                  "description": "Per-widget config — chart kind, axis labels, value format, etc. Free-form to keep the schema flexible; the renderer ignores unknown keys.",
+                  "properties": {
+                    "chartType": {
+                      "type": "string",
+                      "title": "Chart type",
+                      "enum": ["bar", "line", "pie", "donut", "area", "column"],
+                      "description": "For type=chart only."
+                    },
+                    "valueFormat": {
+                      "type": "string",
+                      "title": "Value format",
+                      "enum": ["number", "percent", "currency", "duration", "date"],
+                      "description": "For type=kpi/tile/sparkline."
+                    },
+                    "valueField": {
+                      "type": "string",
+                      "title": "Value field",
+                      "description": "Which aggregation result field to pluck (`count`, `sum`, `avg`, etc.). Defaults to `count`."
+                    },
+                    "trendField": {
+                      "type": "string",
+                      "title": "Trend field",
+                      "description": "For type=sparkline — array field carrying the trend values."
+                    },
+                    "columns": {
+                      "type": "array",
+                      "title": "Table columns",
+                      "description": "For type=table only. Each entry is `{key, label, format?}`.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": { "type": "string", "title": "Field key" },
+                          "label": { "type": "string", "title": "Column label" },
+                          "format": {
+                            "type": "string",
+                            "title": "Cell format",
+                            "enum": ["text", "number", "date", "datetime", "badge", "link"]
+                          }
+                        }
+                      }
+                    },
+                    "icon": {
+                      "type": "string",
+                      "title": "Material design icon name",
+                      "description": "For type=tile/kpi — sets the leading icon."
+                    },
+                    "color": {
+                      "type": "string",
+                      "title": "Accent color",
+                      "description": "Optional accent color for the widget (hex or NC token)."
+                    }
+                  }
+                },
+                "layout": {
+                  "type": "object",
+                  "title": "Widget grid placement",
+                  "description": "CnDashboardPage cell placement. When omitted, widgets flow left-to-right in declaration order.",
+                  "properties": {
+                    "x": { "type": "integer", "title": "Column start", "minimum": 0 },
+                    "y": { "type": "integer", "title": "Row start", "minimum": 0 },
+                    "w": { "type": "integer", "title": "Width", "minimum": 1, "default": 1 },
+                    "h": { "type": "integer", "title": "Height", "minimum": 1, "default": 1 }
+                  }
+                }
+              }
+            }
+          },
+          "schedule": {
+            "type": "object",
+            "title": "Schedule (Phase 2)",
+            "description": "Optional schedule descriptor — when present, ReportRenderJob will render this dashboard at the given cadence and dispatch the result via `delivery`. Phase 1 ignores this field.",
+            "properties": {
+              "intervalSec": {
+                "type": "integer",
+                "title": "Interval (seconds)",
+                "description": "Re-render cadence in seconds. 86400 = daily, 604800 = weekly. Mirrors the notifications-v2 deferral (no cron parsing)."
+              },
+              "active": {
+                "type": "boolean",
+                "title": "Schedule active",
+                "default": false
+              }
+            }
+          },
+          "delivery": {
+            "type": "object",
+            "title": "Delivery (Phase 2)",
+            "description": "Where the rendered report goes when the schedule fires. Phase 1 ignores this field.",
+            "properties": {
+              "format": {
+                "type": "string",
+                "title": "Render format",
+                "enum": ["pdf", "xlsx", "ods", "csv"],
+                "default": "pdf"
+              },
+              "channel": {
+                "type": "string",
+                "title": "Delivery channel",
+                "enum": ["files", "email", "both"],
+                "default": "files"
+              },
+              "recipients": {
+                "type": "array",
+                "title": "Recipients",
+                "items": { "type": "string", "format": "email" }
+              },
+              "filesFolder": {
+                "type": "string",
+                "title": "Target Files folder",
+                "description": "Absolute path inside the operator's Files (or a configurable system folder). Defaults to `/Reports/<dashboard-slug>/`."
+              }
+            }
+          }
+        },
+        "required": ["titel", "widgets"]
+      }
+    }
+  }
+}

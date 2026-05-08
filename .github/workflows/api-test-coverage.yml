@@ -1,0 +1,146 @@
+##
+# api-test-coverage.yml — automated Newman runs against a live OR.
+#
+# Boots a minimal Nextcloud + Postgres stack via .github/docker-compose.ci.yml,
+# enables the openregister app, and runs the same orchestrator script
+# (tests/newman/run-all.sh) that developers use locally — single source
+# of truth for the API integration suite.
+#
+# The orchestrator excludes agent-cms (needs Ollama) and federation
+# (needs a 2nd NC) from the default domain list. To run extras
+# explicitly, override COLLECTIONS in workflow_dispatch.
+##
+
+name: api-test-coverage
+
+# SECURITY: deny-by-default permissions for the GITHUB_TOKEN at the
+# workflow level. The job below runs PR-supplied scripts
+# (tests/newman/run-all.sh) inside a CI container, so a malicious PR
+# could otherwise exfiltrate the token or use it to comment/approve/
+# push. `contents: read` is the only scope the suite needs (clones the
+# PR ref). Override per-job if a future step needs more.
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [development]
+  workflow_dispatch:
+    inputs:
+      collections:
+        description: "Space-separated domain subset (default: all 8). Examples: 'crud relations', 'auth-matrix'."
+        required: false
+        type: string
+
+jobs:
+  newman-suite:
+    name: Newman API Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache composer deps
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install composer deps (production)
+        run: composer install --no-dev --no-interaction --no-progress --prefer-dist
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Boot CI stack (db + Nextcloud)
+        run: docker compose -f .github/docker-compose.ci.yml up -d
+
+      - name: Wait for Nextcloud to be installed
+        run: |
+          for i in $(seq 1 60); do
+            if docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ status" 2>/dev/null | grep -q "installed: true"; then
+              echo "✓ Nextcloud installed and ready"
+              break
+            fi
+            echo "Waiting for Nextcloud installation... ($i/60)"
+            sleep 5
+          done
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ status"
+
+      - name: Copy openregister into container
+        run: |
+          docker exec nextcloud mkdir -p /var/www/html/custom_apps/openregister
+          # Stream the working tree (excluding heavy/local junk) into the container.
+          tar --exclude='.git' --exclude='node_modules' --exclude='.claude' --exclude='tests/e2e/playwright-report' --exclude='tests/e2e/test-results' -cf - . | docker exec -i nextcloud tar -xf - -C /var/www/html/custom_apps/openregister
+          docker exec nextcloud chown -R www-data:www-data /var/www/html/custom_apps/openregister
+
+      - name: Enable openregister app
+        run: |
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable openregister"
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:list" | grep openregister
+
+      - name: Run Newman orchestrator
+        env:
+          BASE_URL: http://localhost:8080
+          ADMIN_USER: admin
+          ADMIN_PASSWORD: admin
+          CONTAINER_NAME: nextcloud
+          NEWMAN_RUNNER: host
+          FAIL_FAST: "0"
+          # platform-annotations + files hardcode 'decidesk/meeting' /
+          # register=1 / schema=1 IDs that don't exist in fresh CI state
+          # (they assume dev-container state). Excluded by default until
+          # the collections gain proper setUp steps that seed their own
+          # test fixtures. Match agent-cms / federation pattern (extras).
+          # Override via workflow_dispatch input to run them anyway.
+          COLLECTIONS: ${{ inputs.collections || 'crud graphql relations auth-matrix error-matrix referential-integrity' }}
+        run: bash tests/newman/run-all.sh
+
+      - name: Upload Newman reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-reports
+          path: |
+            tests/newman/reports/
+            newman-*.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Collect docker logs on failure
+        if: failure()
+        run: |
+          mkdir -p ci-logs
+          docker compose -f .github/docker-compose.ci.yml logs --no-color > ci-logs/docker-compose.log
+          docker exec nextcloud cat /var/www/html/data/nextcloud.log > ci-logs/nextcloud.log 2>&1 || true
+
+      - name: Upload docker logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs
+          path: ci-logs/
+          retention-days: 14
+
+      - name: Tear down CI stack
+        if: always()
+        run: docker compose -f .github/docker-compose.ci.yml down -v

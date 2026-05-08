@@ -15,7 +15,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-25
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
  */
 
 declare(strict_types=1);
@@ -117,7 +117,11 @@ class CalendarEventService
             }
 
             try {
-                $eventArray = $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $calendarObject['uri']);
+                $eventArray = $this->veventToArray(
+                    calendarData: $calendarData,
+                    calendarId: (string) $calendarId,
+                    uri: $calendarObject['uri']
+                );
                 if ($eventArray !== null && $eventArray['objectUuid'] === $objectUuid) {
                     $events[] = $eventArray;
                 }
@@ -433,7 +437,7 @@ class CalendarEventService
      *
      * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null}
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
      */
     private function extractOpenRegisterProperties(mixed $vevent): array
     {

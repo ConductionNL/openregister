@@ -51,7 +51,7 @@ class OpenRegisterAdmin implements ISettings
      * @param IConfig $config Config service
      * @param IL10N   $l      Localization helper
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
      */
     public function __construct(IConfig $config, IL10N $l)
     {
@@ -66,7 +66,7 @@ class OpenRegisterAdmin implements ISettings
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
      */
     public function getForm()
     {
@@ -89,7 +89,7 @@ class OpenRegisterAdmin implements ISettings
      *
      * @psalm-return 'openregister'
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
      */
     public function getSection()
     {
@@ -108,7 +108,7 @@ class OpenRegisterAdmin implements ISettings
      *
      * @psalm-return 11
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
      */
     public function getPriority()
     {

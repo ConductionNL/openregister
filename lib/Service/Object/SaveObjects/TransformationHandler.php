@@ -95,10 +95,9 @@ class TransformationHandler
             // Only extract @self if it exists (mixed schema or other paths).
             // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
             // or extract @self if it exists (mixed schema or other paths).
+            $selfData = $object;
             if (($object['@self'] ?? null) !== null) {
                 $selfData = $object['@self'];
-            } else {
-                $selfData = $object;
             }
 
             // Auto-wire @self metadata with proper UUID validation and generation.
@@ -115,18 +114,16 @@ class TransformationHandler
             // CRITICAL FIX: Use register and schema from object data if available.
             // Register and schema should be provided in object data for this method.
             if (($selfData['register'] ?? null) === null && ($object['register'] ?? null) !== null) {
+                $selfData['register'] = $object['register'];
                 if (is_object($object['register']) === true) {
                     $selfData['register'] = $object['register']->getId();
-                } else {
-                    $selfData['register'] = $object['register'];
                 }
             }
 
             if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
+                $selfData['schema'] = $object['schema'];
                 if (is_object($object['schema']) === true) {
                     $selfData['schema'] = $object['schema']->getId();
-                } else {
-                    $selfData['schema'] = $object['schema'];
                 }
             }
 
@@ -167,11 +164,10 @@ class TransformationHandler
 
             // Set owner to current user if not provided (with null check).
             if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
-                $currentUser = $this->userSession->getUser();
+                $currentUser       = $this->userSession->getUser();
+                $selfData['owner'] = null;
                 if ($currentUser !== null) {
                     $selfData['owner'] = $currentUser->getUID();
-                } else {
-                    $selfData['owner'] = null;
                 }
             }
 

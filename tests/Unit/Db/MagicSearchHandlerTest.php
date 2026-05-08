@@ -227,4 +227,88 @@ class MagicSearchHandlerTest extends TestCase
         $this->assertCount(1, $conditions);
         $this->assertSame('1=0', $conditions[0]);
     }//end testUnknownPropertyProducesImpossibleCondition()
+
+    // -------------------------------------------------------------------------
+    // buildSearchConditionSql: reserved-word property names must be quoted so
+    // PostgreSQL doesn't choke on `case::text ILIKE …` and MySQL doesn't choke
+    // on `` `case` LIKE … ``. Regression guard for the Newman failure that
+    // motivated PR #1437.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Invoke the private buildSearchConditionSql() method via reflection.
+     *
+     * @param string $search     Free-text search term.
+     * @param array  $properties Schema properties (field => ['type' => ...]).
+     * @param bool   $isPostgres Whether to render the PostgreSQL or MySQL flavour.
+     *
+     * @return string|null Generated SQL condition string (or null when empty).
+     */
+    private function invokeBuildSearchConditionSql(
+        string $search,
+        array $properties,
+        bool $isPostgres
+    ): ?string {
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getProperties')->willReturn($properties);
+
+        $method = new ReflectionMethod(MagicSearchHandler::class, 'buildSearchConditionSql');
+        $method->setAccessible(true);
+
+        return $method->invoke(
+            $this->handler,
+            $search,
+            $schema,
+            [],
+            $this->makeConnection(),
+            $isPostgres,
+            null
+        );
+    }//end invokeBuildSearchConditionSql()
+
+    public function testBuildSearchConditionSqlQuotesReservedWordOnPostgres(): void
+    {
+        $sql = $this->invokeBuildSearchConditionSql(
+            search: 'foo',
+            properties: ['case' => ['type' => 'string']],
+            isPostgres: true
+        );
+
+        $this->assertNotNull($sql);
+        $this->assertStringContainsString('"case"::text ILIKE', $sql);
+        // Unquoted form must not appear — `"case"::text` has a quote between
+        // `case` and `::text`, so the bare `case::text` substring should be absent.
+        $this->assertStringNotContainsString('case::text', $sql);
+    }//end testBuildSearchConditionSqlQuotesReservedWordOnPostgres()
+
+    public function testBuildSearchConditionSqlQuotesReservedWordOnMySql(): void
+    {
+        $sql = $this->invokeBuildSearchConditionSql(
+            search: 'foo',
+            properties: ['case' => ['type' => 'string']],
+            isPostgres: false
+        );
+
+        $this->assertNotNull($sql);
+        $this->assertStringContainsString('LOWER(CAST(`case` AS CHAR)) LIKE LOWER(', $sql);
+    }//end testBuildSearchConditionSqlQuotesReservedWordOnMySql()
+
+    public function testBuildSearchConditionSqlQuotesEveryStringPropertyOnPostgres(): void
+    {
+        $sql = $this->invokeBuildSearchConditionSql(
+            search: 'foo',
+            properties: [
+                'case'     => ['type' => 'string'],
+                'status'   => ['type' => 'string'],
+                'numeric'  => ['type' => 'integer'],
+            ],
+            isPostgres: true
+        );
+
+        $this->assertNotNull($sql);
+        $this->assertStringContainsString('"case"::text ILIKE', $sql);
+        $this->assertStringContainsString('"status"::text ILIKE', $sql);
+        // Non-string properties must not appear in the LIKE chain.
+        $this->assertStringNotContainsString('"numeric"', $sql);
+    }//end testBuildSearchConditionSqlQuotesEveryStringPropertyOnPostgres()
 }//end class

@@ -49,7 +49,11 @@ class DestructionServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectMapper     = $this->createMock(MagicMapper::class);
+        $this->objectMapper     = $this->getMockBuilder(MagicMapper::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['update'])
+            ->addMethods(['findByUuid'])
+            ->getMock();
         $this->legalHoldService = $this->createMock(LegalHoldService::class);
         $this->deleteObject     = $this->createMock(DeleteObject::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
@@ -153,7 +157,11 @@ class DestructionServiceTest extends TestCase
         $this->setupMockUser('archivaris-1');
 
         // Mock finding the excluded object for date extension.
-        $mockObject = $this->createMock(ObjectEntity::class);
+        $mockObject = $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['jsonSerialize'])
+            ->addMethods(['getRetention', 'setRetention'])
+            ->getMock();
         $mockObject->method('getRetention')->willReturn([
             'archiefactiedatum' => '2025-01-01',
         ]);
@@ -191,7 +199,11 @@ class DestructionServiceTest extends TestCase
     {
         $this->setupMockUser('archivaris-1');
 
-        $mockObject = $this->createMock(ObjectEntity::class);
+        $mockObject = $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['jsonSerialize'])
+            ->addMethods(['getRetention', 'setRetention'])
+            ->getMock();
         $mockObject->method('getRetention')->willReturn(['archiefactiedatum' => '2025-01-01']);
         $mockObject->expects($this->once())->method('setRetention');
         $this->objectMapper->method('findByUuid')->willReturn($mockObject);
