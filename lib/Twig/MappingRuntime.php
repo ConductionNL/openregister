@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Twig;
 
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\MappingService;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Uid\UuidV4;
@@ -54,12 +55,14 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @param MappingService $mappingService The mapping service for executing mappings
      * @param MappingMapper  $mappingMapper  The mapping mapper for finding mappings
+     * @param FileService    $fileService    The file service for retrieving object files
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function __construct(
         private readonly MappingService $mappingService,
         private readonly MappingMapper $mappingMapper,
+        private readonly FileService $fileService,
     ) {
     }//end __construct()
 
@@ -197,6 +200,25 @@ class MappingRuntime implements RuntimeExtensionInterface
 
         return $flipped[$value] ?? $value;
     }//end zgwEnumReverse()
+
+    /**
+     * Fetch and format all files for an object.
+     *
+     * @param string $objectId The object UUID to fetch files for.
+     *
+     * @return array The formatted file metadata list.
+     */
+    public function getFiles(string $objectId): array
+    {
+        $files = $this->fileService->getFiles(object: $objectId);
+
+        $formattedFiles = [];
+        foreach ($files as $file) {
+            $formattedFiles[] = $this->fileService->formatFile($file);
+        }
+
+        return $formattedFiles;
+    }//end getFiles()
 
     /**
      * Extracts a UUID from a ZGW URL reference.

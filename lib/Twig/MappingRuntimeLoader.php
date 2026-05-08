@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Twig;
 
 use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\MappingService;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 
@@ -38,12 +39,14 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
      *
      * @param MappingService $mappingService The mapping service
      * @param MappingMapper  $mappingMapper  The mapping mapper
+     * @param FileService    $fileService    The file service for object file retrieval
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function __construct(
         private readonly MappingService $mappingService,
         private readonly MappingMapper $mappingMapper,
+        private readonly FileService $fileService,
     ) {
     }//end __construct()
 
@@ -62,6 +65,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
             return new MappingRuntime(
                 mappingService: $this->mappingService,
                 mappingMapper: $this->mappingMapper,
+                fileService: $this->fileService,
             );
         }
 
