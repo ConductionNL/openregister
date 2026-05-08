@@ -72,7 +72,7 @@
 						type="password"
 						:placeholder="t('openregister', 'sk-...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your OpenAI API key. get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+					<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
 				</div>
 
 				<div class="form-group">
@@ -152,7 +152,7 @@
 						type="password"
 						:placeholder="t('openregister', 'fw_...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your Fireworks AI API key. get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
+					<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
 				</div>
 
 				<div class="form-group">
@@ -197,7 +197,7 @@
 						type="password"
 						:placeholder="t('openregister', 'sk-...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your OpenAI API key. get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+					<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
 				</div>
 
 				<div class="form-group">
@@ -230,7 +230,7 @@
 						type="password"
 						:placeholder="t('openregister', 'fw_...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your Fireworks AI API key. get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
+					<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
 				</div>
 
 				<div class="form-group">

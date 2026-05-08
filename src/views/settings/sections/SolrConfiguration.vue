@@ -135,7 +135,7 @@ import { translate as t } from '@nextcloud/l10n'
 				{{ solrEnabled ? t('openregister', 'SOLR search enabled') : t('openregister', 'SOLR search disabled') }}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
-				{{ t('openregister', 'Enable or disable SOLR search integration. configure connection settings using the connection settings button above.') }}
+				{{ t('openregister', 'Enable or disable SOLR search integration. Configure connection settings using the connection settings button above.') }}
 				<span v-if="saving" class="saving-indicator">
 					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
 				</span>

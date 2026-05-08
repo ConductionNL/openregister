@@ -5,7 +5,7 @@
 		@closing="$emit('closing')">
 		<div class="vectorization-config-content">
 			<p class="description">
-				{{ t('openregister', 'Configure parameters for file vectorization. this process will generate vector embeddings for all extracted file chunks.') }}
+				{{ t('openregister', 'Configure parameters for file vectorization. This process will generate vector embeddings for all extracted file chunks.') }}
 			</p>
 
 			<!-- Execution Mode -->
@@ -73,8 +73,8 @@
 					v-model.number="maxFiles"
 					type="number"
 					min="0"
-					:placeholder="t('openregister', 'Maximum number of files to process. set to 0 to process all files.')">
-				<small>{{ t('openregister', 'Maximum number of files to process. set to 0 to process all files.') }}</small>
+					:placeholder="t('openregister', 'Maximum number of files to process. Set to 0 to process all files.')">
+				<small>{{ t('openregister', 'Maximum number of files to process. Set to 0 to process all files.') }}</small>
 			</div>
 
 			<div class="form-group">
@@ -86,14 +86,14 @@
 					min="1"
 					max="100"
 					:placeholder="t('openregister', 'Number of chunks to vectorize in one API call (1-100).')">
-				<small>{{ t('openregister', 'Number of chunks to vectorize in one API call. higher = faster but more memory. recommended: 10-50.') }}</small>
+				<small>{{ t('openregister', 'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.') }}</small>
 			</div>
 
 			<!-- File Type Selection -->
 			<h3>{{ t('openregister', 'File Type Selection') }}</h3>
 			<div class="info-box">
 				<InformationOutline :size="20" />
-				<p>{{ t('openregister', 'Choose which file types to include in the vectorization process. only files with extracted text and chunks will be processed.') }}</p>
+				<p>{{ t('openregister', 'Choose which file types to include in the vectorization process. Only files with extracted text and chunks will be processed.') }}</p>
 			</div>
 
 			<div class="form-group">
@@ -340,7 +340,7 @@ export default {
 
 				// Check if it's a "not implemented" response
 				if (error.response?.status === 501 || errorData?.error === 'File vectorization not yet implemented') {
-					showError(this.t('openregister', 'File chunk vectorization is not yet implemented. the chunks are ready and stored, but the vectorization service is under development.'))
+					showError(this.t('openregister', 'File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.'))
 				} else {
 					showError(this.t('openregister', 'Failed to vectorize files: {error}', {
 						error: errorData?.error || errorData?.message || error.message,

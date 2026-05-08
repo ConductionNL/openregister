@@ -27,7 +27,7 @@
 			<div class="modal-header">
 				<h3>{{ t('openregister', 'SOLR Connection Settings') }}</h3>
 				<p class="header-description">
-					{{ t('openregister', 'Configure basic connection settings for your SOLR server including authentication and network options. use the separate configset and collection management dialogs to manage cores and collections.') }}
+					{{ t('openregister', 'Configure basic connection settings for your SOLR server including authentication and network options. Use the separate configset and collection management dialogs to manage cores and collections.') }}
 				</p>
 			</div>
 
