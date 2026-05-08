@@ -146,10 +146,22 @@ export default {
 			objectStore.setObjectItem(row)
 			navigationStore.setDialog('deleteObject')
 		},
-		handleMassDelete(ids) {
-			const rows = this.normalizedObjects.filter((r) => ids.includes(String(r.id)))
-			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
-			navigationStore.setDialog('massDeleteObject')
+		async handleMassDelete(ids) {
+			const type = this.computedObjectType
+			if (!objectStore.objectTypes.includes(type)) {
+				const schemaId = objectStore.searchParams?.schema
+				const registerId = objectStore.searchParams?.register
+				objectStore.registerObjectType(type, schemaId, registerId)
+			}
+
+			try {
+				const result = await objectStore.deleteObjects(type, ids)
+				objectStore.clearSelectedObjects()
+				objectStore.refetchSearchCollection()
+				this.$refs.indexPage?.setMassDeleteResult({ success: result.successfulIds.length > 0 })
+			} catch (error) {
+				this.$refs.indexPage?.setMassDeleteResult({ success: false, error: error.message || 'Delete failed' })
+			}
 		},
 		handleMassCopy(payload) {
 			const ids = payload?.ids || []
