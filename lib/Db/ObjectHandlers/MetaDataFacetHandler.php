@@ -1155,7 +1155,12 @@ class MetaDataFacetHandler
             case 'day':
                 return '%Y-%m-%d';
             case 'week':
-                return '%Y-%u';
+                // ISO 8601 year + ISO 8601 week (Monday-starting). %x is the
+                // ISO year, %v is the ISO week (01-53). Matches PostgreSQL
+                // `IYYY-IW` and MariaDbFacetHandler output; required for
+                // cross-DB parity at year boundaries (e.g. 2023-01-01 maps to
+                // ISO week 2022-52, not 2023-00).
+                return '%x-%v';
             case 'month':
                 return '%Y-%m';
             case 'quarter':

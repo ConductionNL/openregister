@@ -33,7 +33,7 @@
 	},
 	"dependencies": {
 		"@codemirror/lang-json": "^6.0.1",
-        "@conduction/nextcloud-vue": "0.1.0-beta.17",
+		"@conduction/nextcloud-vue": "0.1.0-beta.17",
 		"@fortawesome/fontawesome-svg-core": "^6.5.2",
 		"@fortawesome/free-solid-svg-icons": "^6.5.2",
 		"@nextcloud/axios": "^2.5.0",
@@ -59,7 +59,7 @@
 		"vue-apexcharts": "^1.7.0",
 		"vue-codemirror6": "^1.1.5",
 		"vue-draggable-plus": "^0.2.6",
-        "vue-frag": "^1.4.3",
+		"vue-frag": "^1.4.3",
 		"vue-loader": "^15.11.1",
 		"vue-loading-overlay": "^6.0.3",
 		"vue-material-design-icons": "^5.2.0",

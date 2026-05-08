@@ -17,8 +17,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-46
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-47
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-46
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-47
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -80,7 +80,7 @@ class GraphQLController extends Controller
      *
      * @CORS
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-46
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-46
      */
     public function execute(): JSONResponse
     {
@@ -138,7 +138,7 @@ class GraphQLController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-47
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-47
      */
     public function explorer(): Response
     {

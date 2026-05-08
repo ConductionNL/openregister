@@ -14,8 +14,8 @@
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
  */
 
 declare(strict_types=1);
@@ -105,7 +105,7 @@ class AuthorizationAuditService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
      */
     public function logRegisterAuthorizationChange(
         int $registerId,
@@ -118,15 +118,12 @@ class AuthorizationAuditService
         $userId   = $user !== null ? $user->getUID() : 'system';
 
         // Count schemas that will inherit this change.
+        // This is approximate -- we don't load each schema to check whether it has its own authorization.
         $affectedSchemaCount = 0;
         try {
             $register = $this->registerMapper->find($registerId);
             $schemas  = $register->getSchemas();
-            foreach ($schemas as $schemaId) {
-                // Count schemas without their own authorization (they cascade).
-                // This is approximate -- we don't load each schema to check.
-                $affectedSchemaCount++;
-            }
+            $affectedSchemaCount = is_array($schemas) === true ? count($schemas) : 0;
         } catch (\Throwable $e) {
             // Could not count affected schemas.
         }
@@ -159,7 +156,7 @@ class AuthorizationAuditService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
      */
     public function logRoleDefinitionChange(
         int $registerId,

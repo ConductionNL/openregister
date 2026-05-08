@@ -82,7 +82,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
  */
 import {
 	NcModal,
@@ -117,14 +117,14 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		closeDialog() {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		formatValue(value) {
 			if (value === null || value === undefined) {
@@ -137,7 +137,7 @@ export default {
 			return value // Return the value as is for other types
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		fetchSchema() {
 			this.schemaLoading = true
@@ -148,7 +148,7 @@ export default {
 				})
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		fetchRegister() {
 			this.registerLoading = true
@@ -159,7 +159,7 @@ export default {
 				})
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		goToSchema() {
 			navigationStore.setModal(null)
@@ -168,7 +168,7 @@ export default {
 			schemaStore.setSchemaItem(this.schemaItem)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
 		 */
 		goToRegister() {
 			navigationStore.setModal(null)

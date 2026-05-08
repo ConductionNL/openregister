@@ -481,7 +481,8 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @suppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @return JSONResponse JSON response with updated register or error
      *
@@ -795,6 +796,77 @@ class RegistersController extends Controller
             return new JSONResponse(data: ['error' => 'Failed to export register: '.$e->getMessage()], statusCode: 400);
         }//end try
     }//end export()
+
+    /**
+     * Download an empty import template for a schema
+     *
+     * Returns a spreadsheet (XLSX by default, CSV when `format=csv` is supplied)
+     * containing only the schema's header row, so users can fill it in and
+     * upload it via the existing import endpoint. The resulting file uses the
+     * same column layout that `ExportService::exportToExcel()` would emit, so a
+     * round-trip export/import keeps headers stable.
+     *
+     * @param int|string $id     The register slug or numeric id
+     * @param int|string $schema The schema slug or numeric id
+     *
+     * @return DataDownloadResponse|JSONResponse Spreadsheet on success, JSON error otherwise
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    public function importTemplate(int|string $id, int|string $schema): JSONResponse|DataDownloadResponse
+    {
+        try {
+            $format = strtolower((string) $this->request->getParam(key: 'format', default: 'xlsx'));
+            if (in_array($format, ['xlsx', 'csv'], true) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'Unsupported template format: '.$format.'. Supported formats: xlsx, csv.'],
+                    statusCode: 400
+                );
+            }
+
+            // RBAC is enforced inside both find() calls (default _rbac=true).
+            $register     = $this->registerMapper->find($id);
+            $schemaEntity = $this->schemaMapper->find($schema);
+
+            $schemaSlug  = $schemaEntity->getSlug() ?? 'schema';
+            $currentUser = $this->userSession->getUser();
+
+            if ($format === 'csv') {
+                $content  = $this->exportService->buildTemplateCsv(
+                    register: $register,
+                    schema: $schemaEntity,
+                    currentUser: $currentUser
+                );
+                $filename = sprintf('%s_template.csv', $schemaSlug);
+                return new DataDownloadResponse($content, $filename, 'text/csv');
+            }
+
+            $spreadsheet = $this->exportService->buildTemplateSpreadsheet(
+                register: $register,
+                schema: $schemaEntity,
+                currentUser: $currentUser
+            );
+            $writer      = new Xlsx($spreadsheet);
+            ob_start();
+            $writer->save('php://output');
+            $content  = ob_get_clean();
+            $filename = sprintf('%s_template.xlsx', $schemaSlug);
+            $mime     = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            return new DataDownloadResponse($content, $filename, $mime);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(
+                data: ['error' => 'Register or schema not found: '.$e->getMessage()],
+                statusCode: 404
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: ['error' => 'Failed to generate import template: '.$e->getMessage()],
+                statusCode: 400
+            );
+        }//end try
+    }//end importTemplate()
 
     /**
      * Publish register OAS specification to GitHub
@@ -1153,16 +1225,92 @@ class RegistersController extends Controller
                     break;
             }//end switch
 
-            return new JSONResponse(
-                data: [
-                    'message' => 'Import successful',
-                    'summary' => $summary,
-                ]
-            );
+            // Attach a downloadable per-row error CSV when the summary
+            // surfaces row-level failures. Base64 keeps the artefact in the
+            // existing JSON envelope so the frontend can offer a download
+            // without a second round-trip.
+            $errorsCsv    = $this->importService->serializeErrorsToCsv(summary: $summary);
+            $responseData = [
+                'message' => 'Import successful',
+                'summary' => $summary,
+            ];
+            if ($errorsCsv !== '') {
+                $responseData['errors_csv']          = base64_encode($errorsCsv);
+                $responseData['errors_csv_filename'] = 'import_errors.csv';
+            }
+
+            return new JSONResponse(data: $responseData);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
     }//end import()
+
+    /**
+     * Roll back an import by soft-deleting every object whose `create`
+     * audit row carries the given `importJobId`. Implements the
+     * rollback contract on the `data-import-export` change.
+     *
+     * @return JSONResponse Report with counts and per-object outcomes.
+     *
+     * @NoAdminRequired
+     */
+    public function rollbackImport(): JSONResponse
+    {
+        $importJobId = $this->request->getParam('importJobId');
+        if (is_string($importJobId) === false || $importJobId === '') {
+            return new JSONResponse(
+                data: ['error' => 'importJobId is required'],
+                statusCode: 422
+            );
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required'],
+                statusCode: 401
+            );
+        }
+
+        // SECURITY: rollback wipes every object created by an import job.
+        // The only safety net was that `deleteObject` runs RBAC, which is
+        // much weaker than it sounds — any user with broad delete rights
+        // on the affected schemas could otherwise wipe a *different*
+        // user's import (and across tenants, since the audit lookup
+        // doesn't filter by organisation). Require the caller to be
+        // either the original importer or a member of the admin group.
+        $isAdmin     = $this->groupManager->isAdmin($user->getUID());
+        $auditSample = $this->auditTrailMapper->findByImportJobId(
+            importJobId: $importJobId,
+            action: 'create'
+        );
+        if (count($auditSample) === 0) {
+            return new JSONResponse(
+                data: ['error' => 'Import job not found', 'importJobId' => $importJobId],
+                statusCode: 404
+            );
+        }
+
+        $importerUid = method_exists($auditSample[0], 'getUser') === true
+            ? $auditSample[0]->getUser()
+            : null;
+        if ($isAdmin === false && $importerUid !== $user->getUID()) {
+            return new JSONResponse(
+                data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],
+                statusCode: 403
+            );
+        }
+
+        try {
+            $report = $this->importService->softDeleteByImportJobId(importJobId: $importJobId);
+            return new JSONResponse(data: $report, statusCode: 200);
+        } catch (\Throwable $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: 500
+            );
+        }
+    }//end rollbackImport()
 
     /**
      * Get statistics for a specific register
@@ -1496,6 +1644,9 @@ class RegistersController extends Controller
      * @param Register $register The register to check manage permission for.
      *
      * @return bool True if user has manage permission.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function checkRegisterManagePermission(Register $register): bool
     {

@@ -93,7 +93,7 @@ class MagicRbacHandler
      * @param IGroupManager      $groupManager     Group manager for user group operations
      * @param IUserManager       $userManager      User manager for user operations
      * @param IAppConfig         $appConfig        App configuration for RBAC settings
-     * @param ConditionMatcher   $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays in this class).
+     * @param ConditionMatcher   $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
      * @param ContainerInterface $container        Container for service injection
      * @param LoggerInterface    $logger           Logger for debugging
      */
@@ -653,7 +653,7 @@ class MagicRbacHandler
      *
      * @return bool True if user has permission
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Rule-type dispatch is inlined to keep the delegation to ConditionMatcher single-site.
+     * @SuppressWarnings(PHPMD.NPathComplexity) Inlined dispatch keeps the ConditionMatcher delegation in one place.
      */
     public function hasPermission(
         Schema $schema,

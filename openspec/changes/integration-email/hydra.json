@@ -3,8 +3,10 @@
   "spec_slug": "integration-email",
   "app": "openregister",
   "repo": "https://github.com/ConductionNL/openregister",
-  "depends_on": ["pluggable-integration-registry"],
-  "wave": 1,
-  "wave_label": "backend-ready-ui-missing",
+  "depends_on": [
+    "pluggable-integration-registry"
+  ],
+  "issue": "https://github.com/ConductionNL/openregister/issues/1309",
+  "pipeline": {},
   "cycles": []
 }

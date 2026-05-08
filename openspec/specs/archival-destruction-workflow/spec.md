@@ -1,7 +1,7 @@
 ---
 status: implemented
 retrofit_extensions:
-  - "REQ-009"
+  - REQ-009
 ---
 
 # Archival Destruction Workflow

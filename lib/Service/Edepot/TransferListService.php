@@ -16,8 +16,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
  */
 
 declare(strict_types=1);
@@ -91,8 +91,10 @@ class TransferListService
      *
      * @throws InvalidArgumentException If no objects provided.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function createTransferList(array $objects): array
     {
@@ -141,8 +143,8 @@ class TransferListService
      *
      * @throws InvalidArgumentException If the list is not in review status.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
      */
     public function approveTransferList(array $transferList, string $archivistId): array
     {
@@ -180,8 +182,8 @@ class TransferListService
      *
      * @throws InvalidArgumentException If the list is not in review status.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
      */
     public function rejectTransferList(array $transferList, string $archivistId, string $reason): array
     {
@@ -223,7 +225,7 @@ class TransferListService
      *
      * @return array<string,mixed> The updated transfer list data.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
      */
     public function excludeObjects(array $transferList, array $objectUuids, string $reason): array
     {
@@ -279,7 +281,7 @@ class TransferListService
      *
      * @return array<int, string> UUIDs of objects on active transfer lists.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
      */
     public function getObjectsOnActiveTransferLists(array $activeTransferLists): array
     {
@@ -306,7 +308,7 @@ class TransferListService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
      */
     public function notifyArchivists(array $transferList): void
     {

@@ -3,8 +3,10 @@
   "spec_slug": "integration-collectives",
   "app": "openregister",
   "repo": "https://github.com/ConductionNL/openregister",
-  "depends_on": ["pluggable-integration-registry"],
-  "wave": 2,
-  "wave_label": "nc-native-greenfield",
+  "depends_on": [
+    "pluggable-integration-registry"
+  ],
+  "issue": "https://github.com/ConductionNL/openregister/issues/1317",
+  "pipeline": {},
   "cycles": []
 }

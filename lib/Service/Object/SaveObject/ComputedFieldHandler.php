@@ -47,8 +47,9 @@ use Twig\Sandbox\SecurityPolicy;
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Handler requires Twig and mapper dependencies
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Handler requires Twig and mapper dependencies
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class ComputedFieldHandler
 {
@@ -74,7 +75,7 @@ class ComputedFieldHandler
      * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
      * @param LoggerInterface      $logger               Logger for error and debug messages.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -94,7 +95,7 @@ class ComputedFieldHandler
      *
      * @return Environment The configured Twig environment
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      */
     private function getTwig(): Environment
     {
@@ -102,8 +103,15 @@ class ComputedFieldHandler
             return $this->twig;
         }
 
-        $loader     = new ArrayLoader();
-        $this->twig = new Environment($loader);
+        $loader = new ArrayLoader();
+        // Autoescape disabled — Twig's default autoescaping injects the
+        // `escape` filter into every `{{ var }}` output, but our
+        // sandbox SecurityPolicy doesn't allow that filter (and HTML
+        // escape isn't meaningful for computed property values that
+        // return strings/numbers/dates back into the object data).
+        // Without this flag, every Twig expression silently fails
+        // with `Filter "escape" is not allowed`.
+        $this->twig = new Environment($loader, ['autoescape' => false]);
 
         // Add the mapping extension for custom filters and functions.
         $this->twig->addExtension($this->mappingExtension);
@@ -165,7 +173,7 @@ class ComputedFieldHandler
      *
      * @return array The object data with computed field values added/updated.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      */
     public function evaluateComputedFields(array $data, Schema $schema, string $evaluateOn='save'): array
     {
@@ -215,7 +223,7 @@ class ComputedFieldHandler
      *
      * @return mixed The computed value, or null on error.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      */
     private function evaluateExpression(
         string $expression,
@@ -272,7 +280,7 @@ class ComputedFieldHandler
      *
      * @return array The Twig context with data and resolved references.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      */
     private function buildTwigContext(array $data, Schema $schema, int $depth=0): array
     {
@@ -301,7 +309,7 @@ class ComputedFieldHandler
      *
      * @return array Resolved reference data indexed by property name.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      */
     private function resolveReferences(array $data, Schema $schema, int $depth): array
     {
@@ -380,7 +388,7 @@ class ComputedFieldHandler
      *
      * @return mixed The cast result.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      */
     private function castResult(string $result): mixed
     {
@@ -412,7 +420,7 @@ class ComputedFieldHandler
      *
      * @return bool True if the schema has at least one computed property.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      */
     public function hasComputedProperties(Schema $schema): bool
     {
@@ -435,7 +443,7 @@ class ComputedFieldHandler
      *
      * @return array List of property names that are computed for the given mode.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
      */
     public function getComputedPropertyNames(Schema $schema, string $evaluateOn='save'): array
     {
@@ -455,4 +463,300 @@ class ComputedFieldHandler
 
         return $names;
     }//end getComputedPropertyNames()
+
+    /**
+     * Detect circular dependencies between computed fields on a schema.
+     *
+     * Performs a static analysis of the Twig expressions to build a
+     * dependency graph (computed property -> set of property names it
+     * references) and walks the graph with DFS to surface cycles.
+     * Same-property self-references count as cycles of length 1.
+     *
+     * The detector is conservative: it only flags references between
+     * properties that are themselves computed. Non-computed inputs are
+     * inert leaves of the graph and never close a cycle.
+     *
+     * Returns an array of cycles; each cycle is the ordered list of
+     * property names traversed (e.g. `['a', 'b', 'a']`). An empty array
+     * means the schema is acyclic and safe to evaluate.
+     *
+     * Closes the computed-fields spec requirement
+     * "Circular Dependency Detection".
+     *
+     * @param Schema $schema The schema to analyse.
+     *
+     * @return array<int, array<int, string>> Detected cycles.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    public function detectCircularDependencies(Schema $schema): array
+    {
+        $properties = $schema->getProperties() ?? [];
+        if ($properties === []) {
+            return [];
+        }
+
+        // Build the dependency graph for computed properties only.
+        $graph         = [];
+        $computedNames = [];
+        foreach ($properties as $propertyName => $property) {
+            if (isset($property['computed']) === false || is_array($property['computed']) === false) {
+                continue;
+            }
+
+            $computedNames[$propertyName] = true;
+        }
+
+        if ($computedNames === []) {
+            return [];
+        }
+
+        foreach ($properties as $propertyName => $property) {
+            if (isset($computedNames[$propertyName]) === false) {
+                continue;
+            }
+
+            $expression = $property['computed']['expression'] ?? '';
+            if (is_string($expression) === false || $expression === '') {
+                $graph[$propertyName] = [];
+                continue;
+            }
+
+            $referenced = $this->extractTwigVariables(expression: $expression);
+
+            // Only edges that point to other computed properties can
+            // close a cycle — non-computed inputs are inert leaves.
+            $edges = [];
+            foreach ($referenced as $name) {
+                if (isset($computedNames[$name]) === true) {
+                    $edges[] = $name;
+                }
+            }
+
+            $graph[$propertyName] = array_values(array_unique($edges));
+        }//end foreach
+
+        // DFS over the graph, tracking the current traversal stack to
+        // detect back-edges. We collect distinct cycles (canonicalised
+        // by their starting node alphabetically) so two paths into the
+        // same cycle aren't double-reported.
+        $cycles   = [];
+        $reported = [];
+        $visited  = [];
+        foreach (array_keys($graph) as $start) {
+            $stack = [];
+            $this->dfsForCycles(
+                node: $start,
+                graph: $graph,
+                stack: $stack,
+                visited: $visited,
+                cycles: $cycles,
+                reported: $reported
+            );
+        }
+
+        return $cycles;
+
+    }//end detectCircularDependencies()
+
+    /**
+     * Extract candidate variable names from a Twig expression.
+     *
+     * The handler doesn't lean on a real Twig AST walker (which would
+     * require parsing every expression with a sandbox-bound environment
+     * just for static analysis). Instead it pulls identifiers out of
+     * `{{ ... }}` and `{% ... %}` blocks via a regex that catches the
+     * top-level word in dotted/array references — `foo`, `foo.bar`,
+     * `foo[0]`, `_ref.bar.x`. References under the `_ref.` prefix are
+     * cross-object lookups, not in-schema references, so they're
+     * stripped before the result is returned.
+     *
+     * @param string $expression The Twig expression source.
+     *
+     * @return array<int, string> Distinct top-level identifiers.
+     */
+    private function extractTwigVariables(string $expression): array
+    {
+        $tokens = [];
+
+        // Pull out the body of every `{{ ... }}` or `{% ... %}` block
+        // so plain text in the template doesn't get scanned as code.
+        if (preg_match_all('/\{\{(.+?)\}\}|\{%(.+?)%\}/s', $expression, $blocks) > 0) {
+            foreach ($blocks[1] as $body) {
+                if ($body !== '') {
+                    $tokens[] = $body;
+                }
+            }
+
+            foreach ($blocks[2] as $body) {
+                if ($body !== '') {
+                    $tokens[] = $body;
+                }
+            }
+        }
+
+        if ($tokens === []) {
+            return [];
+        }
+
+        $body = implode(' ', $tokens);
+
+        // Identifiers MUST start with a letter or underscore. Filter
+        // out Twig keywords and built-in helpers we don't want to chase
+        // through the dependency graph.
+        $reserved = [
+            'and',
+            'or',
+            'not',
+            'in',
+            'is',
+            'as',
+            'with',
+            'true',
+            'false',
+            'null',
+            'if',
+            'else',
+            'elseif',
+            'endif',
+            'for',
+            'endfor',
+            'set',
+            'do',
+            'block',
+            'endblock',
+            'date',
+            'now',
+            'min',
+            'max',
+            'range',
+            'random',
+            'length',
+            'count',
+        ];
+
+        $identifiers = [];
+        if (preg_match_all('/(?<![\\w.])([A-Za-z_][A-Za-z0-9_]*)/', $body, $matches) > 0) {
+            foreach ($matches[1] as $name) {
+                if (in_array($name, $reserved, true) === true) {
+                    continue;
+                }
+
+                $identifiers[$name] = true;
+            }
+        }
+
+        // Strip cross-object reference prefix (`_ref.foo`) — those are
+        // foreign-object lookups and not in-schema dependencies.
+        unset($identifiers['_ref']);
+
+        return array_keys($identifiers);
+
+    }//end extractTwigVariables()
+
+    /**
+     * DFS helper that records cycles in the dependency graph.
+     *
+     * @param string                         $node     Current node being
+     *                                                 visited.
+     * @param array<string, array<string>>   $graph    Adjacency list.
+     * @param array<int, string>             $stack    Traversal stack on
+     *                                                 the way to
+     *                                                 `$node`.
+     * @param array<string, bool>            $visited  Globally-visited
+     *                                                 nodes (avoid
+     *                                                 re-walking
+     *                                                 shared
+     *                                                 subtrees).
+     * @param array<int, array<int, string>> $cycles   Output: detected
+     *                                                 cycles.
+     * @param array<string, bool>            $reported Cycle signatures
+     *                                                 already emitted.
+     *
+     * @return void
+     */
+    private function dfsForCycles(
+        string $node,
+        array $graph,
+        array $stack,
+        array &$visited,
+        array &$cycles,
+        array &$reported
+    ): void {
+        if (in_array($node, $stack, true) === true) {
+            // Found a back-edge — slice the cycle out of the stack.
+            $cycleStart  = array_search($node, $stack, true);
+            $cyclePath   = array_slice($stack, $cycleStart);
+            $cyclePath[] = $node;
+
+            // Canonicalise so two starts into the same cycle hash to
+            // the same key.
+            $signature = $this->canonicaliseCycle(cycle: $cyclePath);
+            if (isset($reported[$signature]) === false) {
+                $reported[$signature] = true;
+                $cycles[] = $cyclePath;
+            }
+
+            return;
+        }
+
+        if (isset($visited[$node]) === true) {
+            return;
+        }
+
+        $stack[] = $node;
+        foreach ($graph[$node] ?? [] as $neighbour) {
+            $this->dfsForCycles(
+                node: $neighbour,
+                graph: $graph,
+                stack: $stack,
+                visited: $visited,
+                cycles: $cycles,
+                reported: $reported
+            );
+        }
+
+        $visited[$node] = true;
+
+    }//end dfsForCycles()
+
+    /**
+     * Canonicalise a cycle so duplicate starts produce one signature.
+     *
+     * Rotates the cycle so the lexicographically smallest node leads.
+     *
+     * @param array<int, string> $cycle The cycle path with the closing
+     *                                  node duplicated.
+     *
+     * @return string Canonical cycle signature.
+     */
+    private function canonicaliseCycle(array $cycle): string
+    {
+        // Drop the duplicated closing node before rotating.
+        $body = $cycle;
+        if (count($body) > 1 && $body[0] === $body[count($body) - 1]) {
+            array_pop($body);
+        }
+
+        if ($body === []) {
+            return '';
+        }
+
+        $minIndex = 0;
+        $minValue = $body[0];
+        foreach ($body as $idx => $name) {
+            if (strcmp($name, $minValue) < 0) {
+                $minValue = $name;
+                $minIndex = $idx;
+            }
+        }
+
+        $rotated = array_merge(
+            array_slice($body, $minIndex),
+            array_slice($body, 0, $minIndex)
+        );
+
+        return implode('->', $rotated);
+
+    }//end canonicaliseCycle()
 }//end class

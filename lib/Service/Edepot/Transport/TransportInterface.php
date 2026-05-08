@@ -37,7 +37,7 @@ interface TransportInterface
      *
      * @return TransportResult The result of the transport operation.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function send(string $sipFilePath, array $config): TransportResult;
 
@@ -48,7 +48,7 @@ interface TransportInterface
      *
      * @return bool True if connection test succeeds.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function testConnection(array $config): bool;
 
@@ -57,7 +57,7 @@ interface TransportInterface
      *
      * @return string The transport protocol name (e.g., 'sftp', 'rest_api', 'openconnector').
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getName(): string;
 }//end interface

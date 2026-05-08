@@ -540,6 +540,7 @@ class SchemaHandler
             'description'  => ['name' => 'description', 'type' => 'text', 'indexed' => true, 'stored' => true],
             'created'      => ['name' => 'created', 'type' => 'date', 'indexed' => true, 'stored' => true],
             'updated'      => ['name' => 'updated', 'type' => 'date', 'indexed' => true, 'stored' => true],
+            'published'    => ['name' => 'published', 'type' => 'date', 'indexed' => true, 'stored' => true],
             'deleted'      => ['name' => 'deleted', 'type' => 'boolean', 'indexed' => true, 'stored' => true],
             'owner'        => ['name' => 'owner', 'type' => 'string', 'indexed' => true, 'stored' => true],
             'organisation' => ['name' => 'organisation', 'type' => 'string', 'indexed' => true, 'stored' => true],

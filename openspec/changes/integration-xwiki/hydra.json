@@ -3,9 +3,10 @@
   "spec_slug": "integration-xwiki",
   "app": "openregister",
   "repo": "https://github.com/ConductionNL/openregister",
-  "depends_on": ["pluggable-integration-registry", "integration-openproject"],
-  "wave": 3,
-  "wave_label": "external-via-openconnector",
-  "depends_on_reason": "Soft-depends on openproject to avoid duplicate work on getOpenConnectorSource() and ExternalIntegrationRouter patterns — build openproject first to prove the external-routing infrastructure, then XWiki reuses",
+  "depends_on": [
+    "pluggable-integration-registry"
+  ],
+  "issue": "https://github.com/ConductionNL/openregister/issues/1326",
+  "pipeline": {},
   "cycles": []
 }

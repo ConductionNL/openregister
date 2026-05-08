@@ -54,7 +54,7 @@ class ConfigurationCreatedEvent extends Event
      *
      * @return Configuration The configuration that was created.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      */
     public function getConfiguration(): Configuration
     {

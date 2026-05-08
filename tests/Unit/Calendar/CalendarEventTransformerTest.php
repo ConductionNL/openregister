@@ -101,7 +101,7 @@ class CalendarEventTransformerTest extends TestCase
         $config = [
             'enabled'       => true,
             'dtstart'       => 'startdatum',
-            'titleTemplate' => '{naam} - {locatie}',
+            'titleTemplate' => '{{naam}} - {{locatie}}',
         ];
 
         $result = $this->transformer->transform($object, $this->schema, $config);
@@ -118,7 +118,7 @@ class CalendarEventTransformerTest extends TestCase
         $config = [
             'enabled'       => true,
             'dtstart'       => 'startdatum',
-            'titleTemplate' => '{naam} - {missing}',
+            'titleTemplate' => '{{naam}} - {{missing}}',
         ];
 
         $result = $this->transformer->transform($object, $this->schema, $config);
@@ -137,8 +137,8 @@ class CalendarEventTransformerTest extends TestCase
         $config = [
             'enabled'             => true,
             'dtstart'             => 'startdatum',
-            'titleTemplate'       => '{naam}',
-            'descriptionTemplate' => 'Locatie: {locatie}',
+            'titleTemplate'       => '{{naam}}',
+            'descriptionTemplate' => 'Locatie: {{locatie}}',
         ];
 
         $result = $this->transformer->transform($object, $this->schema, $config);

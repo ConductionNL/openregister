@@ -22,7 +22,7 @@
  *
  * @since 2.0.0 Introduced by fix-empty-string-date-conversion
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-24
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-24
  */
 
 declare(strict_types=1);
@@ -71,6 +71,8 @@ class DateTimeNormalizer
      * @param mixed $value Value to normalise (string, null, DateTimeInterface, or anything else).
      *
      * @return DateTimeImmutable|null A `DateTimeImmutable` when parseable, otherwise `null`.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function normalize(mixed $value): ?DateTimeImmutable
     {
@@ -124,12 +126,12 @@ class DateTimeNormalizer
      */
     public function formatForDatabase(mixed $value): ?string
     {
-        $dt = $this->normalize(value: $value);
-        if ($dt === null) {
+        $datetime = $this->normalize(value: $value);
+        if ($datetime === null) {
             return null;
         }
 
-        return $dt->format(self::DATABASE_FORMAT);
+        return $datetime->format(self::DATABASE_FORMAT);
     }//end formatForDatabase()
 
     /**
@@ -141,11 +143,11 @@ class DateTimeNormalizer
      */
     public function formatForIso8601(mixed $value): ?string
     {
-        $dt = $this->normalize(value: $value);
-        if ($dt === null) {
+        $datetime = $this->normalize(value: $value);
+        if ($datetime === null) {
             return null;
         }
 
-        return $dt->format(DateTimeInterface::ATOM);
+        return $datetime->format(DateTimeInterface::ATOM);
     }//end formatForIso8601()
 }//end class

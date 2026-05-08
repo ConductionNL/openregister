@@ -65,6 +65,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setGroups(?array $groups)
  * @method DateTime|null getDeleted()
  * @method void setDeleted(?DateTime $deleted)
+ * @method string|null getType()
+ * @method void setType(?string $type)
  * @method array|null getLanguages()
  * @method void setLanguages(?array $languages)
  * @method array|null getConfiguration()
@@ -248,6 +250,18 @@ class Register extends Entity implements JsonSerializable
     protected ?DateTime $depublished = null;
 
     /**
+     * Register classification, sourced from `x-openregister.type` on import.
+     *
+     * Free-form short string. Standard values are "mock" (demo/seed data
+     * registers shipped in `lib/Settings/`) and "production" (real data).
+     * Consuming apps filter by this via `GET /api/registers?filters[type]=mock`
+     * to keep mock content out of production deployments.
+     *
+     * @var string|null Register type (e.g. "mock", "production")
+     */
+    protected ?string $type = null;
+
+    /**
      * Available languages for this register.
      *
      * JSON array of BCP 47 language codes (e.g., ["nl", "en"]).
@@ -354,6 +368,7 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
+        $this->addType(fieldName: 'type', type: 'string');
         $this->addType(fieldName: 'languages', type: 'json');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'mail', type: 'json');
@@ -565,6 +580,7 @@ class Register extends Entity implements JsonSerializable
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
             'groups'        => $groups,
+            'type'          => $this->type,
             'languages'     => $this->languages,
             'configuration' => $this->configuration,
             'published'     => $published,

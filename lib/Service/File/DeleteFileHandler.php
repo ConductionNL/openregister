@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -50,13 +51,15 @@ class DeleteFileHandler
      * @param FileValidationHandler $fileValidHandler     File validation handler.
      * @param FileOwnershipHandler  $fileOwnershipHandler File ownership handler.
      * @param LoggerInterface       $logger               Logger for logging operations.
+     * @param FileLockHandler       $fileLockHandler      Lock handler used to release / verify file locks on delete.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly ReadFileHandler $readFileHandler,
         private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly FileLockHandler $fileLockHandler
     ) {
     }//end __construct()
 
@@ -100,6 +103,9 @@ class DeleteFileHandler
             );
             return false;
         }
+
+        // Reject when the file is locked by someone else.
+        $this->fileLockHandler->assertCanModify($file->getId());
 
         // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->fileValidHandler->checkOwnership($file);

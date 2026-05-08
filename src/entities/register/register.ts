@@ -14,6 +14,7 @@ export class Register implements TRegister {
 	public created: string
 	public slug: string
 	public groups?: string[]
+	public languages?: string[]
 	public quota?: TRegister['quota']
 	public usage?: TRegister['usage']
 	public stats?: TRegister['stats']
@@ -30,6 +31,7 @@ export class Register implements TRegister {
 		this.created = register.created || ''
 		this.slug = register.slug || ''
 		this.groups = register.groups || []
+		this.languages = register.languages || []
 		this.quota = register.quota || {
 			storage: null,
 			bandwidth: null,

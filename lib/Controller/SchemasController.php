@@ -444,8 +444,10 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @suppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @return JSONResponse JSON response with updated schema or error
      *

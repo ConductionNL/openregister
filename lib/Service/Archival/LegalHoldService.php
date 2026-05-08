@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
  */
 
 declare(strict_types=1);
@@ -111,8 +111,8 @@ class LegalHoldService
      *
      * @return ObjectEntity The updated object with legal hold applied.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
      */
     public function placeHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -154,8 +154,8 @@ class LegalHoldService
      *
      * @return ObjectEntity The updated object with legal hold released.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
      */
     public function releaseHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -207,7 +207,7 @@ class LegalHoldService
      *
      * @return bool True if the object has an active legal hold.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
      */
     public function hasActiveHold(ObjectEntity $object): bool
     {
@@ -224,7 +224,7 @@ class LegalHoldService
      *
      * @return bool True if the retention data indicates an active legal hold.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
      */
     public function hasActiveHoldFromRetention(array $retention): bool
     {
@@ -242,8 +242,8 @@ class LegalHoldService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
      */
     public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void
     {
@@ -277,7 +277,7 @@ class LegalHoldService
      *
      * @return string The user ID or 'system' if no user is authenticated.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
      */
     private function getCurrentUserId(): string
     {

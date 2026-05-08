@@ -6,7 +6,7 @@
  *
  * @package OpenRegister
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-51
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-51
  */
 
 import Vue from 'vue'
@@ -24,6 +24,8 @@ const SIDEBAR_ROOT_ID = 'openregister-mail-sidebar'
  * initial-state is present in the page.
  *
  * @return {boolean} True if the Mail app is initialising.
+ *
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-51
  */
 function isMailAppPage() {
 	return !!document.getElementById('initial-state-mail-accounts')

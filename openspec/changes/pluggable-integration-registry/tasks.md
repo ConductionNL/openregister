@@ -1,14 +1,17 @@
 # Tasks: Pluggable Integration Registry
 
 > The umbrella covers the contract, the registry, the migration of existing types, and the parity-gap fills. Individual new integrations are leaf changes (see proposal.md "Leaf plan").
+>
+> **ADR-028 task-cap waiver**: This umbrella exceeds the 15-task cap by design. The waiver is documented in proposal.md ("ADR-028 waiver") and the rationale is that splitting the contract, registry, built-ins, and migration across multiple changes would force interleaved depends_on chains that are harder to review and ship than one cohesive umbrella. Hydra builders SHOULD batch this umbrella across multiple turns; the leaf changes (which each stay within the cap) carry the bulk of the per-integration work.
 
 ## Backend — Provider Contract & Registry
 
-- [ ] Create `lib/Service/Integration/IntegrationProvider.php` interface (13 methods per design.md normative contract)
-- [ ] Create `lib/Service/Integration/AbstractIntegrationProvider.php` base class with sensible defaults (group=null, requiresPermission=null, authRequirements=['type'=>'none'], get() throws NotImplemented for list-only providers)
-- [ ] Create `lib/Service/Integration/IntegrationRegistry.php` — DI-tag-based discovery, `RequestScopedCache` for per-request caching, `list()`, `listIds()`, `get($id)`, `getEnabled()`
-- [ ] Create `lib/Service/Integration/ExternalIntegrationRouter.php` — routes `storage: external` providers through OpenConnector + surfaces auth status
+- [ ] Create `lib/Service/Integration/IntegrationProvider.php` interface (15 methods per design.md normative contract — includes `getStorageStrategy()` allowing `'magic-column' | 'link-table' | 'external' | 'query-time'` and `getOpenConnectorSource(): ?string`)
+- [ ] Create `lib/Service/Integration/AbstractIntegrationProvider.php` base class with sensible defaults (group=null, requiresPermission=null, authRequirements=['type'=>'none'], `getOpenConnectorSource()` returns null, get() throws NotImplemented for list-only providers)
+- [ ] Create `lib/Service/Integration/IntegrationRegistry.php` — DI-tag-based discovery, `RequestScopedCache` for per-request caching, `list()`, `listIds()`, `get($id)`, `getEnabled()`; reject providers with `storage='external'` whose `getOpenConnectorSource()` returns null
+- [ ] Create `lib/Service/Integration/ExternalIntegrationRouter.php` — routes `storage: external` providers through OpenConnector + surfaces auth status; raises `ProviderUnavailableException` with `details.cause` of `'openconnector-down' | 'openconnector-source-missing' | 'upstream-service-down'` per AD-23
 - [ ] Update `lib/AppInfo/Application.php` to register built-in providers as DI-tagged services (`IntegrationProvider` tag)
+- [ ] Define `query-time` storage-strategy contract in code: per-render timeout (default 2s) returning the documented degraded-surface signal; mutation methods throw `NotImplementedException` translated to HTTP 501 in `ObjectsController`
 
 ## Backend — Schema validator refactor
 

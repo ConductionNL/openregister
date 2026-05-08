@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-15
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ class ExportHandler
      * @param FileService     $fileService        File service
      * @param LoggerInterface $logger             PSR-3 logger
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-11
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -98,7 +98,7 @@ class ExportHandler
      *
      * @throws \Exception If export fails.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-11
      */
     public function export(
         Register $register,
@@ -214,7 +214,7 @@ class ExportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file type handlers require conditional branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Import orchestration requires comprehensive error handling
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-15
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-15
      */
     public function import(
         Register $register,
@@ -341,7 +341,7 @@ class ExportHandler
      *
      * @throws \Exception If download fails.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-11
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-11
      */
     public function downloadObjectFiles(string $objectId)
     {

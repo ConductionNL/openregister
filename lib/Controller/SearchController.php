@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-92
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -70,7 +70,7 @@ class SearchController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     public function __construct(
         string $appName,
@@ -101,7 +101,7 @@ class SearchController extends Controller
      *                                type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|mixed,
      *                                facets: array<never, never>|mixed}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
     public function search(): JSONResponse
     {
@@ -180,7 +180,7 @@ class SearchController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-92
      */
     private function processSearchQuery(string $query): string
     {

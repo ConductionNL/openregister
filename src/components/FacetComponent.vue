@@ -328,9 +328,9 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-32
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
  */
 import { NcCheckboxRadioSwitch, NcLoadingIcon, NcButton, NcSelect, NcDateTimePickerNative } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
@@ -359,7 +359,7 @@ export default {
 		 * Get object fields that support terms faceting (excluding id)
 		 * These will be shown as dropdowns
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-32
 		 */
 		termsFacetableFields() {
 			const fields = {}
@@ -375,7 +375,7 @@ export default {
 		 * Get object fields that don't support terms faceting (excluding id field)
 		 * These will be shown as checkboxes
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
 		 */
 		nonTermsObjectFieldFacets() {
 			const fields = {}
@@ -922,7 +922,7 @@ export default {
 		 * @param {object} dateRange - Date range object with min and max dates
 		 * @return {string} Formatted date range string
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
 		 */
 		formatDateRange(dateRange) {
 			if (!dateRange || !dateRange.min || !dateRange.max) {

@@ -205,6 +205,8 @@ class TablesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function syncAll(): JSONResponse
     {

@@ -97,19 +97,23 @@ Three layers decide what the user actually sees. They already exist in skeletal 
 
 **Decision**: Registering an integration without both a tab and widget component fails pre-commit (local) and fails the hydra quality gate (pipeline). No tab-only integrations permitted.
 
-**Why**: The user has explicit preference for full parity. Making parity a hard rule enforces it from day one; softer "warnings" drift. A `scripts/check-integration-parity.sh` walks each provider's JS registration and asserts both `tab` and `widget` are set to components that resolve.
+**Definition of "set"** (normative): a `tab` or `widget` value is "set" iff the key is present on the registration object, the value is non-null, non-undefined, and `typeof value === 'function'` (a Vue component constructor or async-component factory). Non-function values (`{}`, `false`, primitives) are rejected.
+
+**Why**: The user has explicit preference for full parity. Making parity a hard rule enforces it from day one; softer "warnings" drift. A `scripts/check-integration-parity.sh` walks each provider's JS registration and asserts both `tab` and `widget` are set per the definition above.
 
 **Trade-off**: Slower onboarding for a new integration — both UI surfaces must exist before merge. Acceptable: the work is small (one shell widget can wrap the tab's data for MVP), and the user experience benefit is real.
+
+**Hydra-repo gate wiring**: The hydra quality gate's parity check is wired by extending `scripts/run-hydra-gates.sh` in the hydra repo. That is a hydra-repo change, tracked as a separate one-task change in hydra (depends_on this umbrella). It is not in this umbrella's hydra.json because it touches a different repo.
 
 ### AD-4: External integrations route via OpenConnector
 
 **Decision**: Providers declare `storage: "external"` with an `openconnector_source: "..."` reference. When the sub-resource endpoint is hit, `IntegrationRegistry` delegates to the OpenConnector client, passing the object context (register/schema/id) as request context. There is no local link table for external entities; pairings are stored in OpenConnector's own pairing model or computed per-request.
 
-**Why**: OpenConnector is the existing pattern for external-service integration. Reusing it avoids inventing a second external-integration mechanism and lets OR stay focused on its own primitives. The `storage` strategy becomes a first-class switch: `magic-column` (legacy), `link-table`, `external`.
+**Why**: OpenConnector is the existing pattern for external-service integration. Reusing it avoids inventing a second external-integration mechanism and lets OR stay focused on its own primitives. The `storage` strategy becomes a first-class switch: `magic-column` (legacy), `link-table`, `external`, `query-time`. (`query-time` is documented below — used by read-only providers such as NC Activity and NC Shares that aggregate live from another NC service rather than persisting their own link rows.)
 
 **Trade-off**: External integrations are higher-latency and can fail for reasons unrelated to OR (external service down, OAuth expired). The UI must handle graceful degradation — `IntegrationProvider::health()` returns a status that the tab/widget can display.
 
-### AD-4b: Schema `linkedTypes` is the relevance layer, not the existence layer
+### AD-5: Schema `linkedTypes` is the relevance layer, not the existence layer
 
 **Decision**: `Schema::validateLinkedTypesValue()` stops comparing against the hardcoded `VALID_LINKED_TYPES` constant and instead calls `IntegrationRegistry::listIds()`. The schema's `configuration.linkedTypes` array is the **relevance filter**, not the gate on what exists. An empty/absent `linkedTypes` means "no integrations explicitly enabled" (not "all" — matches current behaviour). A present array is a whitelist.
 
@@ -117,7 +121,7 @@ Three layers decide what the user actually sees. They already exist in skeletal 
 
 **Trade-off**: Backwards-incompat risk if any current schema has `linkedTypes` referencing an id that isn't yet registered (e.g., a schema set to `["talk"]` on an instance without the Talk provider registered). Mitigated by making registration permissive of historical ids — validation warns but doesn't reject ids-not-currently-registered on READ; it only rejects on WRITE when adding a new id. A one-time migration logs any schemas with dangling linked types.
 
-### AD-4c: Widget surfaces — one component, contextual rendering
+### AD-6: Widget surfaces — one component, contextual rendering
 
 **Decision**: One widget component per integration is registered. It receives a `surface` prop at render time: `'user-dashboard' | 'app-dashboard' | 'detail-page'`. The component decides what to render per surface — typically compact summary on dashboards, richer interaction on the detail page. Extra surface variants (e.g., a distinct "collapsed kanban card" view) are declared via additional registration keys (`widgetCompact`, `widgetExpanded`) but default to the main `widget` when absent.
 
@@ -125,7 +129,7 @@ Three layers decide what the user actually sees. They already exist in skeletal 
 
 **Trade-off**: Integrations that differ dramatically across surfaces have a bulkier single component. Acceptable — and the optional `widgetCompact` / `widgetExpanded` registration keys exist for truly divergent cases. Parity gate still only requires `widget`; extras are opt-in.
 
-### AD-5: Tags and audit trail become IntegrationType entries
+### AD-7: Tags and audit trail become IntegrationType entries
 
 **Decision**: `tags` and `audit-trail` are first-class `IntegrationProvider`s, not special-case tabs. They are "built-in always-available" — their `required_app` is OpenRegister itself, so they are never absent — but they ride the same registry machinery.
 
@@ -133,7 +137,7 @@ Three layers decide what the user actually sees. They already exist in skeletal 
 
 **Trade-off**: Mild — two integrations exist "for free" that don't map to an external NC app. The registry handles this naturally; the cost is just the label `required_app: null` meaning "always available."
 
-### AD-6: Migration is structural, not data-level
+### AD-8: Migration is structural, not data-level
 
 **Decision**: The existing `LinkedEntityService::TYPE_COLUMN_MAP` constant is kept as an internal implementation detail of the built-in providers (files, notes, todos). The `openregister_*_links` tables keep their schema. Nothing moves on disk.
 
@@ -141,7 +145,7 @@ Three layers decide what the user actually sees. They already exist in skeletal 
 
 **Trade-off**: Built-in providers carry a small amount of legacy-aware code (delegating to `LinkedEntityService` internally). Acceptable; it will be cleaned up if/when storage models ever unify.
 
-### AD-7: Backwards compatibility for `CnObjectSidebar`
+### AD-9: Backwards compatibility for `CnObjectSidebar`
 
 **Decision**: The current `CnObjectSidebar` prop surface (`hidden-tabs`, `files-label`, named slots like `tab-notes`) continues to work. New consumers use the registry-driven behaviour by default; existing consumers opt out via an `integrations` prop or continue relying on slots, which still override registry-resolved components.
 
@@ -149,7 +153,7 @@ Three layers decide what the user actually sees. They already exist in skeletal 
 
 **Trade-off**: Slightly more complex rendering logic inside `CnObjectSidebar`. Offset by extensive tests.
 
-### AD-8: Leaf-change contract
+### AD-10: Leaf-change contract
 
 **Decision**: Each leaf change that adds an integration must ship:
 
@@ -168,7 +172,7 @@ Leaves that miss any of these fail the parity gate at merge time.
 
 **Trade-off**: Onboarding overhead per integration; mitigated by a scaffold script (`scripts/scaffold-integration.sh <id>`) delivered in this umbrella.
 
-### AD-9: Dashboard / detail page composition is left to consumers
+### AD-11: Dashboard / detail page composition is left to consumers
 
 **Decision**: The umbrella registers widgets; it does **not** decide which widgets appear on which dashboard or detail page. Each consuming app (OpenCatalogi, Procest, ...) composes its own surfaces by selecting a subset from `integrations.list()` and providing a layout — same mechanism for user dashboard, app dashboard, and detail page widget grid.
 
@@ -176,7 +180,16 @@ Leaves that miss any of these fail the parity gate at merge time.
 
 **Trade-off**: Each consuming app does one-time work per surface to declare its layout. Covered by `CnDashboardPage`'s existing `widgets` + `layout` props — no new mechanism needed.
 
-### AD-11: Naming collision policy
+### AD-12: Capability visibility based on installed NC apps
+
+**Decision**: `IntegrationProvider::isEnabled()` checks whether the required NC app is installed + enabled. Disabled integrations are filtered out of `IntegrationRegistry::list()`. The UI never shows a tab for a disabled integration (no "install Deck to use this" placeholders).
+
+**Why**: An integration that requires Deck shouldn't appear on a system that doesn't have Deck. Showing it then immediately failing is worse than not showing it.
+
+**Trade-off**: Consumers who want admin-facing "install this app to unlock X" prompts need to build that themselves; it's out of scope for the registry.
+
+
+### AD-13: Naming collision policy
 
 **Decision**: `integrations.register(...)` with an id already registered throws synchronously in development mode and logs a warning + keeps the first registration in production. PHP-side, two providers tagged with the same id cause container build failure (loud).
 
@@ -184,7 +197,7 @@ Leaves that miss any of these fail the parity gate at merge time.
 
 **Trade-off**: Two well-meaning apps competing for an id (`forms` from NC Forms vs `forms` from Cospend Forms) need to coordinate. The registry exposes this via the `IntegrationsController` health endpoint so admins can see collisions.
 
-### AD-13: Provider contract is "linked thing"–shaped, not NC-entity–specific
+### AD-14: Provider contract is "linked thing"–shaped, not NC-entity–specific
 
 **Decision**: Even though this umbrella ships only NC-native + external-via-OpenConnector providers, the `IntegrationProvider` interface uses generic terminology ("linked entity", "thing", "item") rather than NC-specific terms. This keeps the door open for `RelationsService` (object↔object) to be subsumed under the registry in a future change without breaking the contract.
 
@@ -192,15 +205,15 @@ Leaves that miss any of these fail the parity gate at merge time.
 
 **Trade-off**: Slightly less self-documenting — a reader has to know "this is currently NC entities only, but the contract is more general." Mitigated by clear docblock on the interface.
 
-### AD-14: External integrations declare auth requirements; OR shows admin UI
+### AD-15: External integrations declare auth requirements; OR shows admin UI
 
 **Decision**: `IntegrationProvider::authRequirements()` returns one of `'none' | 'oauth2' | 'api-key' | 'basic'` plus a config schema describing the credential shape. OpenRegister provides a unified admin UI (under settings) showing each integration's auth status, with "Configure" buttons that delegate to OpenConnector's existing credential management. The provider itself never handles credentials — it asks OpenConnector for them when making external calls.
 
 **Why**: The user picked "umbrella defines auth declaration." The motivation is unified visibility — without this, each external integration ships its own auth setup screen and admins have no central view of "what's configured / broken / expired." Reusing OpenConnector for the actual auth flow keeps OR out of the credentials business.
 
-**Trade-off**: Adds an admin UI surface (small) and a method to the provider contract. Worth it for the unified status view, especially given OCS capability advertising (AD-16) surfaces this status to clients too.
+**Trade-off**: Adds an admin UI surface (small) and a method to the provider contract. Worth it for the unified status view, especially given OCS capability advertising (AD-17) surfaces this status to clients too.
 
-### AD-15: Per-integration RBAC via optional `requiresPermission()`
+### AD-16: Per-integration RBAC via optional `requiresPermission()`
 
 **Decision**: `IntegrationProvider::requiresPermission(): ?string` defaults to `null` (no extra check). When set, it returns a permission string evaluated against the user's permissions on the object (using OR's existing `AuthorizationService`). Integrations with no extra requirement inherit access from the underlying object's RBAC + the NC app's own permissions (e.g., `calendar` integration is hidden if user can't access NC Calendar).
 
@@ -208,15 +221,20 @@ Leaves that miss any of these fail the parity gate at merge time.
 
 **Trade-off**: A permission string is less expressive than a DSL. If real cases demand more (e.g., "handler OR admin"), the contract evolves later — but YAGNI for now.
 
-### AD-16: Registry advertised via Nextcloud's OCS capabilities endpoint
+### AD-17: Registry advertised via Nextcloud's OCS capabilities endpoint (role-redacted)
 
-**Decision**: OR's `CapabilitiesService` is extended to include an `integrations` block in the response from `/ocs/v2.php/cloud/capabilities`. Block contains: `{ id, label, group, enabled, requiresPermission, authStatus, surfaces[] }` for each registered integration on the instance. Full per-object operations remain at `/api/integrations` and the sub-resource endpoints — capabilities is for *discovery*, not *operation*.
+**Decision**: OR's `CapabilitiesService` is extended to include an `integrations` block in the response from `/ocs/v2.php/cloud/capabilities`. The block is **role-redacted**:
 
-**Why**: User picked "expose via capabilities." External clients (mobile apps, partner integrations, other NC apps) get a standard discovery mechanism — they can do feature-detection without polling OR-specific endpoints. Free to add now, awkward to add later (every client would have to dual-path).
+- **All authenticated users** receive `{ id, label, group, enabled, surfaces[] }` per entry — the public surface needed to render UI / do feature detection.
+- **Admins** additionally receive `{ requiresPermission, authStatus, openConnectorSource }` per entry — the operational surface needed to manage integrations.
 
-**Trade-off**: Slightly bigger capabilities response. Mitigated by the registry being small (target: <50 integrations forever).
+Sensitive fields are *omitted* (not `null`-stubbed) for non-admins so that absence is indistinguishable from non-existence. Full per-object operations remain at `/api/integrations` and the sub-resource endpoints — capabilities is for *discovery*, not *operation*.
 
-### AD-17: Reference-property auto-rendering via `single-entity` widget surface
+**Why**: User picked "expose via capabilities." External clients (mobile apps, partner integrations, other NC apps) get a standard discovery mechanism — they can do feature-detection without polling OR-specific endpoints. Free to add now, awkward to add later (every client would have to dual-path). Role-redaction prevents leaking infrastructure-configuration gaps (`authStatus: 'expired'`) and the permission model (`requiresPermission` strings) to non-admin callers — OCS capabilities is reachable by every authenticated NC user.
+
+**Trade-off**: Slightly bigger capabilities response and a per-caller redaction step. Mitigated by the registry being small (target: <50 integrations forever).
+
+### AD-18: Reference-property auto-rendering via `single-entity` widget surface
 
 **Decision**: A new widget surface `single-entity` is added to the existing three (`user-dashboard`, `app-dashboard`, `detail-page`). When a schema property is typed as a reference to an NC entity (via a new `referenceType: <integration-id>` marker on the property), `CnFormDialog` and `CnDetailGrid` detect it and render the matching integration's widget at `surface: 'single-entity'`. The widget receives the entity id as `entityId` and renders a compact card.
 
@@ -226,10 +244,10 @@ The `referenceType` marker is added to the schema property type system as an opt
 
 **Trade-off**: This expands the umbrella significantly — `CnFormDialog`, `CnDetailGrid`, schema property types, and the widget contract all gain new responsibilities. Mitigated by:
 - Reference properties opt in via the new marker (no automatic migration of existing schemas)
-- The `single-entity` surface gracefully falls back to the main `widget` for integrations that don't ship a dedicated single-entity rendering (per AD-18)
+- The `single-entity` surface gracefully falls back to the main `widget` for integrations that don't ship a dedicated single-entity rendering (per AD-19)
 - A leaf change can opt out by not declaring `referenceType`
 
-### AD-18: New surfaces use graceful fallback to main `widget`
+### AD-19: New surfaces use graceful fallback to main `widget`
 
 **Decision**: When a render request specifies a `surface` the integration didn't register a specific widget for, the registry falls back to the main `widget` component, passing the surface name as a prop so the component can branch internally if it wants. Adding a future surface (e.g., `email-digest`, `printed-pdf`, `mobile-card`) requires zero re-registration from existing integrations — they just keep working with their main widget.
 
@@ -237,7 +255,7 @@ The `referenceType` marker is added to the schema property type system as an opt
 
 **Trade-off**: An integration's main widget might render awkwardly on a brand-new surface it wasn't designed for. Acceptable — better than every existing integration breaking when a new surface is added. Per-surface opt-in is explicit (`widgetCompact`, `widgetExpanded`, `widgetEntity`, future `widgetX`), so deliberate quality work happens where it matters.
 
-### AD-19: `LinkedEntityService::TYPE_COLUMN_MAP` deprecated, removed in follow-up
+### AD-20: `LinkedEntityService::TYPE_COLUMN_MAP` deprecated, removed in follow-up
 
 **Decision**: This umbrella marks the constant `@deprecated` with a doc-block pointing to the registry. Built-in `link-table` providers (mail, contacts, deck) use it internally for one more cycle to minimise migration risk. A follow-up change `cleanup-linked-entity-type-map` removes the constant entirely once those providers are stable and any external consumers have moved off it (we don't expect any — the constant was always private-by-convention).
 
@@ -245,21 +263,37 @@ The `referenceType` marker is added to the schema property type system as an opt
 
 **Trade-off**: A follow-up change is now obligatory. Tracked in the leaf-plan section of proposal.md as a Wave 0.5 item.
 
-### AD-12: Apps consume OR abstractions over local duplication (companion ADR)
+### AD-21: Apps consume OR abstractions over local duplication (companion ADR)
 
-**Decision**: This umbrella references — and depends on — a companion org-wide ADR ("Apps consume OpenRegister abstractions") that should live in `hydra/openspec/architecture/` (likely as ADR-019 or 020). That ADR is *not authored by this change*; it is flagged as required and tracked as a separate proposal in the hydra repo.
+**Decision**: This umbrella references — and depends on — a companion org-wide ADR ("Apps consume OpenRegister abstractions") that lives in `hydra/openspec/architecture/adr-022-apps-consume-or-abstractions.md` (companion to ADR-019 which this change instantiates). That ADR is *not authored by this change*; it is flagged as required and tracked as a separate proposal in the hydra repo.
 
 **Why**: The integration registry is a concrete instance of a broader principle: Conduction apps should hook into OpenRegister abstractions (registers, schemas, objects, integrations, RBAC, audit, archival, ...) rather than build parallel mechanisms. That principle applies far beyond integrations and deserves its own ADR. Codifying it explicitly prevents future drift where an app reinvents, say, a sidebar tab system or a relations table.
 
 **Trade-off**: This change creates a dependency on a not-yet-written ADR. Acceptable — the ADR is small, the principle is well-understood, and writing it is a parallel task that doesn't block implementation here.
 
-### AD-10: Capability visibility based on installed NC apps
+### AD-22: `query-time` storage strategy for read-only aggregators
 
-**Decision**: `IntegrationProvider::isEnabled()` checks whether the required NC app is installed + enabled. Disabled integrations are filtered out of `IntegrationRegistry::list()`. The UI never shows a tab for a disabled integration (no "install Deck to use this" placeholders).
+**Decision**: A fourth storage strategy `'query-time'` joins `magic-column`, `link-table`, `external`. Providers with this strategy persist nothing — `list()` queries the upstream NC service live on every call; `create()` / `update()` / `delete()` throw `NotImplementedException`. Used by NC Activity (leaf `integration-activity`) and NC Shares (leaf `integration-shares`).
 
-**Why**: An integration that requires Deck shouldn't appear on a system that doesn't have Deck. Showing it then immediately failing is worse than not showing it.
+**Why**: For sources OR doesn't own (Activity events, Share rows), persisting a parallel link table is busywork that creates staleness. Query-time providers stay correct by definition because they read the authoritative source.
 
-**Trade-off**: Consumers who want admin-facing "install this app to unlock X" prompts need to build that themselves; it's out of scope for the registry.
+**Trade-off**: Per-render query cost. Mitigated by:
+- A timeout contract: if the upstream query exceeds 2 seconds, the surface SHALL render the degraded ("source slow — retrying in background") state rather than blocking the request. Implementations MAY use a shorter timeout.
+- Pagination at the upstream API (NC Activity and Share Manager both support it).
+- Request-scoped caching for repeated reads within one request.
+
+**Cross-integration "OR events" in blended feeds**: A blended feed (e.g. activity tab) may include OR-internal events (objects linked, audit-trail entries). Source: OR's audit-trail provider — exposed via the same registry, queried by the consuming feed in the same render pass. No new event store is introduced.
+
+### AD-23: OpenConnector failure-path contract
+
+**Decision**: External providers (`storage='external'`) follow this contract:
+1. **Auth check is lazy.** Providers do NOT call `health()` on every render. Auth status is surfaced reactively: if a request returns 401 from the upstream service, the provider throws `ProviderAuthException` and the UI surfaces the reconnect banner. `health()` is only refreshed on demand (admin "Test connection") and from the OCS capabilities response.
+2. **Token refresh is OpenConnector-managed.** Providers call OpenConnector assuming valid tokens; OpenConnector refreshes silently when possible and reports `authStatus: 'expired'` when it cannot.
+3. **OpenConnector unavailability is distinct from upstream unavailability.** If the OpenConnector NC app itself is disabled or its source is missing, the provider throws `ProviderUnavailableException` with `details.cause = 'openconnector-down' | 'openconnector-source-missing' | 'upstream-service-down'` so the UI can render an actionable message ("Reconfigure connector" vs "Service offline").
+
+**Why**: The reactive (lazy) auth pattern avoids a per-render upstream round-trip just to check status. Distinguishing connector-down from upstream-down avoids "Service unavailable" messages when the real fix is reconnecting the connector source.
+
+**Trade-off**: Slightly richer exception payloads. Acceptable — the alternative (every external integration reinventing this) is worse.
 
 ## The contract (normative)
 
@@ -290,8 +324,23 @@ interface IntegrationProvider
     /** NC app id the integration requires, or null for always-available. */
     public function getRequiredApp(): ?string;
 
-    /** 'magic-column' | 'link-table' | 'external' */
+    /**
+     * Storage strategy. One of:
+     *   - 'magic-column' — link stored as a column on the OR object row.
+     *   - 'link-table'   — link stored in a dedicated `openregister_*_links` table.
+     *   - 'external'     — no local persistence; CRUD routed through OpenConnector.
+     *   - 'query-time'   — no local persistence; the source system is queried live on
+     *                      every `list()` call. Used by read-only/aggregating providers
+     *                      (e.g. NC Activity, NC Shares). Mutation methods on these
+     *                      providers throw `NotImplementedException`.
+     */
     public function getStorageStrategy(): string;
+
+    /**
+     * OpenConnector source id, for providers with `getStorageStrategy() === 'external'`.
+     * MUST return null for native NC and query-time integrations.
+     */
+    public function getOpenConnectorSource(): ?string;
 
     /** Whether the integration is currently usable on this NC instance. */
     public function isEnabled(): bool;
@@ -355,7 +404,7 @@ OCA.OpenRegister.integrations.register({
 })
 ```
 
-**Surface fallback rule (AD-18)**: any surface without a dedicated component falls back to `widget`, with the `surface` prop passed so the component can branch internally.
+**Surface fallback rule (AD-19)**: any surface without a dedicated component falls back to `widget`, with the `surface` prop passed so the component can branch internally.
 
 **Surface registry (current)**: `'user-dashboard' | 'app-dashboard' | 'detail-page' | 'single-entity'`. Future surfaces are added by adding a new key to the surface enum and an optional `widget<Surface>` registration key — existing integrations keep working via fallback.
 
@@ -466,7 +515,7 @@ GET    /api/integrations/{integrationId}    ← single integration metadata + he
 
 | File | Purpose |
 |---|---|
-| `hydra/openspec/architecture/adr-020-apps-consume-or-abstractions.md` | Org-wide principle ADR — flagged as required, lives in a separate hydra change |
+| `hydra/openspec/architecture/adr-022-apps-consume-or-abstractions.md` | Org-wide principle ADR — flagged as required, lives in a separate hydra change |
 
 ## Risks
 
@@ -482,8 +531,8 @@ GET    /api/integrations/{integrationId}    ← single integration metadata + he
 ## Open questions (for the umbrella only)
 
 The three pre-iteration questions have been resolved into the design:
-- Ordering — numeric `order` + optional named `group` (AD-11 / JS shape)
-- Per-app filter — `excludeIntegrations` prop, mirrors existing `hidden-tabs` (AD-7)
+- Ordering — numeric `order` + optional named `group` (AD-13 / JS shape)
+- Per-app filter — `excludeIntegrations` prop, mirrors existing `hidden-tabs` (AD-9)
 - Widget size — `defaultSize: {w, h}` at registration (JS shape)
 
-Ten new open questions surfaced during iteration are listed in the companion message — they need answers before `tasks.md` and `spec.md` can be finalised.
+All ten iteration-phase questions have been resolved and folded into the ADs above (AD-14 auth, AD-15 RBAC, AD-16 group, AD-17 OCS, AD-18 reference-property, AD-19 surface fallback, AD-20 deprecation, AD-21 companion ADR, plus schema default, and talk provider consolidation). No open questions remain for the umbrella — leaf-level questions live in each leaf's own design.md.

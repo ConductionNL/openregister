@@ -32,7 +32,7 @@ class BsnFormat implements Format
      *
      * @return bool True if data is a valid BSN, false otherwise.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-22
      */
     public function validate(mixed $data): bool
     {

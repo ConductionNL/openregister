@@ -1,6 +1,8 @@
 # Design: Integration — Maps
 
-> Umbrella decisions apply.
+> Umbrella decisions apply
+>
+> **Cross-repo note**: file paths under `nextcloud-vue/src/...` or bare component names (`CnXxxTab`, `CnXxxCard`) are **expected locations** in the `@conduction/nextcloud-vue` shared library, not binding spec. The frontend implementation PR lands in that separate repo and MAY choose different paths.
 
 ## Approach
 
