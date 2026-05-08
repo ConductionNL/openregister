@@ -26,4 +26,7 @@
     "[php]": {
         "editor.defaultFormatter": "DEVSENSE.phptools-vscode"
     },
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
 }
