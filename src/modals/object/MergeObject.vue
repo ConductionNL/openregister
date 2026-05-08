@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
@@ -177,9 +178,9 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				</div>
 			</div>
 
-			<!-- Relation Handling Options -->
+			<!-- Outgoing Relation Handling Options -->
 			<div class="options-section">
-				<h4>Relations to source object: ({{ sourceRelations.length }})</h4>
+				<h4>Outgoing relations from source object: ({{ sourceRelations.length }})</h4>
 
 				<div class="radio-options">
 					<NcCheckboxRadioSwitch
@@ -214,7 +215,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<tr>
 								<th>Related Object</th>
 								<th>Relation Type</th>
-								<th>Register/Schema</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -223,16 +223,75 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									{{ truncateText(relation.title || relation.name || relation.id, 40) }}
 								</td>
 								<td>{{ relation.relationType || 'Related' }}</td>
-								<td :title="(relation.register || 'N/A') + ' / ' + (relation.schema || 'N/A')">
-									{{ truncateText((relation.register || 'N/A') + ' / ' + (relation.schema || 'N/A'), 30) }}
-								</td>
 							</tr>
 						</tbody>
 					</table>
 				</div>
 
 				<div v-else-if="showRelationList && !sourceRelations.length" class="no-relations">
-					<p>No relations to source object</p>
+					<p>No outgoing relations from source object</p>
+				</div>
+			</div>
+
+			<!-- Incoming References Handling Options -->
+			<div class="options-section">
+				<h4>Incoming references to source object: ({{ sourceIncomingReferences.length }})</h4>
+				<p class="options-description">
+					These are objects from other schemas that reference the source object. Transferring will update their references to point to the target object.
+				</p>
+
+				<div class="radio-options">
+					<NcCheckboxRadioSwitch
+						v-model="referenceAction"
+						value="transfer"
+						name="referenceAction"
+						type="radio">
+						Transfer references to target object
+					</NcCheckboxRadioSwitch>
+					<NcCheckboxRadioSwitch
+						v-model="referenceAction"
+						value="keep"
+						name="referenceAction"
+						type="radio">
+						Don't update references
+					</NcCheckboxRadioSwitch>
+				</div>
+
+				<div class="table-toggle">
+					<NcButton type="tertiary" @click="toggleReferenceList">
+						{{ showReferenceList ? 'Hide References' : 'View References' }}
+						<template #icon>
+							<ChevronUp v-if="showReferenceList" :size="20" />
+							<ChevronDown v-else :size="20" />
+						</template>
+					</NcButton>
+				</div>
+
+				<div v-if="showReferenceList && sourceIncomingReferences.length" class="relation-list">
+					<table class="relation-table">
+						<thead>
+							<tr>
+								<th>Referencing Object</th>
+								<th>Type</th>
+								<th>Register / Schema</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="ref in sourceIncomingReferences" :key="ref.id">
+								<td :title="ref.title || ref.id">
+									{{ truncateText(ref.title || ref.id, 40) }}
+								</td>
+								<td>{{ ref.relationType || 'Related' }}</td>
+								<td :title="(ref.register || 'N/A') + ' / ' + (ref.schema || 'N/A')">
+									{{ truncateText((ref.register || 'N/A') + ' / ' + (ref.schema || 'N/A'), 30) }}
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div v-else-if="showReferenceList && !sourceIncomingReferences.length" class="no-relations">
+					<p>No incoming references to source object</p>
 				</div>
 			</div>
 		</div>
@@ -442,11 +501,14 @@ export default {
 			propertySelections: {}, // Intermediate values for NcSelect v-model
 			fileAction: 'transfer',
 			relationAction: 'transfer',
+			referenceAction: 'transfer',
 			mergeResult: null,
 			showFileList: true,
 			showRelationList: true,
+			showReferenceList: true,
 			sourceFiles: [],
 			sourceRelations: [],
+			sourceIncomingReferences: [],
 		}
 	},
 	computed: {
@@ -665,6 +727,7 @@ export default {
 					object: finalMergedData,
 					fileAction: this.fileAction,
 					relationAction: this.relationAction,
+					referenceAction: this.referenceAction,
 				})
 
 				this.mergeResult = result.data
@@ -694,6 +757,9 @@ export default {
 		toggleRelationList() {
 			this.showRelationList = !this.showRelationList
 		},
+		toggleReferenceList() {
+			this.showReferenceList = !this.showReferenceList
+		},
 		formatFileSize(bytes) {
 			if (!bytes) return 'N/A'
 			const sizes = ['Bytes', 'KB', 'MB', 'GB']
@@ -722,7 +788,7 @@ export default {
 			return types[ext] || ext?.toUpperCase() || 'Unknown'
 		},
 		async loadSourceData() {
-			// Load files and relations for the source object
+			// Load files, outgoing relations, and incoming references for the source object
 			if (!this.sourceObject) return
 
 			try {
@@ -733,14 +799,42 @@ export default {
 					this.sourceFiles = []
 				}
 
-				// Load relations - this would need to be implemented based on your API
-				// For now, we'll use a placeholder
-				this.sourceRelations = []
+				// Load outgoing relations from the source object's _relations
+				const relations = this.sourceObject?.['@self']?.relations || this.sourceObject?._relations || []
+				this.sourceRelations = (Array.isArray(relations) ? relations : []).map(rel => ({
+					id: rel,
+					title: rel,
+					relationType: 'Outgoing',
+				}))
+
+				// Load incoming references via the /used endpoint
+				const register = registerStore.registerItem?.id
+				const schema = schemaStore.schemaItem?.id
+				const objectId = this.sourceObject?.['@self']?.id
+				if (register && schema && objectId) {
+					try {
+						const response = await fetch(
+							`/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/used`,
+						)
+						const data = await response.json()
+						this.sourceIncomingReferences = (data.results || []).map(obj => ({
+							id: obj?.['@self']?.id || obj?.id,
+							title: obj?.['@self']?.name || obj?.['@self']?.title || obj?.['@self']?.id || obj?.id,
+							relationType: obj?.['@self']?.schema ? `Schema ${obj['@self'].schema}` : 'Related',
+							register: obj?.['@self']?.register || 'N/A',
+							schema: obj?.['@self']?.schema || 'N/A',
+						}))
+					} catch (error) {
+						console.error('Error loading incoming references:', error)
+						this.sourceIncomingReferences = []
+					}
+				}
 
 			} catch (error) {
 				console.error('Error loading source data:', error)
 				this.sourceFiles = []
 				this.sourceRelations = []
+				this.sourceIncomingReferences = []
 			}
 		},
 		closeModal() {
@@ -888,6 +982,12 @@ export default {
 .options-section h4 {
 	margin-bottom: 12px;
 	color: var(--color-main-text);
+}
+
+.options-description {
+	margin-bottom: 12px;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
 }
 
 .radio-options {
@@ -1062,6 +1162,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼd) {
 	color: #d19a66;
 }
+
 .codeMirrorContainer.dark :deep(.ͼd) {
 	color: #9d6c3a;
 }
@@ -1075,26 +1176,29 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line)::selection,
 .codeMirrorContainer.light :deep(.cm-line) ::selection {
 	background-color: #d7eaff !important;
-    color: black;
+	color: black;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line)::selection,
 .codeMirrorContainer.dark :deep(.cm-line) ::selection {
 	background-color: #8fb3e6 !important;
-    color: black;
+	color: black;
 }
 
 /* string */
 .codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-    color: #2d770f;
+	color: #2d770f;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-    color: #104e0c;
+	color: #104e0c;
 }
 
 /* boolean */
 .codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
 	color: #221199;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
 	color: #4026af;
 }
@@ -1103,6 +1207,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
 	color: #770088;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
 	color: #770088;
 }
@@ -1111,6 +1216,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
 	color: #8c5c2c;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
 	color: #623907;
 }

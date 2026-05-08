@@ -1,0 +1,137 @@
+{
+  "name": "AI Fixer - Error Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/5 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Check Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:5678/api/v1/executions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "10"
+            },
+            {
+              "name": "status",
+              "value": "error"
+            }
+          ]
+        }
+      },
+      "id": "get-failed-executions",
+      "name": "Get Failed Executions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const executions = $input.item.json.data || [];\nconst fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);\n\n// Filter for AI Fixer workflow failures in last 5 minutes\nconst recentFailures = executions.filter(exec => {\n  const execTime = new Date(exec.startedAt);\n  const isRecent = execTime > fiveMinutesAgo;\n  const isAIFixer = exec.workflowData?.name?.includes('AI Code Fixer');\n  return isRecent && isAIFixer;\n});\n\nif (recentFailures.length === 0) {\n  return [];\n}\n\nconst results = recentFailures.map(exec => ({\n  json: {\n    workflowName: exec.workflowData?.name || 'Unknown',\n    executionId: exec.id,\n    error: exec.data?.resultData?.error?.message || 'Unknown error',\n    startedAt: exec.startedAt,\n    stoppedAt: exec.stoppedAt,\n    duration: Math.round((new Date(exec.stoppedAt) - new Date(exec.startedAt)) / 1000),\n    hasFailure: true\n  }\n}));\n\nconsole.log(`Found ${results.length} recent AI Fixer failures`);\nreturn results;"
+      },
+      "id": "filter-ai-fixer-failures",
+      "name": "Filter AI Fixer Failures",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hasFailure }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "has-failures",
+      "name": "Has Failures?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "content": "=🚨 **AI Code Fixer Failed**\n\n**Workflow:** {{ $json.workflowName }}\n**Execution ID:** `{{ $json.executionId }}`\n**Time:** {{ $json.startedAt }}\n**Duration:** {{ $json.duration }}s\n\n**Error:**\n```\n{{ $json.error }}\n```\n\n**Actions:**\n- Check execution logs: http://localhost:5678/execution/{{ $json.executionId }}\n- Review workflow: http://localhost:5678/workflow/ai-fixer-full-cycle\n- Check git status for uncommitted changes\n\n**Note:** The workflow will automatically retry in 10 minutes.",
+        "channel": "#ai-fixer-alerts",
+        "authentication": "oAuth2"
+      },
+      "id": "send-slack-alert",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const failure = $input.item.json;\n\nconst report = {\n  title: '📊 Error Notification Sent',\n  workflow: failure.workflowName,\n  executionId: failure.executionId,\n  error: failure.error,\n  notified: true,\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('Slack notification sent for failure:', failure.executionId);\nreturn [{ json: report }];"
+      },
+      "id": "log-notification",
+      "name": "Log Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log('No recent AI Fixer failures detected');\nreturn [{ json: { status: 'ok', message: 'No failures in last 5 minutes' } }];"
+      },
+      "id": "no-failures",
+      "name": "No Failures (OK)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    }
+  ],
+  "connections": {
+    "Check Every 5 Minutes": {
+      "main": [[{"node": "Get Failed Executions"}]]
+    },
+    "Get Failed Executions": {
+      "main": [[{"node": "Filter AI Fixer Failures"}]]
+    },
+    "Filter AI Fixer Failures": {
+      "main": [[{"node": "Has Failures?"}]]
+    },
+    "Has Failures?": {
+      "main": [
+        [{"node": "Send Slack Alert"}],
+        [{"node": "No Failures (OK)"}]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [[{"node": "Log Notification"}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "ai-fixer-error-notifications",
+  "tags": []
+}
+
+
+

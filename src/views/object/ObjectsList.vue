@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
@@ -37,16 +38,16 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						</NcActionButton>
 					</NcActions>
 				</div>
-				<div v-if="objectStore.objectList.results?.length > 0 && objectStore.objectList.total > limit">
-					<span>Page {{ currentPage }} of {{ objectStore.objectList.pages }}</span>
+				<div v-if="objectStore.getCollection(objectStore.currentType).length > 0 && objectStore.getPagination(objectStore.currentType).total > limit">
+					<span>Page {{ currentPage }} of {{ objectStore.getPagination(objectStore.currentType).pages }}</span>
 					<BPagination v-model="currentPage"
 						class="listPagination"
-						:total-rows="objectStore.objectList.total"
+						:total-rows="objectStore.getPagination(objectStore.currentType).total"
 						:per-page="limit" />
 				</div>
 			</div>
-			<div v-if="objectStore.objectList.results && objectStore.objectList.results.length > 0 && !loading">
-				<NcListItem v-for="(object, i) in objectStore.objectList.results"
+			<div v-if="objectStore.getCollection(objectStore.currentType) && objectStore.getCollection(objectStore.currentType).length > 0 && !loading">
+				<NcListItem v-for="(object, i) in objectStore.getCollection(objectStore.currentType)"
 					:key="`${object}${i}`"
 					:name="object.id?.toString()"
 					:active="objectStore.objectItem?.id === object?.id"
@@ -100,7 +101,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			appearance="dark"
 			name="Loading Objects" />
 
-		<div v-if="objectStore.objectList.results?.length === 0">
+		<div v-if="objectStore.getCollection(objectStore.currentType)?.length === 0">
 			No objects have been defined yet.
 		</div>
 	</NcAppContentList>

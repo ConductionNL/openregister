@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+
 /**
  * OpenRegister Migration
  *
@@ -22,6 +22,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
@@ -31,70 +32,98 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
+ * Migration step for creating openregister_files table
+ *
  * FIXME Auto-generated migration step: Please modify to your needs!
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241216094112 extends SimpleMigrationStep
 {
-
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Execute actions before schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end preSchemaChange()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Apply schema changes
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return ISchemaWrapper
+     *
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_files') === false) {
             $table = $schema->createTable('openregister_files');
-            $table->addColumn(name: 'id', typeName: Types::BIGINT, options: ['autoincrement' => true, 'notnull' => true, 'length' => 255]);
+            $table->addColumn(
+                name: 'id',
+                typeName: Types::BIGINT,
+                options: ['autoincrement' => true, 'notnull' => true, 'length' => 255]
+            );
             $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
             $table->addColumn(name: 'filename', typeName: Types::STRING, options: ['notnull' => false, 'length' => 255]);
-            $table->addColumn(name: 'download_url', typeName: Types::STRING, options: ['notnull' => false, 'length' => 1023]);
+            $table->addColumn(
+                name: 'download_url',
+                typeName: Types::STRING,
+                options: ['notnull' => false, 'length' => 1023]
+            );
             $table->addColumn(name: 'share_url', typeName: Types::STRING, options: ['notnull' => false, 'length' => 1023]);
             $table->addColumn(name: 'access_url', typeName: Types::STRING, options: ['notnull' => false, 'length' => 1023]);
             $table->addColumn(name: 'extension', typeName: Types::STRING, options: ['notnull' => false, 'length' => 255]);
             $table->addColumn(name: 'checksum', typeName: Types::STRING, options: ['notnull' => false, 'length' => 255]);
             $table->addColumn(name: 'source', typeName: Types::INTEGER, options: ['notnull' => false, 'length' => 255]);
             $table->addColumn(name: 'user_id', typeName: Types::STRING, options: ['notnull' => false, 'length' => 255]);
-            $table->addColumn(name: 'created', typeName: Types::DATETIME_IMMUTABLE, options: ['notnull' => true, 'length' => 255]);
-            $table->addColumn(name: 'updated', typeName: Types::DATETIME_MUTABLE, options: ['notnull' => true, 'length' => 255]);
+            $table->addColumn(
+                name: 'created',
+                typeName: Types::DATETIME_IMMUTABLE,
+                options: ['notnull' => true, 'length' => 255]
+            );
+            $table->addColumn(
+                name: 'updated',
+                typeName: Types::DATETIME_MUTABLE,
+                options: ['notnull' => true, 'length' => 255]
+            );
             $table->addColumn(name: 'file_path', typeName: Types::STRING)->setNotnull(false)->setDefault(null);
 
             $table->setPrimaryKey(['id']);
-        }
+        }//end if
 
         return $schema;
-
     }//end changeSchema()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Execute actions after schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end postSchemaChange()
-
-
 }//end class

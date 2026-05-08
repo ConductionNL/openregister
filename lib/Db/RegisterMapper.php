@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Register Mapper
  *
@@ -22,6 +23,7 @@ namespace OCA\OpenRegister\Db;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -32,66 +34,131 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\FileService;
 
 /**
- * The RegisterMapper class
+ * RegisterMapper handles database operations for Register entities
  *
  * Handles database operations for Register entities with multi-tenancy support.
+ * Provides CRUD operations with automatic organisation filtering, RBAC checks,
+ * and event dispatching.
  *
- * @package OCA\OpenRegister\Db
+ * @category Mapper
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @method Register insert(Entity $entity)
+ * @method Register update(Entity $entity)
+ * @method Register insertOrUpdate(Entity $entity)
+ * @method Register delete(Entity $entity)
+ * @method Register find(int|string $id)
+ * @method Register findEntity(IQueryBuilder $query)
+ * @method Register[] findAll(int|null $limit=null, int|null $offset=null)
+ * @method list<Register> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Register>
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RegisterMapper extends QBMapper
 {
     use MultiTenancyTrait;
 
     /**
-     * The schema mapper instance
+     * Schema mapper instance
      *
-     * @var SchemaMapper
+     * Used for finding schemas associated with registers.
+     *
+     * @var SchemaMapper Schema mapper instance
      */
-    private $schemaMapper;
+    private readonly SchemaMapper $schemaMapper;
 
     /**
-     * The event dispatcher instance
+     * User session for multi-tenancy (from trait)
      *
-     * @var IEventDispatcher
+     * Used to get current user context for multi-tenancy filtering.
+     *
+     * @var IUserSession User session instance
      */
-    private $eventDispatcher;
+    protected IUserSession $userSession;
 
     /**
-     * The object entity mapper instance
+     * Group manager for RBAC (from trait)
      *
-     * @var ObjectEntityMapper
+     * Used to check user group memberships for permission verification.
+     *
+     * @var IGroupManager Group manager instance
      */
-    private readonly ObjectEntityMapper $objectEntityMapper;
+    protected IGroupManager $groupManager;
 
     /**
-     * The file service instance
+     * Event dispatcher instance
      *
-     * @var FileService
+     * Dispatches events when registers are created, updated, or deleted.
+     *
+     * @var IEventDispatcher Event dispatcher instance
      */
-    private FileService $fileService;
+    private readonly IEventDispatcher $eventDispatcher;
 
     /**
-     * App configuration for reading multitenancy settings
+     * Container for lazy resolution of MagicMapper (avoids circular DI).
      *
-     * @var IAppConfig
+     * @var \Psr\Container\ContainerInterface
      */
-    private IAppConfig $appConfig;
-
+    private readonly \Psr\Container\ContainerInterface $container;
 
     /**
-     * Constructor for RegisterMapper
+     * Organisation mapper for multi-tenancy (from trait)
      *
-     * @param IDBConnection        $db                  The database connection
-     * @param SchemaMapper         $schemaMapper        The schema mapper
-     * @param IEventDispatcher     $eventDispatcher     The event dispatcher
-     * @param ObjectEntityMapper   $objectEntityMapper  The object entity mapper
-     * @param OrganisationService  $organisationService The organisation service (for multi-tenancy)
-     * @param IUserSession         $userSession         The user session (for multi-tenancy)
-     * @param IGroupManager        $groupManager        The group manager (for RBAC)
-     * @param IAppConfig           $appConfig           App configuration for multitenancy settings
+     * Used to get active organisation and apply organisation filters.
+     *
+     * @var OrganisationMapper Organisation mapper instance
+     */
+    protected OrganisationMapper $organisationMapper;
+
+    /**
+     * App configuration for multitenancy settings
+     *
+     * Used by MultiTenancyTrait for checking multitenancy configuration.
+     *
+     * @var IAppConfig App configuration instance
+     */
+    protected IAppConfig $appConfig;
+
+    /**
+     * Request-scoped in-memory cache for find() results
+     *
+     * Prevents redundant DB queries when the same register is looked up
+     * multiple times within one request.
+     *
+     * @var array<string, Register>
+     */
+    private array $findCache = [];
+
+    /**
+     * Constructor
+     *
+     * Initializes mapper with database connection and required dependencies
+     * for multi-tenancy, RBAC, and event dispatching.
+     *
+     * @param IDBConnection                     $db                 Database connection for queries
+     * @param SchemaMapper                      $schemaMapper       Schema mapper for schema operations
+     * @param IEventDispatcher                  $eventDispatcher    Event dispatcher for register events
+     * @param \Psr\Container\ContainerInterface $container          Container for lazy MagicMapper resolution
+     * @param OrganisationMapper                $organisationMapper Organisation mapper for multi-tenancy
+     * @param IUserSession                      $userSession        User session for current user context
+     * @param IGroupManager                     $groupManager       Group manager for RBAC checks
+     * @param IAppConfig                        $appConfig          App configuration for multitenancy settings
      *
      * @return void
      */
@@ -99,164 +166,209 @@ class RegisterMapper extends QBMapper
         IDBConnection $db,
         SchemaMapper $schemaMapper,
         IEventDispatcher $eventDispatcher,
-        ObjectEntityMapper $objectEntityMapper,
-        OrganisationService $organisationService,
+        \Psr\Container\ContainerInterface $container,
+        OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
     ) {
-        parent::__construct($db, 'openregister_registers');
+        // Initialize parent mapper with table name and entity class.
+        parent::__construct(db: $db, tableName: 'openregister_registers', entityClass: Register::class);
+
+        // Store dependencies for use in mapper methods.
         $this->schemaMapper       = $schemaMapper;
         $this->eventDispatcher    = $eventDispatcher;
-        $this->objectEntityMapper = $objectEntityMapper;
-        
-        // Initialize multi-tenancy trait dependencies
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-        $this->appConfig           = $appConfig;
-
+        $this->container          = $container;
+        $this->organisationMapper = $organisationMapper;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
+        $this->appConfig          = $appConfig;
     }//end __construct()
-
 
     /**
      * Find a register by its ID, with optional extension for statistics
      *
      * Includes RBAC and organisation filtering for multi-tenancy.
      *
-     * @param int|string $id        The ID of the register to find
-     * @param array      $extend    Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published Whether to enable published bypass (default: null = check config)
-     * @param bool       $rbac      Whether to apply RBAC permission checks (default: true)
-     * @param bool       $multi     Whether to apply multi-tenancy filtering (default: true)
+     * @param int|string $id            The ID of the register to find
+     * @param array      $_extend       Optional array of extensions (e.g., ['@self.stats'])
+     * @param bool|null  $published     Whether to enable published bypass (default: null = check config)
+     * @param bool       $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool       $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @return Register The found register, possibly with stats
      *
      * @throws \Exception If RBAC permission check fails
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Find operation requires multiple lookup strategies
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
-    public function find(string | int $id, ?array $extend=[], ?bool $published = null, bool $rbac = true, bool $multi = true): Register
-    {
-        // Log search attempt for debugging
-        if (isset($this->logger) === true) {
-            $this->logger->info('[RegisterMapper] Searching for register', [
-                'identifier' => $id,
-                'rbac' => $rbac,
-                'multi' => $multi,
-                'published' => $published,
-            ]);
+    public function find(
+        string|int $id,
+        ?array $_extend=[],
+        ?bool $published=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): Register {
+        // Check request-scoped cache to avoid redundant DB queries for the same register.
+        if ($_rbac === true) {
+            $rbacFlag = '1';
+        } else {
+            $rbacFlag = '0';
         }
 
-        // Verify RBAC permission to read registers if RBAC is enabled
-        if ($rbac === true) {
+        if ($_multitenancy === true) {
+            $mtFlag = '1';
+        } else {
+            $mtFlag = '0';
+        }
+
+        $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
+        if (isset($this->findCache[$cacheKey]) === true) {
+            return $this->findCache[$cacheKey];
+        }
+
+        // Log search attempt for debugging.
+        if (isset($this->logger) === true) {
+            $this->logger->info(
+                message: '[RegisterMapper] Searching for register',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'identifier' => $id,
+                    'rbac'       => $_rbac,
+                    'multi'      => $_multitenancy,
+                    'published'  => $published,
+                ]
+            );
+        }
+
+        // Verify RBAC permission to read registers if RBAC is enabled.
+        if ($_rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
-            //$this->verifyRbacPermission('read', 'register');
+            // $this->verifyRbacPermission('read', 'register');
         }
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
-            ->from('openregister_registers')
-            ->where(
-                $qb->expr()->orX(
-                    $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
-                )
-            );
+            ->from('openregister_registers');
 
-        // Check if register exists before applying filters (for debugging)
-        $qbBeforeFilter = clone $qb;
+        // Build OR conditions for matching against id, uuid, or slug.
+        // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
+        // Slug comparison is case-insensitive using LOWER() function.
+        $lowerId      = strtolower((string) $id);
+        $orConditions = $qb->expr()->orX(
+            $qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
+            $qb->expr()->eq(
+                $qb->func()->lower('slug'),
+                $qb->createNamedParameter($lowerId, IQueryBuilder::PARAM_STR)
+            )
+        );
+
+        if (is_numeric($id) === true) {
+            $orConditions->add($qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT)));
+        }
+
+        $qb->where($orConditions);
+
+        // Check if register exists before applying filters (for debugging).
+        $qbBeforeFilter     = clone $qb;
         $existsBeforeFilter = false;
         try {
-            $testResult = $this->findEntity(query: $qbBeforeFilter);
+            $testResult         = $this->findEntity(query: $qbBeforeFilter);
             $existsBeforeFilter = true;
             if (isset($this->logger) === true) {
-                $this->logger->debug('[RegisterMapper] Register exists before filters', [
-                    'identifier' => $id,
-                    'registerId' => $testResult->getId(),
-                    'organisation' => $testResult->getOrganisation(),
-                    'published' => $testResult->getPublished(),
-                    'depublished' => $testResult->getDepublished(),
-                ]);
+                $this->logger->debug(
+                    message: '[RegisterMapper] Register exists before filters',
+                    context: [
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
+                        'identifier'   => $id,
+                        'registerId'   => $testResult->getId(),
+                        'organisation' => $testResult->getOrganisation(),
+                        'published'    => $testResult->getPublished(),
+                        'depublished'  => $testResult->getDepublished(),
+                    ]
+                );
             }
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             if (isset($this->logger) === true) {
-                $this->logger->warning('[RegisterMapper] Register does not exist in database', [
-                    'identifier' => $id,
-                ]);
+                $this->logger->warning(
+                    message: '[RegisterMapper] Register does not exist in database',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'identifier' => $id,
+                    ]
+                );
             }
-        }
-        
-        // Apply organisation filter with published entity bypass support
-        // Published registers can bypass multi-tenancy restrictions if configured
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config
-        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
-        
-        // Log multitenancy configuration
-        if (isset($this->logger) === true) {
-            $activeOrgUuids = $this->getActiveOrganisationUuids();
-            $isAdmin = false;
-            $adminOverrideEnabled = false;
-            $user = $this->userSession->getUser();
-            if ($user !== null && isset($this->groupManager) === true) {
-                $userGroups = $this->groupManager->getUserGroupIds($user);
-                $isAdmin = in_array('admin', $userGroups);
-            }
-            if ($isAdmin === true && isset($this->appConfig) === true) {
-                $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-                if (empty($multitenancyConfig) === false) {
-                    $multitenancyData = json_decode($multitenancyConfig, true);
-                    $adminOverrideEnabled = $multitenancyData['adminOverride'] ?? false;
-                }
-            }
-            
-            $this->logger->info('[RegisterMapper] Applying multitenancy filters', [
-                'identifier' => $id,
-                'multiEnabled' => $multi,
-                'enablePublished' => $enablePublished,
-                'activeOrganisations' => $activeOrgUuids,
-                'isAdmin' => $isAdmin,
-                'adminOverrideEnabled' => $adminOverrideEnabled,
-                'existsBeforeFilter' => $existsBeforeFilter,
-            ]);
-        }
-        
+        }//end try
+
+        // Apply organisation filter.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
-            tableAlias: '',
-            enablePublished: $enablePublished,
-            multiTenancyEnabled: $multi
+            multiTenancyEnabled: $_multitenancy
         );
-        
-        // Just return the entity; do not attach stats here
+
+        // Just return the entity; do not attach stats here.
         try {
-            return $this->findEntity(query: $qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Log detailed error information
-            if (isset($this->logger) === true) {
-                $this->logger->error('[RegisterMapper] Register not found after filters', [
-                    'identifier' => $id,
-                    'existsBeforeFilter' => $existsBeforeFilter,
-                    'multiEnabled' => $multi,
-                    'enablePublished' => $enablePublished,
-                    'rbacEnabled' => $rbac,
-                    'error' => $e->getMessage(),
-                ]);
+            $register = $this->findEntity(query: $qb);
+
+            // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
+            if ($_rbac === true) {
+                $rbacChar = '1';
+            } else {
+                $rbacChar = '0';
             }
+
+            if ($_multitenancy === true) {
+                $mtChar = '1';
+            } else {
+                $mtChar = '0';
+            }
+
+            $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
+            $this->findCache[$cacheKey] = $register;
+            $this->findCache[(string) $register->getId().$rbacSuffix]      = $register;
+            $this->findCache[strtolower($register->getUuid()).$rbacSuffix] = $register;
+            if ($register->getSlug() !== null) {
+                $this->findCache[strtolower($register->getSlug()).$rbacSuffix] = $register;
+            }
+
+            return $register;
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Log detailed error information.
+            if (isset($this->logger) === true) {
+                $this->logger->error(
+                    message: '[RegisterMapper] Register not found after filters',
+                    context: [
+                        'file'               => __FILE__,
+                        'line'               => __LINE__,
+                        'identifier'         => $id,
+                        'existsBeforeFilter' => $existsBeforeFilter,
+                        'multiEnabled'       => $_multitenancy,
+                        'rbacEnabled'        => $_rbac,
+                        'error'              => $e->getMessage(),
+                    ]
+                );
+            }
+
             throw $e;
-        }
-
+        }//end try
     }//end find()
-
 
     /**
      * Finds multiple registers by id
      *
-     * @param array $ids  The ids of the registers
-     * @param bool  $rbac Whether to apply RBAC permission checks (default: true)
-     * @param bool  $multi Whether to apply multi-tenancy filtering (default: true)
+     * @param array     $ids           The ids of the registers
+     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
+     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a register does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers are found
@@ -264,35 +376,43 @@ class RegisterMapper extends QBMapper
      *
      * @todo: refactor this into find all
      *
-     * @return array The registers
+     * @return Register[]
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Register>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
-    public function findMultiple(array $ids, ?bool $published = null, bool $rbac = true, bool $multi = true): array
+    public function findMultiple(array $ids, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
     {
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find($id, [], $published, $rbac, $multi);
-            } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
+                $result[] = $this->find(id: $id, published: $published, _rbac: $_rbac, _multitenancy: $_multitenancy);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException) {
+                // Catch all exceptions but do nothing.
+            } catch (\OCP\DB\Exception) {
                 // Catch all exceptions but do nothing.
             }
         }
 
         return $result;
-
     }//end findMultiple()
 
     /**
      * Find multiple registers by IDs using a single optimized query
      *
      * This method performs a single database query to fetch multiple registers,
-     * significantly improving performance compared to individual queries.
+     * register: * significantly improving performance compared to individual queries.
      *
-     * @param array $ids Array of register IDs to find
-     * @return array Associative array of ID => Register entity
+     * @param array $ids Array of register IDs to find.
+     *
+     * @return Entity&Register[]
+     *
+     * @psalm-return array<Entity&Register>
      */
     public function findMultipleOptimized(array $ids): array
     {
-        if (empty($ids)) {
+        if ($ids === []) {
             return [];
         }
 
@@ -303,33 +423,36 @@ class RegisterMapper extends QBMapper
                 $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
             );
 
-        $result = $qb->executeQuery();
+        $result    = $qb->executeQuery();
         $registers = [];
-        
-        while ($row = $result->fetch()) {
+
+        while (($row = $result->fetch()) !== false) {
             $register = new Register();
             $register = $register->fromRow($row);
             $registers[$row['id']] = $register;
         }
-        
+
         return $registers;
     }//end findMultipleOptimized()
 
-
     /**
-     * Find all registers, with optional extension for statistics
+     * Find all registers, files: with optional extension for statistics
      *
      * @param int|null   $limit            The limit of the results
      * @param int|null   $offset           The offset of the results
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
-     * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published       Whether to enable published bypass (default: null = check config)
-     * @param bool       $rbac            Whether to apply RBAC permission checks (default: true)
-     * @param bool       $multi           Whether to apply multi-tenancy filtering (default: true)
+     * @param array      $_extend          Optional array of extensions (e.g., ['@self.stats'])
+     * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
+     * @param bool       $_rbac            Whether to apply RBAC permission checks (default: true)
+     * @param bool       $_multitenancy    Whether to apply multi-tenancy filtering (default: true)
      *
-     * @return array Array of found registers, possibly with stats
+     * @return Register[]
+     *
+     * @psalm-return                                  list<OCA\OpenRegister\Db\Register>
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
     public function findAll(
         ?int $limit=null,
@@ -337,59 +460,58 @@ class RegisterMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[],
-        ?bool $published = null,
-        bool $rbac = true,
-        bool $multi = true
+        ?array $_extend=[],
+        ?bool $published=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): array {
-        // Verify RBAC permission to read registers if RBAC is enabled
-        if ($rbac === true) {
+        // Verify RBAC permission to read registers if RBAC is enabled.
+        if ($_rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
-            //$this->verifyRbacPermission('read', 'register');
+            // $this->verifyRbacPermission('read', 'register');
         }
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
             ->setMaxResults($limit)
-            ->setFirstResult($offset);
-        
-        foreach ($filters as $filter => $value) {
+            ->setFirstResult($offset ?? 0);
+
+        foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                continue;
             }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
-            foreach ($searchParams as $param => $value) {
+            foreach ($searchParams ?? [] as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }
 
         // Apply organisation filter with published entity bypass support
         // Published registers can bypass multi-tenancy restrictions if configured
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config
-        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
+        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally
+        // Apply organisation filter.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
-            tableAlias: '',
-            enablePublished: $enablePublished,
-            multiTenancyEnabled: $multi
+            multiTenancyEnabled: $_multitenancy
         );
 
-        // Just return the entities; do not attach stats here
+        // Just return the entities; do not attach stats here.
         return $this->findEntities(query: $qb);
-
     }//end findAll()
-
 
     /**
      * Insert a new entity
@@ -400,28 +522,26 @@ class RegisterMapper extends QBMapper
      *
      * @return Entity The inserted entity
      *
-     * @throws \Exception If RBAC permission check fails
+     * @throws         \Exception If RBAC permission check fails
+     * @psalm-suppress LessSpecificImplementedReturnType - Register is more specific than Entity
      */
     public function insert(Entity $entity): Entity
     {
         // Verify RBAC permission to create registers
         // $this->verifyRbacPermission('create', 'register');
+        // Auto-set organisation from active session.
+        $this->setOrganisationOnCreate(entity: $entity);
 
-        // Auto-set organisation from active session
-        $this->setOrganisationOnCreate($entity);
-        
-        // Auto-set owner from current user session
-        $this->setOwnerOnCreate($entity);
+        // Auto-set owner from current user session.
+        $this->setOwnerOnCreate(entity: $entity);
 
-        $entity = parent::insert($entity);
+        $entity = parent::insert(entity: $entity);
 
         // Dispatch creation event.
-        $this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent(register: $entity));
 
         return $entity;
-
     }//end insert()
-
 
     /**
      * Ensures that a register object has a UUID and a slug.
@@ -429,18 +549,20 @@ class RegisterMapper extends QBMapper
      * @param Register $register The register object to clean
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
      */
     private function cleanObject(Register $register): void
     {
         // Check if UUID is set, if not, generate a new one.
         if ($register->getUuid() === null) {
-            $register->setUuid(Uuid::v4());
+            $register->setUuid((string) Uuid::v4());
         }
 
         // Ensure the object has a slug.
         if (empty($register->getSlug()) === true) {
             // Convert to lowercase and replace spaces with dashes.
-            $slug = strtolower(trim($register->getTitle()));
+            $slug = strtolower(trim($register->getTitle() ?? 'register'));
             // Assuming title is used for slug.
             // Remove special characters.
             $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
@@ -461,9 +583,7 @@ class RegisterMapper extends QBMapper
         if ($register->getSource() === null || $register->getSource() === '') {
             $register->setSource('internal');
         }
-
     }//end cleanObject()
-
 
     /**
      * Create a new register from an array of data
@@ -478,14 +598,12 @@ class RegisterMapper extends QBMapper
         $register->hydrate(object: $object);
 
         // Clean the register object to ensure UUID, slug, and version are set.
-        $this->cleanObject($register);
+        $this->cleanObject(register: $register);
 
         $register = $this->insert(entity: $register);
 
         return $register;
-
     }//end createFromArray()
-
 
     /**
      * Update an entity
@@ -493,16 +611,17 @@ class RegisterMapper extends QBMapper
      * @param Entity $entity The entity to update
      *
      * @return Entity The updated entity
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType - Register is more specific than Entity
      */
     public function update(Entity $entity): Entity
     {
         // Verify RBAC permission to update registers
         // $this->verifyRbacPermission('update', 'register');
+        // Verify entity belongs to active organisation.
+        $this->verifyOrganisationAccess(entity: $entity);
 
-        // Verify entity belongs to active organisation
-        $this->verifyOrganisationAccess($entity);
-
-        // Fetch old entity directly without organisation filter for event comparison
+        // Fetch old entity directly without organisation filter for event comparison.
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_registers')
@@ -510,17 +629,15 @@ class RegisterMapper extends QBMapper
         $oldSchema = $this->findEntity(query: $qb);
 
         // Clean the register object to ensure UUID, slug, and version are set.
-        $this->cleanObject($entity);
+        $this->cleanObject(register: $entity);
 
-        $entity = parent::update($entity);
+        $entity = parent::update(entity: $entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent($entity, $oldSchema));
+        $this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent(newRegister: $entity, oldRegister: $oldSchema));
 
         return $entity;
-
     }//end update()
-
 
     /**
      * Update an existing register from an array of data
@@ -532,26 +649,28 @@ class RegisterMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Register
     {
-        $register = $this->find($id);
+        // Disable multitenancy filtering for update operations.
+        // When updating by ID, we want to find the register regardless of organisation.
+        // Access verification happens in update() method via verifyOrganisationAccess().
+        $register = $this->find(id: $id, _multitenancy: false);
 
         // Set or update the version.
         if (isset($object['version']) === false) {
-            $version    = explode('.', $register->getVersion());
-            $version[2] = ((int) $version[2] + 1);
+            $currentVersion = $register->getVersion() ?? '0.0.0';
+            $version        = explode('.', $currentVersion);
+            $version[2]     = ((int) $version[2] + 1);
             $register->setVersion(implode('.', $version));
         }
 
-        $register->hydrate($object);
+        $register->hydrate(object: $object);
 
-        // Clean the register object to ensure UUID, slug, and version are set.
-        $this->cleanObject($register);
+        // Clean the register object to ensure UUID, extend: slug, files: and version are set.
+        $this->cleanObject(register: $register);
 
-        $register = $this->update($register);
+        $register = $this->update(entity: $register);
 
         return $register;
-
     }//end updateFromArray()
-
 
     /**
      * Delete a register only if no objects are attached
@@ -566,80 +685,95 @@ class RegisterMapper extends QBMapper
     {
         // Verify RBAC permission to delete registers
         // $this->verifyRbacPermission('delete', 'register');
+        // Verify entity belongs to active organisation.
+        $this->verifyOrganisationAccess(entity: $entity);
 
-        // Verify entity belongs to active organisation
-        $this->verifyOrganisationAccess($entity);
-
-        // Check for attached objects before deleting
-        $registerId = method_exists($entity, 'getId') ? $entity->getId() : $entity->id;
-        $stats      = $this->objectEntityMapper->getStatistics($registerId, null);
-        if (($stats['total'] ?? 0) > 0) {
-            throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete register: objects are still attached.');
+        // Check for attached objects before deleting.
+        $registerId = $entity->id;
+        if (method_exists($entity, 'getId') === true) {
+            $registerId = $entity->getId();
         }
 
-        // Proceed with deletion if no objects are attached
-        $result = parent::delete($entity);
+        $objectEntityMapper = $this->container->get(MagicMapper::class);
+        $stats = $objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+        if (($stats['total'] ?? 0) > 0) {
+            throw new ValidationException(message: 'Cannot delete register: objects are still attached.');
+        }
+
+        // Proceed with deletion if no objects are attached.
+        $result = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
         $this->eventDispatcher->dispatchTyped(
-            new RegisterDeletedEvent($entity)
+            new RegisterDeletedEvent(register: $entity)
         );
 
         return $result;
-
     }//end delete()
-
 
     /**
      * Get all schemas associated with a register
      *
-     * @param int      $registerId The ID of the register
-     * @param bool|null $published  Whether to enable published bypass (default: null = check config)
-     * @param bool     $rbac       Whether to apply RBAC permission checks (default: true)
-     * @param bool     $multi      Whether to apply multi-tenancy filtering (default: true)
+     * @param int       $registerId    The ID of the register
+     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
+     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
-     * @return array Array of schemas
+     * @return Schema[]
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
-    public function getSchemasByRegisterId(int $registerId, ?bool $published = null, bool $rbac = true, bool $multi = true): array
-    {
-        $register  = $this->find($registerId, [], $published, $rbac, $multi);
+    public function getSchemasByRegisterId(
+        int $registerId,
+        ?bool $published=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): array {
+        $register  = $this->find(
+            id: $registerId,
+            _extend: [],
+            published: $published,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
         $schemaIds = $register->getSchemas();
 
         $schemas = [];
 
         // Fetch each schema by its ID.
-        // Use $multi=false to bypass organization filter since the register has already passed access checks
-        // This ensures schemas linked to accessible registers can always be found
-        foreach ($schemaIds as $schemaId) {
+        // Use $_multitenancy=false to bypass organization filter since the register has already passed access checks.
+        // This ensures schemas linked to accessible registers can always be found.
+        foreach ($schemaIds ?? [] as $schemaId) {
             try {
-                $schemas[] = $this->schemaMapper->find((int) $schemaId, [], $published, $rbac, false);
+                $schemas[] = $this->schemaMapper->find((int) $schemaId, [], $published, $_rbac, false);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Schema not found, skip it (similar to RegistersController behavior)
+                // Schema not found, skip it (similar to RegistersController behavior).
                 continue;
             }
         }
 
         return $schemas;
-
     }//end getSchemasByRegisterId()
-
 
     /**
      * Retrieves the ID of the first register that includes the given schema ID.
      *
      * This method searches the `openregister_registers` table for a register
-     * whose `schemas` field (a string) contains the specified schema ID, using
-     * a regular expression for exact word matching. If a match is found, the ID
-     * of the first such register is returned. Otherwise, it returns null.
+     * whose `schemas` field (a string) contains the specified schema ID, register: using
+     * a regular expression for exact word matching. If a match is found, schema: the ID
+     * of the first such register is returned. Otherwise, extend: it returns null.
      *
-     * @param  int $schemaId The ID of the schema to search for.
-     * @return int|null The ID of the first matching register, or null if none found.
+     * @param int $schemaId The ID of the schema to search for.
+     *
+     * @return int|null The ID of the first matching register, files: or null if none found.
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
         $qb = $this->db->getQueryBuilder();
 
-        // REGEXP: match number with optional whitespace and newlines
+        // REGEXP: match number with optional whitespace and newlines.
         $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
 
         $qb->select('id')
@@ -650,10 +784,12 @@ class RegisterMapper extends QBMapper
 
         $result = $qb->executeQuery()->fetchOne();
 
-        return $result !== false ? (int) $result : null;
+        if ($result !== false) {
+            return (int) $result;
+        }
 
+        return null;
     }//end getFirstRegisterWithSchema()
-
 
     /**
      * Check if a register has a schema with a specific title
@@ -661,11 +797,11 @@ class RegisterMapper extends QBMapper
      * @param int    $registerId  The ID of the register
      * @param string $schemaTitle The title of the schema to look for
      *
-     * @return Schema|null The schema if found, null otherwise
+     * @return Schema|null The schema if found, multi: null otherwise
      */
     public function hasSchemaWithTitle(int $registerId, string $schemaTitle): ?Schema
     {
-        $schemas = $this->getSchemasByRegisterId($registerId);
+        $schemas = $this->getSchemasByRegisterId(registerId: $registerId);
 
         // Check each schema for a matching title.
         foreach ($schemas as $schema) {
@@ -675,9 +811,7 @@ class RegisterMapper extends QBMapper
         }
 
         return null;
-
     }//end hasSchemaWithTitle()
-
 
     /**
      * Get all register ID to slug mappings
@@ -692,14 +826,12 @@ class RegisterMapper extends QBMapper
 
         $result   = $qb->executeQuery();
         $mappings = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $mappings[$row['id']] = $row['slug'];
         }
 
         return $mappings;
-
     }//end getIdToSlugMap()
-
 
     /**
      * Get all register slug to ID mappings
@@ -714,13 +846,10 @@ class RegisterMapper extends QBMapper
 
         $result   = $qb->executeQuery();
         $mappings = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $mappings[$row['slug']] = $row['id'];
         }
 
         return $mappings;
-
     }//end getSlugToIdMap()
-
-
 }//end class

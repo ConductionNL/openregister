@@ -1,0 +1,505 @@
+{
+	"info": {
+		"name": "OpenRegister GraphQL API Tests",
+		"description": "Integration tests for the OpenRegister GraphQL API endpoint.\n\nTests cover: introspection, schema generation, queries, mutations, pagination, filtering, error handling, complexity analysis, and rate limiting.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
+			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8080" },
+		{ "key": "admin_user", "value": "admin" },
+		{ "key": "admin_password", "value": "admin" },
+		{ "key": "test_register_id", "value": "" },
+		{ "key": "test_schema_id", "value": "" },
+		{ "key": "test_object_uuid", "value": "" },
+		{ "key": "test_schema_slug", "value": "" }
+	],
+	"item": [
+		{
+			"name": "Setup: Create Test Register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Register created (200/201)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});",
+							"var body = pm.response.json();",
+							"pm.collectionVariables.set('test_register_id', body.id || body.data?.id);",
+							"pm.test('Register has ID', function () {",
+							"    pm.expect(pm.collectionVariables.get('test_register_id')).to.exist;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Newman GraphQL Test Register\", \"description\": \"Test register for GraphQL Newman tests\", \"schemas\": []}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers"
+			}
+		},
+		{
+			"name": "Setup: Create Test Schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Schema created (200/201)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});",
+							"var body = pm.response.json();",
+							"pm.collectionVariables.set('test_schema_id', body.id || body.data?.id);",
+							"pm.collectionVariables.set('test_schema_slug', body.slug || body.data?.slug);",
+							"pm.test('Schema has ID', function () {",
+							"    pm.expect(pm.collectionVariables.get('test_schema_id')).to.exist;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Newman GraphQL Meldingen\", \"description\": \"Test schema for GraphQL tests\", \"properties\": {\"title\": {\"type\": \"string\"}, \"status\": {\"type\": \"string\"}, \"priority\": {\"type\": \"integer\"}, \"email\": {\"type\": \"string\", \"format\": \"email\"}}, \"required\": [\"title\"]}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas"
+			}
+		},
+		{
+			"name": "Setup: Link Schema to Register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Register updated (200)', function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"schemas\": [{{test_schema_id}}]}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{test_register_id}}"
+			}
+		},
+		{
+			"name": "1. Introspection: Schema types exist",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var body = pm.response.json();",
+							"pm.test('Has data field', function () {",
+							"    pm.expect(body).to.have.property('data');",
+							"});",
+							"pm.test('Has __schema with types', function () {",
+							"    pm.expect(body.data).to.have.property('__schema');",
+							"    pm.expect(body.data.__schema).to.have.property('types');",
+							"});",
+							"var typeNames = body.data.__schema.types.map(t => t.name);",
+							"pm.test('Has Query type', function () {",
+							"    pm.expect(typeNames).to.include('Query');",
+							"});",
+							"pm.test('Has Mutation type', function () {",
+							"    pm.expect(typeNames).to.include('Mutation');",
+							"});",
+							"pm.test('Has PageInfo type', function () {",
+							"    pm.expect(typeNames).to.include('PageInfo');",
+							"});",
+							"pm.test('Has DateTime scalar', function () {",
+							"    pm.expect(typeNames).to.include('DateTime');",
+							"});",
+							"pm.test('Has UUID scalar', function () {",
+							"    pm.expect(typeNames).to.include('UUID');",
+							"});",
+							"pm.test('Has Email scalar', function () {",
+							"    pm.expect(typeNames).to.include('Email');",
+							"});",
+							"pm.test('Has JSON scalar', function () {",
+							"    pm.expect(typeNames).to.include('JSON');",
+							"});",
+							"pm.test('Has AuditTrailEntry type', function () {",
+							"    pm.expect(typeNames).to.include('AuditTrailEntry');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"{ __schema { types { name } } }\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "2. Complexity info in extensions",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var body = pm.response.json();",
+							"pm.test('Has extensions.complexity', function () {",
+							"    pm.expect(body).to.have.property('extensions');",
+							"    pm.expect(body.extensions).to.have.property('complexity');",
+							"});",
+							"pm.test('Complexity has expected fields', function () {",
+							"    var c = body.extensions.complexity;",
+							"    pm.expect(c).to.have.property('estimated');",
+							"    pm.expect(c).to.have.property('max');",
+							"    pm.expect(c).to.have.property('depth');",
+							"    pm.expect(c).to.have.property('maxDepth');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"{ __schema { queryType { name } } }\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "3. Invalid query returns error",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"var body = pm.response.json();",
+							"pm.test('Has errors array', function () {",
+							"    pm.expect(body).to.have.property('errors');",
+							"    pm.expect(body.errors).to.be.an('array').that.is.not.empty;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"{ thisFieldDoesNotExist }\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "4. Missing query field returns 400",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"var body = pm.response.json();",
+							"pm.test('Error mentions query field', function () {",
+							"    pm.expect(body.errors[0].message).to.include('query');",
+							"});",
+							"pm.test('Error code is BAD_REQUEST', function () {",
+							"    pm.expect(body.errors[0].extensions.code).to.equal('BAD_REQUEST');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"notQuery\": \"test\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "5. Syntax error returns error",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"var body = pm.response.json();",
+							"pm.test('Has errors', function () {",
+							"    pm.expect(body).to.have.property('errors');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"{ broken query {{\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "6. PageInfo type has required fields",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var body = pm.response.json();",
+							"var fields = body.data.__type.fields.map(f => f.name);",
+							"pm.test('Has hasNextPage', function () { pm.expect(fields).to.include('hasNextPage'); });",
+							"pm.test('Has hasPreviousPage', function () { pm.expect(fields).to.include('hasPreviousPage'); });",
+							"pm.test('Has startCursor', function () { pm.expect(fields).to.include('startCursor'); });",
+							"pm.test('Has endCursor', function () { pm.expect(fields).to.include('endCursor'); });"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"{ __type(name: \\\"PageInfo\\\") { fields { name } } }\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "7. AuditTrailEntry type fields",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var body = pm.response.json();",
+							"var fields = body.data.__type.fields.map(f => f.name);",
+							"pm.test('Has action', function () { pm.expect(fields).to.include('action'); });",
+							"pm.test('Has user', function () { pm.expect(fields).to.include('user'); });",
+							"pm.test('Has changed', function () { pm.expect(fields).to.include('changed'); });",
+							"pm.test('Has created', function () { pm.expect(fields).to.include('created'); });"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"{ __type(name: \\\"AuditTrailEntry\\\") { fields { name } } }\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "8. Connection type has edges and pageInfo",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var body = pm.response.json();",
+							"var types = body.data.__schema.types;",
+							"var connectionTypes = types.filter(t => t.name.endsWith('Connection'));",
+							"pm.test('Has at least one Connection type', function () {",
+							"    pm.expect(connectionTypes.length).to.be.above(0);",
+							"});",
+							"var conn = connectionTypes[0];",
+							"var fieldNames = conn.fields.map(f => f.name);",
+							"pm.test('Connection has edges', function () { pm.expect(fieldNames).to.include('edges'); });",
+							"pm.test('Connection has pageInfo', function () { pm.expect(fieldNames).to.include('pageInfo'); });",
+							"pm.test('Connection has totalCount', function () { pm.expect(fieldNames).to.include('totalCount'); });",
+							"pm.test('Connection has facets', function () { pm.expect(fieldNames).to.include('facets'); });"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"{ __schema { types { name fields { name } } } }\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "9. Query type has register field",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var body = pm.response.json();",
+							"var fieldNames = body.data.__type.fields.map(f => f.name);",
+							"pm.test('Has register query', function () {",
+							"    pm.expect(fieldNames).to.include('register');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"{ __type(name: \\\"Query\\\") { fields { name } } }\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "10. Mutation type has create/update/delete",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Response is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var body = pm.response.json();",
+							"var fieldNames = body.data.__type.fields.map(f => f.name);",
+							"pm.test('Has create mutations', function () {",
+							"    var creates = fieldNames.filter(n => n.startsWith('create'));",
+							"    pm.expect(creates.length).to.be.above(0);",
+							"});",
+							"pm.test('Has update mutations', function () {",
+							"    var updates = fieldNames.filter(n => n.startsWith('update'));",
+							"    pm.expect(updates.length).to.be.above(0);",
+							"});",
+							"pm.test('Has delete mutations', function () {",
+							"    var deletes = fieldNames.filter(n => n.startsWith('delete'));",
+							"    pm.expect(deletes.length).to.be.above(0);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"{ __type(name: \\\"Mutation\\\") { fields { name } } }\"}"
+				},
+				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+			}
+		},
+		{
+			"name": "Cleanup: Delete Test Schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Schema deleted (200/204)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{test_schema_id}}"
+			}
+		},
+		{
+			"name": "Cleanup: Delete Test Register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Register deleted (200/204)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{test_register_id}}"
+			}
+		}
+	]
+}

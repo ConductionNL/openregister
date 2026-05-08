@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectDeletedEvent
  *
@@ -35,7 +36,6 @@ class ObjectDeletedEvent extends Event
      */
     private ObjectEntity $object;
 
-
     /**
      * Constructor for ObjectDeletedEvent
      *
@@ -47,9 +47,7 @@ class ObjectDeletedEvent extends Event
     {
         parent::__construct();
         $this->object = $object;
-
     }//end __construct()
-
 
     /**
      * Get the deleted object entity
@@ -59,8 +57,5 @@ class ObjectDeletedEvent extends Event
     public function getObject(): ObjectEntity
     {
         return $this->object;
-
     }//end getObject()
-
-
 }//end class

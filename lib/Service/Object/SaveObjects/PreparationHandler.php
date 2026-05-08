@@ -1,0 +1,283 @@
+<?php
+
+/**
+ * PreparationHandler
+ *
+ * This file is part of the OpenRegister app for Nextcloud.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+ */
+
+namespace OCA\OpenRegister\Service\Object\SaveObjects;
+
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
+use DateTime;
+use Exception;
+
+/**
+ * Handles preparation of objects for bulk save operations.
+ *
+ * This handler is responsible for:
+ * - Schema loading and caching
+ * - Metadata hydration
+ * - UUID generation
+ * - Auto-publish logic
+ * - Relations scanning
+ * - Pre-validation cascading
+ *
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+ * @version  1.0.0
+ */
+class PreparationHandler
+{
+
+    /**
+     * Static cache for schemas to avoid repeated DB queries.
+     *
+     * @var array<int|string, Schema>
+     */
+    private static array $schemaCache = [];
+
+    /**
+     * Constructor for PreparationHandler.
+     *
+     * @param SaveObject            $saveHandler      Handler for save operations.
+     * @param SchemaMapper          $schemaMapper     Mapper for schema operations.
+     * @param BulkValidationHandler $bulkValidHandler Handler for schema analysis.
+     * @param IUserSession          $userSession      User session for owner assignment.
+     */
+    public function __construct(
+        private readonly SaveObject $saveHandler,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly BulkValidationHandler $bulkValidHandler,
+        // REMOVED: private readonly.
+        private readonly IUserSession $userSession,
+    ) {
+    }//end __construct()
+
+    /**
+     * Prepare objects for bulk save operations.
+     *
+     * This method prepares objects by:
+     * - Loading and caching schemas
+     * - Hydrating metadata (name, description, summary, etc.)
+     * - Generating UUIDs for new objects
+     * - Scanning for relations
+     * - Handling pre-validation cascading
+     *
+     * @param array $objects Array of objects to prepare.
+     *
+     * @return array Array containing [prepared objects, schema cache, invalid objects].
+     *
+     * @throws Exception If schema not found or other preparation errors.
+     *
+     * @psalm-param    array<int, array<string, mixed>> $objects
+     * @phpstan-param  array<int, array<string, mixed>> $objects
+     * @psalm-return   array{0: array<int, array<string, mixed>>,
+     *     1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
+     * @phpstan-return array{0: array<int, array<string, mixed>>,
+     *     1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex metadata hydration and schema processing
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for metadata extraction
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete preparation pipeline with multiple steps
+     */
+    public function prepareObjectsForBulkSave(array $objects): array
+    {
+        // Early return for empty arrays.
+        if (empty($objects) === true) {
+            return [[], [], []];
+        }
+
+        $preparedObjects = [];
+        $schemaCache     = [];
+        $schemaAnalysis  = [];
+        $invalidObjects  = [];
+
+        // PERFORMANCE OPTIMIZATION: Build comprehensive schema analysis cache first.
+        $schemaIds = [];
+        foreach ($objects as $object) {
+            $selfData = $object['@self'] ?? [];
+            $schemaId = $selfData['schema'] ?? null;
+            if (($schemaId !== null) === true && in_array($schemaId, $schemaIds, true) === false) {
+                $schemaIds[] = $schemaId;
+            }
+        }
+
+        // PERFORMANCE OPTIMIZATION: Load and analyze all schemas with caching.
+        foreach ($schemaIds as $schemaId) {
+            // Load schema (implementation would use schema mapper).
+            // For this extracted handler, we assume schema loading is done externally.
+            // This is a placeholder - actual implementation needs schema mapper injection.
+            $schema = $this->loadSchemaWithCache(schemaId: $schemaId);
+            $schemaCache[$schemaId] = $schema;
+
+            // Get schema analysis (implementation would use bulk validation handler).
+            $schemaAnalysis[$schemaId] = $this->getSchemaAnalysisWithCache(schema: $schema);
+        }
+
+        // Pre-process objects using cached schema analysis.
+        foreach ($objects as $index => $object) {
+            $selfData = $object['@self'] ?? [];
+            $schemaId = $selfData['schema'] ?? null;
+
+            // Allow objects without schema ID to pass through - they'll be caught in transformation.
+            if ($schemaId === null || $schemaId === '') {
+                $preparedObjects[$index] = $object;
+                continue;
+            }
+
+            // Schema validation - direct error if not found in cache.
+            if (isset($schemaCache[$schemaId]) === false) {
+                throw new Exception("Schema {$schemaId} not found in cache during preparation");
+            }
+
+            $schema = $schemaCache[$schemaId];
+
+            // Accept any non-empty string as ID, generate UUID if not provided.
+            $providedId = $selfData['id'] ?? null;
+            if (($providedId === null) === true || empty(trim($providedId)) === true) {
+                // No ID provided or empty - generate new UUID.
+                $selfData['id']  = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+                $object['@self'] = $selfData;
+            }
+
+            // METADATA HYDRATION: Create temporary entity for metadata extraction.
+            $tempEntity = new ObjectEntity();
+            $tempEntity->setObject($object);
+
+            // Hydrate @self data into the entity before calling hydrateObjectMetadata.
+            if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
+                $tempEntity->hydrate($object['@self']);
+            }//end if
+
+            $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schema);
+
+            // Extract hydrated metadata back to object's @self data.
+            $selfData = $object['@self'] ?? [];
+            if ($tempEntity->getName() !== null) {
+                $selfData['name'] = $tempEntity->getName();
+            }
+
+            if ($tempEntity->getDescription() !== null) {
+                $selfData['description'] = $tempEntity->getDescription();
+            }
+
+            if ($tempEntity->getSummary() !== null) {
+                $selfData['summary'] = $tempEntity->getSummary();
+            }
+
+            if ($tempEntity->getImage() !== null) {
+                $selfData['image'] = $tempEntity->getImage();
+            }
+
+            if ($tempEntity->getSlug() !== null) {
+                $selfData['slug'] = $tempEntity->getSlug();
+            }
+
+            // RELATIONS EXTRACTION: Scan the object data for relations.
+            $objDataForRels = $tempEntity->getObject();
+            $relations      = $this->saveHandler->scanForRelations(data: $objDataForRels, prefix: '', schema: $schema);
+            $selfData['relations'] = $relations;
+
+            $object['@self'] = $selfData;
+
+            // Handle pre-validation cascading (placeholder - needs actual implementation).
+            $processedObject = $this->handlePreValidationCascading(object: $object, uuid: $selfData['id']);
+
+            $preparedObjects[$index] = $processedObject;
+        }//end foreach
+
+        // PERFORMANCE OPTIMIZATION: Handle bulk inverse relations (placeholder).
+        $this->handleBulkInverseRelationsWithAnalysis(preparedObjects: $preparedObjects, schemaAnalysis: $schemaAnalysis);
+
+        // Return prepared objects, schema cache, and any invalid objects.
+        return [array_values($preparedObjects), $schemaCache, $invalidObjects];
+    }//end prepareObjectsForBulkSave()
+
+    /**
+     * Load schema with caching.
+     *
+     * @param int|string $schemaId The schema ID to load.
+     *
+     * @return Schema The loaded schema.
+     */
+    private function loadSchemaWithCache($schemaId): Schema
+    {
+        // Check static cache first.
+        if ((self::$schemaCache[$schemaId] ?? null) !== null) {
+            return self::$schemaCache[$schemaId];
+        }
+
+        // Load from database and cache.
+        $schema = $this->schemaMapper->find($schemaId);
+        self::$schemaCache[$schemaId] = $schema;
+
+        return $schema;
+    }//end loadSchemaWithCache()
+
+    /**
+     * Get schema analysis with caching.
+     *
+     * @param Schema $schema The schema to analyze.
+     *
+     * @return array The schema analysis with metadataFields, inverseProperties, and configuration.
+     */
+    private function getSchemaAnalysisWithCache(Schema $schema): array
+    {
+        // Delegate to BulkValidationHandler for comprehensive schema analysis.
+        return $this->bulkValidHandler->performComprehensiveSchemaAnalysis($schema);
+    }//end getSchemaAnalysisWithCache()
+
+    /**
+     * Handle pre-validation cascading.
+     *
+     * @param array  $object The object to process.
+     * @param string $uuid   The object UUID.
+     *
+     * @return array The processed object.
+     */
+    private function handlePreValidationCascading(array $object, string $uuid): array
+    {
+        // Delegate to BulkValidationHandler for pre-validation cascading.
+        [$processedObject, $processedUuid] = $this->bulkValidHandler->handlePreValidationCascading(
+            object: $object,
+            uuid: $uuid
+        );
+        // Suppress unused variable warning for $processedUuid - it's part of the tuple return.
+        unset($processedUuid);
+        return $processedObject;
+    }//end handlePreValidationCascading()
+
+    /**
+     * Handle bulk inverse relations with analysis.
+     *
+     * @param array $preparedObjects The prepared objects.
+     * @param array $schemaAnalysis  The schema analysis.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    private function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
+    {
+        // This method is handled internally by SaveObjects for performance.
+        // For now, we skip it in the handler to avoid circular dependencies.
+        // Params are kept for API consistency when method is implemented.
+        unset($preparedObjects, $schemaAnalysis);
+    }//end handleBulkInverseRelationsWithAnalysis()
+}//end class

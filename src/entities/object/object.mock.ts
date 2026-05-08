@@ -30,8 +30,6 @@ export const mockObjectData = (): TObject[] => [
 			size: '1024',
 			created: new Date().toISOString(),
 			updated: new Date().toISOString(),
-			published: new Date().toISOString(),
-			depublished: null,
 		},
 	},
 	{
@@ -62,8 +60,6 @@ export const mockObjectData = (): TObject[] => [
 			size: '512',
 			created: new Date().toISOString(),
 			updated: new Date().toISOString(),
-			published: null,
-			depublished: null,
 		},
 	},
 ]

@@ -9,7 +9,7 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -37,46 +37,42 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250831130000 extends SimpleMigrationStep
 {
-
-
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Add tags column to objects table
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput                 $output        Migration output interface
+     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper
+     * @param array<array-key, mixed> $options       Migration options
+     *
+     * @return null|ISchemaWrapper Updated schema or null
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
         $schema = $schemaClosure();
 
-        // Check if the objects table exists
+        // Check if the objects table exists.
         if ($schema->hasTable('openregister_objects') === false) {
             return null;
         }
 
         $table = $schema->getTable('openregister_objects');
 
-        // Add expires column if it doesn't exist
+        // Add expires column if it doesn't exist.
         if ($table->hasColumn('expires') === false) {
             $table->addColumn(
-                    'expires',
-                    'datetime',
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Expiration timestamp for permanent deletion',
-                    ]
-                    );
-            $output->info('Added expires column to openregister_objects table');
+                'expires',
+                'datetime',
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Expiration timestamp for permanent deletion',
+                ]
+            );
+            $output->info(message: 'Added expires column to openregister_objects table');
         }
 
         return $schema;
-
     }//end changeSchema()
-
-
 }//end class

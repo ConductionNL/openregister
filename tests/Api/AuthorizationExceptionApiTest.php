@@ -67,8 +67,8 @@ class AuthorizationExceptionApiTest extends TestCase
             'OCS-APIRequest' => 'true',
         ];
 
-        // In a real test, you would authenticate with valid credentials
-        // For this example, we'll use basic auth
+        // In a real test, you would authenticate with valid credentials.
+        // For this example, we'll use basic auth.
         $this->client = new Client([
             'base_uri' => $this->baseUrl,
             'auth' => ['admin', 'admin'],
@@ -111,8 +111,8 @@ class AuthorizationExceptionApiTest extends TestCase
             $this->assertEquals('special-user', $responseData['subject_id']);
 
         } catch (ClientException $e) {
-            // In a real test environment, this should succeed
-            // For this demonstration, we'll just verify the expected behavior
+            // In a real test environment, this should succeed.
+            // For this demonstration, we'll just verify the expected behavior.
             $this->markTestSkipped('API endpoint not yet implemented - this demonstrates expected usage');
         }
 
@@ -218,7 +218,7 @@ class AuthorizationExceptionApiTest extends TestCase
             $responseData = json_decode($response->getBody()->getContents(), true);
             $this->assertIsArray($responseData);
 
-            // Each exception should have required fields
+            // Each exception should have required fields.
             if (count($responseData) > 0) {
                 $exception = $responseData[0];
                 $this->assertArrayHasKey('uuid', $exception);
@@ -315,7 +315,7 @@ class AuthorizationExceptionApiTest extends TestCase
             $responseData = json_decode($response->getBody()->getContents(), true);
             $this->assertIsArray($responseData);
 
-            // All returned exceptions should match the filter criteria
+            // All returned exceptions should match the filter criteria.
             foreach ($responseData as $exception) {
                 $this->assertEquals('inclusion', $exception['type']);
                 $this->assertEquals('group', $exception['subject_type']);
@@ -361,8 +361,8 @@ class AuthorizationExceptionApiTest extends TestCase
             $this->assertArrayHasKey('reason', $responseData);
             $this->assertIsBool($responseData['has_permission']);
 
-            // The reason should indicate whether permission was granted/denied
-            // by exception, normal RBAC, or other rules
+            // The reason should indicate whether permission was granted/denied.
+            // by exception, normal RBAC, or other rules.
             $validReasons = ['exception_inclusion', 'exception_exclusion', 'rbac_allowed', 'rbac_denied', 'owner', 'published'];
             $this->assertContains($responseData['reason'], $validReasons);
 
@@ -443,11 +443,11 @@ class AuthorizationExceptionApiTest extends TestCase
                 'json' => $invalidData,
             ]);
 
-            // Should not reach here - expect validation error
+            // Should not reach here - expect validation error.
             $this->fail('Expected validation error for invalid data');
 
         } catch (ClientException $e) {
-            // Expect 400 Bad Request for validation errors
+            // Expect 400 Bad Request for validation errors.
             $this->assertEquals(400, $e->getResponse()->getStatusCode());
 
             $responseData = json_decode($e->getResponse()->getBody()->getContents(), true);

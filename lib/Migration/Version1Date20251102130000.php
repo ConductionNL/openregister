@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * OpenRegister Applications Groups Column Migration
  *
@@ -11,14 +9,16 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -38,57 +38,57 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251102130000 extends SimpleMigrationStep
 {
-
     /**
      * Add groups column to applications table
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null Updated schema
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
         $schema = $schemaClosure();
 
-        $output->info('🔧 Adding groups column to applications table...');
+        $output->info(message: '🔧 Adding groups column to applications table...');
 
-        if ($schema->hasTable('openregister_applications')) {
+        if ($schema->hasTable('openregister_applications') === true) {
             $table = $schema->getTable('openregister_applications');
-            
-            // Add groups column if it doesn't exist
-            if (!$table->hasColumn('groups')) {
-                $table->addColumn('groups', Types::JSON, [
-                    'notnull' => false,
-                    'default' => null,
-                    'comment' => 'Array of Nextcloud group IDs that have access to this application'
-                ]);
-                
-                $output->info('✅ Added groups column to openregister_applications table');
+
+            // Add groups column if it doesn't exist.
+            if ($table->hasColumn('groups') === false) {
+                $table->addColumn(
+                    'groups',
+                    Types::JSON,
+                    [
+                        'notnull' => false,
+                        'default' => null,
+                        'comment' => 'Array of Nextcloud group IDs that have access to this application',
+                    ]
+                );
+
+                $output->info(message: '✅ Added groups column to openregister_applications table');
                 $output->info('🎯 Applications now support:');
-                $output->info('   • Group-based access control');
-                $output->info('   • Restriction by Nextcloud group membership');
-                $output->info('   • Empty array = all users have access');
-                
+                $output->info(message: '   • Group-based access control');
+                $output->info(message: '   • Restriction by Nextcloud group membership');
+                $output->info(message: '   • Empty array = all users have access');
+
                 return $schema;
-            } else {
-                $output->info('ℹ️  Groups column already exists, skipping...');
             }
-        } else {
-            $output->info('⚠️  Applications table not found!');
-        }
+
+            $output->info(message: 'ℹ️  Groups column already exists, skipping...');
+            return null;
+        }//end if
+
+        $output->info(message: '⚠️  Applications table not found!');
 
         return null;
-
     }//end changeSchema()
-
-
 }//end class
-
-
-
-
-
-

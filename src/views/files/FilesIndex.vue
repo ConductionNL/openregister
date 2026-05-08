@@ -65,23 +65,32 @@
 				<table v-else class="filesTable">
 					<thead>
 						<tr>
-							<th class="column-filename">
+							<th class="column-filename sortable" @click="toggleSort('fileName')">
 								{{ t('openregister', 'File Name') }}
+								<span v-if="sortField === 'fileName'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
 							<th class="column-mimetype">
 								{{ t('openregister', 'Type') }}
 							</th>
-							<th class="column-size">
+							<th class="column-size sortable" @click="toggleSort('fileSize')">
 								{{ t('openregister', 'Size') }}
+								<span v-if="sortField === 'fileSize'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
-							<th class="column-status">
-								{{ t('openregister', 'Extraction Status') }}
-							</th>
-							<th class="column-chunks">
+							<th class="column-chunks sortable" @click="toggleSort('chunkCount')">
 								{{ t('openregister', 'Chunks') }}
+								<span v-if="sortField === 'chunkCount'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
-							<th class="column-extracted">
+							<th class="column-entities sortable" @click="toggleSort('entityCount')">
+								{{ t('openregister', 'Entities') }}
+								<span v-if="sortField === 'entityCount'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+							</th>
+							<th class="column-risk sortable" @click="toggleSort('riskLevel')">
+								{{ t('openregister', 'Risk Level') }}
+								<span v-if="sortField === 'riskLevel'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+							</th>
+							<th class="column-extracted sortable" @click="toggleSort('extractedAt')">
 								{{ t('openregister', 'Extracted At') }}
+								<span v-if="sortField === 'extractedAt'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
 							<th class="column-actions">
 								{{ t('openregister', 'Actions') }}
@@ -102,13 +111,16 @@
 							<td class="column-size">
 								{{ formatFileSize(file.fileSize) }}
 							</td>
-							<td class="column-status">
-								<span class="badge" :class="'badge-status-' + file.extractionStatus">
-									{{ formatStatus(file.extractionStatus) }}
-								</span>
-							</td>
 							<td class="column-chunks">
 								{{ file.chunkCount || 0 }}
+							</td>
+							<td class="column-entities">
+								{{ file.entityCount || 0 }}
+							</td>
+							<td class="column-risk">
+								<span class="badge" :class="'badge-risk-' + file.riskLevel">
+									{{ formatRiskLevel(file.riskLevel) }}
+								</span>
 							</td>
 							<td class="column-extracted">
 								{{ formatDate(file.extractedAt) }}
@@ -166,8 +178,10 @@
 			<FilesSidebar
 				:search.sync="searchQuery"
 				:status.sync="statusFilter"
+				:risk-level.sync="riskLevelFilter"
 				@update:search="handleSearchUpdate"
-				@update:status="handleStatusUpdate" />
+				@update:status="handleStatusUpdate"
+				@update:riskLevel="handleRiskLevelUpdate" />
 		</template>
 	</NcAppContent>
 </template>
@@ -222,6 +236,9 @@ export default {
 			sidebarOpen: false,
 			searchQuery: '',
 			statusFilter: null,
+			riskLevelFilter: null,
+			sortField: 'extractedAt',
+			sortOrder: 'DESC',
 		}
 	},
 	computed: {
@@ -259,6 +276,23 @@ export default {
 		},
 
 		/**
+		 * Toggle sort field and direction
+		 *
+		 * @param {string} field - The field to sort by
+		 * @return {void}
+		 */
+		toggleSort(field) {
+			if (this.sortField === field) {
+				this.sortOrder = this.sortOrder === 'ASC' ? 'DESC' : 'ASC'
+			} else {
+				this.sortField = field
+				this.sortOrder = 'DESC'
+			}
+			this.offset = 0
+			this.loadFiles()
+		},
+
+		/**
 		 * Handle search query update
 		 *
 		 * @param {string} query - Search query
@@ -283,6 +317,18 @@ export default {
 		},
 
 		/**
+		 * Handle risk level filter update
+		 *
+		 * @param {string|null} level - Risk level filter
+		 * @return {void}
+		 */
+		handleRiskLevelUpdate(level) {
+			this.riskLevelFilter = level
+			this.offset = 0
+			this.loadFiles()
+		},
+
+		/**
 		 * Load files from the API
 		 *
 		 * @return {Promise<void>}
@@ -293,6 +339,8 @@ export default {
 				const params = {
 					limit: this.limit,
 					offset: this.offset,
+					sort: this.sortField,
+					order: this.sortOrder,
 				}
 
 				if (this.searchQuery) {
@@ -301,6 +349,10 @@ export default {
 
 				if (this.statusFilter) {
 					params.status = this.statusFilter
+				}
+
+				if (this.riskLevelFilter) {
+					params.riskLevel = this.riskLevelFilter
 				}
 
 				const response = await axios.get(
@@ -427,8 +479,25 @@ export default {
 		 */
 		formatMimeType(mimeType) {
 			if (!mimeType) return ''
-			const parts = mimeType.split('/')
-			return parts[parts.length - 1].toUpperCase()
+			const category = mimeType.split('/')[0]
+			return category.charAt(0).toUpperCase() + category.slice(1)
+		},
+
+		/**
+		 * Format risk level for display
+		 *
+		 * @param {string} level - Risk level
+		 * @return {string} Formatted risk level
+		 */
+		formatRiskLevel(level) {
+			const labels = {
+				none: t('openregister', 'None'),
+				low: t('openregister', 'Low'),
+				medium: t('openregister', 'Medium'),
+				high: t('openregister', 'High'),
+				very_high: t('openregister', 'Very High'),
+			}
+			return labels[level] || level || t('openregister', 'None')
 		},
 
 		/**
@@ -521,6 +590,20 @@ export default {
 	white-space: nowrap;
 }
 
+.filesTable th.sortable {
+	cursor: pointer;
+	user-select: none;
+}
+
+.filesTable th.sortable:hover {
+	background: var(--color-background-dark);
+}
+
+.sort-indicator {
+	margin-left: 4px;
+	font-size: 10px;
+}
+
 .filesTable td {
 	padding: 12px 16px;
 	border-bottom: 1px solid var(--color-border);
@@ -582,6 +665,31 @@ export default {
 	color: var(--color-error);
 }
 
+.badge-risk-none {
+	background: var(--color-background-dark);
+	color: var(--color-text-maxcontrast);
+}
+
+.badge-risk-low {
+	background: var(--color-success-light);
+	color: var(--color-success);
+}
+
+.badge-risk-medium {
+	background: var(--color-warning-light);
+	color: var(--color-warning);
+}
+
+.badge-risk-high {
+	background: var(--color-error-light);
+	color: var(--color-error);
+}
+
+.badge-risk-very_high {
+	background: var(--color-error);
+	color: var(--color-main-background);
+}
+
 .column-filename {
 	min-width: 200px;
 }
@@ -601,6 +709,15 @@ export default {
 .column-chunks {
 	width: 80px;
 	text-align: center;
+}
+
+.column-entities {
+	width: 80px;
+	text-align: center;
+}
+
+.column-risk {
+	width: 120px;
 }
 
 .column-extracted {

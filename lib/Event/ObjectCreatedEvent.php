@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectCreatedEvent
  *
@@ -35,7 +36,6 @@ class ObjectCreatedEvent extends Event
      */
     private ObjectEntity $object;
 
-
     /**
      * Constructor for ObjectCreatedEvent
      *
@@ -47,9 +47,7 @@ class ObjectCreatedEvent extends Event
     {
         parent::__construct();
         $this->object = $object;
-
     }//end __construct()
-
 
     /**
      * Get the created object entity
@@ -59,8 +57,5 @@ class ObjectCreatedEvent extends Event
     public function getObject(): ObjectEntity
     {
         return $this->object;
-
     }//end getObject()
-
-
 }//end class

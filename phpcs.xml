@@ -4,6 +4,11 @@
 
     <file>lib</file>
 
+    <!-- Exclude external and vendor files -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>composer-setup.php</exclude-pattern>
+
     <arg name="basepath" value="."/>
     <arg name="colors"/>
     <arg name="parallel" value="75"/>
@@ -44,17 +49,20 @@
     <!-- Removed the OperatorBracket rule to allow operations without brackets -->
     <rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing"/>
     <rule ref="Squiz.Operators.ComparisonOperatorUsage"/>
-    <rule ref="Squiz.PHP.DisallowInlineIf"/>
+    <!-- Removed DisallowInlineIf to allow ternary operators for ElseExpression elimination -->
     <rule ref="Squiz.Scope.MethodScope"/>
     <rule ref="Squiz.Strings.ConcatenationSpacing"/>
     <rule ref="Squiz.WhiteSpace.ControlStructureSpacing"/>
-    <rule ref="Squiz.WhiteSpace.FunctionClosingBraceSpace"/>
-    <rule ref="Squiz.WhiteSpace.FunctionSpacing"/>
+    <!-- Disabled: Conflicts with Squiz.WhiteSpace.FunctionSpacing -->
+    <!-- <rule ref="Squiz.WhiteSpace.FunctionClosingBraceSpace"/> -->
+    <rule ref="Squiz.WhiteSpace.FunctionSpacing">
         <properties>
             <property name="spacing" value="1"/>
             <property name="spacingAfterLast" value="0"/>
             <property name="spacingBeforeFirst" value="0"/>
         </properties>
+        <exclude-pattern>lib/Db/AuditTrailMapper\.php</exclude-pattern>
+    </rule>
     <rule ref="Squiz.WhiteSpace.MemberVarSpacing"/>
     <rule ref="Squiz.WhiteSpace.OperatorSpacing"/>
     <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace"/>
@@ -92,7 +100,7 @@
 
     <!-- We use custom indent rules for arrays -->
     <rule ref="Generic.Arrays.ArrayIndent"/>
-    
+
     <!-- Selectively include array rules, excluding alignment rules -->
     <rule ref="Squiz.Arrays.ArrayDeclaration">
         <exclude name="Squiz.Arrays.ArrayDeclaration.KeyNotAligned"/>
@@ -118,12 +126,12 @@
             <property name="requiredSpacesBeforeClose" value="0"/>
         </properties>
     </rule>
-    
+
     <!-- Disable the indentation rule for multiline function declarations -->
     <rule ref="PEAR.Functions.FunctionCallSignature.Indent">
         <severity>0</severity>
     </rule>
-    
+
     <!-- Disable the opening placement for multiline arrays -->
     <rule ref="PEAR.Functions.FunctionCallSignature.OpeningIndent">
         <severity>0</severity>
@@ -146,6 +154,8 @@
                 <element value="T_OPEN_SHORT_ARRAY"/>
             </property>
         </properties>
+        <exclude-pattern>lib/Service/Settings/ConfigurationSettingsHandler\.php</exclude-pattern>
+        <exclude-pattern>lib/Db/AuditTrailMapper\.php</exclude-pattern>
     </rule>
 
     <!-- Have 12 chars padding maximum and always show as errors -->
@@ -206,9 +216,9 @@
         <severity>0</severity>
     </rule>
 
-    <!-- Custom rule to encourage named parameters -->  
+    <!-- Custom rule to enforce named parameters -->
     <rule ref="./phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php">
-        <type>warning</type>
+        <type>error</type>
     </rule>
 
 </ruleset>

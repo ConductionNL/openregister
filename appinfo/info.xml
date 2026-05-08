@@ -2,35 +2,59 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
     <id>openregister</id>
-    <name>Open Register</name>
-    <summary>Quickly build data registers based on schema.json</summary>
-    <description><![CDATA[📰 An OpenRegister App for Nextcloud
+    <name lang="en">Open Register</name>
+    <name lang="nl">Open Register</name>
+    <summary lang="en">Build structured data registers with schemas, RBAC, and full-text search</summary>
+    <summary lang="nl">Bouw gestructureerde dataregisters met schema's, RBAC en full-text zoeken</summary>
+    <description lang="en"><![CDATA[Open Register is the foundation for structured data management in Nextcloud. Define your data models with JSON Schema, store objects in high-performance registers, and let your other apps build on top of a solid, standards-based data layer.
 
-The OpenRegister Nextcloud app provides a framework for federated registers to work together in an open data ecosystem
+**Key Features**
 
-- 📲 Synchronize your sources with multiple registers
-- 🔄 Automatic publications of your open data
-- 🆓 Free and open source under EUPL
+- **Schema-based registers** — Define data structures with JSON Schema and organize them into registers
+- **Full CRUD API** — Create, read, update, and delete objects through a powerful REST API
+- **Full-text search with faceting** — Search across registers with filters, powered by magic tables or Solr
+- **Role-based access control** — Fine-grained permissions with organization-level multitenancy
+- **Event-driven architecture** — React to data changes with events for tasks, notifications, and integrations
+- **CalDAV tasks and notes** — Attach Nextcloud tasks and comments directly to your data objects
+- **JSON-LD and Linked Data** — Standards-compliant data that connects to the broader open data ecosystem
+- **Source synchronization** — Keep your registers in sync with external data sources
 
-**System Cron is currently required for this app to work**
+Open Register powers apps like OpenCatalogi, Procest, Pipelinq, and Software Catalogus, giving them a shared, federated data backbone.
 
-Requirements can be found [here](https://conduction.gitbook.io/openregister-nextcloud/installatie)
-
-The Roadmap is available [here](https://github.com/orgs/OpenRegister/projects/1/views/2)
-
-Create a [bug report](https://github.com/OpenRegister/.github/issues/new/choose)
-
-Create a [feature request](https://github.com/OpenRegister/.github/issues/new/choose)
+Free and open source under the EUPL license.
     ]]></description>
-    <version>0.2.11</version>
+    <description lang="nl"><![CDATA[Open Register is de basis voor gestructureerd databeheer in Nextcloud. Definieer je datamodellen met JSON Schema, sla objecten op in krachtige registers en laat je andere apps bouwen op een solide, op standaarden gebaseerde datalaag.
+
+**Belangrijkste functies**
+
+- **Schema-gebaseerde registers** — Definieer datastructuren met JSON Schema en organiseer ze in registers
+- **Volledige CRUD API** — Maak, lees, wijzig en verwijder objecten via een krachtige REST API
+- **Full-text zoeken met facetten** — Zoek dwars door registers met filters, aangedreven door magic tables of Solr
+- **Rolgebaseerde toegangscontrole** — Fijnmazige rechten met multitenancy op organisatieniveau
+- **Event-driven architectuur** — Reageer op datawijzigingen met events voor taken, notificaties en integraties
+- **CalDAV taken en notities** — Koppel Nextcloud-taken en opmerkingen direct aan je dataobjecten
+- **JSON-LD en Linked Data** — Data conform standaarden die aansluit op het bredere open data ecosysteem
+- **Bronsynchronisatie** — Houd je registers in sync met externe databronnen
+
+Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Catalogus aan en geeft ze een gedeelde, gefedereerde data-backbone.
+
+Vrij en open source onder de EUPL-licentie.
+    ]]></description>
+    <version>0.2.13-unstable.78</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
     <category>organization</category>
     <category>tools</category>
+    <category>search</category>
     <website>https://github.com/ConductionNL/OpenRegister</website>
+    <discussion>https://github.com/ConductionNL/OpenRegister/discussions</discussion>
     <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
     <repository>https://github.com/ConductionNL/OpenRegister</repository>
+
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/OpenRegister/main/img/app-store.svg</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot.png</screenshot>
+
     <documentation>
         <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
         <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
@@ -42,12 +66,26 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-        <nextcloud min-version="28" max-version="33"/>
+        <nextcloud min-version="28" max-version="34"/>
     </dependencies>
+
+	<repair-steps>
+		<post-migration>
+			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+		</post-migration>
+		<install>
+			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+		</install>
+	</repair-steps>
 
 	<background-jobs>
 		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
 		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
+		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 	</background-jobs>
 
     <navigations>
@@ -65,10 +103,13 @@ Create a [feature request](https://github.com/OpenRegister/.github/issues/new/ch
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
 
+	<!-- TEMPORARILY DISABLED: Commands trigger circular DI during occ bootstrap
 	<commands>
 		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
 		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
+		<command>OCA\OpenRegister\Command\MigrateStorageCommand</command>
 	</commands>
+	-->
 
 	<notification>
 		<service>OCA\OpenRegister\Notification\Notifier</service>

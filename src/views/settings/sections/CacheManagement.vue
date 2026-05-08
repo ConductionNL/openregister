@@ -238,6 +238,43 @@
 					</div>
 				</div>
 
+				<!-- Cache Warmup Schedule -->
+				<div class="cache-warmup">
+					<h4>Cache Warmup Schedule</h4>
+					<p class="warmup-description">
+						Configure automatic cache warmup to prevent cold-start delays. The background job pre-populates caches at the configured interval.
+					</p>
+					<div class="warmup-controls">
+						<div class="warmup-select">
+							<label for="warmup-interval">Warmup Interval:</label>
+							<NcSelect
+								input-id="warmup-interval"
+								:value="selectedWarmupOption"
+								:options="warmupIntervalOptions"
+								:clearable="false"
+								:disabled="savingWarmupInterval"
+								label="label"
+								track-by="value"
+								@input="onWarmupIntervalChange" />
+						</div>
+						<div class="warmup-actions">
+							<NcButton
+								type="secondary"
+								:disabled="warmingUpCache || savingWarmupInterval"
+								@click="triggerWarmup">
+								<template #icon>
+									<NcLoadingIcon v-if="warmingUpCache" :size="20" />
+									<Refresh v-else :size="20" />
+								</template>
+								{{ warmingUpCache ? 'Warming up...' : 'Trigger Now' }}
+							</NcButton>
+						</div>
+					</div>
+					<p v-if="warmupLastRun" class="warmup-last-run">
+						Last warmup: {{ formatDate(warmupLastRun) }}
+					</p>
+				</div>
+
 				<div class="cache-footer">
 					<p class="cache-updated">
 						Last updated: {{ formatDate(cacheStats.lastUpdated) }}
@@ -324,7 +361,7 @@
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcDialog, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcDialog, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 
@@ -337,6 +374,7 @@ export default {
 		NcLoadingIcon,
 		NcDialog,
 		NcCheckboxRadioSwitch,
+		NcSelect,
 		Refresh,
 		Delete,
 	},
@@ -381,6 +419,38 @@ export default {
 		hitRateClass() {
 			return this.getHitRateClass(this.cacheStats.overview?.overallHitRate || 0)
 		},
+
+		warmingUpCache() {
+			return this.settingsStore.warmingUpCache
+		},
+
+		savingWarmupInterval() {
+			return this.settingsStore.savingWarmupInterval
+		},
+
+		warmupLastRun() {
+			return this.settingsStore.warmupLastRun
+		},
+
+		warmupIntervalOptions() {
+			return [
+				{ label: 'Disabled', value: 0 },
+				{ label: 'Every 15 minutes', value: 900 },
+				{ label: 'Every 30 minutes', value: 1800 },
+				{ label: 'Every hour', value: 3600 },
+				{ label: 'Every 6 hours', value: 21600 },
+				{ label: 'Every 24 hours', value: 86400 },
+			]
+		},
+
+		selectedWarmupOption() {
+			const interval = this.settingsStore.warmupInterval
+			return this.warmupIntervalOptions.find((o) => o.value === interval) || this.warmupIntervalOptions[3]
+		},
+	},
+
+	mounted() {
+		this.settingsStore.loadWarmupInterval()
 	},
 
 	methods: {
@@ -475,6 +545,24 @@ export default {
 				return 'Unknown'
 			}
 			return this.cacheStats.distributed.backend || 'File'
+		},
+
+		/**
+		 * Handle warmup interval change
+		 *
+		 * @param {object} option Selected option
+		 */
+		onWarmupIntervalChange(option) {
+			if (option) {
+				this.settingsStore.saveWarmupInterval(option.value)
+			}
+		},
+
+		/**
+		 * Trigger manual cache warmup
+		 */
+		triggerWarmup() {
+			this.settingsStore.warmupNamesCache()
 		},
 
 		/**
@@ -675,6 +763,42 @@ export default {
 	text-align: right;
 	font-family: monospace;
 	font-size: 13px;
+}
+
+.cache-warmup h4 {
+	margin: 0 0 8px 0;
+	color: var(--color-text-light);
+}
+
+.warmup-description {
+	color: var(--color-text-maxcontrast);
+	margin: 0 0 16px 0;
+	font-size: 13px;
+}
+
+.warmup-controls {
+	display: flex;
+	align-items: flex-end;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.warmup-select {
+	flex: 0 0 280px;
+}
+
+.warmup-select label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: 500;
+	color: var(--color-text-light);
+	font-size: 13px;
+}
+
+.warmup-last-run {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+	margin: 8px 0 0 0;
 }
 
 .cache-footer {

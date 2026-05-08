@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
 
+use DateTime;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -28,11 +29,13 @@ use OCP\IDBConnection;
  *
  * This handler provides faceting capabilities for metadata fields like
  * register, schema, owner, organisation, created, updated, etc.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class MetaDataFacetHandler
 {
-
-
     /**
      * Constructor for the MetaDataFacetHandler
      *
@@ -41,9 +44,7 @@ class MetaDataFacetHandler
     public function __construct(
         private readonly IDBConnection $db
     ) {
-
     }//end __construct()
-
 
     /**
      * Get terms facet for a metadata field
@@ -61,31 +62,34 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Terms facet data with buckets containing key, results, and label
+     * @return ((int|mixed|string)[][]|string)[]
+     *
+     * @psalm-return array{type: 'terms',
+     *     buckets: list<array{key: mixed, label: string, results: int}>}
      */
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
-        // FACET FIX: Map @self metadata field names to actual database columns
-        $actualField = $this->mapMetadataFieldToColumn($field);
+        // FACET FIX: Map @self metadata field names to actual database columns.
+        $actualField = $this->mapMetadataFieldToColumn(field: $field);
 
         $queryBuilder = $this->db->getQueryBuilder();
 
-        // Build aggregation query using the actual database column
+        // Build aggregation query using the actual database column.
         $queryBuilder->select($actualField, $queryBuilder->createFunction('COUNT(*) as doc_count'))
             ->from('openregister_objects')
             ->where($queryBuilder->expr()->isNotNull($actualField))
             ->groupBy($actualField)
             ->orderBy('doc_count', 'DESC');
         // Note: Still using doc_count in ORDER BY as it's the SQL alias
-        // Apply base filters (this would be implemented to apply the base query filters)
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        // Apply base filters (this would be implemented to apply the base query filters).
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $key   = $row[$actualField];
-            $label = $this->getFieldLabel($field, $key);
+            $label = $this->getFieldLabel(field: $field, value: $key);
 
             $buckets[] = [
                 'key'     => $key,
@@ -98,9 +102,7 @@ class MetaDataFacetHandler
             'type'    => 'terms',
             'buckets' => $buckets,
         ];
-
     }//end getTermsFacet()
-
 
     /**
      * Map @self metadata field names to actual database columns
@@ -114,22 +116,26 @@ class MetaDataFacetHandler
      */
     private function mapMetadataFieldToColumn(string $field): string
     {
-        // Map @self metadata fields to database columns
+        // Map @self metadata fields to database columns.
+        // @self.register -> register column (stores register ID)
+        // @self.schema -> schema column (stores schema ID)
+        // @self.organisation -> organisation column (stores org UUID)
+        // @self.created -> created column
+        // @self.updated -> updated column
+        // @self.owner -> owner column
+        // Add more mappings as needed for other @self metadata fields.
         $fieldMappings = [
-            'register' => 'register',         // @self.register -> register column (stores register ID)
-            'schema' => 'schema',             // @self.schema -> schema column (stores schema ID)
-            'organisation' => 'organisation', // @self.organisation -> organisation column (stores org UUID)
-            'created' => 'created',           // @self.created -> created column
-            'updated' => 'updated',           // @self.updated -> updated column
-            'published' => 'published',       // @self.published -> published column
-            'owner' => 'owner',               // @self.owner -> owner column
-            // Add more mappings as needed for other @self metadata fields
+            'register'     => 'register',
+            'schema'       => 'schema',
+            'organisation' => 'organisation',
+            'created'      => 'created',
+            'updated'      => 'updated',
+            'owner'        => 'owner',
         ];
 
-        // Return the mapped column name or original field name if no mapping exists
+        // Return the mapped column name or original field name if no mapping exists.
         return $fieldMappings[$field] ?? $field;
     }//end mapMetadataFieldToColumn()
-
 
     /**
      * Get date histogram facet for a metadata field
@@ -150,36 +156,52 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Date histogram facet data
+     * @return ((int|mixed)[][]|string)[]
+     *
+     * @psalm-return array{type: 'date_histogram', interval: string,
+     *     buckets: list<array{key: mixed, results: int}>}
      */
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
 
-        // Build date histogram query based on interval
-        $dateFormat = $this->getDateFormatForInterval($interval);
+        // Build interval-specific grouping expression.
+        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
+        $dateKeySql = "DATE_FORMAT($field, '$dateFormat')";
+        if ($interval === 'quarter') {
+            $dateKeySql = "CONCAT(YEAR($field), '-Q', QUARTER($field))";
+        }
 
         $queryBuilder->selectAlias(
-                $queryBuilder->createFunction("DATE_FORMAT($field, '$dateFormat')"),
-                'date_key'
-            )
+            $queryBuilder->createFunction($dateKeySql),
+            'date_key'
+        )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where($queryBuilder->expr()->isNotNull($field))
             ->groupBy('date_key')
             ->orderBy('date_key', 'ASC');
 
-        // Apply base filters
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        // Apply base filters.
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
-        while ($row = $result->fetch()) {
-            $buckets[] = [
+        while (($row = $result->fetch()) !== false) {
+            $bucket = [
                 'key'     => $row['date_key'],
                 'results' => (int) $row['doc_count'],
             ];
+
+            // Add from/to bounds based on interval.
+            $bounds = $this->getDateBoundsForBucket(dateKey: $row['date_key'], interval: $interval);
+            if ($bounds !== null) {
+                $bucket['from'] = $bounds['from'];
+                $bucket['to']   = $bounds['to'];
+            }
+
+            $buckets[] = $bucket;
         }
 
         return [
@@ -187,9 +209,68 @@ class MetaDataFacetHandler
             'interval' => $interval,
             'buckets'  => $buckets,
         ];
-
     }//end getDateHistogramFacet()
 
+    /**
+     * Get date bounds (from/to) for a histogram bucket based on interval.
+     *
+     * @param string $dateKey  The bucket key (e.g., '2025', '2025-03', '2025-Q1').
+     * @param string $interval The histogram interval.
+     *
+     * @return array{from: string, to: string}|null The date bounds or null if unparseable.
+     */
+    private function getDateBoundsForBucket(string $dateKey, string $interval): ?array
+    {
+        switch ($interval) {
+            case 'year':
+                $year = (int) $dateKey;
+                return [
+                    'from' => $year.'-01-01',
+                    'to'   => $year.'-12-31',
+                ];
+
+            case 'quarter':
+                if (preg_match('/^(\d{4})-Q(\d)$/', $dateKey, $matches) === 1) {
+                    $year       = (int) $matches[1];
+                    $quarter    = (int) $matches[2];
+                    $startMonth = (($quarter - 1) * 3) + 1;
+                    $endMonth   = $startMonth + 2;
+                    $lastDay    = (int) date('t', mktime(0, 0, 0, $endMonth, 1, $year));
+                    return [
+                        'from' => sprintf('%04d-%02d-01', $year, $startMonth),
+                        'to'   => sprintf('%04d-%02d-%02d', $year, $endMonth, $lastDay),
+                    ];
+                }
+                return null;
+
+            case 'month':
+                $date = \DateTime::createFromFormat('Y-m', $dateKey);
+                if ($date !== false) {
+                    return [
+                        'from' => $date->format('Y-m-01'),
+                        'to'   => $date->format('Y-m-t'),
+                    ];
+                }
+                return null;
+
+            case 'week':
+                if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) === 1) {
+                    $date = new DateTime();
+                    $date->setISODate((int) $matches[1], (int) $matches[2], 1);
+                    $from = $date->format('Y-m-d');
+                    $date->setISODate((int) $matches[1], (int) $matches[2], 7);
+                    $to = $date->format('Y-m-d');
+                    return ['from' => $from, 'to' => $to];
+                }
+                return null;
+
+            case 'day':
+                return ['from' => $dateKey, 'to' => $dateKey];
+
+            default:
+                return null;
+        }//end switch
+    }//end getDateBoundsForBucket()
 
     /**
      * Get range facet for a metadata field
@@ -210,7 +291,11 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Range facet data
+     * @return ((int|mixed|string)[][]|string)[]
+     *
+     * @psalm-return array{type: 'range',
+     *     buckets: list<array{from?: mixed, key: string, results: int,
+     *     to?: mixed}>}
      */
     public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
     {
@@ -223,34 +308,36 @@ class MetaDataFacetHandler
                 ->from('openregister_objects')
                 ->where($queryBuilder->expr()->isNotNull($field));
 
-            // Apply range conditions
-            if (isset($range['from'])) {
-                $queryBuilder->andWhere($queryBuilder->expr()->gte($field, $queryBuilder->createNamedParameter($range['from'])));
+            // Apply range conditions.
+            if (($range['from'] ?? null) !== null) {
+                $fromParam = $queryBuilder->createNamedParameter($range['from']);
+                $queryBuilder->andWhere($queryBuilder->expr()->gte($field, $fromParam));
             }
 
-            if (isset($range['to'])) {
-                $queryBuilder->andWhere($queryBuilder->expr()->lt($field, $queryBuilder->createNamedParameter($range['to'])));
+            if (($range['to'] ?? null) !== null) {
+                $toParam = $queryBuilder->createNamedParameter($range['to']);
+                $queryBuilder->andWhere($queryBuilder->expr()->lt($field, $toParam));
             }
 
-            // Apply base filters
-            $this->applyBaseFilters($queryBuilder, $baseQuery);
+            // Apply base filters.
+            $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
             $result = $queryBuilder->executeQuery();
             $count  = (int) $result->fetchOne();
 
-            // Generate range key
-            $key = $this->generateRangeKey($range);
+            // Generate range key.
+            $key = $this->generateRangeKey(range: $range);
 
             $bucket = [
                 'key'     => $key,
                 'results' => $count,
             ];
 
-            if (isset($range['from'])) {
+            if (($range['from'] ?? null) !== null) {
                 $bucket['from'] = $range['from'];
             }
 
-            if (isset($range['to'])) {
+            if (($range['to'] ?? null) !== null) {
                 $bucket['to'] = $range['to'];
             }
 
@@ -261,9 +348,7 @@ class MetaDataFacetHandler
             'type'    => 'range',
             'buckets' => $buckets,
         ];
-
     }//end getRangeFacet()
-
 
     /**
      * Apply base query filters to the query builder
@@ -280,66 +365,51 @@ class MetaDataFacetHandler
      * @psalm-param IQueryBuilder $queryBuilder
      * @psalm-param array<string, mixed> $baseQuery
      *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
      * @return void
      */
     private function applyBaseFilters(IQueryBuilder $queryBuilder, array $baseQuery): void
     {
-        // Apply basic filters like deleted, published, etc.
+        // Apply basic filters like deleted, etc.
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-        $published      = $baseQuery['_published'] ?? false;
         $search         = $baseQuery['_search'] ?? null;
         $ids            = $baseQuery['_ids'] ?? null;
 
-        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true
+        // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
         }
 
-        // If published filter is set, only include objects that are currently published
-        if ($published === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $queryBuilder->andWhere(
-                $queryBuilder->expr()->andX(
-                    $queryBuilder->expr()->isNotNull('published'),
-                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
-                    $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull('depublished'),
-                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
-                    )
-                )
-            );
-        }
-
-        // Apply full-text search if provided
+        // Apply full-text search if provided.
         if ($search !== null && trim($search) !== '') {
-            $this->applyFullTextSearch($queryBuilder, trim($search));
+            $this->applyFullTextSearch(queryBuilder: $queryBuilder, searchTerm: trim($search));
         }
 
-        // Apply IDs filter if provided
-        if ($ids !== null && is_array($ids) && !empty($ids)) {
-            $this->applyIdsFilter($queryBuilder, $ids);
+        // Apply IDs filter if provided.
+        if ($ids !== null && is_array($ids) === true && empty($ids) === false) {
+            $this->applyIdsFilter(queryBuilder: $queryBuilder, ids: $ids);
         }
 
-        // Apply metadata filters from @self
-        if (isset($baseQuery['@self']) && is_array($baseQuery['@self'])) {
-            $this->applyMetadataFilters($queryBuilder, $baseQuery['@self']);
+        // Apply metadata filters from @self.
+        if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
+            $this->applyMetadataFilters(queryBuilder: $queryBuilder, metadataFilters: $baseQuery['@self']);
         }
 
-        // Apply JSON object field filters (non-@self filters)
+        // Apply JSON object field filters (non-@self filters).
         $objectFilters = array_filter(
-                $baseQuery,
-                function ($key) {
-                    return $key !== '@self' && !str_starts_with($key, '_');
-                },
-                ARRAY_FILTER_USE_KEY
-                );
+            $baseQuery,
+            function ($key) {
+                return $key !== '@self' && str_starts_with($key, '_') === false;
+            },
+            ARRAY_FILTER_USE_KEY
+        );
 
-        if (!empty($objectFilters)) {
-            $this->applyObjectFieldFilters($queryBuilder, $objectFilters);
+        if (empty($objectFilters) === false) {
+            $this->applyObjectFieldFilters(queryBuilder: $queryBuilder, objectFilters: $objectFilters);
         }
-
     }//end applyBaseFilters()
-
 
     /**
      * Apply full-text search to the query builder
@@ -360,7 +430,7 @@ class MetaDataFacetHandler
      */
     private function applyFullTextSearch(IQueryBuilder $queryBuilder, string $searchTerm): void
     {
-        // Split search terms by ' OR ' to handle multiple search words
+        // Split search terms by ' OR ' to handle multiple search words.
         $searchTerms = array_filter(
             array_map('trim', explode(' OR ', $searchTerm)),
             function ($term) {
@@ -368,42 +438,41 @@ class MetaDataFacetHandler
             }
         );
 
-        // If no valid search terms, return without modifying the query
+        // If no valid search terms, return without modifying the query.
         if (empty($searchTerms) === true) {
             return;
         }
 
-        // Create OR conditions for each search term
+        // Create OR conditions for each search term.
         $orConditions = $queryBuilder->expr()->orX();
 
         foreach ($searchTerms as $term) {
-            // Clean the search term - remove wildcards and convert to lowercase
+            // Clean the search term - remove wildcards and convert to lowercase.
             $cleanTerm = strtolower(trim($term));
             $cleanTerm = str_replace(['*', '%'], '', $cleanTerm);
 
-            // Skip empty terms after cleaning
+            // Skip empty terms after cleaning.
             if (empty($cleanTerm) === true) {
                 continue;
             }
 
-            // Use case-insensitive JSON_SEARCH with partial matching
-            // This ensures the search is case-insensitive and supports partial matches
-            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$queryBuilder->createNamedParameter('%'.$cleanTerm.'%').")";
+            // Use case-insensitive JSON_SEARCH with partial matching.
+            // This ensures the search is case-insensitive and supports partial matches.
+            $searchParam    = $queryBuilder->createNamedParameter('%'.$cleanTerm.'%');
+            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$searchParam.")";
 
             $orConditions->add(
                 $queryBuilder->expr()->isNotNull(
                     $queryBuilder->createFunction($searchFunction)
                 )
             );
-        }
+        }//end foreach
 
-        // Add the OR conditions to the query if we have any valid terms
+        // Add the OR conditions to the query if we have any valid terms.
         if ($orConditions->count() > 0) {
             $queryBuilder->andWhere($orConditions);
         }
-
     }//end applyFullTextSearch()
-
 
     /**
      * Apply IDs filter to the query builder
@@ -427,45 +496,44 @@ class MetaDataFacetHandler
         $integerIds = [];
         $stringIds  = [];
 
-        // Separate integer IDs from string UUIDs
+        // Separate integer IDs from string UUIDs.
         foreach ($ids as $id) {
-            if (is_numeric($id)) {
-                $integerIds[] = (int) $id;
-            } else {
+            if (is_numeric($id) === false) {
                 $stringIds[] = (string) $id;
+                continue;
             }
+
+            $integerIds[] = (int) $id;
         }
 
-        // Create OR condition for ID or UUID matching
+        // Create OR condition for ID or UUID matching.
         $orConditions = $queryBuilder->expr()->orX();
 
-        // Add integer ID condition if we have any
-        if (!empty($integerIds)) {
+        // Add integer ID condition if we have any.
+        if (empty($integerIds) === false) {
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'id',
-                    $queryBuilder->createNamedParameter($integerIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                    $queryBuilder->createNamedParameter($integerIds, IQueryBuilder::PARAM_INT_ARRAY)
                 )
             );
         }
 
-        // Add UUID condition if we have any
-        if (!empty($stringIds)) {
+        // Add UUID condition if we have any.
+        if (empty($stringIds) === false) {
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'uuid',
-                    $queryBuilder->createNamedParameter($stringIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                    $queryBuilder->createNamedParameter($stringIds, IQueryBuilder::PARAM_STR_ARRAY)
                 )
             );
         }
 
-        // Apply the OR condition if we have any IDs to filter by
+        // Apply the OR condition if we have any IDs to filter by.
         if ($orConditions->count() > 0) {
             $queryBuilder->andWhere($orConditions);
         }
-
     }//end applyIdsFilter()
-
 
     /**
      * Apply metadata filters with advanced operator support
@@ -487,113 +555,300 @@ class MetaDataFacetHandler
     private function applyMetadataFilters(IQueryBuilder $queryBuilder, array $metadataFilters): void
     {
         foreach ($metadataFilters as $field => $value) {
-            // Handle simple values (backwards compatibility)
-            if (!is_array($value)) {
-                if ($value === 'IS NOT NULL') {
-                    $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-                } else if ($value === 'IS NULL') {
-                    $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-                } else {
-                    // Simple equals (case insensitive for strings)
-                    $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value)));
-                }
-
+            if (is_array($value) === false) {
+                $this->applySimpleMetadataFilter(queryBuilder: $queryBuilder, field: $field, value: $value);
                 continue;
             }
 
-            // Handle array of values (OR condition)
-            if (isset($value[0]) && !is_string($value[0])) {
-                // This is an array of values, not operators
-                $queryBuilder->andWhere($queryBuilder->expr()->in($field, $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            if ($this->isValueArray(value: $value) === true) {
+                $this->applyInArrayFilter(queryBuilder: $queryBuilder, field: $field, value: $value);
                 continue;
             }
 
-            // Handle operator-based filters
-            foreach ($value as $operator => $operatorValue) {
-                switch ($operator) {
-                    case 'gt':
-                        $queryBuilder->andWhere($queryBuilder->expr()->gt($field, $queryBuilder->createNamedParameter($operatorValue)));
-                        break;
-                    case 'lt':
-                        $queryBuilder->andWhere($queryBuilder->expr()->lt($field, $queryBuilder->createNamedParameter($operatorValue)));
-                        break;
-                    case 'gte':
-                        $queryBuilder->andWhere($queryBuilder->expr()->gte($field, $queryBuilder->createNamedParameter($operatorValue)));
-                        break;
-                    case 'lte':
-                        $queryBuilder->andWhere($queryBuilder->expr()->lte($field, $queryBuilder->createNamedParameter($operatorValue)));
-                        break;
-                    case 'ne':
-                        $queryBuilder->andWhere($queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter($operatorValue)));
-                        break;
-                    case '~':
-                        // Contains (case insensitive)
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
-                        break;
-                    case '^':
-                        // Starts with (case insensitive)
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter($operatorValue.'%')));
-                        break;
-                    case '$':
-                        // Ends with (case insensitive)
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue)));
-                        break;
-                    case '===':
-                        // Exact match (case sensitive)
-                        $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
-                        break;
-                    case 'exists':
-                        if ($operatorValue === true || $operatorValue === 'true') {
-                            $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-                        } else {
-                            $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-                        }
-                        break;
-                    case 'empty':
-                        if ($operatorValue === true || $operatorValue === 'true') {
-                            $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->orX(
-                                $queryBuilder->expr()->isNull($field),
-                                $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter(''))
-                            )
-                                    );
-                        } else {
-                            $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->andX(
-                                $queryBuilder->expr()->isNotNull($field),
-                                $queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter(''))
-                            )
-                                    );
-                        }
-                        break;
-                    case 'null':
-                        if ($operatorValue === true || $operatorValue === 'true') {
-                            $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-                        } else {
-                            $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-                        }
-                        break;
-
-                    case 'or':
-                        $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
-                        $orConditions = $queryBuilder->expr()->orX();
-                        foreach ($values as $val) {
-                            $orConditions->add(
-                                $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($val))
-                            );
-                        }
-                        $queryBuilder->andWhere($orConditions);
-                        break;
-                    default:
-                        // Default to equals for unknown operators
-                        $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
-                        break;
-                }//end switch
-            }//end foreach
-        }//end foreach
-
+            $this->applyOperatorFilters(queryBuilder: $queryBuilder, field: $field, operators: $value);
+        }
     }//end applyMetadataFilters()
 
+    /**
+     * Check if value is a simple array of values (not operators)
+     *
+     * @param array $value Value to check
+     *
+     * @return bool True if value array
+     */
+    private function isValueArray(array $value): bool
+    {
+        return ($value[0] ?? null) !== null && is_string($value[0]) === false;
+    }//end isValueArray()
+
+    /**
+     * Apply simple metadata filter (non-array value)
+     *
+     * @param IQueryBuilder $queryBuilder Query builder
+     * @param string        $field        Field name
+     * @param mixed         $value        Filter value
+     *
+     * @return void
+     */
+    private function applySimpleMetadataFilter(IQueryBuilder $queryBuilder, string $field, mixed $value): void
+    {
+        if ($value === 'IS NOT NULL') {
+            $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
+            return;
+        }
+
+        if ($value === 'IS NULL') {
+            $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
+            return;
+        }
+
+        $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value)));
+    }//end applySimpleMetadataFilter()
+
+    /**
+     * Apply IN array filter
+     *
+     * @param IQueryBuilder $queryBuilder Query builder
+     * @param string        $field        Field name
+     * @param array         $value        Array of values
+     *
+     * @return void
+     */
+    private function applyInArrayFilter(IQueryBuilder $queryBuilder, string $field, array $value): void
+    {
+        $queryBuilder->andWhere(
+            $queryBuilder->expr()->in(
+                $field,
+                $queryBuilder->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
+            )
+        );
+    }//end applyInArrayFilter()
+
+    /**
+     * Apply operator-based filters
+     *
+     * @param IQueryBuilder $queryBuilder Query builder
+     * @param string        $field        Field name
+     * @param array         $operators    Operator => value pairs
+     *
+     * @return void
+     */
+    private function applyOperatorFilters(IQueryBuilder $queryBuilder, string $field, array $operators): void
+    {
+        foreach ($operators as $operator => $operatorValue) {
+            $this->applyMetadataOperator(
+                queryBuilder: $queryBuilder,
+                field: $field,
+                operator: $operator,
+                operatorValue: $operatorValue
+            );
+        }
+    }//end applyOperatorFilters()
+
+    /**
+     * Apply a single operator filter
+     *
+     * @param IQueryBuilder $queryBuilder  Query builder
+     * @param string        $field         Field name
+     * @param string        $operator      Operator name
+     * @param mixed         $operatorValue Operator value
+     *
+     * @return void
+     */
+    private function applyMetadataOperator(
+        IQueryBuilder $queryBuilder,
+        string $field,
+        string $operator,
+        mixed $operatorValue
+    ): void {
+        $comparisonApplied = $this->applyComparisonMetadataOperator(
+            queryBuilder: $queryBuilder,
+            field: $field,
+            operator: $operator,
+            operatorValue: $operatorValue
+        );
+        if ($comparisonApplied === true) {
+            return;
+        }
+
+        $patternApplied = $this->applyPatternMetadataOperator(
+            queryBuilder: $queryBuilder,
+            field: $field,
+            operator: $operator,
+            operatorValue: $operatorValue
+        );
+        if ($patternApplied === true) {
+            return;
+        }
+
+        $existenceApplied = $this->applyExistenceMetadataOperator(
+            queryBuilder: $queryBuilder,
+            field: $field,
+            operator: $operator,
+            operatorValue: $operatorValue
+        );
+        if ($existenceApplied === true) {
+            return;
+        }
+
+        if ($operator === 'or') {
+            $this->applyOrMetadataOperator(queryBuilder: $queryBuilder, field: $field, operatorValue: $operatorValue);
+            return;
+        }
+
+        $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
+    }//end applyMetadataOperator()
+
+    /**
+     * Apply comparison operators (gt, lt, gte, lte, ne, ===)
+     *
+     * @param IQueryBuilder $queryBuilder  Query builder
+     * @param string        $field         Field name
+     * @param string        $operator      Operator
+     * @param mixed         $operatorValue Value
+     *
+     * @return bool True if handled
+     */
+    private function applyComparisonMetadataOperator(
+        IQueryBuilder $queryBuilder,
+        string $field,
+        string $operator,
+        mixed $operatorValue
+    ): bool {
+        $opParam = $queryBuilder->createNamedParameter($operatorValue);
+        $methods = [
+            'gt'  => 'gt',
+            'lt'  => 'lt',
+            'gte' => 'gte',
+            'lte' => 'lte',
+            'ne'  => 'neq',
+            '===' => 'eq',
+        ];
+
+        if (isset($methods[$operator]) === false) {
+            return false;
+        }
+
+        $method = $methods[$operator];
+        $queryBuilder->andWhere($queryBuilder->expr()->$method($field, $opParam));
+        return true;
+    }//end applyComparisonMetadataOperator()
+
+    /**
+     * Apply pattern operators (~, ^, $)
+     *
+     * @param IQueryBuilder $queryBuilder  Query builder
+     * @param string        $field         Field name
+     * @param string        $operator      Operator
+     * @param mixed         $operatorValue Value
+     *
+     * @return bool True if handled
+     */
+    private function applyPatternMetadataOperator(
+        IQueryBuilder $queryBuilder,
+        string $field,
+        string $operator,
+        mixed $operatorValue
+    ): bool {
+        $patterns = [
+            '~' => '%'.$operatorValue.'%',
+            '^' => $operatorValue.'%',
+            '$' => '%'.$operatorValue,
+        ];
+
+        if (isset($patterns[$operator]) === false) {
+            return false;
+        }
+
+        $param = $queryBuilder->createNamedParameter($patterns[$operator]);
+        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $param));
+        return true;
+    }//end applyPatternMetadataOperator()
+
+    /**
+     * Apply existence operators (exists, empty, null)
+     *
+     * @param IQueryBuilder $queryBuilder  Query builder
+     * @param string        $field         Field name
+     * @param string        $operator      Operator
+     * @param mixed         $operatorValue Value
+     *
+     * @return bool True if handled
+     */
+    private function applyExistenceMetadataOperator(
+        IQueryBuilder $queryBuilder,
+        string $field,
+        string $operator,
+        mixed $operatorValue
+    ): bool {
+        $isTrue = ($operatorValue === true || $operatorValue === 'true');
+
+        if ($operator === 'exists') {
+            $existsExpr = $queryBuilder->expr()->isNull($field);
+            if ($isTrue === true) {
+                $existsExpr = $queryBuilder->expr()->isNotNull($field);
+            }
+
+            $queryBuilder->andWhere($existsExpr);
+
+            return true;
+        }
+
+        if ($operator === 'null') {
+            $nullExpr = $queryBuilder->expr()->isNotNull($field);
+            if ($isTrue === true) {
+                $nullExpr = $queryBuilder->expr()->isNull($field);
+            }
+
+            $queryBuilder->andWhere($nullExpr);
+
+            return true;
+        }
+
+        if ($operator === 'empty') {
+            $emptyParam = $queryBuilder->createNamedParameter('');
+            $emptyExpr  = $queryBuilder->expr()->andX(
+                $queryBuilder->expr()->isNotNull($field),
+                $queryBuilder->expr()->neq($field, $emptyParam)
+            );
+            if ($isTrue === true) {
+                $emptyExpr = $queryBuilder->expr()->orX(
+                    $queryBuilder->expr()->isNull($field),
+                    $queryBuilder->expr()->eq($field, $emptyParam)
+                );
+            }
+
+            $queryBuilder->andWhere($emptyExpr);
+
+            return true;
+        }
+
+        return false;
+    }//end applyExistenceMetadataOperator()
+
+    /**
+     * Apply OR operator
+     *
+     * @param IQueryBuilder $queryBuilder  Query builder
+     * @param string        $field         Field name
+     * @param mixed         $operatorValue Value (array or comma-separated string)
+     *
+     * @return void
+     */
+    private function applyOrMetadataOperator(IQueryBuilder $queryBuilder, string $field, mixed $operatorValue): void
+    {
+        $values = $operatorValue;
+        if (is_string($operatorValue) === true) {
+            $values = array_map('trim', explode(',', $operatorValue));
+        }
+
+        $orConditions = $queryBuilder->expr()->orX();
+        foreach ($values as $val) {
+            $orConditions->add($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($val)));
+        }
+
+        $queryBuilder->andWhere($orConditions);
+    }//end applyOrMetadataOperator()
 
     /**
      * Apply object field filters with advanced operator support
@@ -615,50 +870,67 @@ class MetaDataFacetHandler
     private function applyObjectFieldFilters(IQueryBuilder $queryBuilder, array $objectFilters): void
     {
         foreach ($objectFilters as $field => $value) {
-            $jsonPath = '$.'.$field;
+            $jsonPath      = '$.'.$field;
+            $jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+            $extractSql    = "JSON_EXTRACT(object, ".$jsonPathParam.")";
 
-            // Handle simple values (backwards compatibility)
-            if (!is_array($value)) {
+            // Handle simple values (backwards compatibility).
+            if (is_array($value) === false) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                            $queryBuilder->createFunction($extractSql)
                         )
                     );
-                } else if ($value === 'IS NULL') {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
-                    );
-                } else {
-                    // Simple equals with both exact match and array containment
-                    $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $value);
+                    continue;
                 }
 
-                continue;
-            }
+                if ($value === 'IS NULL') {
+                    $queryBuilder->andWhere(
+                        $queryBuilder->expr()->isNull(
+                            $queryBuilder->createFunction($extractSql)
+                        )
+                    );
+                    continue;
+                }
 
-            // Handle array of values (OR condition) - backwards compatibility
-            if (isset($value[0]) && !is_string($value[0])) {
-                // This is an array of values, not operators
+                // Simple equals with both exact match and array containment.
+                $this->applySimpleObjectFieldFilter(
+                    queryBuilder: $queryBuilder,
+                    jsonPath: $jsonPath,
+                    value: $value
+                );
+                continue;
+            }//end if
+
+            // Handle array of values (OR condition) - backwards compatibility.
+            if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
+                // This is an array of values, not operators.
                 $orConditions = $queryBuilder->expr()->orX();
                 foreach ($value as $val) {
-                    $this->addObjectFieldValueCondition($queryBuilder, $orConditions, $jsonPath, $val);
+                    $this->addObjectFieldValueCondition(
+                        queryBuilder: $queryBuilder,
+                        conditions: $orConditions,
+                        jsonPath: $jsonPath,
+                        value: $val
+                    );
                 }
 
                 $queryBuilder->andWhere($orConditions);
                 continue;
             }
 
-            // Handle operator-based filters
+            // Handle operator-based filters.
             foreach ($value as $operator => $operatorValue) {
-                $this->applyObjectFieldOperator($queryBuilder, $jsonPath, $operator, $operatorValue);
+                $this->applyObjectFieldOperator(
+                    queryBuilder: $queryBuilder,
+                    jsonPath: $jsonPath,
+                    operator: $operator,
+                    operatorValue: $operatorValue
+                );
             }
         }//end foreach
-
     }//end applyObjectFieldFilters()
-
 
     /**
      * Apply simple object field filter (backwards compatibility)
@@ -679,12 +951,15 @@ class MetaDataFacetHandler
      */
     private function applySimpleObjectFieldFilter(IQueryBuilder $queryBuilder, string $jsonPath, mixed $value): void
     {
-        $singleValueConditions = $queryBuilder->expr()->orX();
-        $this->addObjectFieldValueCondition($queryBuilder, $singleValueConditions, $jsonPath, $value);
-        $queryBuilder->andWhere($singleValueConditions);
-
+        $singleValConds = $queryBuilder->expr()->orX();
+        $this->addObjectFieldValueCondition(
+            queryBuilder: $queryBuilder,
+            conditions: $singleValConds,
+            jsonPath: $jsonPath,
+            value: $value
+        );
+        $queryBuilder->andWhere($singleValConds);
     }//end applySimpleObjectFieldFilter()
-
 
     /**
      * Add object field value condition (exact match and array containment)
@@ -706,26 +981,35 @@ class MetaDataFacetHandler
      *
      * @return void
      */
-    private function addObjectFieldValueCondition(IQueryBuilder $queryBuilder, mixed $conditions, string $jsonPath, mixed $value): void
-    {
-        // Check for exact match (single value)
+    private function addObjectFieldValueCondition(
+        IQueryBuilder $queryBuilder,
+        mixed $conditions,
+        string $jsonPath,
+        mixed $value
+    ): void {
+        $jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+        $valueParam    = $queryBuilder->createNamedParameter($value);
+        $unquoteSql    = "JSON_UNQUOTE(JSON_EXTRACT(object, ".$jsonPathParam."))";
+
+        // Check for exact match (single value).
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
-                $queryBuilder->createNamedParameter($value)
+                $queryBuilder->createFunction($unquoteSql),
+                $valueParam
             )
         );
 
-        // Check if the value exists within an array using JSON_CONTAINS
+        // Check if the value exists within an array using JSON_CONTAINS.
+        $extractSql       = "JSON_EXTRACT(object, ".$jsonPathParam.")";
+        $jsonEncodedValue = $queryBuilder->createNamedParameter(json_encode($value));
+        $containsSql      = "JSON_CONTAINS(".$extractSql.", ".$jsonEncodedValue.")";
         $conditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
+                $queryBuilder->createFunction($containsSql),
                 $queryBuilder->createNamedParameter(1)
             )
         );
-
     }//end addObjectFieldValueCondition()
-
 
     /**
      * Apply object field operator
@@ -745,103 +1029,114 @@ class MetaDataFacetHandler
      * @psalm-param string $operator
      * @psalm-param mixed $operatorValue
      *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
      * @return void
      */
-    private function applyObjectFieldOperator(IQueryBuilder $queryBuilder, string $jsonPath, string $operator, mixed $operatorValue): void
-    {
-        $jsonExtract = $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))");
+    private function applyObjectFieldOperator(
+        IQueryBuilder $queryBuilder,
+        string $jsonPath,
+        string $operator,
+        mixed $operatorValue
+    ): void {
+        $jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+        $extractSql    = "JSON_EXTRACT(object, ".$jsonPathParam.")";
+        $unquoteSql    = "JSON_UNQUOTE(".$extractSql.")";
+        $jsonExtract   = $queryBuilder->createFunction($unquoteSql);
+        $opParam       = $queryBuilder->createNamedParameter($operatorValue);
 
         switch ($operator) {
             case 'gt':
-                $queryBuilder->andWhere($queryBuilder->expr()->gt($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->gt($jsonExtract, $opParam));
                 break;
             case 'lt':
-                $queryBuilder->andWhere($queryBuilder->expr()->lt($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->lt($jsonExtract, $opParam));
                 break;
             case 'gte':
-                $queryBuilder->andWhere($queryBuilder->expr()->gte($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->gte($jsonExtract, $opParam));
                 break;
             case 'lte':
-                $queryBuilder->andWhere($queryBuilder->expr()->lte($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->lte($jsonExtract, $opParam));
                 break;
             case 'ne':
-                $queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $opParam));
                 break;
             case '~':
-                // Contains (case insensitive)
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
+                // Contains (case insensitive).
+                $likeParam = $queryBuilder->createNamedParameter('%'.$operatorValue.'%');
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $likeParam));
                 break;
             case '^':
-                // Starts with (case insensitive)
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter($operatorValue.'%')));
+                // Starts with (case insensitive).
+                $startsParam = $queryBuilder->createNamedParameter($operatorValue.'%');
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $startsParam));
                 break;
             case '$':
-                // Ends with (case insensitive)
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue)));
+                // Ends with (case insensitive).
+                $endsParam = $queryBuilder->createNamedParameter('%'.$operatorValue);
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $endsParam));
                 break;
             case '===':
-                // Exact match (case sensitive)
-                $queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
+                // Exact match (case sensitive).
+                $queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $opParam));
                 break;
             case 'exists':
-                if ($operatorValue === true || $operatorValue === 'true') {
+                $extractFunc = $queryBuilder->createFunction($extractSql);
+                if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
+                        $queryBuilder->expr()->isNull($extractFunc)
                     );
-                } else {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
-                    );
+                    break;
                 }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->isNotNull($extractFunc)
+                );
                 break;
             case 'empty':
-                if ($operatorValue === true || $operatorValue === 'true') {
+                $extractFunc = $queryBuilder->createFunction($extractSql);
+                $emptyParam  = $queryBuilder->createNamedParameter('');
+                if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
-                            $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                            ),
-                            $queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter(''))
-                    )
-                            );
-                } else {
-                    $queryBuilder->andWhere(
-                            $queryBuilder->expr()->andX(
-                        $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                            ),
-                            $queryBuilder->expr()->neq($jsonExtract, $queryBuilder->createNamedParameter(''))
-                    )
-                            );
+                        $queryBuilder->expr()->andX(
+                            $queryBuilder->expr()->isNotNull($extractFunc),
+                            $queryBuilder->expr()->neq($jsonExtract, $emptyParam)
+                        )
+                    );
+                    break;
                 }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->orX(
+                        $queryBuilder->expr()->isNull($extractFunc),
+                        $queryBuilder->expr()->eq($jsonExtract, $emptyParam)
+                    )
+                );
                 break;
             case 'null':
-                if ($operatorValue === true || $operatorValue === 'true') {
+                $extractFunc = $queryBuilder->createFunction($extractSql);
+                if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
+                        $queryBuilder->expr()->isNotNull($extractFunc)
                     );
-                } else {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
-                    );
+                    break;
                 }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->isNull($extractFunc)
+                );
                 break;
             default:
-                // Default to simple filter for unknown operators
-                $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $operatorValue);
+                // Default to simple filter for unknown operators.
+                $this->applySimpleObjectFieldFilter(
+                    queryBuilder: $queryBuilder,
+                    jsonPath: $jsonPath,
+                    value: $operatorValue
+                );
                 break;
         }//end switch
-
     }//end applyObjectFieldOperator()
-
 
     /**
      * Get date format string for histogram interval
@@ -863,14 +1158,14 @@ class MetaDataFacetHandler
                 return '%Y-%u';
             case 'month':
                 return '%Y-%m';
+            case 'quarter':
+                return '%Y-%m';
             case 'year':
                 return '%Y';
             default:
                 return '%Y-%m';
         }
-
     }//end getDateFormatForInterval()
-
 
     /**
      * Generate a human-readable key for a range
@@ -885,18 +1180,20 @@ class MetaDataFacetHandler
      */
     private function generateRangeKey(array $range): string
     {
-        if (isset($range['from']) && isset($range['to'])) {
+        if (($range['from'] ?? null) !== null && (($range['to'] ?? null) !== null) === true) {
             return $range['from'].'-'.$range['to'];
-        } else if (isset($range['from'])) {
-            return $range['from'].'+';
-        } else if (isset($range['to'])) {
-            return '0-'.$range['to'];
-        } else {
-            return 'all';
         }
 
-    }//end generateRangeKey()
+        if (($range['from'] ?? null) !== null) {
+            return $range['from'].'+';
+        }
 
+        if (($range['to'] ?? null) !== null) {
+            return '0-'.$range['to'];
+        }
+
+        return 'all';
+    }//end generateRangeKey()
 
     /**
      * Get human-readable label for metadata field value
@@ -914,8 +1211,8 @@ class MetaDataFacetHandler
      */
     private function getFieldLabel(string $field, mixed $value): string
     {
-        // For register and schema fields, try to get the actual name from database
-        if ($field === 'register' && is_numeric($value)) {
+        // For register and schema fields, try to get the actual name from database.
+        if ($field === 'register' && is_numeric($value) === true) {
             try {
                 $qb = $this->db->getQueryBuilder();
                 $qb->select('title')
@@ -923,13 +1220,17 @@ class MetaDataFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title  = $result->fetchOne();
-                return $title ? (string) $title : "Register $value";
+                if ($title === false) {
+                    return "Register $value";
+                }
+
+                return (string) $title;
             } catch (\Exception $e) {
                 return "Register $value";
             }
         }
 
-        if ($field === 'schema' && is_numeric($value)) {
+        if ($field === 'schema' && is_numeric($value) === true) {
             try {
                 $qb = $this->db->getQueryBuilder();
                 $qb->select('title')
@@ -937,17 +1238,19 @@ class MetaDataFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title  = $result->fetchOne();
-                return $title ? (string) $title : "Schema $value";
+                if ($title === false) {
+                    return "Schema $value";
+                }
+
+                return (string) $title;
             } catch (\Exception $e) {
                 return "Schema $value";
             }
         }
 
-        // For other fields, return the value as-is
+        // For other fields, return the value as-is.
         return (string) $value;
-
     }//end getFieldLabel()
-
 
     /**
      * Get facetable metadata fields with their types and available options
@@ -963,13 +1266,13 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Facetable metadata fields with their configuration
+     * @return (((int|mixed|string)[]|mixed|string)[]|bool|string)[][] Facetable field definitions.
      */
     public function getFacetableFields(array $baseQuery=[]): array
     {
         $facetableFields = [];
 
-        // Define predefined metadata fields with their types and descriptions
+        // Define predefined metadata fields with their types and descriptions.
         $metadataFields = [
             'register'     => [
                 'type'        => 'categorical',
@@ -1009,35 +1312,21 @@ class MetaDataFacetHandler
                 'intervals'   => ['day', 'week', 'month', 'year'],
                 'has_labels'  => false,
             ],
-            'published'    => [
-                'type'        => 'date',
-                'description' => 'Date and time when the object was published',
-                'facet_types' => ['date_histogram', 'range'],
-                'intervals'   => ['day', 'week', 'month', 'year'],
-                'has_labels'  => false,
-            ],
-            'depublished'  => [
-                'type'        => 'date',
-                'description' => 'Date and time when the object was depublished',
-                'facet_types' => ['date_histogram', 'range'],
-                'intervals'   => ['day', 'week', 'month', 'year'],
-                'has_labels'  => false,
-            ],
         ];
 
-        // Check which fields actually have data in the database
+        // Check which fields actually have data in the database.
         foreach ($metadataFields as $field => $config) {
-            if ($this->hasFieldData($field, $baseQuery)) {
+            if ($this->hasFieldData(field: $field, baseQuery: $baseQuery) === true) {
                 $fieldConfig = $config;
 
-                // Add sample values for categorical fields
+                // Add sample values for categorical fields.
                 if ($config['type'] === 'categorical') {
-                    $fieldConfig['sample_values'] = $this->getSampleValues($field, $baseQuery, 10);
+                    $fieldConfig['sample_values'] = $this->getSampleValues(field: $field, baseQuery: $baseQuery, limit: 10);
                 }
 
-                // Add date range for date fields
+                // Add date range for date fields.
                 if ($config['type'] === 'date') {
-                    $dateRange = $this->getDateRange($field, $baseQuery);
+                    $dateRange = $this->getDateRange(field: $field, baseQuery: $baseQuery);
                     if ($dateRange !== null) {
                         $fieldConfig['date_range'] = $dateRange;
                     }
@@ -1048,9 +1337,7 @@ class MetaDataFacetHandler
         }
 
         return $facetableFields;
-
     }//end getFacetableFields()
-
 
     /**
      * Check if a metadata field has data in the database
@@ -1076,16 +1363,14 @@ class MetaDataFacetHandler
             ->from('openregister_objects')
             ->where($queryBuilder->expr()->isNotNull($field));
 
-        // Apply base filters
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        // Apply base filters.
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result = $queryBuilder->executeQuery();
         $count  = (int) $result->fetchOne();
 
         return $count > 0;
-
     }//end hasFieldData()
-
 
     /**
      * Get sample values for a categorical field
@@ -1104,7 +1389,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Sample values with their counts
+     * @return (int|mixed|string)[][]
+     *
+     * @psalm-return list<array{count: int, label: string, value: mixed}>
      */
     private function getSampleValues(string $field, array $baseQuery, int $limit): array
     {
@@ -1118,15 +1405,15 @@ class MetaDataFacetHandler
             ->orderBy('count', 'DESC')
             ->setMaxResults($limit);
 
-        // Apply base filters
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        // Apply base filters.
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
         $samples = [];
 
-        while ($row = $result->fetch()) {
-            $value = $row[$field];
-            $label = $this->getFieldLabel($field, $value);
+        while (($row = $result->fetch()) !== false) {
+            $value     = $row[$field];
+                $label = $this->getFieldLabel(field: $field, value: $value);
 
             $samples[] = [
                 'value' => $value,
@@ -1136,9 +1423,7 @@ class MetaDataFacetHandler
         }
 
         return $samples;
-
     }//end getSampleValues()
-
 
     /**
      * Get date range for a date field
@@ -1155,8 +1440,10 @@ class MetaDataFacetHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return array|null Date range with min and max values, or null if no data
+     *
+     * @psalm-return array{min: mixed, max: mixed}|null
      */
-    private function getDateRange(string $field, array $baseQuery): ?array
+    private function getDateRange(string $field, array $baseQuery): array|null
     {
         $queryBuilder = $this->db->getQueryBuilder();
 
@@ -1165,13 +1452,13 @@ class MetaDataFacetHandler
             ->from('openregister_objects')
             ->where($queryBuilder->expr()->isNotNull($field));
 
-        // Apply base filters
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        // Apply base filters.
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result = $queryBuilder->executeQuery();
         $row    = $result->fetch();
 
-        if ($row && $row['min_date'] && $row['max_date']) {
+        if (($row !== false) === true && ($row['min_date'] !== null) === true && ($row['max_date'] !== null) === true) {
             return [
                 'min' => $row['min_date'],
                 'max' => $row['max_date'],
@@ -1179,8 +1466,5 @@ class MetaDataFacetHandler
         }
 
         return null;
-
     }//end getDateRange()
-
-
 }//end class

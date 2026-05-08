@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Combined Schema and Object Enhancements Migration
  *
@@ -43,7 +44,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      */
     private IDBConnection $connection;
 
-
     /**
      * Constructor
      *
@@ -52,9 +52,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-
     }//end __construct()
-
 
     /**
      * Pre-schema change operations to clean up duplicates
@@ -63,14 +61,14 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
      * @return void
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $this->cleanupDuplicateSlugs($output);
-
+        $this->cleanupDuplicateSlugs(output: $output);
     }//end preSchemaChange()
-
 
     /**
      * Clean up duplicate (organisation, slug) combinations by updating slugs
@@ -82,13 +80,11 @@ class Version1Date20250829120000 extends SimpleMigrationStep
     private function cleanupDuplicateSlugs(IOutput $output): void
     {
         // Clean up duplicates in registers table.
-        $this->cleanupTableDuplicates('openregister_registers', 'registers', $output);
+        $this->cleanupTableDuplicates(tableName: 'openregister_registers', entityType: 'registers', output: $output);
 
         // Clean up duplicates in schemas table.
-        $this->cleanupTableDuplicates('openregister_schemas', 'schemas', $output);
-
+        $this->cleanupTableDuplicates(tableName: 'openregister_schemas', entityType: 'schemas', output: $output);
     }//end cleanupDuplicateSlugs()
-
 
     /**
      * Clean up duplicates in a specific table
@@ -111,13 +107,16 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             ->groupBy('organisation', 'slug')
             ->having($qb->expr()->gt('duplicate_count', $qb->createNamedParameter(1)));
 
-        $duplicateGroups = $qb->execute()->fetchAll();
+        $duplicateGroups = $qb->executeQuery()->fetchAll();
 
         foreach ($duplicateGroups as $group) {
             $organisation = $group['organisation'];
             $originalSlug = $group['slug'];
 
-            $output->info("Found {$group['duplicate_count']} duplicate {$entityType} with organisation '{$organisation}' and slug '{$originalSlug}'");
+            $count = $group['duplicate_count'];
+            $msg   = "Found {$count} duplicate {$entityType} with organisation ";
+            $msg  .= "'{$organisation}' and slug '{$originalSlug}'";
+            $output->info($msg);
 
             // Get all records in this duplicate group, ordered by ID (keep first, update others).
             $qb2 = $this->connection->getQueryBuilder();
@@ -127,11 +126,16 @@ class Version1Date20250829120000 extends SimpleMigrationStep
                 ->andWhere($qb2->expr()->eq('slug', $qb2->createNamedParameter($originalSlug)))
                 ->orderBy('id', 'ASC');
 
-            $duplicates = $qb2->execute()->fetchAll();
+            $duplicates = $qb2->executeQuery()->fetchAll();
 
             // Skip the first record (keep original), update the rest.
             foreach (array_slice($duplicates, 1) as $index => $duplicate) {
-                $newSlug = $this->generateUniqueSlug($tableName, $organisation, $originalSlug, ($index + 2));
+                $newSlug = $this->generateUniqueSlug(
+                    tableName: $tableName,
+                    organisation: $organisation,
+                    baseSlug: $originalSlug,
+                    startNumber: ((int) $index + 2)
+                );
 
                 // Update the slug.
                 $updateQb = $this->connection->getQueryBuilder();
@@ -139,14 +143,16 @@ class Version1Date20250829120000 extends SimpleMigrationStep
                     ->set('slug', $updateQb->createNamedParameter($newSlug))
                     ->where($updateQb->expr()->eq('id', $updateQb->createNamedParameter($duplicate['id'])));
 
-                $updateQb->execute();
+                $updateQb->executeStatement();
 
-                $output->info("Updated {$entityType} '{$duplicate['title']}' (ID: {$duplicate['id']}) from slug '{$originalSlug}' to '{$newSlug}'");
-            }
+                $title = $duplicate['title'];
+                $id    = $duplicate['id'];
+                $msg   = "Updated {$entityType} '{$title}' (ID: {$id}) ";
+                $msg  .= "from slug '{$originalSlug}' to '{$newSlug}'";
+                $output->info($msg);
+            }//end foreach
         }//end foreach
-
     }//end cleanupTableDuplicates()
-
 
     /**
      * Generate a unique slug for the given table and organisation
@@ -158,21 +164,23 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      *
      * @return string The unique slug
      */
-    private function generateUniqueSlug(string $tableName, string $organisation, string $baseSlug, int $startNumber=2): string
-    {
+    private function generateUniqueSlug(
+        string $tableName,
+        string $organisation,
+        string $baseSlug,
+        int $startNumber=2
+    ): string {
         $counter = $startNumber;
         $newSlug = $baseSlug.'-'.$counter;
 
         // Keep incrementing until we find a unique slug.
-        while ($this->slugExists($tableName, $organisation, $newSlug) === true) {
+        while ($this->slugExists(tableName: $tableName, organisation: $organisation, slug: $newSlug) === true) {
             $counter++;
             $newSlug = $baseSlug.'-'.$counter;
         }
 
         return $newSlug;
-
     }//end generateUniqueSlug()
-
 
     /**
      * Check if a slug exists for the given organisation in the table
@@ -191,11 +199,9 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)))
             ->andWhere($qb->expr()->eq('slug', $qb->createNamedParameter($slug)));
 
-        $count = $qb->execute()->fetchColumn();
+        $count = $qb->executeQuery()->fetchOne();
         return ((int) $count > 0);
-
     }//end slugExists()
-
 
     /**
      * Apply schema changes for both image column and unique constraints
@@ -204,67 +210,62 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Database migration requires checking many column/index conditions
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // 1. Add image column to openregister_objects table
+        // 1. Add image column to openregister_objects table.
         if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
             if ($table->hasColumn('image') === false) {
                 $table->addColumn(
-                        'image',
-                        Types::TEXT,
-                        [
-                            'notnull' => false,
-                            'comment' => 'Image data or reference representing the object (e.g. logo)',
-                        ]
-                        );
-                $output->info('Added image column to openregister_objects table');
+                    'image',
+                    Types::TEXT,
+                    [
+                        'notnull' => false,
+                        'comment' => 'Image data or reference representing the object (e.g. logo)',
+                    ]
+                );
+                $output->info(message: 'Added image column to openregister_objects table');
             }
         }
 
-        // 2. Add unique constraint for (organisation, slug) on registers table
+        // 2. Add unique constraint for (organisation, slug) on registers table.
         if ($schema->hasTable('openregister_registers') === true) {
             $table = $schema->getTable('openregister_registers');
 
             // Check if both columns exist before adding constraint.
-            if ($table->hasColumn('organisation') === true && $table->hasColumn('slug') === true) {
-                $indexName = 'registers_organisation_slug_unique';
-                if ($table->hasIndex($indexName) === false) {
-                    $table->addUniqueIndex(['organisation', 'slug'], $indexName);
-                    $output->info('Added unique constraint on (organisation, slug) for registers table');
-                }
-            } else {
+            if ($table->hasColumn('organisation') === false || $table->hasColumn('slug') === false) {
                 $output->warning('Cannot add unique constraint: organisation or slug column missing in registers table');
+            } else if ($table->hasIndex('registers_organisation_slug_unique') === false) {
+                $table->addUniqueIndex(['organisation', 'slug'], 'registers_organisation_slug_unique');
+                $output->info(message: 'Added unique constraint on (organisation, slug) for registers table');
             }
         }
 
-        // 3. Add unique constraint for (organisation, slug) on schemas table
+        // 3. Add unique constraint for (organisation, slug) on schemas table.
         if ($schema->hasTable('openregister_schemas') === true) {
             $table = $schema->getTable('openregister_schemas');
 
             // Check if both columns exist before adding constraint.
-            if ($table->hasColumn('organisation') === true && $table->hasColumn('slug') === true) {
-                $indexName = 'schemas_organisation_slug_unique';
-                if ($table->hasIndex($indexName) === false) {
-                    $table->addUniqueIndex(['organisation', 'slug'], $indexName);
-                    $output->info('Added unique constraint on (organisation, slug) for schemas table');
-                }
-            } else {
+            if ($table->hasColumn('organisation') === false || $table->hasColumn('slug') === false) {
                 $output->warning('Cannot add unique constraint: organisation or slug column missing in schemas table');
+            } else if ($table->hasIndex('schemas_organisation_slug_unique') === false) {
+                $table->addUniqueIndex(['organisation', 'slug'], 'schemas_organisation_slug_unique');
+                $output->info(message: 'Added unique constraint on (organisation, slug) for schemas table');
             }
         }
 
         return $schema;
-
     }//end changeSchema()
-
-
 }//end class
