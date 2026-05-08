@@ -325,3 +325,238 @@ and the nil UUID `00000000-0000-0000-0000-000000000000` where an ID placeholder 
 - **WHEN** the OpenAPI spec is regenerated
 - **THEN** it SHALL include `/api/github/issues` with both GET and POST operations and
   their documented response statuses
+
+### Requirement: Required PAT scopes
+
+The minimum GitHub OAuth scope required for both PATs SHALL be `public_repo` only — no
+broader scope (`repo`, `admin:org`, `delete_repo`, etc.) is required by any code path in
+this capability. The app-level PAT (`openregister::github_api_token`) SHALL be used solely
+for read access to public-repo issues, which `public_repo` covers. The user-level PAT
+(`openregister::github_token`) SHALL be used solely for creating issues on the configured
+public repo, which `public_repo` also covers. Admin documentation MUST instruct operators
+to provision PATs with the least-privilege `public_repo` scope; if a PAT carries broader
+scope the system cannot detect or reject it, but the documentation SHALL warn that doing
+so violates least-privilege and increases blast radius if the PAT leaks.
+
+Fine-grained PATs SHOULD be preferred over classic PATs because they allow scoping to the
+single configured repository in addition to scoping by permission.
+
+#### Scenario: Admin docs surface the required scope
+
+- **WHEN** an administrator reads the OpenRegister admin documentation for configuring the
+  app-level GitHub PAT
+- **THEN** the docs SHALL state that the minimum required scope is `public_repo`
+- **AND** the docs SHALL warn that broader scopes (e.g. `repo`, `admin:org`) violate least
+  privilege and SHOULD NOT be granted
+
+### Requirement: Token lifecycle
+
+The github-issue-proxy capability SHALL define an explicit operational lifecycle for both
+the app-level and user-level PATs, covering rotation, expiry, and compromise response:
+
+1. **Preference for fine-grained PATs.** Documentation SHALL recommend GitHub fine-grained
+   PATs with an explicit expiry over classic PATs (which never expire by default).
+2. **Recommended rotation cadence.** Documentation SHALL state a recommended rotation
+   cadence of 90 days for the app-level PAT. User PATs are rotated by the user themselves;
+   no system-imposed cadence applies.
+3. **Compromise response.** Documentation SHALL state that on suspected compromise the
+   server PAT MUST be revoked at GitHub immediately, replaced in OpenRegister via the
+   admin settings UI, and the audit-log records produced under the audit-logging
+   requirement SHALL be reviewed for unexpected `repo` or volume signals.
+4. **Expiry detection.** The implementation MAY add an admin-facing health-check (e.g. a
+   periodic background job or a settings-page status indicator) that calls
+   `GET /user` with the configured PAT and surfaces a non-200 response (typically 401 on
+   expired tokens) before silent failure across the proxy. When implemented, the health
+   check MUST NOT log the PAT value on failure.
+
+#### Scenario: Admin docs document rotation cadence and revocation procedure
+
+- **WHEN** an administrator reads the OpenRegister admin documentation for the app-level
+  GitHub PAT
+- **THEN** the docs SHALL state a recommended rotation cadence of 90 days
+- **AND** the docs SHALL state the procedure to revoke at GitHub and replace in
+  OpenRegister on suspected compromise
+
+### Requirement: Repo allowlist enforcement
+
+Both endpoints SHALL enforce a server-side allowlist that constrains the `repo` parameter
+to the single repository configured for this OpenRegister instance. The allowlist SHALL be
+sourced from a new IAppConfig key `openregister::github_repo` (format `<owner>/<repo>`)
+configured by the administrator. The controller MUST validate that the request's `repo`
+parameter (GET) or `repo` body field (POST) equals the configured value before any
+delegation to `GitHubHandler`. Requests for any other repository SHALL be rejected with
+HTTP 403 and the structured error code `repo_not_allowed`. No outbound GitHub request
+SHALL be issued for rejected calls.
+
+When `openregister::github_repo` is unset, both endpoints SHALL behave as if no PAT were
+configured (GET → HTTP 200 `{items: [], hint: "github_repo_not_configured"}`; POST → HTTP
+503 `{error: "github_repo_not_configured"}`) and SHALL NOT issue an outbound GitHub
+request. This collapses the user-supplied-`repo` attack surface to a single
+admin-configured value.
+
+#### Scenario: POST to a non-configured repo is rejected
+
+- **WHEN** an authenticated user POSTs `{repo: "torvalds/linux", title: "Spam", body: "spam body 10+ chars"}`
+- **AND** `openregister::github_repo` is set to `ConductionNL/openregister`
+- **THEN** the endpoint SHALL return HTTP 403 with error code `repo_not_allowed`
+- **AND** no outbound GitHub request SHALL be issued
+
+#### Scenario: GET for a non-configured repo is rejected
+
+- **WHEN** an authenticated user requests `GET /api/github/issues?repo=torvalds/linux`
+- **AND** `openregister::github_repo` is set to `ConductionNL/openregister`
+- **THEN** the endpoint SHALL return HTTP 403 with error code `repo_not_allowed`
+- **AND** no outbound GitHub request SHALL be issued
+
+#### Scenario: GitHub repo not configured
+
+- **WHEN** `openregister::github_repo` is empty or unset
+- **AND** an authenticated user POSTs `/api/github/issues` with any `repo` value
+- **THEN** the endpoint SHALL return HTTP 503 with body `{error: "github_repo_not_configured"}`
+- **AND** no outbound GitHub request SHALL be issued
+
+### Requirement: Display-name sanitization in attribution prefix
+
+When the server PAT fallback path is used, the controller SHALL escape the embedded
+`<display_name>` and `<instance_url>` values before building the attribution block to
+prevent markdown-injection or block-termination attacks via the user-controlled display
+name. Sanitization SHALL strip all newline characters (`\r`, `\n`) and the markdown-
+significant characters `*`, `_`, `[`, `]`, `(`, `)`, `` ` ``, `<`, `>`, `\` from the
+display name before embedding. The resulting attribution block SHALL be:
+
+```
+> Submitted by **<sanitized_display_name>** via <sanitized_instance_url>
+
+---
+
+```
+
+The sanitized display name SHALL be truncated to 80 characters maximum to bound the
+attribution-prefix length. The sanitized instance URL SHALL be validated to begin with
+`https://` (or `http://` only on `localhost` for development); other schemes SHALL cause
+the prefix to fall back to a generic literal `> Submitted via Nextcloud OpenRegister`
+without embedding the URL at all.
+
+#### Scenario: Display name with markdown-injection characters
+
+- **WHEN** the user's Nextcloud display name is `** via evil.com\n\n[Forged Admin]`
+- **AND** the server PAT fallback is used
+- **THEN** the attribution prefix SHALL render the display name as
+  `   via evil.com  Forged Admin` (all `*`, `_`, `[`, `]`, `(`, `)`, `` ` ``, `<`, `>`,
+  `\`, and newline characters stripped, replaced with spaces)
+- **AND** the `\n\n---\n\n` separator SHALL appear exactly once and only after the
+  sanitized prefix
+
+#### Scenario: Excessively long display name
+
+- **WHEN** the user's display name is 200 characters long
+- **THEN** the attribution prefix SHALL embed only the first 80 characters of the
+  sanitized name
+
+### Requirement: specRef server-side validation
+
+When the request body includes a `specRef` field, the controller SHALL validate the value
+against the regex `^[a-z0-9][a-z0-9-]*[a-z0-9]$` (kebab-case, identical to the ADR-008
+capability-slug convention) and SHALL reject values longer than 80 characters. Validation
+failures SHALL yield HTTP 400 with the structured error code `specref_invalid_format` and
+SHALL NOT issue an outbound GitHub request. An empty or absent `specRef` field is valid
+and SHALL skip the body suffix and label-application logic per the existing requirement.
+
+#### Scenario: Invalid specRef format
+
+- **WHEN** a user POSTs `{repo: "ConductionNL/openregister", title: "Valid title", body: "Valid body 10+ chars.", specRef: "Bad Slug!"}`
+- **THEN** the endpoint SHALL return HTTP 400 with error code `specref_invalid_format`
+- **AND** no outbound GitHub request SHALL be issued
+
+#### Scenario: specRef with newline injection
+
+- **WHEN** a user POSTs `{... specRef: "slug\nnewline-content"}`
+- **THEN** the endpoint SHALL return HTTP 400 with error code `specref_invalid_format`
+
+#### Scenario: specRef exceeds length cap
+
+- **WHEN** a user POSTs `{... specRef: "<81-character valid slug>"}`
+- **THEN** the endpoint SHALL return HTTP 400 with error code `specref_invalid_format`
+
+### Requirement: Audit logging for server-PAT submissions
+
+When the server-PAT fallback path is used to create an issue, the implementation SHALL
+write a single audit-log entry at INFO level to Nextcloud's `app.log` containing exactly
+the fields:
+
+- `user_id` — the Nextcloud UID of the submitting user.
+- `repo` — the `<owner>/<repo>` value from the validated request.
+- `issue_number` — the integer issue number returned by GitHub.
+- `specref` — the validated `specRef` value, or empty string if absent.
+- `timestamp` — RFC 3339 timestamp from server clock.
+
+The log entry MUST NOT contain the PAT value, the issue body, the issue title, or the
+attribution prefix. Submissions made with the user-PAT path SHALL NOT produce this audit
+entry (those are auditable on GitHub directly under the user's identity). Failed
+submissions (any non-201 response from GitHub) SHALL log a separate WARNING entry
+containing the same fields plus an `error_code` and the GitHub status code, again with no
+PAT value.
+
+#### Scenario: Successful server-PAT submission emits audit entry
+
+- **WHEN** a user submits successfully via the server-PAT fallback path and GitHub returns
+  issue 42 on `ConductionNL/openregister`
+- **THEN** Nextcloud's `app.log` SHALL contain exactly one INFO entry from the
+  `openregister` app with fields `{user_id, repo: "ConductionNL/openregister", issue_number: 42, specref: "", timestamp}`
+- **AND** the entry SHALL NOT contain the PAT value or the issue body
+
+#### Scenario: User-PAT submission does not emit server-side audit entry
+
+- **WHEN** the same user submits using their own PAT (not the fallback)
+- **THEN** no `openregister` audit entry SHALL be emitted (GitHub audit covers it under
+  the user's identity)
+
+### Requirement: APCu fallback for submission rate limit
+
+When APCu is unavailable on the PHP installation, the POST endpoint SHALL fall back to
+Nextcloud's `ICache` (via `ICacheFactory::createDistributed()` or `createLocking()`) to
+enforce the per-user rate limit. The implementation SHALL NOT silently bypass the rate
+limit when APCu is absent. When neither APCu nor any `ICache` backend is available
+(extremely rare in production deployments), the endpoint SHALL fail closed with HTTP 503
+and the structured error code `rate_limiter_unavailable`, and SHALL NOT issue an outbound
+GitHub request.
+
+#### Scenario: APCu unavailable, distributed cache available
+
+- **WHEN** APCu is not loaded on PHP
+- **AND** Nextcloud's distributed cache (e.g. Redis, Memcached) is available
+- **THEN** the rate-limit key `openregister.feature_submission:<user_id>` SHALL be stored
+  in the distributed cache with the same 60s TTL semantics
+- **AND** the second submission within 60s SHALL still receive HTTP 429
+
+#### Scenario: APCu unavailable and no other cache backend
+
+- **WHEN** no rate-limit-capable cache backend is available
+- **THEN** the POST endpoint SHALL fail closed with HTTP 503 and error code `rate_limiter_unavailable`
+- **AND** no outbound GitHub request SHALL be issued
+
+### Requirement: Per-user GET rate limit
+
+The GET endpoint SHALL enforce a per-user rate limit on cache-miss requests of at most 10
+distinct cache-key tuples per user per 5-minute window, to prevent a single user from
+exhausting the app-level PAT's GitHub rate budget by varying `sort` or `per_page` to
+defeat the in-memory cache. Cache hits SHALL NOT count against this limit. The limiter
+SHALL share the same APCu/`ICache` fallback semantics as the POST limiter. When the limit
+is exceeded, the endpoint SHALL return HTTP 429 with the structured body
+`{"error": "user_rate_limited", "retry_after": <seconds>}` and SHALL NOT issue an outbound
+GitHub request. Additionally, the endpoint SHALL constrain the `sort` query parameter to
+the fixed set `{"reactions-+1", "created", "updated", "comments"}` (rejecting other values
+with HTTP 400 `sort_invalid_value`) so the cache-key space is naturally bounded.
+
+#### Scenario: User exhausts cache-miss budget
+
+- **WHEN** a single user makes 11 GET requests within 5 minutes, each varying `per_page`
+  to produce a distinct cache key, all of which miss the cache
+- **THEN** the 11th response SHALL be HTTP 429 with body
+  `{error: "user_rate_limited", retry_after: <positive integer ≤ 300>}`
+- **AND** no outbound GitHub request SHALL be issued for the 11th call
+
+#### Scenario: Invalid sort value
+
+- **WHEN** a user requests `GET /api/github/issues?repo=ConductionNL/openregister&sort=stars`
+- **THEN** the endpoint SHALL return HTTP 400 with error code `sort_invalid_value`

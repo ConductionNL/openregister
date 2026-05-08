@@ -426,3 +426,128 @@ manifest before the application build runs.
   `"prebuild": "openspec-manifest build"`
 - **THEN** `docs/features.json` SHALL be regenerated before webpack / vite runs
 - **AND** the bundled JS SHALL contain the current manifest contents
+
+### Requirement: DOMPurify config policy on remote images
+
+The `SAFE_MARKDOWN_DOMPURIFY_CONFIG` allowlist SHALL strip all `<img>` tags whose `src`
+attribute resolves to a non-relative external origin (i.e. begins with `http://`,
+`https://`, `//`, or any non-`/` protocol-bearing prefix). Inline `data:` image URLs
+SHALL also be stripped. Only `<img>` elements with relative `src` attributes (e.g.
+`./foo.png`, `/images/bar.svg`) SHALL render — these have no provenance leakage to
+external origins. This is stricter than DOMPurify's default and is required to prevent
+issue authors from embedding tracking-pixel images that leak the viewer's IP, request
+headers, and timing to attacker-controlled origins on every roadmap render.
+
+The same policy SHALL apply to `<image>` (SVG) and `<picture>`/`<source>` elements.
+
+The `SuggestFeatureModal` live-preview pane SHALL use the same configuration so the
+preview matches what will eventually render on the roadmap.
+
+#### Scenario: External image is stripped
+
+- **WHEN** a roadmap issue body contains
+  `<img src="https://tracker.example/pixel.gif">`
+- **THEN** the rendered DOM SHALL NOT contain the `<img>` element
+
+#### Scenario: data: URL image is stripped
+
+- **WHEN** a roadmap issue body contains
+  `<img src="data:image/png;base64,iVBORw0KGgo...">`
+- **THEN** the rendered DOM SHALL NOT contain the `<img>` element
+
+#### Scenario: Relative image is permitted
+
+- **WHEN** a roadmap issue body contains `<img src="./assets/diagram.png">` (rare in
+  GitHub issue bodies but theoretically valid)
+- **THEN** the rendered DOM SHALL contain the `<img>` element verbatim
+
+### Requirement: Manifest freshness CI check
+
+Every host app adopting this capability SHALL include a CI step in its workflow that runs
+`npx openspec-manifest build` and asserts that the resulting `docs/features.json` is
+byte-identical to the committed file (excluding the deterministically-skipped
+`generatedAt` field). The recommended implementation is:
+
+```sh
+npx openspec-manifest build
+git diff --exit-code -- docs/features.json
+```
+
+The CI step SHALL fail the build when `docs/features.json` is out of sync with the
+underlying `openspec/specs/*/spec.md` content. The migration guide SHALL document this
+step as a MUST-have for adopting apps. The shared `@conduction/openspec-manifest` package
+SHALL document the recommended GitHub Actions snippet in its README.
+
+#### Scenario: Stale manifest is caught
+
+- **WHEN** a developer modifies a spec's frontmatter to flip `status: proposed` →
+  `status: implemented` AND commits without re-running the prebuild AND opens a PR
+- **THEN** the CI step `git diff --exit-code -- docs/features.json` SHALL exit non-zero
+- **AND** the workflow SHALL fail with a clear message instructing the developer to run
+  `npx openspec-manifest build` and re-commit
+
+### Requirement: Admin opt-out for the navigation entry
+
+The host app SHALL gate the rendering of `<CnFeaturesAndRoadmapLink>` on the boolean
+IAppConfig key `openregister::features_roadmap_enabled`, defaulting to `true` when the
+key is absent. When the key is `false`, neither the navigation entry nor the
+`/features-roadmap` route SHALL be reachable: the link SHALL be hidden and a direct
+navigation to the route SHALL render a localized "This feature has been disabled by your
+administrator" message instead of the tabs.
+
+The `SuggestFeatureModal`'s widget-level entry points (action menu items injected into
+widgets that declared `specRef`) SHALL also respect this flag — when `false`, the action
+menu item SHALL be hidden. The corresponding backend endpoints (`GET` and `POST` on
+`/api/github/issues`) SHALL also check the flag and return HTTP 403 with the structured
+error code `feature_disabled` when invoked while the flag is `false`, so a user who
+crafted a direct request cannot bypass the UI gate.
+
+This addresses operator personas (e.g. municipal/government deployments under CISO
+control) that may need to disable external-data-egress feature-request submissions for
+compliance reasons without forking the codebase.
+
+#### Scenario: Admin disables the feature
+
+- **WHEN** the administrator sets `openregister::features_roadmap_enabled = false`
+- **THEN** the navigation sidebar SHALL NOT render the Features & Roadmap entry
+- **AND** a logged-in user navigating directly to `/features-roadmap` SHALL see the
+  localized "This feature has been disabled by your administrator" message
+- **AND** any direct call to `GET /api/github/issues` or `POST /api/github/issues` SHALL
+  return HTTP 403 with body `{error: "feature_disabled"}`
+
+#### Scenario: Default behavior
+
+- **WHEN** the IAppConfig key `openregister::features_roadmap_enabled` is absent
+- **THEN** the feature SHALL render normally (default `true`)
+
+### Requirement: docsUrl frontmatter override validation
+
+The `@conduction/openspec-manifest` CLI SHALL validate any frontmatter `docsUrl:` override before accepting it as the manifest entry's `docsUrl`. The value MUST:
+
+1. Be a syntactically valid URL parseable by Node's `URL` constructor.
+2. Use the `https:` scheme (case-insensitive). `http:`, `javascript:`, `data:`, `file:`,
+   and any other scheme SHALL be rejected.
+3. Have a non-empty hostname.
+
+When validation fails, the CLI SHALL emit a stderr warning naming the spec file and the
+invalid value, treat the override as absent, and fall back to the default computed
+`docsUrl`. The CLI SHALL NOT abort the build on a single invalid `docsUrl`; one bad spec
+SHALL NOT poison the whole manifest.
+
+#### Scenario: javascript: URL override is rejected
+
+- **WHEN** a spec frontmatter contains `docsUrl: javascript:alert(1)`
+- **THEN** the CLI SHALL emit a stderr warning naming the spec
+- **AND** the manifest entry's `docsUrl` SHALL be the default computed value (or omitted
+  if no default could be resolved)
+
+#### Scenario: http: URL override is rejected
+
+- **WHEN** a spec frontmatter contains `docsUrl: http://example.com/foo`
+- **THEN** the CLI SHALL emit a stderr warning naming the spec
+- **AND** the manifest entry's `docsUrl` SHALL be the default computed value
+
+#### Scenario: Valid https: URL override is accepted
+
+- **WHEN** a spec frontmatter contains `docsUrl: https://docs.example.com/foo`
+- **THEN** the manifest entry's `docsUrl` SHALL be `https://docs.example.com/foo` verbatim

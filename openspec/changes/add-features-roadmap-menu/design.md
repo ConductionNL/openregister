@@ -177,7 +177,14 @@ The read endpoint returns `200 { items: [], hint: "github_pat_not_configured" }`
   `openregister::github_api_token` (IAppConfig) when the user has no token; on fallback,
   prefix the issue body with
   `> Submitted by **<nc_user_display_name>** via <nc_instance_url>\n\n---\n\n` so
-  traceability survives.
+  traceability survives. Display name and instance URL are sanitized before embedding
+  (see github-issue-proxy spec, "Display-name sanitization in attribution prefix")
+  to prevent markdown-injection or block-termination via the user-controlled display
+  name. When `specRef` is provided, the body sent to GitHub is additionally suffixed
+  with `\n\n---\nRelated capability: \`<specRef>\`\n` (the slug is wrapped in single
+  backticks so GitHub renders it as inline code) AND the created issue carries a
+  `specRef:<slug>` label. The backtick wrapper is intentional and consistent across
+  spec.md / tasks.md / this design.
 
 ### D15. Markdown rendering: `marked` + `DOMPurify`
 
