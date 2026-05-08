@@ -146,22 +146,10 @@ export default {
 			objectStore.setObjectItem(row)
 			navigationStore.setDialog('deleteObject')
 		},
-		async handleMassDelete(ids) {
-			const type = this.computedObjectType
-			if (!objectStore.objectTypes.includes(type)) {
-				const schemaId = objectStore.searchParams?.schema
-				const registerId = objectStore.searchParams?.register
-				objectStore.registerObjectType(type, schemaId, registerId)
-			}
-
-			try {
-				const result = await objectStore.deleteObjects(type, ids)
-				objectStore.clearSelectedObjects()
-				objectStore.refetchSearchCollection()
-				this.$refs.indexPage?.setMassDeleteResult({ success: result.successfulIds.length > 0 })
-			} catch (error) {
-				this.$refs.indexPage?.setMassDeleteResult({ success: false, error: error.message || 'Delete failed' })
-			}
+		handleMassDelete(ids) {
+			const rows = this.normalizedObjects.filter((r) => ids.includes(String(r.id)))
+			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
+			navigationStore.setDialog('massDeleteObject')
 		},
 		handleMassCopy(payload) {
 			const ids = payload?.ids || []
@@ -200,18 +188,27 @@ export default {
 			:show-copy-action="false"
 			:show-delete-action="false"
 			show-mass-copy
-			show-mass-delete
+			:show-mass-delete="false"
 			mass-action-name-field="title"
 			empty-text="No objects found. Select registers and schemas in the sidebar, then search."
 			@add="handleAddObject"
 			@refresh="handleRefresh"
-			@mass-delete="handleMassDelete"
 			@mass-copy="handleMassCopy"
 			@row-click="handleRowClick"
 			@sort="handleSort"
 			@page-changed="handlePageChanged"
 			@page-size-changed="handlePageSizeChanged"
 			@select="handleSelect">
+			<template #mass-actions="{ selectedIds }">
+				<NcActionButton
+					:disabled="!selectedIds.length"
+					@click="handleMassDelete(selectedIds)">
+					<template #icon>
+						<TrashCanOutline :size="20" />
+					</template>
+					Delete selected
+				</NcActionButton>
+			</template>
 			<template #row-actions="{ row }">
 				<NcActions>
 					<NcActionButton close-after-click @click="handleRowClick(row)">
