@@ -22,6 +22,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-63
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -86,6 +88,8 @@ class ValidateObject
      * @param SchemaMapper    $schemaMapper Schema mapper.
      * @param IURLGenerator   $urlGenerator URL generator.
      * @param LoggerInterface $logger       Logger for logging operations.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function __construct(
         private IAppConfig $config,
@@ -111,6 +115,8 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema reference resolution requires multiple type checks
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag needed for backward compatibility
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function preprocessSchemaReferences(
         object $schemaObject,
@@ -170,6 +176,8 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex reference resolution with multiple format handlers
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple reference types and nested schema scenarios
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function resolveSchemaProperty(object $propertySchema, array $visited=[]): object
     {
@@ -275,6 +283,8 @@ class ValidateObject
      * @param object $schemaObject The schema object to transform
      *
      * @return object The transformed schema object
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function transformOpenRegisterObjectConfigurations(object $schemaObject): object
     {
@@ -302,6 +312,8 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple OpenRegister configuration scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Various property transformation paths
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function transformPropertyForOpenRegister(object $propertySchema): void
     {
@@ -418,6 +430,8 @@ class ValidateObject
      * @param object $objectSchema The object schema to transform
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function transformObjectPropertyForOpenRegister(object $objectSchema): void
     {
@@ -452,6 +466,8 @@ class ValidateObject
      * @param object $objectSchema The object schema to transform
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function transformToUuidProperty(object $objectSchema): void
     {
@@ -523,6 +539,8 @@ class ValidateObject
      * @param object $objectSchema The object schema to transform
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function transformToNestedObjectProperty(object $objectSchema): void
     {
@@ -575,6 +593,8 @@ class ValidateObject
      * @param object $propertySchema The property schema to check
      *
      * @return string|null The handling value or null if not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function extractObjectConfigurationHandling(object $propertySchema): ?string
     {
@@ -626,6 +646,8 @@ class ValidateObject
      * @param mixed $oneOf The oneOf array or object to search (null-safe)
      *
      * @return string|null The handling value or null if not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function extractHandlingFromOneOfItems($oneOf): ?string
     {
@@ -656,6 +678,8 @@ class ValidateObject
      * @param string $key  The key to retrieve
      *
      * @return mixed The value or null if not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function getMixedValue($data, string $key)
     {
@@ -688,6 +712,8 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex schema transformation with multiple scenarios
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive schema transformation logic
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function transformSchemaForValidation(object $schemaObject, array $object, string $currentSchemaSlug): array
     {
@@ -829,6 +855,8 @@ class ValidateObject
      * @return object The cleaned schema object
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed to handle array items differently
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function cleanSchemaForValidation(object $schemaObject, bool $_isArrayItems=false): object
     {
@@ -891,6 +919,8 @@ class ValidateObject
      * @return mixed The cleaned property schema
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed to handle array items differently
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function cleanPropertyForValidation($propertySchema, bool $isArrayItems=false)
     {
@@ -969,6 +999,8 @@ class ValidateObject
      * @param object $propertySchema The property schema to fix
      *
      * @return object The property schema with constraints moved to items level
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function fixMisplacedArrayConstraints(object $propertySchema): object
     {
@@ -1034,6 +1066,8 @@ class ValidateObject
      * @param object $propertySchema The property schema to transform
      *
      * @return object The transformed property schema with valid JSON Schema types
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function transformCustomTypeToJsonSchemaType(object $propertySchema): object
     {
@@ -1088,6 +1122,8 @@ class ValidateObject
      * @param object $itemsSchema The array items schema to transform
      *
      * @return object The transformed items schema
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function transformArrayItemsForValidation(object $itemsSchema): object
     {
@@ -1177,6 +1213,8 @@ class ValidateObject
      * @param string $schemaSlug     The schema slug to check against
      *
      * @return bool True if this is a self-reference
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function isSelfReference(object $propertySchema, string $schemaSlug): bool
     {
@@ -1210,6 +1248,8 @@ class ValidateObject
      * @param string $slug The schema slug to find
      *
      * @return Schema|null The found schema or null if not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function findSchemaBySlug(string $slug): ?Schema
     {
@@ -1255,6 +1295,9 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Comprehensive validation with many edge case handlers
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation scenarios and schema types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete validation logic requires extensive handling
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-63
      */
     public function validateObject(
         array $object,
@@ -1446,6 +1489,8 @@ class ValidateObject
      * @param object    $resolver  The format resolver instance
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function registerCustomFormat(Validator $validator, string $type, string $format, object $resolver): void
     {
@@ -1465,6 +1510,8 @@ class ValidateObject
      * @psalm-suppress PossiblyUnusedReturnValue
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Uri::fromParts is standard GuzzleHttp\Psr7 pattern
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function resolveSchema(Uri $uri): string
     {
@@ -1514,6 +1561,8 @@ class ValidateObject
      * @param string $reference The reference string that may contain query parameters
      *
      * @return string The reference string without query parameters
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -1534,6 +1583,8 @@ class ValidateObject
      * @param ValidationResult $result The validation result from Opis JsonSchema.
      *
      * @return string A meaningful error message.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function generateErrorMessage(ValidationResult $result): string
     {
@@ -1556,6 +1607,8 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many validation error types require specific formatting
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive error formatting for all validation types
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function formatValidationError(\Opis\JsonSchema\Errors\ValidationError $error): string
     {
@@ -1718,6 +1771,8 @@ class ValidateObject
      * @param mixed $value The value to get the type for.
      *
      * @return string The type name.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function getValueType($value): string
     {
@@ -1758,6 +1813,8 @@ class ValidateObject
      * @param ValidationException|CustomValidationException $exception The validation exception.
      *
      * @return JSONResponse JSON error response with validation errors and 400 status code.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function handleValidationException(ValidationException | CustomValidationException $exception): JSONResponse
     {
@@ -1807,6 +1864,8 @@ class ValidateObject
      *
      * @return void
      * @throws CustomValidationException
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
      */
     private function validateUniqueFields(array $object, Schema $schema): void
     {

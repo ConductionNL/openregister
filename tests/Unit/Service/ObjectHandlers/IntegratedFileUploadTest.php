@@ -208,12 +208,20 @@ class IntegratedFileUploadTest extends TestCase
         // Default: isFileProperty returns false (overridden per-test as needed).
         $this->filePropertyHandler->method('isFileProperty')->willReturn(false);
 
+        $linkedEntityHandler = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class);
+        $computedFieldHandler = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class);
+        $translationHandler = $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class);
+        $translationHandler->method('normalizeTranslationsForSave')
+            ->willReturnArgument(0);
+        $tmloService = $this->createMock(\OCA\OpenRegister\Service\TmloService::class);
+
         // Create SaveObject instance with correct constructor params.
         $this->saveObject = new SaveObject(
             $this->objectEntityMapper,
             $this->unifiedObjectMapper,
             $this->metaHydrationHandler,
             $this->filePropertyHandler,
+            $linkedEntityHandler,
             $this->userSession,
             $this->auditTrailMapper,
             $this->schemaMapper,
@@ -223,7 +231,10 @@ class IntegratedFileUploadTest extends TestCase
             $this->cacheHandler,
             $this->settingsService,
             $this->propertyRbacHandler,
+            $computedFieldHandler,
+            $translationHandler,
             $this->logger,
+            $tmloService,
             $arrayLoader
         );
     }

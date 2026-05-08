@@ -8,6 +8,7 @@ use OCA\OpenRegister\Controller\WorkflowEngineController;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -32,7 +33,8 @@ class WorkflowEngineControllerTest extends TestCase
             'openregister',
             $this->request,
             $this->registry,
-            $this->logger
+            $this->logger,
+            $this->createMock(IL10N::class)
         );
     }
 

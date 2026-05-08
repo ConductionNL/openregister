@@ -3,12 +3,18 @@
  *
  * This file contains examples and manual tests for the facet integration.
  * Use these in the browser console to test facet functionality.
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
  */
 
 // Import object store
 import { objectStore } from '../store/store.js'
 
 // Test 1: Basic Facet Discovery
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+ */
 async function testFacetDiscovery() {
 	console.info('Testing facet discovery...')
 
@@ -30,6 +36,9 @@ async function testFacetDiscovery() {
 }
 
 // Test 2: Basic Facet Retrieval
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+ */
 async function testBasicFacets() {
 	console.info('Testing basic facet retrieval...')
 
@@ -46,6 +55,9 @@ async function testBasicFacets() {
 }
 
 // Test 3: Custom Facet Configuration
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+ */
 async function testCustomFacets() {
 	console.info('Testing custom facet configuration...')
 
@@ -70,6 +82,9 @@ async function testCustomFacets() {
 }
 
 // Test 4: Active Facet Management
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+ */
 async function testActiveFacets() {
 	console.info('Testing active facet management...')
 
@@ -96,6 +111,9 @@ async function testActiveFacets() {
 }
 
 // Test 5: Object List with Facets
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+ */
 async function testObjectListWithFacets() {
 	console.info('Testing object list with facets...')
 
@@ -114,6 +132,9 @@ async function testObjectListWithFacets() {
 }
 
 // Test 6: Object List without Facets
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+ */
 async function testObjectListWithoutFacets() {
 	console.info('Testing object list without facets...')
 

@@ -1,3 +1,6 @@
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-54
+ */
 import { Register } from './register'
 import { TRegister } from './register.types'
 
@@ -20,7 +23,6 @@ export const mockRegisterData = (): TRegister[] => [
 				invalid: 2,
 				deleted: 1,
 				locked: 0,
-				published: 17,
 			},
 			logs: { total: 3, size: 1024 },
 			files: { total: 2, size: 256 },
@@ -44,7 +46,6 @@ export const mockRegisterData = (): TRegister[] => [
 				invalid: 0,
 				deleted: 0,
 				locked: 0,
-				published: 8,
 			},
 			logs: { total: 1, size: 512 },
 			files: { total: 1, size: 64 },

@@ -10,6 +10,8 @@
  * @author   Conduction <info@conduction.nl>
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -68,6 +70,8 @@ class QueryHandler
      * @param IRequest                       $request            Request object.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -100,6 +104,8 @@ class QueryHandler
      *
      * @psalm-return   int
      * @phpstan-return int
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function countSearchObjects(
         array $query=[],
@@ -148,6 +154,8 @@ class QueryHandler
      * @phpstan-return array<int, ObjectEntity>|int
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function searchObjects(
         array $query=[],
@@ -257,6 +265,8 @@ class QueryHandler
      *
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -340,6 +350,8 @@ class QueryHandler
      *
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
      */
     public function searchObjectsPaginatedDatabase(
         array $query=[],
@@ -374,10 +386,10 @@ class QueryHandler
 
         // Prepare paginated query (remove pagination params for count query).
         $paginatedQuery = array_merge($query, ['_limit' => $limit, '_offset' => $offset]);
-        unset($paginatedQuery['_page'], $paginatedQuery['_facetable']);
+        unset($paginatedQuery['_page'], $paginatedQuery['_facetable'], $paginatedQuery['_extend']);
 
         $countQuery = $query;
-        unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable']);
+        unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable'], $countQuery['_extend']);
 
         // Get active organization context for multi-tenancy.
         $activeOrgUuid = null;
@@ -470,7 +482,15 @@ class QueryHandler
                 _multitenancy: $_multitenancy
             );
             $metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
-        }
+        } else if ($hasComplexRendering === false && is_array($results) === true) {
+            // Cheap path: rows did not go through renderEntities, so @self.files is
+            // absent or stale. Per the files-render-extension capability, every list
+            // row MUST carry @self.files (lightweight ID list by default). Issue a
+            // single batched FileMapper lookup and attach IDs to each row.
+            $filesStart = microtime(true);
+            $this->renderHandler->attachLightweightFilesToRows(rows: $results);
+            $metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
+        }//end if
 
         // Calculate total pages (avoid division by zero when limit=0).
         $pages = 0;

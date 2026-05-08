@@ -51,12 +51,22 @@ class CacheHandlerBranchCoverageTest extends TestCase
                 return $this->nameDistCache;
             });
 
+        $container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
+        $objectMapperRef = $this->objectMapper;
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapperRef) {
+                if ($class === MagicMapper::class) {
+                    return $objectMapperRef;
+                }
+                return null;
+            });
+
         $this->handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
-            $this->userSession
+            $this->userSession,
+            $container
         );
     }
 
@@ -312,7 +322,6 @@ class CacheHandlerBranchCoverageTest extends TestCase
             ->willThrowException(new \Exception('Cache init failed'));
 
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $cacheFactory,

@@ -702,12 +702,12 @@ export default {
 			typeOptions: {
 				inputLabel: 'Type*',
 				multiple: false,
-				options: ['string', 'number', 'integer', 'object', 'array', 'boolean', 'dictionary', 'file', 'oneOf'],
+				options: ['string', 'number', 'integer', 'object', 'array', 'boolean', 'dictionary', 'file', 'oneOf', 'NcFile', 'NcMail', 'NcContact', 'NcNote', 'NcTodo', 'NcCalendarEvent', 'NcTalk', 'NcDeck'],
 			},
 			itemsTypeOptions: {
 				inputLabel: 'Sub type',
 				multiple: false,
-				options: ['string', 'number', 'integer', 'object', 'boolean', 'dictionary', 'file'],
+				options: ['string', 'number', 'integer', 'object', 'boolean', 'dictionary', 'file', 'NcFile', 'NcMail', 'NcContact', 'NcNote', 'NcTodo', 'NcCalendarEvent', 'NcTalk', 'NcDeck'],
 			},
 			formatOptions: {
 				inputLabel: 'Format',

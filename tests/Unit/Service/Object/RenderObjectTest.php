@@ -97,6 +97,12 @@ class RenderObjectTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->fileService = $this->createMock(FileService::class);
 
+        $translationHandler = $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class);
+        $translationHandler->method('resolveTranslationsForRender')
+            ->willReturnCallback(function (array $objectData) {
+                return $objectData;
+            });
+
         $this->handler = new RenderObject(
             $this->fileMapper,
             $this->objectMapper,
@@ -108,7 +114,10 @@ class RenderObjectTest extends TestCase
             $this->objectCacheService,
             $this->propertyRbacHandler,
             $this->logger,
-            $this->fileService
+            $this->fileService,
+        $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+        $translationHandler,
+        $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
         );
     }
 
@@ -1550,7 +1559,10 @@ class RenderObjectTest extends TestCase
             $this->objectCacheService,
             $this->propertyRbacHandler,
             $this->logger,
-            $this->fileService
+            $this->fileService,
+        $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+        $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+        $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
         );
 
         $ref = new ReflectionClass($handler);
@@ -1579,7 +1591,10 @@ class RenderObjectTest extends TestCase
             $this->objectCacheService,
             $this->propertyRbacHandler,
             $this->logger,
-            $this->fileService
+            $this->fileService,
+        $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+        $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+        $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
         );
 
         $ref = new ReflectionClass($handler);
@@ -1663,7 +1678,10 @@ class RenderObjectTest extends TestCase
         $this->schemaMapper->method('find')
             ->willThrowException(new Exception('Not found'));
 
-        $result = $this->handler->renderEntity($entity);
+        // _extend opts in to full file metadata via renderFiles().
+        // After files-render-extension landed, omitting extend produces the
+        // lightweight integer-id list instead of file objects.
+        $result = $this->handler->renderEntity(entity: $entity, _extend: ['@self.files']);
 
         $files = $result->getFiles();
         $this->assertCount(1, $files);
@@ -1705,7 +1723,8 @@ class RenderObjectTest extends TestCase
         $this->schemaMapper->method('find')
             ->willThrowException(new Exception('Not found'));
 
-        $result = $this->handler->renderEntity($entity);
+        // _extend opts in to full file metadata (post files-render-extension gate).
+        $result = $this->handler->renderEntity(entity: $entity, _extend: ['@self.files']);
 
         $files = $result->getFiles();
         $this->assertCount(1, $files);
@@ -1755,7 +1774,8 @@ class RenderObjectTest extends TestCase
         $this->schemaMapper->method('find')
             ->willThrowException(new Exception('Not found'));
 
-        $result = $this->handler->renderEntity($entity);
+        // _extend opts in to full file metadata (post files-render-extension gate).
+        $result = $this->handler->renderEntity(entity: $entity, _extend: ['@self.files']);
 
         $files = $result->getFiles();
         $this->assertCount(1, $files);
@@ -2946,7 +2966,8 @@ class RenderObjectTest extends TestCase
         $this->schemaMapper->method('find')
             ->willThrowException(new Exception('Not found'));
 
-        $result = $this->handler->renderEntity($entity);
+        // _extend opts in to full file metadata (post files-render-extension gate).
+        $result = $this->handler->renderEntity(entity: $entity, _extend: ['@self.files']);
         $files = $result->getFiles();
 
         $this->assertCount(2, $files);
@@ -2979,7 +3000,8 @@ class RenderObjectTest extends TestCase
         $this->schemaMapper->method('find')
             ->willThrowException(new Exception('Not found'));
 
-        $result = $this->handler->renderEntity($entity);
+        // _extend opts in to full file metadata (post files-render-extension gate).
+        $result = $this->handler->renderEntity(entity: $entity, _extend: ['@self.files']);
         $files = $result->getFiles();
 
         $this->assertSame('application/octet-stream', $files[0]['type']);
@@ -4566,7 +4588,10 @@ class RenderObjectTest extends TestCase
             $this->objectCacheService,
             $this->propertyRbacHandler,
             $this->logger,
-            $this->fileService
+            $this->fileService,
+        $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+        $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+        $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
         );
 
         $ref = new ReflectionClass($handler);
@@ -4928,7 +4953,10 @@ class RenderObjectTest extends TestCase
             $this->objectCacheService,
             $this->propertyRbacHandler,
             $this->logger,
-            $this->fileService
+            $this->fileService,
+        $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+        $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+        $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
         );
 
         $ref = new ReflectionClass($handler);
@@ -6404,5 +6432,149 @@ class RenderObjectTest extends TestCase
         $this->assertArrayHasKey('contacts', $result);
         $this->assertSame([], $result['contacts']);
     }
+
+    // =========================================================================
+    // files-render-extension gate (capability: files-render-extension)
+    //
+    // Pins the breaking-change contract introduced by the
+    // `opt-in-files-extend` change: `@self.files` is opt-in via
+    // `_extend[]=@self.files` (or the `_files` shorthand). Without extend, the
+    // entity carries a lightweight integer-id list. With extend, the
+    // `renderFiles()` path runs (full FileMapper + SystemTag lookup).
+    //
+    // The first three tests gate the renderEntity path; the fourth pins the
+    // sub-entity cache-miss bug that was the original blocker on PR #1369.
+    // =========================================================================
+
+    public function testShouldExtendFilesRecognizesCanonicalAndShorthand(): void
+    {
+        // Use reflection because the helper is private static.
+        $ref = new ReflectionClass(\OCA\OpenRegister\Service\Object\RenderObject::class);
+        $method = $ref->getMethod('shouldExtendFiles');
+        $method->setAccessible(true);
+
+        // Canonical and shorthand opt the request in.
+        $this->assertTrue($method->invoke(null, ['@self.files']));
+        $this->assertTrue($method->invoke(null, ['_files']));
+        $this->assertTrue($method->invoke(null, ['name', '@self.files']));
+        $this->assertTrue($method->invoke(null, '@self.files,name'));
+
+        // Empty / null forms do NOT opt in.
+        $this->assertFalse($method->invoke(null, null));
+        $this->assertFalse($method->invoke(null, ''));
+        $this->assertFalse($method->invoke(null, []));
+        $this->assertFalse($method->invoke(null, ['name', 'description']));
+
+        // The blanket `all` token is intentionally NOT recognised as a
+        // file-metadata opt-in — `@self.files` is strict explicit opt-in to
+        // prevent silent N+1 file lookups on every linked sub-entity when a
+        // top-level request uses `_extend[]=all`.
+        $this->assertFalse($method->invoke(null, ['all']));
+        $this->assertFalse($method->invoke(null, ['all', 'name']));
+    }//end testShouldExtendFilesRecognizesCanonicalAndShorthand()
+
+    public function testRenderEntityEmitsLightweightFileIdsWhenExtendOmitsFiles(): void
+    {
+        $entity = $this->createBasicEntity(id: 1, uuid: 'abc-123', objectData: ['name' => 'A']);
+
+        // Lightweight default: getFileIdsForObjects MUST be called.
+        $this->fileMapper->expects($this->once())
+            ->method('getFileIdsForObjects')
+            ->with($this->equalTo(['abc-123']))
+            ->willReturn(['abc-123' => [101, 102]]);
+
+        // Heavy path: getFilesForObject MUST NOT be called when extend is empty.
+        $this->fileMapper->expects($this->never())
+            ->method('getFilesForObject');
+
+        $this->schemaMapper->method('find')->willThrowException(new Exception('Not found'));
+
+        $rendered = $this->handler->renderEntity(entity: $entity, _extend: []);
+
+        $this->assertSame(
+            expected: [101, 102],
+            actual: $rendered->getFiles(),
+            message: 'Lightweight default must surface the integer ID list from getFileIdsForObjects.'
+        );
+    }//end testRenderEntityEmitsLightweightFileIdsWhenExtendOmitsFiles()
+
+    public function testRenderEntityRoutesThroughRenderFilesWhenExtendCoversFiles(): void
+    {
+        $entity = $this->createBasicEntity(id: 2, uuid: 'def-456', objectData: ['name' => 'B']);
+
+        // With explicit opt-in, the heavy path runs: renderFiles() calls
+        // getFilesForObject. The lightweight batch lookup MUST NOT run.
+        $this->fileMapper->expects($this->never())
+            ->method('getFileIdsForObjects');
+
+        $this->fileMapper->expects($this->once())
+            ->method('getFilesForObject')
+            ->willReturn([]);
+
+        $this->schemaMapper->method('find')->willThrowException(new Exception('Not found'));
+
+        $rendered = $this->handler->renderEntity(entity: $entity, _extend: ['@self.files']);
+
+        // Sanity: the call returns the same entity instance (renderFiles mutates
+        // in place; with no files mocked, getFiles() resolves to whatever the
+        // renderFiles body produced — we only need to verify the path was hit).
+        $this->assertNotNull($rendered);
+    }//end testRenderEntityRoutesThroughRenderFilesWhenExtendCoversFiles()
+
+    public function testSetLightweightFileIdsCacheMissFallsThroughToSingleLookup(): void
+    {
+        // Sub-entities reached via relation extends are NOT in the batch cache
+        // populated by renderEntities() (which holds top-level page UUIDs only).
+        // A cache miss must fall through to a single-UUID FileMapper lookup so
+        // the sub-entity's @self.files is populated correctly. Before the fix,
+        // `$cache[$uuid] ?? []` silently returned `[]` for every cache miss —
+        // every linked sub-entity with attached files emitted `@self.files: []`.
+
+        // Seed the batch cache with a different UUID (simulates a list render
+        // having populated it for top-level entities).
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('batchFileIdsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, ['top-level-uuid' => [1, 2, 3]]);
+
+        // The sub-entity UUID is NOT in the cache → must fall through.
+        $subEntity = $this->createBasicEntity(id: 99, uuid: 'sub-uuid', objectData: []);
+
+        $this->fileMapper->expects($this->once())
+            ->method('getFileIdsForObjects')
+            ->with($this->equalTo(['sub-uuid']))
+            ->willReturn(['sub-uuid' => [201, 202]]);
+
+        $result = $this->invokePrivate(method: 'setLightweightFileIds', args: [$subEntity]);
+
+        $this->assertSame(
+            expected: [201, 202],
+            actual: $result->getFiles(),
+            message: 'Cache-miss sub-entity must fall through to single-UUID lookup, not return [].'
+        );
+    }//end testSetLightweightFileIdsCacheMissFallsThroughToSingleLookup()
+
+    public function testSetLightweightFileIdsCacheHitReturnsCachedValue(): void
+    {
+        // Companion to the cache-miss test: a cache HIT (UUID present, even
+        // with empty array) must use the cached value — no FileMapper call.
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('batchFileIdsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, ['known-uuid' => [], 'other-uuid' => [7, 8]]);
+
+        $entityNoFiles = $this->createBasicEntity(id: 10, uuid: 'known-uuid', objectData: []);
+        $entityWithFiles = $this->createBasicEntity(id: 11, uuid: 'other-uuid', objectData: []);
+
+        $this->fileMapper->expects($this->never())
+            ->method('getFileIdsForObjects');
+
+        $resultNoFiles = $this->invokePrivate(method: 'setLightweightFileIds', args: [$entityNoFiles]);
+        $resultWithFiles = $this->invokePrivate(method: 'setLightweightFileIds', args: [$entityWithFiles]);
+
+        $this->assertSame(expected: [], actual: $resultNoFiles->getFiles());
+        $this->assertSame(expected: [7, 8], actual: $resultWithFiles->getFiles());
+    }//end testSetLightweightFileIdsCacheHitReturnsCachedValue()
 
 }

@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-59
  */
 
 declare(strict_types=1);
@@ -100,6 +102,8 @@ class LockHandler
      *
      * @throws LockedException If object is already locked.
      * @throws \Exception      If lock operation fails.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-59
      */
     public function lock(string $identifier, ?string $process=null, ?int $duration=null): array
     {
@@ -181,6 +185,8 @@ class LockHandler
      * @return true True if unlocked successfully
      *
      * @throws \Exception If unlock operation fails
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-59
      */
     public function unlock(string $identifier): bool
     {

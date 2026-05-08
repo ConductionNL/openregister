@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -87,12 +88,14 @@ class MagicSearchHandler
      * @param LoggerInterface          $logger              Logger for debugging and error reporting
      * @param MagicRbacHandler         $rbacHandler         RBAC handler for access control
      * @param MagicOrganizationHandler $organizationHandler Organization handler for multi-tenancy
+     * @param SchemaTypeConverter      $schemaTypeConverter Schema-driven type converter for row values
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
         private readonly MagicRbacHandler $rbacHandler,
-        private readonly MagicOrganizationHandler $organizationHandler
+        private readonly MagicOrganizationHandler $organizationHandler,
+        private readonly SchemaTypeConverter $schemaTypeConverter
     ) {
     }//end __construct()
 
@@ -408,6 +411,13 @@ class MagicSearchHandler
         );
         $conditions       = array_merge($conditions, $objectConditions);
 
+        // 6. TMLO metadata JSON field filters (tmlo.archiefstatus, tmlo.archiefnominatie, etc.).
+        $tmloConditions = $this->buildTmloFilterConditionsSql(
+            query: $query,
+            connection: $connection
+        );
+        $conditions     = array_merge($conditions, $tmloConditions);
+
         return $conditions;
     }//end buildWhereConditionsSql()
 
@@ -544,18 +554,41 @@ class MagicSearchHandler
                 continue;
             }
 
-            // Handle array filter values with IN clause (for non-array property types).
+            // Handle array filter values: comparison operators (gte/lte/gt/lt/in) or IN clause.
             if (is_array($value) === true) {
-                if (empty($value) === false) {
+                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
+                if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
+                    if (isset($value['gte']) === true) {
+                        $conditions[] = "{$columnName} >= ".$connection->quote((string) $value['gte']);
+                    }
+
+                    if (isset($value['lte']) === true) {
+                        $conditions[] = "{$columnName} <= ".$connection->quote((string) $value['lte']);
+                    }
+
+                    if (isset($value['gt']) === true) {
+                        $conditions[] = "{$columnName} > ".$connection->quote((string) $value['gt']);
+                    }
+
+                    if (isset($value['lt']) === true) {
+                        $conditions[] = "{$columnName} < ".$connection->quote((string) $value['lt']);
+                    }
+
+                    if (isset($value['in']) === true) {
+                        $inValues     = is_array($value['in']) === true ? $value['in'] : [$value['in']];
+                        $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $inValues);
+                        $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+                    }
+                } else if (empty($value) === false) {
                     $quotedValues = array_map(
                         fn($v) => $connection->quote((string) $v),
                         $value
                     );
                     $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
-                }
+                }//end if
 
                 continue;
-            }
+            }//end if
 
             // Simple equality filter.
             $conditions[] = "{$columnName} = ".$connection->quote((string) $value);
@@ -600,6 +633,64 @@ class MagicSearchHandler
 
         return '('.implode(' OR ', $orParts).')';
     }//end buildArrayPropertyConditionSql()
+
+    /**
+     * Build SQL conditions for TMLO metadata JSON field filters.
+     *
+     * Supports dot-notation filters like:
+     * - tmlo.archiefstatus=semi_statisch (exact match on JSON sub-field)
+     * - tmlo.archiefnominatie=vernietigen (exact match)
+     * - tmlo.archiefactiedatum[from]=2025-01-01 (range filter)
+     * - tmlo.archiefactiedatum[to]=2025-12-31 (range filter)
+     * - tmlo.vernietigingsCategorie=cat1 (exact match)
+     *
+     * Uses PostgreSQL ->> operator for JSON field extraction.
+     *
+     * @param array  $query      The full query array
+     * @param object $connection Database connection for value quoting
+     *
+     * @return string[] Array of SQL conditions
+     */
+    private function buildTmloFilterConditionsSql(array $query, object $connection): array
+    {
+        $conditions       = [];
+        $archiefactieFrom = null;
+        $archiefactieTo   = null;
+
+        foreach ($query as $key => $value) {
+            if (str_starts_with($key, 'tmlo.') === false) {
+                continue;
+            }
+
+            $subField = substr($key, 5);
+
+            // Handle date range filters for archiefactiedatum.
+            if ($subField === 'archiefactiedatum[from]') {
+                $archiefactieFrom = $value;
+                continue;
+            }
+
+            if ($subField === 'archiefactiedatum[to]') {
+                $archiefactieTo = $value;
+                continue;
+            }
+
+            // Standard exact match on TMLO JSON sub-field.
+            $quotedValue  = $connection->quote((string) $value);
+            $conditions[] = "_tmlo::jsonb ->> ".$connection->quote($subField)." = {$quotedValue}";
+        }//end foreach
+
+        // Build archiefactiedatum range condition.
+        if ($archiefactieFrom !== null) {
+            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' >= ".$connection->quote($archiefactieFrom);
+        }
+
+        if ($archiefactieTo !== null) {
+            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' <= ".$connection->quote($archiefactieTo);
+        }
+
+        return $conditions;
+    }//end buildTmloFilterConditionsSql()
 
     /**
      * Get the list of reserved query parameter names
@@ -883,14 +974,44 @@ class MagicSearchHandler
             }
 
             if (is_array($value) === true) {
-                $qb->andWhere(
-                    $qb->expr()->in(
-                        "t.{$columnName}",
-                        $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
-                    )
-                );
+                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
+                if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
+                    if (isset($value['gte']) === true) {
+                        $qb->andWhere($qb->expr()->gte("t.{$columnName}", $qb->createNamedParameter($value['gte'])));
+                    }
+
+                    if (isset($value['lte']) === true) {
+                        $qb->andWhere($qb->expr()->lte("t.{$columnName}", $qb->createNamedParameter($value['lte'])));
+                    }
+
+                    if (isset($value['gt']) === true) {
+                        $qb->andWhere($qb->expr()->gt("t.{$columnName}", $qb->createNamedParameter($value['gt'])));
+                    }
+
+                    if (isset($value['lt']) === true) {
+                        $qb->andWhere($qb->expr()->lt("t.{$columnName}", $qb->createNamedParameter($value['lt'])));
+                    }
+
+                    if (isset($value['in']) === true) {
+                        $inValues = is_array($value['in']) === true ? $value['in'] : [$value['in']];
+                        $qb->andWhere(
+                            $qb->expr()->in(
+                                "t.{$columnName}",
+                                $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
+                            )
+                        );
+                    }
+                } else {
+                    $qb->andWhere(
+                        $qb->expr()->in(
+                            "t.{$columnName}",
+                            $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
+                        )
+                    );
+                }//end if
+
                 continue;
-            }
+            }//end if
 
             $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
         }//end foreach
@@ -1253,8 +1374,10 @@ class MagicSearchHandler
                 $propertyName = $columnToPropertyMap[$column] ?? $this->columnNameToPropertyName(columnName: $column);
 
                 // Convert value based on schema property type.
+                // Delegates to the shared SchemaTypeConverter so this handler and
+                // MagicStatisticsHandler agree on type semantics across read paths.
                 $propertyType = $propertyTypes[$propertyName] ?? 'string';
-                $objectData[$propertyName] = $this->convertValueByType(value: $value, type: $propertyType);
+                $objectData[$propertyName] = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $propertyType);
             }
 
             // Set metadata properties.
@@ -1501,154 +1624,6 @@ class MagicSearchHandler
         // Convert snake_case to camelCase.
         return lcfirst(str_replace('_', '', ucwords($columnName, '_')));
     }//end columnNameToPropertyName()
-
-    /**
-     * Convert value based on schema property type
-     *
-     * Schema type determines the conversion, not the data format.
-     *
-     * @param mixed  $value Value to convert
-     * @param string $type  Schema property type (string, number, boolean, array, object, integer)
-     *
-     * @return mixed Converted value
-     */
-    private function convertValueByType(mixed $value, string $type): mixed
-    {
-        // Handle null values.
-        if ($value === null) {
-            return null;
-        }
-
-        // Convert based on schema type (schema is authoritative, not data format).
-        return match ($type) {
-            'array', 'object' => $this->convertArrayOrObjectValue(value: $value),
-            'number'          => $this->convertNumberValue(value: $value),
-            'integer'         => $this->convertIntegerValue(value: $value),
-            'boolean'         => $this->convertBooleanValue(value: $value),
-            default           => $this->convertStringValue(value: $value, type: $type),
-        };
-    }//end convertValueByType()
-
-    /**
-     * Convert a value to array or object type
-     *
-     * Schema says this should be array/object - decode if it's a JSON string.
-     *
-     * @param mixed $value Value to convert
-     *
-     * @return mixed Decoded array/object or original value
-     */
-    private function convertArrayOrObjectValue(mixed $value): mixed
-    {
-        if (is_string($value) === true) {
-            $decoded = json_decode($value, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $decoded;
-            }
-        }
-
-        // Already an array/object or failed to decode - return as-is.
-        return $value;
-    }//end convertArrayOrObjectValue()
-
-    /**
-     * Convert a value to number (float) type
-     *
-     * Schema says this should be a number (float).
-     *
-     * @param mixed $value Value to convert
-     *
-     * @return mixed Float value or original if not numeric
-     */
-    private function convertNumberValue(mixed $value): mixed
-    {
-        if (is_numeric($value) === true) {
-            return (float) $value;
-        }
-
-        return $value;
-    }//end convertNumberValue()
-
-    /**
-     * Convert a value to integer type
-     *
-     * Schema says this should be an integer.
-     *
-     * @param mixed $value Value to convert
-     *
-     * @return mixed Integer value or original if not numeric
-     */
-    private function convertIntegerValue(mixed $value): mixed
-    {
-        if (is_numeric($value) === true) {
-            return (int) $value;
-        }
-
-        return $value;
-    }//end convertIntegerValue()
-
-    /**
-     * Convert a value to boolean type
-     *
-     * Schema says this should be a boolean.
-     *
-     * @param mixed $value Value to convert
-     *
-     * @return bool Boolean value
-     */
-    private function convertBooleanValue(mixed $value): bool
-    {
-        if (is_bool($value) === true) {
-            return $value;
-        }
-
-        if (is_string($value) === true) {
-            return in_array(strtolower($value), ['true', '1', 'yes'], true);
-        }
-
-        return (bool) $value;
-    }//end convertBooleanValue()
-
-    /**
-     * Convert a value for string or unknown schema type
-     *
-     * For backwards compatibility, if the value looks like a JSON array or object
-     * (starts with [ or {), try to decode it. This handles cases where schema is
-     * incorrectly defined as string but the actual data is array/object, matching
-     * MagicMapper::convertRowToObjectEntity behavior.
-     *
-     * @param mixed  $value Value to convert
-     * @param string $type  The schema type (used to check for explicit 'string')
-     *
-     * @return mixed Converted value
-     */
-    private function convertStringValue(mixed $value, string $type): mixed
-    {
-        if (is_string($value) === true) {
-            $trimmed          = trim($value);
-            $startsWithArrObj = (
-                str_starts_with($trimmed, '[') === true || str_starts_with($trimmed, '{') === true
-            );
-
-            if ($startsWithArrObj === true) {
-                $decoded = json_decode($value, true);
-                if (json_last_error() === JSON_ERROR_NONE && ($decoded !== null || $value === 'null')) {
-                    return $decoded;
-                }
-            }
-
-            return $value;
-        }
-
-        // For schema type 'string', ensure we return a string.
-        // This handles cases where the database driver returns numeric values as integers
-        // even though they're stored in TEXT/VARCHAR columns (e.g., "45" returned as int 45).
-        if ($type === 'string' && (is_int($value) === true || is_float($value) === true)) {
-            return (string) $value;
-        }
-
-        return $value;
-    }//end convertStringValue()
 
     /**
      * Check if authorization rules include public read access

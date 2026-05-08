@@ -17,6 +17,10 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-55
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-57
  */
 
 declare(strict_types=1);
@@ -30,6 +34,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\ConditionMatcher;
+use OCP\IAppConfig;
 use OCP\IUserSession;
 use OCP\IUserManager;
 use OCP\IGroupManager;
@@ -44,6 +50,12 @@ use Psr\Container\ContainerInterface;
  * - User and group authorization
  * - Multi-tenancy filtering
  * - Object ownership verification
+ *
+ * Conditional match evaluation (rules with a `match` clause) is delegated to
+ * {@see \OCA\OpenRegister\Service\ConditionMatcher} — the single shared PHP-side
+ * matcher used across the RBAC stack (ADR-011). Do not reimplement condition
+ * evaluation locally. For SQL-side conditional filtering (list endpoints), see
+ * {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::applyRbacFilters()}.
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
@@ -77,6 +89,18 @@ class PermissionHandler
     private array $cachedRegisterConfig = [];
 
     /**
+     * Per-request cache for resolved `inheritFromPublic` flag per schema.
+     *
+     * Maps schema ID to its resolved boolean value (cascade: schema → register
+     * → IAppConfig → hard-coded true). Avoids repeated cascade walks within a
+     * single request when the same schema is checked many times (e.g. listing
+     * filter + per-object follow-up).
+     *
+     * @var array<int, bool>
+     */
+    private array $cachedInheritFromPublic = [];
+
+    /**
      * PermissionHandler constructor.
      *
      * @param IUserSession       $userSession        User session for getting current user.
@@ -84,8 +108,12 @@ class PermissionHandler
      * @param IGroupManager      $groupManager       Group manager for checking user groups.
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
      * @param MagicMapper        $objectEntityMapper Mapper for object entity operations.
+     * @param ConditionMatcher   $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
+     * @param IAppConfig         $appConfig          Tenant configuration for the inheritFromPublic default.
      * @param LoggerInterface    $logger             Logger for permission auditing.
      * @param ContainerInterface $container          Container for lazy loading services.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -93,6 +121,8 @@ class PermissionHandler
         private readonly IGroupManager $groupManager,
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $objectEntityMapper,
+        private readonly ConditionMatcher $conditionMatcher,
+        private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container
     ) {
@@ -124,6 +154,8 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC permission checks require multiple conditional paths
      * @SuppressWarnings(PHPMD.NPathComplexity)      User/group/owner permission combinations create many paths
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC flag follows established API patterns
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function hasPermission(
         Schema $schema,
@@ -139,24 +171,13 @@ class PermissionHandler
         }
 
         // Resolve object context for conditional authorization matching.
+        // $activeOrganisation is resolved by ConditionMatcher itself (via OrganisationService);
+        // no per-call lookup is needed here anymore.
         $objectData         = null;
         $objectOrganisation = null;
-        $activeOrganisation = null;
-
         if ($object !== null) {
             $objectData         = $object->getObject();
             $objectOrganisation = $object->getOrganisation();
-        }
-
-        // Get the user's active organisation for $organisation variable resolution.
-        try {
-            $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-            $activeOrg           = $organisationService->getActiveOrganisation();
-            if ($activeOrg !== null) {
-                $activeOrganisation = $activeOrg->getUuid();
-            }
-        } catch (\Throwable $e) {
-            // OrganisationService not available, conditional matching will be limited.
         }
 
         $authorization = $this->resolveAuthorization(schema: $schema);
@@ -174,8 +195,7 @@ class PermissionHandler
                     userGroup: null,
                     objectOwner: $objectOwner,
                     objectData: $objectData,
-                    objectOrganisation: $objectOrganisation,
-                    activeOrganisation: $activeOrganisation
+                    objectOrganisation: $objectOrganisation
                 );
             }
 
@@ -194,8 +214,7 @@ class PermissionHandler
                 userGroup: null,
                 objectOwner: $objectOwner,
                 objectData: $objectData,
-                objectOrganisation: $objectOrganisation,
-                activeOrganisation: $activeOrganisation
+                objectOrganisation: $objectOrganisation
             );
         }
 
@@ -215,24 +234,25 @@ class PermissionHandler
                     userId: $userId,
                     objectOwner: $objectOwner,
                     objectData: $objectData,
-                    objectOrganisation: $objectOrganisation,
-                    activeOrganisation: $activeOrganisation
+                    objectOrganisation: $objectOrganisation
                 ) === true
             ) {
                 return true;
             }
         }//end foreach
 
-        // Logged-in users should also have at least the same rights as 'public' users.
-        if ($this->hasGroupPermission(
+        // Logged-in users should also have at least the same rights as 'public' users —
+        // unless inheritFromPublic is disabled for this schema (cascade: schema → register
+        // → IAppConfig openregister.rbac.inherit_from_public_default → true).
+        if ($this->resolveInheritFromPublic(schema: $schema) === true
+            && $this->hasGroupPermission(
                 authorization: $authorization,
                 groupId: 'public',
                 action: $action,
                 userId: $userId,
                 objectOwner: $objectOwner,
                 objectData: $objectData,
-                objectOrganisation: $objectOrganisation,
-                activeOrganisation: $activeOrganisation
+                objectOrganisation: $objectOrganisation
             ) === true
         ) {
             return true;
@@ -256,6 +276,8 @@ class PermissionHandler
      * @throws Exception If permission is not granted
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC flag follows established API patterns
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function checkPermission(
         Schema $schema,
@@ -302,6 +324,8 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission filtering requires multiple conditional checks
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function filterObjectsForPermissions(array $objects, bool $_rbac, bool $_multitenancy): array
     {
@@ -376,6 +400,8 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) UUID filtering with permission checks requires multiple conditions
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function filterUuidsForPermissions(array $uuids, bool $_rbac, bool $_multitenancy): array
     {
@@ -445,6 +471,8 @@ class PermissionHandler
      * Get the active organisation UUID for the current context
      *
      * @return string|null The active organisation UUID or null if none set
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function getActiveOrganisationForContext(): ?string
     {
@@ -489,6 +517,16 @@ class PermissionHandler
      * - If no authorization is set, everyone has permission
      * - If authorization is set but action is not specified, everyone has permission
      *
+     * Deduplication note:
+     *   Conditional match evaluation (rules with a `match` clause) is delegated to
+     *   {@see \OCA\OpenRegister\Service\ConditionMatcher}. ConditionMatcher is the
+     *   single PHP-side conditional-match evaluator used across the RBAC stack:
+     *   PropertyRbacHandler (property-level), PermissionHandler (schema-level), and
+     *   MagicRbacHandler::hasPermission() (row-level PHP path). The SQL emission
+     *   path in MagicRbacHandler::applyRbacFilters() is the only specialised
+     *   interpreter of the same rule grammar — it produces SQL WHERE fragments
+     *   instead of PHP verdicts. Do not introduce a fourth match evaluator here.
+     *
      * @param array|null  $authorization      The schema's authorization array
      * @param string      $groupId            The group ID to check
      * @param string      $action             The CRUD action (create, read, update, delete)
@@ -496,12 +534,13 @@ class PermissionHandler
      * @param string|null $userGroup          Optional user group for admin check
      * @param string|null $objectOwner        Optional object owner for ownership check
      * @param array|null  $objectData         Optional object data for conditional matching
-     * @param string|null $objectOrganisation Optional object organisation
-     * @param string|null $activeOrganisation Optional active organisation UUID
+     * @param string|null $objectOrganisation Optional object organisation (folded into @self.organisation)
      *
      * @return bool True if the group has permission
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function hasGroupPermission(
         ?array $authorization,
@@ -511,8 +550,7 @@ class PermissionHandler
         ?string $userGroup=null,
         ?string $objectOwner=null,
         ?array $objectData=null,
-        ?string $objectOrganisation=null,
-        ?string $activeOrganisation=null
+        ?string $objectOrganisation=null
     ): bool {
         // Admin group always has all permissions.
         if ($groupId === 'admin' || $userGroup === 'admin') {
@@ -552,75 +590,33 @@ class PermissionHandler
                     return true;
                 }
 
-                // Evaluate all match conditions (all must pass).
-                if ($this->evaluateMatchConditions(
-                    conditions: $entry['match'],
-                    objectData: $objectData,
-                    objectOrganisation: $objectOrganisation,
-                    activeOrganisation: $activeOrganisation
-                ) === true
+                // Evaluate all match conditions (all must pass) via the shared ConditionMatcher.
+                // Build the envelope so ConditionMatcher::getObjectValue() can resolve _organisation
+                // (and any other _-prefixed @self field) by stripping the underscore and looking
+                // up @self[<stripped>].
+                //
+                // Precedence: the `+` array union keeps any existing `@self.organisation` already
+                // present in $objectData, and only falls back to the separately-passed
+                // $objectOrganisation when @self has no `organisation` key. This matches the
+                // pre-unification behaviour where the object's own @self was authoritative and
+                // the explicit parameter was the fallback source.
+                $envelope = ($objectData ?? []);
+                if ($objectOrganisation !== null) {
+                    $envelope['@self'] = (($envelope['@self'] ?? []) + ['organisation' => $objectOrganisation]);
+                }
+
+                if ($this->conditionMatcher->objectMatchesConditions(
+                        object: $envelope,
+                        match: $entry['match']
+                    ) === true
                 ) {
                     return true;
                 }
-            }
+            }//end if
         }//end foreach
 
         return false;
     }//end hasGroupPermission()
-
-    /**
-     * Evaluate match conditions from a conditional authorization entry
-     *
-     * Supports variable substitution:
-     * - $organisation -> replaced with the user's active organisation UUID
-     *
-     * Supports special field prefixes:
-     * - _organisation -> matches against the object's @self.organisation
-     * - Other fields -> matched against the object data
-     *
-     * @param array       $conditions         Key-value pairs of field => expected value
-     * @param array|null  $objectData         The object's data fields
-     * @param string|null $objectOrganisation The object's @self.organisation
-     * @param string|null $activeOrganisation The user's active organisation UUID
-     *
-     * @return bool True if all conditions are satisfied
-     */
-    public function evaluateMatchConditions(
-        array $conditions,
-        ?array $objectData,
-        ?string $objectOrganisation,
-        ?string $activeOrganisation
-    ): bool {
-        foreach ($conditions as $field => $expectedValue) {
-            // Resolve $organisation variable in the expected value.
-            if ($expectedValue === '$organisation') {
-                if ($activeOrganisation === null) {
-                    return false;
-                }
-
-                $expectedValue = $activeOrganisation;
-            }
-
-            // Get the actual value to compare against.
-            // Regular field: match against object data; special _organisation field: match against @self.organisation.
-            $actualValue = $objectData[$field] ?? null;
-            if ($field === '_organisation') {
-                $actualValue = $objectOrganisation;
-            }
-
-            // If the actual value is an array with an 'id' key (resolved relation), use the id.
-            if (is_array($actualValue) === true && isset($actualValue['id']) === true) {
-                $actualValue = $actualValue['id'];
-            }
-
-            // Compare values.
-            if ($actualValue !== $expectedValue) {
-                return false;
-            }
-        }//end foreach
-
-        return true;
-    }//end evaluateMatchConditions()
 
     /**
      * Get all groups that have permission for a specific action
@@ -629,6 +625,8 @@ class PermissionHandler
      * @param string     $action        The CRUD action to check
      *
      * @return array Array of group IDs that have permission, or empty array if all groups have permission
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function getAuthorizedGroups(?array $authorization, string $action): array
     {
@@ -656,6 +654,8 @@ class PermissionHandler
      * @param Schema $schema The schema to resolve authorization for.
      *
      * @return array|null The effective authorization array, or null if none configured.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function resolveAuthorization(Schema $schema): ?array
     {
@@ -681,6 +681,134 @@ class PermissionHandler
     }//end resolveAuthorization()
 
     /**
+     * Resolve the effective `inheritFromPublic` flag for a schema.
+     *
+     * Cascade (first explicitly-set value wins):
+     *   1. schema's authorization.inheritFromPublic
+     *   2. register's authorization.inheritFromPublic
+     *   3. IAppConfig key `openregister.rbac.inherit_from_public_default`
+     *   4. hard-coded `true` (preserves pre-change behaviour)
+     *
+     * `null` is treated as "unset" — the cascade falls through.
+     *
+     * Result is cached per request, keyed by schema ID, to avoid repeated
+     * cascade walks when the same schema is checked many times (listing
+     * filter + per-object follow-up). Transient schemas without an ID
+     * (in-memory drafts, validation-loop fixtures, unit-test stubs) bypass
+     * the cache and re-walk the cascade on every call — correct, but the
+     * caller pays for it. Hot paths that re-use the same unsaved schema
+     * should either persist it or be aware that this is a no-cache path.
+     *
+     * @param Schema $schema The schema to resolve the flag for.
+     *
+     * @return bool The effective inheritFromPublic value.
+     *
+     * @spec openspec/changes/rbac-disable-public-inheritance/specs/rbac-scopes/spec.md#requirement-the-effective-value-of-inheritfrompublic-must-be-resolved-via-cascade
+     */
+    public function resolveInheritFromPublic(Schema $schema): bool
+    {
+        $schemaId = $schema->getId();
+        if ($schemaId !== null && array_key_exists($schemaId, $this->cachedInheritFromPublic) === true) {
+            return $this->cachedInheritFromPublic[$schemaId];
+        }
+
+        $resolved = null;
+
+        // Step 1: schema-level authorization.
+        // Strict-boolean check: anything that is not literally `true` or `false` is
+        // treated as "unset" (cascade falls through). PHP's loose `(bool) "false"`
+        // is `true`, which would silently invert the gate on any seed/migration/CLI
+        // write that bypasses the schema validator and stores a string. Strict
+        // matching closes that foot-gun — invalid storage skips the level rather
+        // than producing a misleading permissive default.
+        $auth = $schema->getAuthorization();
+        if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true) {
+            $resolved = $this->coerceStrictBoolOrLog(
+                value: $auth['inheritFromPublic'],
+                level: 'schema',
+                schemaId: $schemaId
+            );
+        }
+
+        // Step 2: register-level authorization.
+        if ($resolved === null) {
+            $register = $this->getRegisterForSchema(schema: $schema);
+            if ($register !== null) {
+                $registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
+                if (is_array($registerAuth) === true
+                    && array_key_exists('inheritFromPublic', $registerAuth) === true
+                ) {
+                    $resolved = $this->coerceStrictBoolOrLog(
+                        value: $registerAuth['inheritFromPublic'],
+                        level: 'register',
+                        schemaId: $schemaId
+                    );
+                }
+            }
+        }
+
+        // Step 3: tenant-wide IAppConfig default.
+        // IAppConfig::getValueBool tolerates the string forms ("true"/"false"/
+        // "1"/"0") at the storage layer — that tolerance is intentional for the
+        // CLI / occ surface. The schema- and register-level cascade is stricter
+        // because it sits behind validators that should already have rejected
+        // non-boolean values.
+        if ($resolved === null) {
+            $resolved = $this->appConfig->getValueBool(
+                app: 'openregister',
+                key: 'rbac.inherit_from_public_default',
+                default: true
+            );
+        }
+
+        if ($schemaId !== null) {
+            $this->cachedInheritFromPublic[$schemaId] = $resolved;
+        }
+
+        return $resolved;
+
+    }//end resolveInheritFromPublic()
+
+    /**
+     * Strict-boolean coercion for cascade levels backed by JSON storage.
+     *
+     * Returns `true` or `false` only when the stored value is literally the
+     * boolean. Returns `null` (treated as "unset" by the cascade) for `null`
+     * or any non-boolean — and logs a warning in the latter case so operators
+     * can spot bad seed/migration writes. The previous loose `(bool)` cast
+     * silently turned `"false"` into `true`, which inverted the gate.
+     *
+     * @param mixed    $value    The raw value from the JSON authorization block.
+     * @param string   $level    Cascade level for the log message ("schema" or "register").
+     * @param int|null $schemaId Schema id for the log context (null for transient).
+     *
+     * @return bool|null Strict boolean, or null when the value is null/invalid.
+     */
+    private function coerceStrictBoolOrLog(mixed $value, string $level, ?int $schemaId): ?bool
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value === true || $value === false) {
+            return $value;
+        }
+
+        $this->logger->warning(
+            message: '[PermissionHandler] '.$level.'-level inheritFromPublic is not a boolean — treating as unset and falling through cascade',
+            context: [
+                'file'      => __FILE__,
+                'line'      => __LINE__,
+                'level'     => $level,
+                'schemaId'  => $schemaId,
+                'valueType' => gettype($value),
+            ]
+        );
+        return null;
+
+    }//end coerceStrictBoolOrLog()
+
+    /**
      * Get the parent register for a schema.
      *
      * Uses RegisterMapper::getFirstRegisterWithSchema() to find the register
@@ -689,6 +817,8 @@ class PermissionHandler
      * @param Schema $schema The schema to find the register for.
      *
      * @return Register|null The parent register, or null if not found.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-55
      */
     private function getRegisterForSchema(Schema $schema): ?Register
     {
@@ -723,6 +853,8 @@ class PermissionHandler
      * @param int $registerId The register ID to get authorization for.
      *
      * @return array|null The register's authorization array.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
      */
     private function getRegisterAuthorization(int $registerId): ?array
     {
@@ -751,6 +883,8 @@ class PermissionHandler
      * @param int $registerId The register ID to get configuration for.
      *
      * @return array|null The register's configuration array.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-57
      */
     private function getRegisterConfiguration(int $registerId): ?array
     {
@@ -784,6 +918,8 @@ class PermissionHandler
      * @return array The authorization with roles expanded to action-level entries.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function expandRoles(array $authorization, Schema $schema): array
     {
@@ -857,6 +993,8 @@ class PermissionHandler
      * @param Schema $schema The schema to find role definitions for.
      *
      * @return array Array of role definitions, each with 'name', 'description', 'actions'.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-57
      */
     private function getRoleDefinitionsForSchema(Schema $schema): array
     {

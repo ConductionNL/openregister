@@ -6,7 +6,7 @@ on:
 
 jobs:
   unstable:
-    if: false # unstable builds are disabled
+    if: github.ref == 'refs/heads/development'
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: unstable

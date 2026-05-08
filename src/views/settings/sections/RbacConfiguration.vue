@@ -78,6 +78,24 @@
 					Allow administrators to bypass all RBAC restrictions
 				</p>
 
+				<!-- Inherit-from-public default -->
+				<NcCheckboxRadioSwitch
+					:checked.sync="rbacOptions.inheritFromPublicDefault"
+					:disabled="saving"
+					type="switch">
+					{{ rbacOptions.inheritFromPublicDefault
+						? 'Authenticated users inherit public group rights (default)'
+						: 'Authenticated users do NOT inherit public group rights (default)' }}
+				</NcCheckboxRadioSwitch>
+				<p class="option-description">
+					Tenant-wide default for the schema-level <code>inheritFromPublic</code> flag.
+					When on (default), authenticated users qualify for any rule that targets the
+					<code>public</code> group across all schemas — unless an individual schema or
+					register opts out via its <code>inheritFromPublic</code> field. When off,
+					authenticated users must qualify via their own group memberships everywhere
+					the flag is not explicitly set. Anonymous users are unaffected either way.
+				</p>
+
 				<h4>Default User Groups</h4>
 				<p class="option-description">
 					Configure which Nextcloud groups different types of users are assigned to by default
@@ -138,6 +156,9 @@
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+ */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
@@ -162,40 +183,67 @@ export default {
 		...mapStores(useSettingsStore),
 
 		rbacOptions: {
+			/**
+			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+			 */
 			get() {
 				return this.settingsStore.rbacOptions
 			},
+			/**
+			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+			 */
 			set(value) {
 				this.settingsStore.rbacOptions = value
 			},
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 */
 		groupOptions() {
 			return this.settingsStore.groupOptions
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 */
 		userOptions() {
 			return this.settingsStore.userOptions
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 */
 		rebasing() {
 			return this.settingsStore.rebasing
 		},
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 */
 		showRebaseDialog() {
 			this.settingsStore.showRebaseDialog()
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 */
 		async saveSettings() {
 			await this.settingsStore.updateRbacSettings(this.rbacOptions)
 		},

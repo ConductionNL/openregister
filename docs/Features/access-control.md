@@ -24,9 +24,9 @@ The access control system integrates with:
 
 Access can be controlled at multiple levels:
 - Register level - Control access to entire registers
-- Schema level - Manage permissions for specific register/schema combinations  
+- Schema level - Manage permissions for specific register/schema combinations
 - Object level - Set permissions on individual objects
-- Property level - Fine-grained control over specific object properties
+- Property level - Fine-grained, conditional control over specific object properties (see [Property Authorization](./property-authorization.md))
 
 ## Permission Types
 
@@ -380,9 +380,16 @@ sequenceDiagram
   "create": ["admin", "editors"],
   "read": ["admin", "editors", "viewers", "public"],
   "update": ["admin", "editors"],
-  "delete": ["admin"]
+  "delete": ["admin"],
+  "inheritFromPublic": true
 }
 ```
+
+The optional `inheritFromPublic` boolean controls whether authenticated users
+qualify for `public` rules on this schema. It defaults to `true` (the
+pre-change behaviour). See [Disabling public-group inheritance for
+authenticated users](#disabling-public-group-inheritance-for-authenticated-users-inheritfrompublic)
+below.
 
 **Object Authorization Field:**
 - Stored in `oc_openregister_objects.authorization` (JSON)
@@ -521,6 +528,179 @@ $object->setAuthorization([
 ]);
 ```
 
+### Conditional rules work identically at every level
+
+Schema-level, object-level, and property-level `authorization` blocks all accept the **same** conditional rule grammar. A rule of the form `{ "group": "...", "match": { ... } }` evaluates the same way whether it sits on a schema, an object, or a single property, and whether it is enforced at list time (SQL `WHERE` via `MagicRbacHandler`), at single-object fetch time (`PermissionHandler::hasPermission`), or during property filtering (`PropertyRbacHandler`).
+
+All three enforcement points route conditional match evaluation through the shared `ConditionMatcher` service. The operator set and dynamic-variable set listed below therefore apply uniformly:
+
+- **Operators**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`.
+- **Dynamic variables** resolved at evaluation time: `$organisation` / `$activeOrganisation`, `$userId` / `$user`, `$now`.
+
+A schema authored with `{ "read": [{ "group": "public", "match": { "publishDate": { "$lte": "$now" } } }] }` returns the same object set from `GET /api/objects/{register}/{schema}` (list) and `GET /api/objects/{register}/{schema}/{id}` (find). List-vs-find drift caused by differing grammar is no longer possible.
+
+### Disabling public-group inheritance for authenticated users (`inheritFromPublic`)
+
+By default, authenticated users qualify for any rule that targets the `public`
+group — they inherit at least the rights of an anonymous visitor. This is
+convenient for most schemas, but it gets in the way of two patterns:
+
+1. **Privacy-strict schemas** where authentication is meant to be a strict
+   gate, not a superset of public access. For example: a schema where the
+   public group can only see redacted/anonymised rows via a conditional
+   rule, but logged-in users should be channelled through a different
+   curated view rather than seeing the same redacted set.
+2. **Tiered visibility flows** where a public catalogue uses a date-windowed
+   `match` (e.g. `publishedAt $lte $now`) and a separate authenticated
+   curated view uses its own group rule. With public inheritance on, the
+   authenticated view leaks the public catalogue rows.
+
+The optional `inheritFromPublic` boolean on the authorization block of a
+schema or register lets a tenant opt out of the inherit-from-public
+behaviour. When `false`, authenticated users no longer qualify for `public`
+rules on that schema/register; they must qualify via their own group
+memberships. Anonymous users are unaffected — the flag does not change
+what an unauthenticated visitor sees.
+
+#### Cascade
+
+The effective value is resolved per schema, walking the cascade until the
+first explicitly-set value is found:
+
+1. The schema's own `authorization.inheritFromPublic`.
+2. The parent register's `authorization.inheritFromPublic`.
+3. The tenant-wide IAppConfig key `openregister.rbac.inherit_from_public_default`
+   (read via `IAppConfig::getValueBool`, which accepts `true`/`false`/`"true"`/
+   `"false"`/`"1"`/`"0"`/`1`/`0` at the storage layer).
+4. Hard-coded `true` (preserves pre-change behaviour).
+
+**Strict-boolean check at schema and register levels.** Steps 1 and 2 require
+the stored value to be a literal `true` or `false` — anything else (string
+forms, integers, mistyped JSON) is rejected as "unset" and the cascade
+falls through, with a warning logged. This closes a foot-gun where a seed
+write or migration that bypasses the schema validator could store the
+string `"false"` and silently invert the gate (`(bool) "false"` is `true`).
+Always store real JSON booleans on schema/register `authorization` blocks.
+The IAppConfig layer keeps its broader tolerance because the `occ` /
+operator surface intentionally accepts those forms.
+
+`null` at any level is treated as "unset" — the cascade falls through to
+the next level. The first explicit boolean wins; a schema that sets the
+flag overrides its register and the tenant default.
+
+The tenant default can be flipped from the OpenRegister settings UI under
+**RBAC Configuration → Authenticated users inherit `public` group rights
+(default)**, or via `occ config:app:set openregister rbac.inherit_from_public_default --value=false --type=boolean`.
+
+#### Four-state matrix
+
+For a schema with `read: [{ "group": "public", "match": <m> }]`:
+
+| User              | `inheritFromPublic` | Result                                                                |
+|-------------------|---------------------|-----------------------------------------------------------------------|
+| anonymous         | `true` (default)    | granted when `<m>` matches (pre-change behaviour)                      |
+| anonymous         | `false`             | granted when `<m>` matches — anonymous users are unaffected            |
+| authenticated     | `true` (default)    | granted when `<m>` matches (authenticated user inherits public)        |
+| authenticated     | `false`             | denied unless the user qualifies via another rule (own group / owner / admin) |
+
+Owner-shortcut and admin-bypass paths are unaffected by the flag — an
+object's owner and any user in the `admin` group always have access
+regardless of `inheritFromPublic`.
+
+The PHP-side per-object check (`PermissionHandler::hasPermission`) and the
+SQL-side listing filter (`MagicRbacHandler::applyRbacFilters` /
+`buildRbacConditionsSql`) both honour the flag identically; per-object
+checks and listing membership cannot drift.
+
+#### Worked example: a publication-style schema with a curated authenticated view
+
+A `publication` schema needs to be visible to anonymous visitors only after
+its `publishedAt` timestamp, but logged-in editors should see the curated
+in-progress queue (which is a different rule) instead of the public-time
+window. Authenticated users without `editors` membership should see
+**nothing** — they should not inherit the public window.
+
+```json
+{
+  "authorization": {
+    "inheritFromPublic": false,
+    "read": [
+      { "group": "public",  "match": { "publishedAt": { "$lte": "$now" } } },
+      { "group": "editors", "match": { "status":      { "$in": ["draft", "review"] } } }
+    ]
+  }
+}
+```
+
+Behaviour:
+
+- An anonymous visitor sees rows where `publishedAt <= now` (public match
+  applies; the flag does not affect anonymous users).
+- An `editors` member sees rows where `status` is `draft` or `review` (their
+  group rule applies). They do NOT inherit the public time-window because
+  `inheritFromPublic` is `false`.
+- A logged-in user who is not in `editors` sees nothing on this schema.
+  They have no qualifying rule, and the flag prevents them from falling
+  back to the public match.
+- An owner of a row sees it via the owner shortcut, regardless of the flag.
+
+If the same schema were authored with `inheritFromPublic: true` (or the
+field omitted), the third case would change: the non-`editors` logged-in
+user would inherit the public window and see the same rows the anonymous
+visitor sees.
+
+#### When to reach for `'authenticated'` instead of `'public'`
+
+`inheritFromPublic` governs the `public` group only. The simple-string
+rule `'authenticated'` is a separate construct — it grants access to any
+logged-in user, independent of the flag. If you want "any logged-in user,
+no group filtering, regardless of `inheritFromPublic`", use
+`{ "read": ["authenticated"] }` rather than relying on public-inheritance.
+
+### Property-Level Authorization
+
+In addition to the schema- and object-level rules above, individual properties can carry their own `authorization` block with conditional rules. This is covered in depth in [Property Authorization](./property-authorization.md); this section is a short map into that feature.
+
+Property-level rules support the same grammar as schema-level (listed above):
+
+- **Group checks** — the same groups used at schema level (including `"public"`).
+- **`match` conditions** on the object, with the operators listed above.
+- **Dynamic variables** — the same set listed above.
+
+Example — a `publishedAt` field that is only visible after its own timestamp:
+
+```json
+{
+  "publishedAt": {
+    "type": "string",
+    "format": "date-time",
+    "authorization": {
+      "read": [
+        { "group": "public", "match": { "publishedAt": { "$lte": "$now" } } }
+      ]
+    }
+  }
+}
+```
+
+Example — internal notes scoped to the owning organisation:
+
+```json
+{
+  "interneAantekening": {
+    "type": "string",
+    "authorization": {
+      "read":   [{ "group": "public",  "match": { "_organisation": "$organisation" } }],
+      "update": [{ "group": "editors", "match": { "_organisation": "$organisation" } }]
+    }
+  }
+}
+```
+
+Reads that fail property authorization strip the field from the response; writes that fail produce a validation error rather than a silent drop. Schemas with no `authorization` blocks on any property skip property-RBAC evaluation entirely.
+
+See [Property Authorization](./property-authorization.md) for the full operator catalogue, variable reference, edge cases, and more examples.
+
 ### RBAC Configuration
 
 RBAC can be configured in Nextcloud app settings:
@@ -528,12 +708,21 @@ RBAC can be configured in Nextcloud app settings:
 ```json
 {
   "enabled": true,
-  "adminOverride": true
+  "adminOverride": true,
+  "inheritFromPublicDefault": true
 }
 ```
 
 - **`enabled`**: Master switch for RBAC system
 - **`adminOverride`**: Allow users in 'admin' group to bypass all RBAC checks
+- **`inheritFromPublicDefault`**: Tenant-wide default for the schema-level
+  `inheritFromPublic` flag. When `true` (default), authenticated users
+  qualify for `public` rules on any schema that does not explicitly set
+  the flag. When `false`, authenticated users must qualify via their own
+  group memberships unless a schema or register opts back in. Persisted
+  to the IAppConfig key `openregister.rbac.inherit_from_public_default`.
+  See
+  [Disabling public-group inheritance for authenticated users](#disabling-public-group-inheritance-for-authenticated-users-inheritfrompublic).
 
 ### Performance Optimizations
 
@@ -853,23 +1042,15 @@ $oldExceptions = $mapper->findByCriteria([
 
 ### Future Enhancements
 
-1. **Field-Level Authorization**
-   - Control access to specific object properties
-   - Redact sensitive fields based on user permissions
-
-2. **Time-Based Permissions**
-   - Temporary permission grants with expiration
-   - Scheduled permission changes
-
-3. **Audit Logging**
+1. **Audit Logging**
    - Log all authorization decisions
    - Track permission changes over time
 
-4. **Permission Testing Tool**
+2. **Permission Testing Tool**
    - UI for testing user permissions
    - Visualize effective permissions for users/groups
 
-5. **RBAC Analytics**
+3. **RBAC Analytics**
    - Permission usage statistics
    - Identify over-privileged users
    - Suggest permission optimizations

@@ -70,6 +70,8 @@ class FileChangeListener implements IEventListener
      * @param SettingsService       $settingsService Settings service
      * @param IJobList              $jobList         Job list for queuing background jobs
      * @param LoggerInterface       $logger          Logger
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly TextExtractionService $textExtractSvc,
@@ -89,6 +91,8 @@ class FileChangeListener implements IEventListener
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File event handling requires many conditional checks
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) File event handling requires comprehensive case coverage
      * @SuppressWarnings(PHPMD.NPathComplexity)       File event handling requires many conditional checks
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function handle(Event $event): void
     {

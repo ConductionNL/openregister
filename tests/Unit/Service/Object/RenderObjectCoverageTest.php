@@ -105,6 +105,12 @@ class RenderObjectCoverageTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->fileService = $this->createMock(FileService::class);
 
+        $translationHandler = $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class);
+        $translationHandler->method('resolveTranslationsForRender')
+            ->willReturnCallback(function (array $objectData) {
+                return $objectData;
+            });
+
         $this->handler = new RenderObject(
             $this->fileMapper,
             $this->objectMapper,
@@ -116,7 +122,10 @@ class RenderObjectCoverageTest extends TestCase
             $this->objectCacheService,
             $this->propertyRbacHandler,
             $this->logger,
-            $this->fileService
+            $this->fileService,
+        $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+        $translationHandler,
+        $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class)
         );
     }
 

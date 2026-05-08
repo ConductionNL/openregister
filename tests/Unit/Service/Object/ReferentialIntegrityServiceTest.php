@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
+use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -65,6 +66,9 @@ class ReferentialIntegrityServiceTest extends TestCase
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
 
+    /** @var IDBConnection&MockObject */
+    private IDBConnection $db;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -74,13 +78,15 @@ class ReferentialIntegrityServiceTest extends TestCase
         $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->db = $this->createMock(IDBConnection::class);
 
         $this->service = new ReferentialIntegrityService(
             $this->schemaMapper,
             $this->registerMapper,
             $this->objectMapper,
             $this->auditTrailMapper,
-            $this->logger
+            $this->logger,
+            $this->db
         );
     }
 
@@ -1615,9 +1621,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ->method('deleteObjects')
             ->with(
                 $this->equalTo(['cascade-uuid']),
-                $this->equalTo(false),
-                $this->isInstanceOf(Register::class),
-                $this->isInstanceOf(Schema::class)
+                $this->equalTo(false)
             );
 
         $analysis = new DeletionAnalysis(
@@ -1649,9 +1653,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ->with(
                 // Reversed order because applyDeletionActions reverses cascadeTargets.
                 $this->equalTo(['cascade-uuid-2', 'cascade-uuid-1']),
-                $this->equalTo(false),
-                $this->isInstanceOf(Register::class),
-                $this->isInstanceOf(Schema::class)
+                $this->equalTo(false)
             );
 
         $analysis = new DeletionAnalysis(
@@ -1682,9 +1684,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ->method('deleteObjects')
             ->with(
                 $this->equalTo(['cascade-uuid']),
-                $this->equalTo(false),
-                $this->isNull(),
-                $this->isNull()
+                $this->equalTo(false)
             );
 
         $analysis = new DeletionAnalysis(
@@ -1702,8 +1702,8 @@ class ReferentialIntegrityServiceTest extends TestCase
 
     public function testApplyDeletionActionsCascadeHandlesDeleteException(): void
     {
-        $this->registerMapper->method('find')
-            ->willThrowException(new \Exception('Register not found'));
+        $this->objectMapper->method('deleteObjects')
+            ->willThrowException(new \Exception('Batch delete failed'));
 
         $this->logger->expects($this->atLeastOnce())
             ->method('warning');

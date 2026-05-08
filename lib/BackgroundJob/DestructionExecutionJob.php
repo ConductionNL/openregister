@@ -17,6 +17,10 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -72,6 +76,9 @@ class DestructionExecutionJob extends QueuedJob
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
      */
     protected function run($argument): void
     {
@@ -238,6 +245,8 @@ class DestructionExecutionJob extends QueuedJob
      * @param LoggerInterface $logger       Logger
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     private function notifySkippedHolds(
         string $listUuid,

@@ -325,6 +325,10 @@
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+ */
 import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
@@ -383,6 +387,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+		 */
 		totalFacets() {
 			if (!this.facetsData || !this.facetsData.facets) return 0
 			return this.metadataCount + this.objectFieldCount
@@ -411,6 +418,8 @@ export default {
 	methods: {
 		/**
 		 * Load facets from SOLR API
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
 		 */
 		async loadFacets() {
 			console.info('🚀 FacetConfigModal: loadFacets called')
@@ -489,6 +498,8 @@ export default {
 		/**
 		 * Format display type for human-readable labels
 		 * @param {string} displayType - The display type to format
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
 		 */
 		formatDisplayType(displayType) {
 			const typeMap = {
@@ -504,6 +515,8 @@ export default {
 
 		/**
 		 * Save facet configuration
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
 		 */
 		async saveFacetConfiguration() {
 			console.info('💾 Saving facet configuration...')

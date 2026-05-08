@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
  *
  * @package Unit\Controller
  */
+use Psr\Container\ContainerInterface;
+
 class RegistersControllerTest extends TestCase
 {
     private RegistersController $controller;
@@ -90,7 +92,8 @@ class RegistersControllerTest extends TestCase
             $this->registerMapper,
             $this->githubService,
             $this->appManager,
-            $this->oasService
+            $this->oasService,
+            $this->createMock(\Psr\Container\ContainerInterface::class)
         );
     }
 

@@ -29,12 +29,16 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\TmloService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -169,12 +173,20 @@ class SaveObjectTest extends TestCase
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
         $this->registerMapper->method('findAll')->willReturn([$this->mockRegister]);
 
+        // Create TranslationHandler mock that passes through data.
+        $translationHandler = $this->createMock(TranslationHandler::class);
+        $translationHandler->method('normalizeTranslationsForSave')
+            ->willReturnCallback(function (array $objectData) {
+                return $objectData;
+            });
+
         // Create SaveObject instance.
         $this->saveObject = new SaveObject(
             objectEntityMapper: $this->objectEntityMapper,
             unifiedObjectMapper: $this->unifiedObjectMapper,
             metaHydrationHandler: $this->metaHydrationHandler,
             filePropertyHandler: $this->filePropertyHandler,
+            linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
             userSession: $this->userSession,
             auditTrailMapper: $this->auditTrailMapper,
             schemaMapper: $this->schemaMapper,
@@ -184,7 +196,10 @@ class SaveObjectTest extends TestCase
             cacheHandler: $this->cacheHandler,
             settingsService: $this->settingsService,
             propertyRbacHandler: $this->propertyRbacHandler,
+            computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
+            translationHandler: $translationHandler,
             logger: $this->logger,
+            tmloService: $this->createMock(TmloService::class),
             arrayLoader: new ArrayLoader(),
         );
     }

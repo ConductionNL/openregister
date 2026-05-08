@@ -1461,10 +1461,15 @@ class SchemaMapper extends QBMapper
      */
     private function determineFacetTypeFromProperty(array $property): string
     {
-        $propertyType = $property['type'] ?? 'string';
+        $propertyType   = $property['type'] ?? 'string';
+        $propertyFormat = $property['format'] ?? '';
 
         // Date/datetime properties use date_histogram.
-        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
+        // Checks both 'type' (e.g. type: date) and 'format' (e.g. type: string, format: date)
+        // because JSON Schema represents dates as type: "string" with format: "date".
+        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true
+            || in_array($propertyFormat, ['date', 'date-time', 'datetime']) === true
+        ) {
             return 'date_histogram';
         }
 
@@ -1486,10 +1491,9 @@ class SchemaMapper extends QBMapper
      * Resolve schema composition by merging referenced schemas
      *
      * This method implements JSON Schema composition patterns conforming to the specification:
-     * 1. Handles 'extend' (deprecated) for backward compatibility
-     * 2. Handles 'allOf' - instance must validate against ALL schemas (multiple inheritance)
-     * 3. Handles 'oneOf' - instance must validate against EXACTLY ONE schema
-     * 4. Handles 'anyOf' - instance must validate against AT LEAST ONE schema
+     * 1. Handles 'allOf' - instance must validate against ALL schemas (multiple inheritance)
+     * 2. Handles 'oneOf' - instance must validate against EXACTLY ONE schema
+     * 3. Handles 'anyOf' - instance must validate against AT LEAST ONE schema
      *
      * The method enforces the Liskov Substitution Principle:
      * - Extended schemas can ONLY ADD constraints, never relax them

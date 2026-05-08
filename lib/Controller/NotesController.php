@@ -13,6 +13,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-60
  */
 
 declare(strict_types=1);
@@ -86,6 +88,8 @@ class NotesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-60
      */
     public function index(
         string $register,
@@ -126,6 +130,8 @@ class NotesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-60
      */
     public function create(
         string $register,
@@ -162,6 +168,53 @@ class NotesController extends Controller
     }//end create()
 
     /**
+     * Update a note.
+     *
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID of the object
+     * @param string $noteId   The ID of the note to update
+     *
+     * @return JSONResponse JSON response with the updated note
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function update(
+        string $register,
+        string $schema,
+        string $id,
+        string $noteId
+    ): JSONResponse {
+        try {
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
+            if ($object === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Object not found'],
+                    statusCode: 404
+                );
+            }
+
+            $data = $this->request->getParams();
+
+            if (empty($data['message']) === true) {
+                return new JSONResponse(
+                    data: ['error' => 'Note message is required'],
+                    statusCode: 400
+                );
+            }
+
+            $note = $this->noteService->updateNote((int) $noteId, $data['message']);
+
+            return new JSONResponse(data: $note);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+        }//end try
+    }//end update()
+
+    /**
      * Delete a note.
      *
      * @param string $register The register slug or identifier
@@ -173,6 +226,8 @@ class NotesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-60
      */
     public function destroy(
         string $register,

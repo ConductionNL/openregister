@@ -7,7 +7,6 @@ This guide covers all installation methods for OpenRegister, from the Nextcloud 
 ### System Requirements
 
 **Minimum Requirements:**
-
 - PHP 8.1 or higher
 - Nextcloud 28 or higher
 - Database: PostgreSQL 12+ OR MariaDB 10.5+ / MySQL 8.0+
@@ -15,7 +14,6 @@ This guide covers all installation methods for OpenRegister, from the Nextcloud 
 - 1GB disk space for the app
 
 **Recommended Setup:**
-
 - PHP 8.2+
 - Nextcloud 31+
 - PostgreSQL 16+ with pgvector and pg_trgm extensions
@@ -45,22 +43,19 @@ php-mysql    # For MariaDB/MySQL
 The easiest way to install OpenRegister is directly from the Nextcloud App Store.
 
 1. **Open Nextcloud:**
-
    - Log in as an administrator
    - Navigate to **Settings** → **Apps**
 
 2. **Search and Install:**
-
    - Click on **"Featured apps"** or **"Integration"**
    - Search for **"OpenRegister"** or **"Open Register"**
    - Click **"Download and enable"**
 
 3. **Verify Installation:**
-
    ```bash
    # Via command line
    php occ app:list | grep openregister
-
+   
    # Should show:
    # openregister: 0.2.x enabled
    ```
@@ -73,7 +68,6 @@ The easiest way to install OpenRegister is directly from the Nextcloud App Store
 For custom installations or when the App Store is unavailable.
 
 1. **Download Latest Release:**
-
    ```bash
    cd /path/to/nextcloud/apps/
    wget https://github.com/ConductionNL/openregister/releases/latest/download/openregister.tar.gz
@@ -82,7 +76,6 @@ For custom installations or when the App Store is unavailable.
    ```
 
 2. **Enable the App:**
-
    ```bash
    cd /path/to/nextcloud
    sudo -u www-data php occ app:enable openregister
@@ -116,7 +109,6 @@ docker-compose up -d
 #### Detailed Setup
 
 **1. Clone and Navigate:**
-
 ```bash
 git clone https://github.com/ConductionNL/openregister.git
 cd openregister
@@ -125,19 +117,16 @@ cd openregister
 **2. Choose Database Backend:**
 
 **PostgreSQL (Recommended):**
-
 ```bash
 docker-compose up -d
 ```
 
 **MariaDB (For Compatibility Testing):**
-
 ```bash
 docker-compose --profile mariadb up -d
 ```
 
 **3. Wait for Initialization:**
-
 ```bash
 # Check container status
 docker-compose ps
@@ -149,19 +138,16 @@ docker-compose logs -f nextcloud
 ```
 
 **4. Access Nextcloud:**
-
 - URL: http://localhost:8080
 - Username: `admin`
 - Password: `admin`
 
 **5. Enable OpenRegister:**
-
 ```bash
 docker exec -u 33 nextcloud php occ app:enable openregister
 ```
 
 **6. Verify Installation:**
-
 ```bash
 docker exec -u 33 nextcloud php occ app:list | grep openregister
 ```
@@ -170,27 +156,25 @@ docker exec -u 33 nextcloud php occ app:list | grep openregister
 
 The Docker setup includes:
 
-| Service               | Description                          | Port  | Optional                          |
-| --------------------- | ------------------------------------ | ----- | --------------------------------- |
-| **nextcloud**         | Nextcloud application server         | 8080  | Required                          |
-| **db**                | PostgreSQL database (pgvector)       | 5432  | Required (default)                |
-| **db-mariadb**        | MariaDB database                     | 3306  | Optional (profile: mariadb)       |
-| **ollama**            | Local LLM inference (Llama, Mistral) | 11434 | Required                          |
-| **presidio-analyzer** | PII detection and NER                | 5001  | Required                          |
-| **solr**              | Search engine (legacy)               | 8983  | Optional (profile: solr)          |
-| **elasticsearch**     | Alternative search backend           | 9200  | Optional (profile: elasticsearch) |
-| **n8n**               | Workflow automation                  | 5678  | Optional (profile: n8n)           |
+| Service | Description | Port | Optional |
+|---------|-------------|------|----------|
+| **nextcloud** | Nextcloud application server | 8080 | Required |
+| **db** | PostgreSQL database (pgvector) | 5432 | Required (default) |
+| **db-mariadb** | MariaDB database | 3306 | Optional (profile: mariadb) |
+| **ollama** | Local LLM inference (Llama, Mistral) | 11434 | Required |
+| **presidio-analyzer** | PII detection and NER | 5001 | Required |
+| **solr** | Search engine (legacy) | 8983 | Optional (profile: solr) |
+| **elasticsearch** | Alternative search backend | 9200 | Optional (profile: elasticsearch) |
+| **n8n** | Workflow automation | 5678 | Optional (profile: n8n) |
 
 #### Optional Services
 
 **Enable Solr:**
-
 ```bash
 docker-compose --profile solr up -d
 ```
 
 **Enable n8n Workflows:**
-
 ```bash
 docker-compose --profile n8n up -d
 # Access: http://localhost:5678
@@ -198,7 +182,6 @@ docker-compose --profile n8n up -d
 ```
 
 **Enable All Optional Services:**
-
 ```bash
 docker-compose --profile solr --profile n8n --profile elasticsearch up -d
 ```
@@ -212,7 +195,6 @@ PostgreSQL offers advanced features like vector search (pgvector) and full-text 
 #### Automatic Setup (Docker)
 
 Extensions are automatically installed via `docker/postgres/init-extensions.sql`:
-
 - ✅ **pgvector** - Vector similarity search
 - ✅ **pg_trgm** - Trigram full-text search
 - ✅ **btree_gin** - Optimized GIN indexing
@@ -325,14 +307,12 @@ Access **Settings** → **OpenRegister** → **Settings**:
 ### 3. Import or Create Schema
 
 **Option A: Import from Schema.org**
-
 1. Go to **Schemas** → **Import**
 2. Select **"Schema.org"**
 3. Search and select a schema (e.g., "Person")
 4. Click **"Import"**
 
 **Option B: Create Custom Schema**
-
 1. Go to **Schemas** → **New Schema**
 2. Define properties in JSON Schema format
 3. Save the schema
@@ -355,14 +335,12 @@ curl -u admin:admin \
 ### Ollama Integration
 
 OpenRegister can use Ollama for:
-
 - Semantic search
 - Content understanding
 - AI-powered chat
 - RAG (Retrieval Augmented Generation)
 
 **1. Pull a Model:**
-
 ```bash
 # Inside Docker
 docker exec openregister-ollama ollama pull llama3.2
@@ -373,13 +351,11 @@ docker exec openregister-ollama ollama pull codellama
 ```
 
 **2. Verify Ollama:**
-
 ```bash
 curl http://localhost:11434/api/tags
 ```
 
 **3. Configure in OpenRegister:**
-
 - Navigate to **Settings** → **OpenRegister** → **AI**
 - Enable **"AI Features"**
 - Set Ollama URL: `http://ollama:11434`
@@ -390,13 +366,11 @@ curl http://localhost:11434/api/tags
 For automatic PII detection and anonymization:
 
 **Verify Presidio:**
-
 ```bash
 curl http://localhost:5001/health
 ```
 
 **Configure in OpenRegister:**
-
 - Navigate to **Settings** → **OpenRegister** → **Privacy**
 - Enable **"PII Detection"**
 - Set Presidio URL: `http://presidio-analyzer:5001`
@@ -418,7 +392,6 @@ php occ maintenance:mode --off
 #### Database Connection Errors
 
 **PostgreSQL:**
-
 ```bash
 # Check if PostgreSQL is running
 docker-compose ps db
@@ -431,7 +404,6 @@ docker exec openregister-postgres psql -U nextcloud -d nextcloud -c "SELECT vers
 ```
 
 **MariaDB:**
-
 ```bash
 # Check if MariaDB is running
 docker-compose --profile mariadb ps db-mariadb
@@ -488,7 +460,6 @@ After installation:
 ### From Nextcloud App Store
 
 Updates are automatic via the Nextcloud update mechanism:
-
 1. Navigate to **Settings** → **Apps**
 2. Look for OpenRegister updates
 3. Click **"Update"**
@@ -581,7 +552,6 @@ Before deploying to production:
 ### Database Tuning
 
 **PostgreSQL:**
-
 ```sql
 -- Add to postgresql.conf
 shared_buffers = 4GB
@@ -592,7 +562,6 @@ max_connections = 200
 ```
 
 **MariaDB:**
-
 ```ini
 # Add to my.cnf
 innodb_buffer_pool_size = 4G
@@ -604,7 +573,6 @@ query_cache_size = 64M
 ### PHP Tuning
 
 Add to `php.ini`:
-
 ```ini
 memory_limit = 4G
 upload_max_filesize = 2G
@@ -617,7 +585,6 @@ opcache.memory_consumption = 256
 ### Nextcloud Tuning
 
 Add to `config/config.php`:
-
 ```php
 'memcache.local' => '\OC\Memcache\APCu',
 'memcache.distributed' => '\OC\Memcache\Redis',
@@ -634,3 +601,5 @@ Add to `config/config.php`:
 - **GitHub**: https://github.com/ConductionNL/openregister
 - **License**: EUPL-1.2
 - **Support**: support@conduction.nl
+
+

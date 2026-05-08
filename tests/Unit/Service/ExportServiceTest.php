@@ -70,7 +70,6 @@ class ExportServiceTest extends TestCase
         $this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 
         $this->service = new ExportService(
-            $this->objectMapper,
             $this->registerMapper,
             $this->userManager,
             $this->groupManager,
@@ -1206,7 +1205,7 @@ class ExportServiceTest extends TestCase
         $entity->setUuid('uuid-1');
         $entity->setName('Test');
         $entity->setObject(['title' => 'Hello']);
-        // depublished is null by default.
+        // updated is null by default.
 
         $adminUser = $this->createMock(IUser::class);
         $adminGroup = $this->createMock(IGroup::class);
@@ -1229,17 +1228,17 @@ class ExportServiceTest extends TestCase
 
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Find the @self.depublished column.
-        $depubCol = null;
+        // Find the @self.updated column.
+        $updatedCol = null;
         for ($col = 'A'; $col !== 'ZZ'; $col++) {
-            if ($sheet->getCell($col . '1')->getValue() === '@self.depublished') {
-                $depubCol = $col;
+            if ($sheet->getCell($col . '1')->getValue() === '@self.updated') {
+                $updatedCol = $col;
                 break;
             }
         }
 
-        $this->assertNotNull($depubCol, '@self.depublished column should exist');
-        $this->assertNull($sheet->getCell($depubCol . '2')->getValue());
+        $this->assertNotNull($updatedCol, '@self.updated column should exist');
+        $this->assertNull($sheet->getCell($updatedCol . '2')->getValue());
     }
 
     // ── getObjectValue: _ prefix legacy metadata ────────────────────────

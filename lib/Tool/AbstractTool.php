@@ -87,6 +87,8 @@ abstract class AbstractTool implements ToolInterface
      * @param Agent|null $agent The agent using this tool
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function setAgent(?Agent $agent): void
     {
@@ -104,6 +106,8 @@ abstract class AbstractTool implements ToolInterface
      * @param string|null $explicitUserId Explicitly provided user ID
      *
      * @return string|null User ID or null if no user context
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     protected function getUserId(?string $explicitUserId=null): ?string
     {
@@ -132,6 +136,8 @@ abstract class AbstractTool implements ToolInterface
      * @param string|null $explicitUserId Explicitly provided user ID
      *
      * @return bool True if user context is available
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     protected function hasUserContext(?string $explicitUserId=null): bool
     {
@@ -147,6 +153,8 @@ abstract class AbstractTool implements ToolInterface
      * @param array $params Query parameters
      *
      * @return array Query parameters with view filters applied
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     protected function applyViewFilters(array $params): array
     {
@@ -175,6 +183,8 @@ abstract class AbstractTool implements ToolInterface
      * @return (mixed|string|true)[] Formatted result
      *
      * @psalm-return array{success: true, message: string, data: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     protected function formatSuccess($data, string $message='Success'): array
     {
@@ -194,6 +204,8 @@ abstract class AbstractTool implements ToolInterface
      * @return (false|mixed|string)[] Formatted error result
      *
      * @psalm-return array{success: false, error: string, details?: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     protected function formatError(string $message, $details=null): array
     {
@@ -224,6 +236,8 @@ abstract class AbstractTool implements ToolInterface
      * @return void
      *
      * @psalm-suppress PossiblyNullArgument
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     protected function log(string $functionName, array $parameters, string $level='info', string $message=''): void
     {
@@ -289,6 +303,8 @@ abstract class AbstractTool implements ToolInterface
      * @return void
      *
      * @throws \InvalidArgumentException If any required parameter is missing
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     protected function validateParameters(array $parameters, array $required): void
     {
@@ -329,6 +345,8 @@ abstract class AbstractTool implements ToolInterface
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex type coercion for LLM compatibility
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple type conversion paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive type handling
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function __call(string $name, array $arguments)
     {

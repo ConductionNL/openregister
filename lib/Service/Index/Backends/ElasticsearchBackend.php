@@ -10,6 +10,8 @@
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-88
  */
 
 declare(strict_types=1);
@@ -181,6 +183,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @psalm-return array{total: 0|mixed, results: array<never, array<never, never>|mixed>, page: 1, limit: 10|mixed}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-88
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -551,6 +555,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param bool  $dryRun           Whether to preview changes only.
      *
      * @return array Results of the fix operation.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-88
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {

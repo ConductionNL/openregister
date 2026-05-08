@@ -93,6 +93,8 @@ class FetchHandler
      * @return array|JSONResponse The parsed data array or error response.
      *
      * @throws \Exception If the request fails or parsing fails.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -143,6 +145,8 @@ class FetchHandler
      * @param Configuration $configuration The configuration entity with source URL.
      *
      * @return array|JSONResponse The fetched configuration data or error response.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
@@ -214,6 +218,8 @@ class FetchHandler
      * @param string $type The Content-Type header value.
      *
      * @return array|null The decoded array or null on failure.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function decode(string $data, string $type): ?array
     {

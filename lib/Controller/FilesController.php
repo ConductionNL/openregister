@@ -12,6 +12,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
  */
 
 declare(strict_types=1);
@@ -30,6 +32,13 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCA\OpenRegister\Event\FileCopiedEvent;
+use OCA\OpenRegister\Event\FileLockedEvent;
+use OCA\OpenRegister\Event\FileMovedEvent;
+use OCA\OpenRegister\Event\FileRenamedEvent;
+use OCA\OpenRegister\Event\FileUnlockedEvent;
+use OCA\OpenRegister\Event\FileVersionRestoredEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IRequest;
 use OCP\IUserManager;
 
@@ -84,12 +93,13 @@ class FilesController extends Controller
      * Initializes controller with required dependencies for file operations.
      * Calls parent constructor to set up base controller functionality.
      *
-     * @param string        $appName       Application name
-     * @param IRequest      $request       HTTP request object
-     * @param FileService   $fileService   File service for file operations
-     * @param ObjectService $objectService Object service for object validation
-     * @param IRootFolder   $rootFolder    Root folder for file access
-     * @param IUserManager  $userManager   User manager for user lookups
+     * @param string           $appName         Application name
+     * @param IRequest         $request         HTTP request object
+     * @param FileService      $fileService     File service for file operations
+     * @param ObjectService    $objectService   Object service for object validation
+     * @param IRootFolder      $rootFolder      Root folder for file access
+     * @param IUserManager     $userManager     User manager for user lookups
+     * @param IEventDispatcher $eventDispatcher Event dispatcher for file events
      *
      * @return void
      */
@@ -99,7 +109,8 @@ class FilesController extends Controller
         FileService $fileService,
         ObjectService $objectService,
         private readonly IRootFolder $rootFolder,
-        private readonly IUserManager $userManager
+        private readonly IUserManager $userManager,
+        private readonly IEventDispatcher $eventDispatcher
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -123,6 +134,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @PublicPage
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
      */
     public function index(
         string $register,
@@ -271,6 +284,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
      */
     public function create(
         string $register,
@@ -815,6 +830,8 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<200|400|404,
      *     array{error?: string, success?: bool},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
      */
     public function delete(
         string $register,
@@ -862,6 +879,8 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<200|400|404,
      *     array{error?: mixed|string, labels?: list<string>,...},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
      */
     public function publish(
         string $register,
@@ -1081,6 +1100,516 @@ class FilesController extends Controller
         // Default to empty array.
         return [];
     }//end normalizeTags()
+
+    /**
+     * Rename a file
+     *
+     * @param string $register Register slug
+     * @param string $schema   Schema slug
+     * @param string $id       Object ID
+     * @param int    $fileId   File ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function rename(string $register, string $schema, string $id, int $fileId): JSONResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+            if ($object === null) {
+                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+            }
+
+            $data    = $this->request->getParams();
+            $newName = $data["name"] ?? "";
+
+            $file = $this->fileService->renameFile(object: $object, fileId: $fileId, newName: $newName);
+
+            // Dispatch event.
+            $this->eventDispatcher->dispatchTyped(
+                new FileRenamedEvent(
+                    objectUuid: $object->getUuid(),
+                    fileId: $fileId,
+                    data: ["oldName" => $data["oldName"] ?? "", "newName" => $newName]
+                )
+            );
+
+            return new JSONResponse(data: $this->fileService->formatFile($file));
+        } catch (Exception $e) {
+            $statusCode = match (true) {
+                str_contains($e->getMessage(), "already exists") => 409,
+                str_contains($e->getMessage(), "invalid characters") => 400,
+                str_contains($e->getMessage(), "required") => 400,
+                str_contains($e->getMessage(), "locked") => 423,
+                default => 400,
+            };
+
+            return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
+        }//end try
+    }//end rename()
+
+    /**
+     * Copy a file to another object
+     *
+     * @param string $register Register slug
+     * @param string $schema   Schema slug
+     * @param string $id       Source object ID
+     * @param int    $fileId   File ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $sourceObject = $this->objectService->getObject();
+            if ($sourceObject === null) {
+                return new JSONResponse(data: ["error" => "Source object not found"], statusCode: 404);
+            }
+
+            $data           = $this->request->getParams();
+            $targetObjectId = $data["targetObjectId"] ?? "";
+            $targetRegister = $data["targetRegister"] ?? $register;
+            $targetSchema   = $data["targetSchema"] ?? $schema;
+
+            if (empty($targetObjectId) === true) {
+                return new JSONResponse(data: ["error" => "Target object ID is required"], statusCode: 400);
+            }
+
+            // Load target object.
+            $this->objectService->setSchema($targetSchema);
+            $this->objectService->setRegister($targetRegister);
+            $this->objectService->setObject($targetObjectId);
+            $targetObject = $this->objectService->getObject();
+            if ($targetObject === null) {
+                return new JSONResponse(data: ["error" => "Target object not found"], statusCode: 404);
+            }
+
+            $newFile = $this->fileService->copyFile(
+                sourceObject: $sourceObject,
+                fileId: $fileId,
+                targetObject: $targetObject
+            );
+
+            $this->eventDispatcher->dispatchTyped(
+                new FileCopiedEvent(
+                    objectUuid: $sourceObject->getUuid(),
+                    fileId: $fileId,
+                    data: ["targetObjectUuid" => $targetObject->getUuid()]
+                )
+            );
+
+            return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
+        } catch (Exception $e) {
+            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
+            return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
+        }//end try
+    }//end copy()
+
+    /**
+     * Move a file to another object
+     *
+     * @param string $register Register slug
+     * @param string $schema   Schema slug
+     * @param string $id       Source object ID
+     * @param int    $fileId   File ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function move(string $register, string $schema, string $id, int $fileId): JSONResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $sourceObject = $this->objectService->getObject();
+            if ($sourceObject === null) {
+                return new JSONResponse(data: ["error" => "Source object not found"], statusCode: 404);
+            }
+
+            $data           = $this->request->getParams();
+            $targetObjectId = $data["targetObjectId"] ?? "";
+            $targetRegister = $data["targetRegister"] ?? $register;
+            $targetSchema   = $data["targetSchema"] ?? $schema;
+
+            if (empty($targetObjectId) === true) {
+                return new JSONResponse(data: ["error" => "Target object ID is required"], statusCode: 400);
+            }
+
+            $this->objectService->setSchema($targetSchema);
+            $this->objectService->setRegister($targetRegister);
+            $this->objectService->setObject($targetObjectId);
+            $targetObject = $this->objectService->getObject();
+            if ($targetObject === null) {
+                return new JSONResponse(data: ["error" => "Target object not found"], statusCode: 404);
+            }
+
+            $movedFile = $this->fileService->moveFile(
+                sourceObject: $sourceObject,
+                fileId: $fileId,
+                targetObject: $targetObject
+            );
+
+            $this->eventDispatcher->dispatchTyped(
+                new FileMovedEvent(
+                    objectUuid: $sourceObject->getUuid(),
+                    fileId: $fileId,
+                    data: ["targetObjectUuid" => $targetObject->getUuid()]
+                )
+            );
+
+            return new JSONResponse(data: $this->fileService->formatFile($movedFile));
+        } catch (Exception $e) {
+            $statusCode = match (true) {
+                str_contains($e->getMessage(), "not found") => 404,
+                str_contains($e->getMessage(), "locked") => 423,
+                default => 400,
+            };
+
+            return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
+        }//end try
+    }//end move()
+
+    /**
+     * List versions for a file
+     *
+     * @param string $register Register slug
+     * @param string $schema   Schema slug
+     * @param string $id       Object ID
+     * @param int    $fileId   File ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function listVersions(string $register, string $schema, string $id, int $fileId): JSONResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+            if ($object === null) {
+                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+            }
+
+            $file = $this->fileService->getFile(object: $object, file: $fileId);
+            if ($file === null) {
+                return new JSONResponse(data: ["error" => "File not found"], statusCode: 404);
+            }
+
+            $result = $this->fileService->getVersioningHandler()->listVersions($file);
+
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
+        }
+    }//end listVersions()
+
+    /**
+     * Restore a specific file version
+     *
+     * @param string $register  Register slug
+     * @param string $schema    Schema slug
+     * @param string $id        Object ID
+     * @param int    $fileId    File ID
+     * @param string $versionId Version identifier
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function restoreVersion(
+        string $register,
+        string $schema,
+        string $id,
+        int $fileId,
+        string $versionId
+    ): JSONResponse {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+            if ($object === null) {
+                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+            }
+
+            $file = $this->fileService->getFile(object: $object, file: $fileId);
+            if ($file === null) {
+                return new JSONResponse(data: ["error" => "File not found"], statusCode: 404);
+            }
+
+            $this->fileService->getVersioningHandler()->restoreVersion($file, $versionId);
+
+            $this->eventDispatcher->dispatchTyped(
+                new FileVersionRestoredEvent(
+                    objectUuid: $object->getUuid(),
+                    fileId: $fileId,
+                    data: ["versionId" => $versionId]
+                )
+            );
+
+            return new JSONResponse(data: $this->fileService->formatFile($file));
+        } catch (Exception $e) {
+            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
+            return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
+        }//end try
+    }//end restoreVersion()
+
+    /**
+     * Lock a file
+     *
+     * @param string $register Register slug
+     * @param string $schema   Schema slug
+     * @param string $id       Object ID
+     * @param int    $fileId   File ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function lock(string $register, string $schema, string $id, int $fileId): JSONResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+            if ($object === null) {
+                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+            }
+
+            $result = $this->fileService->getLockHandler()->lockFile($fileId);
+
+            $this->eventDispatcher->dispatchTyped(
+                new FileLockedEvent(
+                    objectUuid: $object->getUuid(),
+                    fileId: $fileId,
+                    data: $result
+                )
+            );
+
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            $statusCode = str_contains($e->getMessage(), 'locked') === true ? 423 : 400;
+            return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
+        }//end try
+    }//end lock()
+
+    /**
+     * Unlock a file
+     *
+     * @param string $register Register slug
+     * @param string $schema   Schema slug
+     * @param string $id       Object ID
+     * @param int    $fileId   File ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function unlock(string $register, string $schema, string $id, int $fileId): JSONResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+            if ($object === null) {
+                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+            }
+
+            $data  = $this->request->getParams();
+            $force = $this->parseBool(value: $data["force"] ?? false);
+
+            $result = $this->fileService->getLockHandler()->unlockFile($fileId, $force);
+
+            $this->eventDispatcher->dispatchTyped(
+                new FileUnlockedEvent(
+                    objectUuid: $object->getUuid(),
+                    fileId: $fileId,
+                    data: ["force" => $force]
+                )
+            );
+
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            $statusCode = match (true) {
+                str_contains($e->getMessage(), "Only the lock owner") => 403,
+                str_contains($e->getMessage(), "administrators") => 403,
+                default => 400,
+            };
+
+            return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
+        }//end try
+    }//end unlock()
+
+    /**
+     * Execute batch file operations
+     *
+     * @param string $register Register slug
+     * @param string $schema   Schema slug
+     * @param string $id       Object ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function batch(string $register, string $schema, string $id): JSONResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+            if ($object === null) {
+                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+            }
+
+            $data    = $this->request->getParams();
+            $action  = $data["action"] ?? "";
+            $fileIds = $data["fileIds"] ?? [];
+            $params  = $data;
+
+            $result = $this->fileService->getBatchHandler()->executeBatch(
+                object: $object,
+                action: $action,
+                fileIds: $fileIds,
+                params: $params
+            );
+
+            // Return 207 if there were partial failures.
+            $statusCode = $result["summary"]["failed"] > 0 ? 207 : 200;
+
+            return new JSONResponse(data: $result, statusCode: $statusCode);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
+        }//end try
+    }//end batch()
+
+    /**
+     * Get file preview/thumbnail
+     *
+     * @param string $register Register slug
+     * @param string $schema   Schema slug
+     * @param string $id       Object ID
+     * @param int    $fileId   File ID
+     *
+     * @return JSONResponse|StreamResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * @PublicPage
+     */
+    public function preview(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+            if ($object === null) {
+                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+            }
+
+            $file = $this->fileService->getFile(object: $object, file: $fileId);
+            if ($file === null) {
+                return new JSONResponse(data: ["error" => "File not found"], statusCode: 404);
+            }
+
+            $width  = (int) ($this->request->getParam("width") ?? 256);
+            $height = (int) ($this->request->getParam("height") ?? 256);
+
+            $preview = $this->fileService->getPreviewHandler()->getPreview($file, $width, $height);
+
+            $response = new StreamResponse($preview->read());
+            $response->addHeader("Content-Type", $preview->getMimeType());
+            $response->addHeader("Cache-Control", "max-age=3600, public");
+            $response->addHeader("Content-Length", (string) $preview->getSize());
+
+            return $response;
+        } catch (Exception $e) {
+            $fallbackIcon = "/core/img/filetypes/file.svg";
+            return new JSONResponse(
+                data: ["error" => $e->getMessage(), "fallbackIcon" => $fallbackIcon],
+                statusCode: 404
+            );
+        }//end try
+    }//end preview()
+
+    /**
+     * Update file labels
+     *
+     * @param string $register Register slug
+     * @param string $schema   Schema slug
+     * @param string $id       Object ID
+     * @param int    $fileId   File ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function updateLabels(string $register, string $schema, string $id, int $fileId): JSONResponse
+    {
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+
+        try {
+            $this->objectService->setObject($id);
+            $object = $this->objectService->getObject();
+            if ($object === null) {
+                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+            }
+
+            $data   = $this->request->getParams();
+            $labels = $data["labels"] ?? [];
+
+            // Ensure labels is an array.
+            if (is_array($labels) === false) {
+                $labels = [];
+            }
+
+            $result = $this->fileService->updateFile(
+                filePath: $fileId,
+                content: null,
+                tags: $labels,
+                object: $object
+            );
+
+            return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (Exception $e) {
+            return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
+        }//end try
+    }//end updateLabels()
 
     /**
      * Render the Files page

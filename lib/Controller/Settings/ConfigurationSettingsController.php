@@ -76,9 +76,16 @@ class ConfigurationSettingsController extends Controller
     }//end getRbacSettings()
 
     /**
-     * Update RBAC settings only
+     * Update RBAC settings only.
      *
-     * @NoCSRFRequired
+     * State-mutating endpoint that flips a tenant-wide RBAC default
+     * (`inheritFromPublicDefault` and friends). CSRF protection is enforced
+     * here because this endpoint is now security-load-bearing — a CSRF'd
+     * admin session could otherwise silently flip the org-wide default for
+     * every schema in the tenant. See ADR-005 (CSRF for non-GET endpoints).
+     *
+     * Authentication remains admin-only via Nextcloud's framework default
+     * (no `@NoAdminRequired`).
      *
      * @return JSONResponse JSON response with updated RBAC settings
      */

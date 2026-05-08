@@ -304,15 +304,6 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 					</template>
 				</NcCheckboxRadioSwitch>
 
-				<NcCheckboxRadioSwitch
-					:checked="publish"
-					type="switch"
-					@update:checked="publish = $event">
-					Auto-publish imported objects
-					<template #helper>
-						Automatically set the published date for all created and updated objects to the current timestamp.
-					</template>
-				</NcCheckboxRadioSwitch>
 			</div>
 		</div>
 
@@ -338,6 +329,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+ */
 import {
 	NcButton,
 	NcDialog,
@@ -382,7 +376,6 @@ export default {
 			events: false, // Whether to enable events (default: false)
 			rbac: true, // Whether to enable RBAC (default: true)
 			multi: true, // Whether to enable multi-tenancy (default: true)
-			publish: false, // Whether to auto-publish imported objects (default: false)
 			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'], // Allowed file types
 			importSummary: null, // The import summary from the backend
 			importResults: null, // The import results for display
@@ -420,6 +413,9 @@ export default {
 				},
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
@@ -461,6 +457,9 @@ export default {
 				register,
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
 			const schema = schemaStore.schemaItem
@@ -565,7 +564,6 @@ export default {
 			this.events = false // Reset to default
 			this.rbac = true // Reset to default
 			this.multi = true // Reset to default
-			this.publish = false // Reset to default
 			this.importSummary = null
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
@@ -675,6 +673,9 @@ export default {
 				}
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
 			if (option) {

@@ -53,6 +53,8 @@ class ViewCreatedEvent extends Event
      * Get the created view.
      *
      * @return View The view that was created.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getView(): View
     {

@@ -75,9 +75,9 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 
 		// Create SchemaService instance.
 		$this->schemaService = new SchemaService(
-			schemaMapper: $this->schemaMapper,
-			objectMapper: $this->objectMapper,
-			logger: $this->logger
+			$this->schemaMapper,
+			$this->objectMapper,
+			$this->logger
 		);
 
 		// Set up reflection for accessing private methods.

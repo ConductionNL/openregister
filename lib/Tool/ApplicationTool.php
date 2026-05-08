@@ -71,6 +71,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * @return string Tool name
      *
      * @psalm-return 'Application Management'
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getName(): string
     {
@@ -83,6 +85,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * @return string The tool description
      *
      * @psalm-return 'Manage applications: list, view, create, update, or delete with RBAC permissions.'
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getDescription(): string
     {
@@ -96,6 +100,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * These are used by LLMs to understand what capabilities this tool provides.
      *
      * @return array<int, array<string, mixed>> Array of function definitions
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getFunctions(): array
     {
@@ -206,6 +212,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response with applications list
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function listApplications(int $limit=50, int $offset=0): array
     {
@@ -257,6 +265,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response with application details
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getApplication(string $uuid): array
     {
@@ -299,6 +309,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response with created application
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function createApplication(
         string $name,
@@ -350,6 +362,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response with updated application
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function updateApplication(
         string $uuid,
@@ -406,6 +420,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * @return (bool|mixed|string)[] Response confirming deletion
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function deleteApplication(string $uuid): array
     {
@@ -450,6 +466,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      * @param string|null $userId       User ID for session context (optional)
      *
      * @return array Response
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {

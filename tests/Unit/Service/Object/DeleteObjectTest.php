@@ -103,7 +103,8 @@ class DeleteObjectTest extends TestCase
             $this->auditTrailMapper,
             $this->settingsService,
             $this->logger,
-            $this->integrityService
+            $this->integrityService,
+            $this->createMock(\OCP\IDBConnection::class)
         );
     }
 

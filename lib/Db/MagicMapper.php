@@ -214,6 +214,16 @@ class MagicMapper extends AbstractObjectMapper
     private static array $calcVersionCache = [];
 
     /**
+     * Cache recording whether a register+schema table's columns have been verified
+     * in the current PHP process. Eliminates repeated information_schema queries
+     * on the happy path. Cleared by invalidateTableCache() and clearAllStaticCaches().
+     * Key format: 'registerId_schemaId' => true
+     *
+     * @var array<string, bool>
+     */
+    private static array $tableColumnsVerifiedCache = [];
+
+    /**
      * Cache for column existence checks to avoid repeated information_schema queries.
      * Key format: 'tableName' => ['column1' => true, 'column2' => true, ...]
      *
@@ -357,6 +367,7 @@ class MagicMapper extends AbstractObjectMapper
             groupManager: $this->groupManager,
             userManager: $this->userManager,
             appConfig: $this->appConfig,
+            conditionMatcher: $this->container->get(\OCA\OpenRegister\Service\ConditionMatcher::class),
             container: $this->container,
             logger: $this->logger
         );
@@ -373,13 +384,15 @@ class MagicMapper extends AbstractObjectMapper
             db: $this->db,
             logger: $this->logger,
             rbacHandler: $this->rbacHandler,
-            organizationHandler: $this->organizationHandler
+            organizationHandler: $this->organizationHandler,
+            schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class)
         );
 
         $this->bulkHandler = new MagicBulkHandler(
             db: $this->db,
             logger: $this->logger,
-            eventDispatcher: $this->eventDispatcher
+            eventDispatcher: $this->eventDispatcher,
+            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
         );
 
         // CacheHandler and ICacheFactory are resolved lazily via container
@@ -404,7 +417,9 @@ class MagicMapper extends AbstractObjectMapper
             db: $this->db,
             logger: $this->logger,
             registerMapper: $this->registerMapper,
-            schemaMapper: $this->schemaMapper
+            schemaMapper: $this->schemaMapper,
+            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+            schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class)
         );
 
         // Use setter injection for the count callback to avoid circular dependency.
@@ -478,6 +493,34 @@ class MagicMapper extends AbstractObjectMapper
     }//end setRegSchemaTableCache()
 
     /**
+     * Mark a register+schema table's columns as verified for this process.
+     *
+     * @param string $cacheKey The cache key (registerId_schemaId)
+     *
+     * @return void
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function setTableColumnsVerified(string $cacheKey): void
+    {
+        self::$tableColumnsVerifiedCache[$cacheKey] = true;
+    }//end setTableColumnsVerified()
+
+    /**
+     * Check whether a register+schema table's columns have been verified.
+     *
+     * @param string $cacheKey The cache key (registerId_schemaId)
+     *
+     * @return bool True if columns have been verified in this process
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function isTableColumnsVerified(string $cacheKey): bool
+    {
+        return isset(self::$tableColumnsVerifiedCache[$cacheKey]);
+    }//end isTableColumnsVerified()
+
+    /**
      * Clear all static caches used by MagicMapper.
      *
      * @return void
@@ -486,10 +529,11 @@ class MagicMapper extends AbstractObjectMapper
      */
     public static function clearAllStaticCaches(): void
     {
-        self::$tableExistsCache    = [];
-        self::$regSchemaTableCache = [];
-        self::$tableStructureCache = [];
-        self::$calcVersionCache    = [];
+        self::$tableExistsCache          = [];
+        self::$regSchemaTableCache       = [];
+        self::$tableStructureCache       = [];
+        self::$calcVersionCache          = [];
+        self::$tableColumnsVerifiedCache = [];
     }//end clearAllStaticCaches()
 
     /**
@@ -1137,7 +1181,8 @@ class MagicMapper extends AbstractObjectMapper
         $unionSql = implode(' UNION ALL ', $parts);
 
         // Apply global ORDER BY - supports _order parameter or defaults to search score.
-        $hasSearch   = isset($query['_search']) === true && empty($query['_search']) === false;
+        $hasSearch   = isset($query['_search']) === true
+            && empty($query['_search']) === false;
         $orderParams = $query['_order'] ?? [];
 
         if (empty($orderParams) === false && is_array($orderParams) === true) {
@@ -1266,29 +1311,55 @@ class MagicMapper extends AbstractObjectMapper
         // Base SELECT with metadata columns.
         $selectColumns = $metadataColumns;
 
-        // Add schema property columns for UNION compatibility.
-        // Each schema's SELECT includes ALL property columns across all schemas.
-        // Columns that exist in this schema's table use the real column cast to text.
-        // Columns that don't exist use NULL::text AS placeholder.
-        // Cast to text ensures type compatibility across schemas in UNION.
-        // (e.g., one schema has 'type' as text, another as jsonb).
+        /*
+         * Every SELECT in the UNION must have identical columns in the same order.
+         * We build the superset of all property columns across all schemas:
+         *  - Columns present in this table are cast to a text type so that the same
+         *    column from two different schemas (e.g. 'type' as VARCHAR in one table
+         *    and JSONB in another) remains type-compatible across the UNION arms.
+         *  - Columns absent from this table are emitted as NULL with the same alias
+         *    so the column count stays consistent.
+         * Cast syntax is database-specific: PostgreSQL uses `col::text`, while
+         * MariaDB/MySQL requires the standard `CAST(col AS CHAR)`.
+         */
+
         $existingColumns = [];
         foreach (array_keys($allPropertyColumns) as $columnName) {
-            $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-            $colExpr   = "NULL::text AS {$quotedCol}";
-            if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
-                $colExpr           = "{$quotedCol}::text AS {$quotedCol}";
+            $quotedCol = $this->quoteIdentifier(
+                name: $columnName,
+                isPostgres: $isPostgres
+            );
+            // Absent column: emit a typed NULL placeholder.
+            if ($isPostgres === true) {
+                $colExpr = "NULL::text AS {$quotedCol}";
+            } else {
+                $colExpr = "NULL AS {$quotedCol}";
+            }
+
+            $columnInTable = $this->columnExistsInTable(
+                tableName: $tableName,
+                columnName: $columnName
+            );
+            if ($columnInTable === true) {
+                // Present column: cast to text for cross-schema type compatibility.
+                if ($isPostgres === true) {
+                    $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+                } else {
+                    $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
+                }
+
                 $existingColumns[] = $columnName;
             }
 
             $selectColumns[] = $colExpr;
-        }
+        }//end foreach
 
         $selectColumns[] = "'{$register->getId()}' AS _union_register_id";
         $selectColumns[] = "'{$schema->getId()}' AS _union_schema_id";
 
         // Add search score if _search is present.
-        $hasSearch   = isset($query['_search']) === true && empty($query['_search']) === false;
+        $hasSearch   = isset($query['_search']) === true
+            && empty($query['_search']) === false;
         $searchTerm  = $query['_search'] ?? '';
         $schemaProps = $schema->getProperties() ?? [];
 
@@ -1306,27 +1377,41 @@ class MagicMapper extends AbstractObjectMapper
                     // Only score columns that actually exist in this table.
                     // Columns from other schemas are aliased as NULL in the SELECT
                     // and cannot be referenced by similarity()/ILIKE expressions.
-                    if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === false) {
+                    $columnInTable = $this->columnExistsInTable(
+                        tableName: $tableName,
+                        columnName: $columnName
+                    );
+                    if ($columnInTable === false) {
                         continue;
                     }
 
-                    $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-                    // Fallback: use CASE with ILIKE for basic relevance scoring.
+                    $quotedCol   = $this->quoteIdentifier(
+                        name: $columnName,
+                        isPostgres: $isPostgres
+                    );
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
-                    $scoreExpr   = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
-                    if ($hasTrgm === true) {
-                        // Use similarity() for fuzzy scoring when pg_trgm is available.
-                        $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
+                    if ($isPostgres === true) {
+                        // PostgreSQL: pg_trgm similarity() for fuzzy relevance;
+                        // fall back to ILIKE when pg_trgm is unavailable.
+                        $scoreExpr = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
+                        if ($hasTrgm === true) {
+                            $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
+                        }
+                    } else {
+                        // MariaDB/MySQL: ILIKE and similarity() are unavailable;
+                        // use case-sensitive LIKE with a standard CAST instead.
+                        $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
                     }
 
                     $searchColumns[] = $scoreExpr;
-                }
+                }//end if
             }//end foreach
 
             $selectColumns[] = '0 AS _search_score';
             if (empty($searchColumns) === false) {
                 $scoreExpression = 'GREATEST('.implode(', ', $searchColumns).')';
-                $selectColumns[count($selectColumns) - 1] = "{$scoreExpression} AS _search_score";
+                $lastIndex       = count($selectColumns) - 1;
+                $selectColumns[$lastIndex] = "{$scoreExpression} AS _search_score";
             }
         }//end if
 
@@ -1334,7 +1419,8 @@ class MagicMapper extends AbstractObjectMapper
             $selectColumns[] = '0 AS _search_score';
         }
 
-        $selectSql = 'SELECT '.implode(', ', $selectColumns)." FROM {$fullTableName}";
+        $colList   = implode(', ', $selectColumns);
+        $selectSql = "SELECT {$colList} FROM {$fullTableName}";
 
         // Build WHERE conditions using shared method (single source of truth for filters).
         // This ensures search, count, and facets all use the same filter logic.
@@ -1654,6 +1740,7 @@ class MagicMapper extends AbstractObjectMapper
         unset(self::$regSchemaTableCache[$cacheKey]);
         unset(self::$tableStructureCache[$cacheKey]);
         unset(self::$calcVersionCache[$cacheKey]);
+        unset(self::$tableColumnsVerifiedCache[$cacheKey]);
 
         $this->logger->debug(
             message: '[MagicMapper] Invalidated table cache',
@@ -1773,6 +1860,9 @@ class MagicMapper extends AbstractObjectMapper
 
         // Add all metadata columns from ObjectEntity with underscore prefix.
         $columns = array_merge($columns, $this->getMetadataColumns());
+
+        // Add linked entity type columns based on schema's linkedTypes configuration.
+        $columns = array_merge($columns, $this->getLinkedTypeColumns(schema: $schema));
 
         // Get schema properties and convert to SQL columns.
         $schemaProperties = $schema->getProperties();
@@ -2058,8 +2148,63 @@ class MagicMapper extends AbstractObjectMapper
                 'type'     => 'json',
                 'nullable' => true,
             ],
+            self::METADATA_PREFIX.'tmlo'           => [
+                'name'     => self::METADATA_PREFIX.'tmlo',
+                'type'     => 'json',
+                'nullable' => true,
+            ],
         ];
     }//end getMetadataColumns()
+
+    /**
+     * Map linkedTypes configuration values to their metadata column names
+     */
+    private const LINKED_TYPE_COLUMN_MAP = [
+        'mail'     => '_mail',
+        'contacts' => '_contacts',
+        'notes'    => '_notes',
+        'todos'    => '_todos',
+        'calendar' => '_calendar',
+        'talk'     => '_talk',
+        'deck'     => '_deck',
+    ];
+
+    /**
+     * Get linked entity type columns based on schema's linkedTypes configuration
+     *
+     * Returns JSON columns for each linked type declared in the schema.
+     * The 'files' linked type is excluded because _files already exists in metadata columns.
+     *
+     * @param Schema $schema The schema to get linked type columns for
+     *
+     * @return array Column definitions keyed by column name
+     */
+    private function getLinkedTypeColumns(Schema $schema): array
+    {
+        $linkedTypes = $schema->getLinkedTypes();
+        $columns     = [];
+
+        foreach ($linkedTypes as $type) {
+            // Skip 'files' — _files already exists in metadata columns.
+            if ($type === 'files') {
+                continue;
+            }
+
+            $columnName = self::LINKED_TYPE_COLUMN_MAP[$type] ?? null;
+            if ($columnName === null) {
+                continue;
+            }
+
+            $columns[$columnName] = [
+                'name'     => $columnName,
+                'type'     => 'json',
+                'nullable' => true,
+                'index'    => true,
+            ];
+        }
+
+        return $columns;
+    }//end getLinkedTypeColumns()
 
     /**
      * Map JSON schema property to SQL column definition
@@ -2896,10 +3041,20 @@ class MagicMapper extends AbstractObjectMapper
             'geo',
             'retention',
             'groups',
+            'tmlo',
             'created',
             'updated',
             'expires',
         ];
+
+        // Dynamically add linked type fields based on schema's linkedTypes configuration.
+        // LINKED_TYPE_COLUMN_MAP values are column names with _ prefix (e.g., '_mail'),
+        // but the metadata loop adds its own prefix, so we use the linkedType key directly.
+        foreach ($schema->getLinkedTypes() as $linkedType) {
+            if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true && $linkedType !== 'files') {
+                $metadataFields[] = $linkedType;
+            }
+        }
 
         foreach ($metadataFields as $field) {
             $value = $metadata[$field] ?? null;
@@ -2910,16 +3065,15 @@ class MagicMapper extends AbstractObjectMapper
                     $value = $now;
                 }
 
-                if ($value instanceof DateTime) {
+                if ($value instanceof \DateTimeInterface) {
                     $value = $value->format('Y-m-d H:i:s');
                 } else if (is_string($value) === true) {
-                    // Validate and convert datetime strings.
-                    try {
-                        $dateTime = new DateTime($value);
-                        $value    = $dateTime->format('Y-m-d H:i:s');
-                    } catch (Exception $e) {
-                        $value = null;
-                    }
+                    // Delegate string parsing to DateTimeNormalizer so that empty/whitespace
+                    // input becomes null rather than silently becoming "now". The outer
+                    // default-to-now logic for absent created/updated is preserved above.
+                    $value = $this->container
+                        ->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+                        ->formatForDatabase($value);
                 }
             }
 
@@ -2934,7 +3088,15 @@ class MagicMapper extends AbstractObjectMapper
                 'geo',
                 'retention',
                 'groups',
+                'tmlo',
             ];
+            // Add active linked type fields as JSON fields.
+            foreach ($schema->getLinkedTypes() as $linkedType) {
+                if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true && $linkedType !== 'files') {
+                    $jsonFields[] = $linkedType;
+                }
+            }
+
             if (in_array($field, $jsonFields) === true) {
                 // Convert to JSON if not already a string.
                 // Note: Empty string → NULL conversion is handled at final insert/update stage.
@@ -3032,6 +3194,18 @@ class MagicMapper extends AbstractObjectMapper
                             $value = $cleanedArray;
                         }
                     }//end if
+
+                    // Normalise date/date-time properties to Y-m-d H:i:s for MySQL DATETIME columns.
+                    $propertyFormat = $propertyConfig['format'] ?? null;
+                    if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
+                        if ($value instanceof \DateTimeInterface) {
+                            $value = $value->format('Y-m-d H:i:s');
+                        } else if (is_string($value) === true) {
+                            $value = $this->container
+                                ->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+                                ->formatForDatabase($value);
+                        }
+                    }
 
                     // Convert boolean values to integers (0/1) for database compatibility.
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
@@ -4970,6 +5144,9 @@ class MagicMapper extends AbstractObjectMapper
             $entity->setObject(array_merge($objectData, $modifiedData));
         }
 
+        // Ensure table has all required columns before updating (e.g. _tmlo added after table was created).
+        $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $uuid      = $entity->getUuid();
 
@@ -5658,6 +5835,100 @@ class MagicMapper extends AbstractObjectMapper
 
         return $results;
     }//end findByRelationUsingRelationsColumn()
+
+    /**
+     * Find objects in a specific schema's magic table that have a given entity ID in a linked type column.
+     *
+     * Used for reverse lookups: "find all objects linked to mail 1/6".
+     * The linked type columns (_mail, _contacts, etc.) store JSON arrays of string IDs.
+     *
+     * @param Schema $schema     The schema whose magic table to search
+     * @param string $columnName The column name (e.g., '_mail', '_contacts')
+     * @param string $entityId   The entity ID to search for
+     *
+     * @return array Array of ObjectEntity objects
+     */
+    public function findByLinkedEntity(Schema $schema, string $columnName, string $entityId): array
+    {
+        $results   = [];
+        $tableName = $this->getTableName(schema: $schema);
+
+        if ($tableName === null) {
+            return [];
+        }
+
+        $fullTableName = 'oc_'.$tableName;
+        $platform      = $this->db->getDatabasePlatform();
+        $isPostgres    = stripos($platform::class, 'PostgreSQL') !== false;
+
+        try {
+            if ($isPostgres === true) {
+                // PostgreSQL: use JSONB containment operator.
+                $sql = "SELECT * FROM {$fullTableName}
+                        WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
+                        AND {$columnName} IS NOT NULL
+                        AND {$columnName} @> to_jsonb(?::text)
+                        LIMIT 100";
+            } else {
+                // MySQL: use JSON_SEARCH to find the ID as a value in the array.
+                $sql = "SELECT * FROM {$fullTableName}
+                        WHERE _deleted IS NULL
+                        AND {$columnName} IS NOT NULL
+                        AND JSON_SEARCH({$columnName}, 'one', ?) IS NOT NULL
+                        LIMIT 100";
+            }
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$entityId]);
+            $rows = $stmt->fetchAll();
+
+            foreach ($rows as $row) {
+                try {
+                    $entity = $this->rowToObjectEntity(row: $row);
+                    if ($entity !== null) {
+                        $results[] = $entity;
+                    }
+                } catch (Exception $e) {
+                    continue;
+                }
+            }
+        } catch (Exception $e) {
+            $this->logger->debug(
+                '[MagicMapper] findByLinkedEntity query failed',
+                [
+                    'table'    => $fullTableName,
+                    'column'   => $columnName,
+                    'entityId' => $entityId,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+        return $results;
+    }//end findByLinkedEntity()
+
+    /**
+     * Get the magic table name for a schema.
+     *
+     * @param Schema $schema The schema
+     *
+     * @return string|null The table name or null
+     */
+    private function getTableName(Schema $schema): ?string
+    {
+        // The table name follows the pattern: TABLE_PREFIX + registerId + "_" + schemaId.
+        // We need to find the register for this schema.
+        $tables = $this->getAllMagicMapperTables();
+
+        $schemaId = (string) $schema->getId();
+        foreach ($tables as $tableName) {
+            if (str_ends_with($tableName, '_'.$schemaId) === true) {
+                return $tableName;
+            }
+        }
+
+        return null;
+    }//end getTableName()
 
     /**
      * Batch find objects in a specific schema that reference ANY of the given UUIDs.

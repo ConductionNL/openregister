@@ -12,6 +12,10 @@
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-41
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -67,6 +71,8 @@ class GraphQLSubscriptionController extends Controller
      * @NoCSRFRequired
      *
      * @CORS
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-41
      */
     public function subscribe(): Response
     {

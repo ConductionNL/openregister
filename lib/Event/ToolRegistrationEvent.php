@@ -40,7 +40,7 @@ use OCP\EventDispatcher\Event;
  *             ToolRegistrationEvent::class,
  *             function(ToolRegistrationEvent $event) {
  *                 // Get your tool from DI container
- *                 $tool = \OC::$server->get(MyCMSTool::class);
+ *                 $tool = \OCP\Server::get(MyCMSTool::class);
  *
  *                 // Register it with metadata
  *                 $event->registerTool('myapp.cms', $tool, [
@@ -95,6 +95,8 @@ class ToolRegistrationEvent extends Event
      * @return void
      *
      * @throws \InvalidArgumentException If validation fails
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {

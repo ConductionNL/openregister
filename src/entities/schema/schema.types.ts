@@ -17,13 +17,16 @@ export type TSchema = {
         objectImageField?: string; // Field to use as object image
         allowFiles?: boolean; // Whether files are allowed for this schema
         allowedTags?: string[]; // Array of allowed tags for files
+        linkedTypes?: string[]; // Nc entity types this schema can link to (mail, contacts, etc.)
         unique?: boolean; // Whether objects must be unique
         facetCacheTtl?: number; // Cache TTL for facets in seconds
     }
     hardValidation: boolean; // Whether hard validation is enabled
     maxDepth: number; // Maximum depth of the schema
     authorization?: Record<string, string[]>; // RBAC authorization configuration
-    extend?: string; // ID or UUID of the parent schema that this schema extends
+    allOf?: string[]; // Schema refs (id, UUID, or slug) that this schema must validate against (inheritance/extension via JSON Schema allOf)
+    oneOf?: string[]; // Schema refs where instance must validate against EXACTLY ONE (mutually exclusive options)
+    anyOf?: string[]; // Schema refs where instance must validate against AT LEAST ONE (flexible composition)
     stats?: {
         objects: {
             total: number
@@ -31,7 +34,6 @@ export type TSchema = {
             invalid: number
             deleted: number
             locked: number
-            published: number
         },
         logs: {
             total: number

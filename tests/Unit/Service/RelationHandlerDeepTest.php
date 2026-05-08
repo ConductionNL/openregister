@@ -336,9 +336,13 @@ class RelationHandlerDeepTest extends TestCase
      */
     public function testBulkLoadRelationshipsBatchedLoads(): void
     {
-        $obj = $this->createMock(ObjectEntity::class);
-        $obj->method('getUuid')->willReturn('uuid-1');
-        $obj->method('getId')->willReturn(1);
+        $obj = new ObjectEntity();
+        $obj->setUuid('uuid-1');
+        // Set id via reflection since Entity id is set by mapper.
+        $ref = new \ReflectionClass($obj);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($obj, 1);
 
         $this->objectMapper->method('findAll')->willReturn([$obj]);
 
@@ -553,8 +557,8 @@ class RelationHandlerDeepTest extends TestCase
 
         $this->rbacHandler->method('isAdmin')->willReturn(false);
 
-        $obj = $this->createMock(ObjectEntity::class);
-        $obj->method('getSchema')->willReturn(null);
+        $obj = new ObjectEntity();
+        // Schema is null by default.
 
         $result = $method->invoke($this->handler, [$obj]);
         $this->assertCount(1, $result);
@@ -573,8 +577,8 @@ class RelationHandlerDeepTest extends TestCase
 
         $this->rbacHandler->method('isAdmin')->willReturn(false);
 
-        $obj = $this->createMock(ObjectEntity::class);
-        $obj->method('getSchema')->willReturn(5);
+        $obj = new ObjectEntity();
+        $obj->setSchema('5');
 
         $this->schemaMapper->method('find')
             ->willThrowException(new \Exception('Not found'));
@@ -596,14 +600,14 @@ class RelationHandlerDeepTest extends TestCase
 
         $this->rbacHandler->method('isAdmin')->willReturn(false);
 
-        $schema = $this->createMock(Schema::class);
+        $schema = new Schema();
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $obj = $this->createMock(ObjectEntity::class);
-        $obj->method('getSchema')->willReturn(1);
-        $obj->method('getObject')->willReturn([]);
-        $obj->method('getOrganisation')->willReturn('org-1');
-        $obj->method('getOwner')->willReturn('admin');
+        $obj = new ObjectEntity();
+        $obj->setSchema('1');
+        $obj->setObject([]);
+        $obj->setOrganisation('org-1');
+        $obj->setOwner('admin');
 
         // First call returns true (has permission), second returns false.
         $this->rbacHandler->method('hasPermission')->willReturn(true);
@@ -625,14 +629,14 @@ class RelationHandlerDeepTest extends TestCase
 
         $this->rbacHandler->method('isAdmin')->willReturn(false);
 
-        $schema = $this->createMock(Schema::class);
+        $schema = new Schema();
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $obj = $this->createMock(ObjectEntity::class);
-        $obj->method('getSchema')->willReturn(1);
-        $obj->method('getObject')->willReturn([]);
-        $obj->method('getOrganisation')->willReturn('org-1');
-        $obj->method('getOwner')->willReturn('admin');
+        $obj = new ObjectEntity();
+        $obj->setSchema('1');
+        $obj->setObject([]);
+        $obj->setOrganisation('org-1');
+        $obj->setOwner('admin');
 
         $this->rbacHandler->method('hasPermission')->willReturn(false);
 

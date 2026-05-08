@@ -114,7 +114,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $this->service = new ReferentialIntegrityService(
             schemaMapper: $this->schemaMapper,
             registerMapper: $this->registerMapper,
-            objectMapper: $this->objectMapper,
+            objectEntityMapper: $this->objectMapper,
             auditTrailMapper: $this->auditTrailMapper,
             logger: $this->logger
         );

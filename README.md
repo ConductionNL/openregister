@@ -91,14 +91,14 @@ graph TD
 
 ### Data Model
 
-| Entity         | Description                                                      |
-| -------------- | ---------------------------------------------------------------- |
-| Register       | Collection of schemas with shared configuration and access rules |
-| Schema         | JSON Schema definition that validates and types objects          |
-| Object         | Data record validated against a schema, stored in a register     |
-| AuditTrail     | Immutable change log entry for an object                         |
-| ObjectRelation | Typed link between two objects (within or across registers)      |
-| File           | Attachment with text extraction, chunking, and vector embeddings |
+| Entity | Description |
+|--------|-------------|
+| Register | Collection of schemas with shared configuration and access rules |
+| Schema | JSON Schema definition that validates and types objects |
+| Object | Data record validated against a schema, stored in a register |
+| AuditTrail | Immutable change log entry for an object |
+| ObjectRelation | Typed link between two objects (within or across registers) |
+| File | Attachment with text extraction, chunking, and vector embeddings |
 
 ### Directory Structure
 
@@ -122,12 +122,12 @@ openregister/
 
 ## Requirements
 
-| Dependency | Version                                      |
-| ---------- | -------------------------------------------- |
-| Nextcloud  | 28 – 33                                      |
-| PHP        | 8.1+                                         |
+| Dependency | Version |
+|-----------|---------|
+| Nextcloud | 28 – 33 |
+| PHP | 8.1+ |
 | PostgreSQL | 12+ (recommended, with pgvector and pg_trgm) |
-| MySQL      | 8.0+ (alternative, no vector search)         |
+| MySQL | 8.0+ (alternative, no vector search) |
 
 ## Installation
 
@@ -183,28 +183,28 @@ npm run stylelint       # CSS linting
 
 ## Tech Stack
 
-| Layer    | Technology                                         |
-| -------- | -------------------------------------------------- |
-| Frontend | Vue 2.7, Pinia, @nextcloud/vue                     |
-| Build    | Webpack 5, @nextcloud/webpack-vue-config           |
-| Backend  | PHP 8.1+, Nextcloud App Framework                  |
-| Database | PostgreSQL 16 with pgvector + pg_trgm              |
-| Search   | Magic tables (SQL), Solr (optional)                |
-| AI       | Ollama, OpenAI, Fireworks AI, Azure OpenAI         |
-| UX       | @conduction/nextcloud-vue                          |
-| Quality  | PHPCS, PHPMD, phpmetrics, Psalm, ESLint, Stylelint |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Vue 2.7, Pinia, @nextcloud/vue |
+| Build | Webpack 5, @nextcloud/webpack-vue-config |
+| Backend | PHP 8.1+, Nextcloud App Framework |
+| Database | PostgreSQL 16 with pgvector + pg_trgm |
+| Search | Magic tables (SQL), Solr (optional) |
+| AI | Ollama, OpenAI, Fireworks AI, Azure OpenAI |
+| UX | @conduction/nextcloud-vue |
+| Quality | PHPCS, PHPMD, phpmetrics, Psalm, ESLint, Stylelint |
 
 ## Documentation
 
 Full documentation is available at **[openregisters.app](https://openregisters.app)**
 
-| Page                                                        | Description                                                     |
-| ----------------------------------------------------------- | --------------------------------------------------------------- |
-| [Installation](https://openregisters.app/docs/installation) | Complete installation and configuration guide                   |
-| [Features](website/docs/Features/)                          | Feature documentation (objects, schemas, registers, search, AI) |
-| [Developer Guide](website/docs/development/)                | Development setup, Docker profiles, PostgreSQL search           |
-| [API Reference](website/docs/api/)                          | REST API endpoints and bulk operations                          |
-| [Testing](tests/integration/README.md)                      | Integration test suite (Newman/Postman)                         |
+| Page | Description |
+|------|-------------|
+| [Installation](https://openregisters.app/docs/installation) | Complete installation and configuration guide |
+| [Features](website/docs/Features/) | Feature documentation (objects, schemas, registers, search, AI) |
+| [Developer Guide](website/docs/development/) | Development setup, Docker profiles, PostgreSQL search |
+| [API Reference](website/docs/api/) | REST API endpoints and bulk operations |
+| [Testing](tests/integration/README.md) | Integration test suite (Newman/Postman) |
 
 ## Standards & Compliance
 

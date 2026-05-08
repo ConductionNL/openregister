@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -38,6 +39,15 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250929120000 extends SimpleMigrationStep
 {
+    /**
+     * Constructor.
+     *
+     * @param IDBConnection $connection Database connection
+     */
+    public function __construct(private readonly IDBConnection $connection)
+    {
+    }//end __construct()
+
     /**
      * Add searchable column to schemas table
      *
@@ -109,12 +119,10 @@ class Version1Date20250929120000 extends SimpleMigrationStep
         // Since we added the column with default value true and notnull constraint,.
         // All existing records should already have searchable = 1.
         // We'll just verify this with a simple count query.
-        $connection = \OC::$server->getDatabaseConnection();
-
         try {
             // Count schemas to verify the column was added successfully.
             $sql          = "SELECT COUNT(*) as total FROM `oc_openregister_schemas`";
-            $result       = $connection->executeQuery($sql);
+            $result       = $this->connection->executeQuery($sql);
             $row          = $result->fetch();
             $totalSchemas = $row['total'] ?? 0;
 

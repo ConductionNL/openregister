@@ -84,6 +84,20 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method void setConfiguration(?array $configuration)
  * @method array|null getHooks()
  * @method void setHooks(?array $hooks)
+ * @method array|null getMail()
+ * @method void setMail(?array $mail)
+ * @method array|null getContacts()
+ * @method void setContacts(?array $contacts)
+ * @method array|null getNotes()
+ * @method void setNotes(?array $notes)
+ * @method array|null getTodos()
+ * @method void setTodos(?array $todos)
+ * @method array|null getCalendar()
+ * @method void setCalendar(?array $calendar)
+ * @method array|null getTalk()
+ * @method void setTalk(?array $talk)
+ * @method array|null getDeck()
+ * @method void setDeck(?array $deck)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -375,6 +389,55 @@ class Schema extends Entity implements JsonSerializable
     protected ?array $hooks = null;
 
     /**
+     * Linked mail entity IDs for this schema.
+     *
+     * @var array|null Linked mail entity IDs
+     */
+    protected ?array $mail = null;
+
+    /**
+     * Linked contact entity IDs for this schema.
+     *
+     * @var array|null Linked contact entity IDs
+     */
+    protected ?array $contacts = null;
+
+    /**
+     * Linked note entity IDs for this schema.
+     *
+     * @var array|null Linked note entity IDs
+     */
+    protected ?array $notes = null;
+
+    /**
+     * Linked todo entity IDs for this schema.
+     *
+     * @var array|null Linked todo entity IDs
+     */
+    protected ?array $todos = null;
+
+    /**
+     * Linked calendar event entity IDs for this schema.
+     *
+     * @var array|null Linked calendar event entity IDs
+     */
+    protected ?array $calendar = null;
+
+    /**
+     * Linked Talk conversation IDs for this schema.
+     *
+     * @var array|null Linked Talk conversation IDs
+     */
+    protected ?array $talk = null;
+
+    /**
+     * Linked Deck card IDs for this schema.
+     *
+     * @var array|null Linked Deck card IDs
+     */
+    protected ?array $deck = null;
+
+    /**
      * Constructor for the Schema class
      *
      * Sets up field types for all properties
@@ -413,6 +476,13 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'hooks', type: 'json');
+        $this->addType(fieldName: 'mail', type: 'json');
+        $this->addType(fieldName: 'contacts', type: 'json');
+        $this->addType(fieldName: 'notes', type: 'json');
+        $this->addType(fieldName: 'todos', type: 'json');
+        $this->addType(fieldName: 'calendar', type: 'json');
+        $this->addType(fieldName: 'talk', type: 'json');
+        $this->addType(fieldName: 'deck', type: 'json');
     }//end __construct()
 
     /**
@@ -672,6 +742,19 @@ class Schema extends Entity implements JsonSerializable
         $validActions = ['create', 'read', 'update', 'delete'];
 
         foreach ($authorization as $action => $rules) {
+            // The optional `inheritFromPublic` flag is a sibling of the CRUD actions and
+            // controls whether authenticated users qualify for `public` rules on this
+            // schema/register. See PermissionHandler::resolveInheritFromPublic.
+            if ($action === 'inheritFromPublic') {
+                if ($rules !== null && is_bool($rules) === false) {
+                    throw new InvalidArgumentException(
+                        "Authorization '{$action}' in {$context} must be a boolean or null"
+                    );
+                }
+
+                continue;
+            }
+
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
                 $validList = implode(', ', $validActions);
@@ -818,6 +901,17 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return bool True if the group has permission for the action
      *
+     * @deprecated This is a pre-unification duplicate of the RBAC matcher. The
+     *             canonical evaluators are {@see \OCA\OpenRegister\Service\Object\PermissionHandler::hasPermission()}
+     *             (PHP-side) and {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::applyRbacFilters()}
+     *             (SQL-side), both of which delegate conditional match evaluation
+     *             to {@see \OCA\OpenRegister\Service\ConditionMatcher}. This method
+     *             has no production callers (only test coverage via
+     *             BasicCrudTest/RbacTest/RbacComprehensiveTest) and is retained
+     *             solely to avoid churning the test suite in the #1336 unification
+     *             change. Scheduled for removal in a follow-up cleanup; do not
+     *             add new callers.
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Conditional authorization rules require multiple checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Match condition evaluation creates multiple paths
      */
@@ -901,6 +995,12 @@ class Schema extends Entity implements JsonSerializable
      * @param string $activeOrganisation The user's active organisation UUID
      *
      * @return bool True if all conditions are satisfied
+     *
+     * @deprecated See {@see self::hasPermission()} — this helper exists only to
+     *             serve the deprecated entity-level matcher. Operator and
+     *             dynamic-variable support is deliberately narrower than the
+     *             canonical {@see \OCA\OpenRegister\Service\ConditionMatcher}.
+     *             Do not add callers.
      */
     private function evaluateMatchConditions(
         array $conditions,
@@ -1247,6 +1347,13 @@ class Schema extends Entity implements JsonSerializable
             'anyOf'          => $this->anyOf,
             'facets'         => $this->facets,
             'hooks'          => $this->hooks,
+            '_mail'          => $this->mail,
+            '_contacts'      => $this->contacts,
+            '_notes'         => $this->notes,
+            '_todos'         => $this->todos,
+            '_calendar'      => $this->calendar,
+            '_talk'          => $this->talk,
+            '_deck'          => $this->deck,
         ];
     }//end jsonSerialize()
 
@@ -1395,6 +1502,35 @@ class Schema extends Entity implements JsonSerializable
     }//end getConfiguration()
 
     /**
+     * Get the calendar provider configuration from the schema configuration
+     *
+     * Extracts the calendarProvider section from the configuration JSON.
+     * Returns null if not present or if enabled is false.
+     *
+     * @return array|null The calendar provider config array, or null if disabled/absent
+     */
+    public function getCalendarProviderConfig(): ?array
+    {
+        $configuration = $this->getConfiguration();
+
+        if ($configuration === null) {
+            return null;
+        }
+
+        $calendarConfig = $configuration['calendarProvider'] ?? null;
+
+        if ($calendarConfig === null || is_array($calendarConfig) === false) {
+            return null;
+        }
+
+        if (empty($calendarConfig['enabled']) === true) {
+            return null;
+        }
+
+        return $calendarConfig;
+    }//end getCalendarProviderConfig()
+
+    /**
      * Set the configuration for the schema with validation
      *
      * Validates and sets the configuration array for the schema.
@@ -1479,7 +1615,7 @@ class Schema extends Entity implements JsonSerializable
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
         $boolFields      = ['allowFiles'];
-        $passThrough     = ['unique', 'facetCacheTtl'];
+        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {
@@ -1499,6 +1635,18 @@ class Schema extends Entity implements JsonSerializable
                 continue;
             }
 
+            if ($key === 'linkedTypes') {
+                $this->validateLinkedTypesValue(value: $value);
+                $validatedConfig[$key] = $value;
+                continue;
+            }
+
+            if ($key === 'calendarProvider' && is_array($value) === true) {
+                $this->validateCalendarProviderConfig(config: $value);
+                $validatedConfig[$key] = $value;
+                continue;
+            }
+
             if (in_array($key, $passThrough, true) === true) {
                 $validatedConfig[$key] = $value;
             }
@@ -1506,6 +1654,38 @@ class Schema extends Entity implements JsonSerializable
 
         return $validatedConfig;
     }//end validateConfigurationArray()
+
+    /**
+     * Validate calendar provider configuration
+     *
+     * When calendarProvider.enabled is true, dtstart and titleTemplate are required.
+     * Warns (but does not reject) if referenced property names don't exist in schema properties.
+     *
+     * @param array $config The calendarProvider config array
+     *
+     * @throws InvalidArgumentException If required fields are missing when enabled
+     *
+     * @return void
+     */
+    private function validateCalendarProviderConfig(array $config): void
+    {
+        // Only validate required fields when enabled.
+        if (empty($config['enabled']) === true) {
+            return;
+        }
+
+        if (empty($config['dtstart']) === true) {
+            throw new InvalidArgumentException(
+                'calendarProvider.dtstart is required when calendar provider is enabled'
+            );
+        }
+
+        if (empty($config['titleTemplate']) === true) {
+            throw new InvalidArgumentException(
+                'calendarProvider.titleTemplate is required when calendar provider is enabled'
+            );
+        }
+    }//end validateCalendarProviderConfig()
 
     /**
      * Validate a string configuration value
@@ -1572,6 +1752,71 @@ class Schema extends Entity implements JsonSerializable
             }
         }
     }//end validateAllowedTagsValue()
+
+    /**
+     * Valid linked type values for Nextcloud entity integration
+     */
+    private const VALID_LINKED_TYPES = [
+        'files',
+        'mail',
+        'contacts',
+        'notes',
+        'todos',
+        'calendar',
+        'talk',
+        'deck',
+    ];
+
+    /**
+     * Validate the linkedTypes configuration value
+     *
+     * @param mixed $value The linkedTypes value to validate
+     *
+     * @throws InvalidArgumentException If validation fails
+     *
+     * @return void
+     */
+    private function validateLinkedTypesValue(mixed $value): void
+    {
+        if ($value === null) {
+            return;
+        }
+
+        if (is_array($value) === false) {
+            throw new InvalidArgumentException("Configuration 'linkedTypes' must be an array or null");
+        }
+
+        foreach ($value as $type) {
+            if (is_string($type) === false) {
+                throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
+            }
+
+            if (in_array($type, self::VALID_LINKED_TYPES, true) === false) {
+                throw new InvalidArgumentException(
+                    "Invalid linked type '$type'. Valid values: ".implode(', ', self::VALID_LINKED_TYPES)
+                );
+            }
+        }
+    }//end validateLinkedTypesValue()
+
+    /**
+     * Get the linked types from the schema configuration
+     *
+     * Returns the array of Nextcloud entity types this schema can link to.
+     * Defaults to empty array if not configured.
+     *
+     * @return array The linked types array
+     */
+    public function getLinkedTypes(): array
+    {
+        $configuration = $this->getConfiguration();
+
+        if ($configuration === null) {
+            return [];
+        }
+
+        return $configuration['linkedTypes'] ?? [];
+    }//end getLinkedTypes()
 
     /**
      * Check whether this schema should be searchable in SOLR

@@ -13,6 +13,10 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
  */
 
 declare(strict_types=1);
@@ -222,7 +226,7 @@ class ImportService
      * @param bool          $events        Whether to dispatch object lifecycle events (default: false).
      * @param bool          $_rbac         Whether to apply RBAC checks (default: true, unused).
      * @param bool          $_multitenancy Whether to apply multitenancy checks (default: true, unused).
-     * @param bool          $publish       Whether to publish objects after import (default: false).
+     * @param bool          $publish       DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules.
      * @param IUser|null    $currentUser   The current user performing the import (optional).
      * @param bool          $enrich        Whether to enrich objects with metadata (default: true).
      *
@@ -252,6 +256,9 @@ class ImportService
      * }>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
      */
     public function importFromExcel(
         string $filePath,
@@ -329,13 +336,15 @@ class ImportService
      * @param bool          $events        Whether to dispatch object lifecycle events (default: false).
      * @param bool          $_rbac         Whether to enforce RBAC checks (default: true, unused).
      * @param bool          $_multitenancy Whether to enable multi-tenancy (default: true, unused).
-     * @param bool          $publish       Whether to publish objects immediately (default: false).
+     * @param bool          $publish       DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules.
      * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
      * @param bool          $enrich        Whether to enrich objects with metadata (default: true).
      *
      * @return array Import results by schema
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
      */
     public function importFromCsv(
         string $filePath,
@@ -403,7 +412,7 @@ class ImportService
      * @param bool        $events        Whether to dispatch object lifecycle events
      * @param bool        $_rbac         Whether to apply RBAC permissions
      * @param bool        $_multitenancy Whether to apply multi-tenancy filtering
-     * @param bool        $publish       Whether to publish objects after import
+     * @param bool        $publish       DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules
      * @param IUser|null  $currentUser   The current user performing the import.
      * @param bool        $enrich        Whether to enrich objects with metadata.
      *
@@ -637,11 +646,17 @@ class ImportService
         // Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
         // This will reveal the real bulk save problem immediately.
         if ((empty($allObjects) === false) && $register !== null && $schema !== null) {
-            // Add publish date to all objects if publish is enabled.
+            // DEPRECATED: Object-level published metadata has been removed.
+            // Publication control is now handled via RBAC authorization rules with $now.
+            // The $publish parameter is kept for backward compatibility but is a no-op.
             if ($publish === true) {
-                $publishDate = (new DateTime('now'))->format('c');
-                // ISO 8601 format.
-                $allObjects = $this->addPublishedDateToObjects(objects: $allObjects, publishDate: $publishDate);
+                $this->logger->warning(
+                    message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                    ]
+                );
             }
 
             $saveResult = $this->objectService->saveObjects(
@@ -711,7 +726,7 @@ class ImportService
      * @param bool                                          $events        Whether to dispatch events
      * @param bool                                          $_rbac         Whether to apply RBAC
      * @param bool                                          $_multitenancy Multi-tenancy filtering
-     * @param bool                                          $publish       Whether to publish objects after import
+     * @param bool                                          $publish       DEPRECATED: No-op. Publish metadata removed.
      * @param IUser|null                                    $currentUser   The current user performing the import
      * @param bool                                          $enrich        Whether to enrich objects with metadata
      *
@@ -812,43 +827,18 @@ class ImportService
                 ]
             );
 
-            // Add publish date to all objects if publish is enabled.
-            if ($publish !== true) {
-                $this->logger->debug(
-                    message: '[ImportService] Publish disabled for CSV import, not adding publish dates',
+            // DEPRECATED: Object-level published metadata has been removed.
+            // Publication control is now handled via RBAC authorization rules with $now.
+            // The $publish parameter is kept for backward compatibility but is a no-op.
+            if ($publish === true) {
+                $this->logger->warning(
+                    message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
                     ]
                 );
             }
-
-            if ($publish === true) {
-                $publishDate = (new DateTime('now'))->format('c');
-                // ISO 8601 format.
-                $this->logger->debug(
-                    message: '[ImportService] Adding publish date to CSV import objects',
-                    context: [
-                        'file'        => __FILE__,
-                        'line'        => __LINE__,
-                        'publishDate' => $publishDate,
-                        'objectCount' => count($allObjects),
-                    ]
-                );
-                $allObjects = $this->addPublishedDateToObjects(objects: $allObjects, publishDate: $publishDate);
-
-                // Log first object structure for debugging.
-                if (empty($allObjects[0]['@self']) === false) {
-                    $this->logger->debug(
-                        message: '[ImportService] First object @self structure after adding publish date',
-                        context: [
-                            'file'     => __FILE__,
-                            'line'     => __LINE__,
-                            'selfData' => $allObjects[0]['@self'],
-                        ]
-                    );
-                }
-            }//end if
 
             $saveResult = $this->objectService->saveObjects(
                 objects: $allObjects,
@@ -1312,6 +1302,8 @@ class ImportService
      *
      * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
      */
     private function transformObjectBySchema(array $objectData, Schema $schema): array
     {
@@ -1536,31 +1528,6 @@ class ImportService
             }
         }
     }//end validateObjectProperties()
-
-    /**
-     * Add published date to all objects in the @self section
-     *
-     * @param array  $objects     Array of object data
-     * @param string $publishDate Published date in ISO 8601 format
-     *
-     * @return array Modified objects with published date
-     */
-    private function addPublishedDateToObjects(array $objects, string $publishDate): array
-    {
-        foreach ($objects as &$object) {
-            // Ensure @self section exists.
-            if (isset($object['@self']) === false) {
-                $object['@self'] = [];
-            }
-
-            // Only add published date if not already set (from @self.published column).
-            if (($object['@self']['published'] ?? null) === null || empty($object['@self']['published']) === true) {
-                $object['@self']['published'] = $publishDate;
-            }
-        }
-
-        return $objects;
-    }//end addPublishedDateToObjects()
 
     /**
      * Schedule SOLR warmup job after successful import

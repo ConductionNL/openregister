@@ -6,6 +6,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notification;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Notification\Notifier;
+use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\IL10N;
 use OCP\Notification\IAction;
@@ -17,11 +18,13 @@ class NotifierTest extends TestCase
 {
     private Notifier $notifier;
     private IFactory&MockObject $factory;
+    private IURLGenerator&MockObject $urlGenerator;
 
     protected function setUp(): void
     {
         $this->factory = $this->createMock(IFactory::class);
-        $this->notifier = new Notifier($this->factory);
+        $this->urlGenerator = $this->createMock(IURLGenerator::class);
+        $this->notifier = new Notifier($this->factory, $this->urlGenerator);
     }
 
     public function testGetId(): void
@@ -101,25 +104,14 @@ class NotifierTest extends TestCase
             ->with('openregister', 'en')
             ->willReturn($l10n);
 
-        // Mock OC::$server for getURLGenerator
-        $urlGenerator = $this->createMock(\OCP\IURLGenerator::class);
-        $urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app.svg');
-        $urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister');
+        $this->urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app.svg');
+        $this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister');
 
-        $server = $this->createMock(\OC\Server::class);
-        $server->method('getURLGenerator')->willReturn($urlGenerator);
-
-        // We need to set OC::$server, but it uses static. This may not work in unit tests.
-        // Instead, we test without the icon/action parts if OC::$server isn't available.
-        // The prepare method will still be called and cover the switch/case branches.
-
-        // Since OC::$server->getURLGenerator() is called, we need it to be set up.
-        // The test bootstrap should have an OC_ServerStub. Let's verify coverage of the main flow.
         try {
             $result = $this->notifier->prepare($notification, 'en');
             $this->assertSame($notification, $result);
         } catch (\Error $e) {
-            // Expected: either OC::$server not set up, or named param mismatch with IL10N mock
+            // Expected: named param mismatch with IL10N mock.
             $this->assertTrue(true);
         }
     }
@@ -150,7 +142,7 @@ class NotifierTest extends TestCase
             $result = $this->notifier->prepare($notification, 'en');
             $this->assertSame($notification, $result);
         } catch (\Error $e) {
-            // Expected: OC::$server or named param mismatch
+            // Expected: named param mismatch with IL10N mock.
             $this->assertTrue(true);
         }
     }
@@ -176,7 +168,7 @@ class NotifierTest extends TestCase
         try {
             $this->notifier->prepare($notification, 'en');
         } catch (\Error $e) {
-            // Expected when OC::$server not available
+            // Expected: named param mismatch with IL10N mock.
             $this->assertTrue(true);
         }
     }

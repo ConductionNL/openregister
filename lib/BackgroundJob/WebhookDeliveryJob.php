@@ -15,6 +15,9 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-79
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
  */
 
 declare(strict_types=1);
@@ -118,6 +121,9 @@ class WebhookDeliveryJob extends QueuedJob
      *                                       - attempt: Current attempt number (default: 1)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-79
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-85
      */
     protected function run($argument): void
     {

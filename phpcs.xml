@@ -221,4 +221,9 @@
         <type>error</type>
     </rule>
 
+    <!-- Custom rule to forbid legacy \OC::$server->getX() accessors removed in Nextcloud 34 -->
+    <rule ref="./phpcs-custom-sniffs/CustomSniffs/Sniffs/Nextcloud/NoLegacyServerAccessorsSniff.php">
+        <type>error</type>
+    </rule>
+
 </ruleset>
