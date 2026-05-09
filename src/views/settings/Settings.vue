@@ -53,6 +53,9 @@
 		<!-- SOLR Configuration Section -->
 		<SolrConfiguration />
 
+		<!-- Push Notifications Status Section -->
+		<PushNotificationsConfiguration :push-status="pushStatus" />
+
 		<!-- n8n Workflow Configuration Section -->
 		<N8nConfiguration />
 
@@ -86,6 +89,7 @@ import PermissionMatrix from './sections/PermissionMatrix.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
 import N8nConfiguration from './sections/N8nConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
@@ -113,11 +117,23 @@ export default {
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
+		PushNotificationsConfiguration,
 		N8nConfiguration,
 		LlmConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,
 		Dialogs,
+	},
+
+	props: {
+		/**
+		 * Push notification status from PHP initial state.
+		 * One of: 'not_installed' | 'unreachable' | 'active'
+		 */
+		pushStatus: {
+			type: String,
+			default: 'not_installed',
+		},
 	},
 
 	computed: {

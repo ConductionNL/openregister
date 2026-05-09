@@ -16,7 +16,11 @@ OpenRegister integrates with various external services and models to provide pow
 
 ## Integration Categories
 
-OpenRegister integrations fall into three main categories:
+OpenRegister integrations fall into four main categories:
+
+### 0. Nextcloud-native integrations
+Apps that ship with or alongside Nextcloud and integrate tightly with OR:
+- **[Deck](./Deck.md)** — Kanban card linking with real-time push events via notify_push
 
 ### 1. LLM Hosting Platforms
 Services that host and run Large Language Models locally:
@@ -37,6 +41,10 @@ Workflow automation and integration platforms:
 - **[n8n](./n8n.md)** - Workflow automation platform
 - **[Windmill](./windmill.md)** - Developer-focused workflow engine
 - **[Custom Webhooks](./custom-webhooks.md)** - Build your own integrations
+
+### 5. Real-time push
+Native push notification integrations:
+- **[Deck](./Deck.md)** — Nextcloud Deck card linking with notify_push real-time events
 
 ## Integration Architecture
 
