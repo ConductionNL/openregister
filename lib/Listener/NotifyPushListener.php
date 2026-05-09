@@ -239,8 +239,9 @@ class NotifyPushListener implements IEventListener
             $queue->push(
                     'notify_custom',
                     [
-                        'userId' => $userId,
-                        'data'   => json_encode($payload),
+                        'user'    => $userId,
+                        'message' => $objectChannel,
+                        'body'    => $payload,
                     ]
                     );
             $pushed = true;
@@ -256,8 +257,9 @@ class NotifyPushListener implements IEventListener
                 $queue->push(
                         'notify_custom',
                         [
-                            'userId' => $userId,
-                            'data'   => json_encode($payload),
+                            'user'    => $userId,
+                            'message' => $collectionChannel,
+                            'body'    => $payload,
                         ]
                         );
                 $pushed = true;
@@ -343,16 +345,19 @@ class NotifyPushListener implements IEventListener
                 'schema'   => $schemaSlug,
             ];
 
-            // For batch flush we cannot resolve per-object users; push to empty
-            // userIds means no event — batch caller is responsible for passing
-            // a representative user list if needed. For now we push without a
-            // user filter, as the batch flush is a collection-wide signal.
-            // This is intentional: the collection channel is consumed by
-            // frontend widgets that already know which register/schema they watch.
+            $collectionChannel = PushEvents::OR_COLLECTION.'-'.$registerSlug.'-'.$schemaSlug;
+
+            // Batch flush is a collection-wide signal that does not target a specific
+            // reader set. We omit the `user` field; notify_push treats this as a
+            // broadcast to every connected client subscribed to the collection
+            // channel. Clients that don't have access to the underlying objects
+            // simply ignore the event when they refetch and the API returns an
+            // empty page.
             $queue->push(
                     'notify_custom',
                     [
-                        'data' => json_encode($payload),
+                        'message' => $collectionChannel,
+                        'body'    => $payload,
                     ]
                     );
         }//end foreach

@@ -360,13 +360,17 @@ class NotifyPushListenerTest extends TestCase
 
         $this->assertGreaterThanOrEqual(2, count($pushCalls));
 
-        // Find collection push: the one whose data contains register/schema slugs.
+        // Find collection push: the one whose body contains register/schema slugs
+        // and whose message channel matches the OR_COLLECTION pattern.
         $collectionPayloads = array_filter(
                 $pushCalls,
                 function (array $p): bool {
-                    $data = json_decode($p['data'] ?? '{}', true);
-                    return isset($data['register']) && $data['register'] === 'my-register'
-                    && isset($data['schema']) && $data['schema'] === 'my-schema';
+                    $body = $p['body'] ?? [];
+                    if (is_string($body) === true) {
+                        $body = json_decode($body, true);
+                    }
+                    return isset($body['register']) && $body['register'] === 'my-register'
+                    && isset($body['schema']) && $body['schema'] === 'my-schema';
                 }
                 );
 
