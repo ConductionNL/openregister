@@ -651,6 +651,40 @@ services:
       - EXAPP_OPENTALK_URL=http://openregister-exapp-opentalk:23000
       - EXAPP_VALTIMO_URL=http://openregister-exapp-valtimo:23000
 
+  # Redis - shared cache backend required by notify_push for cross-process state.
+  # Also used as Nextcloud's distributed cache (memcache.distributed).
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - 6379:6379
+
+  # notify_push - WebSocket push server for realtime updates
+  # Required by OpenRegister's add-live-updates change for REST clients.
+  # Setup after first start:
+  #   docker exec -u www-data nextcloud php occ config:system:set redis host --value redis
+  #   docker exec -u www-data nextcloud php occ config:system:set memcache.distributed --value '\OC\Memcache\Redis'
+  #   docker exec -u www-data nextcloud php occ notify_push:setup http://notify_push:7867
+  notify_push:
+    image: icewind1991/notify_push:latest
+    container_name: notify_push
+    restart: always
+    depends_on:
+      - nextcloud
+      - db
+      - redis
+    ports:
+      - 7867:7867
+    volumes:
+      - nextcloud:/nextcloud:ro
+    environment:
+      - NEXTCLOUD_URL=http://nextcloud
+      - DATABASE_URL=postgres://nextcloud:!ChangeMe!@db/nextcloud
+      - REDIS_URL=redis://redis:6379
+      - LOG=info
+      - PORT=7867
+
   # Nextcloud Application Server (MariaDB - For Testing)
   # Start with: docker-compose --profile mariadb up
   # Note: Do NOT use docker-compose up when using this profile
