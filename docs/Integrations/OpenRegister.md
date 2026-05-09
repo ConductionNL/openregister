@@ -158,6 +158,66 @@ The plugin maintains a single `notify_push` WebSocket connection per browser tab
 
 When `notify_push` is unavailable, the same `subscribe()` API silently falls back to a coalesced polling timer keyed on `(type, paramsHash)` — one timer per unique query, not per widget.
 
+## Subscription cost & guidelines
+
+A common worry when adding `subscribe()` calls liberally is "am I making the page slow?" The cost model is **event-driven**, not poll-driven, so the answer is almost always no — but it helps to understand exactly where cost comes from.
+
+### What an idle subscription costs
+
+A `store.subscribe('participant')` that never fires an event for the next 30 minutes:
+
+| Resource | Cost |
+|---|---|
+| Memory (browser) | One entry in `Map<eventKey, Set<callback>>` — a few hundred bytes total |
+| Memory (server) | Zero — the listener is registered against the event dispatcher once at app boot, not per-subscriber |
+| Network (browser) | Zero — the WebSocket is already open for any other subscription on the page; this listener piggybacks on it |
+| Network (server) | Zero — `IQueue::push` only fires when an OR object lifecycle event actually dispatches |
+| CPU | Zero |
+
+So **subscribing to a collection that doesn't change is free**. The decidesk live-meeting page subscribes to `participant` even though participants rarely change mid-meeting; if the participant list is static for the entire 90-minute meeting, that subscription emits zero pushes and costs nothing beyond a Map entry.
+
+### What an active subscription costs
+
+When an event actually fires for a subscribed key, the per-event work scales with the number of authorised readers:
+
+```
+1 ObjectUpdatedEvent
+  ├── PHP listener: 1 PermissionHandler::getReadableByUsers() call
+  ├── PHP listener: N × IQueue::push('notify_custom', …)        # N = readers
+  ├── Redis: N × PUBLISH on the notify_custom channel
+  ├── notify_push: dispatches to up-to-N WebSocket connections
+  └── Each browser tab subscribed to the matching event-name:
+       └── 1 store.fetchObject(...) call (deduplicated across all
+           components in the same tab via the in-flight Promise map —
+           5 widgets watching the same uuid → 1 fetch, not 5)
+```
+
+So the dominant cost for a single object change is `N` PHP push calls + `N` REST refetches at the API layer, where N is "readers connected and watching this object." For typical small/medium government installations N is in the tens, not thousands.
+
+### When to be careful
+
+The idle-cost-is-zero rule has three exceptions worth knowing:
+
+1. **High-frequency field edits on widely-watched objects** — e.g. someone collaboratively editing a shared note, with 50 watchers, fires `or-object-{uuid}` on every keystroke. Each push triggers 50 refetches × keystrokes-per-second. Mitigation: debounce server-side (don't fire `ObjectUpdatedEvent` per keystroke; fire once per save/save-on-blur cycle).
+2. **Bulk imports without `setBatchMode`** — a 1,000-row import without batch mode emits up to `1000 × N_readers` pushes. Mitigation: use `NotifyPushListener::setBatchMode(true)` around the loop and `flushBatch()` at the end. OR's `ImportService` already does this.
+3. **Subscribing to a collection on every list-row render** — if a list of 100 cards each calls `store.subscribe(type, item.id)` without sharing across the list, you've created 100 distinct event-key listeners. Refcounting prevents this from doubling up if the same uuid appears twice, but you still pay the per-uuid map cost. Mitigation: subscribe at the **list** level (`store.subscribe(type)` once for the collection) rather than per-card.
+
+### Decidesk LiveMeeting concretely
+
+Three subscriptions on the live meeting page:
+
+| Subscription | Event frequency during a typical meeting | Cost during meeting |
+|---|---|---|
+| `subscribe('meeting', this.id)` | Chair clicks "next item" or changes status — a few per meeting | Tiny — one push per change × N readers |
+| `subscribe('agenda-item')` | Items reorder, vote starts/ends — handful per agenda item | Tiny — collection events only on create/delete; vote start = create, vote end = update (no collection event) |
+| `subscribe('participant')` | Late joiner / drop-off — rare to never | **Zero** for the static case; `N` pushes per join/leave |
+
+For a 1-hour meeting with 12 participants and 8 agenda items, the entire live-meeting transport overhead is on the order of **20-30 pushes total per attendee** — well under what the 30s polling baseline would have done (`60min × 2 polls/min × 12 attendees = 1,440 fetches per attendee per meeting`).
+
+So the live-updates approach reduces total work by ~50× for this use case, even with three "extra" subscriptions running.
+
+---
+
 ## Two-transport architecture
 
 OpenRegister ships **two complementary realtime transports**, both hanging off the same three internal events:
