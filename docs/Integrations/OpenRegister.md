@@ -63,7 +63,7 @@ Clients refetch via the standard REST endpoints when a payload arrives.
 
 ## Fan-out: per-user routing
 
-Pushes are emitted **per authorised user**, not broadcast. The listener resolves the list of users with read access to the object via `PermissionHandler::getReadableByUsers(ObjectEntity $object)` and emits one `IQueue::push('notify_custom', ['userId' => $user, 'data' => $payload])` per user.
+Pushes are emitted **per authorised user**, not broadcast. The listener resolves the list of users with read access to the object via `PermissionHandler::getReadableByUsers(ObjectEntity $object)` and, per user, calls `IQueue::push('notify_custom', ['user' => $user, 'message' => $eventName, 'body' => $payload])` — matching the canonical `notify_custom` wire format used by Deck, Calendar, and other NC apps. The `message` field is the event name clients filter on (e.g. `or-object-{uuid}`); `body` is the payload object.
 
 ```
 ObjectUpdatedEvent (fires once)
@@ -78,7 +78,11 @@ PermissionHandler::getReadableByUsers($object)
 [user-a, user-b, user-c]
         │
         ▼
-3 × IQueue::push('notify_custom', ['userId' => …, 'data' => $payload])
+3 × IQueue::push('notify_custom', [
+        'user'    => $userId,
+        'message' => 'or-object-' . $uuid,
+        'body'    => ['action' => …, 'register' => …, 'schema' => …, 'uuid' => …, 'version' => …],
+    ])
 ```
 
 This means an object change costs `N` pushes where `N` = the number of users who can read it. For typical small-to-medium organisations this is correct and efficient. For installations where a single object has more than ~1,000 readers, consider a broadcast-channel approach (out of scope for v1; see the [realtime-updates spec](../../openspec/specs/realtime-updates/spec.md)).
