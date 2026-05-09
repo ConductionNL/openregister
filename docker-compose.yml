@@ -651,6 +651,39 @@ services:
       - EXAPP_OPENTALK_URL=http://openregister-exapp-opentalk:23000
       - EXAPP_VALTIMO_URL=http://openregister-exapp-valtimo:23000
 
+  # notify_push - WebSocket push server for realtime updates
+  # Required by OpenRegister's add-live-updates change for REST clients (frontends consume
+  # via @conduction/nextcloud-vue's useLiveUpdates plugin). Soft-fails when absent — OR
+  # works fine without this service, just without push delivery.
+  #
+  # Setup after first start:
+  #   docker exec -u www-data nextcloud php occ notify_push:setup http://notify_push:7867
+  #   docker exec -u www-data nextcloud php occ notify_push:self-test
+  #
+  # Image: icewind1991/notify_push (official upstream maintained by the notify_push author).
+  notify_push:
+    image: icewind1991/notify_push:latest
+    container_name: notify_push
+    restart: always
+    depends_on:
+      - nextcloud
+      - db
+    ports:
+      - 7867:7867
+    volumes:
+      # Mount the same NC volume the nextcloud container uses, read-only — notify_push
+      # reads NC's config.php and apps/notify_push/css/* from here.
+      - nextcloud:/nextcloud:ro
+    environment:
+      # Tell notify_push where Nextcloud lives (server-side URL, not the public one)
+      - NEXTCLOUD_URL=http://nextcloud
+      # PostgreSQL connection (matches the db service env vars above)
+      - DATABASE_URL=postgres://nextcloud:!ChangeMe!@db/nextcloud
+      # Logging — set to `info` for production, `trace` while debugging
+      - LOG=info
+      # Bind on all interfaces inside the container
+      - PORT=7867
+
   # Nextcloud Application Server (MariaDB - For Testing)
   # Start with: docker-compose --profile mariadb up
   # Note: Do NOT use docker-compose up when using this profile
