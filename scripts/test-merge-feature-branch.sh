@@ -2,10 +2,12 @@
 # test-merge-feature-branch.sh
 #
 # Pull a remote feature branch (typically a PR branch) into the currently
-# checked-out branch as a non-fast-forward merge, then restart Nextcloud
-# and run the notify_push self-test so the new code is live in the local
-# Docker stack. Used to test OR PRs locally without first merging to
-# development.
+# checked-out branch via `git merge`, then restart Nextcloud and run the
+# notify_push self-test so the new code is live in the local Docker
+# stack. Lets developers preview a PR locally on top of their own active
+# branch ahead of upstream merging to development — the merged code is
+# heading there anyway, so this is a "test it now, see it land later"
+# workflow rather than a sandbox.
 #
 # Usage:
 #   scripts/test-merge-feature-branch.sh <branch-or-pr-number>
@@ -16,15 +18,12 @@
 #
 # Behaviour:
 #   1. Fetch the remote branch (or pull/<N>/head for PR numbers).
-#   2. git merge --no-ff into the current branch (preserves a merge commit
-#      so the test merge is easy to revert with `git reset --hard HEAD~1`).
+#   2. git merge into the current branch.
 #   3. docker compose restart nextcloud (picks up new code from the
 #      bind-mounted submodule path).
 #   4. docker exec ... php occ upgrade (catches schema migrations).
 #   5. docker exec ... php occ notify_push:self-test (verifies the chain
 #      is healthy if notify_push is installed).
-#
-# To revert: `git reset --hard HEAD~1` and restart the container.
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
@@ -54,8 +53,8 @@ else
     MERGE_TARGET="origin/$REF"
 fi
 
-echo "==> Merging '$MERGE_TARGET' into '$CURRENT_BRANCH' (--no-ff)"
-git merge --no-ff "$MERGE_TARGET" -m "test: merge $REF for local testing on $CURRENT_BRANCH"
+echo "==> Merging '$MERGE_TARGET' into '$CURRENT_BRANCH'"
+git merge "$MERGE_TARGET" --no-edit
 
 echo "==> Restarting nextcloud container"
 docker compose restart nextcloud >/dev/null 2>&1 || docker-compose restart nextcloud
@@ -77,10 +76,6 @@ docker exec -u www-data nextcloud php occ notify_push:self-test 2>&1 \
 
 cat <<EOF
 
-Done. The merge of '$REF' is now sitting on top of '$CURRENT_BRANCH'
-as a regular commit. Verify in a browser at http://localhost:8080.
-
-To revert the test merge:
-    git reset --hard HEAD~1
-    docker compose restart nextcloud
+Done. '$REF' is now merged into '$CURRENT_BRANCH' and live in the
+running Nextcloud container. Verify in a browser at http://localhost:8080.
 EOF
