@@ -1,7 +1,11 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog
 		v-if="show"
-		name="Configure SOLR Facets v3.0"
+		:name="t('openregister', 'Configure SOLR Facets')"
 		:can-close="!loading"
 		size="large"
 		@closing="$emit('close')">
@@ -101,7 +105,7 @@
 											</NcCheckboxRadioSwitch>
 											<button
 												class="chevron-toggle"
-												:aria-label="facet.expanded ? 'Collapse details' : 'Expand details'"
+												:aria-label="facet.expanded ? t('openregister', 'Collapse details') : t('openregister', 'Expand details')"
 												@click="toggleFacetExpanded(facet)">
 												<ChevronUp v-if="facet.expanded" :size="20" />
 												<ChevronDown v-else :size="20" />
@@ -124,7 +128,7 @@
 											<textarea
 												v-model="facet.config.description"
 												class="form-textarea"
-												placeholder="Optional description for this facet"
+												:placeholder="t('openregister', 'Optional description for this facet')"
 												rows="2" />
 										</div>
 
@@ -203,7 +207,7 @@
 											</NcCheckboxRadioSwitch>
 											<button
 												class="chevron-toggle"
-												:aria-label="facet.expanded ? 'Collapse details' : 'Expand details'"
+												:aria-label="facet.expanded ? t('openregister', 'Collapse details') : t('openregister', 'Expand details')"
 												@click="toggleFacetExpanded(facet)">
 												<ChevronUp v-if="facet.expanded" :size="20" />
 												<ChevronDown v-else :size="20" />
@@ -226,7 +230,7 @@
 											<textarea
 												v-model="facet.config.description"
 												class="form-textarea"
-												placeholder="Optional description for this facet"
+												:placeholder="t('openregister', 'Optional description for this facet')"
 												rows="2" />
 										</div>
 
@@ -346,6 +350,7 @@ import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
 // import { VueDraggable } from 'vue-draggable-plus'
 
 export default {
@@ -547,7 +552,7 @@ export default {
 
 				// Check if the response is successful
 				if (response.data && response.data.success) {
-					showSuccess(`Successfully saved configuration for ${Object.keys(facetConfig.facets).length} facets!`)
+					showSuccess(t('openregister', 'Successfully saved configuration for {count} facets!', { count: Object.keys(facetConfig.facets).length }))
 					console.info('✅ Facet configuration saved successfully:', response.data)
 				} else {
 					throw new Error(response.data?.message || response.data?.error || 'Failed to save configuration')
@@ -555,7 +560,7 @@ export default {
 
 			} catch (error) {
 				console.error('❌ Failed to save facet configuration:', error)
-				showError(error.response?.data?.message || error.message || 'Failed to save facet configuration')
+				showError(error.response?.data?.message || error.message || t('openregister', 'Failed to save facet configuration'))
 			} finally {
 				this.loading = false
 			}

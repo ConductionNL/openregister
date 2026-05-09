@@ -9,7 +9,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="success === null">
-			{{ t('openregister', 'Do you want to permanently delete this audit trail entry? This action cannot be undone.') }}
+			{{ t('openregister', 'Do you want to permanently delete this audit trail entry? this action cannot be undone.') }}
 		</p>
 
 		<div v-if="success === null && auditTrailStore.auditTrailItem" class="audit-trail-info">

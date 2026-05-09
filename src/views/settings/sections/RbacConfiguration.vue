@@ -95,7 +95,7 @@
 							<NcSelect
 								v-model="rbacOptions.anonymousGroup"
 								:options="groupOptions"
-								input-label="Anonymous Group"
+								:input-label="t('openregister', 'Anonymous Group')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -111,7 +111,7 @@
 							<NcSelect
 								v-model="rbacOptions.defaultNewUserGroup"
 								:options="groupOptions"
-								input-label="New User Group"
+								:input-label="t('openregister', 'New User Group')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -127,7 +127,7 @@
 							<NcSelect
 								v-model="rbacOptions.defaultObjectOwner"
 								:options="userOptions"
-								input-label="Default Owner"
+								:input-label="t('openregister', 'Default Owner')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -142,6 +142,7 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
  */
 import { mapStores } from 'pinia'
+import { translate as t } from '@nextcloud/l10n'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'

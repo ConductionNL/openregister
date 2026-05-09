@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "spec_slug": "integration-shares",
+  "app": "openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "depends_on": ["pluggable-integration-registry"],
+  "wave": 2,
+  "wave_label": "nc-native-greenfield",
+  "cycles": []
+}

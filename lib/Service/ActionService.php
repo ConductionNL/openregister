@@ -15,8 +15,6 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
- *
- * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -82,8 +80,6 @@ class ActionService
      * @return Action The created action
      *
      * @throws InvalidArgumentException If required fields are missing
-     *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
      */
     public function createAction(array $data): Action
     {
@@ -147,8 +143,6 @@ class ActionService
      * @param array $data Partial update data
      *
      * @return Action The updated action
-     *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
      */
     public function updateAction(int $id, array $data): Action
     {
@@ -175,8 +169,6 @@ class ActionService
      * @param int $id Action ID
      *
      * @return Action The deleted action
-     *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
      */
     public function deleteAction(int $id): Action
     {
@@ -353,8 +345,6 @@ class ActionService
      * @param string $status   Execution status (success, failure, abandoned)
      *
      * @return void
-     *
-     * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-1
      */
     public function updateStatistics(int $actionId, string $status): void
     {

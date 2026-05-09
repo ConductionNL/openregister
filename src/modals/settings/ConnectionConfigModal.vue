@@ -27,7 +27,7 @@
 			<div class="modal-header">
 				<h3>{{ t('openregister', 'SOLR Connection Settings') }}</h3>
 				<p class="header-description">
-					{{ t('openregister', 'Configure basic connection settings for your SOLR server including authentication and network options. Use the separate ConfigSet and Collection Management dialogs to manage cores and collections.') }}
+					{{ t('openregister', 'Configure basic connection settings for your SOLR server including authentication and network options. use the separate configset and collection management dialogs to manage cores and collections.') }}
 				</p>
 			</div>
 
@@ -195,7 +195,7 @@
 						{{ localConfig.useCloud ? t('openregister', 'SolrCloud mode enabled') : t('openregister', 'Standalone SOLR mode') }}
 					</NcCheckboxRadioSwitch>
 					<p class="option-description">
-						{{ t('openregister', 'Use SolrCloud with Zookeeper for distributed search') }}
+						{{ t('openregister', 'Use SolrCloud with zookeeper for distributed search') }}
 					</p>
 
 					<NcCheckboxRadioSwitch

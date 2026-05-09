@@ -9,7 +9,7 @@ import formatBytes from '../../services/formatBytes.js'
 		<CnDetailPage
 			:title="register?.title || ''"
 			:loading="dashboardStore.loading"
-			loading-label="Loading register data..."
+			:loading-label="t('openregister', 'Loading register data...')"
 			:error="!!dashboardStore.error || (!dashboardStore.loading && !register)"
 			:error-message="dashboardStore.error || t('openregister', 'Register not found')"
 			:stats-title="registerStats ? t('openregister', 'Register Statistics') : ''"
@@ -191,7 +191,7 @@ import formatBytes from '../../services/formatBytes.js'
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
-						input-label="Schemas"
+						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"

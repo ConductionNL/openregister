@@ -602,11 +602,12 @@ class FilesController extends Controller
             $uploadedFiles = $this->normalizeMultipartFiles(files: $files, data: $data);
         }
 
-        // Check for single file upload.
+        // Check for single file upload via the 'file' field. Run it through
+        // the same normalizer as 'files[]' so 'share' and 'tags' are populated.
         $uploadedFile = $this->request->getUploadedFile('file');
 
         if (empty($uploadedFile) === false) {
-            $uploadedFiles[] = $uploadedFile;
+            $uploadedFiles[] = $this->normalizeSingleFile(files: $uploadedFile, data: $data);
         }
 
         if (empty($uploadedFiles) === true) {

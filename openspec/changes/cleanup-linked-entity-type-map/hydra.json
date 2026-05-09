@@ -1,0 +1,11 @@
+{
+  "schema_version": 2,
+  "spec_slug": "cleanup-linked-entity-type-map",
+  "app": "openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "depends_on": ["pluggable-integration-registry"],
+  "wave": 0.5,
+  "wave_label": "followup-cleanup",
+  "notes": "Runs after umbrella is archived and all 5 built-in providers have stabilised in production. Pre-removal grep sweep required.",
+  "cycles": []
+}

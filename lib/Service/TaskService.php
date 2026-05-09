@@ -88,6 +88,165 @@ class TaskService
     }//end __construct()
 
     /**
+     * Get all tasks for the current user across all VTODO-supporting calendars.
+     *
+     * Returns all VTODOs (optionally filtered by status) from the user's calendars.
+     * Tasks with X-OPENREGISTER-* properties include linking metadata.
+     *
+     * @param string|null $status   Optional status filter (e.g. 'needs-action', 'completed')
+     * @param int         $limit    Maximum number of tasks to return
+     * @param int         $offset   Number of tasks to skip
+     * @param string|null $assignee Optional assignee filter (matches ATTENDEE or description)
+     *
+     * @return array{results: array, total: int} Task results with total count
+     *
+     * @throws Exception If no user is logged in
+     */
+    public function getAllUserTasks(
+        ?string $status=null,
+        int $limit=50,
+        int $offset=0,
+        ?string $assignee=null
+    ): array {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            throw new Exception('No user logged in');
+        }
+
+        $principal = 'principals/users/'.$user->getUID();
+        $calendars = $this->calDavBackend->getCalendarsForUser($principal);
+
+        $allTasks = [];
+
+        foreach ($calendars as $calendar) {
+            // Check if this calendar supports VTODO.
+            $components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
+            if ($this->calendarSupportsVtodo(components: $components) === false) {
+                continue;
+            }
+
+            $calendarId      = $calendar['id'];
+            $calendarObjects = $this->calDavBackend->getCalendarObjects($calendarId);
+
+            foreach ($calendarObjects as $calendarObject) {
+                $fullObject = $this->calDavBackend->getCalendarObject($calendarId, $calendarObject['uri']);
+                if ($fullObject === null || empty($fullObject['calendardata']) === true) {
+                    continue;
+                }
+
+                $calendarData = $fullObject['calendardata'];
+
+                // Quick check: skip if this is not a VTODO.
+                if (strpos($calendarData, 'VTODO') === false) {
+                    continue;
+                }
+
+                try {
+                    $taskArray = $this->vtodoToArray(
+                        calendarData: $calendarData,
+                        calendarId: (string) $calendarId,
+                        uri: $calendarObject['uri']
+                    );
+
+                    if ($taskArray === null) {
+                        continue;
+                    }
+
+                    // Apply status filter.
+                    if ($status !== null && $taskArray['status'] !== strtolower($status)) {
+                        continue;
+                    }
+
+                    // Apply assignee filter.
+                    if ($assignee !== null) {
+                        $taskAssignee = $this->extractAssigneeFromDescription(
+                            description: $taskArray['description'] ?? ''
+                        );
+                        if ($taskAssignee !== $assignee) {
+                            continue;
+                        }
+                    }
+
+                    $allTasks[] = $taskArray;
+                } catch (Exception $e) {
+                    $this->logger->warning(
+                        'Failed to parse calendar object: '.$e->getMessage(),
+                        ['uri' => $calendarObject['uri']]
+                    );
+                }//end try
+            }//end foreach
+        }//end foreach
+
+        // Sort by due date (soonest first, nulls last).
+        usort(
+            array: $allTasks,
+            callback: function ($a, $b) {
+                $dueA = $a['due'] ?? '9999-12-31';
+                $dueB = $b['due'] ?? '9999-12-31';
+                return strcmp($dueA, $dueB);
+            }
+        );
+
+        $total   = count($allTasks);
+        $results = array_slice($allTasks, $offset, $limit);
+
+        return [
+            'results' => $results,
+            'total'   => $total,
+        ];
+    }//end getAllUserTasks()
+
+    /**
+     * Check whether a calendar supports VTODO components.
+     *
+     * @param mixed $components The supported-calendar-component-set value.
+     *
+     * @return bool True if the calendar supports VTODO.
+     */
+    private function calendarSupportsVtodo(mixed $components): bool
+    {
+        if ($components === null) {
+            return false;
+        }
+
+        if (is_object($components) === true && method_exists($components, 'getValue') === true) {
+            $componentValues = $components->getValue();
+            foreach ($componentValues as $comp) {
+                if (strtoupper($comp) === 'VTODO') {
+                    return true;
+                }
+            }
+        } else if (is_string($components) === true) {
+            return stripos($components, 'VTODO') !== false;
+        } else if (is_iterable($components) === true) {
+            foreach ($components as $comp) {
+                $compName = (is_string($comp) === true) ? $comp : (string) $comp;
+                if (strtoupper($compName) === 'VTODO') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }//end calendarSupportsVtodo()
+
+    /**
+     * Extract assignee from the description field.
+     *
+     * @param string $description The task description.
+     *
+     * @return string|null The assignee name or null.
+     */
+    private function extractAssigneeFromDescription(string $description): ?string
+    {
+        if (str_starts_with($description, 'Assigned to: ') === true) {
+            return substr($description, strlen('Assigned to: '));
+        }
+
+        return null;
+    }//end extractAssigneeFromDescription()
+
+    /**
      * Get all tasks linked to a specific OpenRegister object.
      *
      * Loads all VTODOs from the user's calendars and filters by
@@ -337,41 +496,13 @@ class TaskService
         $calendars = $this->calDavBackend->getCalendarsForUser($principal);
 
         foreach ($calendars as $calendar) {
-            // Check if this calendar supports VTODO.
             $components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
-            if ($components !== null) {
-                // The value can be a CalendarComponent set or a string.
-                $supportsVtodo = false;
-
-                if (is_object($components) === true && method_exists($components, 'getValue') === true) {
-                    $componentValues = $components->getValue();
-                    foreach ($componentValues as $comp) {
-                        if (strtoupper($comp) === 'VTODO') {
-                            $supportsVtodo = true;
-                            break;
-                        }
-                    }
-                } else if (is_string($components) === true) {
-                    $supportsVtodo = stripos($components, 'VTODO') !== false;
-                } else if (is_iterable($components) === true) {
-                    // If components is an array or other iterable.
-                    foreach ($components as $comp) {
-                        $compName = is_string($comp) === true ? $comp : (string) $comp;
-
-                        if (strtoupper($compName) === 'VTODO') {
-                            $supportsVtodo = true;
-                            break;
-                        }
-                    }
-                }//end if
-
-                if ($supportsVtodo === true) {
-                    return [
-                        'id'  => $calendar['id'],
-                        'uri' => $calendar['uri'],
-                    ];
-                }
-            }//end if
+            if ($this->calendarSupportsVtodo(components: $components) === true) {
+                return [
+                    'id'  => $calendar['id'],
+                    'uri' => $calendar['uri'],
+                ];
+            }
         }//end foreach
 
         throw new NoVtodoCalendarException(userId: $user->getUID());

@@ -18,9 +18,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-55
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-57
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-55
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-57
  */
 
 declare(strict_types=1);
@@ -139,7 +139,7 @@ class PermissionHandler
      * @param ContainerInterface                         $container          Container for lazy loading services.
      * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher    Optional dispatcher for custom-scope events.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -181,7 +181,7 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)      User/group/owner permission combinations create many paths
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC flag follows established API patterns
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function hasPermission(
         Schema $schema,
@@ -246,6 +246,7 @@ class PermissionHandler
      * @param string|null       $userId      User ID (null = anonymous).
      * @param string|null       $objectOwner Object owner (null = no owner check).
      * @param ObjectEntity|null $object      Object entity (UUID is the cache scope).
+     * @param Schema|null       $schema      Schema entity for match-rule detection (optional).
      *
      * @return string|null Cache key, or null to bypass cache.
      */
@@ -526,7 +527,7 @@ class PermissionHandler
                 ]
             );
             return false;
-        }
+        }//end try
 
         if ($event->hasVerdict() === false) {
             return null;
@@ -623,7 +624,7 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC flag follows established API patterns
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function checkPermission(
         Schema $schema,
@@ -671,7 +672,7 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission filtering requires multiple conditional checks
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function filterObjectsForPermissions(array $objects, bool $_rbac, bool $_multitenancy): array
     {
@@ -747,7 +748,7 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) UUID filtering with permission checks requires multiple conditions
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function filterUuidsForPermissions(array $uuids, bool $_rbac, bool $_multitenancy): array
     {
@@ -818,7 +819,7 @@ class PermissionHandler
      *
      * @return string|null The active organisation UUID or null if none set
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function getActiveOrganisationForContext(): ?string
     {
@@ -886,7 +887,7 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function hasGroupPermission(
         ?array $authorization,
@@ -972,7 +973,7 @@ class PermissionHandler
      *
      * @return array Array of group IDs that have permission, or empty array if all groups have permission
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function getAuthorizedGroups(?array $authorization, string $action): array
     {
@@ -991,6 +992,115 @@ class PermissionHandler
     }//end getAuthorizedGroups()
 
     /**
+     * Return the list of user IDs authorised to read a given object.
+     *
+     * This is used by NotifyPushListener to fan out per-user push events without
+     * iterating every Nextcloud user with a per-user permission check. The approach
+     * is query-based:
+     *
+     * 1. Resolve the effective authorization for the object's schema.
+     * 2. Extract the groups that have `read` permission.
+     * 3. Fetch member user IDs for each group via IGroupManager (one DB call per group).
+     * 4. Return the deduplicated union.
+     *
+     * Special cases:
+     *   - No authorization configured → empty array (caller should treat as "all users"
+     *     and broadcast or skip push, depending on policy).
+     *   - Authorization exists but object owner is known → always include the owner.
+     *   - `public` group in the read list → empty array (caller should treat as broadcast).
+     *   - `admin` group in the read list → empty array (caller should treat as broadcast
+     *     or resolve admin members separately).
+     *
+     * @param ObjectEntity $object The object whose authorised readers are requested.
+     *
+     * @return array<string> Deduplicated list of user IDs, or empty array when the
+     *                        object is publicly readable (no restriction) or the schema
+     *                        cannot be resolved.
+     *
+     * @spec openspec/changes/add-live-updates/tasks.md#task-3
+     */
+    public function getReadableByUsers(ObjectEntity $object): array
+    {
+        $schemaId = $object->getSchema();
+        if ($schemaId === null) {
+            return [];
+        }
+
+        try {
+            $schema = $this->schemaMapper->find($schemaId);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[PermissionHandler] getReadableByUsers: schema lookup failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'schemaId' => $schemaId,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+            return [];
+        }
+
+        $authorization = $this->resolveAuthorization(schema: $schema);
+
+        // No authorization means the schema is open to everyone — treat as broadcast.
+        if (empty($authorization) === true) {
+            return [];
+        }
+
+        // No read rule means everyone can read — treat as broadcast.
+        if (isset($authorization['read']) === false) {
+            return [];
+        }
+
+        $readEntries = $authorization['read'];
+        if (is_array($readEntries) === false || $readEntries === []) {
+            return [];
+        }
+
+        // Extract group identifiers from the read rule entries.
+        $authorisedGroupIds = [];
+        foreach ($readEntries as $entry) {
+            if (is_string($entry) === true) {
+                $authorisedGroupIds[] = $entry;
+            } else if (is_array($entry) === true && isset($entry['group']) === true && is_string($entry['group']) === true) {
+                $authorisedGroupIds[] = $entry['group'];
+            }
+        }
+
+        $authorisedGroupIds = array_unique($authorisedGroupIds);
+
+        // If public or admin is in the read list, treat as open broadcast.
+        if (in_array('public', $authorisedGroupIds, true) === true
+            || in_array('admin', $authorisedGroupIds, true) === true
+        ) {
+            return [];
+        }
+
+        // Collect user IDs from each authorised group.
+        $userIds = [];
+        foreach ($authorisedGroupIds as $groupId) {
+            $group = $this->groupManager->get($groupId);
+            if ($group === null) {
+                continue;
+            }
+
+            foreach ($group->getUsers() as $user) {
+                $userIds[] = $user->getUID();
+            }
+        }
+
+        // Include the object owner regardless of group membership.
+        $owner = $object->getOwner();
+        if ($owner !== null && $owner !== '') {
+            $userIds[] = $owner;
+        }
+
+        return array_values(array_unique($userIds));
+
+    }//end getReadableByUsers()
+
+    /**
      * Resolve the effective authorization for a schema.
      *
      * If the schema has its own authorization block, use it directly.
@@ -1001,7 +1111,7 @@ class PermissionHandler
      *
      * @return array|null The effective authorization array, or null if none configured.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function resolveAuthorization(Schema $schema): ?array
     {
@@ -1036,7 +1146,7 @@ class PermissionHandler
      *
      * @return Register|null The parent register, or null if not found.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-55
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-55
      */
     private function getRegisterForSchema(Schema $schema): ?Register
     {
@@ -1072,7 +1182,7 @@ class PermissionHandler
      *
      * @return array|null The register's authorization array.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
      */
     private function getRegisterAuthorization(int $registerId): ?array
     {
@@ -1102,7 +1212,7 @@ class PermissionHandler
      *
      * @return array|null The register's configuration array.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-57
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-57
      */
     private function getRegisterConfiguration(int $registerId): ?array
     {
@@ -1137,7 +1247,7 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function expandRoles(array $authorization, Schema $schema): array
     {
@@ -1333,7 +1443,7 @@ class PermissionHandler
      *
      * @return array Array of role definitions, each with 'name', 'description', 'actions'.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-57
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-57
      */
     private function getRoleDefinitionsForSchema(Schema $schema): array
     {

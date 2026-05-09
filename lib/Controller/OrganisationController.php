@@ -10,7 +10,7 @@
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -1169,7 +1169,9 @@ class OrganisationController extends Controller
             if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
                 $userId = \OC::$server->get(\OCP\IUserSession::class)->getUser()?->getUID() ?? 'admin';
                 $result = $this->tenantLifecycleService->provision($organisation, $userId);
-            } else {
+            }
+
+            if ($status !== TenantLifecycleService::STATUS_PROVISIONING) {
                 $result = $this->tenantLifecycleService->reactivate($organisation);
             }
 

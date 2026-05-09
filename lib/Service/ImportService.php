@@ -14,9 +14,9 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
  */
 
 declare(strict_types=1);
@@ -332,8 +332,8 @@ class ImportService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
      */
     public function importFromExcel(
         string $filePath,
@@ -352,12 +352,16 @@ class ImportService
 
         // Generate a per-import UUID and stamp it on every audit row
         // produced during this call. ImportService::softDeleteByImportJobId
-        // uses this UUID to roll the import back. Cleared in finally
-        // so the value never leaks across requests.
+        // uses this UUID to roll the import back. The set/clear pair is
+        // wrapped in try/finally so the request-scoped field is always
+        // cleared, including when the set itself or any subsequent line
+        // throws — guards against cross-request bleed on long-lived
+        // workers where the singleton mapper is reused.
         $importJobId = Uuid::v4()->toRfc4122();
-        $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
 
         try {
+            $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+
             $reader = new Xlsx();
             $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($filePath);
@@ -434,7 +438,7 @@ class ImportService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
      */
     public function importFromCsv(
         string $filePath,
@@ -458,9 +462,10 @@ class ImportService
 
         // Per-import UUID — see importFromExcel() for the rationale.
         $importJobId = Uuid::v4()->toRfc4122();
-        $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
 
         try {
+            $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+
             // Use PhpSpreadsheet CSV reader (works perfectly for multiline fields).
             $reader = new Csv();
             $reader->setReadDataOnly(true);
@@ -759,16 +764,31 @@ class ImportService
                 );
             }
 
-            $saveResult = $this->objectService->saveObjects(
-                objects: $allObjects,
-                register: $register,
-                schema: $schema,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                validation: $validation,
-                events: $events,
-                enrich: $enrich
-            );
+            // @todo add-live-updates/task-6: Wrap with NotifyPushListener::setBatchMode(true) and
+            // flushBatch($queue, $permissionHandler) once IQueue and PermissionHandler are injected
+            // into ImportService. Pattern:
+            // NotifyPushListener::setBatchMode(true);
+            // try { ... saveObjects ... } finally {
+            // NotifyPushListener::flushBatch($queue, $permissionHandler);
+            // NotifyPushListener::setBatchMode(false);
+            // }
+            \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(true);
+            try {
+                $saveResult = $this->objectService->saveObjects(
+                    objects: $allObjects,
+                    register: $register,
+                    schema: $schema,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
+                    validation: $validation,
+                    events: $events,
+                    enrich: $enrich
+                );
+            } finally {
+                // Cannot call flushBatch here without IQueue — batch mode is cleared
+                // so individual events are re-enabled for subsequent calls.
+                \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(false);
+            }
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -940,16 +960,23 @@ class ImportService
                 );
             }
 
-            $saveResult = $this->objectService->saveObjects(
-                objects: $allObjects,
-                register: $register,
-                schema: $schema,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                validation: $validation,
-                events: $events,
-                enrich: $enrich
-            );
+            // @todo add-live-updates/task-6: Wrap with NotifyPushListener batch mode once
+            // IQueue and PermissionHandler are injected into ImportService.
+            \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(true);
+            try {
+                $saveResult = $this->objectService->saveObjects(
+                    objects: $allObjects,
+                    register: $register,
+                    schema: $schema,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
+                    validation: $validation,
+                    events: $events,
+                    enrich: $enrich
+                );
+            } finally {
+                \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(false);
+            }
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -1410,7 +1437,7 @@ class ImportService
      * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
      */
     private function transformObjectBySchema(array $objectData, Schema $schema): array
     {

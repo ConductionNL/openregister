@@ -116,33 +116,6 @@ class RealtimeEventMapper extends QBMapper
     }//end getMaxId()
 
     /**
-     * Get the highest event id scoped to a specific organisation.
-     *
-     * SECURITY: the unfiltered `getMaxId()` returns the global head
-     * pointer, which lets any caller observe the global write rate by
-     * polling. Per-organisation cursors prevent that side-channel.
-     *
-     * @param string $organisationUuid Organisation UUID.
-     *
-     * @return int Highest event id for the organisation, or 0 when none.
-     */
-    public function getMaxIdForOrganisation(string $organisationUuid): int
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->createFunction('MAX(id) AS max_id'))
-            ->from('openregister_realtime_events')
-            ->where(
-                $qb->expr()->eq(
-                    'organisation',
-                    $qb->createNamedParameter($organisationUuid)
-                )
-            );
-        $result = $qb->executeQuery()->fetch();
-        return (int) ($result['max_id'] ?? 0);
-
-    }//end getMaxIdForOrganisation()
-
-    /**
      * Prune events older than `$retentionSeconds`. Used by a daily TimedJob
      * to keep the event log bounded.
      *

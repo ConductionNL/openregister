@@ -15,8 +15,6 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
- *
- * @spec openspec/changes/retrofit-actions-2026-05-01/tasks.md#task-2
  */
 
 declare(strict_types=1);

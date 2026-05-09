@@ -10,11 +10,11 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		:can-close="false">
 		<div v-if="success === null">
 			<p>
-				Create copies of <b>{{ objectStore.selectedObjects.length }} selected objects</b>
+				{{ t('openregister', 'Create copies of') }} <b>{{ objectStore.selectedObjects.length }} {{ t('openregister', 'selected objects') }}</b>
 			</p>
 
 			<div class="form-group">
-				<label for="namingPattern">Naming pattern for copies:</label>
+				<label for="namingPattern">{{ t('openregister', 'Naming pattern for copies:') }}</label>
 				<NcSelect
 					v-model="selectedNamingPattern"
 					:options="namingPatternOptions"
@@ -22,16 +22,16 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					label="label"
 					track-by="value" />
 				<p class="help-text">
-					Preview: "{{ getPreviewName(objectStore.selectedObjects[0]) }}"
+					{{ t('openregister', 'Preview:') }} "{{ getPreviewName(objectStore.selectedObjects[0]) }}"
 				</p>
 			</div>
 
 			<div v-if="selectedNamingPattern?.value === 'custom'" class="form-group">
-				<label for="customPattern">Custom pattern:</label>
+				<label for="customPattern">{{ t('openregister', 'Custom pattern:') }}</label>
 				<NcTextField
 					id="customPattern"
 					v-model="customPattern"
-					placeholder="Copy of {name}"
+					:placeholder="t('openregister', 'Copy of {name}')"
 					:disabled="loading"
 					@input="updateCustomPreview" />
 				<p class="help-text">

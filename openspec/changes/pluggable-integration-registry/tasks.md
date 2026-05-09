@@ -1,104 +1,119 @@
 # Tasks: Pluggable Integration Registry
 
-## Phase 1 — Backend contract
+> The umbrella covers the contract, the registry, the migration of existing types, and the parity-gap fills. Individual new integrations are leaf changes (see proposal.md "Leaf plan").
 
-- [ ] Define `lib/Service/Integration/IntegrationProvider.php` interface
-      with the methods listed in `proposal.md` (`getId`, `getLabel`,
-      `getIcon`, `isEnabled`, `getStorageStrategy`, `authRequirements`,
-      `linkedColumnName`, `query`, `mutate`).
-- [ ] Define `lib/Service/Integration/IntegrationRegistry.php` —
-      registry service with `register/listAll/listEnabled/listIds/
-      getById/requireById`.
-- [ ] Wire DI tag `IntegrationProvider` in `lib/AppInfo/Application.php`
-      so any service implementing the interface auto-registers.
-- [ ] Add `lib/Service/Integration/Exception/IntegrationNotFoundException.php`
-      and `IntegrationDisabledException.php` with `getId()` accessor.
-- [ ] Add `lib/Service/Integration/ExternalIntegrationRouter.php` —
-      dispatches to OpenConnector for `getStorageStrategy() === 'external'`
-      providers. OR does not own credentials; the router surfaces auth
-      status only.
+## Backend — Provider Contract & Registry
 
-## Phase 2 — Migrate built-ins
+- [ ] Create `lib/Service/Integration/IntegrationProvider.php` interface (13 methods per design.md normative contract)
+- [ ] Create `lib/Service/Integration/AbstractIntegrationProvider.php` base class with sensible defaults (group=null, requiresPermission=null, authRequirements=['type'=>'none'], get() throws NotImplemented for list-only providers)
+- [ ] Create `lib/Service/Integration/IntegrationRegistry.php` — DI-tag-based discovery, `RequestScopedCache` for per-request caching, `list()`, `listIds()`, `get($id)`, `getEnabled()`
+- [ ] Create `lib/Service/Integration/ExternalIntegrationRouter.php` — routes `storage: external` providers through OpenConnector + surfaces auth status
+- [ ] Update `lib/AppInfo/Application.php` to register built-in providers as DI-tagged services (`IntegrationProvider` tag)
 
-For each of files / notes / tasks / calendar / mail / contacts / deck /
-talk:
+## Backend — Schema validator refactor
 
-- [ ] Add `lib/Service/Integration/Builtin/{Type}Provider.php`
-      implementing `IntegrationProvider`. Wraps the existing
-      handler logic for that type.
-- [ ] Confirm the provider's `getId()` matches the existing
-      `LinkedEntityService::TYPE_COLUMN_MAP` key for backwards
-      compatibility on existing `linkedTypes` configurations.
+- [ ] Modify `lib/Db/Schema.php::validateLinkedTypesValue()` — replace hardcoded `VALID_LINKED_TYPES` lookup with `IntegrationRegistry::listIds()` injection
+- [ ] Mark `Schema::VALID_LINKED_TYPES` constant `@deprecated` with pointer to the registry
+- [ ] Mark `LinkedEntityService::TYPE_COLUMN_MAP` constant `@deprecated` (removal scheduled in follow-up cleanup change)
+- [ ] Add `referenceType` validation to schema property type system — accepts any registered integration id
+- [ ] Add migration that logs (does not reject) any existing schema with `linkedTypes` referencing an id not currently registered
 
-After all 8 are migrated:
+## Backend — Built-in Providers (5)
 
-- [ ] Mark `LinkedEntityService::TYPE_COLUMN_MAP` `@deprecated`; switch
-      every internal caller to `IntegrationRegistry::listIds()`.
-- [ ] Delete `TYPE_COLUMN_MAP` in a follow-up cleanup change once 1
-      release-cycle has passed.
+- [ ] `lib/Service/Integration/BuiltinProviders/FilesProvider.php` — wraps existing `FileService` integration, storage='magic-column'
+- [ ] `lib/Service/Integration/BuiltinProviders/NotesProvider.php` — wraps existing `NoteService` integration
+- [ ] `lib/Service/Integration/BuiltinProviders/TasksProvider.php` — wraps existing `TaskService` (todos)
+- [ ] `lib/Service/Integration/BuiltinProviders/TagsProvider.php` — wraps existing tags integration; requiredApp=null (always available)
+- [ ] `lib/Service/Integration/BuiltinProviders/AuditTrailProvider.php` — wraps existing `AuditTrailController`; requiredApp=null
+- [ ] All five register `referenceType: <id>` so schema reference properties can target them
 
-## Phase 3 — Schema validator + capability advertisement
+## Backend — Routes, Controller, Capabilities
 
-- [ ] Update `lib/Db/Schema.php::validateLinkedTypesValue()` to call
-      `IntegrationRegistry::listIds()` instead of the deprecated
-      constant.
-- [ ] On read: warn (non-throwing) for unknown ids — schemas with
-      stale references still load.
-- [ ] On write: reject unknown ids with a `400 Bad Request` carrying
-      a structured error pointing at the unknown id.
-- [ ] Add `lib/Capabilities/IntegrationsCapability.php` implementing
-      `OCP\Capabilities\ICapability` so registered integrations appear
-      in `GET /ocs/v2.php/cloud/capabilities` under
-      `openregister.integrations`.
+- [ ] Create `lib/Controller/IntegrationsController.php` — `GET /api/integrations` (list + filter by group/enabled), `GET /api/integrations/{id}` (single + health + auth status)
+- [ ] Update `lib/Controller/ObjectsController.php` — sub-resource calls (`{integrationId}` segment) route through `IntegrationRegistry::get($id)`
+- [ ] Add `/api/integrations` routes to `appinfo/routes.php`
+- [ ] Update `lib/Service/CapabilitiesService.php` — add `integrations` block to OCS capabilities response
+- [ ] Add `integrations` capability declaration to `appinfo/info.xml`
 
-## Phase 4 — Tooling + CI gate
+## Backend — Admin UI for auth
 
-- [ ] Add `php occ openregister:integrations:list` (prints registry
-      contents incl. enabled status, storage strategy, auth
-      requirements).
-- [ ] Add `scripts/scaffold-integration.sh <id>` generating: provider
-      PHP file + spec delta + unit-test stub + FE registration stub
-      (in nextcloud-vue/src/integrations/<id>/).
-- [ ] Add `scripts/check-integration-parity.sh` — exits non-zero if
-      any backend provider lacks a frontend registration entry.
-- [ ] Wire the parity script into `hydra/scripts/run-hydra-gates.sh`
-      as a new gate; document in `hydra/openspec/architecture/adr-019`
-      under "implementation reference".
+- [ ] Create `lib/Settings/IntegrationsAdminSection.php` — admin section listing integrations + auth status + Configure buttons
+- [ ] Wire admin section to OpenConnector credential management for `storage: external` providers
+- [ ] Per-integration "Test connection" action in admin UI
 
-## Phase 5 — Spec + tests
+## Frontend — Registry & Composable (`@conduction/nextcloud-vue`)
 
-- [ ] Write `specs/integration-registry/spec.md` with one Requirement
-      per public surface (interface contract, registry behaviour,
-      schema validator, OCS capability, parity gate).
-- [ ] Add `tests/Unit/Service/Integration/IntegrationRegistryTest.php`
-      covering: register/list/getById/requireById, enabled-vs-all
-      filtering, exception paths.
-- [ ] Add `tests/Unit/Service/Integration/Builtin/<Type>ProviderTest.php`
-      for each migrated builtin (8 files).
-- [ ] Add `tests/Unit/Db/SchemaValidateLinkedTypesTest.php` — covers
-      registry-driven validation paths (warn-on-read, reject-on-write).
-- [ ] Add Newman collection
-      `tests/integration/openregister-integration-registry.postman_collection.json`
-      hitting OCS capabilities + a couple of provider-backed endpoints
-      end-to-end.
-- [ ] Wire the new collection into `tests/newman/run-all.sh::DOMAIN_ORDER`
-      after `relations`.
+- [ ] Create `src/integrations/registry.js` — `window.OCA.OpenRegister.integrations` (register, unregister, list, get, onChange, listByGroup); collision policy per AD-11; queue stub for late-loaded apps
+- [ ] Create `src/composables/useIntegrationRegistry.js` — reactive registry consumer
+- [ ] Add `integrations` export to `src/index.js`
+- [ ] Document the API in `CLAUDE.md`
 
-## Phase 6 — Documentation
+## Frontend — Built-in registrations
 
-- [ ] `docs/integrations/README.md` — developer guide: writing a new
-      provider, registering FE side, parity expectations.
-- [ ] Update `lib/AppInfo/Application.php` PHPDoc with the new public
-      services.
-- [ ] Cross-reference this change from
-      `hydra/openspec/architecture/adr-019-integration-registry.md`'s
-      "Implementation reference" once shipped.
+- [ ] `src/integrations/builtin/files.js` — register `files` integration with tab + widget components
+- [ ] `src/integrations/builtin/notes.js` — register `notes`
+- [ ] `src/integrations/builtin/tasks.js` — register `tasks`
+- [ ] `src/integrations/builtin/tags.js` — register `tags`
+- [ ] `src/integrations/builtin/audit-trail.js` — register `audit-trail`
+- [ ] Each declares `referenceType: <id>` for reference-property crossover
 
-## Phase 7 — Companion FE coordination
+## Frontend — Fill the parity gaps (3 missing widgets)
 
-- [ ] Open `nextcloud-vue/openspec/changes/integration-registry-frontend/`
-      with the matching FE-side proposal (registry, four widget
-      surfaces, `CnObjectSidebar` refactor, snapshot tests for the 5
-      existing tabs).
-- [ ] Cross-link both changes in their `proposal.md` "See also"
-      sections; the parity gate enforces they stay in lockstep.
+- [ ] Create `src/components/CnFilesCard/CnFilesCard.vue` — supports surfaces `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
+- [ ] Create `src/components/CnTagsCard/CnTagsCard.vue` — same four surfaces
+- [ ] Create `src/components/CnAuditTrailCard/CnAuditTrailCard.vue` — same four surfaces
+- [ ] Add to `src/components/index.js` and `src/index.js` barrels
+
+## Frontend — Surface support in existing components
+
+- [ ] Refactor `src/components/CnObjectSidebar/CnObjectSidebar.vue` — render tabs from registry via three-stage filter; preserve all existing props + slots; add `excludeIntegrations` prop
+- [ ] Update `src/components/CnDashboardPage/CnDashboardPage.vue` — pass `surface='user-dashboard'` or `'app-dashboard'` (configurable prop) to widgets resolved from registry
+- [ ] Update `src/components/CnDetailPage/CnDetailPage.vue` — pass `surface='detail-page'` to widgets
+- [ ] Update `src/components/CnFormDialog/CnFormDialog.vue` — detect `referenceType` on schema properties; render integration's `single-entity` widget inline
+- [ ] Update `src/components/CnDetailGrid/CnDetailGrid.vue` — same `referenceType` handling for read-only display
+- [ ] Implement graceful surface fallback per AD-18 — unknown surface → main `widget` with `surface` prop passed
+
+## Frontend — Tests
+
+- [ ] Unit tests `tests/integrations/registry.test.js` — register, list, get, collision, late-load queue, onChange reactivity
+- [ ] Snapshot tests for `CnObjectSidebar` covering 5 existing tabs (backwards-compat assertion)
+- [ ] Component tests for the 3 new widgets across all 4 surfaces
+- [ ] Test the three-stage filter end-to-end (registry → schema → component)
+
+## Backend — Tests
+
+- [ ] `tests/Unit/Service/Integration/IntegrationRegistryTest.php` — registration, lookup, isEnabled filtering, collision detection
+- [ ] `tests/Unit/Service/Integration/CapabilitiesIntegrationTest.php` — OCS block matches registry state
+- [ ] `tests/Unit/Db/SchemaLinkedTypesTest.php` — registry-driven validation, deprecated path still works for one cycle
+- [ ] `tests/Unit/Service/Integration/BuiltinProviders/*Test.php` — one test class per built-in provider
+
+## Quality gates & CI
+
+- [ ] Create `scripts/check-integration-parity.sh` — walks `src/integrations/` registrations, asserts each has `tab` AND `widget`, fails non-zero on missing
+- [ ] Wire parity check into `.github/workflows/integration-parity.yml`
+- [ ] Add parity check to hydra quality gate (extend `scripts/run-hydra-gates.sh` in hydra repo — separate small PR)
+- [ ] Add parity check to local pre-commit hook
+
+## Scaffold script
+
+- [ ] Create `scripts/scaffold-integration.sh <id>` — generates a new leaf-change skeleton (proposal.md, tasks.md, provider stub, tab stub, widget stub, registration call, hydra.json with `depends_on: ["pluggable-integration-registry"]`)
+- [ ] Document scaffold usage in developer guide
+
+## ADR & docs
+
+- [ ] Author `hydra/openspec/architecture/adr-019-integration-registry.md` (separate hydra-repo PR)
+- [ ] Create `docs/integrations/README.md` — "How to add an integration" — full walkthrough using one of the built-in providers as the worked example
+- [ ] Update OpenRegister main `README.md` with a one-paragraph mention of the integration registry pointing to the developer guide
+- [ ] Update `@conduction/nextcloud-vue` `CLAUDE.md` with the integration registry contract
+
+## Translations
+
+- [ ] All new user-facing strings in nl + en — admin section labels, integration group names, parity error messages
+- [ ] Verify `l10n/nl.json` and `l10n/en.json` updated for both repos (openregister + nextcloud-vue)
+
+## Acceptance verification
+
+- [ ] An end-to-end test creates a dummy `IntegrationProvider`, registers it backend + frontend, asserts: it appears in `/api/integrations`, in the OCS capabilities response, in `CnObjectSidebar` (when schema allows), in `CnDashboardPage` (across all 4 surfaces), and gets removed cleanly when unregistered
+- [ ] Backwards-compat test: an existing app upgrading nextcloud-vue with zero code changes sees identical sidebar behaviour for the 5 migrated types
+- [ ] Schema-validator backwards-compat: schemas with existing `linkedTypes: ["files", "notes"]` continue to validate without modification
+- [ ] Reference-property test: a schema with `assignedHandler: { type: 'string', referenceType: 'contacts' }` renders the contact's `single-entity` widget in `CnFormDialog`

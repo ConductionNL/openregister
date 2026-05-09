@@ -473,24 +473,15 @@ class DsarService
                     $qb->expr()->isNotNull('r.object_id')
                 );
 
-            // SECURITY: escape LIKE wildcards in user-supplied subject before
-            // wrapping with `%`-anchors. Without this, an admin (the
-            // `vergetelheid` endpoint is admin-gated) could pass
-            // `subject=%@%` or `subject=_` to match every PII row in
-            // `openregister_entities.value` — combined with the downstream
-            // `eraseObjectsForSubject()` chain, that's a one-call wildcard
-            // erase well beyond legitimate DSAR semantics.
-            $escapedSubject = $this->db->escapeLikeParameter($subject);
-
             if ($mode === 'ilike') {
                 $qb->andWhere(
-                    $qb->expr()->iLike('e.value', $qb->createNamedParameter('%'.$escapedSubject.'%'))
+                    $qb->expr()->iLike('e.value', $qb->createNamedParameter('%'.$subject.'%'))
                 );
             }
 
             if ($mode !== 'ilike') {
                 $qb->andWhere(
-                    $qb->expr()->iLike('e.value', $qb->createNamedParameter($escapedSubject))
+                    $qb->expr()->iLike('e.value', $qb->createNamedParameter($subject))
                 );
             }
 

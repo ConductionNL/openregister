@@ -8,7 +8,7 @@
 			<div class="info-box">
 				<InformationOutline :size="20" />
 				<p>
-					{{ t('openregister', 'Configure Large Language Model (LLM) providers for AI-powered features including semantic search, embeddings, and chat.') }}
+					{{ t('openregister', 'Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.') }}
 				</p>
 			</div>
 
@@ -72,7 +72,7 @@
 						type="password"
 						:placeholder="t('openregister', 'sk-...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+					<small>{{ t('openregister', 'Your OpenAI API key. get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
 				</div>
 
 				<div class="form-group">
@@ -152,7 +152,7 @@
 						type="password"
 						:placeholder="t('openregister', 'fw_...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
+					<small>{{ t('openregister', 'Your Fireworks AI API key. get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
 				</div>
 
 				<div class="form-group">
@@ -197,7 +197,7 @@
 						type="password"
 						:placeholder="t('openregister', 'sk-...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+					<small>{{ t('openregister', 'Your OpenAI API key. get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
 				</div>
 
 				<div class="form-group">
@@ -230,7 +230,7 @@
 						type="password"
 						:placeholder="t('openregister', 'fw_...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
+					<small>{{ t('openregister', 'Your Fireworks AI API key. get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
 				</div>
 
 				<div class="form-group">
@@ -325,7 +325,7 @@
 				<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
 					<div class="info-box">
 						<p>{{ t('openregister', 'Vectors will be stored in your existing object and file collections') }}</p>
-						<p>{{ t('openregister', 'Files → fileCollection, Objects → objectCollection') }}</p>
+						<p>{{ t('openregister', 'Files → filecollection, objects → objectcollection') }}</p>
 						<p><strong>{{ t('openregister', 'Vector field: _embedding_') }}</strong></p>
 					</div>
 				</div>
@@ -876,7 +876,7 @@ export default {
 
 		confirmClearEmbeddings() {
 			// Use native browser confirm to avoid focus-trap conflicts with nested modals
-			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?')
+			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. you will need to re-vectorize all objects and files. this action cannot be undone.\n\nare you sure you want to continue?')
 
 			if (confirm(message)) {
 				this.clearAllEmbeddings()

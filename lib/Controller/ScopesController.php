@@ -110,7 +110,6 @@ class ScopesController extends Controller
      *
      * @return JSONResponse The effective-scope envelope.
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function index(?string $register=null, ?string $schema=null): JSONResponse
@@ -174,12 +173,10 @@ class ScopesController extends Controller
     {
         if ($filter !== null && $filter !== '') {
             try {
-                // SECURITY: keep multitenancy filter on so the discovery
-                // endpoint cannot enumerate registers across tenants. Body
-                // already short-circuits on anonymous + admin paths.
                 $register = $this->registerMapper->find(
                     $filter,
-                    _rbac: false
+                    _rbac: false,
+                    _multitenancy: false
                 );
                 if ($register === null) {
                     return [];
@@ -192,11 +189,9 @@ class ScopesController extends Controller
         }
 
         try {
-            // SECURITY: tenant-scope discovery via the default multitenancy
-            // filter; only RBAC is bypassed because the body computes the
-            // per-caller permission verdict downstream.
             return $this->registerMapper->findAll(
-                _rbac: false
+                _rbac: false,
+                _multitenancy: false
             );
         } catch (\Throwable $e) {
             return [];
@@ -215,10 +210,10 @@ class ScopesController extends Controller
     {
         if ($filter !== null && $filter !== '') {
             try {
-                // SECURITY: see resolveRegisters() — keep multitenancy on.
                 $schema = $this->schemaMapper->find(
                     $filter,
-                    _rbac: false
+                    _rbac: false,
+                    _multitenancy: false
                 );
                 if ($schema === null) {
                     return [];
@@ -231,9 +226,9 @@ class ScopesController extends Controller
         }
 
         try {
-            // SECURITY: see resolveRegisters() — keep multitenancy on.
             return $this->schemaMapper->findAll(
-                _rbac: false
+                _rbac: false,
+                _multitenancy: false
             );
         } catch (\Throwable $e) {
             return [];

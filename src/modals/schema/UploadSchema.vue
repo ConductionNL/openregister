@@ -17,23 +17,23 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 
 		<div v-if="!success" class="formContainer">
 			<NcTextField :disabled="loading"
-				label="Url"
+				:label="t('openregister', 'Url')"
 				:value.sync="schema.url" />
 
 			<div :class="`codeMirrorContainer ${getTheme()}`">
-				<p>Schema</p>
+				<p>{{ t('openregister', 'Schema') }}</p>
 				<CodeMirror v-model="schema.json"
 					:basic="true"
 					:dark="getTheme() === 'dark'"
 					:lang="json()"
 					:linter="jsonParseLinter()"
-					placeholder="Enter your schema here..." />
+					:placeholder="t('openregister', 'Enter your schema here...')" />
 			</div>
 			<NcButton class="prettifyButton" @click="prettifyJson">
 				<template #icon>
 					<AutoFix :size="20" />
 				</template>
-				Prettify
+				{{ t('openregister', 'Prettify') }}
 			</NcButton>
 		</div>
 

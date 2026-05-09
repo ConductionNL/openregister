@@ -57,22 +57,6 @@ class PdfReportWriter
     {
         $html = $this->htmlWriter->write(dashboard: $dashboard, resolvedWidgets: $resolvedWidgets);
 
-        // SECURITY: strip `<link rel="stylesheet">` and `@font-face`
-        // src declarations before handing HTML to Dompdf. Dompdf
-        // honours `file://` URLs even when `isRemoteEnabled=false`,
-        // so a stylesheet/font reference smuggled through the
-        // dashboard payload could read arbitrary files off the FS.
-        $html = preg_replace(
-            '#<link[^>]+rel\s*=\s*["\']?stylesheet["\']?[^>]*>#i',
-            '',
-            $html
-        ) ?? $html;
-        $html = preg_replace(
-            '#@font-face\s*\{[^}]*\}#i',
-            '',
-            $html
-        ) ?? $html;
-
         $options = new Options();
         // No remote stylesheet/image fetches — keeps the renderer hermetic.
         $options->set('isRemoteEnabled', false);
@@ -81,16 +65,6 @@ class PdfReportWriter
         $options->set('defaultFont', 'DejaVu Sans');
         $options->set('defaultPaperSize', 'A4');
         $options->set('defaultPaperOrientation', 'portrait');
-
-        // SECURITY: assert sandbox flags didn't drift via a future
-        // refactor. Dompdf has a history of SSRF / file-disclosure
-        // CVEs (CVE-2022-41343, CVE-2023-23924); these flags are the
-        // primary mitigation and must stay false.
-        if ($options->getIsRemoteEnabled() !== false || $options->getIsPhpEnabled() !== false) {
-            throw new \RuntimeException(
-                'PdfReportWriter sandbox configuration drifted; remote-fetch / PHP execution must remain disabled.'
-            );
-        }
 
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html, 'UTF-8');

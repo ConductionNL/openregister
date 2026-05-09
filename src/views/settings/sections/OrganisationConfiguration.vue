@@ -1,7 +1,7 @@
 <template>
 	<NcSettingsSection
-		name="Organisation Configuration"
-		description="Configure default organisation and organisation-related settings">
+		:name="t('openregister', 'Organisation Configuration')"
+		:description="t('openregister', 'Configure default organisation and organisation-related settings')">
 		<NcNoteCard v-if="saveSuccess" type="success">
 			{{ t('openregister', 'Organisation settings saved successfully') }}
 		</NcNoteCard>
@@ -27,7 +27,7 @@
 					:placeholder="t('openregister', 'Select default organisation')"
 					:clearable="false"
 					label-outside
-					input-label="Default Organisation"
+					:input-label="t('openregister', 'Default Organisation')"
 					@input="handleDefaultOrganisationChange">
 					<template #option="{ name, users, owner }">
 						<div class="organisation-option">
@@ -155,6 +155,7 @@ import UndoVariant from 'vue-material-design-icons/UndoVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 

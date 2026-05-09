@@ -142,6 +142,7 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
+use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
@@ -243,7 +244,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     public function __construct()
     {
@@ -257,7 +258,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     public function register(IRegistrationContext $context): void
     {
@@ -328,7 +329,7 @@ class Application extends App implements IBootstrap
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
     {
@@ -445,7 +446,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerCacheAndFileHandlers(IRegistrationContext $context): void
     {
@@ -490,7 +491,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerConfigurationServices(IRegistrationContext $context): void
     {
@@ -650,7 +651,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerSettingsServices(IRegistrationContext $context): void
     {
@@ -705,7 +706,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerSearchBackend(IRegistrationContext $context): void
     {
@@ -735,7 +736,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerVectorizationService(IRegistrationContext $context): void
     {
@@ -766,7 +767,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerObjectInteractionServices(IRegistrationContext $context): void
     {
@@ -801,7 +802,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     private function registerEventListeners(IRegistrationContext $context): void
     {
@@ -886,6 +887,11 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, GraphQLSubscriptionListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, GraphQLSubscriptionListener::class);
 
+        // Notify_push real-time push listeners (soft-fail when notify_push not installed).
+        $context->registerEventListener(ObjectCreatedEvent::class, NotifyPushListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, NotifyPushListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, NotifyPushListener::class);
+
         // FilesSidebarListener injects the sidebar tab script into the Files app.
         $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
 
@@ -921,7 +927,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
     public function boot(IBootContext $context): void
     {
