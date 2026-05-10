@@ -1027,7 +1027,18 @@ class PermissionHandler
         }
 
         try {
-            $schema = $this->schemaMapper->find($schemaId);
+            // System-internal lookup: bypass RBAC + multitenancy. The listener
+            // that calls getReadableByUsers is emitting push notifications, not
+            // enforcing user-facing access on the schema itself. Without this
+            // bypass, SchemaMapper::find throws "Schema not found" when the
+            // request user's tenant doesn't own the schema (notably any OR
+            // object event that crosses tenant boundaries) and the listener
+            // silently no-ops with an empty reader list — no push fires. Issue #1454.
+            $schema = $this->schemaMapper->find(
+                id: $schemaId,
+                _rbac: false,
+                _multitenancy: false
+            );
         } catch (\Throwable $e) {
             $this->logger->warning(
                 message: '[PermissionHandler] getReadableByUsers: schema lookup failed',

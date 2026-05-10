@@ -411,7 +411,16 @@ class NotifyPushListener implements IEventListener
         }
 
         try {
-            $register = $this->registerMapper->find($registerUuid);
+            // System-internal lookup: bypass RBAC + multitenancy. The listener
+            // is system-level, not user-scoped — without the bypass the lookup
+            // throws "Register not found" whenever the request user's tenant
+            // doesn't own the register, leaving the push payload's slug fields
+            // null (issue #1454).
+            $register = $this->registerMapper->find(
+                id: $registerUuid,
+                _rbac: false,
+                _multitenancy: false
+            );
             return $register->getSlug();
         } catch (\Throwable $e) {
             return null;
@@ -432,7 +441,14 @@ class NotifyPushListener implements IEventListener
         }
 
         try {
-            $schema = $this->schemaMapper->find($schemaUuid);
+            // System-internal lookup: bypass RBAC + multitenancy. Same reason
+            // as resolveRegisterSlug above — without the bypass cross-tenant
+            // events leave the schema slug null in the push body (issue #1454).
+            $schema = $this->schemaMapper->find(
+                id: $schemaUuid,
+                _rbac: false,
+                _multitenancy: false
+            );
             return $schema->getSlug();
         } catch (\Throwable $e) {
             return null;
