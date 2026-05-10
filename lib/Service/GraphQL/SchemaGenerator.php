@@ -161,13 +161,20 @@ class SchemaGenerator
         $this->initScalars();
         $this->initHandlers();
 
-        // Load all registers and schemas.
-        $registers = $this->registerMapper->findAll();
+        // Load all registers and schemas. Bypass RBAC + multi-tenancy for
+        // type generation: the GraphQL schema is system-scoped (per-request,
+        // APCu-cached), and per-user authorisation happens at resolve time
+        // on each query. Filtering schemas by the caller's organisation here
+        // produces a different GraphQL schema per org, which silently hides
+        // every cross-org schema from the type system even though those
+        // schemas are readable via REST under the same session. Same
+        // rationale as PermissionHandler::resolveSchemaSlug (#1454).
+        $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
         foreach ($registers as $register) {
             $this->registersById[$register->getId()] = $register;
         }
 
-        $schemas = $this->schemaMapper->findAll();
+        $schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
         foreach ($schemas as $schema) {
             $this->schemasById[$schema->getId()] = $schema;
         }
