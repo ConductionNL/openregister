@@ -6,12 +6,12 @@
 
 ## Backend — Provider Contract & Registry
 
-- [ ] Create `lib/Service/Integration/IntegrationProvider.php` interface (15 methods per design.md normative contract — includes `getStorageStrategy()` allowing `'magic-column' | 'link-table' | 'external' | 'query-time'` and `getOpenConnectorSource(): ?string`)
-- [ ] Create `lib/Service/Integration/AbstractIntegrationProvider.php` base class with sensible defaults (group=null, requiresPermission=null, authRequirements=['type'=>'none'], `getOpenConnectorSource()` returns null, get() throws NotImplemented for list-only providers)
-- [ ] Create `lib/Service/Integration/IntegrationRegistry.php` — DI-tag-based discovery, `RequestScopedCache` for per-request caching, `list()`, `listIds()`, `get($id)`, `getEnabled()`; reject providers with `storage='external'` whose `getOpenConnectorSource()` returns null
-- [ ] Create `lib/Service/Integration/ExternalIntegrationRouter.php` — routes `storage: external` providers through OpenConnector + surfaces auth status; raises `ProviderUnavailableException` with `details.cause` of `'openconnector-down' | 'openconnector-source-missing' | 'upstream-service-down'` per AD-23
-- [ ] Update `lib/AppInfo/Application.php` to register built-in providers as DI-tagged services (`IntegrationProvider` tag)
-- [ ] Define `query-time` storage-strategy contract in code: per-render timeout (default 2s) returning the documented degraded-surface signal; mutation methods throw `NotImplementedException` translated to HTTP 501 in `ObjectsController`
+- [x] Create `lib/Service/Integration/IntegrationProvider.php` interface (15 methods per design.md normative contract — includes `getStorageStrategy()` allowing `'magic-column' | 'link-table' | 'external' | 'query-time'` and `getOpenConnectorSource(): ?string`)
+- [x] Create `lib/Service/Integration/AbstractIntegrationProvider.php` base class with sensible defaults (group=null, requiresPermission=null, authRequirements=['type'=>'none'], `getOpenConnectorSource()` returns null, get() throws NotImplemented for list-only providers)
+- [x] Create `lib/Service/Integration/IntegrationRegistry.php` — explicit `addProvider()` registration with collision detection (AD-13) + external-source rejection (AD-4); `list()`, `listIds()`, `get($id)`, `getEnabled()`. _Note: spec said "DI-tag-based discovery" but modern Nextcloud doesn't expose `IAppContainer::queryAll(<tag>)` as a public API. Switched to explicit `addProvider()` at app-bootstrap — same semantics, NC-compatible. RequestScopedCache replaced by the instance-level `$providers` array since the service is request-scoped via DI._
+- [x] Create `lib/Service/Integration/ExternalIntegrationRouter.php` — routes `storage: external` providers through OpenConnector + surfaces auth status; raises `ProviderUnavailableException` with `details.cause` of `'openconnector-down' | 'openconnector-source-missing' | 'upstream-service-down'` per AD-23
+- [x] Update `lib/AppInfo/Application.php` to register `IntegrationRegistry` + `ExternalIntegrationRouter` as services (new `registerIntegrationRegistry()` phase). _Built-in providers' DI registration moves to the per-built-in tasks (12-17) — each `*Provider` self-registers via `addProvider()` at bootstrap._
+- [x] Define `query-time` storage-strategy contract in code: documented in `IntegrationProvider` interface docblocks; `AbstractIntegrationProvider` defaults mutation methods (get / create / update / delete) to `NotImplementedException`; new `QueryTimeContract` helper carries the 2 s render timeout + HTTP 501 envelope builder for `ObjectsController` to consume in tasks 7-11.
 
 ## Backend — Schema validator refactor
 
