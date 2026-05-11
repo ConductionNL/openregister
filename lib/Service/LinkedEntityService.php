@@ -49,6 +49,19 @@ class LinkedEntityService
 {
     /**
      * Valid linked entity types and their column names.
+     *
+     * @deprecated since pluggable-integration-registry — the registry
+     * (`IntegrationRegistry`) is the new source of truth for what
+     * integrations exist; this map is retained as an implementation
+     * detail of the magic-column built-in providers until every
+     * Wave-1 leaf has shipped. The follow-up change
+     * `cleanup-linked-entity-type-map` removes it entirely once the
+     * built-in providers (FilesProvider / NotesProvider / TagsProvider /
+     * AuditTrailProvider / etc.) own their own column resolution.
+     *
+     * @see OCA\OpenRegister\Service\Integration\IntegrationRegistry
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-9
      */
     private const TYPE_COLUMN_MAP = [
         'mail'     => 'mail',

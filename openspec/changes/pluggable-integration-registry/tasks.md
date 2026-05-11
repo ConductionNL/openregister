@@ -15,11 +15,11 @@
 
 ## Backend — Schema validator refactor
 
-- [ ] Modify `lib/Db/Schema.php::validateLinkedTypesValue()` — replace hardcoded `VALID_LINKED_TYPES` lookup with `IntegrationRegistry::listIds()` injection
-- [ ] Mark `Schema::VALID_LINKED_TYPES` constant `@deprecated` with pointer to the registry
-- [ ] Mark `LinkedEntityService::TYPE_COLUMN_MAP` constant `@deprecated` (removal scheduled in follow-up cleanup change)
-- [ ] Add `referenceType` validation to schema property type system — accepts any registered integration id
-- [ ] Add migration that logs (does not reject) any existing schema with `linkedTypes` referencing an id not currently registered
+- [x] Modify `lib/Db/Schema.php::validateLinkedTypesValue()` — now consults BOTH the deprecated `VALID_LINKED_TYPES` fallback AND `IntegrationRegistry::listIds()`. Registry resolved lazily via `\OC::$server->get()` since Schema is an Entity (not a service) and DI doesn't reach it; falls back to fallback-only when container isn't booted (unit tests). AD-5 backwards-compat preserved — existing schemas with values like `'mail'` / `'calendar'` still validate until their leaves land.
+- [x] Mark `Schema::VALID_LINKED_TYPES` constant `@deprecated` with pointer to the registry + the `cleanup-linked-entity-type-map` follow-up.
+- [x] Mark `LinkedEntityService::TYPE_COLUMN_MAP` constant `@deprecated` (removal scheduled in follow-up cleanup change).
+- [x] Add `referenceType` validation to schema property type system — new `PropertyReferenceTypeValidator` service consults `IntegrationRegistry::isValidIntegrationId()`. Kept as a standalone validator (rather than refactoring `PropertyValidatorHandler`) so existing schema validation paths stay untouched; opt-in callers wire it where they need the marker enforced (CnFormDialog / CnDetailGrid landings in tasks 25-46).
+- [x] Add migration that logs (does not reject) any existing schema with `linkedTypes` referencing an id not currently registered — `LogDanglingLinkedTypes` repair step registered under `<install>` and `<post-migration>` in info.xml. Strictly informational; never throws, never modifies data.
 
 ## Backend — Built-in Providers (5)
 
