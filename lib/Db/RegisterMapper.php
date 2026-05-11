@@ -344,6 +344,30 @@ class RegisterMapper extends QBMapper
     }//end find()
 
     /**
+     * Clear the request-scoped find cache for a specific register
+     *
+     * Used by the runtime-schema-api CRUD path to drop the in-memory
+     * cache entry after a mutation, so the next find() call re-reads
+     * from the database. Clears every cache key that referenced the
+     * given register (by id, uuid, slug) across both RBAC/multi-tenancy
+     * flag combinations.
+     *
+     * @param int $registerId The register ID to drop from the find cache.
+     *
+     * @return void
+     */
+    public function clearFindCache(int $registerId): void
+    {
+        // Find every cache key whose value points at this register ID and unset.
+        foreach (array_keys($this->findCache) as $key) {
+            $cached = $this->findCache[$key];
+            if ($cached instanceof Register && $cached->getId() === $registerId) {
+                unset($this->findCache[$key]);
+            }
+        }
+    }//end clearFindCache()
+
+    /**
      * Finds multiple registers by id
      *
      * @param array     $ids           The ids of the registers

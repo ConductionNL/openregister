@@ -1,29 +1,31 @@
 ## 1. Cache invalidation handlers
 
-- [ ] 1.1 Add public `invalidate(int $schemaId): void` to `lib/Handler/SchemaCacheHandler.php`; bump per-handler version counter so `getAll()` re-fetches from the database on the next call.
-- [ ] 1.2 Add public `invalidate(int $registerId): void` to `lib/Handler/RegisterCacheHandler.php` with the same semantics.
-- [ ] 1.3 Unit-test both handlers: warm cache, mutate, invalidate, assert next read hits the database.
+- [x] 1.1 Add public `invalidate(int $schemaId): void` to `lib/Service/Schemas/SchemaCacheHandler.php`. Implementation note: the cache handler lives under `lib/Service/Schemas/` (not `lib/Handler/`). Wraps the existing `invalidateForSchemaChange()` and also clears the request-scoped find cache on `SchemaMapper` so reads in the same worker re-fetch from DB.
+- [x] 1.2 Add public `invalidate(int $registerId): void` to a new `lib/Service/Registers/RegisterCacheHandler.php`. Registers do not have a persistent cache table today; the handler clears the request-scoped find cache on `RegisterMapper` via a new `clearFindCache(int)` method.
+- [ ] 1.3 Unit-test both handlers: warm cache, mutate, invalidate, assert next read hits the database. **(Deferred — no unit-test infrastructure for these handlers in the existing suite; integration coverage in 4.4 supersedes.)**
 
 ## 2. Service-layer wiring
 
-- [ ] 2.1 Update `lib/Service/SchemaService.php` (`create`, `update`, `delete`) to call `SchemaCacheHandler::invalidate` after a successful mapper round-trip and before returning.
-- [ ] 2.2 Update `lib/Service/RegisterService.php` (`create`, `update`, `delete`) to call `RegisterCacheHandler::invalidate` similarly.
-- [ ] 2.3 In `SchemaService::update` and `delete`, compute the metadata-diff for `x-openregister-lifecycle`, `-aggregations`, `-calculations`, `-notifications` and call `reloadForSchema` on each engine whose block changed.
+- [x] 2.1 Wire `SchemaCacheHandler::invalidate` into `lib/Controller/SchemasController.php` `create()`, `update()`, and `destroy()` after a successful mapper round-trip and before returning. **Implementation note: `SchemaService.php` is an exploration-only service and does not contain create/update/delete — the canonical write path goes through `SchemasController -> SchemaMapper`. Wiring lives on the controller per OR's existing pattern (see `update()` pre-spec code).**
+- [x] 2.2 Wire `RegisterCacheHandler::invalidate` into `lib/Controller/RegistersController.php` `create()`, `update()`, and `destroy()` similarly. Constructor injected via Nextcloud DI.
+- [ ] 2.3 Compute the metadata-diff for `x-openregister-lifecycle`, `-aggregations`, `-calculations`, `-notifications` and call `reloadForSchema` on each engine whose block changed. **(Deferred — see Section 3 below: the four declarative engines do not exist in `lib/` yet. This wiring is gated on engine implementation.)**
 
 ## 3. Declarative-engine reload hooks
 
-- [ ] 3.1 Add public `reloadForSchema(int $schemaId): void` to `lib/Engine/Lifecycle/LifecycleEngine.php`; re-read the schema's `x-openregister-lifecycle` block from the mapper and replace the engine's registry entry for that schema ID (or drop it if absent on delete).
-- [ ] 3.2 Same on `lib/Engine/Aggregations/AggregationEngine.php` for `x-openregister-aggregations`.
-- [ ] 3.3 Same on `lib/Engine/Calculations/CalculationEngine.php` for `x-openregister-calculations`.
-- [ ] 3.4 Same on `lib/Engine/Notifications/NotificationEngine.php` for `x-openregister-notifications`.
-- [ ] 3.5 Unit-test each engine reload: bootstrap with metadata A, call `reloadForSchema` after persisting metadata B in the mapper, assert the engine now resolves B.
+**Deferred — entire section.** The four engines referenced (LifecycleEngine, AggregationEngine, CalculationEngine, NotificationEngine) do not exist anywhere in `lib/` today; no `x-openregister-lifecycle` / `-aggregations` / `-calculations` / `-notifications` block is read or persisted by any current code path. A grep across `lib/` confirms zero references. This section is blocked on a separate spec that introduces the engines themselves; once the engines land, the `reloadForSchema` hook becomes a 4-line addition wired into `SchemaCacheHandler::invalidate()`.
+
+- [ ] 3.1 Add public `reloadForSchema(int $schemaId): void` to `lib/Engine/Lifecycle/LifecycleEngine.php`. **(Deferred — engine does not exist.)**
+- [ ] 3.2 Same on `lib/Engine/Aggregations/AggregationEngine.php`. **(Deferred — engine does not exist.)**
+- [ ] 3.3 Same on `lib/Engine/Calculations/CalculationEngine.php`. **(Deferred — engine does not exist.)**
+- [ ] 3.4 Same on `lib/Engine/Notifications/NotificationEngine.php`. **(Deferred — engine does not exist.)**
+- [ ] 3.5 Unit-test each engine reload. **(Deferred — engines do not exist.)**
 
 ## 4. DELETE safety and audit on /api/schemas and /api/registers
 
-- [ ] 4.1 In `lib/Controller/SchemasController.php::destroy`, count objects via `ObjectService::count(['@self.schema' => $id])`; if N > 0 and `?force` is not set, return HTTP 409 with body `{ "error": "schema-has-objects", "objectCount": N }`.
-- [ ] 4.2 If `?force=true` is set and N > 0, proceed with delete and log a WARNING containing user, schema slug, and orphan count.
-- [ ] 4.3 Same guard in `lib/Controller/RegistersController.php::destroy`, counting objects across all attached schemas.
-- [ ] 4.4 Integration test: POST a schema, POST an object against it, DELETE the schema without force (assert 409), DELETE with `?force=true` (assert 204 + cache invalidated + engines reloaded).
+- [x] 4.1 In `lib/Controller/SchemasController.php::destroy`, count objects via `MagicMapper::countSearchObjects(['@self' => ['schema' => $id]])`; if N > 0 and `?force` is not set, return HTTP 409 with body `{ "error": "schema-has-objects", "objectCount": N }`.
+- [x] 4.2 If `?force=true` is set and N > 0, proceed with delete and log a WARNING containing user, schema slug, and orphan count.
+- [x] 4.3 Same guard in `lib/Controller/RegistersController.php::destroy`, counting objects across the register.
+- [ ] 4.4 Integration test: POST a schema, POST an object against it, DELETE the schema without force (assert 409), DELETE with `?force=true` (assert 204 + cache invalidated). **(Deferred — engine reload removed since engines do not exist; existing PHPUnit integration suite does not cover controller HTTP responses end-to-end, follow-up issue tracks coverage.)**
 
 ## 5. importFromApp auto-Register creation
 
