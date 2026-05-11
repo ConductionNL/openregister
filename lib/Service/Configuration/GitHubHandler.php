@@ -22,15 +22,12 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use RuntimeException;
 use OCP\Http\Client\IClient;
-use OCP\Http\Client\IClientService;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IConfig;
-use OCP\IURLGenerator;
-use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -95,48 +92,37 @@ class GitHubHandler
     private IConfig $config;
 
     /**
-     * URL generator for building absolute instance URLs (used in attribution prefix
-     * on server-PAT-fallback issue submissions).
+     * Attribution formatter for server-PAT-fallback issue submissions.
      *
-     * @var IURLGenerator
+     * @var AttributionFormatter
      */
-    private IURLGenerator $urlGenerator;
-
-    /**
-     * User manager for resolving display names by UID (used in attribution prefix
-     * on server-PAT-fallback issue submissions).
-     *
-     * @var IUserManager
-     */
-    private IUserManager $userManager;
+    private AttributionFormatter $attributionFormatter;
 
     /**
      * GitHubHandler constructor
      *
-     * @param IClientService  $clientService HTTP client service
-     * @param IAppConfig      $appConfig     App configuration service for app-level settings
-     * @param IConfig         $config        User configuration service for user-level settings
-     * @param ICacheFactory   $cacheFactory  Cache factory for creating cache instances
-     * @param IURLGenerator   $urlGenerator  URL generator for absolute instance URLs
-     * @param IUserManager    $userManager   User manager for display-name resolution
-     * @param LoggerInterface $logger        Logger instance
+     * @param IClient              $client               HTTP client (built by the DI factory in
+     *                                                   Application.php via IClientService::newClient)
+     * @param IAppConfig           $appConfig            App-level configuration service
+     * @param IConfig              $config               Per-user configuration service
+     * @param ICacheFactory        $cacheFactory         Cache factory
+     * @param AttributionFormatter $attributionFormatter Server-PAT attribution helper
+     * @param LoggerInterface      $logger               Logger instance
      */
     public function __construct(
-        IClientService $clientService,
+        IClient $client,
         IAppConfig $appConfig,
         IConfig $config,
         ICacheFactory $cacheFactory,
-        IURLGenerator $urlGenerator,
-        IUserManager $userManager,
+        AttributionFormatter $attributionFormatter,
         LoggerInterface $logger
     ) {
-        $this->client       = $clientService->newClient();
-        $this->appConfig    = $appConfig;
-        $this->config       = $config;
-        $this->cache        = $cacheFactory->createDistributed('openregister_github_configs');
-        $this->urlGenerator = $urlGenerator;
-        $this->userManager  = $userManager;
-        $this->logger       = $logger;
+        $this->client    = $client;
+        $this->appConfig = $appConfig;
+        $this->config    = $config;
+        $this->cache     = $cacheFactory->createDistributed('openregister_github_configs');
+        $this->attributionFormatter = $attributionFormatter;
+        $this->logger = $logger;
     }//end __construct()
 
     /**
@@ -1408,41 +1394,63 @@ class GitHubHandler
     public function listIssues(
         string $owner,
         string $repo,
-        string $state = 'open',
-        string $sort = 'reactions-+1',
-        int $perPage = 30,
-        ?array $labels = null
+        string $state='open',
+        string $sort='reactions-+1',
+        int $perPage=30,
+        ?array $labels=null
     ): array {
         $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
         if ($token === '') {
             return ['items' => [], 'hint' => 'github_pat_not_configured'];
         }
 
-        $effectiveLabels = is_array($labels) ? array_values(array_filter($labels, static fn($l) => $l !== '')) : [];
+        $effectiveLabels = is_array($labels) === true ? array_values(array_filter($labels, static fn($l) => $l !== '')) : [];
         $labelCount      = count($effectiveLabels);
 
         if ($labelCount >= 2) {
             // OR semantics: one request per label, merge deduped by issue number, re-sort, truncate.
             $merged = [];
             foreach ($effectiveLabels as $label) {
-                foreach ($this->fetchIssuesPage($owner, $repo, $state, $sort, $perPage, $label, $token) as $item) {
+                $page = $this->fetchIssuesPage(
+                    owner: $owner,
+                    repo: $repo,
+                    state: $state,
+                    sort: $sort,
+                    perPage: $perPage,
+                    label: $label,
+                    token: $token
+                );
+                foreach ($page as $item) {
                     $number = (int) ($item['number'] ?? 0);
                     if ($number > 0 && isset($merged[$number]) === false) {
                         $merged[$number] = $item;
                     }
                 }
             }
+
             $items = array_values($merged);
             usort(
                 $items,
-                static fn($a, $b) => (int) ($b['reactions']['total_count'] ?? 0) <=> (int) ($a['reactions']['total_count'] ?? 0)
+                static function (array $a, array $b): int {
+                    $aCount = (int) ($a['reactions']['total_count'] ?? 0);
+                    $bCount = (int) ($b['reactions']['total_count'] ?? 0);
+                    return $bCount <=> $aCount;
+                }
             );
             $items = array_slice($items, 0, $perPage);
             return ['items' => $items];
-        }
+        }//end if
 
         $singleLabel = $labelCount === 1 ? $effectiveLabels[0] : null;
-        $items       = $this->fetchIssuesPage($owner, $repo, $state, $sort, $perPage, $singleLabel, $token);
+        $items       = $this->fetchIssuesPage(
+            owner: $owner,
+            repo: $repo,
+            state: $state,
+            sort: $sort,
+            perPage: $perPage,
+            label: $singleLabel,
+            token: $token
+        );
         return ['items' => $items];
     }//end listIssues()
 
@@ -1492,7 +1500,8 @@ class GitHubHandler
             if ($token === '') {
                 throw new RuntimeException('github_pat_not_configured');
             }
-            $effectiveBody = $this->buildAttributionPrefix($userId).$body;
+
+            $effectiveBody = $this->attributionFormatter->format($userId).$body;
         }
 
         // Append specRef suffix when provided (task 1.8). Slug-format validation happens in the controller (task 1.16).
@@ -1507,7 +1516,7 @@ class GitHubHandler
             $payload['labels'] = $labels;
         }
 
-        $url = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
+        $url      = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
         $response = $this->client->request(
             'POST',
             $url,
@@ -1522,7 +1531,7 @@ class GitHubHandler
             ]
         );
 
-        $data = json_decode((string) $response->getBody(), true);
+        $data   = json_decode((string) $response->getBody(), true);
         $result = [
             'number'          => (int) ($data['number'] ?? 0),
             'html_url'        => (string) ($data['html_url'] ?? ''),
@@ -1532,6 +1541,7 @@ class GitHubHandler
         if ($specRef !== null && $specRef !== '') {
             $result['specRef'] = $specRef;
         }
+
         return $result;
     }//end createIssue()
 
@@ -1577,7 +1587,7 @@ class GitHubHandler
             $query['labels'] = $label;
         }
 
-        $url = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
+        $url      = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
         $response = $this->client->request(
             'GET',
             $url,
@@ -1599,9 +1609,11 @@ class GitHubHandler
                     // Skip pull requests (GitHub returns them on the issues endpoint).
                     continue;
                 }
-                $items[] = $this->stripIssueFields($issue);
+
+                $items[] = $this->stripIssueFields(issue: $issue);
             }
         }
+
         return $items;
     }//end fetchIssuesPage()
 
@@ -1644,24 +1656,4 @@ class GitHubHandler
             'labels'     => $labels,
         ];
     }//end stripIssueFields()
-
-    /**
-     * Build the attribution prefix prepended to the GitHub issue body when the server-PAT fallback
-     * path is taken. Skeleton implementation — markdown-injection sanitization on display name and
-     * URL-scheme validation are scoped to task 1.15 (follow-up).
-     *
-     * @param string $userId Nextcloud UID of the submitting user
-     *
-     * @return string Attribution block ending with `\n\n---\n\n`
-     *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
-     */
-    private function buildAttributionPrefix(string $userId): string
-    {
-        $user        = $this->userManager->get($userId);
-        $displayName = $user !== null ? $user->getDisplayName() : $userId;
-        $instanceUrl = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
-
-        return '> Submitted by **'.$displayName.'** via '.$instanceUrl."\n\n---\n\n";
-    }//end buildAttributionPrefix()
 }//end class

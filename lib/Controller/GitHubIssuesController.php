@@ -90,12 +90,12 @@ class GitHubIssuesController extends Controller
     /**
      * GitHubIssuesController constructor.
      *
-     * @param string          $appName        Nextcloud app name (DI-injected)
-     * @param IRequest        $request        Current HTTP request
-     * @param GitHubHandler   $githubHandler  Reused HTTP client / token / attribution logic
-     * @param IUserSession    $userSession    Resolves the submitting NC user
-     * @param ICacheFactory   $cacheFactory   Distributed cache factory
-     * @param LoggerInterface $logger         Structured logger
+     * @param string          $appName       Nextcloud app name (DI-injected)
+     * @param IRequest        $request       Current HTTP request
+     * @param GitHubHandler   $githubHandler Reused HTTP client / token / attribution logic
+     * @param IUserSession    $userSession   Resolves the submitting NC user
+     * @param ICacheFactory   $cacheFactory  Distributed cache factory
+     * @param LoggerInterface $logger        Structured logger
      *
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
      */
@@ -107,7 +107,7 @@ class GitHubIssuesController extends Controller
         ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->readCache       = $cacheFactory->createDistributed('openregister_github_issues');
         $this->submitRateCache = $cacheFactory->createDistributed('openregister_feature_submission');
     }//end __construct()
@@ -140,6 +140,7 @@ class GitHubIssuesController extends Controller
         if (preg_match('#^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$#', $repo) !== 1) {
             return new JSONResponse(['error' => 'repo_invalid_format'], Http::STATUS_BAD_REQUEST);
         }
+
         if ($perPage < 1 || $perPage > 100) {
             return new JSONResponse(['error' => 'per_page_out_of_range'], Http::STATUS_BAD_REQUEST);
         }
@@ -147,7 +148,13 @@ class GitHubIssuesController extends Controller
         [$owner, $repoName] = explode('/', $repo, 2);
         $labelArray         = $labels === '' ? null : array_values(array_filter(array_map('trim', explode(',', $labels))));
 
-        $cacheKey = $this->buildReadCacheKey($repo, $state, $sort, $perPage, $labelArray);
+        $cacheKey = $this->buildReadCacheKey(
+            repo: $repo,
+            state: $state,
+            sort: $sort,
+            perPage: $perPage,
+            labels: $labelArray
+        );
 
         $cached = $this->readCache->get($cacheKey);
         if (is_array($cached) === true) {
@@ -157,9 +164,16 @@ class GitHubIssuesController extends Controller
         }
 
         try {
-            $result = $this->githubHandler->listIssues($owner, $repoName, $state, $sort, $perPage, $labelArray);
+            $result = $this->githubHandler->listIssues(
+                owner: $owner,
+                repo: $repoName,
+                state: $state,
+                sort: $sort,
+                perPage: $perPage,
+                labels: $labelArray
+            );
         } catch (Exception $e) {
-            return $this->mapHandlerException($e, isRead: true);
+            return $this->mapHandlerException(exception: $e, isRead: true);
         }
 
         $this->readCache->set($cacheKey, $result, self::READ_CACHE_TTL);
@@ -194,6 +208,7 @@ class GitHubIssuesController extends Controller
         if ($user === null) {
             return new JSONResponse(['error' => 'unauthenticated'], Http::STATUS_UNAUTHORIZED);
         }
+
         $uid = $user->getUID();
 
         $repo    = (string) $this->request->getParam('repo', '');
@@ -202,54 +217,108 @@ class GitHubIssuesController extends Controller
         $specRef = $this->request->getParam('specRef');
         $specRef = ($specRef === null || $specRef === '') ? null : (string) $specRef;
 
-        if (preg_match('#^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$#', $repo) !== 1) {
-            return new JSONResponse(['error' => 'repo_invalid_format'], Http::STATUS_BAD_REQUEST);
-        }
-        $titleLength = strlen($title);
-        if ($titleLength < 3 || $titleLength > 200) {
-            return new JSONResponse(['error' => 'title_invalid_length'], Http::STATUS_BAD_REQUEST);
-        }
-        if (strlen($body) < 10) {
-            return new JSONResponse(['error' => 'body_invalid_length'], Http::STATUS_BAD_REQUEST);
+        $validationError = $this->validateSubmission(repo: $repo, title: $title, body: $body);
+        if ($validationError !== null) {
+            return $validationError;
         }
 
-        // Per-user submission rate limit (1/60s) — task 1.6.
-        $rateLimitKey = 'openregister.feature_submission:'.$uid;
-        $existing     = $this->submitRateCache->get($rateLimitKey);
-        if ($existing !== null) {
-            $retryAfter = max(1, self::SUBMIT_RATE_LIMIT_TTL - (time() - (int) $existing));
-            $resp       = new JSONResponse(
-                ['error' => 'rate_limited', 'retry_after' => $retryAfter],
-                Http::STATUS_TOO_MANY_REQUESTS
-            );
-            $resp->addHeader('Retry-After', (string) $retryAfter);
-            return $resp;
+        $rateLimitResponse = $this->enforceSubmitRateLimit(uid: $uid);
+        if ($rateLimitResponse !== null) {
+            return $rateLimitResponse;
         }
 
         [$owner, $repoName] = explode('/', $repo, 2);
 
         try {
-            $result = $this->githubHandler->createIssue($owner, $repoName, $title, $body, $specRef, $uid);
+            $result = $this->githubHandler->createIssue(
+                owner: $owner,
+                repo: $repoName,
+                title: $title,
+                body: $body,
+                specRef: $specRef,
+                userId: $uid
+            );
         } catch (Exception $e) {
-            return $this->mapHandlerException($e, isRead: false);
+            return $this->mapHandlerException(exception: $e, isRead: false);
         }
 
         // Mark the rate-limit slot consumed (stores submission time so we can compute Retry-After).
-        $this->submitRateCache->set($rateLimitKey, time(), self::SUBMIT_RATE_LIMIT_TTL);
+        $this->submitRateCache->set('openregister.feature_submission:'.$uid, time(), self::SUBMIT_RATE_LIMIT_TTL);
 
         return new JSONResponse($result, Http::STATUS_CREATED);
     }//end create()
+
+    /**
+     * Validate the submission body. Returns null on success, or a 400 JSONResponse on the first
+     * validation failure. Extracted from `create()` so each method stays within PHPMD's
+     * CyclomaticComplexity + NPathComplexity thresholds, and so tasks 1.14–1.22 can layer extra
+     * guards (repo allowlist, specRef format, sort allowlist, labels validation, admin opt-out)
+     * by adding more validator calls without inflating `create()`.
+     *
+     * @param string $repo  `<owner>/<repo>` slug from the request body
+     * @param string $title Issue title from the request body
+     * @param string $body  Issue body from the request body
+     *
+     * @return JSONResponse|null Null on success, 400 with structured error_code on failure.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
+     */
+    private function validateSubmission(string $repo, string $title, string $body): ?JSONResponse
+    {
+        if (preg_match('#^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$#', $repo) !== 1) {
+            return new JSONResponse(['error' => 'repo_invalid_format'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $titleLength = strlen($title);
+        if ($titleLength < 3 || $titleLength > 200) {
+            return new JSONResponse(['error' => 'title_invalid_length'], Http::STATUS_BAD_REQUEST);
+        }
+
+        if (strlen($body) < 10) {
+            return new JSONResponse(['error' => 'body_invalid_length'], Http::STATUS_BAD_REQUEST);
+        }
+
+        return null;
+    }//end validateSubmission()
+
+    /**
+     * Enforce the per-user 1/60s submission rate limit (task 1.6). Returns null when the user is
+     * within their budget, or a 429 JSONResponse with `Retry-After` header when they are
+     * currently rate-limited.
+     *
+     * @param string $uid Submitting user's UID.
+     *
+     * @return JSONResponse|null Null on success, 429 with structured error_code + retry_after.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-6
+     */
+    private function enforceSubmitRateLimit(string $uid): ?JSONResponse
+    {
+        $rateLimitKey = 'openregister.feature_submission:'.$uid;
+        $existing     = $this->submitRateCache->get($rateLimitKey);
+        if ($existing === null) {
+            return null;
+        }
+
+        $retryAfter = max(1, self::SUBMIT_RATE_LIMIT_TTL - (time() - (int) $existing));
+        $response   = new JSONResponse(
+            ['error' => 'rate_limited', 'retry_after' => $retryAfter],
+            Http::STATUS_TOO_MANY_REQUESTS
+        );
+        $response->addHeader('Retry-After', (string) $retryAfter);
+        return $response;
+    }//end enforceSubmitRateLimit()
 
     /**
      * Build the read cache key. Includes the (sorted) label list so different filter
      * combinations do not collide on the same cache slot. The cache namespace is already
      * scoped to `openregister_github_issues` by the factory.
      *
-     * @param string             $repo        Validated `<owner>/<repo>` slug
-     * @param string             $state       Issue state filter
-     * @param string             $sort        Sort key
-     * @param int                $perPage     Page size
-     * @param array<string>|null $labels      Optional label filter
+     * @param string             $repo    Validated `<owner>/<repo>` slug
+     * @param string             $state   Issue state filter
+     * @param string             $sort    Sort key
+     * @param int                $perPage Page size
+     * @param array<string>|null $labels  Optional label filter
      *
      * @return string Cache key (no PII, no token, no user identifier)
      *
@@ -263,6 +332,7 @@ class GitHubIssuesController extends Controller
             sort($sorted);
             $key .= ':'.implode(',', $sorted);
         }
+
         return $key;
     }//end buildReadCacheKey()
 
@@ -287,32 +357,13 @@ class GitHubIssuesController extends Controller
     private function mapHandlerException(Exception $exception, bool $isRead): JSONResponse
     {
         if ($exception instanceof RuntimeException && $exception->getMessage() === 'github_pat_not_configured') {
-            if ($isRead === true) {
-                return new JSONResponse(['items' => [], 'hint' => 'github_pat_not_configured']);
-            }
-            return new JSONResponse(['error' => 'github_pat_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
+            return $this->mapPatNotConfigured(isRead: $isRead);
         }
 
         if ($exception instanceof BadResponseException) {
-            $response = $exception->getResponse();
-            if ($response !== null) {
-                $status    = $response->getStatusCode();
-                $remaining = $response->getHeaderLine('X-RateLimit-Remaining');
-                $reset     = $response->getHeaderLine('X-RateLimit-Reset');
-
-                if ($status === 429 || ($status === 403 && $remaining === '0')) {
-                    $resetAt = $reset !== '' ? gmdate('c', (int) $reset) : '';
-                    $body    = ['error' => 'github_rate_limited'];
-                    if ($resetAt !== '') {
-                        $body['reset_at'] = $resetAt;
-                    }
-                    $jsonResp = new JSONResponse($body, Http::STATUS_TOO_MANY_REQUESTS);
-                    if ($reset !== '') {
-                        // Retry-After in seconds is best-effort here; downstream can refine in 1.9.
-                        $jsonResp->addHeader('Retry-After', (string) max(1, (int) $reset - time()));
-                    }
-                    return $jsonResp;
-                }
+            $rateLimitResponse = $this->mapGitHubRateLimit(exception: $exception);
+            if ($rateLimitResponse !== null) {
+                return $rateLimitResponse;
             }
         }
 
@@ -323,4 +374,63 @@ class GitHubIssuesController extends Controller
 
         return new JSONResponse(['error' => 'github_unavailable'], Http::STATUS_BAD_GATEWAY);
     }//end mapHandlerException()
+
+    /**
+     * Translate the handler's PAT-missing signal into either a graceful 200 (GET — items: [] +
+     * hint) or a 503 (POST — structured error_code). Separated so `mapHandlerException` stays
+     * within PHPMD's CyclomaticComplexity threshold.
+     *
+     * @param bool $isRead Whether the original request was a GET (read) or POST (write).
+     *
+     * @return JSONResponse
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-7
+     */
+    private function mapPatNotConfigured(bool $isRead): JSONResponse
+    {
+        if ($isRead === true) {
+            return new JSONResponse(['items' => [], 'hint' => 'github_pat_not_configured']);
+        }
+
+        return new JSONResponse(['error' => 'github_pat_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
+    }//end mapPatNotConfigured()
+
+    /**
+     * Translate a GitHub-side rate-limit response into a structured 429 for the client. Returns
+     * null when the upstream response is NOT a rate-limit signal so the caller can fall through
+     * to the generic 502 path.
+     *
+     * @param BadResponseException $exception Guzzle exception carrying GitHub's response.
+     *
+     * @return JSONResponse|null 429 when rate-limit detected, null otherwise.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-9
+     */
+    private function mapGitHubRateLimit(BadResponseException $exception): ?JSONResponse
+    {
+        $response = $exception->getResponse();
+        if ($response === null) {
+            return null;
+        }
+
+        $status    = $response->getStatusCode();
+        $remaining = $response->getHeaderLine('X-RateLimit-Remaining');
+        $reset     = $response->getHeaderLine('X-RateLimit-Reset');
+
+        if ($status !== 429 && ($status !== 403 || $remaining !== '0')) {
+            return null;
+        }
+
+        $body = ['error' => 'github_rate_limited'];
+        if ($reset !== '') {
+            $body['reset_at'] = gmdate('c', (int) $reset);
+        }
+
+        $jsonResp = new JSONResponse($body, Http::STATUS_TOO_MANY_REQUESTS);
+        if ($reset !== '') {
+            $jsonResp->addHeader('Retry-After', (string) max(1, (int) $reset - time()));
+        }
+
+        return $jsonResp;
+    }//end mapGitHubRateLimit()
 }//end class

@@ -509,12 +509,11 @@ class Application extends App implements IBootstrap
             GitHubHandler::class,
             function (ContainerInterface $container) {
                 return new GitHubHandler(
-                    clientService: $container->get('OCP\Http\Client\IClientService'),
+                    client: $container->get('OCP\Http\Client\IClientService')->newClient(),
                     appConfig: $container->get('OCP\IAppConfig'),
                     config: $container->get('OCP\IConfig'),
                     cacheFactory: $container->get('OCP\ICacheFactory'),
-                    urlGenerator: $container->get('OCP\IURLGenerator'),
-                    userManager: $container->get('OCP\IUserManager'),
+                    attributionFormatter: $container->get('OCA\OpenRegister\Service\Configuration\AttributionFormatter'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
