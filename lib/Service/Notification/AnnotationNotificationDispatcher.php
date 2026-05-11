@@ -95,8 +95,9 @@ class AnnotationNotificationDispatcher
      * Fire any notifications declared on the schema whose trigger matches.
      *
      * @param ObjectEntity         $object  The object the event happened on.
-     * @param string               $trigger 'created' | 'updated' | 'transition'.
-     * @param array<string, mixed> $context Trigger-specific extras (e.g. `action`, `from`, `to`).
+     * @param string               $trigger 'created' | 'updated' | 'transition' | 'calculatedChange'.
+     * @param array<string, mixed> $context Trigger-specific extras (e.g. `action`, `from`, `to`,
+     *                                      `_newData`, `_oldData` for calculatedChange).
      *
      * @return void
      *
@@ -926,11 +927,18 @@ class AnnotationNotificationDispatcher
     /**
      * Decide whether a notification's `trigger` block matches the active event.
      *
+     * For `calculatedChange` triggers, both `condition` (new value) and
+     * `previously` (old value) must be satisfied for the rule to fire —
+     * this is the boundary-crossing / debounce check.
+     *
      * @param array<string, mixed> $triggerSpec The declared `trigger` sub-document.
      * @param string               $trigger     The active event type.
      * @param array<string, mixed> $context     Per-event context (e.g. `action`).
      *
      * @return bool True when the rule should fire for this event.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function matches(array $triggerSpec, string $trigger, array $context): bool
     {
@@ -951,8 +959,87 @@ class AnnotationNotificationDispatcher
             }
         }
 
+        // `calculatedChange` boundary-crossing check.
+        // `field` names the calculated property to monitor.
+        // `condition` operators the NEW value must satisfy.
+        // `previously` operators the OLD value must satisfy.
+        // Both must hold simultaneously. When either condition or
+        // previously is absent the gate is open (partial spec is treated
+        // as "just the declared side must match"). When _newData/_oldData
+        // are absent in context (e.g. missing old object) the check
+        // cannot be evaluated and the rule is skipped (fail-closed).
+        if ($trigger === 'calculatedChange') {
+            $field = (string) ($triggerSpec['field'] ?? '');
+            if ($field === '') {
+                return false;
+            }
+
+            $newData = ($context['_newData'] ?? null);
+            $oldData = ($context['_oldData'] ?? null);
+            if (is_array($newData) === false || is_array($oldData) === false) {
+                return false;
+            }
+
+            $newValue = ($newData[$field] ?? null);
+            $oldValue = ($oldData[$field] ?? null);
+
+            $condition  = ($triggerSpec['condition'] ?? null);
+            $previously = ($triggerSpec['previously'] ?? null);
+
+            if (is_array($condition) === true
+                && $this->numericConditionMatches(value: $newValue, operators: $condition) === false
+            ) {
+                return false;
+            }
+
+            if (is_array($previously) === true
+                && $this->numericConditionMatches(value: $oldValue, operators: $previously) === false
+            ) {
+                return false;
+            }
+        }//end if
+
         return true;
     }//end matches()
+
+    /**
+     * Evaluate a set of plain comparison operators against a numeric value.
+     *
+     * Operators mirror the JSON-schema style used by the notification spec:
+     * `lt`, `lte`, `gt`, `gte`, `eq`, `ne`. All comparisons are numeric
+     * (int/float); a non-numeric value returns false for every ordering
+     * operator (`lt`, `lte`, `gt`, `gte`) and casts to string for `eq`/`ne`.
+     *
+     * Multiple operators in the map are ANDed together (all must hold).
+     *
+     * @param mixed                $value     The field value to test.
+     * @param array<string, mixed> $operators Map of operator → threshold (e.g. `['lt' => 0.85]`).
+     *
+     * @return bool True when the value satisfies every declared operator.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function numericConditionMatches(mixed $value, array $operators): bool
+    {
+        foreach ($operators as $op => $threshold) {
+            $numeric = is_numeric($value) === true && is_numeric($threshold) === true;
+            $result  = match ((string) $op) {
+                'lt'  => $numeric && (float) $value < (float) $threshold,
+                'lte' => $numeric && (float) $value <= (float) $threshold,
+                'gt'  => $numeric && (float) $value > (float) $threshold,
+                'gte' => $numeric && (float) $value >= (float) $threshold,
+                'eq'  => (string) $value === (string) $threshold,
+                'ne'  => (string) $value !== (string) $threshold,
+                default => false,
+            };
+
+            if ($result === false) {
+                return false;
+            }
+        }
+
+        return true;
+    }//end numericConditionMatches()
 
     /**
      * Resolve a `recipients` block to a flat list of UIDs.
