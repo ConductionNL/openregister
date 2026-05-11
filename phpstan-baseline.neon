@@ -1451,6 +1451,11 @@ parameters:
 			path: lib/Controller/RegistersController.php
 
 		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string, objectCount\\: int\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/RegistersController.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:publish\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404, array\\{error\\?\\: string, id\\?\\: int, uuid\\?\\: string\\|null, slug\\?\\: string\\|null, title\\?\\: string\\|null, version\\?\\: string\\|null, description\\?\\: string\\|null, schemas\\?\\: array\\<int\\|string\\>, \\.\\.\\.\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, version\\: string\\|null, description\\: string\\|null, schemas\\: array\\<int\\|string\\>, source\\: string\\|null, \\.\\.\\.\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/RegistersController.php
@@ -1617,6 +1622,11 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|409\\|500, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SchemasController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|409\\|500, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string, objectCount\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
 
@@ -3927,6 +3937,21 @@ parameters:
 
 		-
 			message: "#^Call to function is_array\\(\\) with OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Configuration/ImportHandler.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Configuration/ImportHandler.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Configuration/ImportHandler.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/Configuration/ImportHandler.php
 

@@ -652,11 +652,12 @@ class RegistersController extends Controller
             $register = $this->registerService->find($id);
 
             // Count objects still referencing this register across all schemas.
-            $objectCount = $this->objectEntityMapper->countSearchObjects(
-                query: ['@self' => ['register' => $register->getId()]],
-                _rbac: true,
-                _multitenancy: true
-            );
+            // Use getStatistics() (single-axis registerId path) — countSearchObjects()
+            // only returns a real count when BOTH register AND schema are present
+            // in the @self filter, and silently returns 0 on single-axis queries,
+            // which would let DELETE silently succeed on registers with objects.
+            $objectStats = $this->objectEntityMapper->getStatistics(registerId: $register->getId(), schemaId: null);
+            $objectCount = (int) $objectStats['total'];
 
             if ($objectCount > 0 && $force === false) {
                 return new JSONResponse(
@@ -699,7 +700,7 @@ class RegistersController extends Controller
         } catch (Exception $e) {
             // Return 500 for other errors.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+        }//end try
     }//end destroy()
 
     /**

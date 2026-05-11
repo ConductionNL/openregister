@@ -2567,7 +2567,7 @@ class ImportHandler
             $this->autoCreateRegisterIfApplication(
                 data: $data,
                 appId: $appId,
-                schemas: $result['schemas'] ?? [],
+                schemas: $result['schemas'],
                 configuration: $configuration,
                 result: $result
             );
@@ -2603,11 +2603,11 @@ class ImportHandler
      * Register ID so the (Configuration, Schemas, Register) triple stays
      * consistent.
      *
-     * @param array               $data          The full OAS document.
-     * @param string              $appId         The app identifier (caller).
-     * @param array               $schemas       Imported schemas (Schema entities or stdClass with getId()).
-     * @param Configuration       $configuration The Configuration row already persisted.
-     * @param array               $result        Mutable result array; the resulting Register entity is appended into $result['registers'].
+     * @param array         $data          The full OAS document.
+     * @param string        $appId         The app identifier (caller).
+     * @param array         $schemas       Imported schemas (Schema entities or stdClass with getId()).
+     * @param Configuration $configuration The Configuration row already persisted.
+     * @param array         $result        Mutable result array; the resulting Register entity is appended into $result['registers'].
      *
      * @return void
      *

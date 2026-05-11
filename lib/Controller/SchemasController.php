@@ -639,11 +639,12 @@ class SchemasController extends Controller
             $schemaToDelete = $this->schemaMapper->find(id: $id);
 
             // Count objects still referencing this schema across all registers.
-            $objectCount = $this->objectEntityMapper->countSearchObjects(
-                query: ['@self' => ['schema' => $schemaToDelete->getId()]],
-                _rbac: true,
-                _multitenancy: true
-            );
+            // Use getStatistics() (single-axis schemaId path) — countSearchObjects()
+            // only returns a real count when BOTH register AND schema are present
+            // in the @self filter, and silently returns 0 on single-axis queries,
+            // which would let DELETE silently succeed on schemas with objects.
+            $objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaToDelete->getId());
+            $objectCount = (int) $objectStats['total'];
 
             if ($objectCount > 0 && $force === false) {
                 // Refuse: structured 409 with the orphan count for the caller.
