@@ -176,8 +176,24 @@ class ChatStreamController extends Controller
             $conversationUuid = (string) ($body['conversationUuid'] ?? '');
             $context          = $body['context'] ?? null;
 
+            // Widget UX: when the widget opens a fresh chat it doesn't know which
+            // agent to use (no agent picker in v1). Fall back to the first agent
+            // the user can access if neither agentUuid nor conversationUuid was
+            // supplied. Matches the "one global thread per (user, agent)"
+            // architectural decision in hydra ADR-034.
             if ($conversationUuid === '' && $agentUuid === '') {
-                $this->emitSseEvent('error', ['code' => 'missing_agent', 'message' => 'Either conversationUuid or agentUuid is required']);
+                try {
+                    $agents = $this->agentMapper->findAll(limit: 1);
+                    if (count($agents) > 0) {
+                        $agentUuid = $agents[0]->getUuid();
+                    }
+                } catch (\Throwable $e) {
+                    // fall through to the missing_agent error below
+                }
+            }
+
+            if ($conversationUuid === '' && $agentUuid === '') {
+                $this->emitSseEvent('error', ['code' => 'missing_agent', 'message' => 'No agent available; configure one in OpenRegister settings.']);
                 exit;
             }
 
