@@ -580,4 +580,111 @@ class NotificationAnnotationValidatorTest extends TestCase
         $codes = array_column($errors, 'code');
         $this->assertContains('notification-bad-organisation', $codes);
     }
+
+    // -----------------------------------------------------------------------
+    // calculatedChange trigger validation
+    // -----------------------------------------------------------------------
+
+    public function testCalculatedChangeTriggerWithValidSpecProducesNoErrors(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'coverageDrop' => [
+                    'trigger' => [
+                        'type'       => 'calculatedChange',
+                        'field'      => 'coveragePercent',
+                        'condition'  => ['lt' => 0.85],
+                        'previously' => ['gte' => 0.85],
+                    ],
+                    'recipients' => [['kind' => 'users', 'users' => ['officer']]],
+                    'channels'   => ['nc-notification'],
+                    'subject'    => 'Coverage dropped',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors, 'A well-formed calculatedChange spec must have no errors.');
+    }
+
+    public function testCalculatedChangeTriggerWithoutFieldIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'noField' => [
+                    'trigger' => [
+                        'type'      => 'calculatedChange',
+                        'condition' => ['lt' => 0.85],
+                    ],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels'   => ['nc-notification'],
+                    'subject'    => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-calculated-change-no-field', $codes);
+    }
+
+    public function testCalculatedChangeTriggerWithBadConditionOpIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'badOp' => [
+                    'trigger' => [
+                        'type'      => 'calculatedChange',
+                        'field'     => 'score',
+                        'condition' => ['between' => 5],
+                    ],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels'   => ['nc-notification'],
+                    'subject'    => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-calculated-change-bad-op', $codes);
+    }
+
+    public function testCalculatedChangeTriggerWithEmptyConditionArrayIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'emptyClause' => [
+                    'trigger' => [
+                        'type'      => 'calculatedChange',
+                        'field'     => 'score',
+                        'condition' => [],
+                    ],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels'   => ['nc-notification'],
+                    'subject'    => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-calculated-change-bad-clause', $codes);
+    }
+
+    public function testCalculatedChangeTriggerWithoutConditionOrPreviouslyIsValid(): void
+    {
+        // Open-gate variant: field is declared but no condition/previously operators.
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'anyChange' => [
+                    'trigger' => [
+                        'type'  => 'calculatedChange',
+                        'field' => 'score',
+                    ],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels'   => ['nc-notification'],
+                    'subject'    => 'score changed',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors, 'calculatedChange without condition/previously is valid (open gate).');
+    }
 }
