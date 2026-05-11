@@ -54,6 +54,7 @@ class ReportsController extends Controller
      * @param IRequest            $request       Active request.
      * @param ReportRenderService $renderService Composer.
      * @param MagicMapper         $objectMapper  Dashboard loader.
+     * @param LoggerInterface     $logger        Logger for render diagnostics.
      */
     public function __construct(
         string $appName,
@@ -122,7 +123,7 @@ class ReportsController extends Controller
                 data: ['error' => 'Render failed; see server logs for details'],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
 
         return new DataDownloadResponse(
             data: $rendered['bytes'],

@@ -108,6 +108,7 @@ class ObjectServiceDeepTest extends TestCase
 
     private MockObject|IAppContainer $container;
 
+
     /**
      * Set up test fixtures
      *
@@ -115,9 +116,9 @@ class ObjectServiceDeepTest extends TestCase
      */
     protected function setUp(): void
     {
-        $dataManipHandler         = $this->createMock(DataManipulationHandler::class);
-        $this->deleteHandler      = $this->createMock(DeleteObject::class);
-        $this->getHandler         = $this->createMock(GetObject::class);
+        $dataManipHandler   = $this->createMock(DataManipulationHandler::class);
+        $this->deleteHandler = $this->createMock(DeleteObject::class);
+        $this->getHandler    = $this->createMock(GetObject::class);
         $this->performanceHandler = $this->createMock(PerformanceHandler::class);
         $this->permissionHandler  = $this->createMock(PermissionHandler::class);
         $this->renderHandler      = $this->createMock(RenderObject::class);
@@ -125,39 +126,38 @@ class ObjectServiceDeepTest extends TestCase
         $saveObjectsHandler       = $this->createMock(SaveObjects::class);
         $searchQueryHandler       = $this->createMock(SearchQueryHandler::class);
         $this->validateHandler    = $this->createMock(ValidateObject::class);
-        $lockHandler            = $this->createMock(LockHandler::class);
-        $auditHandler           = $this->createMock(AuditHandler::class);
-        $relationHandler        = $this->createMock(RelationHandler::class);
-        $mergeHandler           = $this->createMock(MergeHandler::class);
-        $facetHandler           = $this->createMock(FacetHandler::class);
-        $metadataHandler        = $this->createMock(MetadataHandler::class);
-        $perfOptHandler         = $this->createMock(PerformanceOptimizationHandler::class);
-        $queryHandler           = $this->createMock(QueryHandler::class);
-        $revertHandler          = $this->createMock(RevertHandler::class);
-        $utilityHandler         = $this->createMock(UtilityHandler::class);
-        $validationHandler      = $this->createMock(ValidationHandler::class);
-        $this->cascadingHandler = $this->createMock(CascadingHandler::class);
-        $migrationHandler       = $this->createMock(MigrationHandler::class);
-        $this->registerMapper   = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper     = $this->createMock(SchemaMapper::class);
-        $viewMapper = $this->createMock(ViewMapper::class);
+        $lockHandler              = $this->createMock(LockHandler::class);
+        $auditHandler             = $this->createMock(AuditHandler::class);
+        $relationHandler          = $this->createMock(RelationHandler::class);
+        $mergeHandler             = $this->createMock(MergeHandler::class);
+        $facetHandler             = $this->createMock(FacetHandler::class);
+        $metadataHandler          = $this->createMock(MetadataHandler::class);
+        $perfOptHandler           = $this->createMock(PerformanceOptimizationHandler::class);
+        $queryHandler             = $this->createMock(QueryHandler::class);
+        $revertHandler            = $this->createMock(RevertHandler::class);
+        $utilityHandler           = $this->createMock(UtilityHandler::class);
+        $validationHandler        = $this->createMock(ValidationHandler::class);
+        $this->cascadingHandler   = $this->createMock(CascadingHandler::class);
+        $migrationHandler         = $this->createMock(MigrationHandler::class);
+        $this->registerMapper     = $this->createMock(RegisterMapper::class);
+        $this->schemaMapper       = $this->createMock(SchemaMapper::class);
+        $viewMapper               = $this->createMock(ViewMapper::class);
         $this->objectEntityMapper = $this->createMock(MagicMapper::class);
         $this->fileService        = $this->createMock(FileService::class);
-        $userSession        = $this->createMock(IUserSession::class);
-        $searchTrailService = $this->createMock(SearchTrailService::class);
-        $groupManager       = $this->createMock(IGroupManager::class);
-        $userManager        = $this->createMock(IUserManager::class);
+        $userSession              = $this->createMock(IUserSession::class);
+        $searchTrailService       = $this->createMock(SearchTrailService::class);
+        $groupManager             = $this->createMock(IGroupManager::class);
+        $userManager              = $this->createMock(IUserManager::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
-        $cacheHandler       = $this->createMock(CacheHandler::class);
-        $settingsService    = $this->createMock(SettingsService::class);
-        $dateTimeNormalizer = $this->createMock(DateTimeNormalizer::class);
+        $this->logger             = $this->createMock(LoggerInterface::class);
+        $cacheHandler             = $this->createMock(CacheHandler::class);
+        $settingsService          = $this->createMock(SettingsService::class);
+        $dateTimeNormalizer       = $this->createMock(DateTimeNormalizer::class);
         $dateTimeNormalizer->method('normalize')->willReturnCallback(
             function (?string $input): ?\DateTimeImmutable {
                 if ($input === null || trim($input) === '') {
                     return null;
                 }
-
                 try {
                     return new \DateTimeImmutable($input);
                 } catch (\Throwable $e) {
@@ -165,7 +165,7 @@ class ObjectServiceDeepTest extends TestCase
                 }
             }
         );
-        $this->container = $this->createMock(IAppContainer::class);
+        $this->container          = $this->createMock(IAppContainer::class);
 
         $this->service = new ObjectService(
             $dataManipHandler,
@@ -210,6 +210,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end setUp()
 
+
     // =========================================================================
     // getObject
     // =========================================================================
@@ -224,6 +225,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertNull($this->service->getObject());
 
     }//end testGetObjectReturnsNullWithoutContext()
+
 
     // =========================================================================
     // setRegister with slug string
@@ -244,6 +246,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testSetRegisterWithRegisterObject()
 
+
     /**
      * Test setRegister with slug string
      *
@@ -258,6 +261,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertSame($this->service, $result);
 
     }//end testSetRegisterWithSlugString()
+
 
     /**
      * Test setRegister with numeric ID uses cache
@@ -274,6 +278,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertSame($this->service, $result);
 
     }//end testSetRegisterWithNumericIdUsesCache()
+
 
     /**
      * Test setRegister with numeric ID falls back when cache fails
@@ -295,6 +300,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testSetRegisterWithNumericIdCacheFallback()
 
+
     // =========================================================================
     // setSchema
     // =========================================================================
@@ -312,6 +318,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testSetSchemaWithSchemaObject()
 
+
     /**
      * Test setSchema with numeric ID uses cache
      *
@@ -328,6 +335,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testSetSchemaWithNumericIdUsesCache()
 
+
     /**
      * Test setSchema with slug string
      *
@@ -343,11 +351,9 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testSetSchemaWithSlugString()
 
+
     /**
-     * Test setSchema throws DoesNotExistException when not found.
-     *
-     * The service intentionally rethrows DoesNotExistException (not ValidationException)
-     * so the Nextcloud framework converts it to a 404 response rather than a 500.
+     * Test setSchema throws ValidationException when not found
      *
      * @return void
      */
@@ -356,10 +362,11 @@ class ObjectServiceDeepTest extends TestCase
         $this->schemaMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
-        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+        $this->expectException(\OCA\OpenRegister\Exception\ValidationException::class);
         $this->service->setSchema('nonexistent');
 
     }//end testSetSchemaThrowsOnNotFound()
+
 
     // =========================================================================
     // setObject
@@ -380,6 +387,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testSetObjectWithEntity()
 
+
     /**
      * Test setObject with ID uses objectEntityMapper when no context
      *
@@ -394,6 +402,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertSame($entity, $this->service->getObject());
 
     }//end testSetObjectWithIdNoContext()
+
 
     // =========================================================================
     // prepareFindAllConfig (private)
@@ -417,6 +426,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testPrepareFindAllConfigExtendsStringToArray()
 
+
     /**
      * Test prepareFindAllConfig sets register context from filters
      *
@@ -436,6 +446,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testPrepareFindAllConfigSetsRegister()
 
+
     /**
      * Test prepareFindAllConfig sets schema context from filters
      *
@@ -454,6 +465,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertArrayHasKey('filters', $result);
 
     }//end testPrepareFindAllConfigSetsSchema()
+
 
     // =========================================================================
     // extractUuidAndNormalizeObject (private)
@@ -475,6 +487,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testExtractUuidSelfId()
 
+
     /**
      * Test extractUuidAndNormalizeObject with array and uuid in id
      *
@@ -490,6 +503,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertEquals('uuid-from-id', $resultUuid);
 
     }//end testExtractUuidIdField()
+
 
     /**
      * Test extractUuidAndNormalizeObject with explicit uuid takes priority
@@ -507,6 +521,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testExtractUuidExplicitTakesPriority()
 
+
     /**
      * Test extractUuidAndNormalizeObject skips empty id
      *
@@ -522,6 +537,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertNull($resultUuid);
 
     }//end testExtractUuidSkipsEmptyId()
+
 
     // =========================================================================
     // checkSavePermissions (private)
@@ -543,6 +559,7 @@ class ObjectServiceDeepTest extends TestCase
         $method->invoke($this->service, null, true);
 
     }//end testCheckSavePermissionsNoSchema()
+
 
     /**
      * Test checkSavePermissions checks create for null uuid
@@ -570,6 +587,7 @@ class ObjectServiceDeepTest extends TestCase
         $method->invoke($this->service, null, true);
 
     }//end testCheckSavePermissionsCreateForNullUuid()
+
 
     /**
      * Test checkSavePermissions checks update for existing uuid
@@ -603,6 +621,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testCheckSavePermissionsUpdateForExistingUuid()
 
+
     /**
      * Test checkSavePermissions checks create when uuid not found
      *
@@ -632,6 +651,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testCheckSavePermissionsCreateWhenUuidNotFound()
 
+
     // =========================================================================
     // normalizeDateValues (private)
     // =========================================================================
@@ -652,6 +672,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testNormalizeDateValuesNoSchema()
 
+
     /**
      * Test normalizeDateValues converts datetime to date
      *
@@ -662,11 +683,9 @@ class ObjectServiceDeepTest extends TestCase
         $method = new \ReflectionMethod(ObjectService::class, 'normalizeDateValues');
 
         $schema = $this->createMock(Schema::class);
-        $schema->method('getProperties')->willReturn(
-                [
-                    'startDate' => ['type' => 'string', 'format' => 'date'],
-                ]
-                );
+        $schema->method('getProperties')->willReturn([
+            'startDate' => ['type' => 'string', 'format' => 'date'],
+        ]);
         $this->service->setSchema($schema);
 
         $object = ['startDate' => '2024-01-15T10:30:00+02:00'];
@@ -675,6 +694,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertEquals('2024-01-15', $result['startDate']);
 
     }//end testNormalizeDateValuesConvertsDatetime()
+
 
     /**
      * Test normalizeDateValues skips already valid date
@@ -686,11 +706,9 @@ class ObjectServiceDeepTest extends TestCase
         $method = new \ReflectionMethod(ObjectService::class, 'normalizeDateValues');
 
         $schema = $this->createMock(Schema::class);
-        $schema->method('getProperties')->willReturn(
-                [
-                    'startDate' => ['type' => 'string', 'format' => 'date'],
-                ]
-                );
+        $schema->method('getProperties')->willReturn([
+            'startDate' => ['type' => 'string', 'format' => 'date'],
+        ]);
         $this->service->setSchema($schema);
 
         $object = ['startDate' => '2024-01-15'];
@@ -699,6 +717,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertEquals('2024-01-15', $result['startDate']);
 
     }//end testNormalizeDateValuesSkipsValidDate()
+
 
     /**
      * Test normalizeDateValues skips non-date format
@@ -710,11 +729,9 @@ class ObjectServiceDeepTest extends TestCase
         $method = new \ReflectionMethod(ObjectService::class, 'normalizeDateValues');
 
         $schema = $this->createMock(Schema::class);
-        $schema->method('getProperties')->willReturn(
-                [
-                    'email' => ['type' => 'string', 'format' => 'email'],
-                ]
-                );
+        $schema->method('getProperties')->willReturn([
+            'email' => ['type' => 'string', 'format' => 'email'],
+        ]);
         $this->service->setSchema($schema);
 
         $object = ['email' => 'test@example.com'];
@@ -723,6 +740,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertEquals('test@example.com', $result['email']);
 
     }//end testNormalizeDateValuesSkipsNonDateFormat()
+
 
     // =========================================================================
     // ensureObjectFolder (private)
@@ -742,6 +760,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testEnsureObjectFolderNullUuid()
 
+
     /**
      * Test ensureObjectFolder with DoesNotExistException returns null
      *
@@ -758,6 +777,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertNull($result);
 
     }//end testEnsureObjectFolderObjectNotFound()
+
 
     // =========================================================================
     // ensureObjectFolderExists (public)
@@ -789,6 +809,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testEnsureObjectFolderExistsNullFolder()
 
+
     /**
      * Test ensureObjectFolderExists with empty string creates folder
      *
@@ -813,6 +834,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testEnsureObjectFolderExistsEmptyString()
 
+
     /**
      * Test ensureObjectFolderExists handles createEntityFolder returning null
      *
@@ -833,6 +855,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->service->ensureObjectFolderExists($entity);
 
     }//end testEnsureObjectFolderExistsFolderNull()
+
 
     /**
      * Test ensureObjectFolderExists handles folder creation exception
@@ -860,6 +883,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testEnsureObjectFolderExistsException()
 
+
     // =========================================================================
     // findByRelations
     // =========================================================================
@@ -879,6 +903,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testFindByRelationsDelegates()
 
+
     /**
      * Test findByRelations with partial match disabled
      *
@@ -895,6 +920,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertIsArray($result);
 
     }//end testFindByRelationsExactMatch()
+
 
     // =========================================================================
     // getActiveOrganisationForContext (private)
@@ -919,6 +945,7 @@ class ObjectServiceDeepTest extends TestCase
 
     }//end testGetActiveOrganisationForContextReturnsUuid()
 
+
     /**
      * Test getActiveOrganisationForContext returns null when no org
      *
@@ -934,6 +961,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertNull($result);
 
     }//end testGetActiveOrganisationForContextReturnsNull()
+
 
     /**
      * Test getActiveOrganisationForContext handles exception
@@ -951,4 +979,6 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertNull($result);
 
     }//end testGetActiveOrganisationForContextException()
+
+
 }//end class
