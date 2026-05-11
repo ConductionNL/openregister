@@ -67,6 +67,8 @@ class TransportResult
      * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults     Per-object results.
      * @param string|null                                                                      $errorMessage      Error message.
      * @param string|null                                                                      $transferReference Transfer reference.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function __construct(
         bool $success=false,
@@ -85,7 +87,7 @@ class TransportResult
      *
      * @return bool True if successful.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function isSuccess(): bool
     {
@@ -97,7 +99,7 @@ class TransportResult
      *
      * @return bool True if partially successful.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function isPartialSuccess(): bool
     {
@@ -110,9 +112,10 @@ class TransportResult
         foreach ($this->objectResults as $result) {
             if ($result['accepted'] === true) {
                 $accepted++;
-            } else {
-                $rejected++;
+                continue;
             }
+
+            $rejected++;
         }
 
         return ($accepted > 0 && $rejected > 0);
@@ -123,7 +126,7 @@ class TransportResult
      *
      * @return array<string, array{accepted: bool, reference: string|null, error: string|null}> Object results.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getObjectResults(): array
     {
@@ -135,7 +138,7 @@ class TransportResult
      *
      * @return string|null The error message.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getErrorMessage(): ?string
     {
@@ -157,7 +160,7 @@ class TransportResult
      *
      * @return array<int, string> UUIDs of accepted objects.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getAcceptedUuids(): array
     {
@@ -176,7 +179,7 @@ class TransportResult
      *
      * @return array<int, string> UUIDs of rejected objects.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function getRejectedUuids(): array
     {
@@ -195,7 +198,7 @@ class TransportResult
      *
      * @return array<string,mixed> Serialized result.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function toArray(): array
     {

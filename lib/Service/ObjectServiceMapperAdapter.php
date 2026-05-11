@@ -77,6 +77,9 @@ class ObjectServiceMapperAdapter
      * @param string|null $search  Full-text search term.
      *
      * @return array
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function findAll(
         array $config=[],
@@ -166,6 +169,9 @@ class ObjectServiceMapperAdapter
      * @param bool       $patch    When true, perform a partial update (PATCH).
      *
      * @return ObjectEntity
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $validate kept for interface compatibility.
      */
     public function updateFromArray(
         int|string $id,

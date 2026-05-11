@@ -29,6 +29,15 @@ use OCP\IDBConnection;
  */
 class EmailLinkMapper extends QBMapper
 {
+
+    /**
+     * Cache for tableExists() result. The schema doesn't change at
+     * runtime so we can memoise the check.
+     *
+     * @var boolean|null
+     */
+    private ?bool $tableExistsCache = null;
+
     /**
      * Constructor.
      *
@@ -38,6 +47,37 @@ class EmailLinkMapper extends QBMapper
     {
         parent::__construct(db: $db, tableName: 'openregister_email_links', entityClass: EmailLink::class);
     }//end __construct()
+
+    /**
+     * Whether the underlying link table is present in this deployment.
+     *
+     * Migration `Version1Date20260326100001` drops this table on systems
+     * that have moved to the `_mail` metadata column architecture.
+     * Methods on this mapper short-circuit (returning empty / 0 / null)
+     * when the table is missing, so callers don't have to wrap every
+     * lookup in a try/catch.
+     *
+     * @return bool True when the link table exists in this deployment.
+     */
+    public function tableExists(): bool
+    {
+        if ($this->tableExistsCache !== null) {
+            return $this->tableExistsCache;
+        }
+
+        try {
+            $schema = $this->db->createSchema();
+            $this->tableExistsCache = $schema->hasTable('*PREFIX*'.$this->getTableName());
+            // Some drivers strip the prefix; check both.
+            if ($this->tableExistsCache === false) {
+                $this->tableExistsCache = $schema->hasTable($this->getTableName());
+            }
+        } catch (\Throwable $e) {
+            $this->tableExistsCache = false;
+        }
+
+        return $this->tableExistsCache;
+    }//end tableExists()
 
     /**
      * Find email links by object UUID.
@@ -50,6 +90,10 @@ class EmailLinkMapper extends QBMapper
      */
     public function findByObjectUuid(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
+        if ($this->tableExists() === false) {
+            return [];
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -76,6 +120,10 @@ class EmailLinkMapper extends QBMapper
      */
     public function countByObjectUuid(string $objectUuid): int
     {
+        if ($this->tableExists() === false) {
+            return 0;
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->getTableName())
@@ -97,6 +145,10 @@ class EmailLinkMapper extends QBMapper
      */
     public function findBySender(string $sender): array
     {
+        if ($this->tableExists() === false) {
+            return [];
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -116,11 +168,20 @@ class EmailLinkMapper extends QBMapper
      */
     public function findByObjectAndMessage(string $objectUuid, int $mailMessageId): ?EmailLink
     {
+        if ($this->tableExists() === false) {
+            return null;
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->andWhere($qb->expr()->eq('mail_message_id', $qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)));
+            ->andWhere(
+                $qb->expr()->eq(
+                    'mail_message_id',
+                    $qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
+                )
+            );
 
         try {
             return $this->findEntity(query: $qb);
@@ -138,6 +199,10 @@ class EmailLinkMapper extends QBMapper
      */
     public function deleteByObjectUuid(string $objectUuid): int
     {
+        if ($this->tableExists() === false) {
+            return 0;
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->delete($this->getTableName())
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));

@@ -77,7 +77,7 @@ class ObjectTextExtractionJob extends QueuedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
      */
     public function __construct(
         ITimeFactory $time,
@@ -101,7 +101,7 @@ class ObjectTextExtractionJob extends QueuedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
      */
     protected function run($argument): void
     {

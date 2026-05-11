@@ -49,19 +49,67 @@
     "schemas": {
       "Error": {
         "type": "object",
+        "description": "RFC 7807 Problem Details for HTTP APIs (https://datatracker.ietf.org/doc/html/rfc7807). Returned with `Content-Type: application/problem+json` for every 4xx / 5xx response.",
         "properties": {
-          "error": {
+          "type": {
             "type": "string",
-            "description": "Error message describing what went wrong",
-            "example": "Object not found"
+            "format": "uri",
+            "description": "URI reference identifying the problem class. Defaults to `about:blank` when no extension URL is published.",
+            "example": "about:blank"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short, human-readable summary of the problem class. SHOULD NOT change between occurrences.",
+            "example": "Not found"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599,
+            "description": "HTTP status code copied into the body for clients that cannot inspect the wire status.",
+            "example": 404
+          },
+          "detail": {
+            "type": "string",
+            "description": "Per-occurrence human-readable explanation. MAY include user-specific context.",
+            "example": "No object with UUID abc-123 exists in register zaken / schema zaak."
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri-reference",
+            "description": "URI identifying this specific occurrence; MAY be a request-correlation id.",
+            "example": "/api/objects/zaken/zaak/abc-123"
+          },
+          "errors": {
+            "type": "array",
+            "description": "Optional extension: per-field validation errors when `status = 422`. Each entry carries a JSON-pointer `path` and a human-readable `message`.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "example": "/email"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "must be a valid e-mail address"
+                }
+              },
+              "required": ["path", "message"]
+            }
           },
           "code": {
             "type": "integer",
-            "description": "HTTP status code",
+            "description": "DEPRECATED: legacy alias for `status`. New consumers MUST read `status`. Kept for backward compatibility with pre-RFC-7807 clients.",
             "example": 404
+          },
+          "error": {
+            "type": "string",
+            "description": "DEPRECATED: legacy alias for `detail`. New consumers MUST read `detail`. Kept for backward compatibility.",
+            "example": "Object not found"
           }
         },
-        "required": ["error"]
+        "required": ["title", "status"]
       },
       "PaginatedResponse": {
         "type": "object",

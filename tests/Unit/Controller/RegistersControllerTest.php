@@ -56,6 +56,7 @@ class RegistersControllerTest extends TestCase
     private GitHubHandler&MockObject $githubService;
     private IAppManager&MockObject $appManager;
     private OasService&MockObject $oasService;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -76,6 +77,7 @@ class RegistersControllerTest extends TestCase
         $this->githubService = $this->createMock(GitHubHandler::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->oasService = $this->createMock(OasService::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
 
         $this->controller = new RegistersController(
             'openregister',
@@ -95,7 +97,7 @@ class RegistersControllerTest extends TestCase
             $this->appManager,
             $this->oasService,
             $this->createMock(\Psr\Container\ContainerInterface::class),
-            $this->createMock(IGroupManager::class)
+            $this->groupManager
         );
     }
 

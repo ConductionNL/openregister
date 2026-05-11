@@ -1,0 +1,12 @@
+{
+  "schema_version": 2,
+  "spec_slug": "integration-bookmarks",
+  "app": "openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "depends_on": [
+    "pluggable-integration-registry"
+  ],
+  "issue": "https://github.com/ConductionNL/openregister/issues/1315",
+  "pipeline": {},
+  "cycles": []
+}

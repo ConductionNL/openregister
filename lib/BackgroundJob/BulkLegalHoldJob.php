@@ -40,7 +40,7 @@ class BulkLegalHoldJob extends QueuedJob
      *
      * @param ITimeFactory $time Time factory
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-7
      */
     public function __construct(ITimeFactory $time)
     {
@@ -56,7 +56,7 @@ class BulkLegalHoldJob extends QueuedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-7
      */
     protected function run($argument): void
     {
@@ -64,7 +64,6 @@ class BulkLegalHoldJob extends QueuedJob
 
         $schemaId = $argument['schemaId'] ?? null;
         $reason   = $argument['reason'] ?? '';
-        $userId   = $argument['userId'] ?? 'system';
 
         if ($schemaId === null) {
             $logger->error('[BulkLegalHoldJob] No schemaId provided');

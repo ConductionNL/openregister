@@ -18,15 +18,15 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-1
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-3
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-4
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-6
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-1
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-6
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -56,6 +56,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex workflow state machine with multiple paths
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Large service covering full destruction lifecycle
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API surface for destruction workflow management
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class DestructionService
 {
@@ -181,8 +182,8 @@ class DestructionService
      *
      * @return array<int, array<string, mixed>> Array of eligible object data.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-1
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
      */
     public function findEligibleObjects(array $existingListObjectIds=[]): array
     {
@@ -263,8 +264,8 @@ class DestructionService
      *
      * @return array<string, mixed> The created destruction list data.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-6
      */
     public function createDestructionList(array $eligibleObjects): array
     {
@@ -313,8 +314,8 @@ class DestructionService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Configuration-driven dual approval toggle
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
      */
     public function approveList(
         array $destructionList,
@@ -411,7 +412,7 @@ class DestructionService
      *
      * @return array<string, mixed> The updated destruction list.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-3
      */
     private function handlePartialApproval(
         array $destructionList,
@@ -440,10 +441,11 @@ class DestructionService
                     extensionPeriod: $extensionPeriod,
                     reason: $objectEntry['exclusionReason']
                 );
-            } else {
-                $objectEntry['status'] = 'approved';
-                $approved[]            = $objectEntry;
+                continue;
             }
+
+            $objectEntry['status'] = 'approved';
+            $approved[]            = $objectEntry;
         }
 
         $destructionList['objects']         = $approved;
@@ -461,8 +463,8 @@ class DestructionService
      *
      * @return array<string, mixed> The updated destruction list.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
      */
     public function rejectList(array $destructionList, string $reason): array
     {
@@ -516,8 +518,8 @@ class DestructionService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple checks per object during destruction
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
      */
     public function executeDestruction(array $destructionList, string $approvedBy): array
     {
@@ -607,8 +609,8 @@ class DestructionService
      *
      * @return array<string, mixed> The destruction certificate data.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-4
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-3
      */
     public function generateCertificate(array $destructionList, array $executionResult): array
     {
@@ -678,7 +680,7 @@ class DestructionService
      *
      * @return array<string, mixed> Validation result with warnings and blocked objects.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
      */
     public function validateDestructionList(array $destructionList): array
     {
@@ -722,7 +724,7 @@ class DestructionService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
      */
     private function extendArchiefactiedatum(string $uuid, string $extensionPeriod, string $reason): void
     {
@@ -766,7 +768,7 @@ class DestructionService
      *
      * @return string The user ID or 'system' if no user is authenticated.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
      */
     private function getCurrentUserId(): string
     {

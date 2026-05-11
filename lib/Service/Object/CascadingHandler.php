@@ -47,7 +47,7 @@ class CascadingHandler
      * @param UtilityHandler  $utilityHandler Handler for utility operations.
      * @param LoggerInterface $logger         Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function __construct(
         private readonly SaveObject $saveHandler,
@@ -75,7 +75,7 @@ class CascadingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic with multiple relationship types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for handling different relationship configurations
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid, ?int $currentRegister): array
     {
@@ -191,7 +191,7 @@ class CascadingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function createRelatedObject(
         array $objectData,

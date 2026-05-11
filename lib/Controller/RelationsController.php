@@ -183,6 +183,9 @@ class RelationsController extends Controller
      * @param array|null $typesFilter Types to include, or null for all.
      *
      * @return array Relations grouped by type.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function gatherRelations(string $objectUuid, ?array $typesFilter): array
     {
@@ -272,8 +275,9 @@ class RelationsController extends Controller
                 $item['type'] = rtrim($type, 's');
 
                 // Normalize date for sorting.
-                $date = $item['date'] ?? $item['linkedAt'] ?? $item['createdAt'] ?? $item['dtstart'] ?? $item['created'] ?? null;
-                $item['_sortDate'] = $date;
+                $rawDate           = ($item['date'] ?? $item['linkedAt'] ?? null);
+                $rawDate           = ($rawDate ?? $item['createdAt'] ?? $item['dtstart'] ?? null);
+                $item['_sortDate'] = ($rawDate ?? $item['created'] ?? null);
 
                 $timeline[] = $item;
             }

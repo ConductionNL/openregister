@@ -267,6 +267,29 @@ class MappingsController extends Controller
      *
      * Deletes a mapping based on its ID.
      *
+     * Partially update a mapping by ID.
+     *
+     * The route `mappings#patch` (`PATCH /api/mappings/{id}`) delegates to
+     * the same body as `update()` because Nextcloud routes PATCH and PUT to
+     * separate methods even when the handler is identical. Mirrors the same
+     * shape used on `ApplicationsController::patch`.
+     *
+     * @param int $id The ID of the mapping to patch.
+     *
+     * @return JSONResponse JSON response containing patched mapping.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update(id: $id);
+
+    }//end patch()
+
+    /**
+     * Delete a mapping by ID.
+     *
      * @param int $id The ID of the mapping to delete
      *
      * @NoAdminRequired

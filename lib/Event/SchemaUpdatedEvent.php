@@ -63,7 +63,7 @@ class SchemaUpdatedEvent extends Event
      *
      * @return Schema The schema after update
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      */
     public function getNewSchema(): Schema
     {
@@ -75,7 +75,7 @@ class SchemaUpdatedEvent extends Event
      *
      * @return Schema The schema before update
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      */
     public function getOldSchema(): Schema
     {

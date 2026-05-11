@@ -63,7 +63,7 @@ class ConversationUpdatedEvent extends Event
      *
      * @return Conversation The updated conversation entity
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      */
     public function getConversation(): Conversation
     {
@@ -75,7 +75,7 @@ class ConversationUpdatedEvent extends Event
      *
      * @return Conversation The conversation after update
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      */
     public function getNewConversation(): Conversation
     {
@@ -87,7 +87,7 @@ class ConversationUpdatedEvent extends Event
      *
      * @return Conversation The conversation before update
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
      */
     public function getOldConversation(): Conversation
     {

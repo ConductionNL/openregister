@@ -211,17 +211,8 @@ class RegisterMapper extends QBMapper
         bool $_multitenancy=true
     ): Register {
         // Check request-scoped cache to avoid redundant DB queries for the same register.
-        if ($_rbac === true) {
-            $rbacFlag = '1';
-        } else {
-            $rbacFlag = '0';
-        }
-
-        if ($_multitenancy === true) {
-            $mtFlag = '1';
-        } else {
-            $mtFlag = '0';
-        }
+        $rbacFlag = ($_rbac === true) ? '1' : '0';
+        $mtFlag   = ($_multitenancy === true) ? '1' : '0';
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
         if (isset($this->findCache[$cacheKey]) === true) {
@@ -317,18 +308,8 @@ class RegisterMapper extends QBMapper
             $register = $this->findEntity(query: $qb);
 
             // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-            if ($_rbac === true) {
-                $rbacChar = '1';
-            } else {
-                $rbacChar = '0';
-            }
-
-            if ($_multitenancy === true) {
-                $mtChar = '1';
-            } else {
-                $mtChar = '0';
-            }
-
+            $rbacChar   = ($_rbac === true) ? '1' : '0';
+            $mtChar     = ($_multitenancy === true) ? '1' : '0';
             $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
             $this->findCache[$cacheKey] = $register;
             $this->findCache[(string) $register->getId().$rbacSuffix]      = $register;

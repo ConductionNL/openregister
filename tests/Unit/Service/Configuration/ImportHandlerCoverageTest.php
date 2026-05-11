@@ -1918,9 +1918,7 @@ class ImportHandlerCoverageTest extends TestCase
         $schema = $this->makeSchema(40, 'blob-schema');
         $this->setProperty($this->handler, 'schemasMap', ['blob-schema' => $schema]);
 
-        // No objectMapperForRouting set
-        $this->objectEntityMapper->method('findDirectBlobStorage')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
+        // No routingMapper set — code skips find and goes straight to insert.
         $this->objectEntityMapper->method('insert')
             ->willReturnCallback(function ($entity) {
                 $this->setEntityId($entity, 600);
@@ -2227,12 +2225,12 @@ class ImportHandlerCoverageTest extends TestCase
         $this->handler->setObjectMapper($uom);
 
         $ref  = new ReflectionClass($this->handler);
-        $prop = $ref->getProperty('objectMapperForRouting');
+        $prop = $ref->getProperty('routingMapper');
         $prop->setAccessible(true);
 
         $this->assertSame($uom, $prop->getValue($this->handler));
 
-    }//end testSetMagicMapper()
+    }//end testSetObjectMapper()
 
 
     /**
