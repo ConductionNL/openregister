@@ -168,7 +168,17 @@ class AggregationThresholdListener implements IEventListener
         $registerSlug = (string) $object->getRegister();
         $schemaSlug   = (string) $schema->getSlug();
 
-        $result = $this->aggregationRunner->run($registerSlug, $schemaSlug, $aggregationName);
+        // BypassRbac: threshold evaluation is a system reaction to a
+        // write event, not a user-driven request. The write itself
+        // already passed RBAC; the threshold listener's authoritative
+        // reason is "this object just changed", independent of the
+        // active session's `list` permission on the schema.
+        $result = $this->aggregationRunner->run(
+            registerRef: $registerSlug,
+            schemaRef: $schemaSlug,
+            name: $aggregationName,
+            bypassRbac: true
+        );
         $value  = ($result['value'] ?? null);
         if (is_int($value) === false && is_float($value) === false) {
             return;
