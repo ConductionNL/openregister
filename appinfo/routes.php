@@ -548,6 +548,12 @@ return [
 		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
 		['name' => 'chat#getChatStats', 'url' => '/api/chat/stats', 'verb' => 'GET'],
 		['name' => 'chat#sendFeedback', 'url' => '/api/conversations/{conversationUuid}/messages/{messageId}/feedback', 'verb' => 'POST', 'requirements' => ['conversationUuid' => '[^/]+', 'messageId' => '\\d+']],
+
+		// Chat - Health probe (PublicPage — no auth required).
+		['name' => 'chatHealth#health', 'url' => '/api/chat/health', 'verb' => 'GET'],
+
+		// Chat - SSE streaming endpoint (authenticated).
+		['name' => 'chatStream#stream', 'url' => '/api/chat/stream', 'verb' => 'POST'],
 		
 		// Conversations - AI Conversation management.
 		['name' => 'conversation#index', 'url' => '/api/conversations', 'verb' => 'GET'],
