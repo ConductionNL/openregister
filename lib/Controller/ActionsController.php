@@ -84,6 +84,8 @@ class ActionsController extends Controller
      * @param ActionLogMapper $actionLogMapper Action log mapper
      * @param ActionService   $actionService   Action service
      * @param LoggerInterface $logger          Logger
+     * @param IUserSession    $userSession     Current Nextcloud session (for admin-gate checks)
+     * @param IGroupManager   $groupManager    Group manager used to resolve the `admin` group
      */
     public function __construct(
         string $appName,
@@ -390,7 +392,7 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function patch(int $id): JSONResponse
     {
-        // requireAdmin() runs inside update() — no need to duplicate here.
+        // Defence-in-depth: requireAdmin() runs inside update() — no need to duplicate here.
         return $this->update(id: $id);
     }//end patch()
 

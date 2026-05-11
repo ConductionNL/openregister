@@ -125,8 +125,8 @@ class ChatStreamController extends Controller
         $this->chatService        = $chatService;
         $this->conversationMapper = $conversationMapper;
         $this->agentMapper        = $agentMapper;
-        $this->logger             = $logger;
-        $this->userSession        = $userSession;
+        $this->logger      = $logger;
+        $this->userSession = $userSession;
     }//end __construct()
 
     /**
@@ -158,16 +158,21 @@ class ChatStreamController extends Controller
         try {
             $user = $this->userSession->getUser();
             if ($user === null) {
-                $this->emitSseEvent('error', ['code' => 'unauthenticated', 'message' => 'Authentication required']);
+                $this->emitSseEvent(eventType: 'error', payload: ['code' => 'unauthenticated', 'message' => 'Authentication required']);
                 exit;
             }
 
-            $userId = $user->getUID();
-            $body   = json_decode(file_get_contents('php://input') ?: '[]', associative: true) ?? [];
+            $userId  = $user->getUID();
+            $rawBody = file_get_contents('php://input');
+            if ($rawBody === false || $rawBody === '') {
+                $rawBody = '[]';
+            }
+
+            $body = json_decode($rawBody, associative: true) ?? [];
 
             $userMessage = trim((string) ($body['message'] ?? ''));
             if ($userMessage === '') {
-                $this->emitSseEvent('error', ['code' => 'missing_message', 'message' => 'message content is required']);
+                $this->emitSseEvent(eventType: 'error', payload: ['code' => 'missing_message', 'message' => 'message content is required']);
                 exit;
             }
 
@@ -188,16 +193,22 @@ class ChatStreamController extends Controller
                         $agentUuid = $agents[0]->getUuid();
                     }
                 } catch (\Throwable $e) {
-                    // fall through to the missing_agent error below
+                    // Fall through to the missing_agent error below.
                 }
             }
 
             if ($conversationUuid === '' && $agentUuid === '') {
-                $this->emitSseEvent('error', ['code' => 'missing_agent', 'message' => 'No agent available; configure one in OpenRegister settings.']);
+                $this->emitSseEvent(
+                    eventType: 'error',
+                    payload: [
+                        'code'    => 'missing_agent',
+                        'message' => 'No agent available; configure one in OpenRegister settings.',
+                    ]
+                );
                 exit;
             }
 
-            $conversation = $this->resolveConversation($conversationUuid, $agentUuid, $userId);
+            $conversation = $this->resolveConversation(conversationUuid: $conversationUuid, agentUuid: $agentUuid, userId: $userId);
 
             // Persist context on the next message before delegating to ChatService.
             // ChatService::processMessage will create the user-authored Message row;
@@ -209,7 +220,7 @@ class ChatStreamController extends Controller
 
             // Emit a heartbeat right after headers so the client knows we're alive
             // (the synchronous LLM call may take >15s on cold-load).
-            $this->emitSseEvent('heartbeat', ['ts' => gmdate('c')]);
+            $this->emitSseEvent(eventType: 'heartbeat', payload: ['ts' => gmdate('c')]);
 
             // Synchronous LLM call.
             $result = $this->chatService->processMessage(
@@ -228,7 +239,7 @@ class ChatStreamController extends Controller
                 'fullText'         => (string) ($result['response'] ?? $result['message'] ?? ''),
                 'context'          => $context,
             ];
-            $this->emitSseEvent('final', $finalPayload);
+            $this->emitSseEvent(eventType: 'final', payload: $finalPayload);
             exit;
         } catch (Exception $e) {
             $this->logger->error(
@@ -239,17 +250,15 @@ class ChatStreamController extends Controller
                     'error' => $e->getMessage(),
                 ]
             );
-            $this->emitSseEvent('error', [
-                'code'    => 'stream_failed',
-                'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Stream failed',
-            ]);
+            $this->emitSseEvent(
+                eventType: 'error',
+                payload: [
+                    'code'    => 'stream_failed',
+                    'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Stream failed',
+                ]
+            );
             exit;
         }//end try
-
-        // Unreachable — every code path above exits. Return statement kept to
-        // satisfy the framework's controller return-type declaration.
-        // @phpstan-ignore-next-line
-        return new JSONResponse(data: ['status' => 'ok'], statusCode: 200);
     }//end stream()
 
     /**
@@ -264,8 +273,8 @@ class ChatStreamController extends Controller
      */
     private function emitSseEvent(string $eventType, array $payload): void
     {
-        echo 'event: ' . $eventType . "\n";
-        echo 'data: ' . json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n\n";
+        echo 'event: '.$eventType."\n";
+        echo 'data: '.json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n\n";
         flush();
     }//end emitSseEvent()
 
