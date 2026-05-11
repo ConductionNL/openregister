@@ -206,6 +206,8 @@ return [
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],
+        // Manifest endpoint — returns host-app manifest enriched with runtime.user context.
+        ['name' => 'manifest#index', 'url' => '/api/manifest/{appId}', 'verb' => 'GET', 'requirements' => ['appId' => '[^/]+']],
         // Heartbeat - Keep-alive endpoint for long-running operations.
         ['name' => 'heartbeat#heartbeat', 'url' => '/api/heartbeat', 'verb' => 'GET'],
         // Prometheus metrics endpoint.
