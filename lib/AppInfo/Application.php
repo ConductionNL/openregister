@@ -108,6 +108,7 @@ use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\TenantKeyService;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
@@ -694,6 +695,19 @@ class Application extends App implements IBootstrap
                     cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
                     solrSettingsHandler: $container->get(SolrSettingsHandler::class),
                     cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
+                );
+            }
+        );
+
+        // Register TenantKeyService for audit-trail HMAC key management.
+        $context->registerService(
+            TenantKeyService::class,
+            function (ContainerInterface $container) {
+                return new TenantKeyService(
+                    db: $container->get('OCP\IDBConnection'),
+                    crypto: $container->get('OCP\Security\ICrypto'),
+                    secureRandom: $container->get('OCP\Security\ISecureRandom'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
         );
