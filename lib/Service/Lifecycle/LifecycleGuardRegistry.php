@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
+use OCP\IServerContainer;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -52,11 +53,13 @@ final class LifecycleGuardRegistry
     /**
      * Constructor.
      *
-     * @param ContainerInterface $container DI container used to resolve guard services.
-     * @param LoggerInterface    $logger    Logger for guard resolution diagnostics.
+     * @param ContainerInterface $container       OR app container used to resolve guard services first.
+     * @param IServerContainer   $serverContainer NC server container used as fallback for FQCN-tagged guards (F06).
+     * @param LoggerInterface    $logger          Logger for guard resolution diagnostics.
      */
     public function __construct(
         private readonly ContainerInterface $container,
+        private readonly IServerContainer $serverContainer,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -79,9 +82,13 @@ final class LifecycleGuardRegistry
         $instance = null;
         $errors   = [];
         // Try OR's app container first (covers OR-internal guards) and
-        // fall back to the server container (covers FQCN-based references
-        // to guards in other apps that Nextcloud can autowire).
-        foreach ([$this->container, \OC::$server] as $candidate) {
+        // fall back to the injected server container (covers FQCN-based
+        // references to guards in other apps that Nextcloud can autowire).
+        // The server container is injected via OCP\IServerContainer rather
+        // than reached through the static \OC::$server accessor — the
+        // ADR added in this PR (docs/development-notes/AUDIT_2026-05-01.md)
+        // bans \OC::$server in lib/.
+        foreach ([$this->container, $this->serverContainer] as $candidate) {
             try {
                 $instance = $candidate->get($tag);
                 break;

@@ -177,10 +177,15 @@ class ReportRenderService
                     return null;
                 }
 
+                // BypassRbac: report widgets render for viewers whose
+                // authoritative reason is dashboard-read, not the
+                // schema's `list` permission. The dashboard's own
+                // RBAC gate already filtered the viewer at load time.
                 return $this->aggregationRunner->run(
                     registerRef: $register,
                     schemaRef: $schema,
-                    name: $aggregation
+                    name: $aggregation,
+                    bypassRbac: true
                 );
             }
 
