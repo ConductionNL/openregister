@@ -25,12 +25,22 @@ namespace OCA\OpenRegister\Service\Aggregation;
 /**
  * Validates the `x-openregister-aggregations` schema annotation shape.
  *
- * Each aggregation maps a name → { metric, field?, filter?, groupBy? }.
+ * Each aggregation maps a name → spec object.  Two DSL variants are supported:
  *
- * - `metric` MUST be one of count|sum|avg|min|max|count_distinct.
- * - `field` is REQUIRED for sum|avg|min|max|count_distinct, MUST exist on the schema.
- * - `groupBy.field` (when present) MUST exist on the schema.
- * - `filter` is a flat map of field → value-or-operator-shape; every field MUST exist on the schema.
+ * Intra-schema (legacy + new alias):
+ *   { metric|select, field?, filter|where?, groupBy? }
+ *   - `metric`/`select` MUST be one of count|sum|avg|min|max|count_distinct.
+ *   - `field` is REQUIRED for sum|avg|min|max|count_distinct, MUST exist on the schema.
+ *   - `groupBy.field` (when present) MUST exist on the schema.
+ *   - `filter`/`where` is a flat map of field → value-or-operator-shape.
+ *
+ * Cross-schema (new):
+ *   { from, metric|select?, field?, where|filter?, groupBy? }
+ *   - `from` names a foreign schema slug.
+ *   - `metric`/`select` defaults to `count` when omitted.
+ *   - `where`/`filter` values may contain `@self.<field>` parent-references.
+ *   - Field existence is **not** validated against the host schema's properties
+ *     (the target schema is not available at annotation-save time).
  */
 final class AggregationAnnotationValidator
 {
@@ -41,6 +51,13 @@ final class AggregationAnnotationValidator
 
     /**
      * Validate the `x-openregister-aggregations` annotation on a schema.
+     *
+     * Cross-schema specs (those with a `from` key) are validated to the
+     * extent possible without loading the target schema:
+     *   - `from` must be a non-empty string.
+     *   - `metric`/`select` must be a known metric when present.
+     *   - `where`/`filter` must be a map when present.
+     *   - Field existence is skipped (target schema not available here).
      *
      * @param array<string, mixed> $schema Full schema definition (must include `properties`).
      *
@@ -87,7 +104,19 @@ final class AggregationAnnotationValidator
                 continue;
             }
 
-            $metric = (string) ($spec['metric'] ?? '');
+            // Cross-schema aggregation: lighter validation (no property check).
+            $fromRef = ($spec['from'] ?? null);
+            if ($fromRef !== null) {
+                $errors = array_merge(
+                    $errors,
+                    $this->validateCrossSchemaSpec(name: $name, spec: $spec)
+                );
+                continue;
+            }
+
+            // Intra-schema aggregation: full property-existence checks.
+            // Support `select` as alias for `metric`.
+            $metric = (string) ($spec['metric'] ?? $spec['select'] ?? '');
             if (in_array($metric, self::VALID_METRICS, true) === false) {
                 $errors[] = [
                     'code'    => 'aggregation-bad-metric',
@@ -120,11 +149,12 @@ final class AggregationAnnotationValidator
                 }
             }
 
-            $filter = ($spec['filter'] ?? null);
+            // Support `where` as alias for `filter`.
+            $filter = ($spec['filter'] ?? $spec['where'] ?? null);
             if ($filter !== null && is_array($filter) === false) {
                 $errors[] = [
                     'code'    => 'aggregation-filter-malformed',
-                    'message' => sprintf('Aggregation "%s" filter must be a map.', $name),
+                    'message' => sprintf('Aggregation "%s" filter/where must be a map.', $name),
                 ];
             } else if (is_array($filter) === true) {
                 foreach (array_keys($filter) as $filterField) {
@@ -163,4 +193,53 @@ final class AggregationAnnotationValidator
 
         return $errors;
     }//end validate()
+
+    /**
+     * Validate a cross-schema aggregation spec (`from` key present).
+     *
+     * @param string               $name Aggregation name (for error messages).
+     * @param array<string, mixed> $spec The raw spec object.
+     *
+     * @return array<int, array{code: string, message: string}> Error list (empty = valid).
+     */
+    private function validateCrossSchemaSpec(string $name, array $spec): array
+    {
+        $errors = [];
+
+        $from = ($spec['from'] ?? null);
+        if (is_string($from) === false || $from === '') {
+            $errors[] = [
+                'code'    => 'aggregation-from-empty',
+                'message' => sprintf('Cross-schema aggregation "%s" must have a non-empty `from` string.', $name),
+            ];
+        }
+
+        // `metric`/`select` defaults to `count` when omitted — only reject unknown non-empty values.
+        $rawMetric = ($spec['metric'] ?? $spec['select'] ?? null);
+        if ($rawMetric !== null) {
+            $metric = (string) $rawMetric;
+            if (in_array($metric, self::VALID_METRICS, true) === false) {
+                $errors[] = [
+                    'code'    => 'aggregation-bad-metric',
+                    'message' => sprintf(
+                        'Cross-schema aggregation "%s" metric "%s" is not in [%s].',
+                        $name,
+                        $metric,
+                        implode(', ', self::VALID_METRICS)
+                    ),
+                ];
+            }
+        }
+
+        // The where/filter clause must be a map when present.
+        $filter = ($spec['where'] ?? $spec['filter'] ?? null);
+        if ($filter !== null && is_array($filter) === false) {
+            $errors[] = [
+                'code'    => 'aggregation-filter-malformed',
+                'message' => sprintf('Cross-schema aggregation "%s" where/filter must be a map.', $name),
+            ];
+        }
+
+        return $errors;
+    }//end validateCrossSchemaSpec()
 }//end class
