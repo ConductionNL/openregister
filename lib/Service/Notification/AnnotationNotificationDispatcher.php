@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\Notification;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -67,6 +68,7 @@ class AnnotationNotificationDispatcher
      * @param NotificationHistoryMapper|null                           $historyMapper       Optional history mapper for delivery audit rows.
      * @param NotificationCoalescer|null                               $coalescer           Optional coalescer for burst suppression.
      * @param \OCA\OpenRegister\Db\NotificationSubscriptionMapper|null $subscriptionMapper  Optional subscription mapper for opt-in filtering.
+     * @param NotificationDispatchLogMapper|null                       $dispatchLogMapper   Optional dispatch-log mapper for idempotency-key dedup.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
      */
@@ -84,7 +86,8 @@ class AnnotationNotificationDispatcher
         private readonly ?IConfig $config=null,
         private readonly ?NotificationHistoryMapper $historyMapper=null,
         private readonly ?NotificationCoalescer $coalescer=null,
-        private readonly ?\OCA\OpenRegister\Db\NotificationSubscriptionMapper $subscriptionMapper=null
+        private readonly ?\OCA\OpenRegister\Db\NotificationSubscriptionMapper $subscriptionMapper=null,
+        private readonly ?NotificationDispatchLogMapper $dispatchLogMapper=null
     ) {
     }//end __construct()
 
@@ -141,6 +144,32 @@ class AnnotationNotificationDispatcher
             // UUID/slug) or an array of strings (any-of matching).
             if ($this->organisationGateAllows(spec: $spec, object: $object) === false) {
                 continue;
+            }
+
+            // Idempotency-key dedup: when the rule declares an
+            // `idempotencyKey` template, resolve it against the object
+            // and check the dispatch log. A match within the window
+            // (default 24 h) is a no-op — the dispatch is logged at
+            // info level and skipped. The log row is written after the
+            // actual send so a failed emit never poisons the dedup table.
+            $idempotencyKeyTemplate = ($spec['idempotencyKey'] ?? null);
+            $resolvedIdempotencyKey = null;
+            if (is_string($idempotencyKeyTemplate) === true && $idempotencyKeyTemplate !== '') {
+                $resolvedIdempotencyKey = $this->resolveIdempotencyKey(
+                    template: $idempotencyKeyTemplate,
+                    object: $object,
+                    data: $data
+                );
+                if ($this->idempotencyAllows(slug: (string) $name, key: $resolvedIdempotencyKey) === false) {
+                    $this->logger->info(
+                        sprintf(
+                            '[AnnotationNotificationDispatcher] deduplicated rule="%s" key="%s"',
+                            $name,
+                            $resolvedIdempotencyKey
+                        )
+                    );
+                    continue;
+                }
             }
 
             $recipients = $this->resolveRecipients(
@@ -323,6 +352,13 @@ class AnnotationNotificationDispatcher
                     );
                 }
             }//end foreach
+
+            // Record the successful dispatch in the idempotency log so
+            // subsequent dispatches with the same key are deduplicated.
+            // Best-effort: a DB failure must never block the dispatch path.
+            if ($resolvedIdempotencyKey !== null) {
+                $this->recordDispatchLog(slug: (string) $name, key: $resolvedIdempotencyKey);
+            }
         }//end foreach
 
     }//end dispatch()
@@ -464,6 +500,124 @@ class AnnotationNotificationDispatcher
         return $this->coalescer->shouldDispatch(ruleId: $ruleId, recipient: $recipient, perRuleOverride: $coalesce);
 
     }//end coalesceAllows()
+
+    /**
+     * Check the idempotency-key dedup log.
+     *
+     * Returns false (i.e. "do NOT dispatch") when a row for the
+     * (slug, key) pair already exists within the default 24 h window.
+     * A null mapper (test contexts, older fixtures) always allows so
+     * no test has to construct the mapper just to pass the guard.
+     *
+     * Also runs a best-effort prune before each check so the table
+     * does not grow unboundedly without a separate cron job.
+     *
+     * @param string $slug The notification annotation key.
+     * @param string $key  The resolved idempotency key.
+     *
+     * @return bool True when the dispatch may proceed (not a duplicate).
+     */
+    private function idempotencyAllows(string $slug, string $key): bool
+    {
+        if ($this->dispatchLogMapper === null) {
+            return true;
+        }
+
+        // Prune expired rows lazily — best-effort, failures are swallowed
+        // inside the mapper.
+        $this->dispatchLogMapper->pruneExpired();
+
+        return $this->dispatchLogMapper->isDuplicate(
+            notificationSlug: $slug,
+            idempotencyKey: $key
+        ) === false;
+
+    }//end idempotencyAllows()
+
+    /**
+     * Write the idempotency log row after a successful dispatch.
+     *
+     * Best-effort: a DB failure must never block the dispatch path.
+     * When the mapper is missing (older test fixtures) or throws,
+     * we log at debug level and return.
+     *
+     * @param string $slug The notification annotation key.
+     * @param string $key  The resolved idempotency key.
+     *
+     * @return void
+     */
+    private function recordDispatchLog(string $slug, string $key): void
+    {
+        if ($this->dispatchLogMapper === null) {
+            return;
+        }
+
+        try {
+            $this->dispatchLogMapper->record(
+                notificationSlug: $slug,
+                idempotencyKey: $key
+            );
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[AnnotationNotificationDispatcher] dispatch log record failed (slug=%s key=%s): %s',
+                    $slug,
+                    $key,
+                    $e->getMessage()
+                )
+            );
+        }
+
+    }//end recordDispatchLog()
+
+    /**
+     * Resolve a `${@self.<field>}` idempotency-key template against the object.
+     *
+     * The template syntax mirrors the spec example:
+     *   `${@self.id}-T30-${@self.dueDate}`
+     *
+     * Each `${@self.<field>}` token is replaced with the value of
+     * `<field>` from the object's stored data (or the object's built-in
+     * accessor for `id` and `uuid`). Unknown tokens are replaced with
+     * an empty string so the template never returns null.
+     *
+     * Values are cast to string and limited to 128 characters each to
+     * avoid the 512-char column limit being hit by adversarial data.
+     *
+     * @param string               $template Raw idempotency-key template.
+     * @param ObjectEntity         $object   Owning object.
+     * @param array<string, mixed> $data     Pre-fetched object data array.
+     *
+     * @return string The resolved key.
+     */
+    private function resolveIdempotencyKey(string $template, ObjectEntity $object, array $data): string
+    {
+        return preg_replace_callback(
+            '/\$\{@self\.([a-zA-Z0-9_.-]+)\}/',
+            static function (array $matches) use ($object, $data): string {
+                $field = $matches[1];
+
+                // Built-in accessors for the most common fields.
+                if ($field === 'id' || $field === 'uuid') {
+                    return substr((string) ($object->getUuid() ?? ''), 0, 128);
+                }
+
+                // Fall through to the stored object data.
+                $value = ($data[$field] ?? null);
+                if ($value === null) {
+                    return '';
+                }
+
+                if (is_scalar($value) === false) {
+                    return '';
+                }
+
+                return substr((string) $value, 0, 128);
+            },
+            $template
+        ) ?? $template;
+
+    }//end resolveIdempotencyKey()
 
     /**
      * Persist a row in `openregister_notification_history`.
