@@ -29,7 +29,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUserSession;
 use RuntimeException;
@@ -43,16 +45,18 @@ final class TransitionEngine
     /**
      * Constructor.
      *
-     * @param ObjectService    $objectService   Object CRUD service used to load + save the entity.
-     * @param SchemaMapper     $schemaMapper    Mapper to resolve the entity's schema.
-     * @param IEventDispatcher $eventDispatcher Dispatcher used to fire ObjectTransitionedEvent.
-     * @param IUserSession     $userSession     Current user session, for actor attribution.
+     * @param ObjectService     $objectService     Object CRUD service used to load + save the entity.
+     * @param SchemaMapper      $schemaMapper      Mapper to resolve the entity's schema.
+     * @param IEventDispatcher  $eventDispatcher   Dispatcher used to fire ObjectTransitionedEvent.
+     * @param IUserSession      $userSession       Current user session, for actor attribution.
+     * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
      */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
         private readonly IEventDispatcher $eventDispatcher,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly PermissionHandler $permissionHandler
     ) {
     }//end __construct()
 
@@ -78,6 +82,33 @@ final class TransitionEngine
         $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             throw new RuntimeException('Object schema could not be resolved.');
+        }
+
+        // Per-object RBAC: a transition mutates the lifecycle field, so
+        // the caller MUST hold `update` permission on this specific
+        // object. The downstream `saveObject()` does its own RBAC pass,
+        // but we gate explicitly here so that (a) a denial surfaces as
+        // 403 with a clear message instead of being absorbed by the
+        // save path's generic error envelope, and (b) we don't redo the
+        // (potentially expensive) lifecycle annotation lookup before
+        // discovering the caller had no business calling /transition
+        // in the first place.
+        $callerId = $this->userSession->getUser()?->getUID();
+        $allowed  = $this->permissionHandler->hasPermission(
+            schema: $schema,
+            action: 'update',
+            userId: $callerId,
+            objectOwner: $object->getOwner(),
+            _rbac: true,
+            object: $object
+        );
+        if ($allowed === false) {
+            throw new NotAuthorizedException(
+                message: sprintf(
+                    'You do not have permission to transition object "%s".',
+                    $objectId
+                )
+            );
         }
 
         $annotation = $this->getLifecycleAnnotation(schema: $schema);
@@ -158,6 +189,27 @@ final class TransitionEngine
         $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             return [];
+        }
+
+        // Only callers with `read` permission on the object can enumerate
+        // available actions — the response would otherwise leak the
+        // object's current lifecycle state to anyone who could guess the id.
+        $callerId = $this->userSession->getUser()?->getUID();
+        $allowed  = $this->permissionHandler->hasPermission(
+            schema: $schema,
+            action: 'read',
+            userId: $callerId,
+            objectOwner: $object->getOwner(),
+            _rbac: true,
+            object: $object
+        );
+        if ($allowed === false) {
+            throw new NotAuthorizedException(
+                message: sprintf(
+                    'You do not have permission to read object "%s".',
+                    $objectId
+                )
+            );
         }
 
         $annotation = $this->getLifecycleAnnotation(schema: $schema);

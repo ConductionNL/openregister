@@ -29,6 +29,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 class RealtimeController extends Controller
 {
@@ -39,12 +40,14 @@ class RealtimeController extends Controller
      * @param IRequest            $request             The current request.
      * @param RealtimeEventMapper $eventMapper         The realtime event mapper.
      * @param OrganisationService $organisationService The organisation service.
+     * @param IUserSession        $userSession         Active session — drives the 401 anonymous-caller short-circuit (F11).
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly RealtimeEventMapper $eventMapper,
-        private readonly OrganisationService $organisationService
+        private readonly OrganisationService $organisationService,
+        private readonly IUserSession $userSession
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -83,10 +86,18 @@ class RealtimeController extends Controller
         ?string $objectUuid=null,
         ?string $eventType=null
     ): JSONResponse {
+        // Anonymous callers cannot poll the realtime stream; return 401
+        // so clients distinguish "not authenticated" from "no events".
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                ['error' => 'Unauthorized'],
+                Http::STATUS_UNAUTHORIZED
+            );
+        }
+
         $effectiveLimit = max(1, min(1000, (int) ($limit ?? 100)));
 
-        // Multi-tenancy: scope to active organisation. Anonymous callers
-        // get an empty stream (no leak across tenants).
+        // Multi-tenancy: scope to active organisation.
         $orgUuid = null;
         try {
             $activeOrg = $this->organisationService->getActiveOrganisation();
@@ -96,9 +107,9 @@ class RealtimeController extends Controller
         }
 
         if ($orgUuid === null) {
-            // No active org → return an empty result rather than 500.
-            // Tests + CLI dev scripts would otherwise crash unless the
-            // session has resolved an org.
+            // Authenticated but no active org → return an empty result
+            // rather than 500. CLI dev scripts and tests would otherwise
+            // crash unless the session has resolved an org.
             return new JSONResponse(
                 ['events' => [], 'cursor' => $since ?? 0, 'hasMore' => false]
             );
@@ -142,6 +153,13 @@ class RealtimeController extends Controller
      */
     public function cursor(): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                ['error' => 'Unauthorized'],
+                Http::STATUS_UNAUTHORIZED
+            );
+        }
+
         // SECURITY: scope the cursor to the caller's active organisation.
         // Returning the global head pointer let any authed caller observe
         // the global write rate by polling — small but real cross-tenant
