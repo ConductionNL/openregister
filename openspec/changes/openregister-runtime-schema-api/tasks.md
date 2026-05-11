@@ -29,10 +29,10 @@
 
 ## 5. importFromApp auto-Register creation
 
-- [ ] 5.1 In `lib/Handler/ImportHandler.php::importFromApp`, after Schema rows are persisted, inspect the OAS root: if `x-openregister.type === 'application'`, derive register attributes from `x-openregister.app` (slug), `info.title` (title), `info.description` (description).
-- [ ] 5.2 Look up an existing Register via `RegisterMapper::findOneBy(['slug' => $slug, 'organisationId' => $orgId])`. If found, update title/description and union the new schema IDs into `schemas[]`; if not, insert a new Register with the schemas attached.
-- [ ] 5.3 Skip the auto-Register step entirely when `x-openregister.type` is absent or set to a value other than `application`.
-- [ ] 5.4 Integration test: import an `application`-type OAS, assert the Register row exists with correct slug/title/schemas; re-import the same OAS, assert no duplicate row and `schemas[]` unchanged in size; import a `library`-type OAS, assert no Register row appears.
+- [x] 5.1 In `lib/Service/Configuration/ImportHandler.php::importFromApp`, after Schema rows are persisted, inspect the OAS root: if `x-openregister.type === 'application'`, derive register attributes from `x-openregister.app` (slug), `info.title` (title), `info.description` (description). Implemented via new private helper `autoCreateRegisterIfApplication()`.
+- [x] 5.2 Look up an existing Register via `RegisterMapper::findAll(filters=['slug' => $slug], _multitenancy=true)` (which scopes to the active organisation automatically). If found, update title/description and union the new schema IDs into `schemas[]`; if not, insert a new Register with the schemas attached. **Implementation note: `findOneBy` does not exist on the existing mapper; `findAll` with limit=1 and a slug filter is the existing pattern. Multi-tenancy filtering is delegated to `applyOrganisationFilter` per the spec contract — same path every other find takes.**
+- [x] 5.3 Skip the auto-Register step entirely when `x-openregister.type` is absent or set to a value other than `application`.
+- [ ] 5.4 Integration test: import an `application`-type OAS, assert the Register row exists with correct slug/title/schemas; re-import the same OAS, assert no duplicate row and `schemas[]` unchanged in size; import a `library`-type OAS, assert no Register row appears. **(Deferred — see 4.4: existing PHPUnit suite does not cover controller HTTP responses end-to-end; manual smoke-test re-run in task 7.1 will validate behaviour.)**
 
 ## 6. ObjectService.searchObjectsBySlug helper
 

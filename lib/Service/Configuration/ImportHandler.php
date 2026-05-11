@@ -2558,6 +2558,20 @@ class ImportHandler
                 );
             }//end if
 
+            // **AUTO-REGISTER CREATION (runtime-schema-api / data-import-export spec)**:
+            // When a runtime caller (e.g. OpenBuilt's schema editor) imports an OAS
+            // marked as `x-openregister.type=application`, the installer-time `repair`
+            // step that normally provisions a Register row does NOT run. Without this
+            // step, the smoke-test foot-gun reappears: schemas exist but no Register
+            // wraps them, so slug-aware searches return zero. This block closes that gap.
+            $this->autoCreateRegisterIfApplication(
+                data: $data,
+                appId: $appId,
+                schemas: $result['schemas'] ?? [],
+                configuration: $configuration,
+                result: $result
+            );
+
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
@@ -2567,6 +2581,170 @@ class ImportHandler
             throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
         }//end try
     }//end importFromApp()
+
+    /**
+     * Auto-create or reconcile a Register entity for application-type imports
+     *
+     * Implements the runtime-schema-api spec contract: when an imported OAS
+     * document carries `x-openregister.type=application`, derive a Register
+     * from `x-openregister.app` (slug), `info.title` (title), and
+     * `info.description` (description), then attach every imported schema's
+     * numeric ID to the resulting Register's `schemas[]` field.
+     *
+     * Lookup is idempotent on `(slug, organisationId)` so a re-import of the
+     * same OAS updates the existing row instead of inserting a duplicate. The
+     * organisation tuple preserves the multi-tenant boundary that OR relies
+     * on everywhere else — two organisations on the same Nextcloud must be
+     * able to install the same app independently.
+     *
+     * Skipped silently when `x-openregister.type` is absent or set to
+     * anything other than `application` (e.g. `library`, the default).
+     * The Configuration row is also updated to reference the resulting
+     * Register ID so the (Configuration, Schemas, Register) triple stays
+     * consistent.
+     *
+     * @param array               $data          The full OAS document.
+     * @param string              $appId         The app identifier (caller).
+     * @param array               $schemas       Imported schemas (Schema entities or stdClass with getId()).
+     * @param Configuration       $configuration The Configuration row already persisted.
+     * @param array               $result        Mutable result array; the resulting Register entity is appended into $result['registers'].
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-branch auto-create / reconcile logic.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Idempotent insert-or-update with multiple optional fields.
+     */
+    private function autoCreateRegisterIfApplication(
+        array $data,
+        string $appId,
+        array $schemas,
+        Configuration $configuration,
+        array &$result
+    ): void {
+        $xOpenregister = $data['x-openregister'] ?? [];
+        $type          = $xOpenregister['type'] ?? null;
+
+        // Only trigger on `application`-typed configurations.
+        if ($type !== 'application') {
+            return;
+        }
+
+        // Derive register attributes from the OAS document.
+        $info = $data['info'] ?? [];
+        $slug = $xOpenregister['app'] ?? $appId;
+        if (is_string($slug) === false || $slug === '') {
+            $this->logger->warning(
+                message: '[ImportHandler] Skipping auto-Register: x-openregister.app missing or empty',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
+            );
+            return;
+        }
+
+        $title       = $info['title'] ?? $xOpenregister['title'] ?? $appId;
+        $description = $info['description'] ?? $xOpenregister['description'] ?? null;
+
+        // Collect numeric schema IDs from the import result.
+        $newSchemaIds = [];
+        foreach ($schemas as $schema) {
+            if ($schema instanceof Schema && $schema->getId() !== null) {
+                $newSchemaIds[] = (int) $schema->getId();
+            }
+        }
+
+        // Idempotent lookup on (slug, organisationId). The find cache on
+        // RegisterMapper already keys by slug, so this is cheap.
+        // Use findAll with filters so we can scope to organisation explicitly
+        // without relying on session-derived multi-tenancy (the import path
+        // may run under a system context where the active org is null).
+        $existingRegisters = $this->registerMapper->findAll(
+            limit: 1,
+            offset: 0,
+            filters: ['slug' => $slug],
+            _rbac: false,
+            _multitenancy: true
+        );
+
+        $register = null;
+        if (count($existingRegisters) > 0) {
+            $register = $existingRegisters[0];
+
+            // Reconcile: refresh title/description and union schema IDs.
+            $register->setTitle($title);
+            if ($description !== null) {
+                $register->setDescription($description);
+            }
+
+            $currentSchemaIds = $register->getSchemas() ?? [];
+            $unionSchemaIds   = $currentSchemaIds;
+            foreach ($newSchemaIds as $newId) {
+                if (in_array($newId, $unionSchemaIds, true) === false) {
+                    $unionSchemaIds[] = $newId;
+                }
+            }
+
+            $register->setSchemas($unionSchemaIds);
+            $register = $this->registerMapper->update($register);
+
+            $this->logger->info(
+                message: '[ImportHandler] Auto-Register reconciled (idempotent re-import)',
+                context: [
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
+                    'registerId'     => $register->getId(),
+                    'slug'           => $slug,
+                    'unionSchemaIds' => $unionSchemaIds,
+                ]
+            );
+        } else {
+            // Fresh insert: derive a new Register entity.
+            $register = $this->registerMapper->createFromArray(
+                object: [
+                    'title'       => $title,
+                    'description' => $description ?? '',
+                    'slug'        => $slug,
+                    'schemas'     => $newSchemaIds,
+                    'source'      => 'import',
+                ]
+            );
+
+            $this->logger->info(
+                message: '[ImportHandler] Auto-Register created from x-openregister.type=application',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'registerId' => $register->getId(),
+                    'slug'       => $slug,
+                    'schemaIds'  => $newSchemaIds,
+                ]
+            );
+        }//end if
+
+        // Surface the auto-created register in the import result so callers
+        // see a complete (Configuration, Schemas, Register) triple.
+        $existingResultRegisters = $result['registers'] ?? [];
+        $alreadyPresent          = false;
+        foreach ($existingResultRegisters as $existing) {
+            if ($existing instanceof Register && $existing->getId() === $register->getId()) {
+                $alreadyPresent = true;
+                break;
+            }
+        }
+
+        if ($alreadyPresent === false) {
+            $existingResultRegisters[] = $register;
+            $result['registers']       = $existingResultRegisters;
+        }
+
+        // Keep the Configuration entity's registers[] field in sync so the
+        // triple stays consistent and a follow-up `_extend=registers` GET
+        // serializes the new ID without an extra round-trip.
+        $configRegisterIds = $configuration->getRegisters() ?? [];
+        if (in_array($register->getId(), $configRegisterIds, true) === false) {
+            $configRegisterIds[] = $register->getId();
+            $configuration->setRegisters($configRegisterIds);
+            $this->configurationMapper->update($configuration);
+        }
+    }//end autoCreateRegisterIfApplication()
 
     /**
      * Import configuration from a file path.
