@@ -862,7 +862,79 @@ class Application extends App implements IBootstrap
             }
         );
 
+        $this->registerBuiltinIntegrationProviders($context);
+
     }//end registerIntegrationRegistry()
+
+    /**
+     * Register the 5 BuiltinProviders/* services so they can be
+     * resolved lazily from the container.
+     *
+     * Each provider wraps an existing OR service and exposes it
+     * through the IntegrationProvider contract. They self-register
+     * with the IntegrationRegistry during `boot()` —
+     * `bootBuiltinIntegrationProviders()` walks this same list.
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-12
+     */
+    private function registerBuiltinIntegrationProviders(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider(
+                    fileService: $container->get(\OCA\OpenRegister\Service\FileService::class),
+                    container: $container,
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider(
+                    noteService: $container->get(\OCA\OpenRegister\Service\NoteService::class),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider(
+                    taskService: $container->get(\OCA\OpenRegister\Service\TaskService::class),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider(
+                    tagManager: $container->get('OCP\SystemTag\ISystemTagManager'),
+                    objectMapper: $container->get('OCP\SystemTag\ISystemTagObjectMapper'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider(
+                    mapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+    }//end registerBuiltinIntegrationProviders()
 
     /**
      * Register all event listeners for the application.
@@ -1003,5 +1075,63 @@ class Application extends App implements IBootstrap
         $dispatcher = $server->get(IEventDispatcher::class);
         $registry   = $server->get(DeepLinkRegistryService::class);
         $dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $registry));
+
+        // Register the built-in IntegrationProvider implementations
+        // with the IntegrationRegistry. The 5 wrap existing services
+        // (FileService / NoteService / TaskService / system tag manager /
+        // AuditTrailMapper) and surface them through the unified
+        // registry contract. Each provider is constructed lazily — the
+        // registry never touches a provider's wrapped service unless a
+        // caller actually invokes that provider's CRUD path.
+        $this->bootBuiltinIntegrationProviders($server);
     }//end boot()
+
+    /**
+     * Resolve every BuiltinProviders/* class and register it with the
+     * shared IntegrationRegistry.
+     *
+     * Kept separate from the DI registration in
+     * `registerIntegrationRegistry()` because addProvider() needs the
+     * registry instance — i.e. it has to run after the container has
+     * fully bootstrapped. `boot()` is the canonical post-registration
+     * hook for that.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-17
+     */
+    private function bootBuiltinIntegrationProviders($server): void
+    {
+        try {
+            $integrationRegistry = $server->get(
+                \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class
+            );
+        } catch (\Throwable $e) {
+            // Registry binding not available — skip silently; the
+            // service would log its own warning at use-time anyway.
+            return;
+        }
+
+        $providerClasses = [
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider::class,
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider::class,
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class,
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider::class,
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class,
+        ];
+
+        foreach ($providerClasses as $providerClass) {
+            try {
+                $provider = $server->get($providerClass);
+                $integrationRegistry->addProvider($provider);
+            } catch (\Throwable $e) {
+                // Provider construction can fail if a wrapped service
+                // is missing on this NC build — don't take the whole
+                // app down for one absent provider. The user-facing
+                // surface will simply not show the failing tab.
+            }
+        }
+    }//end bootBuiltinIntegrationProviders()
 }//end class
