@@ -246,6 +246,7 @@ class PermissionHandler
      * @param string|null       $userId      User ID (null = anonymous).
      * @param string|null       $objectOwner Object owner (null = no owner check).
      * @param ObjectEntity|null $object      Object entity (UUID is the cache scope).
+     * @param Schema|null       $schema      Schema entity for match-rule detection (optional).
      *
      * @return string|null Cache key, or null to bypass cache.
      */
@@ -526,7 +527,7 @@ class PermissionHandler
                 ]
             );
             return false;
-        }
+        }//end try
 
         if ($event->hasVerdict() === false) {
             return null;
@@ -989,6 +990,126 @@ class PermissionHandler
         // Return the specific groups that have permission.
         return $authorization[$action] ?? [];
     }//end getAuthorizedGroups()
+
+    /**
+     * Return the list of user IDs authorised to read a given object.
+     *
+     * This is used by NotifyPushListener to fan out per-user push events without
+     * iterating every Nextcloud user with a per-user permission check. The approach
+     * is query-based:
+     *
+     * 1. Resolve the effective authorization for the object's schema.
+     * 2. Extract the groups that have `read` permission.
+     * 3. Fetch member user IDs for each group via IGroupManager (one DB call per group).
+     * 4. Return the deduplicated union.
+     *
+     * Special cases:
+     *   - No authorization configured → empty array (caller should treat as "all users"
+     *     and broadcast or skip push, depending on policy).
+     *   - Authorization exists but object owner is known → always include the owner.
+     *   - `public` group in the read list → empty array (caller should treat as broadcast).
+     *   - `admin` group in the read list → empty array (caller should treat as broadcast
+     *     or resolve admin members separately).
+     *
+     * @param ObjectEntity $object The object whose authorised readers are requested.
+     *
+     * @return array<string> Deduplicated list of user IDs, or empty array when the
+     *                        object is publicly readable (no restriction) or the schema
+     *                        cannot be resolved.
+     *
+     * @spec openspec/changes/add-live-updates/tasks.md#task-3
+     */
+    public function getReadableByUsers(ObjectEntity $object): array
+    {
+        $schemaId = $object->getSchema();
+        if ($schemaId === null) {
+            return [];
+        }
+
+        try {
+            // System-internal lookup: bypass RBAC + multitenancy. The listener
+            // that calls getReadableByUsers is emitting push notifications, not
+            // enforcing user-facing access on the schema itself. Without this
+            // bypass, SchemaMapper::find throws "Schema not found" when the
+            // request user's tenant doesn't own the schema (notably any OR
+            // object event that crosses tenant boundaries) and the listener
+            // silently no-ops with an empty reader list — no push fires. Issue #1454.
+            $schema = $this->schemaMapper->find(
+                id: $schemaId,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[PermissionHandler] getReadableByUsers: schema lookup failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'schemaId' => $schemaId,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+            return [];
+        }
+
+        $authorization = $this->resolveAuthorization(schema: $schema);
+
+        // No authorization means the schema is open to everyone — treat as broadcast.
+        if (empty($authorization) === true) {
+            return [];
+        }
+
+        // No read rule means everyone can read — treat as broadcast.
+        if (isset($authorization['read']) === false) {
+            return [];
+        }
+
+        $readEntries = $authorization['read'];
+        if (is_array($readEntries) === false || $readEntries === []) {
+            return [];
+        }
+
+        // Extract group identifiers from the read rule entries.
+        $authorisedGroupIds = [];
+        foreach ($readEntries as $entry) {
+            if (is_string($entry) === true) {
+                $authorisedGroupIds[] = $entry;
+            } else if (is_array($entry) === true && isset($entry['group']) === true && is_string($entry['group']) === true) {
+                $authorisedGroupIds[] = $entry['group'];
+            }
+        }
+
+        $authorisedGroupIds = array_unique($authorisedGroupIds);
+
+        // If public or admin is in the read list, treat as open broadcast.
+        if (in_array('public', $authorisedGroupIds, true) === true
+            || in_array('admin', $authorisedGroupIds, true) === true
+        ) {
+            return [];
+        }
+
+        // Collect user IDs from each authorised group.
+        $userIds = [];
+        foreach ($authorisedGroupIds as $groupId) {
+            $group = $this->groupManager->get($groupId);
+            if ($group === null) {
+                continue;
+            }
+
+            foreach ($group->getUsers() as $user) {
+                $userIds[] = $user->getUID();
+            }
+        }
+
+        // Include the object owner regardless of group membership.
+        $owner = $object->getOwner();
+        if ($owner !== null && $owner !== '') {
+            $userIds[] = $owner;
+        }
+
+        return array_values(array_unique($userIds));
+
+    }//end getReadableByUsers()
 
     /**
      * Resolve the effective authorization for a schema.

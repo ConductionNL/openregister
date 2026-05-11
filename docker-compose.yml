@@ -651,6 +651,58 @@ services:
       - EXAPP_OPENTALK_URL=http://openregister-exapp-opentalk:23000
       - EXAPP_VALTIMO_URL=http://openregister-exapp-valtimo:23000
 
+  # Redis - shared cache backend.
+  # Required by notify_push (cross-process state for connected clients) AND by Nextcloud
+  # itself once memcache.distributed is set to \OC\Memcache\Redis (see post-up setup
+  # commands below). Without Redis, notify_push crashloops with "No redis server is
+  # configured" because it reads NC's config.php for the cache backend.
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - 6379:6379
+
+  # notify_push - WebSocket push server for realtime updates
+  # Required by OpenRegister's add-live-updates change for REST clients (frontends consume
+  # via @conduction/nextcloud-vue's useLiveUpdates plugin). Soft-fails when absent — OR
+  # works fine without this service, just without push delivery.
+  #
+  # Setup after first start (one time):
+  #   docker exec -u www-data nextcloud php occ config:system:set redis host --value redis
+  #   docker exec -u www-data nextcloud php occ config:system:set redis port --value 6379 --type integer
+  #   docker exec -u www-data nextcloud php occ config:system:set memcache.distributed --value '\OC\Memcache\Redis'
+  #   docker exec -u www-data nextcloud php occ config:system:set trusted_proxies 0 --value 172.16.0.0/12
+  #   docker exec -u www-data nextcloud php occ notify_push:setup http://notify_push:7867
+  #   docker exec -u www-data nextcloud php occ notify_push:self-test
+  #
+  # Image: icewind1991/notify_push (official upstream maintained by the notify_push author).
+  notify_push:
+    image: icewind1991/notify_push:latest
+    container_name: notify_push
+    restart: always
+    depends_on:
+      - nextcloud
+      - db
+      - redis
+    ports:
+      - 7867:7867
+    volumes:
+      # Mount the same NC volume the nextcloud container uses, read-only — notify_push
+      # reads NC's config.php and apps/notify_push/css/* from here.
+      - nextcloud:/nextcloud:ro
+    environment:
+      # Tell notify_push where Nextcloud lives (server-side URL, not the public one)
+      - NEXTCLOUD_URL=http://nextcloud
+      # PostgreSQL connection (matches the db service env vars above)
+      - DATABASE_URL=postgres://nextcloud:!ChangeMe!@db/nextcloud
+      # Redis URL (matches the redis service above)
+      - REDIS_URL=redis://redis:6379
+      # Logging — set to `info` for production, `trace` while debugging
+      - LOG=info
+      # Bind on all interfaces inside the container
+      - PORT=7867
+
   # Nextcloud Application Server (MariaDB - For Testing)
   # Start with: docker-compose --profile mariadb up
   # Note: Do NOT use docker-compose up when using this profile

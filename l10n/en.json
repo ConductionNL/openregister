@@ -1345,6 +1345,16 @@
         "Text chunks": "Text chunks",
         "Unknown error": "Unknown error",
         "Very high": "Very high",
-        "{title} in {register} / {schema}": "{title} in {register} / {schema}"
+        "{title} in {register} / {schema}": "{title} in {register} / {schema}",
+        "Push Notifications": "Push Notifications",
+        "Real-time push notification status via notify_push": "Real-time push notification status via notify_push",
+        "Realtime push not available — the notify_push app is not installed": "Realtime push not available — the notify_push app is not installed",
+        "Install the notify_push app from the Nextcloud App Store to enable real-time updates.": "Install the notify_push app from the Nextcloud App Store to enable real-time updates.",
+        "Open Nextcloud App Store": "Open Nextcloud App Store",
+        "notify_push is installed but not yet active": "notify_push is installed but not yet active",
+        "notify_push is installed but OpenRegister has not yet confirmed a successful push. Trigger an object save to activate, or check your notify_push configuration.": "notify_push is installed but OpenRegister has not yet confirmed a successful push. Trigger an object save to activate, or check your notify_push configuration.",
+        "notify_push configuration guide": "notify_push configuration guide",
+        "Realtime push active": "Realtime push active",
+        "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted.": "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted."
     }
 }

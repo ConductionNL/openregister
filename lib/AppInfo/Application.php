@@ -142,6 +142,7 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
+use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
@@ -885,6 +886,11 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, GraphQLSubscriptionListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, GraphQLSubscriptionListener::class);
+
+        // Notify_push real-time push listeners (soft-fail when notify_push not installed).
+        $context->registerEventListener(ObjectCreatedEvent::class, NotifyPushListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, NotifyPushListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, NotifyPushListener::class);
 
         // FilesSidebarListener injects the sidebar tab script into the Files app.
         $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
