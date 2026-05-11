@@ -73,6 +73,12 @@ public function show(Register $register): array
 
 Pre-computed stats are passed in via `$schemaStats` (single) or `$schemaStatsByRegisterId` (many), which keeps the serializer free of business-logic dependencies and avoids circular DI on `RegisterService`.
 
+### Performance note — `@self.stats` is N+1 per register
+
+`RegisterService::findAllSerialized()` runs one `getSchemaObjectCounts()` query per register in the result set when both `schemas` and `@self.stats` are requested. The pattern existed in the pre-refactor controller and is preserved here. It is acceptable for paginated admin endpoints (~10–50 registers per page) but undesirable for cron jobs and high-volume batch paths. Use the entity-returning `findAll()` and reach for the schema mapper yourself when you need finer control. A batched variant of `getSchemaObjectCounts()` can be added if a workload demonstrates the need.
+
+See also the `_extend=@self.files` warning further up — same N+1 shape, different per-row cost.
+
 ### Wire-format note
 
 When `schemas` is in `_extend`, the response's `schemas` field is an array of objects (happy path). When one or more referenced schemas have been deleted, the array is heterogeneous: a mix of objects and bare IDs (in original order). JSON consumers in statically-typed clients (Go, Java, Kotlin) MUST handle both.

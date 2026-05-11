@@ -273,6 +273,15 @@ class RegisterService
      *  - `schemas`     — replace schema IDs with full schema objects (orphan IDs preserved in place).
      *  - `@self.stats` — attach `stats.objects.total` to expanded schemas (only effective alongside `schemas`).
      *
+     * **N+1 query characteristic:** when both `schemas` and `@self.stats` are
+     * requested, this method runs one `getSchemaObjectCounts()` query per
+     * register in the result set (the same pattern that previously existed
+     * inside `RegistersController::index()`). For paginated admin endpoints
+     * this is acceptable; callers invoking this method from cron jobs or
+     * high-volume batch paths should be aware that response time scales with
+     * `count(registers) × count(schemas per register)`. A batched variant
+     * can be added if a real workload demonstrates the need.
+     *
      * @param int|null                  $limit            Maximum number of results to return (null = no limit)
      * @param int|null                  $offset           Number of results to skip for pagination
      * @param array<string, mixed>|null $filters          Filters to apply (e.g., ['organisation_id' => 1])

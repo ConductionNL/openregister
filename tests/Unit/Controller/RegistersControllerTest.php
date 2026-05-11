@@ -925,6 +925,37 @@ class RegistersControllerTest extends TestCase
         $this->assertSame(999, $data['results'][0]['schemas'][1]);
     }
 
+    /**
+     * Asserts that the `_extend` value parsed from the request is forwarded verbatim to
+     * `RegisterService::findAllSerialized()`. Other index tests use `$this->anything()`
+     * for the `_extend` matcher, which would not detect a regression that drops or
+     * mutates the value before the service call. This test exercises that contract
+     * directly so that future refactors cannot silently change it.
+     */
+    public function testIndexForwardsExtendValueToFindAllSerialized(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            '_extend' => ['schemas', '@self.stats'],
+        ]);
+
+        $this->registerService->expects($this->once())
+            ->method('findAllSerialized')
+            ->with(
+                $this->anything(),                              // limit
+                $this->anything(),                              // offset
+                $this->anything(),                              // filters
+                $this->anything(),                              // searchConditions
+                $this->anything(),                              // searchParams
+                $this->equalTo(['schemas', '@self.stats']),     // _extend MUST be forwarded verbatim
+                $this->anything()                               // _multitenancy
+            )
+            ->willReturn([]);
+
+        $result = $this->controller->index();
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
     public function testIndexWithSelfStatsExtend(): void
     {
         $this->request->method('getParams')->willReturn([

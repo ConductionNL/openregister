@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Unit\Service\Serializer;
+namespace OCA\OpenRegister\Tests\Unit\Service\Serializer;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;

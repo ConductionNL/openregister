@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Serializer;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -127,7 +128,10 @@ class RegisterSerializer
     ): array {
         $result = [];
         foreach ($registers as $register) {
-            $registerId  = $register->getId();
+            // Cast to int to match the key type used when assembling `$schemaStatsByRegisterId`
+            // in `RegisterService::findAllSerialized()`. PHP's numeric-string array-key coercion
+            // would have handled mismatched types, but a consistent cast makes the contract obvious.
+            $registerId  = (int) $register->getId();
             $schemaStats = null;
             if ($schemaStatsByRegisterId !== null && isset($schemaStatsByRegisterId[$registerId]) === true) {
                 $schemaStats = $schemaStatsByRegisterId[$registerId];
@@ -147,9 +151,10 @@ class RegisterSerializer
     /**
      * Expand schema IDs into full schema objects, preserving orphan IDs in place.
      *
-     * On `DoesNotExistException` the original ID is retained in its original
-     * array position (not dropped). This is a deliberate divergence from the
-     * pre-refactor controller behaviour and is documented in the spec.
+     * On `DoesNotExistException` or `MultipleObjectsReturnedException` the
+     * original ID is retained in its original array position (not dropped).
+     * This is a deliberate divergence from the pre-refactor controller
+     * behaviour and is documented in the spec.
      *
      * @param array      $schemaIds   The schema-ID array to expand.
      * @param bool       $attachStats Whether `@self.stats` was also requested.
@@ -164,16 +169,17 @@ class RegisterSerializer
             try {
                 $schema     = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
                 $schemaData = $schema->jsonSerialize();
-            } catch (DoesNotExistException $e) {
+            } catch (DoesNotExistException | MultipleObjectsReturnedException $e) {
                 $this->logger->warning(
-                    message: '[RegisterSerializer] Schema not found for expansion; preserving original ID',
+                    message: '[RegisterSerializer] Schema unresolvable for expansion; preserving original ID',
                     context: [
                         'file'     => __FILE__,
                         'line'     => __LINE__,
                         'schemaId' => $schemaId,
+                        'reason'   => $e::class,
                     ]
                 );
-                // Retain the orphan ID in its original position (typed as it came in).
+                // Retain the orphan or ambiguous ID in its original position (typed as it came in).
                 $expanded[] = $schemaId;
                 continue;
             }
