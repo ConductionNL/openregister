@@ -42,6 +42,7 @@ use Throwable;
  * - +, -, *, /, %
  * - eq, ne, lt, lte, gt, gte
  * - now (no args), diffDays(later, earlier), formatDate(date, fmt)
+ * - dateDiff({from, to, unit}) — signed integer difference between two dates
  *
  * Placeholders inside literal strings (e.g. "$now", "$currentUser") are
  * resolved via the shared PlaceholderResolver.
@@ -103,6 +104,7 @@ class CalculationEvaluator
             'now'        => $this->now(),
             'diffDays'   => $this->diffDays(object: $object, args: $args),
             'formatDate' => $this->formatDate(object: $object, args: $args),
+            'dateDiff'   => $this->dateDiff(object: $object, args: $args),
             default      => throw new EvaluationException(sprintf('Unknown operator "%s".', $op)),
         };
     }//end evaluate()
@@ -482,6 +484,105 @@ class CalculationEvaluator
         $fmt  = (string) $this->evaluate(object: $object, expression: $args[1]);
         return $date === null ? null : $date->format($fmt);
     }//end formatDate()
+
+    /**
+     * Compute the signed integer difference between two date/time values.
+     *
+     * Argument shape (dict, not positional array):
+     * ```json
+     * { "dateDiff": { "from": "now", "to": "@self.dueDate", "unit": "days" } }
+     * ```
+     *
+     * Supported units: years, months, weeks, days, hours, minutes, seconds.
+     *
+     * Both `from` and `to` accept:
+     * - The literal string `"now"` (resolved to current server time at call time)
+     * - An ISO-8601 date or datetime string
+     * - A `@self.<field>` reference that resolves to an ISO-8601 string
+     *
+     * The result is a **signed** integer: positive when `to` is after `from`,
+     * negative when `to` is before `from`.  Returns null when either operand
+     * cannot be parsed as a date.
+     *
+     * For `months` and `years`, the difference is calendar-based (using
+     * DateInterval), matching PHP's DateTimeImmutable::diff() semantics.
+     * For `weeks` and all sub-day units, the result is derived from the
+     * elapsed-second delta so DST transitions are handled consistently.
+     *
+     * @param array<string, mixed> $object The object's stored data.
+     * @param mixed                $args   Dict with keys `from`, `to`, and `unit`.
+     *
+     * @return int|null The signed integer difference, or null when a date is unparseable.
+     *
+     * @throws EvaluationException When the args dict is missing required keys or the unit is unknown.
+     */
+    private function dateDiff(array $object, mixed $args): ?int
+    {
+        if (is_array($args) === false) {
+            throw new EvaluationException('dateDiff requires an object argument with keys: from, to, unit.');
+        }
+
+        if (array_key_exists('from', $args) === false
+            || array_key_exists('to', $args) === false
+            || array_key_exists('unit', $args) === false
+        ) {
+            throw new EvaluationException('dateDiff requires keys: from, to, unit.');
+        }
+
+        $validUnits = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds'];
+        $unit       = (string) $this->evaluate(object: $object, expression: $args['unit']);
+        if (in_array($unit, $validUnits, true) === false) {
+            throw new EvaluationException(
+                sprintf(
+                    'dateDiff unit "%s" is invalid. Supported: %s.',
+                    $unit,
+                    implode(', ', $validUnits)
+                )
+            );
+        }
+
+        $fromRaw = $this->evaluate(object: $object, expression: $args['from']);
+        $toRaw   = $this->evaluate(object: $object, expression: $args['to']);
+
+        // Treat the special sentinel "now" (literal string) as current time.
+        if ($fromRaw === 'now') {
+            $fromRaw = new DateTimeImmutable('now');
+        }
+
+        if ($toRaw === 'now') {
+            $toRaw = new DateTimeImmutable('now');
+        }
+
+        $from = $this->toDateOrNull(v: $fromRaw);
+        $to   = $this->toDateOrNull(v: $toRaw);
+
+        if ($from === null || $to === null) {
+            return null;
+        }
+
+        // Calendar-based units use DateInterval for accuracy across leap years / variable month lengths.
+        if ($unit === 'years' || $unit === 'months') {
+            $interval = $from->diff($to);
+            $sign     = ($interval->invert === 1) ? -1 : 1;
+            if ($unit === 'years') {
+                return $sign * $interval->y;
+            }
+
+            return $sign * ($interval->y * 12 + $interval->m);
+        }
+
+        // All remaining units are derived from the elapsed-second delta.
+        $deltaSecs = $to->getTimestamp() - $from->getTimestamp();
+
+        return match ($unit) {
+            'weeks'   => (int) intdiv($deltaSecs, 604800),
+            'days'    => (int) intdiv($deltaSecs, 86400),
+            'hours'   => (int) intdiv($deltaSecs, 3600),
+            'minutes' => (int) intdiv($deltaSecs, 60),
+            'seconds' => $deltaSecs,
+            default   => throw new EvaluationException(sprintf('Unhandled unit "%s".', $unit)),
+        };
+    }//end dateDiff()
 
     /**
      * Coerce a value to DateTimeImmutable when possible.
