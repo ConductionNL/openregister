@@ -64,6 +64,8 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method void setSource(?string $source)
  * @method bool getHardValidation()
  * @method void setHardValidation(bool $hardValidation)
+ * @method bool getAppendOnly()
+ * @method void setAppendOnly(bool $appendOnly)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getCreated()
@@ -301,6 +303,17 @@ class Schema extends Entity implements JsonSerializable
     protected bool $immutable = false;
 
     /**
+     * Whether objects of this schema are append-only (INSERT allowed; UPDATE and DELETE rejected)
+     *
+     * When true, new objects can be created but existing objects cannot be mutated or removed.
+     * This is used for append-only audit logs (e.g. xAPI statements, compliance attestations)
+     * where immutability of past records is a business or legal requirement.
+     *
+     * @var boolean
+     */
+    protected bool $appendOnly = false;
+
+    /**
      * Whether objects of this schema should be indexed in SOLR for searching
      *
      * When set to false, objects of this schema will be excluded from SOLR indexing,
@@ -462,6 +475,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'source', type: 'string');
         $this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
         $this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
+        $this->addType(fieldName: 'appendOnly', type: Types::BOOLEAN);
         $this->addType(fieldName: 'searchable', type: Types::BOOLEAN);
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
@@ -1245,7 +1259,7 @@ class Schema extends Entity implements JsonSerializable
      *     slug: null|string, title: null|string, description: null|string,
      *     version: null|string, summary: null|string, icon: null|string,
      *     required: array, properties: array, archive: array|null,
-     *     source: null|string, hardValidation: bool, immutable: bool,
+     *     source: null|string, hardValidation: bool, immutable: bool, appendOnly: bool,
      *     searchable: bool, updated: null|string, created: null|string,
      *     maxDepth: int, owner: null|string, application: null|string,
      *     organisation: null|string,
@@ -1315,6 +1329,7 @@ class Schema extends Entity implements JsonSerializable
             'source'         => $this->source,
             'hardValidation' => $this->hardValidation,
             'immutable'      => $this->immutable,
+            'appendOnly'     => $this->appendOnly,
             'searchable'     => $this->searchable,
         // @todo: should be refactored to strict.
             'updated'        => $updated,
@@ -1905,6 +1920,19 @@ class Schema extends Entity implements JsonSerializable
         $this->searchable = $searchable;
         $this->markFieldUpdated(attribute: 'searchable');
     }//end setSearchable()
+
+    /**
+     * Check whether objects of this schema are append-only.
+     *
+     * When true, INSERT is permitted but UPDATE and DELETE are rejected with
+     * HTTP 405 and error code SCHEMA_APPEND_ONLY.
+     *
+     * @return bool True if the schema is append-only
+     */
+    public function isAppendOnly(): bool
+    {
+        return $this->appendOnly;
+    }//end isAppendOnly()
 
     /**
      * String representation of the schema
