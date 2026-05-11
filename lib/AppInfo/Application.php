@@ -312,6 +312,11 @@ class Application extends App implements IBootstrap
         // clients can discover URN endpoints + the instance slug without
         // probing routes.
         $context->registerCapability(UrnCapability::class);
+
+        // pluggable-integration-registry task 4.5 (tasks.md#task-22):
+        // advertise the integration registry through the OCS
+        // capabilities endpoint.
+        $context->registerCapability(\OCA\OpenRegister\Capabilities\IntegrationsCapability::class);
     }//end register()
 
     /**
@@ -863,6 +868,48 @@ class Application extends App implements IBootstrap
         );
 
         $this->registerBuiltinIntegrationProviders($context);
+
+        // IntegrationsController — read-only API over the registry.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\IntegrationsController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\IntegrationsController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // ObjectIntegrationsController — object-scoped sub-resource
+        // dispatch through the registry.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\ObjectIntegrationsController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\ObjectIntegrationsController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // IntegrationsCapability — surfaces the registry through the
+        // Nextcloud OCS capabilities endpoint, role-redacted per AD-17.
+        $context->registerService(
+            \OCA\OpenRegister\Capabilities\IntegrationsCapability::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Capabilities\IntegrationsCapability(
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager')
+                );
+            }
+        );
 
     }//end registerIntegrationRegistry()
 

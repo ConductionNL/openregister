@@ -32,11 +32,11 @@
 
 ## Backend — Routes, Controller, Capabilities
 
-- [ ] Create `lib/Controller/IntegrationsController.php` — `GET /api/integrations` (list + filter by group/enabled), `GET /api/integrations/{id}` (single + health + auth status)
-- [ ] Update `lib/Controller/ObjectsController.php` — sub-resource calls (`{integrationId}` segment) route through `IntegrationRegistry::get($id)`
-- [ ] Add `/api/integrations` routes to `appinfo/routes.php`
-- [ ] Update `lib/Service/CapabilitiesService.php` — add `integrations` block to OCS capabilities response
-- [ ] Add `integrations` capability declaration to `appinfo/info.xml`
+- [x] Create `lib/Controller/IntegrationsController.php` — `GET /api/integrations` (with `group` + `enabled` filter params) + `GET /api/integrations/{id}`. Role-redacted descriptor: every authed user sees public fields; admins additionally get `requiresPermission`, `openConnectorSource`, `authStatus`.
+- [x] Sub-resource dispatch via the registry — new dedicated `lib/Controller/ObjectIntegrationsController.php` owns `/api/objects/{register}/{schema}/{id}/integrations/{integrationId}[/{entityId}]` (GET / POST / PUT / DELETE). Additive — `ObjectsController` (2400+ lines) stays untouched. The legacy `/api/objects/{...}/files`, `/api/objects/{...}/notes` etc. routes continue working. Error translation: `NotImplementedException` → 501 with `QueryTimeContract::buildHttpBody()` envelope; `ProviderUnavailableException` → 503 with `details.cause` payload (AD-23); unknown id → 404.
+- [x] Add `/api/integrations` + `/api/objects/.../integrations/...` routes to `appinfo/routes.php`.
+- [x] Add `lib/Capabilities/IntegrationsCapability.php` — surfaces the registry through `/ocs/v2.php/cloud/capabilities`, role-redacted per AD-17 (public surface for everyone; admin-only fields omitted, not null-stubbed). _Spec said "Update lib/Service/CapabilitiesService.php"; OR's capability pattern uses one ICapability class per concern (see `UrnCapability`), so the new file lives in `lib/Capabilities/` and is registered via `$context->registerCapability()`. Same end shape, idiomatic structure._
+- [x] Register the new capability via `$context->registerCapability(IntegrationsCapability::class)` in `Application::register()`. _info.xml doesn't carry capability declarations in OR — registration happens through `IRegistrationContext::registerCapability()` at runtime, mirroring the existing `UrnCapability` pattern. No `appinfo/info.xml` change needed._
 
 ## Backend — Admin UI for auth
 
