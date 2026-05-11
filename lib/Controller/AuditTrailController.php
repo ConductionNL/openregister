@@ -53,11 +53,13 @@ class AuditTrailController extends Controller
     /**
      * Constructor for AuditTrailController
      *
-     * @param string           $appName          The name of the app
-     * @param IRequest         $request          The request object
-     * @param LogService       $logService       The log service
-     * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
-     * @param AuditHashService $auditHashService The audit hash chain service
+     * @param string             $appName          The name of the app
+     * @param IRequest           $request          The request object
+     * @param LogService         $logService       The log service
+     * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper
+     * @param AuditHashService   $auditHashService The audit hash chain service
+     * @param \OCP\IUserSession  $userSession      Current Nextcloud session (for admin-gate checks)
+     * @param \OCP\IGroupManager $groupManager     Group manager used to resolve the `admin` group
      */
     public function __construct(
         string $appName,

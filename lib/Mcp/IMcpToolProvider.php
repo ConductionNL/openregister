@@ -43,7 +43,6 @@ namespace OCA\OpenRegister\Mcp;
  */
 interface IMcpToolProvider
 {
-
     /**
      * The Nextcloud app id that owns this provider (e.g. "opencatalogi").
      *

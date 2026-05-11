@@ -104,7 +104,7 @@ class McpToolsService
 
                 $tools[] = $descriptor;
             }
-        }
+        }//end foreach
 
         return ['tools' => $tools];
     }//end listTools()

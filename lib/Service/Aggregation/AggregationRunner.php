@@ -53,13 +53,16 @@ class AggregationRunner
     /**
      * Constructor.
      *
-     * @param MagicMapper                 $magicMapper    Magic-table mapper used for the PHP fallback path.
-     * @param RegisterMapper              $registerMapper Register loader.
-     * @param SchemaMapper                $schemaMapper   Schema loader.
-     * @param PlaceholderResolver         $placeholders   Resolves dynamic placeholders inside filters.
-     * @param IDBConnection               $db             Database connection for the Postgres-native fast path.
-     * @param AggregationCache            $cache          60s aggregation result cache.
-     * @param SearchBackendInterface|null $searchBackend  Optional Solr/ES backend for native aggregation.
+     * @param MagicMapper                 $magicMapper         Magic-table mapper used for the PHP fallback path.
+     * @param RegisterMapper              $registerMapper      Register loader.
+     * @param SchemaMapper                $schemaMapper        Schema loader.
+     * @param PlaceholderResolver         $placeholders        Resolves dynamic placeholders inside filters.
+     * @param IDBConnection               $db                  Database connection for the Postgres-native fast path.
+     * @param AggregationCache            $cache               60s aggregation result cache.
+     * @param PermissionHandler           $permissionHandler   Per-object/per-schema authorisation gate.
+     * @param IUserSession                $userSession         Current Nextcloud session for permission scoping.
+     * @param OrganisationService         $organisationService Resolves the active organisation for multi-tenant filters.
+     * @param SearchBackendInterface|null $searchBackend       Optional Solr/ES backend for native aggregation.
      *
      * @return void
      */
@@ -114,7 +117,8 @@ class AggregationRunner
             schema: $schema,
             action: 'list',
             userId: $userId
-        ) === false) {
+        ) === false
+        ) {
             throw new RuntimeException('Forbidden: caller lacks list permission on the requested schema.');
         }
 
@@ -151,7 +155,7 @@ class AggregationRunner
             'userId'  => $userId,
             'org'     => $activeOrg?->getUuid(),
         ];
-        $cached   = $this->cache->get(
+        $cached    = $this->cache->get(
             registerSlug: (string) $register->getSlug(),
             schemaSlug: (string) $schema->getSlug(),
             name: $name,

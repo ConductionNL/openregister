@@ -21,7 +21,10 @@
 
 			<label class="avgField">
 				<span>{{ t('openregister', 'Doelbinding *') }}</span>
-				<textarea v-model="form.doelbinding" rows="3" class="avgTextarea" required />
+				<textarea v-model="form.doelbinding"
+					rows="3"
+					class="avgTextarea"
+					required />
 			</label>
 
 			<NcSelect

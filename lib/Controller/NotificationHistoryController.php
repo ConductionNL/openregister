@@ -45,9 +45,11 @@ class NotificationHistoryController extends Controller
     /**
      * Constructor.
      *
-     * @param string                    $appName Application name.
-     * @param IRequest                  $request HTTP request.
-     * @param NotificationHistoryMapper $mapper  Mapper for the notification history table.
+     * @param string                    $appName      Application name.
+     * @param IRequest                  $request      HTTP request.
+     * @param NotificationHistoryMapper $mapper       Mapper for the notification history table.
+     * @param IUserSession              $userSession  Current Nextcloud session (for admin-gate checks).
+     * @param IGroupManager             $groupManager Group manager used to resolve the `admin` group.
      */
     public function __construct(
         string $appName,

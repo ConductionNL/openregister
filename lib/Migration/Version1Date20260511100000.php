@@ -42,7 +42,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20260511100000 extends SimpleMigrationStep
 {
-
     /**
      * Change the database schema — add the context column.
      *
@@ -59,6 +58,7 @@ class Version1Date20260511100000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable(tableName: 'openregister_messages') === false) {
@@ -101,6 +101,7 @@ class Version1Date20260511100000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable(tableName: 'openregister_messages') === false) {
