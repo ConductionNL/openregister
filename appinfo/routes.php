@@ -13,6 +13,19 @@ return [
         'Consumers' => ['url' => 'api/consumers'],
     ],
     'routes' => [
+        // Integration registry (read-only discovery API) —
+        // pluggable-integration-registry task 4.3 / tasks.md#task-20.
+        ['name' => 'integrations#index', 'url' => '/api/integrations', 'verb' => 'GET'],
+        ['name' => 'integrations#show',  'url' => '/api/integrations/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+
+        // Object-scoped integration sub-resource dispatch —
+        // pluggable-integration-registry task 4.2 / tasks.md#task-19.
+        ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
+        ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
+        ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
+        ['name' => 'objectIntegrations#update',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
+        ['name' => 'objectIntegrations#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
+
         // PATCH routes for resources (partial updates).
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -548,7 +561,11 @@ return [
 		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
 		['name' => 'chat#getChatStats', 'url' => '/api/chat/stats', 'verb' => 'GET'],
 		['name' => 'chat#sendFeedback', 'url' => '/api/conversations/{conversationUuid}/messages/{messageId}/feedback', 'verb' => 'POST', 'requirements' => ['conversationUuid' => '[^/]+', 'messageId' => '\\d+']],
-		
+
+		// ai-chat-companion-orchestrator (PR #1466 in flight): health probe + SSE stream — restored for dev testing.
+		['name' => 'chatHealth#health', 'url' => '/api/chat/health', 'verb' => 'GET'],
+		['name' => 'chatStream#stream', 'url' => '/api/chat/stream', 'verb' => 'POST'],
+
 		// Conversations - AI Conversation management.
 		['name' => 'conversation#index', 'url' => '/api/conversations', 'verb' => 'GET'],
 		['name' => 'conversation#show', 'url' => '/api/conversations/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],

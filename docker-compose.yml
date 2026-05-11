@@ -624,6 +624,7 @@ services:
       - ../pipelinq:/var/www/html/custom_apps/pipelinq
       - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
       - ../larpingapp:/var/www/html/custom_apps/larpingapp
+      - ../scholiq:/var/www/html/custom_apps/scholiq
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud
@@ -699,7 +700,7 @@ services:
       # Redis URL (matches the redis service above)
       - REDIS_URL=redis://redis:6379
       # Logging — set to `info` for production, `trace` while debugging
-      - LOG=info
+      - LOG=trace
       # Bind on all interfaces inside the container
       - PORT=7867
 

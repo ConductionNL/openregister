@@ -73,6 +73,7 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -1084,6 +1085,12 @@ class ObjectService
             $this->rejectIfTransferred(uuid: $uuid);
         }
 
+        // Reject updates to objects whose schema is append-only.
+        // CREATE (uuid === null) is always permitted; UPDATE (uuid !== null) is not.
+        if ($uuid !== null) {
+            $this->rejectIfAppendOnly(operation: 'update');
+        }
+
         // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
         $uuidWasNull = ($uuid === null);
 
@@ -1470,6 +1477,11 @@ class ObjectService
         // Reject deletion of transferred objects (archiefstatus = overgebracht).
         $this->rejectIfTransferred(uuid: $uuid);
 
+        // Reject deletion when the schema is append-only.
+        // We check here (before the object lookup) when the schema is already in context,
+        // and again below once the schema has been resolved from the object.
+        $this->rejectIfAppendOnly(operation: 'delete');
+
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {
             $objectToDelete = $this->objectMapper->find(
@@ -1482,6 +1494,8 @@ class ObjectService
             // If no schema was provided but we have an object, derive the schema from the object.
             if ($this->currentSchema === null) {
                 $this->setSchema(schema: $objectToDelete->getSchema());
+                // Re-check append-only now that the schema has been resolved from the object.
+                $this->rejectIfAppendOnly(operation: 'delete');
             }
 
             // Check user has permission to delete this specific object.
@@ -1553,6 +1567,37 @@ class ObjectService
             // Object doesn't exist yet (new object), no check needed.
         }//end try
     }//end rejectIfTransferred()
+
+    /**
+     * Reject an UPDATE or DELETE operation when the schema is append-only.
+     *
+     * Schemas with `appendOnly: true` permit object creation (INSERT) but
+     * prohibit any subsequent mutation or deletion. Callers pass `$operation`
+     * so the error message is specific to the blocked action.
+     *
+     * @param string $operation Either 'update' or 'delete' — used in the error message.
+     *
+     * @return void
+     *
+     * @throws AppendOnlyException With error code SCHEMA_APPEND_ONLY when the
+     *                             current schema has appendOnly: true.
+     */
+    private function rejectIfAppendOnly(string $operation): void
+    {
+        if ($this->currentSchema === null) {
+            return;
+        }
+
+        if ($this->currentSchema->getAppendOnly() === true) {
+            throw new AppendOnlyException(
+                sprintf(
+                    'SCHEMA_APPEND_ONLY: Schema "%s" is append-only; %s is not permitted.',
+                    $this->currentSchema->getTitle() ?? $this->currentSchema->getSlug() ?? 'unknown',
+                    $operation
+                )
+            );
+        }
+    }//end rejectIfAppendOnly()
 
         /**
          * Get the active organization for the current user
