@@ -48,6 +48,16 @@ use Psr\Log\LoggerInterface;
  * which the controller surfaces as HTTP 422 (invalid transition) or 403
  * (guard denial).
  *
+ * Trust contract: lifecycle validation only fires on `ObjectUpdatingEvent`,
+ * which is dispatched by `ObjectService::saveObject()`. Any code path that
+ * mutates an object outside of `saveObject()` — direct `MagicMapper::update`
+ * calls, raw SQL updates, import pipelines that bypass the service layer —
+ * will skip this listener and can persist an invalid state value silently.
+ * Callers MUST go through `ObjectService::saveObject()` (the public mutation
+ * surface) for the lifecycle guarantee to hold. A future hardening step is a
+ * DB-level CHECK constraint on the lifecycle column once the enum vocabulary
+ * is treated as a closed set rather than a schema-author-defined list.
+ *
  * @template-implements IEventListener<ObjectUpdatingEvent>
  */
 class LifecycleValidationListener implements IEventListener

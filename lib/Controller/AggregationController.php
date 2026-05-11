@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -68,6 +69,8 @@ class AggregationController extends Controller
     {
         try {
             $result = $this->runner->run(registerRef: $register, schemaRef: $schema, name: $name);
+        } catch (NotAuthorizedException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
         } catch (RuntimeException $e) {
             return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
         }

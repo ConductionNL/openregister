@@ -99,4 +99,107 @@ class AggregationAnnotationValidatorTest extends TestCase
         ]);
         $this->assertSame([], $errors);
     }
+
+    // -----------------------------------------------------------------------
+    // Cross-schema DSL (`from` key) tests
+    // -----------------------------------------------------------------------
+
+    public function testSelectAliasIsAcceptedForIntraSchema(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-aggregations' => ['total' => ['select' => 'count']],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testWhereAliasIsAcceptedForIntraSchema(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-aggregations' => [
+                'openCount' => ['metric' => 'count', 'where' => ['status' => 'open']],
+            ],
+            'properties' => ['status' => ['type' => 'string']],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testValidCrossSchemaCountSpec(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-aggregations' => [
+                'mandatoryEnrolledCount' => [
+                    'from'   => 'scholiq-enrolment',
+                    'where'  => ['mandatory' => true, 'regulationSlug' => '@self.slug'],
+                    'select' => 'count',
+                ],
+            ],
+            'properties' => ['slug' => ['type' => 'string']],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testCrossSchemaSpecWithoutMetricDefaultsToCount(): void
+    {
+        // `metric`/`select` is optional for cross-schema specs (defaults to count).
+        $errors = $this->v->validate([
+            'x-openregister-aggregations' => [
+                'enrolCount' => ['from' => 'scholiq-enrolment'],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testCrossSchemaSpecWithEmptyFromIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-aggregations' => [
+                'enrolCount' => ['from' => ''],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('aggregation-from-empty', $codes);
+    }
+
+    public function testCrossSchemaSpecWithBadMetricIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-aggregations' => [
+                'enrolCount' => ['from' => 'other-schema', 'select' => 'percentile99'],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('aggregation-bad-metric', $codes);
+    }
+
+    public function testCrossSchemaWhereAsNonMapIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-aggregations' => [
+                'enrolCount' => ['from' => 'other-schema', 'where' => 'not-a-map'],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('aggregation-filter-malformed', $codes);
+    }
+
+    public function testCrossSchemaSkipsFieldExistenceChecks(): void
+    {
+        // For cross-schema specs the target schema's properties are unknown
+        // at annotation-save time, so field names in `where` are not validated.
+        $errors = $this->v->validate([
+            'x-openregister-aggregations' => [
+                'enrolCount' => [
+                    'from'  => 'other-schema',
+                    'where' => ['anyFieldName' => 'anyValue'],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
 }
