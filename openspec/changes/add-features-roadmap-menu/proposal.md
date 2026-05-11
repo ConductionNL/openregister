@@ -27,6 +27,10 @@ token when present and via the server's app-level token (with authorship prefix)
   prefix to the issue body so authorship is preserved.
 - Add a new `GitHubIssuesController` exposing:
   - `GET /api/github/issues` — a thin, cached proxy to GitHub's issues search endpoint.
+    Accepts an optional `labels` query parameter (comma-separated, up to 8 entries) with
+    OR semantics: multiple labels yield issues carrying *any* of the named labels (per D23).
+    The Roadmap tab uses `labels=enhancement,feature` to surface a curated planned-work
+    list instead of every open issue.
     Carries `#[NoCSRFRequired]` since it is a pure read with no side effects.
   - `POST /api/github/issues` — accepts `{repo, title, body, specRef?}` and creates a GitHub
     issue on the app's repo. MUST enforce CSRF (no `#[NoCSRFRequired]` attribute). Subject to

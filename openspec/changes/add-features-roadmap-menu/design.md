@@ -275,6 +275,17 @@ Anything else passes through and renders with its native GitHub color.
 - **Chosen:** APCu key `openregister.feature_submission:<user_id>` with 60s TTL; return 429
   with `{error: "rate_limited", retry_after: <seconds>}` when exceeded.
 
+### D23. Roadmap issue filter: `labels=enhancement,feature`
+
+- Show every open issue. Rejected: surfacing every bug report, infra ticket, and dependency-bump request muddies the roadmap; users browsing for "what's planned" should see planned features, not a firehose.
+- Hide bug-labelled issues client-side. Rejected: doesn't help — those issues still get fetched and counted against rate limit; client-side hiding also breaks the "sort by reactions" ranking because the highest-reacted item may be a hidden bug.
+- Allowlist via admin config per app. Rejected (for now): adds an IAppConfig key and admin docs for a setting that has one sensible default. Can be added later as a follow-up if any repo uses different conventions.
+- **Chosen:** the proxy's `listIssues` endpoint accepts a `labels` query parameter (optional, comma-separated). The Roadmap tab hardcodes `labels=enhancement,feature` in its fetch — GitHub's default labels for planned work, no per-repo hygiene needed. Issues matching either label are returned (GitHub's `labels=a,b` means "items with label a AND label b" — we use **two label-filtered calls deduped by issue number** to get OR semantics, mirroring the pattern OR's existing GitHub integrations use elsewhere).
+
+Validation: `labels` matches `^[a-z][a-z0-9_-]*(,[a-z][a-z0-9_-]*){0,7}$` (≤ 8 labels, each ≤ 50 chars, lowercase + dash/underscore + digits — covers GitHub's label naming conventions and prevents query injection).
+
+Note: this is the **inbound issue filter** (which issues come back from GitHub). It is orthogonal to D16, the **display blocklist** (which labels are hidden inside the issue card UI). The blocklist still hides hydra workflow labels even when the issue carries `enhancement` or `feature`.
+
 ### D22. Spec-dir discovery: prefer `openspec/specs/`, fall back to `./specs/`
 
 - Only `openspec/specs/`. Rejected: legacy apps pre-dating the `openspec/` convention.
