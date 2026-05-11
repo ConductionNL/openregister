@@ -36,10 +36,10 @@
 
 ## 6. ObjectService.searchObjectsBySlug helper
 
-- [ ] 6.1 Add public `searchObjectsBySlug(string $registerSlug, string $schemaSlug, array $filters = []): array` to `lib/Service/ObjectService.php`. Resolve `$registerSlug` via `RegisterMapper::findBySlug($registerSlug, $orgId)`, resolve `$schemaSlug` via `SchemaMapper::findBySlug($schemaSlug, $orgId)`, then merge `@self.register` and `@self.schema` numeric IDs into `$filters` and delegate to `searchObjects($filters)`.
-- [ ] 6.2 On unknown slug (either side), throw `OCP\AppFramework\Db\DoesNotExistException` with a message identifying which slug failed.
-- [ ] 6.3 Update the docblock on `ObjectService::searchObjects` to state that `@self.register` and `@self.schema` MUST be numeric IDs; link to `searchObjectsBySlug` for slug-aware callers.
-- [ ] 6.4 Unit-test: known-good slug pair returns the same result as the numeric-ID equivalent; unknown register slug throws; unknown schema slug (with valid register) throws; foreign-organisation slug throws.
+- [x] 6.1 Add public `searchObjectsBySlug(string $registerSlug, string $schemaSlug, array $filters = []): array` to `lib/Service/ObjectService.php`. **Implementation note: `RegisterMapper::find()` already accepts slug strings (line 209 — `string|int $id`) and applies the standard organisation filter via `applyOrganisationFilter`; same on `SchemaMapper::find()`. The helper uses the polymorphic `find()` rather than a separate `findBySlug` (which exists on SchemaMapper but not on RegisterMapper, and would require duplicating mapper-level multi-tenancy logic).**
+- [x] 6.2 On unknown slug (either side), throw `OCP\AppFramework\Db\DoesNotExistException` with a message identifying which slug failed (register-side vs schema-side).
+- [x] 6.3 Update the docblock on `ObjectService::searchObjects` to state that `@self.register` and `@self.schema` MUST be numeric IDs; link to `searchObjectsBySlug` for slug-aware callers.
+- [ ] 6.4 Unit-test: known-good slug pair returns the same result as the numeric-ID equivalent; unknown register slug throws; unknown schema slug (with valid register) throws; foreign-organisation slug throws. **(Deferred — same reason as 4.4 / 5.4: no existing unit-test scaffold covers ObjectService search; manual smoke-test re-run in task 7.2 will validate behaviour.)**
 
 ## 7. Smoke-test re-run against bootstrap-openbuilt
 
