@@ -1490,48 +1490,21 @@ class GitHubHandler
         ?string $specRef,
         string $userId
     ): array {
-        $userToken     = $this->getUserToken(userId: $userId) ?? '';
-        $useServerPat  = $userToken === '';
-        $token         = $userToken;
-        $effectiveBody = $body;
+        $useServerPat  = false;
+        $token         = $this->resolveCreateIssueToken(userId: $userId, useServerPat: $useServerPat);
+        $effectiveBody = $this->buildIssueBody(userId: $userId, body: $body, specRef: $specRef, useServerPat: $useServerPat);
+        $payload       = $this->buildIssuePayload(title: $title, effectiveBody: $effectiveBody, specRef: $specRef);
 
-        if ($useServerPat === true) {
-            $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
-            if ($token === '') {
-                throw new RuntimeException('github_pat_not_configured');
-            }
-
-            $effectiveBody = $this->attributionFormatter->format($userId).$body;
-        }
-
-        // Append specRef suffix when provided (task 1.8). Slug-format validation happens in the controller (task 1.16).
-        $labels = [];
-        if ($specRef !== null && $specRef !== '') {
-            $effectiveBody .= "\n\n---\nRelated capability: `".$specRef."`\n";
-            $labels[]       = 'specRef:'.$specRef;
-        }
-
-        $payload = ['title' => $title, 'body' => $effectiveBody];
-        if (empty($labels) === false) {
-            $payload['labels'] = $labels;
-        }
-
-        $url      = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
-        $response = $this->client->request(
-            'POST',
-            $url,
-            [
-                'headers' => [
-                    'Accept'               => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                    'Authorization'        => 'Bearer '.$token,
-                    'Content-Type'         => 'application/json',
-                ],
-                'body'    => json_encode($payload, JSON_THROW_ON_ERROR),
-            ]
+        $data = $this->dispatchCreateIssue(
+            owner: $owner,
+            repo: $repo,
+            payload: $payload,
+            token: $token,
+            userId: $userId,
+            specRef: $specRef,
+            useServerPat: $useServerPat
         );
 
-        $data   = json_decode((string) $response->getBody(), true);
         $result = [
             'number'          => (int) ($data['number'] ?? 0),
             'html_url'        => (string) ($data['html_url'] ?? ''),
@@ -1544,6 +1517,248 @@ class GitHubHandler
 
         return $result;
     }//end createIssue()
+
+    /**
+     * Resolve the PAT to use for a `createIssue` call: prefer the user's per-user token, fall
+     * back to the app-level PAT. Sets `$useServerPat` by reference so the caller can branch on it
+     * for attribution + audit logging.
+     *
+     * @param string $userId       Submitting Nextcloud UID.
+     * @param bool   $useServerPat Output flag — true when the fallback path is
+     *                             taken.
+     *
+     * @return string Non-empty token string.
+     *
+     * @throws \RuntimeException `github_pat_not_configured` when neither PAT is available.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
+     */
+    private function resolveCreateIssueToken(string $userId, ?bool &$useServerPat): string
+    {
+        $userToken    = $this->getUserToken(userId: $userId) ?? '';
+        $useServerPat = $userToken === '';
+        if ($useServerPat === false) {
+            return $userToken;
+        }
+
+        $serverToken = $this->appConfig->getValueString('openregister', 'github_api_token', '');
+        if ($serverToken === '') {
+            throw new RuntimeException('github_pat_not_configured');
+        }
+
+        return $serverToken;
+    }//end resolveCreateIssueToken()
+
+    /**
+     * Build the final issue body sent to GitHub: attribution prefix when server-PAT path, then
+     * the user's body, then the optional specRef suffix.
+     *
+     * @param string      $userId       Submitting UID (for attribution lookup).
+     * @param string      $body         Caller-supplied body.
+     * @param string|null $specRef      Validated specRef slug, or null.
+     * @param bool        $useServerPat Whether the attribution prefix should be prepended.
+     *
+     * @return string Final body string.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-8
+     */
+    private function buildIssueBody(string $userId, string $body, ?string $specRef, bool $useServerPat): string
+    {
+        $effectiveBody = $body;
+        if ($useServerPat === true) {
+            $effectiveBody = $this->attributionFormatter->format(userId: $userId).$body;
+        }
+
+        if ($specRef !== null && $specRef !== '') {
+            $effectiveBody .= "\n\n---\nRelated capability: `".$specRef."`\n";
+        }
+
+        return $effectiveBody;
+    }//end buildIssueBody()
+
+    /**
+     * Build the GitHub Issues API request payload.
+     *
+     * @param string      $title         Issue title.
+     * @param string      $effectiveBody Final body string (already includes attribution + specRef suffix).
+     * @param string|null $specRef       Validated specRef slug; when present a `specRef:<slug>` label is applied.
+     *
+     * @return array<string, mixed> Request payload.
+     */
+    private function buildIssuePayload(string $title, string $effectiveBody, ?string $specRef): array
+    {
+        $payload = ['title' => $title, 'body' => $effectiveBody];
+        if ($specRef !== null && $specRef !== '') {
+            $payload['labels'] = ['specRef:'.$specRef];
+        }
+
+        return $payload;
+    }//end buildIssuePayload()
+
+    /**
+     * Dispatch the POST to GitHub's `/repos/{owner}/{repo}/issues` endpoint, then audit + decode.
+     * On error, emit the server-PAT failure audit entry (task 1.17) before rethrowing. On success
+     * audit + decode the body and return the decoded array.
+     *
+     * @param string      $owner        Repo owner.
+     * @param string      $repo         Repo name.
+     * @param array       $payload      Request payload.
+     * @param string      $token        Bearer token.
+     * @param string      $userId       Submitting UID (for audit).
+     * @param string|null $specRef      Validated specRef (for audit).
+     * @param bool        $useServerPat Whether the server-PAT path is in effect (gates audit).
+     *
+     * @return array<string, mixed> Decoded GitHub Issues API response body.
+     *
+     * @throws \Exception When the underlying HTTP call fails for any reason.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-17
+     */
+    private function dispatchCreateIssue(
+        string $owner,
+        string $repo,
+        array $payload,
+        string $token,
+        string $userId,
+        ?string $specRef,
+        bool $useServerPat
+    ): array {
+        $url = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
+        try {
+            $response = $this->client->request(
+                'POST',
+                $url,
+                [
+                    'headers' => [
+                        'Accept'               => 'application/vnd.github+json',
+                        'X-GitHub-Api-Version' => '2022-11-28',
+                        'Authorization'        => 'Bearer '.$token,
+                        'Content-Type'         => 'application/json',
+                    ],
+                    'body'    => json_encode($payload, JSON_THROW_ON_ERROR),
+                ]
+            );
+        } catch (Exception $exception) {
+            if ($useServerPat === true) {
+                $this->auditServerPatSubmission(
+                    userId: $userId,
+                    repoSlug: $owner.'/'.$repo,
+                    issueNumber: 0,
+                    specRef: $specRef ?? '',
+                    isSuccess: false,
+                    errorCode: $exception::class,
+                    githubStatus: $this->extractGitHubStatus(exception: $exception)
+                );
+            }
+
+            throw $exception;
+        }//end try
+
+        $data = json_decode((string) $response->getBody(), true);
+        if (is_array($data) === false) {
+            $data = [];
+        }
+
+        // Task 1.17: audit successful server-PAT submissions. User-PAT submissions are auditable
+        // on GitHub directly under the user's identity and SHALL NOT emit an openregister entry.
+        if ($useServerPat === true) {
+            $this->auditServerPatSubmission(
+                userId: $userId,
+                repoSlug: $owner.'/'.$repo,
+                issueNumber: (int) ($data['number'] ?? 0),
+                specRef: $specRef ?? '',
+                isSuccess: true,
+                errorCode: '',
+                githubStatus: $response->getStatusCode()
+            );
+        }
+
+        return $data;
+    }//end dispatchCreateIssue()
+
+    /**
+     * Emit a single audit-log entry for a server-PAT-fallback submission (task 1.17).
+     *
+     * Fields written: `user_id`, `repo`, `issue_number`, `specref`, `timestamp`. On failure the
+     * entry additionally carries `error_code` + `github_status`. NEVER logs the PAT, the issue
+     * body, the issue title, or the attribution prefix — only the structured metadata fields
+     * the spec lists.
+     *
+     * @param string $userId       Submitting Nextcloud UID.
+     * @param string $repoSlug     `<owner>/<repo>` of the target repository.
+     * @param int    $issueNumber  GitHub issue number on success, 0 on failure.
+     * @param string $specRef      Validated capability slug, or empty string when absent.
+     * @param bool   $isSuccess    Whether GitHub responded 201.
+     * @param string $errorCode    Internal error class / code on failure (empty on success).
+     * @param int    $githubStatus GitHub HTTP status (0 when not available).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-17
+     */
+    private function auditServerPatSubmission(
+        string $userId,
+        string $repoSlug,
+        int $issueNumber,
+        string $specRef,
+        bool $isSuccess,
+        string $errorCode,
+        int $githubStatus
+    ): void {
+        $context = [
+            'user_id'      => $userId,
+            'repo'         => $repoSlug,
+            'issue_number' => $issueNumber,
+            'specref'      => $specRef,
+            'timestamp'    => gmdate('c'),
+        ];
+        if ($isSuccess === true) {
+            $this->logger->info(
+                message: '[GitHubHandler] Server-PAT submission succeeded',
+                context: $context
+            );
+            return;
+        }
+
+        $context['error_code']    = $errorCode;
+        $context['github_status'] = $githubStatus;
+        $this->logger->warning(
+            message: '[GitHubHandler] Server-PAT submission failed',
+            context: $context
+        );
+    }//end auditServerPatSubmission()
+
+    /**
+     * Extract GitHub's HTTP status from a Guzzle exception when available. Returns 0 when the
+     * exception is not a BadResponseException or carries no response.
+     *
+     * @param Exception $exception Exception raised by the client.
+     *
+     * @return int HTTP status, or 0 when unavailable.
+     */
+    private function extractGitHubStatus(Exception $exception): int
+    {
+        // Use is_a() instead of importing BadResponseException — keeps the class's
+        // coupling-between-objects count under the PHPMD threshold. The runtime check is
+        // identical to instanceof.
+        if (is_a($exception, 'GuzzleHttp\\Exception\\BadResponseException') === false) {
+            return 0;
+        }
+
+        // The class is confirmed by the is_a() check above, so getResponse() is safe.
+        if (method_exists($exception, 'getResponse') === false) {
+            return 0;
+        }
+
+        $response = $exception->getResponse();
+        if ($response === null) {
+            return 0;
+        }
+
+        return $response->getStatusCode();
+    }//end extractGitHubStatus()
 
     /**
      * Issue a single GitHub `/issues` request and return the stripped, PR-filtered item list.

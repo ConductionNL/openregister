@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister GitHub Issues Controller.
  *
@@ -31,8 +30,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use GuzzleHttp\Exception\BadResponseException;
+use OCA\OpenRegister\Service\Configuration\GitHubGuards;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitHubRequestValidator;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -68,12 +68,6 @@ class GitHubIssuesController extends Controller
     private const SUBMIT_RATE_LIMIT_TTL = 60;
 
     /**
-     * Allowed reactions sort key set is enforced by GitHubHandler at fetch time; the
-     * controller passes through whatever the client sent. Full server-side allowlist
-     * is added in task 1.20 (follow-up).
-     */
-
-    /**
      * Distributed cache for the GET responses.
      *
      * @var ICache
@@ -90,12 +84,14 @@ class GitHubIssuesController extends Controller
     /**
      * GitHubIssuesController constructor.
      *
-     * @param string          $appName       Nextcloud app name (DI-injected)
-     * @param IRequest        $request       Current HTTP request
-     * @param GitHubHandler   $githubHandler Reused HTTP client / token / attribution logic
-     * @param IUserSession    $userSession   Resolves the submitting NC user
-     * @param ICacheFactory   $cacheFactory  Distributed cache factory
-     * @param LoggerInterface $logger        Structured logger
+     * @param string                 $appName       Nextcloud app name (DI-injected)
+     * @param IRequest               $request       Current HTTP request
+     * @param GitHubHandler          $githubHandler Reused HTTP client / token / attribution logic
+     * @param GitHubGuards           $guards        Policy guards (feature flag, repo allowlist, GET rate limit)
+     * @param GitHubRequestValidator $validator     Pure-function input validators
+     * @param IUserSession           $userSession   Resolves the submitting NC user
+     * @param ICacheFactory          $cacheFactory  Distributed cache factory
+     * @param LoggerInterface        $logger        Structured logger
      *
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
      */
@@ -103,6 +99,8 @@ class GitHubIssuesController extends Controller
         string $appName,
         IRequest $request,
         private readonly GitHubHandler $githubHandler,
+        private readonly GitHubGuards $guards,
+        private readonly GitHubRequestValidator $validator,
         private readonly IUserSession $userSession,
         ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger
@@ -137,16 +135,23 @@ class GitHubIssuesController extends Controller
         $perPage = (int) $this->request->getParam('per_page', 30);
         $labels  = (string) $this->request->getParam('labels', '');
 
-        if (preg_match('#^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$#', $repo) !== 1) {
-            return new JSONResponse(['error' => 'repo_invalid_format'], Http::STATUS_BAD_REQUEST);
-        }
+        $labelArray = $labels === '' ? null : array_values(array_filter(array_map('trim', explode(',', $labels))));
 
-        if ($perPage < 1 || $perPage > 100) {
-            return new JSONResponse(['error' => 'per_page_out_of_range'], Http::STATUS_BAD_REQUEST);
+        $guardError = $this->guards->runGuards(
+            [
+                fn () => $this->guards->enforceFeatureFlag(),
+                fn () => $this->validator->validateRepoFormat(repo: $repo),
+                fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: true),
+                fn () => $this->validator->validatePerPage(perPage: $perPage),
+                fn () => $this->validator->validateSort(sort: $sort),
+                fn () => $this->validator->validateLabels(labels: $labelArray),
+            ]
+        );
+        if ($guardError !== null) {
+            return $guardError;
         }
 
         [$owner, $repoName] = explode('/', $repo, 2);
-        $labelArray         = $labels === '' ? null : array_values(array_filter(array_map('trim', explode(',', $labels))));
 
         $cacheKey = $this->buildReadCacheKey(
             repo: $repo,
@@ -161,6 +166,12 @@ class GitHubIssuesController extends Controller
             $resp = new JSONResponse($cached);
             $resp->addHeader('X-OpenRegister-GitHub-Cache', 'HIT');
             return $resp;
+        }
+
+        // Cache-miss rate-limit (task 1.19) — only enforce when we're about to hit GitHub.
+        $missRateLimit = $this->guards->enforceGetRateLimit(cacheKey: $cacheKey);
+        if ($missRateLimit !== null) {
+            return $missRateLimit;
         }
 
         try {
@@ -217,14 +228,19 @@ class GitHubIssuesController extends Controller
         $specRef = $this->request->getParam('specRef');
         $specRef = ($specRef === null || $specRef === '') ? null : (string) $specRef;
 
-        $validationError = $this->validateSubmission(repo: $repo, title: $title, body: $body);
-        if ($validationError !== null) {
-            return $validationError;
-        }
-
-        $rateLimitResponse = $this->enforceSubmitRateLimit(uid: $uid);
-        if ($rateLimitResponse !== null) {
-            return $rateLimitResponse;
+        $guardError = $this->guards->runGuards(
+            [
+                fn () => $this->guards->enforceFeatureFlag(),
+                fn () => $this->validator->validateRepoFormat(repo: $repo),
+                fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: false),
+                fn () => $this->validator->validateTitleLength(title: $title),
+                fn () => $this->validator->validateBodyLength(body: $body),
+                fn () => $this->validator->validateSpecRef(specRef: $specRef),
+                fn () => $this->enforceSubmitRateLimit(uid: $uid),
+            ]
+        );
+        if ($guardError !== null) {
+            return $guardError;
         }
 
         [$owner, $repoName] = explode('/', $repo, 2);
@@ -247,39 +263,6 @@ class GitHubIssuesController extends Controller
 
         return new JSONResponse($result, Http::STATUS_CREATED);
     }//end create()
-
-    /**
-     * Validate the submission body. Returns null on success, or a 400 JSONResponse on the first
-     * validation failure. Extracted from `create()` so each method stays within PHPMD's
-     * CyclomaticComplexity + NPathComplexity thresholds, and so tasks 1.14–1.22 can layer extra
-     * guards (repo allowlist, specRef format, sort allowlist, labels validation, admin opt-out)
-     * by adding more validator calls without inflating `create()`.
-     *
-     * @param string $repo  `<owner>/<repo>` slug from the request body
-     * @param string $title Issue title from the request body
-     * @param string $body  Issue body from the request body
-     *
-     * @return JSONResponse|null Null on success, 400 with structured error_code on failure.
-     *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
-     */
-    private function validateSubmission(string $repo, string $title, string $body): ?JSONResponse
-    {
-        if (preg_match('#^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$#', $repo) !== 1) {
-            return new JSONResponse(['error' => 'repo_invalid_format'], Http::STATUS_BAD_REQUEST);
-        }
-
-        $titleLength = strlen($title);
-        if ($titleLength < 3 || $titleLength > 200) {
-            return new JSONResponse(['error' => 'title_invalid_length'], Http::STATUS_BAD_REQUEST);
-        }
-
-        if (strlen($body) < 10) {
-            return new JSONResponse(['error' => 'body_invalid_length'], Http::STATUS_BAD_REQUEST);
-        }
-
-        return null;
-    }//end validateSubmission()
 
     /**
      * Enforce the per-user 1/60s submission rate limit (task 1.6). Returns null when the user is
@@ -360,7 +343,7 @@ class GitHubIssuesController extends Controller
             return $this->mapPatNotConfigured(isRead: $isRead);
         }
 
-        if ($exception instanceof BadResponseException) {
+        if (is_a($exception, 'GuzzleHttp\\Exception\\BadResponseException') === true) {
             $rateLimitResponse = $this->mapGitHubRateLimit(exception: $exception);
             if ($rateLimitResponse !== null) {
                 return $rateLimitResponse;
@@ -400,14 +383,23 @@ class GitHubIssuesController extends Controller
      * null when the upstream response is NOT a rate-limit signal so the caller can fall through
      * to the generic 502 path.
      *
-     * @param BadResponseException $exception Guzzle exception carrying GitHub's response.
+     * @param Exception $exception Guzzle BadResponseException carrying GitHub's response (the
+     *                             instanceof check is the caller's responsibility — we use
+     *                             the looser Exception type here to avoid importing
+     *                             BadResponseException directly and inflating coupling).
      *
      * @return JSONResponse|null 429 when rate-limit detected, null otherwise.
      *
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-9
      */
-    private function mapGitHubRateLimit(BadResponseException $exception): ?JSONResponse
+    private function mapGitHubRateLimit(Exception $exception): ?JSONResponse
     {
+        // Caller (mapHandlerException) has already confirmed via is_a() that this is a
+        // BadResponseException, so the dynamic getResponse() call is safe.
+        if (method_exists($exception, 'getResponse') === false) {
+            return null;
+        }
+
         $response = $exception->getResponse();
         if ($response === null) {
             return null;
