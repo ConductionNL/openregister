@@ -513,6 +513,8 @@ class Application extends App implements IBootstrap
                     appConfig: $container->get('OCP\IAppConfig'),
                     config: $container->get('OCP\IConfig'),
                     cacheFactory: $container->get('OCP\ICacheFactory'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    userManager: $container->get('OCP\IUserManager'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }

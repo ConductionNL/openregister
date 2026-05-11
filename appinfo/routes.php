@@ -738,5 +738,12 @@ return [
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
+
+		// Features & Roadmap menu — GitHub issues proxy (add-features-roadmap-menu).
+		// GET is a cached read (NoCSRFRequired set via controller attribute, pure read).
+		// POST creates a GitHub issue on behalf of the user; CSRF MUST apply, so no
+		// NoCSRFRequired attribute is declared in the controller for the create method.
+		['name' => 'gitHubIssues#index', 'url' => '/api/github/issues', 'verb' => 'GET'],
+		['name' => 'gitHubIssues#create', 'url' => '/api/github/issues', 'verb' => 'POST'],
     ],
 ];
