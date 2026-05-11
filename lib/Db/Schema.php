@@ -1645,13 +1645,59 @@ class Schema extends Entity implements JsonSerializable
             // through the schema's configuration column. Validation of
             // their shape is done by the dedicated validators (e.g.
             // LifecycleAnnotationValidator) at schema-save time.
+            //
+            // The key MUST be in the declared vocabulary — unknown
+            // `x-openregister-*` keys are silently dropped to surface
+            // typos at save time rather than persisting them and having
+            // them silently no-op (e.g. `x-openregister-lifecycl` would
+            // otherwise round-trip without ever firing the listener).
             if (str_starts_with((string) $key, 'x-openregister-') === true) {
-                $validatedConfig[$key] = $value;
-            }
+                if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
+                    $validatedConfig[$key] = $value;
+                } else {
+                    // R07: track unknown `x-openregister-*` keys (almost
+                    // always typos like `x-openregister-lifecycl`) so
+                    // SchemaMapper can log them via its structured
+                    // logger after save. The entity has no DI surface
+                    // for a logger and the ADR added in F06 bans the
+                    // `\OC::$server` static accessor — collecting on
+                    // the entity and bridging through the mapper is
+                    // the cleanest path that still surfaces a signal.
+                    $this->droppedAnnotationKeys[] = (string) $key;
+                }//end if
+            }//end if
         }//end foreach
 
         return $validatedConfig;
     }//end validateConfigurationArray()
+
+    /**
+     * R07: dropped `x-openregister-*` keys collected during the most
+     * recent `validateConfigurationArray()` pass. SchemaMapper reads
+     * this after `setConfiguration()` and emits a logger->warning()
+     * for each entry so operators see a signal without us having to
+     * inject a logger into the entity itself.
+     *
+     * @var array<int, string>
+     */
+    private array $droppedAnnotationKeys = [];
+
+    /**
+     * Return + reset the list of dropped annotation keys.
+     *
+     * Returns the keys collected since the last call (or instance
+     * construction) and then clears the internal buffer so a single
+     * dropped key isn't logged twice across the cleanObject() →
+     * insert/update path.
+     *
+     * @return array<int, string>
+     */
+    public function consumeDroppedAnnotationKeys(): array
+    {
+        $dropped = $this->droppedAnnotationKeys;
+        $this->droppedAnnotationKeys = [];
+        return $dropped;
+    }//end consumeDroppedAnnotationKeys()
 
     /**
      * Validate calendar provider configuration
@@ -1750,6 +1796,27 @@ class Schema extends Entity implements JsonSerializable
             }
         }
     }//end validateAllowedTagsValue()
+
+    /**
+     * Declared `x-openregister-*` annotation keys.
+     *
+     * Keys outside this set are dropped at save time so a typo
+     * (e.g. `x-openregister-lifecycl` instead of `…-lifecycle`) is
+     * caught early instead of silently round-tripping through the
+     * configuration column and having the corresponding listener
+     * never fire.
+     *
+     * @var array<int, string>
+     */
+    private const ANNOTATION_VOCABULARY = [
+        'x-openregister-lifecycle',
+        'x-openregister-aggregations',
+        'x-openregister-calculations',
+        'x-openregister-notifications',
+        'x-openregister-widgets',
+        'x-openregister-relations',
+        'x-openregister-processing-activity',
+    ];
 
     /**
      * Valid linked type values for Nextcloud entity integration

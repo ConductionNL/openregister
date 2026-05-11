@@ -35,6 +35,7 @@ use OCP\Activity\IManager as IActivityManager;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use OCP\IGroupManager;
+use OCP\IServerContainer;
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
@@ -60,6 +61,7 @@ class AnnotationNotificationDispatcher
      * @param IMailer                                                  $mailer              Mailer for the `email` channel.
      * @param IActivityManager                                         $activityManager     Activity manager for the `activity` channel.
      * @param IClientService                                           $httpClient          HTTP client for the `webhook` and `talk` channels.
+     * @param IServerContainer                                         $serverContainer     Server container for expression resolvers (F06).
      * @param RateLimiter|null                                         $rateLimiter         Optional rate limiter (per-rule, per-recipient).
      * @param IConfig|null                                             $config              Optional config service for runtime tunables.
      * @param NotificationHistoryMapper|null                           $historyMapper       Optional history mapper for delivery audit rows.
@@ -77,6 +79,7 @@ class AnnotationNotificationDispatcher
         private readonly IMailer $mailer,
         private readonly IActivityManager $activityManager,
         private readonly IClientService $httpClient,
+        private readonly IServerContainer $serverContainer,
         private readonly ?RateLimiter $rateLimiter=null,
         private readonly ?IConfig $config=null,
         private readonly ?NotificationHistoryMapper $historyMapper=null,
@@ -656,8 +659,16 @@ class AnnotationNotificationDispatcher
             $client = $this->httpClient->newClient();
             // Resolve the local OC URL — Talk's chat endpoint is internal
             // to the NC instance, so we route via the configured overwrite
-            // host or fall back to the loopback.
-            $base = (string) \OC::$server->get(\OCP\IConfig::class)->getSystemValue('overwrite.cli.url', 'http://localhost');
+            // host or fall back to the loopback. The injected IConfig
+            // dependency is preferred; the server container fallback
+            // exists for callers that constructed the dispatcher with
+            // the legacy (no-IConfig) signature.
+            if ($this->config !== null) {
+                $base = (string) $this->config->getSystemValue('overwrite.cli.url', 'http://localhost');
+            } else {
+                $base = (string) $this->serverContainer->get(\OCP\IConfig::class)->getSystemValue('overwrite.cli.url', 'http://localhost');
+            }
+
             $base = rtrim($base, '/');
             $url  = $base.'/ocs/v2.php/apps/spreed/api/v1/chat/'.rawurlencode($token);
 
@@ -814,7 +825,7 @@ class AnnotationNotificationDispatcher
             $kind = (string) ($r['kind'] ?? '');
             if ($kind === 'users') {
                 foreach ((array) ($r['users'] ?? []) as $u) {
-                    if (is_string($u) === true && $u !== '') {
+                    if (is_string($u) === true && $u !== '' && $this->userExists(uid: $u) === true) {
                         $uids[] = $u;
                     }
                 }
@@ -823,9 +834,16 @@ class AnnotationNotificationDispatcher
             }
 
             if ($kind === 'field') {
+                // The field's value comes from the object's stored data,
+                // which is writeable by anyone with `update` permission
+                // on the object. An attacker who controls the field
+                // could otherwise direct notifications at any uid string,
+                // including admins, with an attacker-shaped subject.
+                // Verify the value names a real Nextcloud user before
+                // adding it to the recipient list.
                 $field = (string) ($r['field'] ?? '');
                 $value = ($data[$field] ?? null);
-                if (is_string($value) === true && $value !== '') {
+                if (is_string($value) === true && $value !== '' && $this->userExists(uid: $value) === true) {
                     $uids[] = $value;
                 }
 
@@ -836,7 +854,10 @@ class AnnotationNotificationDispatcher
                 // Resolve a typed relation (declared via x-openregister-relations).
                 // Reads $data[<relationFieldName>] which by convention holds
                 // either a string UID, an array of string UIDs, or an
-                // array of objects each carrying a userId field.
+                // array of objects each carrying a userId field. Same
+                // attacker-controlled-input reasoning as the `field`
+                // kind above — every extracted uid is checked against
+                // IUserManager::userExists().
                 $relName = (string) ($r['relation'] ?? '');
                 if ($relName === '') {
                     continue;
@@ -844,11 +865,13 @@ class AnnotationNotificationDispatcher
 
                 $value = ($data[$relName] ?? null);
                 foreach ($this->extractUidsFromRelation(value: $value) as $uid) {
-                    $uids[] = $uid;
+                    if ($this->userExists(uid: $uid) === true) {
+                        $uids[] = $uid;
+                    }
                 }
 
                 continue;
-            }
+            }//end if
 
             if ($kind === 'object-acl') {
                 if ($object !== null) {
@@ -971,10 +994,15 @@ class AnnotationNotificationDispatcher
     /**
      * Resolve recipients via a DI-tagged RecipientResolverInterface.
      *
-     * Looks up the resolver via \OC::$server (server container) so apps
+     * Looks up the resolver via the injected IServerContainer so apps
      * can register their resolver class by FQCN and have NC autowire
      * its dependencies. Skips silently when the resolver doesn't exist
      * or doesn't implement the interface.
+     *
+     * The previous implementation reached for the `\OC::$server` static
+     * accessor; this PR's ADR (`docs/development-notes/AUDIT_2026-05-01.md`)
+     * bans that pattern in `lib/`. The injected container is functionally
+     * equivalent without coupling to the static accessor.
      *
      * @param string               $resolverTag DI tag (or FQCN) of the resolver service.
      * @param ObjectEntity         $object      The object whose recipients are being resolved.
@@ -989,7 +1017,7 @@ class AnnotationNotificationDispatcher
         }
 
         try {
-            $resolver = \OC::$server->get($resolverTag);
+            $resolver = $this->serverContainer->get($resolverTag);
             if (($resolver instanceof RecipientResolverInterface) === false) {
                 $this->logger->warning(
                     sprintf('[AnnotationNotificationDispatcher] expression resolver "%s" does not implement RecipientResolverInterface', $resolverTag)
@@ -1005,6 +1033,58 @@ class AnnotationNotificationDispatcher
             return [];
         }
     }//end resolveExpressionRecipients()
+
+    /**
+     * Verify that a uid corresponds to an actual Nextcloud user.
+     *
+     * Notification recipient lists pull strings from object data
+     * (`field` / `relation` kinds) and from schema annotations
+     * (`users` kind). Without this check, an attacker who can write
+     * objects in a schema using `field` recipients could direct a
+     * notification (with an attacker-shaped subject) at any uid string
+     * — including admins. Backed by a per-request cache to keep the
+     * cost flat across N recipients in a single dispatch.
+     *
+     * @param string $uid Candidate Nextcloud user identifier.
+     *
+     * @return bool True when the uid corresponds to a real Nextcloud user.
+     */
+    private function userExists(string $uid): bool
+    {
+        if ($uid === '') {
+            return false;
+        }
+
+        if (isset($this->userExistsCache[$uid]) === true) {
+            return $this->userExistsCache[$uid];
+        }
+
+        // R06: only cache definitive verdicts. A `\Throwable` from
+        // IUserManager (transient DB/LDAP failure, momentary container
+        // hiccup) is NOT a definitive "user doesn't exist" — caching it
+        // would silently drop every notification for this uid for the
+        // rest of the request, even after the underlying problem
+        // clears. Log + return false WITHOUT writing to the cache so
+        // the next call within the same request retries the lookup.
+        try {
+            $exists = $this->userManager->userExists($uid);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                sprintf('[AnnotationNotificationDispatcher] userExists check failed for "%s" (not cached, will retry): %s', $uid, $e->getMessage())
+            );
+            return false;
+        }
+
+        $this->userExistsCache[$uid] = (bool) $exists;
+        return $this->userExistsCache[$uid];
+    }//end userExists()
+
+    /**
+     * Per-request cache for userExists() lookups.
+     *
+     * @var array<string, bool>
+     */
+    private array $userExistsCache = [];
 
     /**
      * Extract candidate UIDs from a relation value. The relation value
@@ -1188,6 +1268,20 @@ class AnnotationNotificationDispatcher
     /**
      * Replace {{prop}} tokens with values from $data, then $context.
      *
+     * Substituted values are HTML-escaped at the source as defence in
+     * depth. The rendered subject ends up in:
+     *   - INotificationManager (HTML render path in the NC notification UI),
+     *   - the Activity stream (HTML render path),
+     *   - email subject/body (plain-text setPlainBody, but still rendered
+     *     by mail clients that may interpret HTML in the subject line).
+     * Nextcloud's own rendering layers escape on output, so this is a
+     * second layer rather than the only one — but it keeps the
+     * `<script>` / `"` / `&` characters that come from object data
+     * from being placed into a notification context without escaping.
+     *
+     * The literal template fragments authored by the schema author
+     * pass through unchanged (they aren't sourced from object data).
+     *
      * @param string               $template The raw subject template.
      * @param array<string, mixed> $data     Object data for `{{prop}}` lookup.
      * @param array<string, mixed> $context  Per-event context for `{{prop}}` lookup.
@@ -1201,11 +1295,19 @@ class AnnotationNotificationDispatcher
             static function (array $matches) use ($data, $context): string {
                 $key = $matches[1];
                 if (array_key_exists($key, $data) === true) {
-                    return is_scalar($data[$key]) === true ? (string) $data[$key] : '';
+                    if (is_scalar($data[$key]) === false) {
+                        return '';
+                    }
+
+                    return htmlspecialchars((string) $data[$key], ENT_QUOTES, 'UTF-8');
                 }
 
                 if (array_key_exists($key, $context) === true) {
-                    return is_scalar($context[$key]) === true ? (string) $context[$key] : '';
+                    if (is_scalar($context[$key]) === false) {
+                        return '';
+                    }
+
+                    return htmlspecialchars((string) $context[$key], ENT_QUOTES, 'UTF-8');
                 }
 
                 return '';
