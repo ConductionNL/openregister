@@ -30,8 +30,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use DateTimeZone;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\Exception as DbException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -87,7 +89,12 @@ class NotificationDispatchLogMapper extends QBMapper
         string $idempotencyKey,
         int $windowSeconds=self::DEFAULT_WINDOW_SECONDS
     ): bool {
-        $cutoff = new DateTime();
+        // Use UTC consistently: PHP server timezone may differ from the DB
+        // session timezone, and 'Y-m-d H:i:s' in local time would let
+        // duplicates slip through (or, conversely, double-fire across DST
+        // boundaries). Keep the cutoff anchored to UTC and write `dispatched_at`
+        // rows the same way in record().
+        $cutoff = new DateTime('now', new DateTimeZone('UTC'));
         $cutoff->modify(sprintf('-%d seconds', $windowSeconds));
 
         $qb = $this->db->getQueryBuilder();
@@ -133,15 +140,47 @@ class NotificationDispatchLogMapper extends QBMapper
      * @param string $idempotencyKey   The resolved idempotency key.
      *
      * @return NotificationDispatchLog The persisted entity.
+     *
+     * @throws DuplicateDispatchException When the unique
+     *         (notification_slug, idempotency_key) constraint trips —
+     *         signals that a concurrent dispatcher won the race. Callers
+     *         MUST abort the send before flagging the message as
+     *         delivered (see AnnotationNotificationDispatcher).
      */
     public function record(string $notificationSlug, string $idempotencyKey): NotificationDispatchLog
     {
         $entity = new NotificationDispatchLog();
         $entity->setNotificationSlug($notificationSlug);
         $entity->setIdempotencyKey($idempotencyKey);
-        $entity->setDispatchedAt(new DateTime());
+        // Always store dispatched_at in UTC so it is comparable to the
+        // UTC cutoff isDuplicate() computes — see the timezone fix on
+        // that method.
+        $entity->setDispatchedAt(new DateTime('now', new DateTimeZone('UTC')));
 
-        return $this->insert(entity: $entity);
+        try {
+            return $this->insert(entity: $entity);
+        } catch (DbException $e) {
+            // Reason: the migration installs a UNIQUE index on
+            // (notification_slug, idempotency_key) precisely so this insert
+            // is the authoritative serialisation point — isDuplicate() only
+            // narrows the window in the common case. Two dispatchers passing
+            // isDuplicate() concurrently will both reach this insert; the
+            // second one's INSERT trips the unique constraint and we surface
+            // a clearly-typed exception so the caller stops the send.
+            if ($e->getReason() === DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+                throw new DuplicateDispatchException(
+                    sprintf(
+                        'Duplicate dispatch: (slug=%s, key=%s) already recorded',
+                        $notificationSlug,
+                        $idempotencyKey
+                    ),
+                    0,
+                    $e
+                );
+            }
+
+            throw $e;
+        }//end try
 
     }//end record()
 
@@ -159,7 +198,10 @@ class NotificationDispatchLogMapper extends QBMapper
      */
     public function pruneExpired(int $windowSeconds=self::DEFAULT_WINDOW_SECONDS): int
     {
-        $cutoff = new DateTime();
+        // Match isDuplicate(): the prune cutoff is anchored to UTC so it is
+        // directly comparable to the UTC-formatted `dispatched_at` rows
+        // record() writes.
+        $cutoff = new DateTime('now', new DateTimeZone('UTC'));
         $cutoff->modify(sprintf('-%d seconds', $windowSeconds));
 
         try {

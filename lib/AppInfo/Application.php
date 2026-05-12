@@ -712,7 +712,6 @@ class Application extends App implements IBootstrap
                 return new TenantKeyService(
                     db: $container->get('OCP\IDBConnection'),
                     crypto: $container->get('OCP\Security\ICrypto'),
-                    secureRandom: $container->get('OCP\Security\ISecureRandom'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }

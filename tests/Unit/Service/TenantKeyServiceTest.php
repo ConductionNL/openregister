@@ -31,7 +31,6 @@ use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\Security\ICrypto;
-use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -53,11 +52,6 @@ class TenantKeyServiceTest extends TestCase
      * @var ICrypto&MockObject
      */
     private ICrypto $crypto;
-
-    /**
-     * @var ISecureRandom&MockObject
-     */
-    private ISecureRandom $secureRandom;
 
     /**
      * @var LoggerInterface&MockObject
@@ -107,15 +101,13 @@ class TenantKeyServiceTest extends TestCase
             fn(string $cipher): string => str_starts_with($cipher, 'ENC:') ? substr($cipher, 4) : ''
         );
 
-        $this->secureRandom = $this->createMock(ISecureRandom::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
 
         $db = $this->buildDb();
 
         return new TenantKeyService(
             db: $db,
             crypto: $this->crypto,
-            secureRandom: $this->secureRandom,
             logger: $this->logger
         );
     }//end makeService()

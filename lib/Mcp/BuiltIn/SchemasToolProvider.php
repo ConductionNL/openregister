@@ -146,9 +146,16 @@ class SchemasToolProvider implements IMcpToolProvider
         $limit  = $arguments['limit'] ?? null;
         $offset = $arguments['offset'] ?? null;
 
+        // IDOR boundary (IMcpToolProvider contract): SchemaMapper::findAll
+        // applies RBAC + multi-tenancy filtering when its $_rbac and
+        // $_multitenancy flags are true (the defaults). We pass them
+        // explicitly so a service-default refactor cannot silently widen
+        // this query across tenants.
         $schemas = $this->schemaMapper->findAll(
             limit: $limit,
-            offset: $offset
+            offset: $offset,
+            _rbac: true,
+            _multitenancy: true
         );
 
         return array_map(

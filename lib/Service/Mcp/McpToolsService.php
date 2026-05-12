@@ -148,7 +148,11 @@ class McpToolsService
                 ],
                 'isError' => false,
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // Catch \Throwable, not \Exception: TypeError / ArgumentCountError
+            // and friends are \Error subclasses. If we only caught \Exception
+            // those would propagate to the framework as fatal 500s without
+            // the SSE / JSON envelope the caller is parsing.
             $this->logger->error(
                 message: '[MCP] Tool execution failed',
                 context: ['tool' => $name, 'error' => $e->getMessage()]
@@ -194,7 +198,9 @@ class McpToolsService
                 'result'  => $result,
                 'isError' => false,
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // See callTool(): catching \Throwable (not \Exception) prevents
+            // \Error subclasses from escaping the MCP envelope.
             $this->logger->error(
                 message: '[MCP] invokeTool failed',
                 context: ['tool' => $toolId, 'error' => $e->getMessage()]

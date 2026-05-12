@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\Notification;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -149,10 +150,21 @@ class AnnotationNotificationDispatcher
 
             // Idempotency-key dedup: when the rule declares an
             // `idempotencyKey` template, resolve it against the object
-            // and check the dispatch log. A match within the window
-            // (default 24 h) is a no-op — the dispatch is logged at
-            // info level and skipped. The log row is written after the
-            // actual send so a failed emit never poisons the dedup table.
+            // and CLAIM the slot in the dispatch log BEFORE sending.
+            //
+            // The previous design checked the log first, sent, then
+            // recorded after success — that left a TOCTOU window where
+            // two concurrent dispatchers could both pass the check, both
+            // send, then both try to record. With the unique
+            // (notification_slug, idempotency_key) index installed in
+            // Version1Date20260511120000, claim-first turns the index
+            // into the authoritative serialisation point: only the
+            // dispatcher whose INSERT wins proceeds.
+            //
+            // Trade-off acknowledged: a failed send after a successful
+            // claim leaves a dedup row that prevents retry until the
+            // window expires. That is preferable to double-sending
+            // under concurrency (which is what the prior order did).
             $idempotencyKeyTemplate = ($spec['idempotencyKey'] ?? null);
             $resolvedIdempotencyKey = null;
             if (is_string($idempotencyKeyTemplate) === true && $idempotencyKeyTemplate !== '') {
@@ -161,7 +173,7 @@ class AnnotationNotificationDispatcher
                     object: $object,
                     data: $data
                 );
-                if ($this->idempotencyAllows(slug: (string) $name, key: $resolvedIdempotencyKey) === false) {
+                if ($this->claimIdempotencyKey(slug: (string) $name, key: $resolvedIdempotencyKey) === false) {
                     $this->logger->info(
                         sprintf(
                             '[AnnotationNotificationDispatcher] deduplicated rule="%s" key="%s"',
@@ -353,13 +365,6 @@ class AnnotationNotificationDispatcher
                     );
                 }
             }//end foreach
-
-            // Record the successful dispatch in the idempotency log so
-            // subsequent dispatches with the same key are deduplicated.
-            // Best-effort: a DB failure must never block the dispatch path.
-            if ($resolvedIdempotencyKey !== null) {
-                $this->recordDispatchLog(slug: (string) $name, key: $resolvedIdempotencyKey);
-            }
         }//end foreach
 
     }//end dispatch()
@@ -503,22 +508,32 @@ class AnnotationNotificationDispatcher
     }//end coalesceAllows()
 
     /**
-     * Check the idempotency-key dedup log.
+     * Claim the idempotency slot for (slug, key) atomically.
      *
-     * Returns false (i.e. "do NOT dispatch") when a row for the
-     * (slug, key) pair already exists within the default 24 h window.
+     * Inserts the dedup row up-front so the unique
+     * (notification_slug, idempotency_key) index is the authoritative
+     * serialisation point under concurrency. Returns true when the
+     * claim succeeded (caller may dispatch) and false when the row
+     * already exists within the dedup window (caller must skip).
+     *
      * A null mapper (test contexts, older fixtures) always allows so
      * no test has to construct the mapper just to pass the guard.
      *
-     * Also runs a best-effort prune before each check so the table
-     * does not grow unboundedly without a separate cron job.
+     * Side-effects:
+     *   - Runs a best-effort prune before claiming so the table does
+     *     not grow unboundedly without a separate cron job.
+     *   - On non-duplicate DB error returns true (the dispatch should
+     *     not be blocked by infrastructure failure) and logs at warning
+     *     level so the operator can investigate.
      *
      * @param string $slug The notification annotation key.
      * @param string $key  The resolved idempotency key.
      *
-     * @return bool True when the dispatch may proceed (not a duplicate).
+     * @return bool True when the dispatch may proceed (claim succeeded
+     *              or mapper unavailable); false when a competing
+     *              dispatcher already claimed this (slug, key).
      */
-    private function idempotencyAllows(string $slug, string $key): bool
+    private function claimIdempotencyKey(string $slug, string $key): bool
     {
         if ($this->dispatchLogMapper === null) {
             return true;
@@ -528,48 +543,33 @@ class AnnotationNotificationDispatcher
         // inside the mapper.
         $this->dispatchLogMapper->pruneExpired();
 
-        return $this->dispatchLogMapper->isDuplicate(
-            notificationSlug: $slug,
-            idempotencyKey: $key
-        ) === false;
-
-    }//end idempotencyAllows()
-
-    /**
-     * Write the idempotency log row after a successful dispatch.
-     *
-     * Best-effort: a DB failure must never block the dispatch path.
-     * When the mapper is missing (older test fixtures) or throws,
-     * we log at debug level and return.
-     *
-     * @param string $slug The notification annotation key.
-     * @param string $key  The resolved idempotency key.
-     *
-     * @return void
-     */
-    private function recordDispatchLog(string $slug, string $key): void
-    {
-        if ($this->dispatchLogMapper === null) {
-            return;
-        }
-
         try {
             $this->dispatchLogMapper->record(
                 notificationSlug: $slug,
                 idempotencyKey: $key
             );
+            return true;
+        } catch (DuplicateDispatchException) {
+            // Concurrent dispatcher beat us to the (slug, key) slot, or
+            // a previous send within the window already recorded it.
+            // Either way: do not dispatch.
+            return false;
         } catch (\Throwable $e) {
-            $this->logger->debug(
+            // Genuine DB failure (table missing in test fixtures, etc.).
+            // Fail-open: dispatch proceeds so a transient infra issue
+            // doesn't silently drop user-visible notifications.
+            $this->logger->warning(
                 sprintf(
-                    '[AnnotationNotificationDispatcher] dispatch log record failed (slug=%s key=%s): %s',
+                    '[AnnotationNotificationDispatcher] idempotency claim failed (slug=%s key=%s): %s',
                     $slug,
                     $key,
                     $e->getMessage()
                 )
             );
-        }
+            return true;
+        }//end try
 
-    }//end recordDispatchLog()
+    }//end claimIdempotencyKey()
 
     /**
      * Resolve a `${@self.<field>}` idempotency-key template against the object.

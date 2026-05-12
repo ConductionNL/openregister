@@ -36,7 +36,6 @@ use DateTime;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\Security\ICrypto;
-use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -66,15 +65,22 @@ class TenantKeyService
     /**
      * Constructor.
      *
-     * @param IDBConnection   $db           Database connection
-     * @param ICrypto         $crypto       Nextcloud crypto service (encrypt/decrypt at rest)
-     * @param ISecureRandom   $secureRandom Nextcloud CSPRNG
-     * @param LoggerInterface $logger       PSR logger
+     * Note on randomness: this service uses PHP's `random_bytes()` directly
+     * (see generateKey()). It does NOT inject `ISecureRandom`. Both back
+     * the same OS CSPRNG; `random_bytes()` is preferable here because it
+     * raises a typed exception on entropy failure rather than returning a
+     * short string, and the resulting bytes can be hex-encoded without an
+     * extra alphabet round-trip. Don't reintroduce ISecureRandom as a
+     * constructor parameter unless an actual call site needs it — it is
+     * misleading dead-code if it isn't called.
+     *
+     * @param IDBConnection   $db     Database connection
+     * @param ICrypto         $crypto Nextcloud crypto service (encrypt/decrypt at rest)
+     * @param LoggerInterface $logger PSR logger
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly ICrypto $crypto,
-        private readonly ISecureRandom $secureRandom,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()

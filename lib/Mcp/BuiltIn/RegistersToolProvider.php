@@ -146,9 +146,16 @@ class RegistersToolProvider implements IMcpToolProvider
         $limit  = $arguments['limit'] ?? null;
         $offset = $arguments['offset'] ?? null;
 
+        // IDOR boundary (IMcpToolProvider contract): RegisterService::findAll
+        // applies RBAC + multi-tenancy filtering by default — the underlying
+        // mapper joins on the active organisation and filters by RBAC role.
+        // We pass the flags explicitly so a future refactor of the service
+        // defaults cannot silently widen this query to all-tenants. Do NOT
+        // disable either flag here.
         $registers = $this->registerService->findAll(
             limit: $limit,
-            offset: $offset
+            offset: $offset,
+            _multitenancy: true
         );
 
         return array_map(

@@ -33,20 +33,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use Exception;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\ChatService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
+use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
+use Throwable;
 
 /**
  * ChatStreamController
@@ -65,6 +65,24 @@ use Psr\Log\LoggerInterface;
  */
 class ChatStreamController extends Controller
 {
+
+    /**
+     * Forbidden error sentinel used by resolveConversation() when the
+     * caller does not own the requested conversation.
+     *
+     * @var string
+     */
+    private const ERROR_FORBIDDEN = 'cn_chat_stream_forbidden';
+
+    /**
+     * Generic public-facing error message. We deliberately never leak
+     * exception messages over the SSE wire — they can contain DB
+     * connection strings, API key fragments or internal paths. The
+     * full $e->getMessage() is recorded in the logger instead.
+     *
+     * @var string
+     */
+    private const PUBLIC_ERROR_MESSAGE = 'An internal error occurred.';
 
     /**
      * Chat service for processing messages.
@@ -102,6 +120,15 @@ class ChatStreamController extends Controller
     private readonly IUserSession $userSession;
 
     /**
+     * Database connection, used to commit any open transaction before
+     * the SSE handler bypasses the framework via exit; — preventing the
+     * connection-leak risk flagged in the design review.
+     *
+     * @var IDBConnection
+     */
+    private readonly IDBConnection $db;
+
+    /**
      * Constructor.
      *
      * @param string             $appName            Application name.
@@ -111,6 +138,7 @@ class ChatStreamController extends Controller
      * @param AgentMapper        $agentMapper        Agent mapper.
      * @param LoggerInterface    $logger             Logger.
      * @param IUserSession       $userSession        User session.
+     * @param IDBConnection      $db                 Database connection.
      */
     public function __construct(
         string $appName,
@@ -119,7 +147,8 @@ class ChatStreamController extends Controller
         ConversationMapper $conversationMapper,
         AgentMapper $agentMapper,
         LoggerInterface $logger,
-        IUserSession $userSession
+        IUserSession $userSession,
+        IDBConnection $db
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->chatService        = $chatService;
@@ -127,6 +156,7 @@ class ChatStreamController extends Controller
         $this->agentMapper        = $agentMapper;
         $this->logger      = $logger;
         $this->userSession = $userSession;
+        $this->db          = $db;
     }//end __construct()
 
     /**
@@ -136,10 +166,16 @@ class ChatStreamController extends Controller
      * final event after the synchronous LLM call completes; token-by-token
      * streaming is a follow-up.
      *
+     * The method always terminates with exit; — it bypasses the NC response
+     * pipeline because the SSE framing must reach the wire before that
+     * pipeline would buffer it. The declared `: Response` return type is a
+     * formality required by the framework; cleanup before exit; is funnelled
+     * through emitAndExit() so DB transactions never leak under PHP-FPM.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return Response Unused — the method emits SSE directly and exits.
+     * @return Response Never returned — emitAndExit() always terminates.
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -158,8 +194,10 @@ class ChatStreamController extends Controller
         try {
             $user = $this->userSession->getUser();
             if ($user === null) {
-                $this->emitSseEvent(eventType: 'error', payload: ['code' => 'unauthenticated', 'message' => 'Authentication required']);
-                exit;
+                $this->emitAndExit(
+                    eventType: 'error',
+                    payload: ['code' => 'unauthenticated', 'message' => 'Authentication required']
+                );
             }
 
             $userId  = $user->getUID();
@@ -172,8 +210,10 @@ class ChatStreamController extends Controller
 
             $userMessage = trim((string) ($body['message'] ?? ''));
             if ($userMessage === '') {
-                $this->emitSseEvent(eventType: 'error', payload: ['code' => 'missing_message', 'message' => 'message content is required']);
-                exit;
+                $this->emitAndExit(
+                    eventType: 'error',
+                    payload: ['code' => 'missing_message', 'message' => 'message content is required']
+                );
             }
 
             // Resolve agent + conversation.
@@ -182,40 +222,50 @@ class ChatStreamController extends Controller
             $context          = $body['context'] ?? null;
 
             // Widget UX: when the widget opens a fresh chat it doesn't know which
-            // agent to use (no agent picker in v1). Fall back to the first agent
-            // the user can access if neither agentUuid nor conversationUuid was
-            // supplied. Matches the "one global thread per (user, agent)"
-            // architectural decision in hydra ADR-034.
+            // agent to use (no agent picker in v1). Fall back to an agent the
+            // CURRENT USER can access (owner / non-private / invited), never the
+            // first agent in the table — that would cross tenant/user boundaries
+            // in a multi-user deployment.
             if ($conversationUuid === '' && $agentUuid === '') {
-                try {
-                    $agents = $this->agentMapper->findAll(limit: 1);
-                    if (count($agents) > 0) {
-                        $agentUuid = $agents[0]->getUuid();
-                    }
-                } catch (\Throwable $e) {
-                    // Fall through to the missing_agent error below.
-                }
+                $agentUuid = $this->pickFallbackAgentForUser(userId: $userId);
             }
 
             if ($conversationUuid === '' && $agentUuid === '') {
-                $this->emitSseEvent(
+                $this->emitAndExit(
                     eventType: 'error',
                     payload: [
                         'code'    => 'missing_agent',
                         'message' => 'No agent available; configure one in OpenRegister settings.',
                     ]
                 );
-                exit;
             }
 
-            $conversation = $this->resolveConversation(conversationUuid: $conversationUuid, agentUuid: $agentUuid, userId: $userId);
+            try {
+                $conversation = $this->resolveConversation(
+                    conversationUuid: $conversationUuid,
+                    agentUuid: $agentUuid,
+                    userId: $userId
+                );
+            } catch (RuntimeException $e) {
+                if ($e->getMessage() === self::ERROR_FORBIDDEN) {
+                    $this->emitAndExit(
+                        eventType: 'error',
+                        payload: ['code' => 'forbidden', 'message' => 'Forbidden']
+                    );
+                }
+
+                throw $e;
+            }
 
             // Persist context on the next message before delegating to ChatService.
             // ChatService::processMessage will create the user-authored Message row;
-            // the orchestrator's Message.context migration ensures the column exists
-            // and ChatService writes the field. For now we pass context via the
-            // ragSettings extension shim until ChatService grows a first-class
-            // context parameter — wired in a follow-up.
+            // the orchestrator's Message.context migration ensures the column exists.
+            // TODO: ChatService/HistoryHandler currently has no `context` parameter,
+            // so the JSON column is not yet populated. Tracked in
+            // openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md
+            // (#messagecontext-json-column) — wire ChatService::processMessage
+            // through to MessageMapper as a follow-up. Until then, the context is
+            // forwarded through the ragSettings shim only.
             $ragSettings = ['__cn_ai_context__' => $context];
 
             // Emit a heartbeat right after headers so the client knows we're alive
@@ -239,27 +289,75 @@ class ChatStreamController extends Controller
                 'fullText'         => (string) ($result['response'] ?? $result['message'] ?? ''),
                 'context'          => $context,
             ];
-            $this->emitSseEvent(eventType: 'final', payload: $finalPayload);
-            exit;
-        } catch (Exception $e) {
+            $this->emitAndExit(eventType: 'final', payload: $finalPayload);
+        } catch (Throwable $e) {
             $this->logger->error(
                 message: '[ChatStreamController] Stream failed',
                 context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e,
+                    'error'     => $e->getMessage(),
                 ]
             );
-            $this->emitSseEvent(
+            $this->emitAndExit(
                 eventType: 'error',
                 payload: [
                     'code'    => 'stream_failed',
-                    'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Stream failed',
+                    'message' => self::PUBLIC_ERROR_MESSAGE,
                 ]
             );
-            exit;
         }//end try
+
+        // Unreachable — emitAndExit() never returns. Present so static
+        // analysers do not complain about the declared `: Response` return
+        // type. The SSE framing is already written to the wire by the time
+        // we get anywhere near this line.
+        return new Response();
     }//end stream()
+
+    /**
+     * Emit a single SSE frame, commit any open DB transaction, then exit.
+     *
+     * Centralising every termination point through this helper ensures that
+     * the connection-leak risk of bypassing NC's response pipeline (see the
+     * Stream design doc, "exit; under PHP-FPM" section) is mitigated: any
+     * in-flight transaction is committed before the process is torn down.
+     *
+     * @param string               $eventType Event type.
+     * @param array<string, mixed> $payload   JSON-encodable payload.
+     *
+     * @return never
+     */
+    private function emitAndExit(string $eventType, array $payload): never
+    {
+        $this->emitSseEvent(eventType: $eventType, payload: $payload);
+        $this->safeShutdown();
+        exit;
+    }//end emitAndExit()
+
+    /**
+     * Commit any open DB transaction so the connection can be released
+     * cleanly when PHP shuts the process down after exit;.
+     *
+     * Best-effort: swallow any exception so cleanup never masks the
+     * user-visible SSE frame we just emitted.
+     *
+     * @return void
+     */
+    private function safeShutdown(): void
+    {
+        try {
+            if ($this->db->inTransaction() === true) {
+                $this->db->commit();
+            }
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[ChatStreamController] Shutdown commit failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }
+    }//end safeShutdown()
 
     /**
      * Emit a single SSE frame and flush.
@@ -279,11 +377,49 @@ class ChatStreamController extends Controller
     }//end emitSseEvent()
 
     /**
+     * Find an agent the current user is allowed to start a conversation with.
+     *
+     * Iterates agents (most-recent first) and returns the first uuid whose
+     * canUserAccessAgent() check passes — non-private OR owned-by-user OR
+     * invited. Falls back to '' when no accessible agent exists. NEVER
+     * returns "the first row of openregister_agents regardless of owner":
+     * that was the original implementation and caused cross-user data
+     * exposure in multi-user deployments.
+     *
+     * @param string $userId Nextcloud user id.
+     *
+     * @return string The accessible agent uuid, or '' when none is found.
+     */
+    private function pickFallbackAgentForUser(string $userId): string
+    {
+        try {
+            // Cheap cap — we only need the first match. Twenty rows is
+            // enough headroom for any realistic instance.
+            $agents = $this->agentMapper->findAll(limit: 20);
+            foreach ($agents as $agent) {
+                if ($this->agentMapper->canUserAccessAgent(agent: $agent, userId: $userId) === true) {
+                    return (string) $agent->getUuid();
+                }
+            }
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[ChatStreamController] Agent fallback lookup failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }
+
+        return '';
+    }//end pickFallbackAgentForUser()
+
+    /**
      * Resolve (load or create) the conversation referenced by the request.
      *
      * Mirrors ChatController::resolveConversation but kept local so this
      * controller does not couple to the existing chat controller's private
-     * helpers.
+     * helpers. When a conversationUuid is supplied, ownership is verified
+     * against the calling user — preventing the IDOR described in the
+     * security review (any authed user could otherwise read/append to
+     * another user's thread by guessing the uuid).
      *
      * @param string $conversationUuid Conversation UUID or '' to create new.
      * @param string $agentUuid        Agent UUID (required when creating new).
@@ -291,12 +427,25 @@ class ChatStreamController extends Controller
      *
      * @return Conversation Resolved conversation.
      *
-     * @throws Exception When neither uuid is sufficient to resolve a conversation.
+     * @throws RuntimeException When the caller does not own the conversation
+     *                          (message === self::ERROR_FORBIDDEN); the
+     *                          stream() entry point translates this into the
+     *                          `forbidden` SSE error.
      */
     private function resolveConversation(string $conversationUuid, string $agentUuid, string $userId): Conversation
     {
         if ($conversationUuid !== '') {
-            return $this->conversationMapper->findByUuid(uuid: $conversationUuid);
+            $conversation = $this->conversationMapper->findByUuid(uuid: $conversationUuid);
+
+            // IDOR guard: findByUuid() does not scope by user, so we MUST
+            // verify the conversation belongs to the caller. Without this
+            // check any authed user could supply any conversationUuid and
+            // hijack another user's thread.
+            if ($conversation->getUserId() !== $userId) {
+                throw new RuntimeException(self::ERROR_FORBIDDEN);
+            }
+
+            return $conversation;
         }
 
         // Need an agent to create a new conversation.

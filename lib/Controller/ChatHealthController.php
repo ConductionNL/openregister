@@ -32,6 +32,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * ChatHealthController
@@ -60,21 +61,31 @@ class ChatHealthController extends Controller
     private readonly SettingsService $settingsService;
 
     /**
+     * Logger.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
+    /**
      * Constructor
      *
      * @param string          $appName         Application name
      * @param IRequest        $request         HTTP request object
      * @param SettingsService $settingsService Settings service for LLM config
+     * @param LoggerInterface $logger          Logger for surfacing config errors
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        SettingsService $settingsService
+        SettingsService $settingsService,
+        LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->settingsService = $settingsService;
+        $this->logger          = $logger;
     }//end __construct()
 
     /**
@@ -112,8 +123,23 @@ class ChatHealthController extends Controller
                 statusCode: 200
             );
         } catch (\Throwable $e) {
+            // Distinguish "configuration service failed" from "no provider
+            // configured". Returning 'no_provider' for both made it
+            // impossible to tell a fresh instance (genuinely unconfigured)
+            // from a broken config service (deserialisation, DB connectivity
+            // etc.). Operators need that signal; the widget can still treat
+            // any non-200 as "no AI" without branching.
+            $this->logger->warning(
+                message: '[ChatHealthController] Health probe failed reading LLM settings',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e,
+                    'error'     => $e->getMessage(),
+                ]
+            );
             return new JSONResponse(
-                data: ['status' => 'no_provider'],
+                data: ['status' => 'config_error'],
                 statusCode: 503
             );
         }//end try

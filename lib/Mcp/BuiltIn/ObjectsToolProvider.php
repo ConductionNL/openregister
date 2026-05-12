@@ -172,6 +172,11 @@ class ObjectsToolProvider implements IMcpToolProvider
             $config['offset'] = $arguments['offset'];
         }
 
+        // IDOR boundary (IMcpToolProvider contract): ObjectService::findAll
+        // applies RBAC + multi-tenancy filtering by default; we rely on the
+        // service-default behaviour because the object pipeline has many
+        // filtering knobs and toggling them per-call would be fragile.
+        // Do NOT pass _rbac: false or _multitenancy: false from this path.
         $objects = $this->objectService->findAll(config: $config);
 
         return array_map(
