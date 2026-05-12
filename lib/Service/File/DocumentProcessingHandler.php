@@ -58,14 +58,18 @@ class DocumentProcessingHandler
     /**
      * Constructor for DocumentProcessingHandler.
      *
-     * @param IRootFolder     $rootFolder  Root folder for file access.
-     * @param IUserSession    $userSession User session for getting current user.
-     * @param LoggerInterface $logger      Logger for logging operations.
+     * @param IRootFolder                               $rootFolder           Root folder for file access.
+     * @param IUserSession                              $userSession          User session for getting current user.
+     * @param LoggerInterface                           $logger               Logger for logging operations.
+     * @param \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper Used to honour skip-anonymization
+     *                                                                        flags during the redaction pass
+     *                                                                        (see `entity-relation-grondslagen`).
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper
     ) {
     }//end __construct()
 
@@ -151,6 +155,19 @@ class DocumentProcessingHandler
      */
     public function anonymizeDocument(Node $node, array $entities): File
     {
+        // Defensive filter — per the `entity-relation-grondslagen` change,
+        // the DI anonymise path MUST honour the operator's skip decisions
+        // even when the caller's entities[] array includes flagged
+        // occurrences. The OR contract is "skipped relations are never
+        // redacted, full stop", regardless of caller filtering behaviour.
+        $skippedValues = [];
+        if (method_exists($node, 'getId') === true) {
+            $fileId = $node->getId();
+            if (is_int($fileId) === true && $fileId > 0) {
+                $skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
+            }
+        }
+
         // Build replacements array from entities.
         $replacements = [];
         foreach ($entities as $entity) {
@@ -158,7 +175,9 @@ class DocumentProcessingHandler
             $entityType   = $entity['entityType'] ?? 'UNKNOWN';
             $key          = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
 
-            if (empty($originalText) === false) {
+            if (empty($originalText) === false
+                && in_array($originalText, $skippedValues, true) === false
+            ) {
                 $replacements[$originalText] = '['.$entityType.': '.$key.']';
             }
         }
