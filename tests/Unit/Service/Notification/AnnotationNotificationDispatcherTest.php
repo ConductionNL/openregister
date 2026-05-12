@@ -55,6 +55,16 @@ class AnnotationNotificationDispatcherTest extends TestCase
 
     private IServerContainer&MockObject $serverContainer;
 
+    /**
+     * Services the dispatcher resolves via the server container, keyed by id.
+     * Seeded with an IConfig mock; tests using expression resolvers add their
+     * resolver under its DI tag here (the dispatcher calls
+     * IServerContainer::get($tag) — \OC::$server registrations don't reach the mock).
+     *
+     * @var array<string, mixed>
+     */
+    private array $serverServices = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +77,20 @@ class AnnotationNotificationDispatcherTest extends TestCase
         $this->activityManager = $this->createMock(IActivityManager::class);
         $this->httpClient      = $this->createMock(IClientService::class);
         $this->serverContainer = $this->createMock(IServerContainer::class);
+
+        // emitTalk()/emitWebhook() resolve the local base URL via the server
+        // container when no IConfig was injected, and resolveExpressionRecipients()
+        // resolves the recipient resolver via IServerContainer::get($tag). Route
+        // both through $this->serverServices: an IConfig mock by default, plus
+        // whatever a test registers under a tag.
+        $config = $this->createMock(IConfig::class);
+        $config->method('getSystemValue')->willReturnCallback(
+            static fn(string $key, mixed $default = null): mixed => $default ?? 'http://localhost'
+        );
+        $this->serverServices[IConfig::class] = $config;
+        $this->serverContainer->method('get')->willReturnCallback(
+            fn(string $id): mixed => $this->serverServices[$id] ?? null
+        );
 
         // F05 added a `userExists` guard to every recipient-uid path.
         // PHPUnit's default `bool` return on an unstubbed mock is `false`,
@@ -235,8 +259,8 @@ class AnnotationNotificationDispatcherTest extends TestCase
 
     public function testExpressionResolverReceivesObjectAndContext(): void
     {
-        // Register a resolver in the OC server container so the dispatcher
-        // can look it up by tag.
+        // Register a resolver under a DI tag the dispatcher resolves via
+        // IServerContainer::get($tag).
         $resolver = new class implements RecipientResolverInterface {
 
             public ?ObjectEntity $sawObject = null;
@@ -250,8 +274,8 @@ class AnnotationNotificationDispatcherTest extends TestCase
                 return ['eve', 'frank'];
             }//end resolve()
         };
-        $tag      = 'OCA\\Test\\DummyResolver_'.bin2hex(random_bytes(4));
-        \OC::$server->registerService($tag, fn() => $resolver);
+        $tag = 'OCA\\Test\\DummyResolver_'.bin2hex(random_bytes(4));
+        $this->serverServices[$tag] = $resolver;
 
         $schema = $this->schemaWithNotification(
                 [
@@ -281,7 +305,7 @@ class AnnotationNotificationDispatcherTest extends TestCase
     public function testExpressionResolverFailsClosedOnInterfaceMismatch(): void
     {
         $tag = 'OCA\\Test\\BadResolver_'.bin2hex(random_bytes(4));
-        \OC::$server->registerService($tag, fn() => new \stdClass());
+        $this->serverServices[$tag] = new \stdClass();
 
         $schema = $this->schemaWithNotification(
                 [

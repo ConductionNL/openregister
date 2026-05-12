@@ -223,6 +223,11 @@ class AppendOnlyTest extends TestCase
         $schema = new Schema();
         $schema->setId(99);
         $schema->setAppendOnly($appendOnly);
+        // Schema defaults hardValidation to true; these tests only exercise the
+        // append-only guard, so disable validation to avoid the mocked
+        // ValidateObject handler short-circuiting saveObject() with an empty
+        // ValidationException.
+        $schema->setHardValidation(false);
         if ($slug !== null) {
             $schema->setSlug($slug);
         }
