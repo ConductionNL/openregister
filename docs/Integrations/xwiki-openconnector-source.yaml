@@ -73,6 +73,30 @@ source:
   # response rows to { reference, title, space, page, breadcrumb,
   # url, content }.
   # ---------------------------------------------------------------
+  #
+  # XWiki REST shape — verified against xwiki:lts 17.10 (Tomcat, ROOT
+  # context, REST at `/rest/`):
+  #   GET /rest/wikis/xwiki/spaces/{Space}/pages/{Page}  →
+  #     { id: "xwiki:Space.Page", space, name, title, xwikiAbsoluteUrl,
+  #       content (RAW xwiki/2.1 syntax — NOT rendered HTML),
+  #       hierarchy: { items: [{ label, name, type: wiki|space|document,
+  #       url }] }, version, modified, … }
+  #
+  # Two things to get right when wiring the response mapping:
+  #   1. AD-3 breadcrumb — XWiki's `hierarchy.items[].label` IS the
+  #      native breadcrumb ("xwiki" / "Sandbox" / "IntegrationTest").
+  #      Map `breadcrumb` from it. (If you don't, OpenRegister's
+  #      XwikiProvider derives a coarse one from space + title.)
+  #   2. AD-1 preview content — the REST `content` field is RAW wiki
+  #      syntax, not HTML. For a clean text preview, fetch the
+  #      already-rendered page body from
+  #        GET /bin/get/{Space}/{Page}?xpage=plain      (→ HTML)
+  #      (XWiki executes the page's macros server-side, in XWiki's own
+  #      sandbox — they are NEVER executed inside Nextcloud; the widget
+  #      only ever reads the text content) and map that to `content`.
+  #      If instead you map `content` straight from the REST `content`
+  #      field, the preview shows the raw wiki source — still safe
+  #      (macro markup is inert text), just less polished.
   endpoints:
     # GET  — list linked pages for an object
     list:
@@ -80,20 +104,22 @@ source:
       path: ""              # relative to `location`
       # The pairing store — which XWiki pages are linked to which OR
       # object — lives in OpenConnector's own pairing model, keyed by
-      # the {register, schema, object} context. OpenConnector then
-      # fetches each linked page's metadata (and, for the detail-page
-      # surface, its rendered content) from XWiki.
+      # the {register, schema, object} context. OpenConnector resolves
+      # the linked references, fetches each page's metadata from XWiki
+      # REST, and (for the preview) the rendered body from
+      # /bin/get/{Space}/{Page}?xpage=plain.
       response:
         rowsPath: "$"        # bare array, or "$.results"
         map:
-          reference: "id"          # XWiki page reference, e.g. "Space.Page"
+          reference: "id"                       # e.g. "xwiki:Sandbox.IntegrationTest"
           title: "title"
           space: "space"
           page: "name"
           url: "xwikiAbsoluteUrl"
-          content: "content"       # already-rendered HTML; UI strips to text + ~500 chars (AD-1)
+          breadcrumb: "hierarchy.items[*].label"  # AD-3 — native XWiki breadcrumb
+          content: "renderedContent"              # AD-1 — set from /bin/get/...?xpage=plain (see note above)
 
-    # GET {id}  — one linked page (with content for the preview)
+    # GET {id}  — one linked page (with rendered content for the preview)
     get:
       method: GET
       path: "{id}"
