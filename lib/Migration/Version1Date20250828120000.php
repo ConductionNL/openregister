@@ -34,22 +34,57 @@ use OCP\Migration\SimpleMigrationStep;
  * by adding proper indexes on frequently queried columns and composite indexes
  * for common filter combinations.
  *
+ * Single-column indexes are added through the schema migrator (changeSchema()).
+ * Composite indexes are created in postSchemaChange() via raw SQL: that runs
+ * after the schema has been applied, so the live `openregister_objects` table
+ * is guaranteed to exist, and it lets us branch on the database platform —
+ * MySQL/MariaDB need column-length prefixes on TEXT columns to stay under the
+ * key-length limit, whereas PostgreSQL and SQLite reject the `col(n)` syntax.
+ *
  * @package OCA\OpenRegister\Migration
  */
 class Version1Date20250828120000 extends SimpleMigrationStep
 {
     /**
-     * Apply database schema changes for faceting performance.
+     * Single-column faceting indexes, keyed by column name.
+     *
+     * @var array<string, string>
+     */
+    private const SINGLE_INDEXES = [
+        'published'    => 'objects_published_idx',
+        'depublished'  => 'objects_depublished_idx',
+        'created'      => 'objects_created_idx',
+        'updated'      => 'objects_updated_idx',
+        'owner'        => 'objects_owner_idx',
+        'organisation' => 'objects_organisation_idx',
+    ];
+
+    /**
+     * Composite faceting indexes, keyed by index name. Text-column entries
+     * carry an optional `(n)` length prefix that is only applied on MySQL.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const COMPOSITE_INDEXES = [
+        'objects_published_depublished_idx'     => ['published', 'depublished'],
+        'objects_register_schema_published_idx' => ['register(20)', 'schema(20)', 'published'],
+        'objects_register_published_idx'        => ['register(20)', 'published'],
+        'objects_schema_published_idx'          => ['schema(20)', 'published'],
+        'objects_org_published_idx'             => ['organisation(20)', 'published'],
+        'objects_created_published_idx'         => ['created', 'published'],
+        'objects_updated_published_idx'         => ['updated', 'published'],
+    ];
+
+    /**
+     * Add single-column faceting indexes via the schema migrator.
      *
      * @param IOutput $output        Output interface for logging
      * @param Closure $schemaClosure Schema retrieval closure
      * @param array   $options       Migration options
      *
-     * @return null|ISchemaWrapper Modified schema or null
+     * @return null|ISchemaWrapper Modified schema, or null when nothing changed
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Database migration requires checking many index conditions
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Database migration requires many index definitions
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -63,93 +98,97 @@ class Version1Date20250828120000 extends SimpleMigrationStep
             return null;
         }
 
-        $table = $schema->getTable('openregister_objects');
+        $table   = $schema->getTable('openregister_objects');
+        $changed = false;
 
-        // 1. Critical single-column indexes for common faceting fields.
-        // Note: 'deleted' column is JSON type and cannot have btree index in PostgreSQL.
-        $singleIndexes = [
-            // 'deleted'      => 'objects_deleted_idx',  // Skipped: JSON columns cannot have btree indexes in PostgreSQL.
-            'published'    => 'objects_published_idx',
-            'depublished'  => 'objects_depublished_idx',
-            'created'      => 'objects_created_idx',
-            'updated'      => 'objects_updated_idx',
-            'owner'        => 'objects_owner_idx',
-            'organisation' => 'objects_organisation_idx',
-        ];
-
-        foreach ($singleIndexes as $column => $indexName) {
+        foreach (self::SINGLE_INDEXES as $column => $indexName) {
             if ($table->hasColumn($column) === true && $table->hasIndex($indexName) === false) {
                 $table->addIndex([$column], $indexName);
                 $output->info(message: "Added index {$indexName} on column {$column}");
+                $changed = true;
             }
         }
 
-        // 2. Critical composite indexes for common filter combinations.
-        // Note: Using raw SQL for composite indexes to handle MySQL key length limits.
+        if ($changed === false) {
+            return null;
+        }
+
+        return $schema;
+    }//end changeSchema()
+
+    /**
+     * Create composite faceting indexes via raw SQL.
+     *
+     * Runs after the schema has been applied, so `openregister_objects` is
+     * guaranteed present and we can pick the right index syntax per platform.
+     * Failures are logged and swallowed — a missing index only costs query
+     * performance, and re-running the migration must not abort here.
+     *
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Index conditions require several guards.
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
+        $schema = $schemaClosure();
+
+        if ($schema->hasTable('openregister_objects') === false) {
+            return;
+        }
+
+        $table       = $schema->getTable('openregister_objects');
         $connection  = \OC::$server->getDatabaseConnection();
-        $tablePrefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
+        $config      = \OC::$server->getConfig();
+        $tablePrefix = (string) $config->getSystemValue('dbtableprefix', 'oc_');
+        $dbType      = (string) $config->getSystemValue('dbtype', 'sqlite');
+        $usePrefixes = in_array($dbType, ['mysql', 'mariadb'], true);
         $tableName   = $tablePrefix.'openregister_objects';
 
-        $compositeIndexes = [
-            // For base filtering (published state).
-            // Note: Removed 'deleted' column from all composite indexes because it's JSON type
-            // and cannot be part of btree indexes in PostgreSQL.
-            // 'objects_deleted_published_idx'       => ['deleted', 'published'],
-            // 'objects_lifecycle_idx'               => ['deleted', 'published', 'depublished'],.
-            'objects_published_depublished_idx'     => ['published', 'depublished'],
-
-            // For register/schema filtering with lifecycle (with length prefixes for text columns).
-            // 'objects_register_schema_deleted_idx' => ['register(20)', 'schema(20)', 'deleted'],
-            // 'objects_register_lifecycle_idx'      => ['register(20)', 'deleted', 'published'],
-            // 'objects_schema_lifecycle_idx'        => ['schema(20)', 'deleted', 'published'],.
-            'objects_register_schema_published_idx' => ['register(20)', 'schema(20)', 'published'],
-            'objects_register_published_idx'        => ['register(20)', 'published'],
-            'objects_schema_published_idx'          => ['schema(20)', 'published'],
-
-            // For organisation-based filtering (with length prefix for text column).
-            // 'objects_org_lifecycle_idx'           => ['organisation(20)', 'deleted', 'published'],.
-            'objects_org_published_idx'             => ['organisation(20)', 'published'],
-
-            // For date range queries on faceting.
-            // 'objects_created_deleted_idx'         => ['created', 'deleted'],
-            // 'objects_updated_deleted_idx'         => ['updated', 'deleted'],.
-            'objects_created_published_idx'         => ['created', 'published'],
-            'objects_updated_published_idx'         => ['updated', 'published'],
-        ];
-
-        foreach ($compositeIndexes as $indexName => $columns) {
-            // Check if index already exists.
+        foreach (self::COMPOSITE_INDEXES as $indexName => $columns) {
             if ($table->hasIndex($indexName) === true) {
                 continue;
             }
 
-            // Check all base columns exist (without length prefixes).
             $baseColumns = array_map(
-                function ($col) {
+                static function ($col) {
                     return preg_replace('/\(\d+\)/', '', $col);
                 },
                 $columns
             );
 
-            $allColumnsExist = true;
+            $missingColumn = false;
             foreach ($baseColumns as $column) {
                 if ($table->hasColumn($column) === false) {
-                    $allColumnsExist = false;
+                    $missingColumn = true;
                     break;
                 }
             }
 
-            if ($allColumnsExist === true) {
-                try {
-                    $sql = "CREATE INDEX {$indexName} ON {$tableName} (".implode(', ', $columns).")";
-                    $connection->executeStatement($sql);
-                    $output->info("Added composite index {$indexName} on columns: ".implode(', ', $columns));
-                } catch (\Exception $e) {
-                    $output->info("Failed to create index {$indexName}: ".$e->getMessage());
-                }
+            if ($missingColumn === true) {
+                continue;
+            }
+
+            $indexColumns = $baseColumns;
+            if ($usePrefixes === true) {
+                $indexColumns = $columns;
+            }
+
+            try {
+                $sql = sprintf('CREATE INDEX %s ON %s (%s)', $indexName, $tableName, implode(', ', $indexColumns));
+                $connection->executeStatement($sql);
+                $output->info("Added composite index {$indexName} on columns: ".implode(', ', $indexColumns));
+            } catch (\Throwable $e) {
+                $output->info("Skipped composite index {$indexName}: ".$e->getMessage());
             }
         }//end foreach
-
-        return $schema;
-    }//end changeSchema()
+    }//end postSchemaChange()
 }//end class
