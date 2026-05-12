@@ -83,9 +83,9 @@
 
 - [ ] 5.1 Add `@conduction/openspec-manifest` as a devDependency; wire `"prebuild": "openspec-manifest build"` in `package.json`.
 - [ ] 5.2 Verify `docs/features.json` is regenerated on `npm run build`; confirm it is committed (NOT in `.gitignore`).
-- [ ] 5.3 Add `/features-roadmap` route to the Vue router; mount `FeaturesAndRoadmapView` as its component.
-- [ ] 5.4 Mount `<CnFeaturesAndRoadmapLink />` as the first child of `<NcAppNavigationSettings>` in `src/navigation/MainMenu.vue`, above the existing Settings gear.
-- [ ] 5.5 Bump OpenRegister's dependency on `@conduction/nextcloud-vue` to the version that ships the new component family.
+- [~] 5.3 Add `/features-roadmap` route to the Vue router; mount `FeaturesAndRoadmapView` (`CnFeaturesAndRoadmapView`) as its component. — code staged on branch `feature/1328/roadmap-pilot-frontend` (`src/views/roadmap/FeaturesRoadmapIndex.vue` wrapper + route). Cannot merge until 5.5's dep bump builds (blocked on [openregister#1489](https://github.com/ConductionNL/openregister/issues/1489)).
+- [~] 5.4 Mount `<CnFeaturesAndRoadmapLink />` as the first child of `<NcAppNavigationSettings>` in `src/navigation/MainMenu.vue`, above the existing Settings gear. — staged on the same branch; same blocker.
+- [~] 5.5 Bump OpenRegister's dependency on `@conduction/nextcloud-vue` to the version that ships the new component family. — bumped to `^1.0.0-beta.32` on the staged branch, but `npm run build` fails: the 0.1.x→1.x jump pulls `@nextcloud/vue 8.x` whose `dist/index.cjs` `require()`s `@nextcloud/axios` under a `require`/`webpack` condition the resolved `@nextcloud/axios`'s `exports` field doesn't satisfy (13 errors), plus webpack `resolve.extensions` `'*'`→`'.*'`. Needs a coordinated `@nextcloud/*` dep + webpack-config migration — tracked in [openregister#1489](https://github.com/ConductionNL/openregister/issues/1489).
 - [ ] 5.6 Demo: tag 2-3 existing widgets or pages with `specRef` (either `defineOptions({ specRef })` or `meta: { specRef }`) and wire the `useSuggestFeatureAction()` helper into their `NcActions` to validate the end-to-end contract.
 - [ ] 5.7 Install `@conduction/docusaurus-features` in OpenRegister's Docusaurus site; add the plugin and confirm the `/features` page renders.
 - [ ] 5.8 Add a Playwright smoke test: boot OpenRegister, open the navigation sidebar, assert the Features & Roadmap row is visible above the Settings row, click it, assert both tabs render, open the Suggest modal, fill in a valid title + body, submit, assert success toast with issue link.
