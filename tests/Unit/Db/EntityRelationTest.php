@@ -32,6 +32,8 @@ class EntityRelationTest extends TestCase
         $this->assertSame('string', $fieldTypes['context']);
         $this->assertSame('boolean', $fieldTypes['anonymized']);
         $this->assertSame('string', $fieldTypes['anonymizedValue']);
+        $this->assertSame('json', $fieldTypes['bases']);
+        $this->assertSame('boolean', $fieldTypes['skipAnonymization']);
         $this->assertSame('datetime', $fieldTypes['createdAt']);
     }
 
@@ -50,7 +52,32 @@ class EntityRelationTest extends TestCase
         $this->assertNull($this->relation->getContext());
         $this->assertFalse($this->relation->getAnonymized());
         $this->assertNull($this->relation->getAnonymizedValue());
+        $this->assertNull($this->relation->getBases());
+        $this->assertFalse($this->relation->getSkipAnonymization());
         $this->assertNull($this->relation->getCreatedAt());
+    }
+
+    public function testSetAndGetBasesRoundTrip(): void
+    {
+        $this->relation->setBases(['uuid-a', 'uuid-b']);
+        $this->assertSame(['uuid-a', 'uuid-b'], $this->relation->getBases());
+    }
+
+    public function testBasesEmptyArrayDistinctFromNull(): void
+    {
+        $this->relation->setBases([]);
+        $bases = $this->relation->getBases();
+        $this->assertNotNull($bases);
+        $this->assertSame([], $bases);
+    }
+
+    public function testSetAndGetSkipAnonymization(): void
+    {
+        $this->relation->setSkipAnonymization(true);
+        $this->assertTrue($this->relation->getSkipAnonymization());
+
+        $this->relation->setSkipAnonymization(false);
+        $this->assertFalse($this->relation->getSkipAnonymization());
     }
 
     public function testSetAndGetIntegerFields(): void
@@ -118,7 +145,7 @@ class EntityRelationTest extends TestCase
             'id', 'entityId', 'chunkId', 'role', 'fileId', 'objectId',
             'emailId', 'positionStart', 'positionEnd', 'confidence',
             'detectionMethod', 'context', 'anonymized', 'anonymizedValue',
-            'createdAt',
+            'bases', 'skipAnonymization', 'createdAt',
         ];
         foreach ($expectedKeys as $key) {
             $this->assertArrayHasKey($key, $json);

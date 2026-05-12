@@ -124,14 +124,15 @@ The HTTP endpoint MUST be a thin wrapper over `EntityRelationMapper::updateDecis
 
 ### Requirement: `EntityRelationMapper::updateDecisionMetadata` MUST be the single audited write path for the whitelist fields
 
-The mapper MUST expose `updateDecisionMetadata(int $id, array $fields, ?IUser $actingUser = null): EntityRelation`. The method MUST:
+The mapper MUST expose `updateDecisionMetadata(EntityRelation $relation, array $fields, ?IUser $actingUser = null): EntityRelation`. Callers (controller, in-process DI consumers) load the relation themselves via `find()` and pass it in — this keeps the mapper method pure (no hidden DB lookup) and makes it directly unit-testable without DB. The HTTP controller maps `DoesNotExistException` (from its own `find` call) to HTTP 404.
 
-1. Resolve the row by `$id`; throw `DoesNotExistException` if missing.
-2. Enforce the whitelist (`bases`, `skipAnonymization`); throw a typed validation exception for any unknown field name.
-3. Validate the shape of each present field (`bases` MUST be `null` or an array of strings; `skipAnonymization` MUST be a boolean); throw a typed validation exception on shape mismatch.
-4. Compute the diff against the current row state.
-5. If the diff is empty (no field actually changes value), the method MUST return the row unmodified and MUST NOT write an audit entry.
-6. Otherwise, apply the changed fields, persist via the underlying QBMapper, AND write an audit-trail entry — both MUST be committed transactionally (or use the same failure-handling mode the existing audit-traced mapper writes use today).
+The method MUST:
+
+1. Enforce the whitelist (`bases`, `skipAnonymization`); throw a typed validation exception for any unknown field name.
+2. Validate the shape of each present field (`bases` MUST be `null` or an array of strings; `skipAnonymization` MUST be a boolean); throw a typed validation exception on shape mismatch.
+3. Compute the diff against the current row state.
+4. If the diff is empty (no field actually changes value), the method MUST return the row unmodified and MUST NOT write an audit entry.
+5. Otherwise, apply the changed fields, persist via the underlying QBMapper, AND write an audit-trail entry — both MUST be committed transactionally (or use the same failure-handling mode the existing audit-traced mapper writes use today).
 
 The HTTP `PATCH /api/entity-relations/{id}` controller and in-process DI callers MUST both call through this method. There MUST NOT be a parallel write path for `bases` or `skipAnonymization` that bypasses it.
 
@@ -261,7 +262,7 @@ Reads of `EntityRelation` rows — via `EntityRelationMapper::find`, `findEntiti
 
 ### Requirement: PATCH MUST follow standard partial-update semantics
 
-For each whitelist field, the body shapes behave as follows:
+For each whitelist field, the body shape MUST map to behaviour as follows:
 
 | `bases` | Effect | Audit? |
 |---|---|---|
