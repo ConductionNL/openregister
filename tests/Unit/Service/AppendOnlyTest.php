@@ -254,7 +254,7 @@ class AppendOnlyTest extends TestCase
 
         $this->saveHandler->method('saveObject')->willReturn($savedEntity);
         $this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
-        $this->saveHandler->method('clearAllCaches')->willReturn(null);
+        // clearAllCaches() returns void — left unconfigured (a void mock method is a no-op).
 
         // ObjectMapper: no existing object with this UUID (it's a new insert).
         $this->objectMapper->method('find')->willThrowException(
@@ -340,7 +340,7 @@ class AppendOnlyTest extends TestCase
 
         $this->saveHandler->method('saveObject')->willReturn($savedEntity);
         $this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
-        $this->saveHandler->method('clearAllCaches')->willReturn(null);
+        // clearAllCaches() returns void — left unconfigured (a void mock method is a no-op).
 
         // Existing object found — normal UPDATE path.
         $existingEntity = new ObjectEntity();
