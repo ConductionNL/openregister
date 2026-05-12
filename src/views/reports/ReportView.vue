@@ -402,7 +402,7 @@ export default {
 			return []
 		},
 
-		chartCategories(data, widget) {
+		chartCategories(data, _widget) {
 			if (!data || !Array.isArray(data.groups)) return []
 			return data.groups.map((g) => String(g.key ?? g.label ?? ''))
 		},
