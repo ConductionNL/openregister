@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Service\Configuration\GitHubGuards;
+use OCA\OpenRegister\Service\Configuration\RateLimiterService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -134,13 +135,11 @@ class GitHubGuardsTest extends TestCase
     {
         // 10 distinct cache-miss keys (within window) → all pass.
         // The 11th distinct key → 429.
-        $userSession = $this->buildUserSession(uid: 'alice');
-        $cache       = new \ArrayObject();
-        $cacheImpl   = $this->buildArrayCache(state: $cache);
-        $guards      = new GitHubGuards(
+        $factory = $this->buildCacheFactory(cache: $this->buildArrayCache(state: new \ArrayObject()), operational: true);
+        $guards  = new GitHubGuards(
             appConfig: $this->buildAppConfig(repoConfig: 'ConductionNL/openregister', flagEnabled: true),
-            userSession: $userSession,
-            cacheFactory: $this->buildCacheFactory(cache: $cacheImpl)
+            userSession: $this->buildUserSession(uid: 'alice'),
+            rateLimiter: new RateLimiterService(cacheFactory: $factory)
         );
 
         for ($i = 0; $i < 10; $i++) {
@@ -151,6 +150,25 @@ class GitHubGuardsTest extends TestCase
         $this->assertEquals(429, $response->getStatus());
         $this->assertEquals('user_rate_limited', $this->errorCode(response: $response));
     }//end testGetRateLimitEleventhMissReturns429()
+
+    /**
+     * @return void
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
+     */
+    public function testGetRateLimitFailsClosedWhenNoCacheBackend(): void
+    {
+        $factory = $this->buildCacheFactory(cache: $this->buildArrayCache(state: new \ArrayObject()), operational: false);
+        $guards  = new GitHubGuards(
+            appConfig: $this->buildAppConfig(repoConfig: 'ConductionNL/openregister', flagEnabled: true),
+            userSession: $this->buildUserSession(uid: 'alice'),
+            rateLimiter: new RateLimiterService(cacheFactory: $factory)
+        );
+
+        $response = $guards->enforceGetRateLimit(cacheKey: 'k-1');
+        $this->assertEquals(503, $response->getStatus());
+        $this->assertEquals('rate_limiter_unavailable', $this->errorCode(response: $response));
+    }//end testGetRateLimitFailsClosedWhenNoCacheBackend()
 
     /**
      * @return void
@@ -192,10 +210,11 @@ class GitHubGuardsTest extends TestCase
      */
     private function buildGuards(string $repoConfig, bool $flagEnabled): GitHubGuards
     {
+        $factory = $this->buildCacheFactory(cache: $this->buildArrayCache(state: new \ArrayObject()), operational: true);
         return new GitHubGuards(
             appConfig: $this->buildAppConfig(repoConfig: $repoConfig, flagEnabled: $flagEnabled),
             userSession: $this->buildUserSession(uid: 'alice'),
-            cacheFactory: $this->buildCacheFactory(cache: $this->buildArrayCache(state: new \ArrayObject()))
+            rateLimiter: new RateLimiterService(cacheFactory: $factory)
         );
     }//end buildGuards()
 
@@ -278,14 +297,19 @@ class GitHubGuardsTest extends TestCase
     }//end buildArrayCache()
 
     /**
-     * @param ICache $cache
+     * @param ICache $cache       Cache instance returned by createDistributed().
+     * @param bool   $operational Whether a cache backend is "available" (drives isAvailable /
+     *                            isLocalCacheAvailable so RateLimiterService::isOperational()
+     *                            returns the desired value).
      *
      * @return ICacheFactory
      */
-    private function buildCacheFactory(ICache $cache): ICacheFactory
+    private function buildCacheFactory(ICache $cache, bool $operational): ICacheFactory
     {
         $factory = $this->createMock(ICacheFactory::class);
         $factory->method('createDistributed')->willReturn($cache);
+        $factory->method('isAvailable')->willReturn($operational);
+        $factory->method('isLocalCacheAvailable')->willReturn($operational);
         return $factory;
     }//end buildCacheFactory()
 

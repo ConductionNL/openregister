@@ -352,6 +352,8 @@ class GitHubIssuesControllerTest extends TestCase
 
         $cacheFactory = $this->createMock(ICacheFactory::class);
         $cacheFactory->method('createDistributed')->willReturn($cache);
+        $cacheFactory->method('isAvailable')->willReturn(true);
+        $cacheFactory->method('isLocalCacheAvailable')->willReturn(true);
 
         $appConfig = $this->createMock(\OCP\IAppConfig::class);
         $appConfig->method('getValueString')->willReturnCallback(
@@ -365,10 +367,11 @@ class GitHubIssuesControllerTest extends TestCase
             }
         );
 
-        $guards    = new GitHubGuards(
+        $rateLimiter = new \OCA\OpenRegister\Service\Configuration\RateLimiterService(cacheFactory: $cacheFactory);
+        $guards      = new GitHubGuards(
             appConfig: $appConfig,
             userSession: $userSession,
-            cacheFactory: $cacheFactory
+            rateLimiter: $rateLimiter
         );
         $validator = new GitHubRequestValidator();
         $logger    = $this->createMock(LoggerInterface::class);
@@ -379,6 +382,7 @@ class GitHubIssuesControllerTest extends TestCase
             githubHandler: $handler ?? $this->createMock(GitHubHandler::class),
             guards: $guards,
             validator: $validator,
+            rateLimiter: $rateLimiter,
             userSession: $userSession,
             cacheFactory: $cacheFactory,
             logger: $logger

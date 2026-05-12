@@ -33,6 +33,7 @@ use Exception;
 use OCA\OpenRegister\Service\Configuration\GitHubGuards;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubRequestValidator;
+use OCA\OpenRegister\Service\Configuration\RateLimiterService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -75,13 +76,6 @@ class GitHubIssuesController extends Controller
     private ICache $readCache;
 
     /**
-     * Distributed cache for the per-user POST rate-limit window.
-     *
-     * @var ICache
-     */
-    private ICache $submitRateCache;
-
-    /**
      * GitHubIssuesController constructor.
      *
      * @param string                 $appName       Nextcloud app name (DI-injected)
@@ -89,8 +83,9 @@ class GitHubIssuesController extends Controller
      * @param GitHubHandler          $githubHandler Reused HTTP client / token / attribution logic
      * @param GitHubGuards           $guards        Policy guards (feature flag, repo allowlist, GET rate limit)
      * @param GitHubRequestValidator $validator     Pure-function input validators
+     * @param RateLimiterService     $rateLimiter   Cache-backed rate limiter with fail-closed contract
      * @param IUserSession           $userSession   Resolves the submitting NC user
-     * @param ICacheFactory          $cacheFactory  Distributed cache factory
+     * @param ICacheFactory          $cacheFactory  Distributed cache factory (read-response cache)
      * @param LoggerInterface        $logger        Structured logger
      *
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
@@ -101,13 +96,13 @@ class GitHubIssuesController extends Controller
         private readonly GitHubHandler $githubHandler,
         private readonly GitHubGuards $guards,
         private readonly GitHubRequestValidator $validator,
+        private readonly RateLimiterService $rateLimiter,
         private readonly IUserSession $userSession,
         ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
-        $this->readCache       = $cacheFactory->createDistributed('openregister_github_issues');
-        $this->submitRateCache = $cacheFactory->createDistributed('openregister_feature_submission');
+        $this->readCache = $cacheFactory->createDistributed('openregister_github_issues');
     }//end __construct()
 
     /**
@@ -236,6 +231,7 @@ class GitHubIssuesController extends Controller
                 fn () => $this->validator->validateTitleLength(title: $title),
                 fn () => $this->validator->validateBodyLength(body: $body),
                 fn () => $this->validator->validateSpecRef(specRef: $specRef),
+                fn () => $this->enforceRateLimiterOperational(),
                 fn () => $this->enforceSubmitRateLimit(uid: $uid),
             ]
         );
@@ -258,15 +254,32 @@ class GitHubIssuesController extends Controller
             return $this->mapHandlerException(exception: $e, isRead: false);
         }
 
-        // Mark the rate-limit slot consumed (stores submission time so we can compute Retry-After).
-        $this->submitRateCache->set('openregister.feature_submission:'.$uid, time(), self::SUBMIT_RATE_LIMIT_TTL);
+        // Mark the rate-limit slot consumed (records the submission time so Retry-After can be computed).
+        $this->rateLimiter->markFixedWindow(bucketKey: 'feature_submission:'.$uid, windowSeconds: self::SUBMIT_RATE_LIMIT_TTL);
 
         return new JSONResponse($result, Http::STATUS_CREATED);
     }//end create()
 
     /**
-     * Enforce the per-user 1/60s submission rate limit (task 1.6). Returns null when the user is
-     * within their budget, or a 429 JSONResponse with `Retry-After` header when they are
+     * Fail closed when no cache backend is available (task 1.18). On a cache-less instance the
+     * rate limiters silently never fire, so both endpoints reject with HTTP 503
+     * `rate_limiter_unavailable` rather than running unbounded.
+     *
+     * @return JSONResponse|null Null when a cache backend is available, 503 otherwise.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
+     */
+    private function enforceRateLimiterOperational(): ?JSONResponse
+    {
+        if ($this->rateLimiter->isOperational() === true) {
+            return null;
+        }
+        return new JSONResponse(['error' => 'rate_limiter_unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
+    }//end enforceRateLimiterOperational()
+
+    /**
+     * Enforce the per-user 1/60s submission rate limit (tasks 1.6 + 1.18). Returns null when the
+     * user is within their budget, or a 429 JSONResponse with `Retry-After` header when they are
      * currently rate-limited.
      *
      * @param string $uid Submitting user's UID.
@@ -274,17 +287,19 @@ class GitHubIssuesController extends Controller
      * @return JSONResponse|null Null on success, 429 with structured error_code + retry_after.
      *
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-6
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
      */
     private function enforceSubmitRateLimit(string $uid): ?JSONResponse
     {
-        $rateLimitKey = 'openregister.feature_submission:'.$uid;
-        $existing     = $this->submitRateCache->get($rateLimitKey);
-        if ($existing === null) {
+        $retryAfter = $this->rateLimiter->checkFixedWindow(
+            bucketKey: 'feature_submission:'.$uid,
+            windowSeconds: self::SUBMIT_RATE_LIMIT_TTL
+        );
+        if ($retryAfter === null) {
             return null;
         }
 
-        $retryAfter = max(1, self::SUBMIT_RATE_LIMIT_TTL - (time() - (int) $existing));
-        $response   = new JSONResponse(
+        $response = new JSONResponse(
             ['error' => 'rate_limited', 'retry_after' => $retryAfter],
             Http::STATUS_TOO_MANY_REQUESTS
         );

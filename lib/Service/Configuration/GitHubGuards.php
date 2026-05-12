@@ -36,8 +36,6 @@ namespace OCA\OpenRegister\Service\Configuration;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
-use OCP\ICache;
-use OCP\ICacheFactory;
 use OCP\IUserSession;
 
 /**
@@ -60,25 +58,17 @@ class GitHubGuards
     private const GET_RATE_LIMIT_MAX = 10;
 
     /**
-     * Distributed cache for the per-user GET cache-miss counter (task 1.19).
-     *
-     * @var ICache
-     */
-    private ICache $getRateCache;
-
-    /**
      * GitHubGuards constructor.
      *
-     * @param IAppConfig    $appConfig    App-level config (allowlist repo, opt-out flag).
-     * @param IUserSession  $userSession  Current user for the per-user GET counter.
-     * @param ICacheFactory $cacheFactory Distributed cache factory.
+     * @param IAppConfig         $appConfig   App-level config (allowlist repo, opt-out flag).
+     * @param IUserSession       $userSession Current user for the per-user GET counter.
+     * @param RateLimiterService $rateLimiter Cache-backed rate limiter with fail-closed contract.
      */
     public function __construct(
         private readonly IAppConfig $appConfig,
         private readonly IUserSession $userSession,
-        ICacheFactory $cacheFactory
+        private readonly RateLimiterService $rateLimiter
     ) {
-        $this->getRateCache = $cacheFactory->createDistributed('openregister_github_issues_get_rate');
     }//end __construct()
 
     /**
@@ -155,14 +145,18 @@ class GitHubGuards
     }//end enforceRepoAllowlist()
 
     /**
-     * Enforce per-user GET cache-miss rate limit (task 1.19). Counts distinct cache-key tuples
-     * within a rolling GET_RATE_LIMIT_WINDOW. Anonymous callers are not counted.
+     * Enforce per-user GET cache-miss rate limit (tasks 1.19 + 1.18). Counts distinct cache-key
+     * tuples within a rolling GET_RATE_LIMIT_WINDOW via the shared RateLimiterService. Anonymous
+     * callers are not counted. When no cache backend is available the limiter fails closed with
+     * HTTP 503 `rate_limiter_unavailable`.
      *
      * @param string $cacheKey The exact read cache key the caller is about to miss against.
      *
-     * @return JSONResponse|null Null when within budget, 429 `user_rate_limited` otherwise.
+     * @return JSONResponse|null Null when within budget, 503 `rate_limiter_unavailable` when no
+     *                           cache backend exists, 429 `user_rate_limited` when exhausted.
      *
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-19
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
      */
     public function enforceGetRateLimit(string $cacheKey): ?JSONResponse
     {
@@ -171,36 +165,25 @@ class GitHubGuards
             return null;
         }
 
-        $uid       = $user->getUID();
-        $bucketKey = 'getmiss:'.$uid;
-        $bucket    = $this->getRateCache->get($bucketKey);
-        if (is_array($bucket) === false) {
-            $bucket = ['t' => time(), 'keys' => []];
+        if ($this->rateLimiter->isOperational() === false) {
+            return new JSONResponse(['error' => 'rate_limiter_unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
         }
 
-        $age = time() - (int) ($bucket['t'] ?? 0);
-        if ($age >= self::GET_RATE_LIMIT_WINDOW) {
-            $bucket = ['t' => time(), 'keys' => []];
-            $age    = 0;
+        $retryAfter = $this->rateLimiter->consumeDistinctKeyBudget(
+            bucketKey: 'getmiss:'.$user->getUID(),
+            distinctKey: $cacheKey,
+            maxKeys: self::GET_RATE_LIMIT_MAX,
+            windowSeconds: self::GET_RATE_LIMIT_WINDOW
+        );
+        if ($retryAfter === null) {
+            return null;
         }
 
-        $keys = (array) ($bucket['keys'] ?? []);
-        if (in_array($cacheKey, $keys, true) === false) {
-            $keys[] = $cacheKey;
-        }
-
-        if (count($keys) > self::GET_RATE_LIMIT_MAX) {
-            $retryAfter = max(1, self::GET_RATE_LIMIT_WINDOW - $age);
-            $resp       = new JSONResponse(
-                ['error' => 'user_rate_limited', 'retry_after' => $retryAfter],
-                Http::STATUS_TOO_MANY_REQUESTS
-            );
-            $resp->addHeader('Retry-After', (string) $retryAfter);
-            return $resp;
-        }
-
-        $bucket['keys'] = $keys;
-        $this->getRateCache->set($bucketKey, $bucket, self::GET_RATE_LIMIT_WINDOW);
-        return null;
+        $resp = new JSONResponse(
+            ['error' => 'user_rate_limited', 'retry_after' => $retryAfter],
+            Http::STATUS_TOO_MANY_REQUESTS
+        );
+        $resp->addHeader('Retry-After', (string) $retryAfter);
+        return $resp;
     }//end enforceGetRateLimit()
 }//end class
