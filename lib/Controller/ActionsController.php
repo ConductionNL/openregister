@@ -84,6 +84,8 @@ class ActionsController extends Controller
      * @param ActionLogMapper $actionLogMapper Action log mapper
      * @param ActionService   $actionService   Action service
      * @param LoggerInterface $logger          Logger
+     * @param IUserSession    $userSession     Current user session
+     * @param IGroupManager   $groupManager    Group manager (admin checks)
      */
     public function __construct(
         string $appName,
@@ -390,7 +392,7 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function patch(int $id): JSONResponse
     {
-        // requireAdmin() runs inside update() — no need to duplicate here.
+        // Note: requireAdmin() runs inside update() — no need to duplicate here.
         return $this->update(id: $id);
     }//end patch()
 

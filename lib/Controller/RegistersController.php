@@ -1291,9 +1291,7 @@ class RegistersController extends Controller
             );
         }
 
-        $importerUid = method_exists($auditSample[0], 'getUser') === true
-            ? $auditSample[0]->getUser()
-            : null;
+        $importerUid = method_exists($auditSample[0], 'getUser') === true ? $auditSample[0]->getUser() : null;
         if ($isAdmin === false && $importerUid !== $user->getUID()) {
             return new JSONResponse(
                 data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],

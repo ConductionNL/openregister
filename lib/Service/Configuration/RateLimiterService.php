@@ -87,9 +87,11 @@ class RateLimiterService
         if ($this->cacheFactory->isAvailable() === true) {
             return true;
         }
+
         if ($this->cacheFactory->isLocalCacheAvailable() === true) {
             return true;
         }
+
         return false;
     }//end isOperational()
 
@@ -114,6 +116,7 @@ class RateLimiterService
         if ($occupiedAt === null) {
             return null;
         }
+
         return max(1, $windowSeconds - (time() - (int) $occupiedAt));
     }//end checkFixedWindow()
 

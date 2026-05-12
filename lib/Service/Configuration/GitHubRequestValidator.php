@@ -208,7 +208,7 @@ class GitHubRequestValidator
         }
 
         foreach ($labels as $label) {
-            if (is_string($label) === false || strlen($label) > self::LABEL_MAX_LENGTH) {
+            if (strlen($label) > self::LABEL_MAX_LENGTH) {
                 return new JSONResponse(['error' => 'labels_invalid_format'], Http::STATUS_BAD_REQUEST);
             }
 

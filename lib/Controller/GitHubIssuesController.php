@@ -132,14 +132,7 @@ class GitHubIssuesController extends Controller
         $labelArray = $labels === '' ? null : array_values(array_filter(array_map('trim', explode(',', $labels))));
 
         $guardError = $this->guards->runGuards(
-            [
-                fn () => $this->guards->enforceFeatureFlag(),
-                fn () => $this->validator->validateRepoFormat(repo: $repo),
-                fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: true),
-                fn () => $this->validator->validatePerPage(perPage: $perPage),
-                fn () => $this->validator->validateSort(sort: $sort),
-                fn () => $this->validator->validateLabels(labels: $labelArray),
-            ]
+            $this->readGuardPipeline(repo: $repo, sort: $sort, perPage: $perPage, labels: $labelArray)
         );
         if ($guardError !== null) {
             return $guardError;
@@ -223,16 +216,7 @@ class GitHubIssuesController extends Controller
         $specRef = ($specRef === null || $specRef === '') ? null : (string) $specRef;
 
         $guardError = $this->guards->runGuards(
-            [
-                fn () => $this->guards->enforceFeatureFlag(),
-                fn () => $this->validator->validateRepoFormat(repo: $repo),
-                fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: false),
-                fn () => $this->validator->validateTitleLength(title: $title),
-                fn () => $this->validator->validateBodyLength(body: $body),
-                fn () => $this->validator->validateSpecRef(specRef: $specRef),
-                fn () => $this->enforceRateLimiterOperational(),
-                fn () => $this->enforceSubmitRateLimit(uid: $uid),
-            ]
+            $this->writeGuardPipeline(repo: $repo, title: $title, body: $body, specRef: $specRef, uid: $uid)
         );
         if ($guardError !== null) {
             return $guardError;
@@ -261,6 +245,60 @@ class GitHubIssuesController extends Controller
 
         return new JSONResponse($result, Http::STATUS_CREATED);
     }//end create()
+
+    /**
+     * Build the ordered guard pipeline for the GET (read) path. Extracted from `index()` so the
+     * inline closures do not inflate that method's cyclomatic complexity past PHPMD's threshold.
+     *
+     * @param string             $repo    Caller-supplied `<owner>/<repo>` slug.
+     * @param string             $sort    Caller-supplied sort key.
+     * @param int                $perPage Caller-supplied page size.
+     * @param array<string>|null $labels  Parsed label filter, or null when absent.
+     *
+     * @return array<callable(): ?JSONResponse> Ordered guard closures.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-5
+     */
+    private function readGuardPipeline(string $repo, string $sort, int $perPage, ?array $labels): array
+    {
+        return [
+            fn () => $this->guards->enforceFeatureFlag(),
+            fn () => $this->validator->validateRepoFormat(repo: $repo),
+            fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: true),
+            fn () => $this->validator->validatePerPage(perPage: $perPage),
+            fn () => $this->validator->validateSort(sort: $sort),
+            fn () => $this->validator->validateLabels(labels: $labels),
+        ];
+    }//end readGuardPipeline()
+
+    /**
+     * Build the ordered guard pipeline for the POST (write) path. Extracted from `create()` so the
+     * inline closures do not inflate that method's cyclomatic / NPath complexity past PHPMD's
+     * thresholds.
+     *
+     * @param string      $repo    Caller-supplied `<owner>/<repo>` slug.
+     * @param string      $title   Caller-supplied issue title.
+     * @param string      $body    Caller-supplied issue body.
+     * @param string|null $specRef Caller-supplied capability slug, or null.
+     * @param string      $uid     Submitting user's UID (for the per-user rate-limit bucket).
+     *
+     * @return array<callable(): ?JSONResponse> Ordered guard closures.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-6
+     */
+    private function writeGuardPipeline(string $repo, string $title, string $body, ?string $specRef, string $uid): array
+    {
+        return [
+            fn () => $this->guards->enforceFeatureFlag(),
+            fn () => $this->validator->validateRepoFormat(repo: $repo),
+            fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: false),
+            fn () => $this->validator->validateTitleLength(title: $title),
+            fn () => $this->validator->validateBodyLength(body: $body),
+            fn () => $this->validator->validateSpecRef(specRef: $specRef),
+            fn () => $this->enforceRateLimiterOperational(),
+            fn () => $this->enforceSubmitRateLimit(uid: $uid),
+        ];
+    }//end writeGuardPipeline()
 
     /**
      * Fail closed when no cache backend is available (task 1.18). On a cache-less instance the

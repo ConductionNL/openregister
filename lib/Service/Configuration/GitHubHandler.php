@@ -1752,12 +1752,9 @@ class GitHubHandler
             return 0;
         }
 
-        $response = $exception->getResponse();
-        if ($response === null) {
-            return 0;
-        }
-
-        return $response->getStatusCode();
+        // BadResponseException always carries a response (it is required by its constructor),
+        // so getResponse() is non-null here.
+        return $exception->getResponse()->getStatusCode();
     }//end extractGitHubStatus()
 
     /**
