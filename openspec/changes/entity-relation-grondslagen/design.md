@@ -124,11 +124,13 @@ HTTP:  PATCH /api/entity-relations/{id}
        response 404: relation id does not resolve
 
 DI:    EntityRelationMapper::updateDecisionMetadata(
-         int $id,
+         EntityRelation $relation,
          array $fields,
          ?IUser $actingUser = null
        ): EntityRelation
+       — caller loads the relation via find() and passes it in
        — same whitelist, same shape validation, same audit-trail
+       — pure (no hidden DB lookup) so directly unit-testable
 ```
 
 **The HTTP controller is a thin wrapper.** It resolves the acting `IUser` from the session, calls `updateDecisionMetadata`, maps thrown exceptions to HTTP responses (400 / 403 / 404). No duplicated whitelist logic. No duplicated audit logic.
