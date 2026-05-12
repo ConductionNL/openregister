@@ -5863,6 +5863,9 @@ class MagicMapper extends AbstractObjectMapper
                 $sql = "SELECT * FROM {$fullTableName}
                         WHERE (_deleted IS NULL OR _deleted::text = 'null')
                         AND {$columnName} IS NOT NULL
+                        // Note: ::jsonb cast is intentional for polymorphic column support, but defeats any GIN
+                        // index on $columnName if it is already jsonb. Acceptable for now; if a GIN index is added
+                        // in a future migration for this column, branch the query to omit the cast in the jsonb case.
                         AND {$columnName}::jsonb @> to_jsonb(?::text)
                         LIMIT 100";
             }

@@ -103,7 +103,7 @@ class TasksController extends Controller
     {
         try {
             $status   = $this->request->getParam('status');
-            $limit    = (int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50);
+            $limit    = min((int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50), 200);
             $offset   = (int) ($this->request->getParam('_offset') ?? $this->request->getParam('offset') ?? 0);
             $assignee = $this->request->getParam('assignee');
 
