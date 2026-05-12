@@ -1,12 +1,13 @@
 <template>
-	<NcAppSidebar
-		v-if="!collapsed"
-		:name="sidebarTitle"
-		:subname="sidebarSubname"
-		:compact="true"
-		:active.sync="activeTab"
-		class="or-mail-sidebar"
-		@close="toggleCollapsed">
+	<div class="or-mail-sidebar-root">
+		<NcAppSidebar
+			v-if="!collapsed"
+			:name="sidebarTitle"
+			:subname="sidebarSubname"
+			:compact="true"
+			:active.sync="activeTab"
+			class="or-mail-sidebar"
+			@close="toggleCollapsed">
 		<template #description>
 			<div v-if="!isMessageView" class="or-mail-sidebar__hint">
 				{{ t('openregister', 'Select an email to see linked objects') }}
@@ -51,17 +52,18 @@
 				:account-id="accountId"
 				:message-id="messageId" />
 		</NcAppSidebarTab>
-	</NcAppSidebar>
+		</NcAppSidebar>
 
-	<button
-		v-else
-		class="or-mail-sidebar__collapsed-toggle"
-		:aria-label="t('openregister', 'Open OpenRegister sidebar')"
-		:title="t('openregister', 'Open OpenRegister sidebar')"
-		@click="toggleCollapsed">
-		<LinkVariant :size="16" />
-		<span class="or-mail-sidebar__collapsed-label">OR</span>
-	</button>
+		<button
+			v-else
+			class="or-mail-sidebar__collapsed-toggle"
+			:aria-label="t('openregister', 'Open OpenRegister sidebar')"
+			:title="t('openregister', 'Open OpenRegister sidebar')"
+			@click="toggleCollapsed">
+			<LinkVariant :size="16" />
+			<span class="or-mail-sidebar__collapsed-label">OR</span>
+		</button>
+	</div>
 </template>
 
 <script>
@@ -75,6 +77,7 @@ import ActionsTab from './components/ActionsTab.vue'
 import ObjectsTab from './components/ObjectsTab.vue'
 import EntitiesTab from './components/EntitiesTab.vue'
 import { useMailObserver } from './composables/useMailObserver.js'
+import { useAttachmentDrag } from './composables/useAttachmentDrag.js'
 
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
@@ -96,6 +99,7 @@ export default {
 	},
 	setup() {
 		const mailObserver = useMailObserver({ debounceMs: 300 })
+		useAttachmentDrag()
 		return { ...mailObserver }
 	},
 	data() {

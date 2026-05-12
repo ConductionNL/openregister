@@ -61,7 +61,6 @@ class TransitionController extends Controller
      * @return JSONResponse JSON response with the transitioned object or an error.
      *
      * @NoAdminRequired
-     * @NoCSRFRequired
      */
     public function transition(string $id): JSONResponse
     {

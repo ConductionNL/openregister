@@ -622,6 +622,7 @@ services:
       - ../docudesk:/var/www/html/custom_apps/docudesk
       - ../procest:/var/www/html/custom_apps/procest
       - ../pipelinq:/var/www/html/custom_apps/pipelinq
+      - ../decidesk:/var/www/html/custom_apps/decidesk
       - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
       - ../larpingapp:/var/www/html/custom_apps/larpingapp
     environment:

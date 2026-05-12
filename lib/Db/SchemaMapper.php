@@ -9,7 +9,7 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -316,6 +316,30 @@ class SchemaMapper extends QBMapper
 
         return $schema;
     }//end find()
+
+    /**
+     * Clear the request-scoped find cache for a specific schema
+     *
+     * Used by the runtime-schema-api CRUD path to drop the in-memory
+     * cache entry after a mutation, so the next find() call re-reads
+     * from the database. Clears every cache key that referenced the
+     * given schema (by id, uuid, slug) across both RBAC/multi-tenancy
+     * flag combinations.
+     *
+     * @param int $schemaId The schema ID to drop from the find cache.
+     *
+     * @return void
+     */
+    public function clearFindCache(int $schemaId): void
+    {
+        // Find every cache key whose value points at this schema ID and unset.
+        foreach (array_keys($this->findCache) as $key) {
+            $cached = $this->findCache[$key];
+            if ($cached instanceof Schema && $cached->getId() === $schemaId) {
+                unset($this->findCache[$key]);
+            }
+        }
+    }//end clearFindCache()
 
     /**
      * Finds multiple schemas by id
