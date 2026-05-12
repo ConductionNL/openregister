@@ -1,0 +1,343 @@
+{
+  "info": {
+    "_postman_id": "openregister-runtime-schema-api",
+    "name": "OpenRegister Runtime Schema API (spec: openregister-runtime-schema-api)",
+    "description": "End-to-end Newman collection for the runtime-schema-api spec.\n\nScope:\n- POST /api/schemas creates a schema (with `x-openregister-lifecycle`) and the cache is invalidated so the immediate GET sees fresh data.\n- PUT /api/schemas/{id} updates the schema description; subsequent GET reflects the new value.\n- POST /api/objects/{registerId}/{schemaId} creates an object against the schema; GET retrieves it.\n- DELETE /api/schemas/{id} WITHOUT `?force=true` MUST return 409 when the schema has attached objects.\n- DELETE /api/schemas/{id}?force=true MUST return 200 and the schema MUST be gone.\n- Same DELETE-safety on /api/registers/{id}?force=true.\n\nRun:\n```\ndocker exec -u 33 nextcloud newman run \\\n  /var/www/html/custom_apps/openregister/tests/integration/openregister.postman_collection.json \\\n  --env-var base_url=http://localhost --env-var admin_user=admin --env-var admin_password=admin\n```",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{admin_user}}", "type": "string" },
+      { "key": "password", "value": "{{admin_password}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost" },
+    { "key": "admin_user", "value": "admin" },
+    { "key": "admin_password", "value": "admin" },
+    { "key": "runtime_schema_id", "value": "" },
+    { "key": "runtime_register_id", "value": "" },
+    { "key": "runtime_schema_slug", "value": "" },
+    { "key": "runtime_register_slug", "value": "" },
+    { "key": "runtime_object_uuid", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Fresh test run — clear runtime-schema-api scoped variables.",
+          "const initFlag = pm.collectionVariables.get('_rt_initialized');",
+          "if (!initFlag) {",
+          "  ['runtime_schema_id','runtime_register_id','runtime_schema_slug','runtime_register_slug','runtime_object_uuid']",
+          "    .forEach(v => pm.collectionVariables.set(v, ''));",
+          "  // Build per-run unique slug suffixes so re-runs do not collide.",
+          "  const suffix = Date.now().toString(36);",
+          "  pm.collectionVariables.set('runtime_schema_slug', 'rt-schema-' + suffix);",
+          "  pm.collectionVariables.set('runtime_register_slug', 'rt-register-' + suffix);",
+          "  pm.collectionVariables.set('_rt_initialized', 'true');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. POST /api/registers — seed register",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "OCS-APIRequest", "value": "true" }
+        ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","registers"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Runtime Schema API Register\",\n  \"description\": \"Seed register for runtime-schema-api Newman tests\",\n  \"slug\": \"{{runtime_register_slug}}\",\n  \"schemas\": []\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('POST /api/registers returns 201 + numeric id', () => {",
+              "  pm.expect(pm.response.code).to.equal(201);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.id, 'id present').to.exist;",
+              "  pm.collectionVariables.set('runtime_register_id', String(json.id));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. POST /api/schemas — create schema with x-openregister-lifecycle",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "OCS-APIRequest", "value": "true" }
+        ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Runtime Schema API Schema\",\n  \"description\": \"created by newman\",\n  \"slug\": \"{{runtime_schema_slug}}\",\n  \"version\": \"0.0.1\",\n  \"properties\": {\n    \"name\": { \"type\": \"string\", \"title\": \"Name\" }\n  },\n  \"x-openregister-lifecycle\": {\n    \"states\": [\"draft\", \"published\"],\n    \"transitions\": []\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('POST /api/schemas returns 201 + numeric id', () => {",
+              "  pm.expect(pm.response.code).to.equal(201);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.id, 'id present').to.exist;",
+              "  pm.collectionVariables.set('runtime_schema_id', String(json.id));",
+              "});",
+              "pm.test('POST response carries the lifecycle extension key', () => {",
+              "  const json = pm.response.json();",
+              "  const extKey = json['x-openregister-lifecycle'] || (json['@self'] && json['@self']['x-openregister-lifecycle']);",
+              "  pm.expect(extKey, 'lifecycle block round-tripped').to.exist;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. GET /api/schemas/{newId} — immediate read MUST observe new schema (cache invalidated)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{runtime_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas","{{runtime_schema_id}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Immediate GET returns 200 with the freshly-created schema', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.slug).to.equal(pm.collectionVariables.get('runtime_schema_slug'));",
+              "  pm.expect(json.description).to.equal('created by newman');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. PUT /api/schemas/{newId} — update description",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "OCS-APIRequest", "value": "true" }
+        ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{runtime_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas","{{runtime_schema_id}}"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"updated by newman\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('PUT returns 200', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});",
+              "pm.test('PUT response carries the updated description', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.description).to.equal('updated by newman');",
+              "});",
+              "// Same-worker re-read MUST see the updated description — cache invalidation proof.",
+              "pm.sendRequest({",
+              "  url: pm.collectionVariables.get('base_url') + '/index.php/apps/openregister/api/schemas/' + pm.collectionVariables.get('runtime_schema_id'),",
+              "  method: 'GET',",
+              "  header: { 'OCS-APIRequest': 'true' }",
+              "}, function (err, res) {",
+              "  pm.test('Immediate GET after PUT sees the updated description (cache invalidated)', () => {",
+              "    pm.expect(err).to.equal(null);",
+              "    pm.expect(res.code).to.equal(200);",
+              "    pm.expect(res.json().description).to.equal('updated by newman');",
+              "  });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. PATCH /api/registers/{id} — attach schema to register",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "OCS-APIRequest", "value": "true" }
+        ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{runtime_register_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","registers","{{runtime_register_id}}"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schemas\": [\"{{runtime_schema_id}}\"]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('PUT /api/registers attaches the schema (200)', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. POST /api/objects/{register}/{schema} — create object against the schema",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "OCS-APIRequest", "value": "true" }
+        ],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{runtime_register_id}}/{{runtime_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{runtime_register_id}}","{{runtime_schema_id}}"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"runtime-schema-api guard fixture\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('POST /api/objects returns 200 or 201', () => {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "  const json = pm.response.json();",
+              "  const uuid = json.uuid || (json['@self'] && json['@self'].uuid) || json.id;",
+              "  pm.expect(uuid, 'object id/uuid present').to.exist;",
+              "  pm.collectionVariables.set('runtime_object_uuid', String(uuid));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. GET /api/objects/{register}/{schema}/{uuid} — read object back",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{runtime_register_id}}/{{runtime_schema_id}}/{{runtime_object_uuid}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","objects","{{runtime_register_id}}","{{runtime_schema_id}}","{{runtime_object_uuid}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('GET /api/objects/.../{uuid} returns the object (200)', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.name).to.equal('runtime-schema-api guard fixture');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. DELETE /api/schemas/{id} WITHOUT ?force=true — MUST return 409 (schema has objects)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{runtime_schema_id}}", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas","{{runtime_schema_id}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('DELETE without ?force MUST return 409 when objects attached', () => {",
+              "  pm.expect(pm.response.code).to.equal(409);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.error).to.equal('schema-has-objects');",
+              "  pm.expect(json.objectCount).to.be.above(0);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. DELETE /api/schemas/{id}?force=true — MUST proceed and return 200",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{runtime_schema_id}}?force=true", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","schemas","{{runtime_schema_id}}"], "query": [{ "key": "force", "value": "true" }] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('DELETE ?force=true returns 200', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});",
+              "// Immediate GET MUST 404 — cache invalidation closes the read window.",
+              "pm.sendRequest({",
+              "  url: pm.collectionVariables.get('base_url') + '/index.php/apps/openregister/api/schemas/' + pm.collectionVariables.get('runtime_schema_id'),",
+              "  method: 'GET',",
+              "  header: { 'OCS-APIRequest': 'true' }",
+              "}, function (err, res) {",
+              "  pm.test('Immediate GET after force-delete returns 404 (cache cleared)', () => {",
+              "    pm.expect(err).to.equal(null);",
+              "    pm.expect(res.code).to.equal(404);",
+              "  });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. DELETE /api/registers/{id}?force=true — register-side force-delete safety",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "OCS-APIRequest", "value": "true" }],
+        "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{runtime_register_id}}?force=true", "host": ["{{base_url}}"], "path": ["index.php","apps","openregister","api","registers","{{runtime_register_id}}"], "query": [{ "key": "force", "value": "true" }] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('DELETE /api/registers ?force=true returns 200', () => {",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}

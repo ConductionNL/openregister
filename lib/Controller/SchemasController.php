@@ -381,6 +381,12 @@ class SchemasController extends Controller
                 }
              */
 
+            // **CACHE INVALIDATION (runtime-schema-api)**: Drop in-memory + persistent
+            // schema cache for the freshly-created ID so any follow-up read in the same
+            // PHP worker observes the new schema. This is the create-side counterpart
+            // of the invalidations already wired into update() and destroy().
+            $this->schemaCacheService->invalidate(schemaId: $schema->getId());
+
             return new JSONResponse(data: $schema, statusCode: 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
@@ -514,8 +520,12 @@ class SchemasController extends Controller
                 }
             }
 
-            // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
-            $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'update');
+            // **CACHE INVALIDATION (runtime-schema-api)**: Clear all schema-related
+            // caches when a schema is updated. `invalidate()` is the runtime-schema-api
+            // entry point — it covers the legacy `invalidateForSchemaChange` cleanup AND
+            // drops the request-scoped find cache on the mapper itself so reads in the
+            // same worker observe the new state.
+            $this->schemaCacheService->invalidate(schemaId: $updatedSchema->getId());
             $this->facetCacheSvc->invalidateForSchemaChange(
                 schemaId: $updatedSchema->getId(),
                 operation: 'update'
@@ -616,16 +626,58 @@ class SchemasController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        // **DELETE SAFETY (runtime-schema-api)**: Count attached objects FIRST.
+        // If N > 0 and ?force=true is not set, refuse with HTTP 409 so the caller
+        // gets a structured error containing the orphan count and can decide
+        // whether to escalate. A bare DELETE on a schema with objects is the
+        // canonical foot-gun that this guard closes.
+        $forceParam = $this->request->getParam(key: 'force', default: null);
+        $force      = (string) $forceParam === 'true' || $forceParam === true || $forceParam === '1';
+
         try {
-            // Find the schema by ID, delete it, and invalidate caches.
+            // Find the schema first (also validates existence and access).
             $schemaToDelete = $this->schemaMapper->find(id: $id);
+
+            // Count objects still referencing this schema across all registers.
+            // Use getStatistics() (single-axis schemaId path) — countSearchObjects()
+            // only returns a real count when BOTH register AND schema are present
+            // in the @self filter, and silently returns 0 on single-axis queries,
+            // which would let DELETE silently succeed on schemas with objects.
+            $objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaToDelete->getId());
+            $objectCount = (int) $objectStats['total'];
+
+            if ($objectCount > 0 && $force === false) {
+                // Refuse: structured 409 with the orphan count for the caller.
+                return new JSONResponse(
+                    data: [
+                        'error'       => 'schema-has-objects',
+                        'objectCount' => $objectCount,
+                    ],
+                    statusCode: 409
+                );
+            }
+
+            if ($objectCount > 0 && $force === true) {
+                // Force-delete with audit trail at WARNING level: a misused force flag
+                // orphans every object referencing this schema, so log who did it.
+                $this->logger->warning(
+                    message: '[SchemasController] Force-deleting schema with attached objects',
+                    context: [
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
+                        'schemaId'    => $schemaToDelete->getId(),
+                        'schemaSlug'  => $schemaToDelete->getSlug(),
+                        'objectCount' => $objectCount,
+                    ]
+                );
+            }
+
             $this->schemaMapper->delete($schemaToDelete);
 
-            // **CACHE INVALIDATION**: Clear all schema-related caches when schema is deleted.
-            $this->schemaCacheService->invalidateForSchemaChange(
-                schemaId: $schemaToDelete->getId(),
-                operation: 'delete'
-            );
+            // **CACHE INVALIDATION (runtime-schema-api)**: invalidate() is the
+            // canonical entry point — covers in-memory, persistent cache table,
+            // AND the request-scoped find cache on the mapper.
+            $this->schemaCacheService->invalidate(schemaId: $schemaToDelete->getId());
             $this->facetCacheSvc->invalidateForSchemaChange(
                 schemaId: $schemaToDelete->getId(),
                 operation: 'delete'

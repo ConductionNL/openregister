@@ -91,16 +91,6 @@ parameters:
 			path: lib/Command/SolrManagementCommand.php
 
 		-
-			message: "#^Missing parameter \\$id \\(int\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\ActionsController\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Controller/ActionsController.php
-
-		-
-			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Controller\\\\ActionsController\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Controller/ActionsController.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/AgentsController.php
@@ -149,6 +139,11 @@ parameters:
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:tools\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/AgentsController.php
+
+		-
+			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\NotAuthorizedException is never thrown in the try block\\.$#"
+			count: 1
+			path: lib/Controller/AggregationController.php
 
 		-
 			message: "#^Offset 'cached' on array\\{name\\: string, metric\\: string, field\\: string\\|null, value\\?\\: float\\|int\\|null, groups\\?\\: array\\<int, array\\{key\\: mixed, value\\: float\\|int\\|null\\}\\>\\} on left side of \\?\\? does not exist\\.$#"
@@ -1396,11 +1391,6 @@ parameters:
 			path: lib/Controller/OrganisationController.php
 
 		-
-			message: "#^Variable \\$result might not be defined\\.$#"
-			count: 1
-			path: lib/Controller/OrganisationController.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 2
 			path: lib/Controller/RegistersController.php
@@ -1437,6 +1427,11 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/RegistersController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string, objectCount\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/RegistersController.php
 
@@ -1607,6 +1602,11 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|409\\|500, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SchemasController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|409\\|500, array\\{error\\?\\: string\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string, objectCount\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
 
@@ -2541,6 +2541,11 @@ parameters:
 			path: lib/Controller/TransitionController.php
 
 		-
+			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\NotAuthorizedException is never thrown in the try block\\.$#"
+			count: 1
+			path: lib/Controller/TransitionController.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UiController\\:\\:makeSpaResponse\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\TemplateResponse but returns static\\(OCP\\\\AppFramework\\\\Http\\\\Response\\<int, array\\<string, mixed\\>\\>\\)\\.$#"
 			count: 1
 			path: lib/Controller/UiController.php
@@ -3229,41 +3234,6 @@ parameters:
 			message: "#^Strict comparison using \\=\\=\\= between 0\\|1\\|false and true will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
-
-		-
-			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$calendar\\.$#"
-			count: 1
-			path: lib/Db/Organisation.php
-
-		-
-			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$contacts\\.$#"
-			count: 1
-			path: lib/Db/Organisation.php
-
-		-
-			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$deck\\.$#"
-			count: 1
-			path: lib/Db/Organisation.php
-
-		-
-			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$mail\\.$#"
-			count: 1
-			path: lib/Db/Organisation.php
-
-		-
-			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$notes\\.$#"
-			count: 1
-			path: lib/Db/Organisation.php
-
-		-
-			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$talk\\.$#"
-			count: 1
-			path: lib/Db/Organisation.php
-
-		-
-			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$todos\\.$#"
-			count: 1
-			path: lib/Db/Organisation.php
 
 		-
 			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setActive\\(\\)\\.$#"
@@ -4017,6 +3987,11 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_extend in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Configuration/ImportHandler.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/Configuration/ImportHandler.php
 
