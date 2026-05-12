@@ -27,7 +27,7 @@
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
 					</template>
-					{{ t('openregister', 'Extract Now') }}
+					{{ t('openregister', 'Extract now') }}
 				</NcButton>
 			</template>
 		</NcEmptyContent>
@@ -130,7 +130,7 @@
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
 					</template>
-					{{ t('openregister', 'Extract Now') }}
+					{{ t('openregister', 'Extract now') }}
 				</NcButton>
 			</div>
 		</div>

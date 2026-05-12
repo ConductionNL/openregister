@@ -11,7 +11,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<NcTextField
 						:value.sync="search"
 						:show-trailing-button="search !== ''"
-						label="Search"
+						:label="t('openregister', 'Search')"
 						class="searchField"
 						trailing-button-icon="close"
 						@trailing-button-click="search = ''">

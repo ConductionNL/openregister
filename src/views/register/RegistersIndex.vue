@@ -26,7 +26,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 			:show-mass-copy="false"
 			:show-mass-delete="false"
 			show-view-toggle
-			add-label="Add Register"
+			:add-label="t('openregister', 'Add Register')"
 			row-key="id"
 			:empty-text="emptyContentName"
 			:row-class="getRowClass"
@@ -59,7 +59,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
-						input-label="Schemas"
+						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
@@ -75,13 +75,13 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 					<template #icon>
 						<Upload :size="20" />
 					</template>
-					Import
+					{{ t('openregister', 'Import') }}
 				</NcActionButton>
 				<NcActionButton close-after-click @click="openAllApisDoc">
 					<template #icon>
 						<ApiIcon :size="20" />
 					</template>
-					View APIs
+					{{ t('openregister', 'View APIs') }}
 				</NcActionButton>
 				<NcActionButton close-after-click @click="warmupNamesCache">
 					<template #icon>
@@ -138,14 +138,14 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
-						v-tooltip="isManagedByExternalConfig(row) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(row)?.title : ''"
+						v-tooltip="isManagedByExternalConfig(row) ? t('openregister', 'Cannot edit: This register is managed by external configuration {title}', { title: getManagingConfiguration(row)?.title }) : ''"
 						close-after-click
 						:disabled="isManagedByExternalConfig(row)"
 						@click="$refs.indexPage.openFormDialog(row)">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
-						Edit
+						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
 					<NcActionButton
 						v-if="!row.published || (row.depublished && new Date(row.depublished) <= new Date())"
@@ -154,7 +154,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						<template #icon>
 							<Publish :size="20" />
 						</template>
-						Publish
+						{{ t('openregister', 'Publish') }}
 					</NcActionButton>
 					<NcActionButton
 						v-if="row.published && (!row.depublished || new Date(row.depublished) > new Date())"
@@ -163,46 +163,46 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						<template #icon>
 							<PublishOff :size="20" />
 						</template>
-						Depublish
+						{{ t('openregister', 'Depublish') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); navigationStore.setModal('publishRegister')">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
 						</template>
-						Publish OAS
+						{{ t('openregister', 'Publish OAS') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); navigationStore.setModal('importRegister')">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
-						Import
+						{{ t('openregister', 'Import') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); viewOasDoc(row)">
 						<template #icon>
 							<ApiIcon :size="20" />
 						</template>
-						View API Documentation
+						{{ t('openregister', 'View API Documentation') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); downloadOas(row)">
 						<template #icon>
 							<Download :size="20" />
 						</template>
-						Download API Specification
+						{{ t('openregister', 'Download API Specification') }}
 					</NcActionButton>
-					<NcActionButton v-tooltip="row.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+					<NcActionButton v-tooltip="row.stats?.total > 0 ? t('openregister', 'Cannot delete: objects are still attached') : ''"
 						close-after-click
 						:disabled="row.stats?.total > 0"
 						@click="registerStore.setRegisterItem(row); navigationStore.setDialog('deleteRegister')">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
-						Delete
+						{{ t('openregister', 'Delete') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="viewRegisterDetails(row)">
 						<template #icon>
 							<InformationOutline :size="20" />
 						</template>
-						View Details
+						{{ t('openregister', 'View Details') }}
 					</NcActionButton>
 				</NcActions>
 			</template>

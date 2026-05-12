@@ -10,7 +10,7 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -283,6 +283,27 @@ class Organisation extends Entity implements JsonSerializable
      * @var array|null Array of role definitions
      */
     protected ?array $roles = null;
+
+    /** @var array|null Linked mail app data */
+    protected ?array $mail = null;
+
+    /** @var array|null Linked contacts app data */
+    protected ?array $contacts = null;
+
+    /** @var array|null Linked notes app data */
+    protected ?array $notes = null;
+
+    /** @var array|null Linked todos app data */
+    protected ?array $todos = null;
+
+    /** @var array|null Linked calendar app data */
+    protected ?array $calendar = null;
+
+    /** @var array|null Linked talk app data */
+    protected ?array $talk = null;
+
+    /** @var array|null Linked deck app data */
+    protected ?array $deck = null;
 
     /**
      * User count for this organisation (computed property, not stored in database)

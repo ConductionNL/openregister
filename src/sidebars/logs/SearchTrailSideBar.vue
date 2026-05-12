@@ -143,7 +143,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					<template #icon>
 						<FilterOffOutline :size="20" />
 					</template>
-					{{ t('openregister', 'Clear Filters') }}
+					{{ t('openregister', 'Clear filters') }}
 				</NcButton>
 			</div>
 
@@ -235,7 +235,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					<div class="complexityBar">
 						<div class="complexityLabel">
 							<span
-								:title="t('openregister', 'Simple queries: Basic text searches with minimal parameters (e.g., single search term, no advanced filters)')"
+								:title="t('openregister', 'Simple queries: basic text searches with minimal parameters (e.g., single search term, no advanced filters)')"
 								class="complexity-label-with-tooltip">
 								{{ t('openregister', 'Simple') }}
 							</span>
@@ -248,7 +248,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					<div class="complexityBar">
 						<div class="complexityLabel">
 							<span
-								:title="t('openregister', 'Medium queries: Searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)')"
+								:title="t('openregister', 'Medium queries: searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)')"
 								class="complexity-label-with-tooltip">
 								{{ t('openregister', 'Medium') }}
 							</span>
@@ -261,7 +261,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					<div class="complexityBar">
 						<div class="complexityLabel">
 							<span
-								:title="t('openregister', 'Complex queries: Advanced searches with multiple filters, operators, and complex parameter combinations')"
+								:title="t('openregister', 'Complex queries: advanced searches with multiple filters, operators, and complex parameter combinations')"
 								class="complexity-label-with-tooltip">
 								{{ t('openregister', 'Complex') }}
 							</span>

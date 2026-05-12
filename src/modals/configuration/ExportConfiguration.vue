@@ -8,7 +8,7 @@ import axios from '@nextcloud/axios'
 <template>
 	<NcDialog v-if="navigationStore.modal === 'exportConfiguration'"
 		name="export-configuration-dialog"
-		title="Export Configuration"
+		:title="t('openregister', 'Export Configuration')"
 		size="small"
 		:can-close="false">
 		<NcNoteCard v-if="errorMessage" type="error">
