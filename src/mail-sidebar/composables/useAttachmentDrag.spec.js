@@ -9,6 +9,7 @@ jest.mock('vue', () => ({
 const { useAttachmentDrag, ATTACHMENT_MIME } = require('./useAttachmentDrag.js')
 
 class MockDataTransfer {
+
 	constructor() {
 		this.data = {}
 		this.effectAllowed = 'none'
@@ -17,6 +18,7 @@ class MockDataTransfer {
 	setData(type, value) {
 		this.data[type] = value
 	}
+
 }
 
 describe('useAttachmentDrag', () => {
