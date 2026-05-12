@@ -44,6 +44,7 @@ use OCP\IAppConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -101,7 +102,8 @@ class SchemasDestroySafetyTest extends TestCase
             $this->schemaCacheService,
             $this->facetCacheSvc,
             $this->createMock(SchemaService::class),
-            $this->logger
+            $this->logger,
+            $this->createMock(ContainerInterface::class)
         );
 
     }//end setUp()

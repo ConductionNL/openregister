@@ -44,10 +44,12 @@ use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
@@ -105,6 +107,8 @@ class RegistersDestroySafetyTest extends TestCase
             $this->createMock(GitHubHandler::class),
             $this->createMock(IAppManager::class),
             $this->createMock(OasService::class),
+            $this->createMock(ContainerInterface::class),
+            $this->createMock(IGroupManager::class),
             $this->registerCacheHandler
         );
 

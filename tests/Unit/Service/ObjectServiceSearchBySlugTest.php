@@ -56,6 +56,7 @@ use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
@@ -137,6 +138,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
             logger:              $this->createMock(LoggerInterface::class),
             cacheHandler:        $this->createMock(CacheHandler::class),
             settingsService:     $this->createMock(SettingsService::class),
+            dateTimeNormalizer:  $this->createMock(DateTimeNormalizer::class),
             container:           $this->createMock(IAppContainer::class)
         );
 
