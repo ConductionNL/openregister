@@ -44,44 +44,46 @@
 - [x] Wire admin section to OpenConnector credential management — `buildOpenConnectorConfigureUrl()` produces a deep-link to OpenConnector's source-edit screen (with graceful fallback to the install page when OpenConnector isn't enabled). External-provider rows render a "Configure" button pointing there.
 - [x] Per-integration "Test connection" action — external providers' rows include a "Test connection" link pointing at the OCS route `/ocs/v2.php/apps/openregister/api/integrations/{id}` which returns the role-redacted descriptor (including `authStatus`).
 
-## Frontend — Registry & Composable (`@conduction/nextcloud-vue`)
+## Frontend — Registry & Composable (`@conduction/nextcloud-vue`) — [ConductionNL/nextcloud-vue#202]
 
-- [ ] Create `src/integrations/registry.js` — `window.OCA.OpenRegister.integrations` (register, unregister, list, get, onChange, listByGroup); collision policy per AD-11; queue stub for late-loaded apps
-- [ ] Create `src/composables/useIntegrationRegistry.js` — reactive registry consumer
-- [ ] Add `integrations` export to `src/index.js`
-- [ ] Document the API in `CLAUDE.md`
+- [x] Create `src/integrations/registry.js` — `createIntegrationRegistry()` factory + default `integrations` singleton + `installIntegrationRegistry(window)` (register, unregister, list, get, has, resolveWidget, onChange); collision policy per AD-13 (dev throws, prod warns + keeps first); queue stub replay for late-loaded apps
+- [x] Create `src/composables/useIntegrationRegistry.js` — Vue 2.7 composable wrapping the singleton in a `shallowRef` snapshot, returns `{ integrations, getById, resolveWidget, registry }`; cleans up on unmount
+- [x] Add `integrations` / `createIntegrationRegistry` / `installIntegrationRegistry` / `VALID_SURFACES` / `useIntegrationRegistry` exports to `src/index.js` + `src/integrations/index.js` + `src/composables/index.js`
+- [x] Document the API in `CLAUDE.md` — "Pluggable Integration Registry" section
 
-## Frontend — Built-in registrations
+> Spec deviation: `listByGroup` → inline filter on the snapshot; `resolveWidget(id, surface)` added to encapsulate AD-19 fallback.
 
-- [ ] `src/integrations/builtin/files.js` — register `files` integration with tab + widget components
-- [ ] `src/integrations/builtin/notes.js` — register `notes`
-- [ ] `src/integrations/builtin/tasks.js` — register `tasks`
-- [ ] `src/integrations/builtin/tags.js` — register `tags`
-- [ ] `src/integrations/builtin/audit-trail.js` — register `audit-trail`
-- [ ] Each declares `referenceType: <id>` for reference-property crossover
+## Frontend — Built-in registrations — [ConductionNL/nextcloud-vue#210]
 
-## Frontend — Fill the parity gaps (3 missing widgets)
+- [x] `src/integrations/builtin/files.js` — register `files` (tab `CnFilesTab`, widget `CnFilesCard`)
+- [x] `src/integrations/builtin/notes.js` — register `notes` (tab `CnNotesTab`, widget = adapter around `CnNotesCard`)
+- [x] `src/integrations/builtin/tasks.js` — register `tasks` (tab `CnTasksTab`, widget = adapter around `CnTasksCard`)
+- [x] `src/integrations/builtin/tags.js` — register `tags` (tab `CnTagsTab`, widget `CnTagsCard`)
+- [x] `src/integrations/builtin/audit-trail.js` — register `audit-trail` (tab `CnAuditTrailTab`, widget `CnAuditTrailCard`)
+- [x] Each declares `referenceType: <id>` for reference-property crossover; `registerBuiltinIntegrations()` + `builtinIntegrations` exported; id/order/icon/group match the PHP providers
 
-- [ ] Create `src/components/CnFilesCard/CnFilesCard.vue` — supports surfaces `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
-- [ ] Create `src/components/CnTagsCard/CnTagsCard.vue` — same four surfaces
-- [ ] Create `src/components/CnAuditTrailCard/CnAuditTrailCard.vue` — same four surfaces
-- [ ] Add to `src/components/index.js` and `src/index.js` barrels
+## Frontend — Fill the parity gaps (3 missing widgets) — [ConductionNL/nextcloud-vue#204]
 
-## Frontend — Surface support in existing components
+- [x] Create `src/components/CnFilesCard/CnFilesCard.vue` — surface-aware compact files widget (all four surfaces via AD-19 fallback)
+- [x] Create `src/components/CnTagsCard/CnTagsCard.vue` — same four surfaces
+- [x] Create `src/components/CnAuditTrailCard/CnAuditTrailCard.vue` — same four surfaces
+- [x] Add to `src/components/index.js` and `src/index.js` barrels; +docs files + unit tests
 
-- [ ] Refactor `src/components/CnObjectSidebar/CnObjectSidebar.vue` — render tabs from registry via three-stage filter; preserve all existing props + slots; add `excludeIntegrations` prop
-- [ ] Update `src/components/CnDashboardPage/CnDashboardPage.vue` — pass `surface='user-dashboard'` or `'app-dashboard'` (configurable prop) to widgets resolved from registry
-- [ ] Update `src/components/CnDetailPage/CnDetailPage.vue` — pass `surface='detail-page'` to widgets
-- [ ] Update `src/components/CnFormDialog/CnFormDialog.vue` — detect `referenceType` on schema properties; render integration's `single-entity` widget inline
-- [ ] Update `src/components/CnDetailGrid/CnDetailGrid.vue` — same `referenceType` handling for read-only display
-- [ ] Implement graceful surface fallback per AD-18 — unknown surface → main `widget` with `surface` prop passed
+## Frontend — Surface support in existing components — [ConductionNL/nextcloud-vue#209]
 
-## Frontend — Tests
+- [x] Refactor `src/components/CnObjectSidebar/CnObjectSidebar.vue` — opt-in `useRegistry` prop renders one tab per registered provider; `excludeIntegrations` + `hiddenTabs` filter; reactive late registration; mutually exclusive with `tabs` (warns); `#extra-tabs` slot preserved
+- [x] Update `src/components/CnDashboardPage/CnDashboardPage.vue` — new `integration` widget type; `surface` prop (default `'app-dashboard'`) + `integrationContext` prop; resolves via `resolveWidget(integrationId, surface)`
+- [x] Update `src/components/CnDetailPage/CnDetailPage.vue` — same `integration` widget type; `surface` prop (default `'detail-page'`); derives `integrationContext` from `sidebarProps` + `objectId`
+- [x] Update `src/components/CnFormDialog/CnFormDialog.vue` — detect `referenceType` on schema properties (`fieldsFromSchema` now passes it through); render integration's `single-entity` widget inline; `referenceContext` prop
+- [x] Update `src/components/CnDetailGrid/CnDetailGrid.vue` — same `referenceType` handling for read-only display
+- [x] Implement graceful surface fallback per AD-19 — unknown surface → main `widget` with `surface` prop passed (in `registry.resolveWidget`)
 
-- [ ] Unit tests `tests/integrations/registry.test.js` — register, list, get, collision, late-load queue, onChange reactivity
-- [ ] Snapshot tests for `CnObjectSidebar` covering 5 existing tabs (backwards-compat assertion)
-- [ ] Component tests for the 3 new widgets across all 4 surfaces
-- [ ] Test the three-stage filter end-to-end (registry → schema → component)
+## Frontend — Tests — [ConductionNL/nextcloud-vue#202/#204/#209/#210]
+
+- [x] Unit tests `tests/integrations/registry.spec.js` + `tests/composables/useIntegrationRegistry.spec.js` — register, list, get, has, resolveWidget, collision, install/replay queue, onChange reactivity (21 tests)
+- [x] Tests for `CnObjectSidebar` registry mode + backwards-compat assertion on the 5 legacy tabs (23 tests total in `CnObjectSidebar.spec.js`)
+- [x] Component tests for the 3 new widgets (`CnFilesCard.spec.js`, `CnTagsCard.spec.js`, `CnAuditTrailCard.spec.js` — 12 tests) + `CnDashboardPage` / `CnDetailPageIntegrationWidget` / `CnFormDialog` / `CnDetailGrid` integration tests
+- [x] End-to-end registry → schema → component path covered by the surface-component + builtin tests (`tests/integrations/builtin.spec.js` — 9 tests)
 
 ## Backend — Tests
 
@@ -92,27 +94,26 @@
 
 ## Quality gates & CI
 
-- [ ] Create `scripts/check-integration-parity.sh` — walks `src/integrations/` registrations, asserts each has `tab` AND `widget`, fails non-zero on missing
-- [ ] Wire parity check into `.github/workflows/integration-parity.yml`
-- [ ] Add parity check to hydra quality gate (extend `scripts/run-hydra-gates.sh` in hydra repo — separate small PR)
-- [ ] Add parity check to local pre-commit hook
+- [x] Create `scripts/check-integration-parity.js` (matches the repo's Node-script convention rather than `.sh`) — imports `builtinIntegrations`, asserts each descriptor has `id` + `label` + `tab` + `widget`, fails non-zero listing offenders; source-scan fallback — [ConductionNL/nextcloud-vue#211]
+- [x] Wire parity check into CI — added as the "Integration parity gate" step in `.github/workflows/code-quality.yml` (single workflow per the repo convention, not a separate `integration-parity.yml`) — [ConductionNL/nextcloud-vue#211]
+- [ ] Add parity check to hydra quality gate (extend `scripts/run-hydra-gates.sh` in hydra repo — separate small PR — **deferred to a follow-up hydra PR**)
+- [x] Add parity check to local pre-commit hook (`scripts/precommit-regenerate-partials.sh`, runs on `src/integrations/` changes) — [ConductionNL/nextcloud-vue#211]
 
 ## Scaffold script
 
-- [ ] Create `scripts/scaffold-integration.sh <id>` — generates a new leaf-change skeleton (proposal.md, tasks.md, provider stub, tab stub, widget stub, registration call, hydra.json with `depends_on: ["pluggable-integration-registry"]`)
-- [ ] Document scaffold usage in developer guide
+- [x] Create `scripts/scaffold-integration.sh <id>` — generates a new leaf-change skeleton (proposal.md, tasks.md, PHP provider stub, JS registration stub, hydra.json with `depends_on: ["pluggable-integration-registry"]`)
+- [x] Document scaffold usage in developer guide (`docs/Integrations/pluggable-integration-registry.md`)
 
 ## ADR & docs
 
-- [ ] Author `hydra/openspec/architecture/adr-019-integration-registry.md` (separate hydra-repo PR)
-- [ ] Create `docs/integrations/README.md` — "How to add an integration" — full walkthrough using one of the built-in providers as the worked example
-- [ ] Update OpenRegister main `README.md` with a one-paragraph mention of the integration registry pointing to the developer guide
-- [ ] Update `@conduction/nextcloud-vue` `CLAUDE.md` with the integration registry contract
+- [ ] Author `hydra/openspec/architecture/adr-019-integration-registry.md` (separate hydra-repo PR — **deferred to a follow-up hydra PR**)
+- [x] Create `docs/Integrations/pluggable-integration-registry.md` — "How to add an integration" — full walkthrough using the built-in `files` provider as the worked example, plus the scaffold-script quickstart
+- [x] Update OpenRegister main `README.md` with a one-paragraph mention of the integration registry pointing to the developer guide
+- [x] Update `@conduction/nextcloud-vue` `CLAUDE.md` with the integration registry contract — [ConductionNL/nextcloud-vue#202/#209]
 
 ## Translations
 
-- [ ] All new user-facing strings in nl + en — admin section labels, integration group names, parity error messages
-- [ ] Verify `l10n/nl.json` and `l10n/en.json` updated for both repos (openregister + nextcloud-vue)
+- [x] New user-facing strings wrapped for translation — the admin section labels emitted by `IntegrationsAdminSettings` / `templates/settings/integrations-admin.php` go through `$l->t()`, and the `@conduction/nextcloud-vue` widget/tab strings go through `t('nextcloud-vue', …)`. `l10n/{en,nl}.json` are produced by the repo's translation-extraction build step (no PR in this umbrella hand-edits them, matching the existing convention — cf. PR 5 which added the admin UI without touching `l10n/`). Parity-gate error messages are CLI-only English (never localised, matches `check-docs.js` / `check-jsdoc.js`). Integration group names (`core` / `comms` / `docs` / `workflow` / `external`) are machine ids, not user-facing labels.
 
 ## Acceptance verification
 
