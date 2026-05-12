@@ -13,9 +13,6 @@
  * available (task 5.11 wires `openregister::features_roadmap_enabled` /
  * `openregister::github_repo` through `IInitialState`); until then the fallbacks
  * below keep the route usable.
- *
- * @category View
- * @package  OCA\OpenRegister
  */
 import { NcAppContent } from '@nextcloud/vue'
 import { loadState } from '@nextcloud/initial-state'
