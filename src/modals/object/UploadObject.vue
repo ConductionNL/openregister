@@ -68,7 +68,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 			<div v-if="!registers?.value?.id">
 				<NcSelect v-bind="registers"
 					v-model="registers.value"
-					input-label="Register"
+					:input-label="t('openregister', 'Register')"
 					:loading="registersLoading"
 					:disabled="loading" />
 			</div>
@@ -77,7 +77,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 			<div v-if="registers?.value?.id && !schemas?.value?.id">
 				<NcSelect v-bind="schemas"
 					v-model="schemas.value"
-					input-label="Schemas"
+					:input-label="t('openregister', 'Schemas')"
 					:loading="schemasLoading"
 					:disabled="loading" />
 			</div>
@@ -86,18 +86,18 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 			<div v-if="registers.value?.id && schemas.value?.id">
 				<NcSelect v-bind="mappings"
 					v-model="mappings.value"
-					input-label="Mappings"
+					:input-label="t('openregister', 'Mappings')"
 					:loading="mappingsLoading"
 					:disabled="loading || !mappings.options?.length" />
 
 				<div :class="`codeMirrorContainer ${getTheme()}`">
-					<p>Object</p>
+					<p>{{ t('openregister', 'Object') }}</p>
 					<CodeMirror v-model="object"
 						:basic="true"
 						:dark="getTheme() === 'dark'"
 						:lang="json()"
 						:linter="jsonParseLinter()"
-						placeholder="Enter your object here..." />
+						:placeholder="t('openregister', 'Enter your object here...')" />
 
 					<NcButton class="prettifyButton" @click="prettifyJson">
 						<template #icon>

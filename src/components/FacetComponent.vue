@@ -321,7 +321,7 @@
 		</div>
 
 		<div v-else class="facet-empty">
-			<p>{{ t('openregister', 'No facetable fields available. Select a register and schema to see available filters.') }}</p>
+			<p>{{ t('openregister', 'No facetable fields available. select a register and schema to see available filters.') }}</p>
 		</div>
 	</div>
 </template>

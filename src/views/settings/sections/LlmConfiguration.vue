@@ -93,7 +93,7 @@
 				{{ llmSettings.enabled ? t('openregister', 'LLM features enabled') : t('openregister', 'LLM features disabled') }}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
-				{{ t('openregister', 'Enable or disable LLM features. Configure providers and models using the LLM Configuration button above.') }}
+				{{ t('openregister', 'Enable or disable LLM features. configure providers and models using the LLM configuration button above.') }}
 				<span v-if="saving" class="saving-indicator">
 					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
 				</span>
@@ -748,7 +748,7 @@ export default {
 					batchSize: 25,
 				})
 
-				showSuccess(this.t('openregister', 'File vectorization started. Check the statistics section for progress.'))
+				showSuccess(this.t('openregister', 'File vectorization started. check the statistics section for progress.'))
 				await this.loadAllStats()
 			} catch (error) {
 				console.error('Failed to start file vectorization:', error)

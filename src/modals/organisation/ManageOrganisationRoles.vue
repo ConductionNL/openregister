@@ -1,3 +1,7 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog :name="t('openregister', 'Manage Organisation Roles')"
 		size="normal"
@@ -15,7 +19,7 @@
 			<div class="organisation-info">
 				<h3>{{ organisationItem.name }}</h3>
 				<p class="info-text">
-					{{ t('openregister', 'Select which Nextcloud groups are available for this organisation. Users in these groups will have access to organisation resources.') }}
+					{{ t('openregister', 'Select which Nextcloud groups are available for this organisation. users in these groups will have access to organisation resources.') }}
 				</p>
 			</div>
 
@@ -47,7 +51,7 @@
 					:loading="loadingGroups"
 					:filterable="true"
 					label-outside
-					input-label="Nextcloud Groups"
+					:input-label="t('openregister', 'Nextcloud Groups')"
 					@input="addRole">
 					<template #option="{ name, userCount }">
 						<div class="group-option">

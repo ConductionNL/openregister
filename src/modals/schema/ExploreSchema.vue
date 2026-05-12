@@ -433,7 +433,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 								<NcTextField
 									v-model="selectedPropertiesConfig[suggestion.property_name].example"
 									:label="t('openregister', 'Example Value')"
-									placeholder="Example value for this property" />
+									:placeholder="t('openregister', 'Example value for this property')" />
 
 								<NcTextField
 									v-model="selectedPropertiesConfig[suggestion.property_name].order"

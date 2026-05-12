@@ -424,7 +424,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
 		 */
 		async cleanupSearchTrails() {
-			if (!confirm(this.t('openregister', 'Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.'))) {
+			if (!confirm(this.t('openregister', 'Are you sure you want to cleanup old search trails? this will delete entries older than 30 days.'))) {
 				return
 			}
 
@@ -561,7 +561,7 @@ export default {
 		async bulkDeleteSearchTrails() {
 			if (this.selectedSearchTrails.length === 0) return
 
-			if (!confirm(this.t('openregister', 'Are you sure you want to delete the selected search trails? This action cannot be undone.'))) {
+			if (!confirm(this.t('openregister', 'Are you sure you want to delete the selected search trails? this action cannot be undone.'))) {
 				return
 			}
 

@@ -1,15 +1,19 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<SettingsSection
-		name="Permission Matrix"
-		description="View and manage authorization across registers and schemas"
+		:name="t('openregister', 'Permission Matrix')"
+		:description="t('openregister', 'View and manage authorization across registers and schemas')"
 		:loading="loading"
-		loading-message="Loading permission matrix...">
+		:loading-message="t('openregister', 'Loading permission matrix...')">
 		<div v-if="!isAdminUser" class="access-denied">
-			<p>You do not have permission to view the permission matrix. Admin access is required.</p>
+			<p>{{ t('openregister', 'You do not have permission to view the permission matrix. Admin access is required.') }}</p>
 		</div>
 
 		<div v-else-if="registers.length === 0 && !loading" class="empty-state">
-			<p>No registers found. Create a register to configure permissions.</p>
+			<p>{{ t('openregister', 'No registers found. Create a register to configure permissions.') }}</p>
 		</div>
 
 		<div v-else class="permission-matrix">
@@ -17,11 +21,11 @@
 			<div class="matrix-legend">
 				<span class="legend-item">
 					<span class="legend-dot direct" />
-					Direct permission
+					{{ t('openregister', 'Direct permission') }}
 				</span>
 				<span class="legend-item">
 					<span class="legend-dot inherited" />
-					Inherited from register
+					{{ t('openregister', 'Inherited from register') }}
 				</span>
 			</div>
 
@@ -31,13 +35,13 @@
 					<thead>
 						<tr>
 							<th class="name-column">
-								Register / Schema
+								{{ t('openregister', 'Register / Schema') }}
 							</th>
 							<th v-for="action in actions" :key="action" class="action-column">
 								{{ action }}
 							</th>
 							<th class="action-column">
-								Public
+								{{ t('openregister', 'Public') }}
 							</th>
 						</tr>
 					</thead>
@@ -54,7 +58,7 @@
 									</button>
 									<span v-if="register.authorization && Object.keys(register.authorization).length > 0"
 										class="auth-badge">
-										RBAC
+										{{ t('openregister', 'RBAC') }}
 									</span>
 								</td>
 								<td v-for="action in actions"
@@ -83,8 +87,8 @@
 										&#8627; {{ schema.title || schema.name || 'Schema #' + schema.id }}
 										<span v-if="!schema.authorization || Object.keys(schema.authorization).length === 0"
 											class="inherited-badge"
-											title="Inherits permissions from register">
-											inherited
+											:title="t('openregister', 'Inherits permissions from register')">
+											{{ t('openregister', 'inherited') }}
 										</span>
 									</td>
 									<td v-for="action in actions"
@@ -113,24 +117,24 @@
 			<div v-for="register in registersWithBulkActions"
 				:key="'bulk-' + register.id"
 				class="bulk-actions">
-				<h4>Bulk Role Assignment: {{ register.title || 'Register #' + register.id }}</h4>
-				<p class="bulk-description">Apply a role to all schemas in this register that do not have explicit authorization overrides.</p>
+				<h4>{{ t('openregister', 'Bulk Role Assignment: {title}', { title: register.title || 'Register #' + register.id }) }}</h4>
+				<p class="bulk-description">{{ t('openregister', 'Apply a role to all schemas in this register that do not have explicit authorization overrides.') }}</p>
 				<div class="bulk-controls">
 					<NcSelect
 						v-model="bulkRole[register.id]"
 						:options="getRoleOptions(register)"
-						input-label="Select role"
+						:input-label="t('openregister', 'Select role')"
 						class="bulk-select" />
 					<NcSelect
 						v-model="bulkGroup[register.id]"
 						:options="getGroupOptions()"
-						input-label="Select group"
+						:input-label="t('openregister', 'Select group')"
 						class="bulk-select" />
 					<NcButton
 						type="primary"
 						:disabled="!bulkRole[register.id] || !bulkGroup[register.id]"
 						@click="applyBulkRole(register)">
-						Apply
+						{{ t('openregister', 'Apply') }}
 					</NcButton>
 				</div>
 			</div>

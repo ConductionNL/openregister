@@ -240,7 +240,7 @@
 							<label class="dialog-label">{{ t('openregister', 'Headers') }}</label>
 							<NcTextArea
 								:value="headersText"
-								:placeholder="t('openregister', 'X-Custom-Header: value\nAuthorization: Bearer token')"
+								:placeholder="headersPlaceholder"
 								rows="4"
 								@update:value="updateHeaders" />
 							<p class="field-hint">
@@ -252,7 +252,7 @@
 							<label class="dialog-label">{{ t('openregister', 'Filters') }}</label>
 							<NcTextArea
 								:value="filtersText"
-								:placeholder="t('openregister', 'objectType: object\naction: created')"
+								:placeholder="filtersPlaceholder"
 								rows="4"
 								@update:value="updateFilters" />
 							<p class="field-hint">
@@ -395,6 +395,17 @@ export default {
 			return Object.entries(this.webhookItem.headers)
 				.map(([key, value]) => `${key}: ${value}`)
 				.join('\n')
+		},
+		// Placeholder strings are defined in script (not in the template attribute
+		// expression) because a literal `\n` inside a Vue template expression is
+		// compiled into an actual newline character inside a single-quoted JS
+		// string in the render function output, producing an "Invalid or
+		// unexpected token" SyntaxError that breaks the entire bundle.
+		headersPlaceholder() {
+			return this.t('openregister', 'X-Custom-Header: value\nAuthorization: Bearer token')
+		},
+		filtersPlaceholder() {
+			return this.t('openregister', 'objectType: object\naction: created')
 		},
 		filtersText() {
 			if (!this.webhookItem?.filters || typeof this.webhookItem.filters !== 'object') {

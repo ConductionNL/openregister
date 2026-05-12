@@ -5,7 +5,7 @@
 		:size="'normal'"
 		@closing="closeDialog">
 		<div class="create-configset-dialog">
-			<p>{{ t('openregister', 'Create a new ConfigSet based on the _default template') }}</p>
+			<p>{{ t('openregister', 'Create a new configset based on the _default template') }}</p>
 
 			<div class="form-group">
 				<label>{{ t('openregister', 'ConfigSet Name') }}*</label>
@@ -16,7 +16,7 @@
 					class="configset-name-input"
 					@keyup.enter="!creating && configSetName && createConfigSet()">
 				<p class="form-hint">
-					{{ t('openregister', 'This will copy the _default ConfigSet with the new name') }}
+					{{ t('openregister', 'This will copy the _default configset with the new name') }}
 				</p>
 			</div>
 

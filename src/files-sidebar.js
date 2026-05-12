@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	// Register Objects Tab
 	OCA.Files.Sidebar.registerTab(new OCA.Files.Sidebar.Tab({
 		id: 'openregister-objects',
-		name: t('openregister', 'Register Objects'),
+		name: t('openregister', 'Register objects'),
 		icon: databaseOutlineIcon,
 
 		async mount(el, fileInfo, _context) {
