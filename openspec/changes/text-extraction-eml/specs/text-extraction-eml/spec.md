@@ -51,6 +51,14 @@ The flat output (returned by `extractEml`) MUST be ordered:
 - **WHEN** `extractEml` runs
 - **THEN** the body section contains the HTML stripped to text (no `<p>`, `<a>` tags; entities decoded; whitespace collapsed)
 
+#### Scenario: multipart/alternative — `text/plain` is preferred when both parts are present
+
+- **GIVEN** an EML with a `multipart/alternative` body containing both a `text/plain` part ("Hello Bob") and a `text/html` part (`<p>Hello <b>Bob</b></p>`)
+- **WHEN** `extractEml` runs
+- **THEN** the body section MUST contain the `text/plain` content "Hello Bob"
+- **AND** the body section MUST NOT contain raw HTML tags (`<p>`, `<b>`)
+- **AND** the HTML part MUST NOT be concatenated to the plain part — only one is emitted
+
 #### Scenario: Recursive attachment extraction for PDF attachment
 
 - **GIVEN** an EML with a PDF attachment named `report.pdf`
@@ -85,16 +93,16 @@ The method MUST be public and accept an `\OCP\Files\File`. It MUST return an imm
 
 - **GIVEN** a multipart EML with both `text/plain` and `text/html` parts
 - **WHEN** `parseEmlStructured` runs
-- **THEN** `result.body['plainText']` contains the plain part
-- **AND** `result.body['html']` contains the HTML part
+- **THEN** `result.body->plainText` contains the plain part
+- **AND** `result.body->html` contains the HTML part
 - **AND** both are populated (consumer chooses)
 
 #### Scenario: Single-body EMLs populate only the present part
 
 - **GIVEN** an EML with only a `text/html` part
 - **WHEN** `parseEmlStructured` runs
-- **THEN** `result.body['plainText']` is null
-- **AND** `result.body['html']` contains the HTML
+- **THEN** `result.body->plainText` is null
+- **AND** `result.body->html` contains the HTML
 
 #### Scenario: Date header malformed — date field is null
 
@@ -108,9 +116,9 @@ The method MUST be public and accept an `\OCP\Files\File`. It MUST return an imm
 
 Each entry in `EmlStructure.attachments[]` MUST be an `EmlAttachment` with:
 
-- `filename` (string) — from the Content-Disposition header or generated if missing.
+- `filename` (string) — from the Content-Disposition `filename` parameter; if absent, from the Content-Type `name` parameter; if both are absent, generated as `attachment-<n>` where `<n>` is the 1-indexed position of the attachment in the multipart-document order. The generated form MUST always be a non-empty string so consumers can render it as a label without special-casing empty names.
 - `mimeType` (string) — from Content-Type.
-- `content` (string of raw bytes — base64-decoded as needed).
+- `content` (string) — MUST be the decoded binary content of the attachment (NOT re-encoded or kept as the MIME-transport base64 string). `zbateson/mail-mime-parser` returns decoded bytes from `$part->getContent()` by default; implementations MUST use that path, not `$part->getRawContent()`. Consumers (e.g. DocuDesk's `eml-pdf-assembly` building PDF/A-3 file attachments or `data:` URIs) can rely on `content` being raw bytes ready to embed, and MUST NOT base64-decode it again.
 - `isInline` (bool) — true if the attachment has Content-Disposition: inline.
 - `contentId` (string or null) — for HTML body references via `cid:` URLs.
 - `nestedEml` (`EmlStructure` or null) — populated if `mimeType === 'message/rfc822'` and the depth limit is not exceeded.
@@ -134,16 +142,23 @@ Each entry in `EmlStructure.attachments[]` MUST be an `EmlAttachment` with:
 - **WHEN** structured-parse runs
 - **THEN** the nested attachment has `mimeType: "message/rfc822"`, `nestedEml` populated with its own `EmlStructure`
 
+#### Scenario: Attachment with neither Content-Disposition filename nor Content-Type name
+
+- **GIVEN** an EML whose second attachment has no `filename` parameter on either Content-Disposition or Content-Type
+- **WHEN** structured-parse runs
+- **THEN** `result.attachments[1].filename` MUST be `attachment-2` (1-indexed position fallback)
+- **AND** the value MUST NOT be empty or null
+
 ### Requirement: Recursive nesting of `message/rfc822` MUST be capped at depth 3
 
-The structured parse MUST follow `message/rfc822` attachments recursively, but only up to depth 3. Beyond that, the attachment's `nestedEml` MUST be null even though the MIME indicates an EML. The flat path MUST follow the same limit — at depth 3+, EML attachments are listed by name only without inline extraction.
+The structured parse MUST follow `message/rfc822` attachments recursively, but only up to depth 3. **Depth is measured as the number of recursive `parseEmlStructured` calls made from the root**: the root EML is depth 0, the first nested EML is depth 1, etc. The limit of 3 therefore permits three nested calls — once a parse at depth 3 has completed, any further `message/rfc822` attachments inside it MUST have `nestedEml: null`. The flat path MUST follow the same limit — at the same depth boundary, EML attachments are listed by name only without inline extraction.
 
 #### Scenario: Depth-3 EML chain is fully recursed
 
-- **GIVEN** EML A containing EML B containing EML C containing EML D
+- **GIVEN** EML A (depth 0) containing EML B (depth 1) containing EML C (depth 2) containing EML D (depth 3)
 - **WHEN** `parseEmlStructured(A)` runs
-- **THEN** A → B → C are recursed (`nestedEml` populated through C)
-- **AND** the C-level EmlStructure for D's attachment has `nestedEml: null`
+- **THEN** A, B, C, and D are all parsed (`nestedEml` populated on A.attachments[B], B.attachments[C], and C.attachments[D])
+- **AND** any `message/rfc822` attachment inside D (which would be at depth 4) has `nestedEml: null`
 
 #### Scenario: Depth-4+ chain stops at the limit
 
@@ -163,9 +178,9 @@ When a header value uses RFC 2047 encoded-word form (`=?utf-8?B?<base64>?=` or `
 - **WHEN** `extractEml` runs
 - **THEN** the From line in the output is `From: Burgemeester De Vries <burg@gemeente.nl>` (decoded)
 
-### Requirement: Malformed input MUST NOT throw from `extractEml`; structured-parse MAY throw a typed exception
+### Requirement: Malformed input MUST NOT throw from `extractEml`; `parseEmlStructured` MUST throw a typed exception
 
-`extractEml` MUST follow the existing extraction-failure pattern — return null on irrecoverable parse error, log the error. `parseEmlStructured` MAY throw a typed `EmlParseException` for malformed input; consumers handle the exception as they see fit. Both paths MUST handle minor malformations (missing optional headers, unusual encoding, extra whitespace) gracefully without raising errors.
+`extractEml` MUST follow the existing extraction-failure pattern — return null on irrecoverable parse error and log the error. `parseEmlStructured` MUST throw a typed `EmlParseException` on irrecoverable malformed input (it MUST NOT return null, an empty `EmlStructure`, or a partially-populated one in this case); consumers rely on exception propagation to drive their fallback paths (e.g. DocuDesk's `eml-pdf-assembly` falls back to flat `extractEml` text when `parseEmlStructured` throws — silently returning a partial result would skip that fallback and produce a corrupt PDF). Both paths MUST handle minor malformations (missing optional headers, unusual encoding, extra whitespace) gracefully without raising errors.
 
 #### Scenario: Catastrophically broken EML returns null from extractEml
 
@@ -181,6 +196,45 @@ When a header value uses RFC 2047 encoded-word form (`=?utf-8?B?<base64>?=` or `
 - **WHEN** `parseEmlStructured($file)` is called directly
 - **THEN** `EmlParseException` is thrown
 - **AND** the exception's message identifies the parse failure point
+
+### Requirement: `extractEml` and `parseEmlStructured` MUST NOT log PII (ADR-005)
+
+EML headers and bodies contain PII by definition: email addresses, display names, subject lines, and body text. Per ADR-005 ("NO PII in logs, error responses, or debug output"), both methods MUST NOT include any of the following in log lines, exception messages that are subsequently logged, error responses, or debug output:
+
+- email addresses (From, To, Cc, Bcc, Reply-To headers)
+- display names
+- Subject header content
+- body content (plain-text or HTML)
+- attachment filenames (which can themselves carry PII, e.g. `paspoort-de_vries.pdf`)
+
+Permitted log content is restricted to **structural** failure information: the Nextcloud file ID, the MIME type, the parser exception class name, and the depth at which a recursion-limit was hit. When the underlying `zbateson/mail-mime-parser` raises an exception whose message embeds PII (e.g. a header excerpt), implementations MUST sanitize the message — replace addresses / names / subjects with `<redacted>` — before logging or rethrowing.
+
+#### Scenario: Parser failure log contains no PII
+
+- **GIVEN** an EML with `From: alice@example.com` and `Subject: Confidential — case 123`
+- **AND** the parser fails (zbateson exception including the From and Subject in its message)
+- **WHEN** `extractEml` runs and the failure is logged
+- **THEN** the log entry MUST NOT contain `alice@example.com`, "Confidential", or "case 123"
+- **AND** the log entry MUST contain at most: the file ID, the MIME type `message/rfc822`, the exception class name, and any sanitised structural detail
+
+#### Scenario: `EmlParseException` message is sanitised before logging
+
+- **GIVEN** `parseEmlStructured` is called on a malformed EML and the underlying parser raises an exception whose `getMessage()` embeds a header value
+- **WHEN** the consumer catches the exception and the implementation logs it
+- **THEN** the logged message MUST have addresses, names, and subject content replaced with `<redacted>`
+- **AND** the exception class name and the file ID MUST remain in the log line
+
+### Requirement: Non-UTF-8 body parts SHOULD be transcoded to UTF-8
+
+When a body part declares a character set other than UTF-8 (e.g. `Content-Type: text/plain; charset=ISO-8859-1` or `charset=Windows-1252` — common in legacy Dutch government archives), both `extractEml` and `parseEmlStructured` SHOULD transcode the bytes to UTF-8 before exposing them in the flat output or the `EmlStructure.body` fields. The recommended implementation uses `mb_detect_encoding` (with a candidate list including the declared charset) followed by `mb_convert_encoding` to UTF-8.
+
+If transcoding fails (an undetectable or unsupported source charset), the raw bytes MAY be included as-is and an implementation-internal log entry SHOULD note the transcode failure (subject to the no-PII Requirement above — only the failure reason and charset name, not the body content).
+
+#### Scenario: ISO-8859-1 body is transcoded to UTF-8
+
+- **GIVEN** an EML with `Content-Type: text/plain; charset=ISO-8859-1` and a body containing the bytes for "Café" in ISO-8859-1 encoding (`C` `a` `f` `0xE9`)
+- **WHEN** `extractEml` runs
+- **THEN** the body section in the flat output contains the UTF-8 string `Café` (bytes `C` `a` `f` `0xC3 0xA9`)
 
 ### Requirement: The change MUST NOT modify behaviour for non-EML files
 
