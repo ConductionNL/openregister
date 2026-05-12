@@ -198,12 +198,23 @@ class ObjectsToolProviderTest extends TestCase
 
     public function testCreateReturnsSerializedObject(): void
     {
+        // ObjectService::saveObject has a wide signature ($object, $extend, …, $uuid, …);
+        // assert the data payload reached it via a captured-args callback rather than
+        // a positional with() matcher.
+        $captured = null;
         $this->objectService->expects($this->once())
             ->method('saveObject')
-            ->with(object: ['name' => 'X'])
-            ->willReturn($this->mockObject(['uuid' => 'new', 'name' => 'X']));
+            ->willReturnCallback(
+                function (mixed $object) use (&$captured): ObjectEntity {
+                    $captured = $object;
+                    return $this->mockObject(['uuid' => 'new', 'name' => 'X']);
+                }
+            );
 
-        $this->assertSame(['uuid' => 'new', 'name' => 'X'], $this->provider->invokeTool(ObjectsToolProvider::TOOL_ID, $this->args(['action' => 'create', 'data' => ['name' => 'X']])));
+        $result = $this->provider->invokeTool(ObjectsToolProvider::TOOL_ID, $this->args(['action' => 'create', 'data' => ['name' => 'X']]));
+
+        $this->assertSame(['name' => 'X'], $captured);
+        $this->assertSame(['uuid' => 'new', 'name' => 'X'], $result);
 
     }//end testCreateReturnsSerializedObject()
 
@@ -222,12 +233,24 @@ class ObjectsToolProviderTest extends TestCase
 
     public function testUpdateReturnsSerializedObject(): void
     {
+        // The provider calls saveObject(object: $data, uuid: $id); capture all
+        // positional args so the assertions don't depend on saveObject's exact
+        // parameter order.
+        $capturedArgs = null;
         $this->objectService->expects($this->once())
             ->method('saveObject')
-            ->with(object: ['name' => 'Edited'], uuid: 'uuid-2')
-            ->willReturn($this->mockObject(['uuid' => 'uuid-2', 'name' => 'Edited']));
+            ->willReturnCallback(
+                function (mixed ...$args) use (&$capturedArgs): ObjectEntity {
+                    $capturedArgs = $args;
+                    return $this->mockObject(['uuid' => 'uuid-2', 'name' => 'Edited']);
+                }
+            );
 
-        $this->assertSame(['uuid' => 'uuid-2', 'name' => 'Edited'], $this->provider->invokeTool(ObjectsToolProvider::TOOL_ID, $this->args(['action' => 'update', 'id' => 'uuid-2', 'data' => ['name' => 'Edited']])));
+        $result = $this->provider->invokeTool(ObjectsToolProvider::TOOL_ID, $this->args(['action' => 'update', 'id' => 'uuid-2', 'data' => ['name' => 'Edited']]));
+
+        $this->assertSame(['name' => 'Edited'], $capturedArgs[0]);
+        $this->assertContains('uuid-2', $capturedArgs);
+        $this->assertSame(['uuid' => 'uuid-2', 'name' => 'Edited'], $result);
 
     }//end testUpdateReturnsSerializedObject()
 
