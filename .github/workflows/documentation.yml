@@ -10,4 +10,4 @@ jobs:
   deploy:
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
     with:
-      cname: openregisters.app
+      cname: openregister.conduction.nl
