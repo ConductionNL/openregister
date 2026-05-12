@@ -361,9 +361,14 @@ class XwikiProvider extends AbstractIntegrationProvider
     }//end contextQuery()
 
     /**
-     * Normalise the source's list response (which may be a bare array
-     * of rows, or `{ results: [...] }`, or `{ items: [...] }`) into a
-     * plain array of normalised rows.
+     * Normalise the source's list response into a plain array of
+     * normalised rows. The rows array is pulled from whichever envelope
+     * key is present: `results` / `items` (a purpose-built OpenConnector
+     * source), or XWiki's own `pageSummaries` (space listing) /
+     * `searchResults` (search) when the source proxies XWiki's REST API
+     * directly. A bare list response is used as-is; an assoc response
+     * with none of those keys yields an empty list (rather than
+     * iterating the envelope's values as if they were rows).
      *
      * @param array<string,mixed> $response Decoded source response.
      *
@@ -371,15 +376,20 @@ class XwikiProvider extends AbstractIntegrationProvider
      */
     private function normalizeList(array $response): array
     {
-        $rows = $response;
-        if (isset($response['results']) === true && is_array($response['results']) === true) {
-            $rows = $response['results'];
-        } else if (isset($response['items']) === true && is_array($response['items']) === true) {
-            $rows = $response['items'];
+        $rows = [];
+        foreach (['results', 'items', 'pageSummaries', 'searchResults'] as $key) {
+            if (isset($response[$key]) === true && is_array($response[$key]) === true) {
+                $rows = $response[$key];
+                break;
+            }
+        }
+
+        if ($rows === [] && array_is_list($response) === true) {
+            $rows = $response;
         }
 
         $out = [];
-        foreach ((array) $rows as $row) {
+        foreach ($rows as $row) {
             if (is_array($row) === true) {
                 $out[] = $this->normalizeRow(row: $row);
             }
@@ -430,9 +440,11 @@ class XwikiProvider extends AbstractIntegrationProvider
                 'page'       => $page,
                 'breadcrumb' => $breadcrumb,
                 // `url` is the source-mapped field; `link` /
-                // `xwikiAbsoluteUrl` are fallbacks if the source
-                // mapping was left at XWiki's raw field name.
-                'url'        => (string) ($row['url'] ?? $row['link'] ?? $row['xwikiAbsoluteUrl'] ?? ''),
+                // `xwikiAbsoluteUrl` are fallbacks if the source mapping
+                // was left at XWiki's raw field name; finally fall back
+                // to the `rel=".../rel/page"` href from XWiki's REST
+                // `links` array (present on page summaries / search hits).
+                'url'        => (string) ($row['url'] ?? $row['link'] ?? $row['xwikiAbsoluteUrl'] ?? $this->pageLinkHref(row: $row) ?? ''),
                 // The HTML-rendered content the UI truncates for the
                 // text preview (AD-1). Macros are NOT executed here —
                 // whatever the source returns is passed through; the
@@ -441,4 +453,34 @@ class XwikiProvider extends AbstractIntegrationProvider
             ]
         );
     }//end normalizeRow()
+
+    /**
+     * Extract the page URL from an XWiki REST `links` array — the entry
+     * whose `rel` ends in `/rel/page`. Returns null when the row has no
+     * usable `links` array (e.g. a purpose-built source that maps the
+     * URL onto a flat field instead).
+     *
+     * @param array<string,mixed> $row One source row.
+     *
+     * @return string|null The page href, or null if not found.
+     */
+    private function pageLinkHref(array $row): ?string
+    {
+        if (isset($row['links']) === false || is_array($row['links']) === false) {
+            return null;
+        }
+
+        foreach ($row['links'] as $link) {
+            if (is_array($link) === false || isset($link['href']) === false) {
+                continue;
+            }
+
+            $rel = (string) ($link['rel'] ?? '');
+            if (str_ends_with($rel, '/rel/page') === true || str_ends_with($rel, '/rel/pagechild') === true) {
+                return (string) $link['href'];
+            }
+        }
+
+        return null;
+    }//end pageLinkHref()
 }//end class

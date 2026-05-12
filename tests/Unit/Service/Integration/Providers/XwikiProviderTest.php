@@ -160,6 +160,47 @@ class XwikiProviderTest extends TestCase
         $this->assertSame('A.B', $rows[0]['id']);
     }//end testListAcceptsBareArrayResponse()
 
+    public function testListAcceptsRawXwikiPageSummariesEnvelope(): void
+    {
+        // Shape returned by XWiki's REST API: GET /rest/wikis/<wiki>/spaces/<Space>/pages.
+        $this->router->method('call')->willReturn([
+            'links'         => [],
+            'pageSummaries' => [
+                [
+                    'id'       => 'xwiki:Sandbox.IntegrationTest',
+                    'fullName' => 'Sandbox.IntegrationTest',
+                    'wiki'     => 'xwiki',
+                    'space'    => 'Sandbox',
+                    'name'     => 'IntegrationTest',
+                    'title'    => 'Integration Test Page',
+                    'links'    => [
+                        ['rel' => 'http://www.xwiki.org/rel/space', 'href' => 'http://wiki/rest/wikis/xwiki/spaces/Sandbox'],
+                        ['rel' => 'http://www.xwiki.org/rel/page', 'href' => 'http://wiki/rest/wikis/xwiki/spaces/Sandbox/pages/IntegrationTest'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $rows = $this->provider->list('decidesk', 'meeting', 'obj-1');
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('xwiki:Sandbox.IntegrationTest', $rows[0]['id']);
+        $this->assertSame('Integration Test Page', $rows[0]['title']);
+        $this->assertSame('Sandbox', $rows[0]['space']);
+        $this->assertSame('IntegrationTest', $rows[0]['page']);
+        $this->assertSame(['Sandbox', 'Integration Test Page'], $rows[0]['breadcrumb']);
+        // url falls back to the rel="/rel/page" href from the links array.
+        $this->assertSame('http://wiki/rest/wikis/xwiki/spaces/Sandbox/pages/IntegrationTest', $rows[0]['url']);
+    }//end testListAcceptsRawXwikiPageSummariesEnvelope()
+
+    public function testListReturnsEmptyForEnvelopeWithNoRowsKey(): void
+    {
+        // An assoc response with no recognised rows key (e.g. XWiki's
+        // top-level wiki/space representation) must not be iterated as rows.
+        $this->router->method('call')->willReturn(['links' => [['rel' => 'x', 'href' => 'y']], 'syntaxes' => ['xwiki/2.1']]);
+        $this->assertSame([], $this->provider->list('r', 's', 'o'));
+    }//end testListReturnsEmptyForEnvelopeWithNoRowsKey()
+
     public function testGetFetchesEncodedReference(): void
     {
         $this->router->expects($this->once())
