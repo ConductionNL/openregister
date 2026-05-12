@@ -327,34 +327,19 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<!-- Organisation Switcher Modal -->
-		<NcModal v-if="showOrganisationSwitcher"
-			:name="t('openregister', 'Switch Active Organisation')"
-			@close="showOrganisationSwitcher = false">
-			<div class="organisationSwitcher">
-				<h3>{{ t('openregister', 'Select Active Organisation') }}</h3>
-				<div class="organisationList">
-					<div v-for="org in organisationStore.userStats.list"
-						:key="org.uuid"
-						class="organisationOption"
-						:class="{ active: isActiveOrganisation(org) }"
-						@click="switchToOrganisation(org)">
-						<div class="organisationOptionContent">
-							<span class="organisationOptionName">{{ org.name }}</span>
-							<span v-if="org.isDefault" class="defaultBadge">{{ t('openregister', 'Default') }}</span>
-							<span v-if="isActiveOrganisation(org)" class="activeBadge">{{ t('openregister', 'Current') }}</span>
-						</div>
-						<span v-if="org.description" class="organisationOptionDescription">{{ org.description }}</span>
-					</div>
-				</div>
-			</div>
-		</NcModal>
+		<SwitchOrganisationModal
+			:show="showOrganisationSwitcher"
+			:organisations="organisationStore.userStats.list"
+			:active-organisation-uuid="organisationStore.userStats.active?.uuid"
+			@close="showOrganisationSwitcher = false"
+			@switch="switchToOrganisation" />
 
 		<!-- Organisation Management Modal -->
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton, NcModal } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -368,9 +353,9 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import SwitchOrganisationModal from '../../modals/organisation/SwitchOrganisationModal.vue'
 import { reloadAppData } from '../../services/AppInitializationService.js'
 import Check from 'vue-material-design-icons/Check.vue'
-import { translate as t } from '@nextcloud/l10n'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 
 export default {
@@ -382,7 +367,6 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcButton,
-		NcModal,
 		OfficeBuilding,
 		DotsHorizontal,
 		Pencil,
@@ -396,6 +380,7 @@ export default {
 		OpenInNew,
 		Check,
 		PaginationComponent,
+		SwitchOrganisationModal,
 	},
 	data() {
 		return {
@@ -660,56 +645,5 @@ export default {
 
 .statusInactive {
 	color: var(--color-text-lighter);
-}
-
-/* Organisation switcher modal */
-.organisationSwitcher {
-	padding: 20px;
-}
-
-.organisationSwitcher h3 {
-	margin-bottom: 20px;
-	color: var(--color-text-dark);
-}
-
-.organisationList {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.organisationOption {
-	padding: 12px;
-	border: 1px solid var(--color-border);
-	border-radius: 8px;
-	cursor: pointer;
-	transition: background-color 0.2s ease;
-}
-
-.organisationOption:hover {
-	background: var(--color-background-hover);
-}
-
-.organisationOption.active {
-	background: var(--color-success-light);
-	border-color: var(--color-success);
-}
-
-.organisationOptionContent {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.organisationOptionName {
-	font-weight: 600;
-	color: var(--color-text-dark);
-}
-
-.organisationOptionDescription {
-	color: var(--color-text-lighter);
-	font-size: 12px;
-	margin-top: 4px;
-	display: block;
 }
 </style>

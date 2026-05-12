@@ -235,7 +235,7 @@
 						<!-- Info about loaded facets -->
 						<div v-if="facetData && Object.keys(facetData).length > 0" class="facets-loaded-info">
 							<p class="facets-loaded-description">
-								{{ t('openregister', 'Filter data loaded automatically. use the filters below to refine your search.') }}
+								{{ t('openregister', 'Filter data loaded automatically. Use the filters below to refine your search.') }}
 							</p>
 						</div>
 					</div>

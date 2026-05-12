@@ -19,7 +19,7 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="organisation-info">
 				<h3>{{ organisationItem.name }}</h3>
 				<p class="info-text">
-					{{ t('openregister', 'Select which Nextcloud groups are available for this organisation. users in these groups will have access to organisation resources.') }}
+					{{ t('openregister', 'Select which Nextcloud groups are available for this organisation. Users in these groups will have access to organisation resources.') }}
 				</p>
 			</div>
 

@@ -119,8 +119,6 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 
-import { translate as t } from '@nextcloud/l10n'
-
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 

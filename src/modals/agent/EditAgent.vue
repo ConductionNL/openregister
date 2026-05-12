@@ -81,7 +81,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 								:label="t('openregister', 'Max Tokens')"
 								type="number"
 								:value.sync="agentItem.maxTokens"
-								:placeholder="t('openregister', '1000')">
+								placeholder="1000">
 								<template #helper-text-message>
 									{{ t('openregister', 'Maximum tokens to generate') }}
 								</template>
@@ -145,7 +145,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 									min="1"
 									max="20"
 									:value.sync="agentItem.ragNumSources"
-									:placeholder="t('openregister', '5')" />
+									placeholder="5" />
 
 								<div class="views-select-container">
 									<NcSelect

@@ -44,7 +44,7 @@ import { navigationStore, conversationStore } from '../../store/store.js'
 					<!-- Empty State -->
 					<div v-else-if="!conversationStore.conversationList || conversationStore.conversationList.length === 0" class="noConversations">
 						<NcNoteCard type="info">
-							{{ t('openregister', 'No conversations yet. create a new one to get started!') }}
+							{{ t('openregister', 'No conversations yet. Create a new one to get started!') }}
 						</NcNoteCard>
 					</div>
 

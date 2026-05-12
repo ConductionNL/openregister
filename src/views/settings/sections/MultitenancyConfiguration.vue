@@ -7,7 +7,7 @@ import { translate as t } from '@nextcloud/l10n'
 		:name="t('openregister', 'Multitenancy')"
 		:description="t('openregister', 'Configure multi-organization support and tenant isolation')"
 		:loading="loading"
-		loading-message="Loading multitenancy settings...">
+		:loading-message="t('openregister', 'Loading multitenancy settings...')">
 		<template #actions>
 			<NcButton
 				type="error"
