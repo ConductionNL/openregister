@@ -63,11 +63,6 @@
       <code><![CDATA[array]]></code>
     </LessSpecificImplementedReturnType>
   </file>
-  <file src="lib/Controller/ActionsController.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[objectId]]></code>
-    </InvalidNamedArgument>
-  </file>
   <file src="lib/Controller/ArchivalController.php">
     <UndefinedMethod>
       <code><![CDATA[findByUuid]]></code>
@@ -155,17 +150,6 @@
     <MissingTemplateParam>
       <code><![CDATA[NotificationSubscriptionMapper]]></code>
     </MissingTemplateParam>
-  </file>
-  <file src="lib/Db/Organisation.php">
-    <UndefinedThisPropertyFetch>
-      <code><![CDATA[$this->calendar]]></code>
-      <code><![CDATA[$this->contacts]]></code>
-      <code><![CDATA[$this->deck]]></code>
-      <code><![CDATA[$this->mail]]></code>
-      <code><![CDATA[$this->notes]]></code>
-      <code><![CDATA[$this->talk]]></code>
-      <code><![CDATA[$this->todos]]></code>
-    </UndefinedThisPropertyFetch>
   </file>
   <file src="lib/Db/SelectionListMapper.php">
     <InvalidNamedArgument>
