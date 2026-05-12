@@ -191,7 +191,7 @@
 
 						<NcTextField
 							:label="t('openregister', 'Max Retries')"
-							:placeholder="t('openregister', '3')"
+							placeholder="3"
 							:value="webhookItem?.maxRetries?.toString() || '3'"
 							type="number"
 							min="0"
@@ -204,7 +204,7 @@
 
 						<NcTextField
 							:label="t('openregister', 'Timeout (seconds)')"
-							:placeholder="t('openregister', '30')"
+							placeholder="30"
 							:value="webhookItem?.timeout?.toString() || '30'"
 							type="number"
 							min="1"

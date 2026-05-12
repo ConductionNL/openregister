@@ -113,7 +113,7 @@
 						id="ollama-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
+						placeholder="http://localhost:11434"
 						class="input-field">
 					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 				</div>
@@ -178,7 +178,7 @@
 						id="fireworks-base-url"
 						v-model="fireworksConfig.baseUrl"
 						type="text"
-						:placeholder="t('openregister', 'https://api.fireworks.ai/inference/v1')"
+						placeholder="https://api.fireworks.ai/inference/v1"
 						class="input-field">
 					<small>{{ t('openregister', 'Custom API endpoint if using a different region') }}</small>
 				</div>
@@ -261,7 +261,7 @@
 						id="ollama-chat-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
+						placeholder="http://localhost:11434"
 						class="input-field">
 					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 				</div>
