@@ -253,13 +253,6 @@
       <code><![CDATA[getInner]]></code>
     </UndefinedInterfaceMethod>
   </file>
-  <file src="lib/Service/Notification/AnnotationNotificationDispatcher.php">
-    <UnusedParam>
-      <code><![CDATA[$context]]></code>
-      <code><![CDATA[$message]]></code>
-      <code><![CDATA[$object]]></code>
-    </UnusedParam>
-  </file>
   <file src="lib/Service/Notification/NotificationAnnotationValidator.php">
     <InvalidOperand>
       <code><![CDATA[$defaultLocaleBad]]></code>

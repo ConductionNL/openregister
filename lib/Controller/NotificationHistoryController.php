@@ -48,8 +48,8 @@ class NotificationHistoryController extends Controller
      * @param string                    $appName      Application name.
      * @param IRequest                  $request      HTTP request.
      * @param NotificationHistoryMapper $mapper       Mapper for the notification history table.
-     * @param IUserSession              $userSession  Current user session.
-     * @param IGroupManager             $groupManager Group manager (admin checks).
+     * @param IUserSession              $userSession  Active session — drives the per-caller filter scope (F07).
+     * @param IGroupManager             $groupManager Group resolver — admins keep full audit visibility (F07).
      */
     public function __construct(
         string $appName,

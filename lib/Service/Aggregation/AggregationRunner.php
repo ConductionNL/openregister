@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Index\SearchBackendInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -50,6 +51,16 @@ use RuntimeException;
  */
 class AggregationRunner
 {
+
+    /**
+     * Hard cap on the number of rows the PHP fallback path will hydrate
+     * per request. The native Postgres path (tryNativeAggregation) does
+     * the work in SQL and is unaffected. Picked at 10 000 to keep peak
+     * memory bounded against an authenticated-caller request flood that
+     * varies the filter to bypass the AggregationCache.
+     */
+    private const PHP_FALLBACK_ROW_CAP = 10000;
+
     /**
      * Constructor.
      *
@@ -59,9 +70,9 @@ class AggregationRunner
      * @param PlaceholderResolver         $placeholders        Resolves dynamic placeholders inside filters.
      * @param IDBConnection               $db                  Database connection for the Postgres-native fast path.
      * @param AggregationCache            $cache               60s aggregation result cache.
-     * @param PermissionHandler           $permissionHandler   Row-level permission filter.
-     * @param IUserSession                $userSession         Current user session (permission scoping).
-     * @param OrganisationService         $organisationService Active-organisation resolver (permission scoping).
+     * @param PermissionHandler           $permissionHandler   RBAC verdict on the schema's `list` action.
+     * @param IUserSession                $userSession         Active session, for the RBAC + cache-key user scope.
+     * @param OrganisationService         $organisationService Active-organisation lookup for the cache key.
      * @param SearchBackendInterface|null $searchBackend       Optional Solr/ES backend for native aggregation.
      *
      * @return void
@@ -86,6 +97,13 @@ class AggregationRunner
      * @param string $registerRef Register slug/uuid/id.
      * @param string $schemaRef   Schema slug/uuid/id.
      * @param string $name        Aggregation name (key in the annotation).
+     * @param bool   $bypassRbac  Internal-system mode: skip the F04 list-permission gate.
+     *                            Pass `true` ONLY from non-controller callers that already
+     *                            hold an authoritative reason to compute the aggregation
+     *                            (e.g. report rendering for a viewer who has dashboard read,
+     *                            threshold listeners reacting to a write event).
+     *                            Defaults to `false` so HTTP-driven callers (the
+     *                            controller) keep the F04 verdict.
      *
      * @return array{
      *   name: string,
@@ -101,8 +119,9 @@ class AggregationRunner
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Internal-mode toggle, intentional.
      */
-    public function run(string $registerRef, string $schemaRef, string $name): array
+    public function run(string $registerRef, string $schemaRef, string $name, bool $bypassRbac=false): array
     {
         $schema   = $this->loadSchema(schemaRef: $schemaRef);
         $register = $this->loadRegister(registerRef: $registerRef);
@@ -111,15 +130,40 @@ class AggregationRunner
         // before any native or fallback path executes. Without this gate,
         // the native PG path would compute COUNT/SUM/AVG over rows the
         // caller has no read permission for (cross-tenant + cross-RBAC
-        // statistics leak).
+        // statistics leak). NotAuthorizedException maps to HTTP 403 in
+        // AggregationController; using RuntimeException here would mask
+        // it as 404.
+        //
+        // NOTE: this gate is schema-level (matches `list`). For schemas
+        // whose authorization config also declares per-object ACL rules
+        // (`object-acl` / conditional rules), the aggregate value still
+        // rolls up rows the caller cannot read row-by-row. A future
+        // hardening step is to add a per-row hasPermission(read) filter
+        // in the PHP fallback path and a derived WHERE clause (or
+        // bailout to PHP) in the native path. Tracked alongside the
+        // aggregations-backend-native follow-up.
+        //
+        // Non-controller callers (ReportRenderService for dashboard
+        // widgets, AggregationThresholdListener for fire-once threshold
+        // crossings) pass `bypassRbac: true` because they already hold
+        // an authoritative reason that's separate from the active session
+        // (a viewer with dashboard read, a write-event reaction).
         $userId = $this->userSession->getUser()?->getUID();
-        if ($this->permissionHandler->hasPermission(
+        if ($bypassRbac === false && $this->permissionHandler->hasPermission(
             schema: $schema,
             action: 'list',
-            userId: $userId
+            userId: $userId,
+            objectOwner: null,
+            _rbac: true,
+            object: null
         ) === false
         ) {
-            throw new RuntimeException('Forbidden: caller lacks list permission on the requested schema.');
+            throw new NotAuthorizedException(
+                message: sprintf(
+                    'You do not have permission to aggregate schema "%s".',
+                    $schemaRef
+                )
+            );
         }
 
         $annotation = $this->getAnnotation(schema: $schema);
@@ -182,11 +226,16 @@ class AggregationRunner
                 $external      = $this->searchBackend->aggregate(query: $portableQuery);
                 if ($external !== null) {
                     $backendName = $this->detectBackendName(backend: $this->searchBackend);
-                    $result      = [
-                        'name'    => $name,
-                        'metric'  => $metric,
-                        'field'   => is_string($field) === true ? $field : null,
-                        'backend' => $backendName,
+                    // R05: surface `truncated` on every backend so the
+                    // shape is consistent. Search backends propagate the
+                    // flag from the engine when supplied; otherwise
+                    // assume the engine returned the full set.
+                    $result = [
+                        'name'      => $name,
+                        'metric'    => $metric,
+                        'field'     => is_string($field) === true ? $field : null,
+                        'backend'   => $backendName,
+                        'truncated' => (bool) ($external['truncated'] ?? false),
                     ] + $external;
                     $this->cache->set(
                         registerSlug: (string) $register->getSlug(),
@@ -196,7 +245,7 @@ class AggregationRunner
                         result: $result
                     );
                     return $result;
-                }
+                }//end if
             } catch (\Throwable $e) {
                 // External backend errored — fall through to native /
                 // PHP path so a flaky Solr/ES never breaks aggregations.
@@ -215,11 +264,16 @@ class AggregationRunner
             groupBy: is_array($groupBy) === true ? $groupBy : null
         );
         if ($native !== null) {
+            // R05: native Postgres aggregates over the full set, so
+            // `truncated` is structurally always false here. Surface
+            // the key explicitly so client code can branch on
+            // `result.truncated` regardless of backend.
             $result = [
-                'name'    => $name,
-                'metric'  => $metric,
-                'field'   => is_string($field) === true ? $field : null,
-                'backend' => 'postgres',
+                'name'      => $name,
+                'metric'    => $metric,
+                'field'     => is_string($field) === true ? $field : null,
+                'backend'   => 'postgres',
+                'truncated' => false,
             ] + $native;
             $this->cache->set(
                 registerSlug: (string) $register->getSlug(),
@@ -229,14 +283,25 @@ class AggregationRunner
                 result: $result
             );
             return $result;
-        }
+        }//end if
 
-        // Fall back: pull all objects and filter in PHP.
-        $objects = $this->magicMapper->findAllInRegisterSchemaTable(
+        // Fall back: pull objects and filter in PHP.
+        //
+        // Capped at PHP_FALLBACK_ROW_CAP to bound the per-request memory
+        // footprint — the cache is keyed on the resolved filter, so any
+        // authenticated caller can otherwise force a fresh hydrate by
+        // varying a filter parameter. The native Postgres path is the
+        // intended steady state; the fallback is a development /
+        // non-Postgres safety net, not a production aggregation engine.
+        // Aggregations whose source table exceeds the cap are surfaced
+        // with `truncated: true` so callers know the value is partial
+        // (or 503 from the controller in a future hardening step).
+        $objects   = $this->magicMapper->findAllInRegisterSchemaTable(
             register: $register,
             schema: $schema,
-            limit: 100000
+            limit: self::PHP_FALLBACK_ROW_CAP
         );
+        $truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
 
         $rows = [];
         foreach ($objects as $entity) {
@@ -249,10 +314,11 @@ class AggregationRunner
         $rows = $this->applyFilter(rows: $rows, filter: $resolvedFilter);
 
         $result = [
-            'name'    => $name,
-            'metric'  => $metric,
-            'field'   => is_string($field) === true ? $field : null,
-            'backend' => 'php-fallback',
+            'name'      => $name,
+            'metric'    => $metric,
+            'field'     => is_string($field) === true ? $field : null,
+            'backend'   => 'php-fallback',
+            'truncated' => $truncated,
         ];
 
         if (is_array($groupBy) === true && isset($groupBy['field']) === true) {

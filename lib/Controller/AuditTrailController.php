@@ -58,8 +58,8 @@ class AuditTrailController extends Controller
      * @param LogService         $logService       The log service
      * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper
      * @param AuditHashService   $auditHashService The audit hash chain service
-     * @param \OCP\IUserSession  $userSession      Current user session
-     * @param \OCP\IGroupManager $groupManager     Group manager (admin checks)
+     * @param \OCP\IUserSession  $userSession      Active user session for caller identity.
+     * @param \OCP\IGroupManager $groupManager     Group manager for admin / role checks.
      */
     public function __construct(
         string $appName,
