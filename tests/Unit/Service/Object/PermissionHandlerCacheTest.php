@@ -301,11 +301,13 @@ class PermissionHandlerCacheTest extends TestCase
 
 
     /**
-     * Conditional rules with `match` clauses must still re-evaluate per object.
+     * Conditional rules with `match` clauses bypass the per-request cache.
      *
-     * Two different ObjectEntities with different UUIDs must produce two separate
-     * delegations to ConditionMatcher — caching by UUID is the only safe reuse
-     * window for object-dependent verdicts.
+     * SECURITY: a match-rule verdict depends on the *current* object data,
+     * which can change within one request (saveObject / TransitionEngine).
+     * buildPermissionCacheKey() therefore returns null for any schema with a
+     * match rule, so every hasPermission() call re-delegates to
+     * ConditionMatcher — even repeats on the same object UUID.
      *
      * @return void
      */
@@ -320,10 +322,10 @@ class PermissionHandlerCacheTest extends TestCase
         ]);
         $this->setupRegisterForSchema($this->createRegister(10));
 
-        // Two distinct objects -> two distinct cache keys -> two delegation calls.
-        $this->conditionMatcher->expects($this->exactly(2))
+        // Match rules disable caching: 4 hasPermission() calls -> 4 delegations.
+        $this->conditionMatcher->expects($this->exactly(4))
             ->method('objectMatchesConditions')
-            ->willReturnOnConsecutiveCalls(true, false);
+            ->willReturnOnConsecutiveCalls(true, false, true, false);
 
         $objectA = $this->createObjectEntity('uuid-a', ['publishDate' => '2025-01-01']);
         $objectB = $this->createObjectEntity('uuid-b', ['publishDate' => '2099-01-01']);
@@ -349,7 +351,7 @@ class PermissionHandlerCacheTest extends TestCase
             )
         );
 
-        // Re-running on the same UUIDs must hit the cache — no further delegations.
+        // Repeat the same UUIDs — still re-evaluated (match rules bypass cache).
         $this->assertTrue(
             $this->handler->hasPermission(
                 schema: $schema,
