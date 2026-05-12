@@ -11,6 +11,47 @@ Add a declarative `x-openregister-notifications` schema annotation that auto-reg
 ### Requirement: Schemas MAY declare notifications via `x-openregister-notifications`
 A schema MAY include a top-level `x-openregister-notifications` block: a map of notification name → spec. Each spec declares `trigger` (type + parameters), `filter` (Mongo-style operators against the triggering object), `recipients` (one or more recipient blocks), `channels` (one or more channel blocks), optional `throttle`, optional `audit: bool`. Schema-save validation MUST verify every reference and reject malformed annotations with HTTP 422.
 
+#### Channel block format (normative)
+
+Every entry in `channels[]` MUST be an object with exactly one mandatory field — `kind` — whose value is one of `nc-notification`, `email`, `webhook`, `talk`, `activity`. The remaining fields are kind-dependent:
+
+| `kind` | Required fields | Optional fields | Notes |
+|---|---|---|---|
+| `nc-notification` | (none) | `subjectKey`, `messageKey`, `iconUrl`, `link`, `priority` (low/normal/high) | i18n keys resolve via the existing `Notifier` template registry. |
+| `email` | (none) | `subjectKey`, `bodyTemplateKey`, `replyTo`, `senderKey` | SMTP config comes from NC; templates are i18n keys. The annotation MUST NOT inline raw email bodies. |
+| `webhook` | `webhookId` (UUID of an existing `Webhook` entity registered by an admin) | `mappingKey` (template override) | The target URL MUST come from the existing Webhook entity registry — non-admin schema authors MUST NOT be able to set arbitrary URLs in the annotation, to prevent SSRF. Schema-save validation MUST reject `url:` directly inline in a channel block with `{ code: "notification-channel-webhook-inline-url-forbidden" }`. |
+| `talk` | `room` (NC Talk conversation id or token) | `messageKey` | Resolves via `OCA\Talk\Manager`. Validation MUST verify the room exists at install time (best effort — re-checks at delivery). |
+| `activity` | (none) | `subjectKey`, `objectType`, `objectName` | Routes through `OCP\Activity\IManager`; the existing `activity-provider` integration consumes it. |
+
+A schema MAY declare more than one channel block per notification (e.g. send both email and an `nc-notification`). Validation MUST reject unknown keys, missing mandatory fields, or unsupported `kind` values with HTTP 422.
+
+#### End-to-end annotation example
+
+```yaml
+x-openregister-notifications:
+  decisionPublished:
+    trigger:
+      type: transition
+      transition: publish
+    filter:
+      visibility: { $eq: "public" }
+    recipients:
+      - kind: relation
+        relation: stakeholders
+      - kind: groups
+        groups: [cabinet-readers]
+    channels:
+      - kind: email
+        subjectKey: notif.decision.published.subject
+        bodyTemplateKey: notif.decision.published.body
+      - kind: nc-notification
+        subjectKey: notif.decision.published.short
+        link: "/apps/decidesk/decision/{{object.id}}"
+    throttle:
+      perRecipient: "1 per day"
+    audit: true
+```
+
 #### Scenario: Trigger type referenced is in the supported set
 - GIVEN a notification with `trigger: { type: "transition", transition: "publish" }`
 - WHEN the schema is saved
@@ -25,6 +66,24 @@ A schema MAY include a top-level `x-openregister-notifications` block: a map of 
 - THEN validation MUST resolve the transition reference and accept it
 - WHEN the same notification references `trigger.transition: "teleport"` (not declared)
 - THEN validation MUST fail with `{ code: "notification-transition-missing", transition: "teleport" }`
+
+#### Scenario: `created` trigger fires on object creation; filters see the new state only
+- GIVEN a notification with `trigger: { type: "created" }` and `filter: { taskStatus: "open" }`
+- AND a new action item is created with `taskStatus: "open"`
+- WHEN `ObjectCreatedEvent` fires
+- THEN the installer-mapped listener MUST evaluate the filter against the created object's payload (there is no "before" state; placeholder `$before.*` MUST resolve to `null` and validation MUST reject filters that require a non-null `$before`)
+- AND the notification MUST dispatch to all resolved recipients
+
+#### Scenario: `updated` trigger MAY filter on a field-diff (`only_if_changed`)
+- GIVEN a notification with `trigger: { type: "updated", only_if_changed: ["assignee"] }`
+- AND an existing action item is updated, changing `assignee` from `alice` to `bob`
+- WHEN `ObjectUpdatedEvent` fires
+- THEN the listener MUST compare the listed fields between before/after state
+- AND fire the notification (because `assignee` changed)
+- WHEN the same item is later updated, changing only `description`
+- THEN the listener MUST NOT fire (no listed field changed)
+- AND when `only_if_changed` is omitted, the trigger fires on every update
+- AND consecutive saves of the same object within 1 second SHOULD be deduplicated (the existing throttle store with implicit `perObject: 1 per second` baseline is the intended mechanism)
 
 ### Requirement: The installer MUST create Webhook entities at schema-save time
 On schema save, the implementation MUST create or update a Webhook entity (using the existing `WebhookMapper`) per declared notification. The webhook's `events` field MUST be derived from the trigger type (transition → `ObjectTransitionedEvent` for the matching action; created → `ObjectCreatedEvent`; etc.). The webhook's `mapping` reference MUST be filled in with the template's i18n key. The webhook MUST be tagged with the notification name + schema id for idempotent re-installs.
@@ -93,6 +152,8 @@ For `trigger.type: "threshold"`, the installer MUST register a listener on the a
 
 ### Requirement: Throttling reuses the existing notificatie-engine throttle store
 A notification's optional `throttle` block (`perRecipient`, `perObject`, `global`) MUST be enforced through the existing throttle store in `notificatie-engine`. The annotation installer MUST translate the declared windows into the existing throttle entry shape.
+
+**Throttle window grammar (normative).** Each throttle value MUST match the regex `^([1-9][0-9]*) per (second|minute|hour|day|week)$` (count + literal `per` + unit). Whitespace between tokens is exactly one ASCII space. Schema-save validation MUST reject any other format with HTTP 422 and `{ code: "notification-throttle-invalid-window", value: "<input>", expected: "{N} per {second|minute|hour|day|week}" }`. ISO-8601 durations (`PT24H` etc.) are NOT accepted in v1 — implementations MAY add ISO-8601 in v2 but MUST keep the v1 grammar working unchanged.
 
 #### Scenario: PerRecipient throttle suppresses duplicates within the window
 - GIVEN a notification with `throttle: { perRecipient: "1 per day" }`
