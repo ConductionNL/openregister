@@ -224,11 +224,11 @@ Permitted log content is restricted to **structural** failure information: the N
 - **THEN** the logged message MUST have addresses, names, and subject content replaced with `<redacted>`
 - **AND** the exception class name and the file ID MUST remain in the log line
 
-### Requirement: Non-UTF-8 body parts SHOULD be transcoded to UTF-8
+### Requirement: Non-UTF-8 body parts MUST be transcoded to UTF-8 on a best-effort basis
 
-When a body part declares a character set other than UTF-8 (e.g. `Content-Type: text/plain; charset=ISO-8859-1` or `charset=Windows-1252` — common in legacy Dutch government archives), both `extractEml` and `parseEmlStructured` SHOULD transcode the bytes to UTF-8 before exposing them in the flat output or the `EmlStructure.body` fields. The recommended implementation uses `mb_detect_encoding` (with a candidate list including the declared charset) followed by `mb_convert_encoding` to UTF-8.
+When a body part declares a character set other than UTF-8 (e.g. `Content-Type: text/plain; charset=ISO-8859-1` or `charset=Windows-1252` — common in legacy Dutch government archives), both `extractEml` and `parseEmlStructured` MUST attempt to transcode the bytes to UTF-8 before exposing them in the flat output or the `EmlStructure.body` fields. The recommended implementation uses `mb_detect_encoding` (with a candidate list including the declared charset) followed by `mb_convert_encoding` to UTF-8.
 
-If transcoding fails (an undetectable or unsupported source charset), the raw bytes MAY be included as-is and an implementation-internal log entry SHOULD note the transcode failure (subject to the no-PII Requirement above — only the failure reason and charset name, not the body content).
+If transcoding fails (an undetectable or unsupported source charset), the raw bytes MAY be included as-is and an implementation-internal log entry MUST note the transcode failure (subject to the no-PII Requirement above — only the failure reason and charset name, not the body content).
 
 #### Scenario: ISO-8859-1 body is transcoded to UTF-8
 
