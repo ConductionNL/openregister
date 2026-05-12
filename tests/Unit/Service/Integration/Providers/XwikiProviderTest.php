@@ -117,7 +117,7 @@ class XwikiProviderTest extends TestCase
                 $this->provider,
                 'GET',
                 '',
-                ['query' => ['_search' => 'foo', 'register' => 'r1', 'schema' => 's1', 'object' => 'obj-1']]
+                ['query' => ['_search' => 'foo', 'register' => 'r1', 'schema' => 's1', 'object' => 'obj-1'], 'headers' => ['Accept' => 'application/json']]
             )
             ->willReturn([
                 'results' => [
@@ -209,7 +209,7 @@ class XwikiProviderTest extends TestCase
                 $this->provider,
                 'GET',
                 rawurlencode('Space.Page'),
-                ['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o']]
+                ['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
             )
             ->willReturn(['reference' => 'Space.Page', 'title' => 'Page', 'content' => '<p>hello</p>']);
 
@@ -226,7 +226,7 @@ class XwikiProviderTest extends TestCase
                 $this->provider,
                 'POST',
                 '',
-                ['body' => ['reference' => 'https://wiki/bin/view/X/Y', 'register' => 'r', 'schema' => 's', 'object' => 'o']]
+                ['body' => ['reference' => 'https://wiki/bin/view/X/Y', 'register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json']]
             )
             ->willReturn(['reference' => 'X.Y', 'title' => 'Y', 'space' => 'X']);
 
@@ -243,7 +243,7 @@ class XwikiProviderTest extends TestCase
                 $this->provider,
                 'PUT',
                 rawurlencode('Old.Ref'),
-                ['body' => ['reference' => 'New.Ref', 'register' => 'r', 'schema' => 's', 'object' => 'o']]
+                ['body' => ['reference' => 'New.Ref', 'register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json']]
             )
             ->willReturn(['reference' => 'New.Ref', 'title' => 'New']);
 
@@ -259,7 +259,7 @@ class XwikiProviderTest extends TestCase
                 $this->provider,
                 'DELETE',
                 rawurlencode('Space.Page'),
-                ['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o']]
+                ['query' => ['register' => 'r', 'schema' => 's', 'object' => 'o'], 'headers' => ['Accept' => 'application/json']]
             )
             ->willReturn([]);
 

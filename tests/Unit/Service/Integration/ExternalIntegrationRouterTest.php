@@ -136,6 +136,60 @@ class _LocalProvider extends AbstractIntegrationProvider
 }//end class
 
 /**
+ * Stand-in for OpenConnector's CallLog — only the bits the router reads.
+ */
+class _FakeCallLog
+{
+
+    public function __construct(
+        private int $status,
+        private ?array $response,
+    ) {
+    }//end __construct()
+
+    public function getStatusCode(): int
+    {
+        return $this->status;
+    }//end getStatusCode()
+
+    public function getResponse(): ?array
+    {
+        return $this->response;
+    }//end getResponse()
+
+}//end class
+
+/**
+ * Stand-in for OpenConnector's CallService — returns a preset CallLog.
+ */
+class _FakeCallService
+{
+
+    public function __construct(private _FakeCallLog $log)
+    {
+    }//end __construct()
+
+    public function call($source, string $endpoint = '', string $method = 'GET', array $config = [])
+    {
+        return $this->log;
+    }//end call()
+
+}//end class
+
+/**
+ * Stand-in for OpenConnector's SourceMapper — find() returns a marker.
+ */
+class _FakeSourceMapper
+{
+
+    public function find($id)
+    {
+        return (object) ['id' => 1, 'slug' => (string) $id];
+    }//end find()
+
+}//end class
+
+/**
  * Unit tests for ExternalIntegrationRouter.
  */
 class ExternalIntegrationRouterTest extends TestCase
@@ -155,6 +209,41 @@ class ExternalIntegrationRouterTest extends TestCase
 
         return new ExternalIntegrationRouter($appManager, $container, new NullLogger());
     }//end buildRouter()
+
+    /**
+     * Build a router whose container hands back a fake SourceMapper + a
+     * fake CallService that returns the given CallLog.
+     *
+     * @param _FakeCallLog $log The CallLog the fake CallService returns.
+     *
+     * @return ExternalIntegrationRouter
+     */
+    private function buildRouterWithCallLog(_FakeCallLog $log): ExternalIntegrationRouter
+    {
+        $appManager = $this->createMock(IAppManager::class);
+        $appManager->method('isInstalled')->willReturn(true);
+        $appManager->method('isEnabledForUser')->willReturn(true);
+
+        $callService = new _FakeCallService($log);
+        $mapper      = new _FakeSourceMapper();
+
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willReturnCallback(
+            static function (string $id) use ($callService, $mapper) {
+                if (str_ends_with($id, 'SourceMapper') === true) {
+                    return $mapper;
+                }
+
+                if (str_ends_with($id, 'CallService') === true) {
+                    return $callService;
+                }
+
+                return null;
+            }
+        );
+
+        return new ExternalIntegrationRouter($appManager, $container, new NullLogger());
+    }//end buildRouterWithCallLog()
 
     public function testCallRejectsNonExternalProvider(): void
     {
@@ -220,5 +309,51 @@ class ExternalIntegrationRouterTest extends TestCase
         $this->assertSame('unavailable', $report['status']);
         $this->assertSame('missing', $report['authStatus']);
     }//end testProbeReportsUnavailableWhenOpenConnectorMissing()
+
+    public function testCallUnwrapsTheCallLogBody(): void
+    {
+        // CallService returns a CallLog; the upstream JSON payload is the
+        // `body` string inside getResponse() — the router must hand the
+        // caller the decoded body, not the CallLog wrapper.
+        $log    = new _FakeCallLog(200, ['statusCode' => 200, 'headers' => [], 'body' => '{"pageSummaries":[{"id":"xwiki:Sandbox.Page","name":"Page"}]}', 'encoding' => 'UTF-8']);
+        $router = $this->buildRouterWithCallLog($log);
+
+        $result = $router->call(new _ExternalProvider(), 'GET', '');
+
+        $this->assertArrayHasKey('pageSummaries', $result);
+        $this->assertSame('xwiki:Sandbox.Page', $result['pageSummaries'][0]['id']);
+    }//end testCallUnwrapsTheCallLogBody()
+
+    public function testCallDecodesBase64EncodedBody(): void
+    {
+        $log    = new _FakeCallLog(200, ['body' => base64_encode('{"items":[]}'), 'encoding' => 'base64']);
+        $router = $this->buildRouterWithCallLog($log);
+
+        $this->assertSame(['items' => []], $router->call(new _ExternalProvider(), 'GET', ''));
+    }//end testCallDecodesBase64EncodedBody()
+
+    public function testCallTreatsAuthErrorAsProviderAuth(): void
+    {
+        $router = $this->buildRouterWithCallLog(new _FakeCallLog(401, ['body' => 'denied']));
+
+        try {
+            $router->call(new _ExternalProvider(), 'GET', '');
+            $this->fail('Expected ProviderUnavailableException');
+        } catch (ProviderUnavailableException $e) {
+            $this->assertSame(ProviderUnavailableException::CAUSE_PROVIDER_AUTH, $e->getCause());
+        }
+    }//end testCallTreatsAuthErrorAsProviderAuth()
+
+    public function testCallTreatsServerErrorAsUpstreamDown(): void
+    {
+        $router = $this->buildRouterWithCallLog(new _FakeCallLog(500, ['body' => 'oops']));
+
+        try {
+            $router->call(new _ExternalProvider(), 'GET', '');
+            $this->fail('Expected ProviderUnavailableException');
+        } catch (ProviderUnavailableException $e) {
+            $this->assertSame(ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, $e->getCause());
+        }
+    }//end testCallTreatsServerErrorAsUpstreamDown()
 
 }//end class

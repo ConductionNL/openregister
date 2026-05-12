@@ -218,7 +218,7 @@ class XwikiProvider extends AbstractIntegrationProvider
             provider: $this,
             method: 'GET',
             path: '',
-            options: ['query' => $query]
+            options: ['query' => $query, 'headers' => $this->requestHeaders()]
         );
 
         return $this->normalizeList(response: $response);
@@ -246,7 +246,7 @@ class XwikiProvider extends AbstractIntegrationProvider
             provider: $this,
             method: 'GET',
             path: rawurlencode($entityId),
-            options: ['query' => $query]
+            options: ['query' => $query, 'headers' => $this->requestHeaders()]
         );
 
         return $this->normalizeRow(row: $response);
@@ -274,7 +274,12 @@ class XwikiProvider extends AbstractIntegrationProvider
         $body['schema']   = $schema;
         $body['object']   = $objectId;
 
-        $response = $this->router->call(provider: $this, method: 'POST', path: '', options: ['body' => $body]);
+        $response = $this->router->call(
+            provider: $this,
+            method: 'POST',
+            path: '',
+            options: ['body' => $body, 'headers' => $this->requestHeaders(withBody: true)]
+        );
 
         return $this->normalizeRow(row: $response);
     }//end create()
@@ -301,7 +306,7 @@ class XwikiProvider extends AbstractIntegrationProvider
             provider: $this,
             method: 'PUT',
             path: rawurlencode($entityId),
-            options: ['body' => $body]
+            options: ['body' => $body, 'headers' => $this->requestHeaders(withBody: true)]
         );
 
         return $this->normalizeRow(row: $response);
@@ -324,7 +329,10 @@ class XwikiProvider extends AbstractIntegrationProvider
             provider: $this,
             method: 'DELETE',
             path: rawurlencode($entityId),
-            options: ['query' => $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: [])]
+            options: [
+                'query'   => $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []),
+                'headers' => $this->requestHeaders(),
+            ]
         );
     }//end delete()
 
@@ -359,6 +367,27 @@ class XwikiProvider extends AbstractIntegrationProvider
             ['register' => $register, 'schema' => $schema, 'object' => $objectId]
         );
     }//end contextQuery()
+
+    /**
+     * Headers every XWiki call carries. XWiki's REST API negotiates XML
+     * by default — `Accept: application/json` forces JSON; writes also
+     * declare a JSON body. A purpose-built OpenConnector source that
+     * already pins these on the source row is unaffected (the request
+     * headers just get re-set to the same values).
+     *
+     * @param bool $withBody Whether the request carries a JSON body.
+     *
+     * @return array<string,string>
+     */
+    private function requestHeaders(bool $withBody=false): array
+    {
+        $headers = ['Accept' => 'application/json'];
+        if ($withBody === true) {
+            $headers['Content-Type'] = 'application/json';
+        }
+
+        return $headers;
+    }//end requestHeaders()
 
     /**
      * Normalise the source's list response into a plain array of
