@@ -1,0 +1,123 @@
+# OpenConnector source template — XWiki
+#
+# Import this into OpenConnector (Settings → OpenConnector → Sources →
+# Import) and fill in the `location` + auth fields for your XWiki
+# instance. OpenRegister's `XwikiProvider` (id: `xwiki`, group:
+# `external`) routes all of its CRUD through this source via
+# ExternalIntegrationRouter; it never holds credentials itself.
+#
+# (The repo's `config/` directory is gitignored, so this template
+# lives under docs/Integrations/ — copy it to wherever your
+# OpenConnector instance imports source definitions from.)
+#
+# XWiki version notes:
+#   - 5.x / 10.x+ / 14.x+ all expose a REST API under /rest. The
+#     mapping below uses the generic page endpoints; OpenConnector's
+#     adapter normalises field-name drift across versions.
+#   - Authentication is customer-dependent: HTTP Basic works on every
+#     version; OAuth2 (via the xwiki-platform-oidc extension) is
+#     available on newer instances. Pick ONE of the `auth` blocks
+#     below and delete the other.
+#
+# Spec: openspec/changes/integration-xwiki/design.md
+#   - AD-1: detail-page preview is text-only — request the
+#     already-rendered HTML, the @conduction/nextcloud-vue widget
+#     strips it to text and truncates to ~500 chars; macros are NEVER
+#     executed in the preview.
+#   - AD-2: a page may be linked by full XWiki URL or by a `Space.Page`
+#     path — the `create` endpoint resolves both to canonical.
+#   - AD-3: rows carry a `breadcrumb` so the UI can disambiguate
+#     same-titled pages in different spaces.
+
+source:
+  # Stable id — MUST be `xwiki` (matches XwikiProvider::getOpenConnectorSource()).
+  reference: xwiki
+  name: XWiki
+  description: >-
+    XWiki pages linked to OpenRegister objects. Surfaced as the
+    "Articles" integration (sidebar tab + dashboard/detail widgets).
+  type: api
+
+  # Base URL of the XWiki REST API. Example for a wiki at
+  # https://wiki.example.org with the default "xwiki" wiki:
+  #   https://wiki.example.org/rest/wikis/xwiki
+  location: "https://wiki.example.org/rest/wikis/xwiki"
+
+  # ---------------------------------------------------------------
+  # Authentication — keep exactly ONE of the two blocks below.
+  # ---------------------------------------------------------------
+
+  # Option A — HTTP Basic (works on all XWiki versions).
+  auth:
+    type: basic
+    username: "${XWIKI_USERNAME}"
+    password: "${XWIKI_PASSWORD}"
+
+  # Option B — OAuth2 (xwiki-platform-oidc; newer instances only).
+  # auth:
+  #   type: oauth2
+  #   grantType: client_credentials
+  #   tokenUrl: "https://wiki.example.org/oidc/token"
+  #   clientId: "${XWIKI_OIDC_CLIENT_ID}"
+  #   clientSecret: "${XWIKI_OIDC_CLIENT_SECRET}"
+  #   scope: "openid profile"
+
+  headers:
+    Accept: application/json
+
+  # ---------------------------------------------------------------
+  # Endpoint mapping consumed by XwikiProvider. The provider sends
+  # the object context as query params (register / schema / object)
+  # plus optional _search / _limit / _page; OpenConnector resolves
+  # those to the appropriate XWiki REST calls and normalises the
+  # response rows to { reference, title, space, page, breadcrumb,
+  # url, content }.
+  # ---------------------------------------------------------------
+  endpoints:
+    # GET  — list linked pages for an object
+    list:
+      method: GET
+      path: ""              # relative to `location`
+      # The pairing store — which XWiki pages are linked to which OR
+      # object — lives in OpenConnector's own pairing model, keyed by
+      # the {register, schema, object} context. OpenConnector then
+      # fetches each linked page's metadata (and, for the detail-page
+      # surface, its rendered content) from XWiki.
+      response:
+        rowsPath: "$"        # bare array, or "$.results"
+        map:
+          reference: "id"          # XWiki page reference, e.g. "Space.Page"
+          title: "title"
+          space: "space"
+          page: "name"
+          url: "xwikiAbsoluteUrl"
+          content: "content"       # already-rendered HTML; UI strips to text + ~500 chars (AD-1)
+
+    # GET {id}  — one linked page (with content for the preview)
+    get:
+      method: GET
+      path: "{id}"
+
+    # POST  — link a page (body carries `reference`: a full XWiki URL
+    # or a `Space.Page` path; OpenConnector resolves both to canonical)
+    create:
+      method: POST
+      path: ""
+
+    # PUT {id}  — update a pairing
+    update:
+      method: PUT
+      path: "{id}"
+
+    # DELETE {id}  — unlink (removes the pairing; does NOT delete the
+    # page in XWiki)
+    delete:
+      method: DELETE
+      path: "{id}"
+
+  # Health probe used by OpenRegister's admin UI / OCS capabilities.
+  # A cheap authenticated GET that returns 200 when the instance is
+  # reachable and the credentials are valid.
+  healthCheck:
+    method: GET
+    path: ""
