@@ -15,12 +15,14 @@
 - [ ] 3.1 Create `lib/Service/TextExtraction/EmlParser.php`. Constructor takes the logger and (lazily) `TextExtractionService` (avoid circular DI — inject via the container with a method).
 - [ ] 3.2 Implement `parse(File $file): EmlStructure` using `\ZBateson\MailMimeParser\MailMimeParser`. Loop through headers — extract From, To, Cc, Subject, Date, Message-ID. Decode RFC 2047 encoded-words via the parser's built-in handling. Date parsing: try `DateTimeImmutable::createFromFormat` with RFC 2822 / 5322 patterns; fall back to null on failure.
 - [ ] 3.3 Implement body extraction: get `text/plain` and `text/html` parts independently; populate `EmlBody` with both (or null per part).
-- [ ] 3.4 Implement attachment extraction: walk `getAllAttachmentParts()`. For each: filename (from Content-Disposition or Content-Type `name`), mimeType, content (raw bytes), isInline (Content-Disposition: inline), contentId (Content-ID header, stripping angle brackets).
+- [ ] 3.4 Implement attachment extraction: walk `getAllAttachmentParts()`. For each: filename (resolution order: Content-Disposition `filename` → Content-Type `name` → generated `attachment-<1-indexed-position>`; the generated form MUST always be non-empty), mimeType, content (MUST be the **decoded** bytes via `$part->getContent()` — NOT `getRawContent()` — so consumers can embed them as PDF/A-3 file attachments or `data:` URIs without further decoding), isInline (Content-Disposition: inline), contentId (Content-ID header, stripping angle brackets).
 - [ ] 3.5 Implement recursive `nestedEml` for `message/rfc822` attachments. Pass a depth parameter (default 0). Recursive call increments depth. At depth 3, set `nestedEml: null` and emit a debug log "EML nesting depth limit reached".
 - [ ] 3.6 Implement `flatten(EmlStructure $structure, int $depth = 0): string` — builds the flat plain-text per spec D2: header block, blank line, body (plainText preferred; HTML stripped to text fallback), attachments. For extractable attachments (PDF / Word / text / nested EML), call `TextExtractionService` to get attachment text and inline. For non-extractable, marker line only.
 - [ ] 3.7 Implement HTML→text helper for the flat-path body fallback. Drop `<style>`, `<script>` content (block-level removal). Convert `<br>`, `<p>`, block-level tags to newlines. Strip remaining tags via `strip_tags()`. Decode entities via `html_entity_decode()`. Collapse whitespace runs.
 - [ ] 3.8 Implement encoding fallback: if `mb_check_encoding($value, 'UTF-8')` is false, run `mb_detect_encoding` then `mb_convert_encoding` to UTF-8.
-- [ ] 3.9 Wrap parse failures: `parse()` throws `EmlParseException` on irrecoverable error. `flatten()` does not throw (works on a successfully-parsed structure).
+- [ ] 3.9 Wrap parse failures: `parse()` MUST throw `EmlParseException` on irrecoverable error — NOT return null, NOT return a partially-populated `EmlStructure`. `flatten()` does not throw (works on a successfully-parsed structure).
+- [ ] 3.10 Sanitise log lines and exception messages per ADR-005: when logging a parser failure or rethrowing an exception that will be logged, replace email addresses, display names, Subject content, body content, and attachment filenames with `<redacted>`. Permitted log payload: file ID, MIME type, exception class name, structural detail (depth-limit hit, etc.). Apply this in both `extractEml`'s catch block and `EmlParser::parse`'s sanitised re-throw.
+- [ ] 3.11 Implement the flat-path multipart/alternative preference explicitly: when a body has both a `text/plain` and a `text/html` part in a `multipart/alternative`, `flatten()` MUST use the `text/plain` content and MUST NOT concatenate the HTML.
 
 ## 4. TextExtractionService integration
 
@@ -36,6 +38,11 @@
 - [ ] 5.3 Test `flatten()` output structure: header block before body; `--- Attachment: ... ---` markers; non-extractable attachment marker shape; recursive attachment text inlined.
 - [ ] 5.4 Test HTML→text helper: handles `<style>`, `<script>`, common block elements, entity decoding, whitespace collapse.
 - [ ] 5.5 Test encoding fallback: non-UTF-8 input (e.g. ISO-8859-1 body) is converted to UTF-8 in the flat output.
+- [ ] 5.6 Test multipart/alternative preference: an EML with both `text/plain` and `text/html` parts emits only the `text/plain` content from `flatten()`; the HTML is NOT concatenated.
+- [ ] 5.7 Test missing-filename fallback: an attachment with neither Content-Disposition `filename` nor Content-Type `name` MUST get the generated `attachment-<n>` (1-indexed position) and MUST NOT be empty.
+- [ ] 5.8 Test `content` encoding: the attachment's `content` field MUST hold the decoded binary bytes, not the base64 transport string. Assert by re-encoding and comparing against the raw attachment bytes of the source EML.
+- [ ] 5.9 Test PII-redacted logging: induce a parser failure on an EML with sensitive From / Subject / body content; capture the log line and assert that none of the PII appears and only the file ID, MIME type, exception class, and sanitised structural detail are present.
+- [ ] 5.10 Test that `parseEmlStructured` throws (never returns null or a partial structure) on irrecoverable malformed input. Assert exception class is `EmlParseException`.
 
 ## 6. Integration tests
 
