@@ -8,50 +8,50 @@
 			:active.sync="activeTab"
 			class="or-mail-sidebar"
 			@close="toggleCollapsed">
-		<template #description>
-			<div v-if="!isMessageView" class="or-mail-sidebar__hint">
-				{{ t('openregister', 'Select an email to see linked objects') }}
-			</div>
-		</template>
-
-		<NcAppSidebarTab
-			id="objects"
-			:name="t('openregister', 'Objects')"
-			:order="1">
-			<template #icon>
-				<LinkVariant :size="20" />
+			<template #description>
+				<div v-if="!isMessageView" class="or-mail-sidebar__hint">
+					{{ t('openregister', 'Select an email to see linked objects') }}
+				</div>
 			</template>
-			<ObjectsTab
-				ref="objectsTab"
-				:account-id="accountId"
-				:message-id="messageId"
-				@switch-tab="switchTab" />
-		</NcAppSidebarTab>
 
-		<NcAppSidebarTab
-			id="actions"
-			:name="t('openregister', 'Link')"
-			:order="2">
-			<template #icon>
-				<Plus :size="20" />
-			</template>
-			<ActionsTab
-				:account-id="accountId"
-				:message-id="messageId"
-				@linked="onLinked" />
-		</NcAppSidebarTab>
+			<NcAppSidebarTab
+				id="objects"
+				:name="t('openregister', 'Objects')"
+				:order="1">
+				<template #icon>
+					<LinkVariant :size="20" />
+				</template>
+				<ObjectsTab
+					ref="objectsTab"
+					:account-id="accountId"
+					:message-id="messageId"
+					@switch-tab="switchTab" />
+			</NcAppSidebarTab>
 
-		<NcAppSidebarTab
-			id="entities"
-			:name="t('openregister', 'Entities')"
-			:order="3">
-			<template #icon>
-				<AccountMultiple :size="20" />
-			</template>
-			<EntitiesTab
-				:account-id="accountId"
-				:message-id="messageId" />
-		</NcAppSidebarTab>
+			<NcAppSidebarTab
+				id="actions"
+				:name="t('openregister', 'Link')"
+				:order="2">
+				<template #icon>
+					<Plus :size="20" />
+				</template>
+				<ActionsTab
+					:account-id="accountId"
+					:message-id="messageId"
+					@linked="onLinked" />
+			</NcAppSidebarTab>
+
+			<NcAppSidebarTab
+				id="entities"
+				:name="t('openregister', 'Entities')"
+				:order="3">
+				<template #icon>
+					<AccountMultiple :size="20" />
+				</template>
+				<EntitiesTab
+					:account-id="accountId"
+					:message-id="messageId" />
+			</NcAppSidebarTab>
 		</NcAppSidebar>
 
 		<button
