@@ -371,9 +371,11 @@ class ReferentialIntegrityService
             // Raw SQL: QueryBuilder does not target the information_schema metadata
             // tables. The schema-resolution function differs across platforms —
             // MySQL/MariaDB expose DATABASE() while PostgreSQL exposes current_schema()
-            // (mirrors lib/Db/MagicMapper.php:1697-1707).
+            // (mirrors lib/Db/MagicMapper.php:1697-1707). get_debug_type() is used
+            // instead of get_class() so a null platform (e.g. a mocked IDBConnection
+            // in unit tests) degrades to the MySQL syntax rather than fatal-erroring.
             $platform   = $this->db->getDatabasePlatform();
-            $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
+            $isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
             $schemaFn   = $isPostgres === true ? 'current_schema()' : 'DATABASE()';
             // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
             $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = {$schemaFn}";
@@ -896,8 +898,9 @@ class ReferentialIntegrityService
             $queryMode = 'array';
         }
 
-        $platform   = $this->db->getDatabasePlatform();
-        $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
+        $platform = $this->db->getDatabasePlatform();
+        // Null-safe via get_debug_type() (a mocked IDBConnection returns null here in unit tests).
+        $isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
 
         $deletedCheck = '_deleted IS NULL';
         if ($isPostgres === true) {
