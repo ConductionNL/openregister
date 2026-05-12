@@ -49,7 +49,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20260511120000 extends SimpleMigrationStep
 {
-
     /**
      * Add the openregister_notif_dispatch_log table when missing.
      *
@@ -61,7 +60,10 @@ class Version1Date20260511120000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable(tableName: 'openregister_notif_dispatch_log') === true) {
