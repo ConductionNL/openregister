@@ -44,7 +44,6 @@ use OCP\ICacheFactory;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 
 /**
  * Class GitHubIssuesController.
@@ -255,7 +254,10 @@ class GitHubIssuesController extends Controller
         }
 
         // Mark the rate-limit slot consumed (records the submission time so Retry-After can be computed).
-        $this->rateLimiter->markFixedWindow(bucketKey: 'feature_submission:'.$uid, windowSeconds: self::SUBMIT_RATE_LIMIT_TTL);
+        $this->rateLimiter->markFixedWindow(
+            bucketKey: 'feature_submission:'.$uid,
+            windowSeconds: self::SUBMIT_RATE_LIMIT_TTL
+        );
 
         return new JSONResponse($result, Http::STATUS_CREATED);
     }//end create()
@@ -274,6 +276,7 @@ class GitHubIssuesController extends Controller
         if ($this->rateLimiter->isOperational() === true) {
             return null;
         }
+
         return new JSONResponse(['error' => 'rate_limiter_unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
     }//end enforceRateLimiterOperational()
 
@@ -354,7 +357,7 @@ class GitHubIssuesController extends Controller
      */
     private function mapHandlerException(Exception $exception, bool $isRead): JSONResponse
     {
-        if ($exception instanceof RuntimeException && $exception->getMessage() === 'github_pat_not_configured') {
+        if (is_a($exception, 'RuntimeException') === true && $exception->getMessage() === 'github_pat_not_configured') {
             return $this->mapPatNotConfigured(isRead: $isRead);
         }
 
