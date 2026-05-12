@@ -63,6 +63,7 @@ class UrnController extends Controller
      *
      * @return JSONResponse JSON response with the resolution result or error.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function resolve(?string $urn=null): JSONResponse
@@ -106,6 +107,7 @@ class UrnController extends Controller
      *
      * @return JSONResponse JSON response with the URN or error.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function lookup(?string $url=null): JSONResponse
@@ -141,6 +143,7 @@ class UrnController extends Controller
      *
      * @return JSONResponse JSON response with the bulk resolution result.
      *
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function bulk(?array $urns=null): JSONResponse
@@ -149,12 +152,13 @@ class UrnController extends Controller
             return new JSONResponse(['error' => 'urns array is required'], Http::STATUS_BAD_REQUEST);
         }
 
-        // SECURITY: cap the input list. Each URN triggers a parse →
-        // register find → schema find → object find chain, so a 100k
-        // input list = ~400k DB round-trips per request. Currently this
-        // route is effectively admin-only via the absence of
-        // @NoAdminRequired, but a future relaxation would convert the
-        // missing cap directly into a DoS lever.
+        // SECURITY: this route is reachable by every authenticated user
+        // (`@NoAdminRequired` above), so the 1000-URN cap is mandatory.
+        // Each URN triggers a parse → register find → schema find →
+        // object find chain (~4 DB round-trips per URN), so an
+        // uncapped input list (e.g. 100k URNs ≈ 400k round-trips) is a
+        // direct DoS lever. Do not relax this cap without adding a
+        // per-user rate limit upstream.
         if (count($urns) > 1000) {
             return new JSONResponse(
                 ['error' => 'Too many URNs (max 1000 per request)', 'count' => count($urns)],

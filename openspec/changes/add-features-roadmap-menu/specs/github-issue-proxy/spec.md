@@ -21,12 +21,19 @@ fallback for reads and for submissions when the user has no personal PAT.
 
 OpenRegister SHALL expose `GET /api/github/issues` that accepts the query parameters `repo`
 (required, format `<owner>/<repo>`), `state` (optional, default `open`), `sort` (optional,
-default `reactions-+1`), and `per_page` (optional integer, default 30, maximum 100). The
-endpoint SHALL return a JSON response containing an `items` array of issue objects fetched
-from GitHub for the given repository, with sensitive data stripped. The endpoint MUST carry
+default `reactions-+1`), `per_page` (optional integer, default 30, maximum 100), and
+`labels` (optional, comma-separated list of GitHub label names to filter by). The endpoint
+SHALL return a JSON response containing an `items` array of issue objects fetched from
+GitHub for the given repository, with sensitive data stripped. The endpoint MUST carry
 `#[NoCSRFRequired]` since it is a pure read with no side effects.
 
-#### Scenario: Successful fetch of open issues
+When `labels` is supplied with two or more comma-separated labels, the endpoint SHALL
+fetch issues for each label independently and merge the results (deduped by issue number),
+yielding **OR semantics** — items carrying *any* of the named labels are returned. This
+differs from GitHub's native `labels=a,b` query (which is AND semantics) and is necessary
+to support the roadmap convention of "issues labelled `enhancement` OR `feature`."
+
+#### Scenario: Successful fetch of open issues (no label filter)
 
 - **WHEN** an authenticated Nextcloud user requests `GET /api/github/issues?repo=ConductionNL/openregister`
 - **AND** the app-level GitHub PAT is configured
@@ -35,6 +42,33 @@ from GitHub for the given repository, with sensitive data stripped. The endpoint
   `user.avatar_url`, `reactions.total_count`, `reactions.+1`, `created_at`, `updated_at`, and
   `labels[].{name,color}`
 - **AND** items SHALL be sorted by `reactions-+1` descending
+
+#### Scenario: Label filter returns OR-matched issues
+
+- **WHEN** a user requests `GET /api/github/issues?repo=ConductionNL/openregister&labels=enhancement,feature`
+- **THEN** the endpoint SHALL fetch issues labelled `enhancement` from GitHub
+- **AND** SHALL fetch issues labelled `feature` from GitHub
+- **AND** SHALL merge the two result sets, deduplicating by issue `number`
+- **AND** SHALL return only items carrying at least one of the two labels
+- **AND** the merged result SHALL be sorted by `reactions-+1` descending before being
+  truncated to `per_page` items
+
+#### Scenario: Single-label filter
+
+- **WHEN** a user requests `GET /api/github/issues?repo=ConductionNL/openregister&labels=enhancement`
+- **THEN** the endpoint SHALL make a single GitHub request with `labels=enhancement`
+- **AND** SHALL return only issues carrying that label
+
+#### Scenario: Invalid labels parameter
+
+- **WHEN** a user requests `GET /api/github/issues?repo=ConductionNL/openregister&labels=foo;DROP%20TABLE`
+- **THEN** the endpoint SHALL return HTTP 400 with structured error code `labels_invalid_format`
+- **AND** no outbound GitHub request SHALL be issued
+
+#### Scenario: Too many labels
+
+- **WHEN** a user requests `labels` with more than 8 comma-separated entries
+- **THEN** the endpoint SHALL return HTTP 400 with structured error code `labels_too_many`
 
 #### Scenario: Missing repo parameter
 

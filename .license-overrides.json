@@ -2,5 +2,5 @@
 	"@fortawesome/free-solid-svg-icons": "License is (CC-BY-4.0 AND MIT) — both are approved open-source licenses, compound AND expression not parsed by checker",
 	"smalot/pdfparser": "License is LGPL-3.0 — equivalent to LGPL-3.0-only which is on the allowlist, SPDX identifier variation not recognized by checker",
 	"apexcharts": "License is MIT — license-checker misreads logo URL as custom license, see https://github.com/apexcharts/apexcharts.js/blob/main/LICENSE",
-	"dompdf/dompdf": "License is LGPL-2.1 — equivalent to LGPL-2.1-only / LGPL-2.1-or-later which are on the allowlist, package reports the non-SPDX form. See https://github.com/dompdf/dompdf/blob/master/LICENSE.LGPL"
+	"dompdf/dompdf": "License is LGPL-2.1 — equivalent to LGPL-2.1-or-later which is on the allowlist; configured hermetically (isRemoteEnabled=false / isPhpEnabled=false) at the single instantiation site PdfReportWriter:69"
 }

@@ -246,7 +246,7 @@ class PermissionHandler
      * @param string|null       $userId      User ID (null = anonymous).
      * @param string|null       $objectOwner Object owner (null = no owner check).
      * @param ObjectEntity|null $object      Object entity (UUID is the cache scope).
-     * @param Schema|null       $schema      Schema (used to detect match-rule presence).
+     * @param Schema|null       $schema      Optional schema entity used to break the cache when conditional rules are present.
      *
      * @return string|null Cache key, or null to bypass cache.
      */

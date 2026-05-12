@@ -54,7 +54,7 @@ class ReportsController extends Controller
      * @param IRequest            $request       Active request.
      * @param ReportRenderService $renderService Composer.
      * @param MagicMapper         $objectMapper  Dashboard loader.
-     * @param LoggerInterface     $logger        PSR-3 logger.
+     * @param LoggerInterface     $logger        Logger for render diagnostics.
      */
     public function __construct(
         string $appName,

@@ -388,7 +388,8 @@ class Application extends App implements IBootstrap
                     organisationMapper: $container->get(OrganisationMapper::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
-                    appConfig: $container->get('OCP\IAppConfig')
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
         );

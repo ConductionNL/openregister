@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\AggregationController;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -113,4 +114,32 @@ class AggregationControllerTest extends TestCase
         $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
         $this->assertArrayNotHasKey('X-OR-Cache', $response->getHeaders());
     }//end testNoHeaderOn404()
+
+    /**
+     * R08 / F04 contract: when the runner denies access by throwing
+     * `NotAuthorizedException`, the controller maps it to HTTP 403 and
+     * surfaces the message in the structured `error` body. Pinning this
+     * verdict guards against an accidental try/catch reorder silently
+     * flipping 403 → 404 (or 500) on a future refactor.
+     *
+     * @return void
+     */
+    public function testReturnsForbiddenWhenRunnerDeniesAccess(): void
+    {
+        $this->runner->method('run')->willThrowException(
+            new NotAuthorizedException(message: 'You do not have permission to aggregate schema "sch".')
+        );
+
+        $response = $this->controller->aggregate('reg', 'sch', 'totals');
+
+        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+        $body = $response->getData();
+        $this->assertIsArray($body);
+        $this->assertSame(
+            'You do not have permission to aggregate schema "sch".',
+            $body['error'] ?? null
+        );
+        // Cache header is for compute-success only, not for denial.
+        $this->assertArrayNotHasKey('X-OR-Cache', $response->getHeaders());
+    }//end testReturnsForbiddenWhenRunnerDeniesAccess()
 }//end class
