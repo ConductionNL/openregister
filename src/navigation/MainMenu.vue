@@ -52,6 +52,7 @@
 		</NcAppNavigationList>
 
 		<NcAppNavigationSettings>
+			<CnFeaturesAndRoadmapLink route-name="features-roadmap" />
 			<NcAppNavigationItem :active="$route.path.startsWith('/organisation')" :name="t('openregister', 'Organisations')" @click="handleNavigate('/organisation')">
 				<template #icon>
 					<OfficeBuildingOutline :size="20" />
@@ -125,6 +126,7 @@ import {
 	NcAppNavigationItem,
 	NcAppNavigationNew,
 } from '@nextcloud/vue'
+import { CnFeaturesAndRoadmapLink } from '@conduction/nextcloud-vue'
 
 // Icons
 import Finance from 'vue-material-design-icons/Finance.vue'
@@ -160,6 +162,7 @@ export default {
 		NcAppNavigationItem,
 		NcAppNavigationSettings,
 		NcAppNavigationNew,
+		CnFeaturesAndRoadmapLink,
 		// icons
 		Finance,
 		DatabaseOutline,

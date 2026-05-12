@@ -30,6 +30,7 @@ import MyAccount from '../views/account/MyAccount.vue'
 import AvgIndex from '../views/avg/AvgIndex.vue'
 import ReportsIndex from '../views/reports/ReportsIndex.vue'
 import ReportView from '../views/reports/ReportView.vue'
+import FeaturesRoadmapIndex from '../views/roadmap/FeaturesRoadmapIndex.vue'
 
 Vue.use(Router)
 
@@ -88,6 +89,7 @@ const router = new Router({
 		{ path: '/avg', name: 'avg', component: AvgIndex },
 		{ path: '/reports', name: 'reports', component: ReportsIndex },
 		{ path: '/reports/:id', name: 'reportView', component: ReportView },
+		{ path: '/features-roadmap', name: 'features-roadmap', component: FeaturesRoadmapIndex },
 		{ path: '*', redirect: '/' },
 	],
 })
