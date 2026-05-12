@@ -15,20 +15,31 @@
 
 ## 3. Anonymise endpoint integration
 
-- [ ] 3.1 In `FileService::anonymizeDocument(node, payload)` (or the equivalent service method that the controller routes call), accept an optional `bases` field on each entry in `payload.entities[]`. Validate at the entry point: the field, when present, MUST be either `null` or an array of strings. Reject malformed input with a 400-level error.
+- [ ] 3.1 In `FileService::anonymizeDocument(node, payload)` (or the equivalent service method that the controller routes call), accept an optional `bases` field on each entry in `payload.entities[]`. Validate the **shape** at the entry point only: when present, the field MUST be either `null` or an array whose every element is a string. Reject malformed shape (non-array values, non-string array elements) with HTTP 400 and include the offending entity index in the error body. Do NOT validate the **content** of strings — the mapper layer is intentionally content-agnostic (see the spec's two-layer endpoint/mapper Requirement).
 - [ ] 3.2 Implement the persist-then-strip order. For each entry in `payload.entities[]`:
   - locate or upsert the `EntityRelation` row for `(entityId, fileId/objectId/chunkId)`,
+  - apply the retry-omit semantics from task 3.6,
   - set `anonymized`, `anonymizedValue`, `bases` on the row,
   - persist the row.
   Persistence MUST happen before the OpenAnonymiser HTTP call.
 - [ ] 3.3 Construct the OpenAnonymiser request body from a copy of `payload.entities[]` with `bases` removed from every entry. Confirm by inspection that the request body to OpenAnonymiser is byte-equivalent to the pre-change shape (modulo unrelated JSON encoder ordering).
 - [ ] 3.4 Confirm the mapper does NOT issue any cross-register lookup to validate the supplied UUIDs. The persistence layer accepts any string array.
+- [ ] 3.5 Wire `bases` mutations through OpenRegister's existing immutable-audit-trail subsystem — the same path that records other `EntityRelation` mutations (grep `EntityRelationMapper` + audit-trail wiring to find it). Every set/update of `bases` MUST produce an audit entry that includes `previousBases`, `newBases`, the acting user UID (NOT display name, per ADR-005), the timestamp, and the row identifier. Reads MUST NOT produce audit entries. Reference: ADR-022.
+- [ ] 3.6 Implement retry-omit semantics: when a retry payload omits the `bases` field for an entity whose EntityRelation row already has a non-null persisted value, REUSE the persisted value (do not overwrite, do not audit-log the unchanged `bases` field). Distinguish three caller intents in the validation/dispatch layer:
+  - field **absent** → reuse persisted value, no audit entry for `bases`
+  - field present and `null` → set to `null` (explicit clear, audit-logged)
+  - field present and `[]` → set to empty array (audit-logged)
+- [ ] 3.7 Confirm the anonymise endpoint's existing per-object authorization (write-access to the file/object being anonymised) is the **only** auth check on the `bases` write path. No extra group/role check is added. Cross-reference ADR-005 + ADR-023 in the PR description so the absence-of-extra-check is intentional rather than oversight. If a future change wants action-level authz on `bases`, it MUST add a new spec Requirement.
 
 ## 4. Unit tests
 
 - [ ] 4.1 Add `tests/unit/Db/EntityRelationTest.php` covering: `getBases`/`setBases` round-trip; `jsonSerialize` includes `bases`; null vs empty-array distinction is preserved.
 - [ ] 4.2 Add `tests/unit/Db/EntityRelationMapperTest.php` (or extend an existing suite) covering: insert with bases; insert without bases (defaults to null); update bases on existing row; non-UUID strings are accepted; idempotent migration smoke test.
 - [ ] 4.3 Add `tests/unit/Service/FileServiceTest.php` cases for the anonymise-endpoint integration: persist precedes OpenAnonymiser call; OpenAnonymiser receives a request body without `bases`; OpenAnonymiser failure preserves the persisted bases on the row.
+- [ ] 4.4 Add `tests/unit/Service/FileServiceShapeValidationTest.php` covering: endpoint rejects `bases: "string"` with 400; endpoint rejects `bases: ["uuid", 42]` with 400; endpoint accepts `bases: ["any", "strings"]` and the mapper persists them verbatim; the 400 error body identifies the offending entity index.
+- [ ] 4.5 Add `tests/unit/Service/FileServiceAuditTrailTest.php` covering: first-time set produces an audit entry with `previousBases: null` + `newBases: <array>`; update produces audit entry with old + new values; read does NOT produce audit entry; the audit entry references the user UID, not the display name (ADR-005).
+- [ ] 4.6 Add `tests/unit/Service/FileServiceRetryTest.php` covering: retry-omit reuses persisted `bases` without audit-logging the unchanged field; retry with new `bases` overwrites and audit-logs the transition; retry with explicit `null` clears and audit-logs; the three caller intents (absent / present-null / present-empty-array) are distinguished correctly.
+- [ ] 4.7 Add `tests/unit/Service/FileServiceAuthorizationTest.php` covering: a caller without write-access to the target file/object is rejected with HTTP 403 and NO `bases` value is persisted on any EntityRelation row for that file; a caller with write-access can set arbitrary `bases` strings as part of the anonymise call.
 
 ## 5. Integration tests
 
