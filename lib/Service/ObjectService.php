@@ -1651,6 +1651,15 @@ class ObjectService
      * method from MagicMapper with proper query structure. It automatically
      * handles metadata filters, object field searches, and search options.
      *
+     * **Numeric-ID contract (runtime-schema-api):** `@self.register` and
+     * `@self.schema` MUST be numeric IDs (int). Passing a slug string here
+     * is the documented foot-gun the OpenBuilt smoke test surfaced — it
+     * silently returns zero results instead of resolving the slug.
+     * Slug-aware callers MUST use {@see self::searchObjectsBySlug()},
+     * which resolves the slugs via the mappers and then delegates here on
+     * the fast path. Keeping this method strict means the next misuse
+     * fails loudly at the call site rather than silently returning empty.
+     *
      * @param array       $query         The search query array containing filters and options
      *                                   - @self: Metadata filters (register, schema, uuid,
      *                                   etc.) - Direct keys: Object field filters for JSON
@@ -1695,6 +1704,106 @@ class ObjectService
             views: $views
         );
     }//end searchObjects()
+
+    /**
+     * Search objects by register and schema slugs
+     *
+     * Slug-aware bridge to {@see self::searchObjects()}. Resolves both slugs
+     * to numeric IDs via the mappers (scoped to the active organisation by
+     * the mappers' standard multi-tenancy filter) and delegates to the
+     * numeric-ID search path.
+     *
+     * This helper exists to close the OpenBuilt smoke-test foot-gun where
+     * callers passed slugs in `@self.register` / `@self.schema` and got
+     * zero results back. The strict numeric-ID contract on `searchObjects`
+     * means any future misuse fails loudly at the call site; slug-aware
+     * callers (the controller layer, OpenCatalogi, softwarecatalog) get a
+     * one-method-call upgrade path.
+     *
+     * Multi-tenancy honours the same `_multitenancy` flag every other
+     * lookup uses — when true (default), slug resolution and the
+     * downstream object search are both scoped to the caller's
+     * organisation. A slug that exists in another organisation but not
+     * the caller's MUST throw `DoesNotExistException` (the mappers do
+     * this via the standard organisation filter).
+     *
+     * @param string $registerSlug  The register slug (must exist in caller's org).
+     * @param string $schemaSlug    The schema slug (must exist in caller's org).
+     * @param array  $filters       Additional filters merged into the @self block.
+     *                              Direct keys like 'status' are merged at the top
+     *                              level.
+     * @param bool   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool   $_multitenancy Whether to apply multi-tenancy filter (default: true).
+     *
+     * @psalm-param array<string, mixed> $filters
+     *
+     * @phpstan-param array<string, mixed> $filters
+     *
+     * @return \OCA\OpenRegister\Db\ObjectEntity[]|int Same shape as searchObjects.
+     *
+     * @throws OcpDoesNotExistException If either slug fails to resolve in the caller's
+     *                                  organisation. The exception message identifies
+     *                                  which slug (register vs schema) failed.
+     * @throws \OCP\DB\Exception        If a database error occurs.
+     *
+     * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags mirror searchObjects() upstream.
+     */
+    public function searchObjectsBySlug(
+        string $registerSlug,
+        string $schemaSlug,
+        array $filters=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): array|int {
+        // Resolve register slug → numeric ID via the existing mapper find()
+        // which already accepts slug strings and applies the standard
+        // organisation filter. Throws DoesNotExistException if the slug is
+        // missing or belongs to a foreign organisation — same contract as
+        // every other lookup in OR.
+        try {
+            $register = $this->registerMapper->find(
+                id: $registerSlug,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+        } catch (OcpDoesNotExistException $e) {
+            throw new OcpDoesNotExistException(
+                'searchObjectsBySlug: register slug not found in caller organisation: '.$registerSlug
+            );
+        }
+
+        // Resolve schema slug → numeric ID, scoped to the same multi-tenancy
+        // boundary. A schema that exists in another organisation MUST throw,
+        // not return the foreign-org entity (principle of least surprise).
+        try {
+            $schema = $this->schemaMapper->find(
+                id: $schemaSlug,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+        } catch (OcpDoesNotExistException $e) {
+            throw new OcpDoesNotExistException(
+                'searchObjectsBySlug: schema slug not found in caller organisation: '.$schemaSlug
+            );
+        }
+
+        // Merge resolved numeric IDs into the @self block of the filters.
+        // Direct keys (status, etc.) stay at the top level so they hit the
+        // object JSON filter path, not the metadata filter path.
+        $selfBlock = $filters['@self'] ?? [];
+        $selfBlock['register'] = $register->getId();
+        $selfBlock['schema']   = $schema->getId();
+        $filters['@self']      = $selfBlock;
+
+        // Delegate to the numeric-ID searchObjects on the documented fast path.
+        return $this->searchObjects(
+            query: $filters,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+    }//end searchObjectsBySlug()
 
     /**
      * Count objects using clean query structure
