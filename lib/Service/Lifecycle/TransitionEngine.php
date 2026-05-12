@@ -39,8 +39,12 @@ use RuntimeException;
 /**
  * Apply named lifecycle transitions and report which actions are
  * available from the object's current state.
+ *
+ * Not declared `final`: TransitionControllerTest doubles this class, and
+ * the controller injects it by concrete type. If sealing is reintroduced,
+ * extract an interface for the controller to depend on first.
  */
-final class TransitionEngine
+class TransitionEngine
 {
     /**
      * Constructor.
