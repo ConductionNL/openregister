@@ -10,7 +10,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		label-id="AddAttachmentModal"
 		@close="closeModal()">
 		<div class="modal__content TestMappingMainModal">
-			<h2>Bijlage toevoegen</h2>
+			<h2>{{ t('openregister', 'Add Attachment') }}</h2>
 
 			<div class="labelAndShareContainer">
 				<NcSelect v-bind="labelOptions"
@@ -21,10 +21,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 					:multiple="true"
 					:selectable="(option) => isSelectable(option)" />
 				<NcCheckboxRadioSwitch :disabled="loading"
-					label="Automatisch delen"
+					:label="t('openregister', 'Auto share')"
 					type="switch"
 					:checked.sync="share">
-					Automatisch delen
+					{{ t('openregister', 'Auto share') }}
 				</NcCheckboxRadioSwitch>
 			</div>
 
@@ -32,22 +32,22 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				<div v-if="!labelOptions.value?.length || loading" class="filesListDragDropNotice" :class="'tabPanelFileUpload'">
 					<div v-if="!labelOptions.value?.length">
 						<NcNoteCard type="info">
-							<p>Selecteer of maak labels aan of selecteer "Geen label" om bestanden toe te voegen</p>
+							<p>{{ t('openregister', 'Select or create labels, or select "No label" to add files') }}</p>
 						</NcNoteCard>
 					</div>
 					<div v-if="success !== null || error">
 						<NcNoteCard v-if="success" type="success">
-							<p>Bestanden succesvol toegevoegd</p>
+							<p>{{ t('openregister', 'Files added successfully') }}</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
-							<p>Er is iets fout gegaan bij het toevoegen van bestanden</p>
+							<p>{{ t('openregister', 'Something went wrong while adding files') }}</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
 							<p>{{ error }}</p>
 						</NcNoteCard>
 						<div v-if="false">
 							<NcNoteCard type="error">
-								<p>Selecteer bestanden met de juiste extensie</p>
+								<p>{{ t('openregister', 'Select files with the correct extension') }}</p>
 							</NcNoteCard>
 						</div>
 					</div>
@@ -55,12 +55,12 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						<div class="filesListDragDropNoticeWrapperIcon">
 							<TrayArrowDown :size="48" />
 							<h3 class="filesListDragDropNoticeTitle">
-								Sleep een bestand of bestanden hierheen
+								{{ t('openregister', 'Drag a file or files here') }}
 							</h3>
 						</div>
 
 						<h3 class="filesListDragDropNoticeTitle">
-							Of
+							{{ t('openregister', 'Or') }}
 						</h3>
 
 						<div class="filesListDragDropNoticeTitle">
@@ -71,7 +71,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 								<template #icon>
 									<Plus :size="20" />
 								</template>
-								Een bestand of bestanden toevoegen
+								{{ t('openregister', 'Add a file or files') }}
 							</NcButton>
 						</div>
 					</div>
@@ -82,39 +82,39 @@ import { navigationStore, objectStore } from '../../store/store.js'
 					:class="'tabPanelFileUpload'">
 					<div v-if="!labelOptions.value?.length">
 						<NcNoteCard type="info">
-							<p>Selecteer of maak labels aan of selecteer "Geen label" om bestanden toe te voegen</p>
+							<p>{{ t('openregister', 'Select or create labels, or select "No label" to add files') }}</p>
 						</NcNoteCard>
 					</div>
 					<div v-if="checkForTooBigFiles(filesComputed)">
 						<NcNoteCard type="warning">
 							<p class="folderLink">
-								Als je bestanden groter of gelijk aan 512MB wilt toevoegen, ga dan naar de
+								{{ t('openregister', 'To add files larger than or equal to 512MB, go to the') }}
 								<NcButton type="secondary"
 									class="folderLinkButton"
-									aria-label="Open map"
+									:aria-label="t('openregister', 'Open folder')"
 									@click="openFolder(objectStore.objectItem?.['@self']?.folder)">
 									<template #icon>
 										<FolderOutline :size="20" />
 									</template>
-									map
+									{{ t('openregister', 'folder') }}
 								</NcButton>
-								en voeg de bestanden daar toe.
+								{{ t('openregister', 'and add the files there.') }}
 							</p>
 						</NcNoteCard>
 					</div>
 					<div v-if="success !== null || error">
 						<NcNoteCard v-if="success" type="success">
-							<p>Bestanden succesvol toegevoegd</p>
+							<p>{{ t('openregister', 'Files added successfully') }}</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
-							<p>Er is iets fout gegaan bij het toevoegen van bestanden</p>
+							<p>{{ t('openregister', 'Something went wrong while adding files') }}</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
 							<p>{{ error }}</p>
 						</NcNoteCard>
 						<div v-if="false">
 							<NcNoteCard type="error">
-								<p>Selecteer bestanden met de juiste extensie</p>
+								<p>{{ t('openregister', 'Select files with the correct extension') }}</p>
 							</NcNoteCard>
 						</div>
 					</div>
@@ -122,12 +122,12 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						<div class="filesListDragDropNoticeWrapperIcon">
 							<TrayArrowDown :size="48" />
 							<h3 class="filesListDragDropNoticeTitle">
-								Sleep een bestand of bestanden hierheen
+								{{ t('openregister', 'Drag a file or files here') }}
 							</h3>
 						</div>
 
 						<h3 class="filesListDragDropNoticeTitle">
-							Of
+							{{ t('openregister', 'Or') }}
 						</h3>
 
 						<div class="filesListDragDropNoticeTitle">
@@ -138,13 +138,13 @@ import { navigationStore, objectStore } from '../../store/store.js'
 								<template #icon>
 									<Plus :size="20" />
 								</template>
-								Een bestand of bestanden toevoegen
+								{{ t('openregister', 'Add a file or files') }}
 							</NcButton>
 						</div>
 					</div>
 				</div>
 				<div v-if="!filesComputed">
-					Geen bestanden geselecteerd
+					{{ t('openregister', 'No files selected') }}
 				</div>
 
 				<table v-if="filesComputed" class="files-table">
@@ -152,13 +152,13 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						<tr class="files-table-tr">
 							<th class="files-table-td-status" />
 							<th>
-								Bestandsnaam
+								{{ t('openregister', 'File name') }}
 							</th>
 							<th>
-								Grootte
+								{{ t('openregister', 'Size') }}
 							</th>
 							<th>
-								Labels
+								{{ t('openregister', 'Labels') }}
 							</th>
 						</tr>
 					</thead>
@@ -180,7 +180,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 							<td class="files-table-td-labels">
 								<span v-if="editingTags !== file.name"
 									class="files-list__row-action--inline files-list__row-action-system-tags">
-									<ul v-if="file.tags && file.tags.length > 0" class="files-list__system-tags" aria-label="Assigned collaborative tags">
+									<ul v-if="file.tags && file.tags.length > 0" class="files-list__system-tags" :aria-label="t('openregister', 'Assigned collaborative tags')">
 										<li v-for="label of file.tags"
 											:key="label"
 											class="files-list__system-tag"
@@ -189,7 +189,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 										</li>
 									</ul>
 									<span v-if="!file.tags || file.tags.length === 0">
-										Geen labels
+										{{ t('openregister', 'No labels') }}
 									</span>
 								</span>
 								<NcSelect
@@ -206,9 +206,9 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									<!-- Tags Buttons -->
 									<NcButton
 										v-if="editingTags !== file.name"
-										v-tooltip="'Labels bewerken'"
+										:v-tooltip="t('openregister', 'Edit labels')"
 										:disabled="editingTags && editingTags !== file.name || loading || file.status === 'too_large' || tagsLoading"
-										:aria-label="`edit tags for ${file.name}`"
+										:aria-label="t('openregister', 'Edit tags for {name}', { name: file.name })"
 										type="secondary"
 										class="editTagsButton"
 										@click="editingTags = file.name, editedTags = file.tags">
@@ -218,9 +218,9 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="editingTags === file.name"
-										v-tooltip="'Labels opslaan'"
+										:v-tooltip="t('openregister', 'Save labels')"
 										type="primary"
-										:aria-label="`save tags for ${file.name}`"
+										:aria-label="t('openregister', 'Save tags for {name}', { name: file.name })"
 										class="editTagsButton"
 										@click="saveTags(file, editedTags)">
 										<template #icon>
@@ -230,7 +230,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 									<!-- File Actions -->
 									<NcButton v-if="file.status === 'failed'"
-										v-tooltip="'Opnieuw uploaden'"
+										:v-tooltip="t('openregister', 'Retry upload')"
 										type="primary"
 										@click="addAttachments(file)">
 										<template #icon>
@@ -239,7 +239,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="file.status === 'too_large'"
-										v-tooltip="'Verwijder uit lijst'"
+										:v-tooltip="t('openregister', 'Remove from list')"
 										type="primary"
 										@click="removeFile(file.name)">
 										<template #icon>
@@ -258,6 +258,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 <script>
 import { ref } from 'vue'
+import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 import Plus from 'vue-material-design-icons/Plus.vue'
@@ -396,17 +397,17 @@ export default {
 		},
 
 		isSelectable(option) {
-			if (this.labelOptions.value?.includes('Geen label') && option !== 'Geen label') {
+			if (this.labelOptions.value?.includes(t('openregister', 'No label')) && option !== t('openregister', 'No label')) {
 				return false
 			}
-			if (this.labelOptions.value?.length >= 1 && !this.labelOptions.value?.includes('Geen label') && option === 'Geen label') {
+			if (this.labelOptions.value?.length >= 1 && !this.labelOptions.value?.includes(t('openregister', 'No label')) && option === t('openregister', 'No label')) {
 				return false
 			}
 			return true
 		},
 
 		getLabels() {
-			if (this.labelOptions.value?.includes('Geen label')) {
+			if (this.labelOptions.value?.includes(t('openregister', 'No label'))) {
 				return null
 			} else {
 				return this.labelOptions.value
@@ -423,7 +424,7 @@ export default {
 				const newLabelOptionsEdit = new Set()
 
 				// add labels to set
-				newLabelOptions.add('Geen label')
+				newLabelOptions.add(t('openregister', 'No label'))
 
 				tags.map(tag => newLabelOptions.add(tag))
 				tags.map(tag => newLabelOptionsEdit.add(tag))

@@ -188,6 +188,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { NcActions, NcActionButton, NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
@@ -272,36 +274,36 @@ export default {
 		async setActiveOrganisation() {
 			try {
 				await organisationStore.setActiveOrganisationById(organisationStore.organisationItem.uuid)
-				this.showSuccessMessage('Set as active organisation')
+				showSuccess(t('openregister', 'Set as active organisation'))
 			} catch (error) {
-				this.showErrorMessage('Failed to set active organisation: ' + error.message)
+				showError(t('openregister', 'Failed to set active organisation: {error}', { error: error.message }))
 			}
 		},
 		async leaveOrganisation() {
-			if (!confirm(`Are you sure you want to leave '${organisationStore.organisationItem.name}'?`)) {
+			if (!confirm(t('openregister', 'Are you sure you want to leave \'{name}\'?', { name: organisationStore.organisationItem.name }))) {
 				return
 			}
 
 			try {
 				await organisationStore.leaveOrganisation(organisationStore.organisationItem.uuid)
-				this.showSuccessMessage('Left organisation successfully')
+				showSuccess(t('openregister', 'Left organisation successfully'))
 				// Navigate back to organisations list
 				this.$router.push('/organisation')
 			} catch (error) {
-				this.showErrorMessage('Failed to leave organisation: ' + error.message)
+				showError(t('openregister', 'Failed to leave organisation: {error}', { error: error.message }))
 			}
 		},
 		async removeMember(userId) {
-			if (!confirm(`Remove ${userId} from this organisation?`)) {
+			if (!confirm(t('openregister', 'Remove {userId} from this organisation?', { userId }))) {
 				return
 			}
 
 			try {
 				// Would need API endpoint for removing members
 				// TODO: Implement member removal API endpoint
-				this.showSuccessMessage('Member removed successfully')
+				showSuccess(t('openregister', 'Member removed successfully'))
 			} catch (error) {
-				this.showErrorMessage('Failed to remove member: ' + error.message)
+				showError(t('openregister', 'Failed to remove member: {error}', { error: error.message }))
 			}
 		},
 		async loadOrganisationStats() {
@@ -317,10 +319,10 @@ export default {
 		async copyToClipboard(text) {
 			try {
 				await navigator.clipboard.writeText(text)
-				this.showSuccessMessage('UUID copied to clipboard')
+				showSuccess(t('openregister', 'UUID copied to clipboard'))
 			} catch (err) {
 				console.error('Failed to copy text:', err)
-				this.showErrorMessage('Failed to copy to clipboard')
+				showError(t('openregister', 'Failed to copy to clipboard'))
 			}
 		},
 		formatDate(dateString) {
@@ -373,14 +375,7 @@ export default {
 				window.open(websiteUrl, '_blank')
 			}
 		},
-		showSuccessMessage(_message) {
-			// Implementation would depend on your notification system
-			// TODO: Integrate with Nextcloud notification system
-		},
-		showErrorMessage(_message) {
-			// Implementation would depend on your notification system
-			// TODO: Integrate with Nextcloud notification system
-		},
+		// Notification methods removed - use showSuccess/showError directly from @nextcloud/dialogs
 	},
 }
 </script>

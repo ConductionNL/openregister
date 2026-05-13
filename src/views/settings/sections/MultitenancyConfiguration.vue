@@ -1,7 +1,11 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<SettingsSection
-		name="Multitenancy"
-		description="Configure multi-organization support and tenant isolation"
+		:name="t('openregister', 'Multitenancy')"
+		:description="t('openregister', 'Configure multi-organization support and tenant isolation')"
 		:loading="loading"
 		loading-message="Loading multitenancy settings...">
 		<template #actions>
@@ -98,7 +102,7 @@
 						<NcSelect
 							v-model="multitenancyOptions.defaultUserTenant"
 							:options="tenantOptions"
-							input-label="Default User Tenant"
+							:input-label="t('openregister', 'Default User Tenant')"
 							:disabled="loading || saving" />
 					</div>
 				</div>
@@ -114,7 +118,7 @@
 						<NcSelect
 							v-model="multitenancyOptions.defaultObjectTenant"
 							:options="tenantOptions"
-							input-label="Default Object Tenant"
+							:input-label="t('openregister', 'Default Object Tenant')"
 							:disabled="loading || saving" />
 					</div>
 				</div>

@@ -18,6 +18,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
@@ -97,7 +98,8 @@ class RegistersControllerTest extends TestCase
             $this->appManager,
             $this->oasService,
             $this->createMock(\Psr\Container\ContainerInterface::class),
-            $this->groupManager
+            $this->groupManager,
+            $this->createMock(RegisterCacheHandler::class)
         );
     }
 
@@ -289,8 +291,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturnsEmptyOnSuccess(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
 
         $result = $this->controller->destroy(1);
 
@@ -310,8 +313,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns409OnValidationException(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->method('delete')
             ->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('Objects attached'));
 
@@ -322,8 +326,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns500OnGenericException(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->method('delete')
             ->willThrowException(new Exception('Delete error'));
 
@@ -771,8 +776,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns500OnDatabaseConstraintException(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->method('delete')
             ->willThrowException(new DatabaseConstraintException('Foreign key constraint'));
 
@@ -1778,8 +1784,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyCallsDeleteOnService(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->expects($this->once())
             ->method('delete')
             ->with($this->equalTo($register));

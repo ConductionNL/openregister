@@ -7,12 +7,12 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		name="Dashboard"
-		subname="Get real-time insights into your organization's data health by focusing on on registers, schema definitions, and object storage and usage."
+		:name="t('openregister', 'Dashboard')"
+		:subname="t('openregister', 'Get real-time insights into your organization\'s data health by focusing on registers, schema definitions, and object storage and usage.')"
 		:open="isSidebarOpen"
 		class="dashboard-sidebar"
 		@update:open="(e) => isSidebarOpen = e">
-		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
+		<NcAppSidebarTab id="overview-tab" :name="t('openregister', 'Overview')" :order="1">
 			<template #icon>
 				<Magnify :size="20" />
 			</template>
@@ -28,7 +28,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:loading="registerLoading"
 						:disabled="registerLoading"
 						:input-label="t('openregister', 'Register')"
-						placeholder="Select a register"
+						:placeholder="t('openregister', 'Select a register')"
 						@update:model-value="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
@@ -39,7 +39,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
 						:input-label="t('openregister', 'Schema')"
-						placeholder="Select a schema"
+						:placeholder="t('openregister', 'Select a schema')"
 						@update:model-value="handleSchemaChange" />
 				</div>
 			</div>

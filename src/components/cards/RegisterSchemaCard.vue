@@ -176,7 +176,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 										{{ !hasMagicMapping(schema) ? '&#10003; ' : '' }}Use Blob Storage
 									</NcActionButton>
 									<NcActionButton
-										v-tooltip="!hasMagicMapping(schema) ? t('openregister', 'This schema must use Magic Table configuration to sync') : ''"
+										v-tooltip="!hasMagicMapping(schema) ? t('openregister', 'This schema must use magic table configuration to sync') : ''"
 										:disabled="!hasMagicMapping(schema)"
 										close-after-click
 										@click="syncMagicTable(schema)">

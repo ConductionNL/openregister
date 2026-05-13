@@ -29,7 +29,7 @@
 					<FileOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Search / Views')" @click="handleNavigate('/tables')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Search / views')" @click="handleNavigate('/tables')">
 				<template #icon>
 					<Magnify :size="20" />
 				</template>

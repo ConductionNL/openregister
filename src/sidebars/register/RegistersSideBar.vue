@@ -7,14 +7,14 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		name="Registers"
-		subtitle="Register Overview"
-		subname="Statistics and Metrics"
+		:name="t('openregister', 'Registers')"
+		:subtitle="t('openregister', 'Register Overview')"
+		:subname="t('openregister', 'Statistics and Metrics')"
 		:open="navigationStore.sidebarState.registers"
 		@update:open="(e) => {
 			navigationStore.setSidebarState('registers', e)
 		}">
-		<NcAppSidebarTab id="overview-tab" name="Overview" :order="1">
+		<NcAppSidebarTab id="overview-tab" :name="t('openregister', 'Overview')" :order="1">
 			<template #icon>
 				<ChartBar :size="20" />
 			</template>
@@ -29,8 +29,8 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 						:model-value="selectedRegisterValue"
 						:loading="registerLoading"
 						:disabled="registerLoading"
-						aria-label-combobox="Select a register"
-						placeholder="Select a register"
+						:aria-label-combobox="t('openregister', 'Select a register')"
+						:placeholder="t('openregister', 'Select a register')"
 						@update:model-value="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
@@ -40,8 +40,8 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 						:model-value="selectedSchemaValue"
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
-						aria-label-combobox="Select a schema"
-						placeholder="Select a schema"
+						:aria-label-combobox="t('openregister', 'Select a schema')"
+						:placeholder="t('openregister', 'Select a schema')"
 						@update:model-value="handleSchemaChange" />
 				</div>
 			</div>

@@ -9,7 +9,7 @@
 			<div class="configset-management-modal">
 				<!-- Description -->
 				<div class="modal-description">
-					<p>{{ t('openregister', 'Manage SOLR ConfigSets (configuration templates) for your collections.') }}</p>
+					<p>{{ t('openregister', 'Manage SOLR configsets (configuration templates) for your collections.') }}</p>
 				</div>
 
 				<!-- Loading State -->
@@ -36,8 +36,8 @@
 					<!-- Info Box -->
 					<div class="info-box">
 						<h4>ℹ️ {{ t('openregister', 'About ConfigSets') }}</h4>
-						<p>{{ t('openregister', 'ConfigSets define the schema and configuration for your SOLR collections. They contain field definitions, analyzers, and other search settings.') }}</p>
-						<p>{{ t('openregister', 'You can create new ConfigSets based on the _default template, or upload custom ones directly to your SOLR server.') }}</p>
+						<p>{{ t('openregister', 'ConfigSets define the schema and configuration for your SOLR collections. they contain field definitions, analyzers, and other search settings.') }}</p>
+						<p>{{ t('openregister', 'You can create new configsets based on the _default template, or upload custom ones directly to your SOLR server.') }}</p>
 					</div>
 
 					<!-- ConfigSets List -->
