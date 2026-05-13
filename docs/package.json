@@ -15,7 +15,7 @@
     "ci": "npm ci --legacy-peer-deps && npm run build"
   },
   "dependencies": {
-    "@conduction/docusaurus-preset": "^1.5.1",
+    "@conduction/docusaurus-preset": "^2.6.1",
     "@docusaurus/core": "^3.7.0",
     "@docusaurus/preset-classic": "^3.7.0",
     "@docusaurus/theme-mermaid": "^3.7.0",

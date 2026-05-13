@@ -26,7 +26,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<template #title>
 						{{ t('openregister', 'Soft Delete Mode') }}
 					</template>
-					{{ t('openregister', 'Objects will be soft-deleted (marked as deleted but kept in database). They can be recovered later if needed.') }}
+					{{ t('openregister', 'Objects will be soft-deleted (marked as deleted but kept in database). they can be recovered later if needed.') }}
 				</NcNoteCard>
 
 				<!-- Hard Delete Danger (when checkbox is checked) -->

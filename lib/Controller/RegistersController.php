@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -171,6 +172,7 @@ class RegistersController extends Controller
      * @param OasService           $oasService           OAS service for OpenAPI generation
      * @param ContainerInterface   $container            Container for lazy loading services
      * @param IGroupManager        $groupManager         Group manager for RBAC checks
+     * @param RegisterCacheHandler $registerCacheHandler Register cache handler (runtime-schema-api)
      *
      * @return void
      *
@@ -194,7 +196,8 @@ class RegistersController extends Controller
         IAppManager $appManager,
         OasService $oasService,
         private readonly ContainerInterface $container,
-        private readonly IGroupManager $groupManager
+        private readonly IGroupManager $groupManager,
+        private readonly RegisterCacheHandler $registerCacheHandler
     ) {
         $this->logger->debug(
             message: '[RegistersController] Constructor started.',
@@ -445,7 +448,14 @@ class RegistersController extends Controller
 
         try {
             // Create a new register from the data.
-            return new JSONResponse(data: $this->registerService->createFromArray($data), statusCode: 201);
+            $register = $this->registerService->createFromArray($data);
+
+            // **CACHE INVALIDATION (runtime-schema-api)**: Drop the request-scoped
+            // find cache for the freshly-created ID so any follow-up read in the
+            // same PHP worker observes the new register.
+            $this->registerCacheHandler->invalidate(registerId: $register->getId());
+
+            return new JSONResponse(data: $register, statusCode: 201);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException(
@@ -533,6 +543,11 @@ class RegistersController extends Controller
             // Update the register with the provided data.
             $updatedRegister = $this->registerService->updateFromArray(id: $id, data: $data);
 
+            // **CACHE INVALIDATION (runtime-schema-api)**: Drop the request-scoped
+            // find cache for the updated ID so any follow-up read in the same PHP
+            // worker observes the new register state (e.g. an added schema in schemas[]).
+            $this->registerCacheHandler->invalidate(registerId: $updatedRegister->getId());
+
             // Log authorization and role changes.
             try {
                 $auditService = $this->container->get(AuthorizationAuditService::class);
@@ -540,18 +555,19 @@ class RegistersController extends Controller
                 if (isset($data['authorization']) === true) {
                     $auditService->logRegisterAuthorizationChange(
                         $id,
-                        $updatedRegister['title'] ?? '',
+                        $updatedRegister->getTitle() ?? '',
                         $oldRegisterAuth,
-                        $updatedRegister['authorization'] ?? null
+                        $updatedRegister->getAuthorization()
                     );
                 }
 
                 if (isset($data['configuration']['roles']) === true) {
+                    $configuration = $updatedRegister->getConfiguration();
                     $auditService->logRoleDefinitionChange(
                         $id,
-                        $updatedRegister['title'] ?? '',
+                        $updatedRegister->getTitle() ?? '',
                         $oldRegisterRoles,
-                        $updatedRegister['configuration']['roles'] ?? null
+                        $configuration['roles'] ?? null
                     );
                 }
             } catch (\Throwable $e) {
@@ -624,10 +640,54 @@ class RegistersController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        // **DELETE SAFETY (runtime-schema-api)**: Count attached objects across
+        // every schema attached to this register. If N > 0 and ?force=true is
+        // not set, refuse with HTTP 409 so the caller sees a structured error
+        // containing the orphan count.
+        $forceParam = $this->request->getParam(key: 'force', default: null);
+        $force      = (string) $forceParam === 'true' || $forceParam === true || $forceParam === '1';
+
         try {
-            // Find the register by ID and delete it.
+            // Find the register first (validates existence + access).
             $register = $this->registerService->find($id);
+
+            // Count objects still referencing this register across all schemas.
+            // Use getStatistics() (single-axis registerId path) — countSearchObjects()
+            // only returns a real count when BOTH register AND schema are present
+            // in the @self filter, and silently returns 0 on single-axis queries,
+            // which would let DELETE silently succeed on registers with objects.
+            $objectStats = $this->objectEntityMapper->getStatistics(registerId: $register->getId(), schemaId: null);
+            $objectCount = (int) $objectStats['total'];
+
+            if ($objectCount > 0 && $force === false) {
+                return new JSONResponse(
+                    data: [
+                        'error'       => 'register-has-objects',
+                        'objectCount' => $objectCount,
+                    ],
+                    statusCode: 409
+                );
+            }
+
+            if ($objectCount > 0 && $force === true) {
+                // Force-delete with audit at WARNING level so operators can review.
+                $this->logger->warning(
+                    message: '[RegistersController] Force-deleting register with attached objects',
+                    context: [
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
+                        'registerId'   => $register->getId(),
+                        'registerSlug' => $register->getSlug(),
+                        'objectCount'  => $objectCount,
+                    ]
+                );
+            }
+
             $this->registerService->delete($register);
+
+            // **CACHE INVALIDATION (runtime-schema-api)**: Drop request-scoped
+            // find cache for the deleted register.
+            $this->registerCacheHandler->invalidate(registerId: $register->getId());
 
             // Return an empty response.
             return new JSONResponse(data: []);
@@ -640,7 +700,7 @@ class RegistersController extends Controller
         } catch (Exception $e) {
             // Return 500 for other errors.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+        }//end try
     }//end destroy()
 
     /**
@@ -1291,9 +1351,7 @@ class RegistersController extends Controller
             );
         }
 
-        $importerUid = method_exists($auditSample[0], 'getUser') === true
-            ? $auditSample[0]->getUser()
-            : null;
+        $importerUid = method_exists($auditSample[0], 'getUser') === true ? $auditSample[0]->getUser() : null;
         if ($isAdmin === false && $importerUid !== $user->getUID()) {
             return new JSONResponse(
                 data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],

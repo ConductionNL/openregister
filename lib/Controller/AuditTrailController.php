@@ -10,7 +10,7 @@
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -53,11 +53,13 @@ class AuditTrailController extends Controller
     /**
      * Constructor for AuditTrailController
      *
-     * @param string           $appName          The name of the app
-     * @param IRequest         $request          The request object
-     * @param LogService       $logService       The log service
-     * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
-     * @param AuditHashService $auditHashService The audit hash chain service
+     * @param string             $appName          The name of the app
+     * @param IRequest           $request          The request object
+     * @param LogService         $logService       The log service
+     * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper
+     * @param AuditHashService   $auditHashService The audit hash chain service
+     * @param \OCP\IUserSession  $userSession      Active user session for caller identity.
+     * @param \OCP\IGroupManager $groupManager     Group manager for admin / role checks.
      */
     public function __construct(
         string $appName,

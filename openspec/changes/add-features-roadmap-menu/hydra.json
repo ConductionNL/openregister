@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "spec_slug": "add-features-roadmap-menu",
+  "app": "openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "depends_on": [],
+  "issue": 1328,
+  "pipeline": {},
+  "cycles": []
+}

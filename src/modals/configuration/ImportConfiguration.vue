@@ -6,7 +6,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'importConfiguration'"
 		name="importConfiguration"
-		title="Import Configuration"
+		:title="t('openregister', 'Import Configuration')"
 		size="large"
 		:can-close="!loading"
 		@update:open="closeModal">
@@ -47,8 +47,8 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						<div class="searchContainer">
 							<NcTextField
 								:value.sync="searchQuery"
-								label="Search configurations"
-								placeholder="Enter search terms or leave empty to browse all"
+								:label="t('openregister', 'Search configurations')"
+								:placeholder="t('openregister', 'Enter search terms or leave empty to browse all')"
 								@keyup.enter="searchConfigurations">
 								<Magnify :size="20" />
 							</NcTextField>
@@ -332,6 +332,7 @@ import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'ImportConfiguration',
@@ -789,17 +790,17 @@ export default {
 
 				if (response.data.hasUpdate) {
 					showSuccess(
-						`Update available: ${response.data.localVersion} → ${response.data.remoteVersion}`,
+						t('openregister', 'Update available: {local} → {remote}', { local: response.data.localVersion, remote: response.data.remoteVersion }),
 					)
 				} else {
-					showSuccess('Configuration is up to date')
+					showSuccess(t('openregister', 'Configuration is up to date'))
 				}
 
 				// Refresh the list to show updated version info
 				await configurationStore.refreshConfigurationList()
 			} catch (error) {
 				console.error('Failed to check version:', error)
-				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
+				showError(t('openregister', 'Failed to check version: {error}', { error: error.response?.data?.error || error.message }))
 			}
 		},
 	},

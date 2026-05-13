@@ -5,21 +5,21 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'"
-		:name="`Purge ${objectsToDelete.length} object${objectsToDelete.length !== 1 ? 's' : ''} from database`"
+		:name="n('openregister', 'Purge {count} object from database', 'Purge {count} objects from database', objectsToDelete.length, { count: objectsToDelete.length })"
 		size="normal"
 		:can-close="false">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="delete-step">
 			<h3 class="step-title">
-				Confirm Permanent Object Deletion
+				{{ t('openregister', 'Confirm Permanent Object Deletion') }}
 			</h3>
 
 			<NcNoteCard type="warning">
-				Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.
+				{{ t('openregister', 'Review the selected objects below. You can remove any objects you don\'t want to permanently delete by clicking the remove button. This action cannot be undone.') }}
 			</NcNoteCard>
 
 			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ objectsToDelete.length }})</h4>
+				<h4>{{ t('openregister', 'Selected Objects ({count})', { count: objectsToDelete.length }) }}</h4>
 
 				<div v-if="objectsToDelete.length" class="selected-objects-list">
 					<div v-for="obj in objectsToDelete"
@@ -28,11 +28,11 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 						<div class="object-info">
 							<strong>{{ getObjectTitle(obj) }}</strong>
 							<p class="object-id">
-								ID: {{ obj.id }}
+								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
 							</p>
 						</div>
 						<NcButton type="tertiary"
-							:aria-label="`Remove ${getObjectTitle(obj)}`"
+							:aria-label="t('openregister', 'Remove {title}', { title: getObjectTitle(obj) })"
 							@click="removeObject(obj.id)">
 							<template #icon>
 								<Close :size="20" />
@@ -41,9 +41,9 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 
-				<NcEmptyContent v-else name="No objects selected">
+				<NcEmptyContent v-else :name="t('openregister', 'No objects selected')">
 					<template #description>
-						No objects are currently selected for permanent deletion.
+						{{ t('openregister', 'No objects are currently selected for permanent deletion.') }}
 					</template>
 				</NcEmptyContent>
 			</div>
@@ -61,7 +61,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
+				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
 			</NcButton>
 			<NcButton
 				v-if="success === null"

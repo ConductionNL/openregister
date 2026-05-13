@@ -9,7 +9,7 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -41,6 +41,7 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\IAppConfig;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
@@ -174,6 +175,7 @@ class SchemaMapper extends QBMapper
      * @param IUserSession             $userSession        User session for current user context
      * @param IGroupManager            $groupManager       Group manager for RBAC checks
      * @param IAppConfig               $appConfig          App configuration for multitenancy settings
+     * @param LoggerInterface          $logger             Structured logger (R07: surfaces unknown annotation keys).
      *
      * @return void
      */
@@ -184,7 +186,8 @@ class SchemaMapper extends QBMapper
         OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        IAppConfig $appConfig
+        IAppConfig $appConfig,
+        private readonly LoggerInterface $logger
     ) {
         // Initialize parent mapper with table name and entity class.
         parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
@@ -313,6 +316,30 @@ class SchemaMapper extends QBMapper
 
         return $schema;
     }//end find()
+
+    /**
+     * Clear the request-scoped find cache for a specific schema
+     *
+     * Used by the runtime-schema-api CRUD path to drop the in-memory
+     * cache entry after a mutation, so the next find() call re-reads
+     * from the database. Clears every cache key that referenced the
+     * given schema (by id, uuid, slug) across both RBAC/multi-tenancy
+     * flag combinations.
+     *
+     * @param int $schemaId The schema ID to drop from the find cache.
+     *
+     * @return void
+     */
+    public function clearFindCache(int $schemaId): void
+    {
+        // Find every cache key whose value points at this schema ID and unset.
+        foreach (array_keys($this->findCache) as $key) {
+            $cached = $this->findCache[$key];
+            if ($cached instanceof Schema && $cached->getId() === $schemaId) {
+                unset($this->findCache[$key]);
+            }
+        }
+    }//end clearFindCache()
 
     /**
      * Finds multiple schemas by id
@@ -582,7 +609,36 @@ class SchemaMapper extends QBMapper
         $this->validateCalculationsAnnotation(schema: $schema);
         $this->validateNotificationsAnnotation(schema: $schema);
         $this->validateWidgetsAnnotation(schema: $schema);
+        $this->logDroppedAnnotationKeys(schema: $schema);
     }//end cleanObject()
+
+    /**
+     * R07: surface dropped `x-openregister-*` keys via the structured
+     * logger. Schema::validateConfigurationArray accumulates unknown
+     * keys on the entity (no DI surface for a logger inside the
+     * entity); we drain the buffer here at save time so admins see a
+     * single warning per save call rather than nothing at all.
+     *
+     * @param Schema $schema Schema being saved.
+     *
+     * @return void
+     */
+    private function logDroppedAnnotationKeys(Schema $schema): void
+    {
+        $dropped = $schema->consumeDroppedAnnotationKeys();
+        if (count($dropped) === 0) {
+            return;
+        }
+
+        $message  = sprintf(
+            '[OpenRegister.SchemaMapper] Dropped %d unknown x-openregister-* key(s) on schema "%s": %s.',
+            count($dropped),
+            (string) ($schema->getSlug() ?? ''),
+            implode(', ', $dropped)
+        );
+        $message .= ' Typo? See Schema::ANNOTATION_VOCABULARY for the declared keys.';
+        $this->logger->warning($message);
+    }//end logDroppedAnnotationKeys()
 
     /**
      * Validate the optional `x-openregister-lifecycle` annotation.

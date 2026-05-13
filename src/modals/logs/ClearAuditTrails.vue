@@ -9,7 +9,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="success === null">
-			{{ t('openregister', 'Do you want to permanently delete all filtered audit trail entries? This action cannot be undone.') }}
+			{{ t('openregister', 'Do you want to permanently delete all filtered audit trail entries? this action cannot be undone.') }}
 		</p>
 
 		<div v-if="success === null" class="clear-info">
@@ -25,7 +25,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			</div>
 			<div v-else class="no-filters-warning">
 				<NcNoteCard type="warning">
-					<p>{{ t('openregister', 'No filters are currently active. This will delete ALL audit trail entries!') }}</p>
+					<p>{{ t('openregister', 'No filters are currently active. this will delete ALL audit trail entries!') }}</p>
 				</NcNoteCard>
 			</div>
 		</div>

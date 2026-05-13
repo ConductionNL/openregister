@@ -7,7 +7,7 @@
 		<div class="collection-management-modal">
 			<!-- Description -->
 			<div class="modal-description">
-				<p>{{ t('openregister', 'Manage SOLR Collections (data stores) and assign them for objects and files.') }}</p>
+				<p>{{ t('openregister', 'Manage SOLR collections (data stores) and assign them for objects and files.') }}</p>
 			</div>
 
 			<!-- Loading State -->
@@ -183,7 +183,7 @@
 				:size="'normal'"
 				@closing="closeCreateDialog">
 				<div class="create-dialog">
-					<p>{{ t('openregister', 'Create a new SOLR collection from an existing ConfigSet') }}</p>
+					<p>{{ t('openregister', 'Create a new SOLR collection from an existing configset') }}</p>
 
 					<div class="form-group">
 						<label>{{ t('openregister', 'Collection Name') }}*</label>
