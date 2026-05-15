@@ -103,4 +103,11 @@ class Version1Date20260512120000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
+
+    // PostSchemaChange() intentionally NOT overridden: the new columns
+    // are nullable (`bases`) or carry a DB-level default
+    // (`skip_anonymization` → false), so existing rows pick up correct
+    // values automatically and require no backfill pass. Adding an
+    // empty override would be dead code; SimpleMigrationStep's default
+    // no-op is what we want.
 }//end class

@@ -119,7 +119,7 @@ class EntityRelationDecisionUpdatedEvent extends Event
         }
 
         $diff = $this->changedFields['skipAnonymization'];
-        return ($diff['previous'] ?? null) === false && ($diff['new'] ?? null) === true;
+        return $diff['previous'] === false && $diff['new'] === true;
 
     }//end isSkipAnonymizationActivated()
 }//end class

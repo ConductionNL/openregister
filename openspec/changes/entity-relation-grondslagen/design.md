@@ -195,6 +195,10 @@ Only fields that actually changed appear under `changedFields`. If the caller PA
 
 Reads MUST NOT produce audit entries — applies to all relation reads in the codebase (mapper find, controller GET, downstream consumers).
 
+**Transactional audit-invariant.** The row UPDATE and the audit-trail INSERT MUST run inside the same DB transaction (`beginTransaction` / `commit` / `rollBack`). An audit-INSERT failure MUST roll back the UPDATE and surface as HTTP 500 — clients never observe a persisted decision-metadata change without a matching audit entry. The post-commit event dispatch (§D6a) stays OUTSIDE the transaction; listener failures are informational and MUST NOT roll back.
+
+**`bases` diff is multiset-equal, not order-equal.** When deciding whether `bases` changed, treat the two arrays as multisets — same UUIDs in different order is a semantic no-op and does NOT produce an audit entry. Storage preserves the operator-supplied order; only the diff check normalises. `null` vs `[]` remains distinct (different operator intent: "unset" vs "explicitly empty").
+
 ### D6a. Event dispatch for downstream listeners (`EntityRelationDecisionUpdatedEvent`)
 
 After the audit-trail entry is persisted, `updateDecisionMetadata` also dispatches a Symfony event so downstream apps can react to operator decisions without polling. The event carries the same diff payload as the audit entry, plus the post-update `EntityRelation` instance and the acting `IUser` (or null when no session user).
@@ -223,14 +227,16 @@ PATCH requires that the acting user can **write** to the file or object referenc
 
 **Resolution order:**
 
-1. If the relation has `fileId` set — check the acting user can write the file. (`Folder::isReadable() && ...` — actually a write-check; OR has a helper for this used in the anonymise path.)
-2. Else if the relation has `objectId` (+ `registerId` + `schemaId` for disambiguation) — check the user can update the underlying object.
-3. Else if the relation has `emailId` — check the email is accessible to the user.
+1. If the relation has `fileId` set — check the acting user can write the file. `IRootFolder::getUserFolder($uid)->getById($fileId)` MUST return a `File` node, and `File::isUpdateable()` MUST return true.
+2. Else if the relation has `objectId` (+ `registerId` + `schemaId` for disambiguation) — call `PermissionHandler::hasPermission(schema, 'update', uid, object->getOwner(), object)`. This is the same verdict OR uses everywhere else for object writes; the PATCH endpoint cannot grant access the `saveObject()` path would have denied.
+3. Else if the relation has `emailId` — load the `EmailLink`, resolve its parent `objectUuid` + `registerId`, then run the same object-update verdict on the parent. Email links without a parent object cannot satisfy the check and are denied (orphan / system-generated links).
 4. If none of the above resolve to a permission grant, deny (HTTP 403).
 
 **No additional action-level permission** is introduced in this change (per ADR-023). The PATCH endpoint inherits the existing file/object write check; there is no separate "may set bases" permission. If a future change wants action-level authz, it MUST add a new Requirement here. This decision is recorded explicitly so future reviewers can see the absence-of-extra-check is intentional, not oversight.
 
 **`@NoAdminRequired`** on the controller method — non-admins can PATCH relations they have write-access to. Admin role MUST NOT be required.
+
+**No `@NoCSRFRequired`.** The PATCH is a browser-facing decision-time mutation invoked from the DocuDesk operator UI; Nextcloud's session-CSRF protection MUST stay on. Server-to-server callers requiring no-CSRF should use a dedicated API-token surface, not this endpoint.
 
 ### D8. Standard PATCH semantics for partial updates
 

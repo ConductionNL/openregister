@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -78,6 +79,30 @@ class EmailLinkMapper extends QBMapper
 
         return $this->tableExistsCache;
     }//end tableExists()
+
+    /**
+     * Find a single email link by primary id.
+     *
+     * QBMapper exposes `find()` only via `@method` docblock; concrete mappers
+     * add it themselves when needed. Wraps the inherited protected
+     * `findEntity()` so callers get a typed 404 path
+     * (`DoesNotExistException`) for unknown ids.
+     *
+     * @param int $id The email link row id.
+     *
+     * @return EmailLink The matching row.
+     *
+     * @throws DoesNotExistException When $id does not resolve.
+     */
+    public function find(int $id): EmailLink
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+        return $this->findEntity(query: $qb);
+    }//end find()
 
     /**
      * Find email links by object UUID.
