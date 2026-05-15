@@ -5,7 +5,7 @@
 - [ ] `TimeLink` entity + mapper + migration (entry linked to object + denormalized object total)
 - [ ] `TimeEntryService` with per-backend adapter (default: timemanager)
 - [ ] `TimeController` with sub-resource endpoints
-- [ ] `TimeProvider` — id='time-tracker', label='Time', icon='Clock', group='workflow', requiredApp=(configurable, default 'timemanager'), storage='link-table'
+- [x] `TimeProvider` — id='time-tracker', label='Time', icon='Clock', group='workflow', requiredApp=(configurable, default 'timemanager'), storage='link-table'
 - [ ] Admin setting `time-tracker.backend`
 - [ ] `occ openregister:time:reconcile` command for total recalculation
 - [ ] DI-tag, routes, unit tests

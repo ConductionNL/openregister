@@ -5,7 +5,7 @@
 - [ ] Migration: add `exif_metadata` JSON column to `openregister_file_links`
 - [ ] `PhotoService` — filter to images, lazy EXIF extraction
 - [ ] `PhotosController` — sub-resource endpoints (list, get with EXIF, link, unlink)
-- [ ] `PhotosProvider` — id='photos', label='Photos', icon='Image', group='docs', requiredApp='photos', storage='link-table'
+- [x] `PhotosProvider` — id='photos', label='Photos', icon='Image', group='docs', requiredApp='photos', storage='link-table'
 - [ ] Admin-setting: strip GPS from EXIF on link (default off)
 - [ ] DI-tag, routes, unit tests
 

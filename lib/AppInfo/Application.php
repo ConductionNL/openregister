@@ -1002,13 +1002,139 @@ class Application extends App implements IBootstrap
         // in-repo as the worked external-storage example; routed
         // through ExternalIntegrationRouter, credentials on the
         // OpenConnector `xwiki` source.
-        // @spec openspec/changes/integration-xwiki/tasks.md
+        // @spec openspec/changes/integration-xwiki/tasks.md.
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class,
             function (ContainerInterface $container) {
                 return new \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider(
                     router: $container->get(\OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class),
                     appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // Leaf provider: OpenProject (external, OpenConnector-backed) —
+        // mirrors the XwikiProvider pattern (AD-4 / AD-22). Credentials
+        // on the OpenConnector `openproject` source.
+        // @spec openspec/changes/integration-openproject/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider(
+                    router: $container->get(\OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // Leaf providers — NC-native, "backend already shipped":
+        // wrap the existing OR services (Calendar, Contacts, Deck, Email)
+        // through the registry contract so they surface in the sidebar /
+        // widgets / admin UI / OCS caps without per-app glue. Each
+        // provider gates on its required NC app via IAppManager.
+        // @spec openspec/changes/integration-calendar/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\CalendarProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\CalendarProvider(
+                    calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // @spec openspec/changes/integration-contacts/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider(
+                    contactService: $container->get(\OCA\OpenRegister\Service\ContactService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // @spec openspec/changes/integration-deck/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\DeckProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\DeckProvider(
+                    deckCardService: $container->get(\OCA\OpenRegister\Service\DeckCardService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // @spec openspec/changes/integration-email/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\EmailProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\EmailProvider(
+                    emailService: $container->get(\OCA\OpenRegister\Service\EmailService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // Leaf providers — NC-app-backed greenfield. Each registers the
+        // registry surface (sidebar slot + admin UI presence + OCS caps
+        // entry) gated on the named NC app. The wrapped read service +
+        // link table land in per-leaf follow-up PRs; until then `list()`
+        // returns an empty array so the slot renders an empty state
+        // rather than a 500.
+        $greenfieldProviders = [
+            // @spec openspec/changes/integration-activity/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
+            // @spec openspec/changes/integration-analytics/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
+            // @spec openspec/changes/integration-bookmarks/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider::class,
+            // @spec openspec/changes/integration-collectives/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
+            // @spec openspec/changes/integration-cospend/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
+            // @spec openspec/changes/integration-flow/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
+            // @spec openspec/changes/integration-forms/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
+            // @spec openspec/changes/integration-maps/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
+            // @spec openspec/changes/integration-photos/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
+            // @spec openspec/changes/integration-polls/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class,
+            // @spec openspec/changes/integration-talk/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class,
+            // @spec openspec/changes/integration-time-tracker/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
+        ];
+        foreach ($greenfieldProviders as $providerClass) {
+            $context->registerService(
+                $providerClass,
+                function (ContainerInterface $container) use ($providerClass) {
+                    return new $providerClass(
+                        appManager: $container->get('OCP\App\IAppManager'),
+                        l10n: $container->get('OCP\IL10N'),
+                    );
+                }
+            );
+        }
+
+        // SharesProvider takes the Share Manager rather than IAppManager —
+        // shares are NC core (always-available) so the required-app gate
+        // is moot, but `delete()` delegates to IManager::deleteShare().
+        // @spec openspec/changes/integration-shares/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\SharesProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\SharesProvider(
+                    shareManager: $container->get('OCP\Share\IManager'),
                     l10n: $container->get('OCP\IL10N'),
                 );
             }
@@ -1199,8 +1325,48 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class,
             \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider::class,
             \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class,
-            // Leaf: XWiki (external) — see openspec/changes/integration-xwiki.
+            // Leaves: external (OpenConnector-backed).
+            // @spec openspec/changes/integration-xwiki/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class,
+            // @spec openspec/changes/integration-openproject/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class,
+            // Leaves: NC-native, backend-shipped (wrap existing OR services).
+            // @spec openspec/changes/integration-calendar/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\CalendarProvider::class,
+            // @spec openspec/changes/integration-contacts/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider::class,
+            // @spec openspec/changes/integration-deck/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\DeckProvider::class,
+            // @spec openspec/changes/integration-email/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\EmailProvider::class,
+            // Leaves: NC-app-backed greenfield (registry surface only;
+            // service + link table land in per-leaf follow-ups).
+            // @spec openspec/changes/integration-activity/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
+            // @spec openspec/changes/integration-analytics/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
+            // @spec openspec/changes/integration-bookmarks/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider::class,
+            // @spec openspec/changes/integration-collectives/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
+            // @spec openspec/changes/integration-cospend/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
+            // @spec openspec/changes/integration-flow/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
+            // @spec openspec/changes/integration-forms/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
+            // @spec openspec/changes/integration-maps/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
+            // @spec openspec/changes/integration-photos/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
+            // @spec openspec/changes/integration-polls/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class,
+            // @spec openspec/changes/integration-shares/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\SharesProvider::class,
+            // @spec openspec/changes/integration-talk/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class,
+            // @spec openspec/changes/integration-time-tracker/tasks.md.
+            \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
         ];
 
         foreach ($providerClasses as $providerClass) {
