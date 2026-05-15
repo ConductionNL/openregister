@@ -13,7 +13,7 @@ import { dashboardStore, searchTrailStore } from '../../store/store.js'
 			:empty-label="t('openregister', 'No data available')"
 			@layout-change="onLayoutChange">
 			<!-- Header actions -->
-			<template #header-actions>
+			<template #actions>
 				<NcButton :disabled="refreshing"
 					:aria-label="t('openregister', 'Refresh dashboard')"
 					@click="refreshDashboard">

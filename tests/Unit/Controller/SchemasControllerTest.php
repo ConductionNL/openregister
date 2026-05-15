@@ -128,8 +128,7 @@ class SchemasControllerTest extends TestCase
 
     public function testCreateReturnsCreatedSchema(): void
     {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'New Schema']);
+        $schema = $this->createRealSchema(1, 'New Schema');
 
         $this->request->method('getParams')->willReturn(['title' => 'New Schema']);
         $this->schemaMapper->method('createFromArray')->willReturn($schema);
@@ -141,8 +140,7 @@ class SchemasControllerTest extends TestCase
 
     public function testCreateRemovesInternalParams(): void
     {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('jsonSerialize')->willReturn(['id' => 1]);
+        $schema = $this->createRealSchema(1, 'Test');
 
         $this->request->method('getParams')->willReturn([
             '_route' => 'test',
@@ -209,6 +207,7 @@ class SchemasControllerTest extends TestCase
     {
         $schema = $this->createRealSchema(1, 'Test');
         $this->schemaMapper->method('find')->willReturn($schema);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
 
         $result = $this->controller->destroy(1);
 
@@ -804,9 +803,12 @@ class SchemasControllerTest extends TestCase
         $this->request->method('getParams')->willReturn(['title' => 'Updated']);
         $this->schemaMapper->method('updateFromArray')->willReturn($schema);
 
+        // runtime-schema-api: update() now routes schema-cache cleanup through the
+        // canonical invalidate() entry point (which itself covers the legacy
+        // invalidateForSchemaChange cleanup plus the request-scoped mapper cache).
         $this->schemaCacheService->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'update');
+            ->method('invalidate')
+            ->with(1);
         $this->facetCacheSvc->expects($this->once())
             ->method('invalidateForSchemaChange')
             ->with(1, 'update');
@@ -890,10 +892,13 @@ class SchemasControllerTest extends TestCase
     {
         $schema = $this->createRealSchema(1, 'Deletable');
         $this->schemaMapper->method('find')->willReturn($schema);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
 
+        // runtime-schema-api: destroy() now routes schema-cache cleanup through the
+        // canonical invalidate() entry point.
         $this->schemaCacheService->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'delete');
+            ->method('invalidate')
+            ->with(1);
         $this->facetCacheSvc->expects($this->once())
             ->method('invalidateForSchemaChange')
             ->with(1, 'delete');

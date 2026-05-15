@@ -9,7 +9,7 @@
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -35,7 +35,7 @@ use OCP\ISession;
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -107,7 +107,7 @@ class CacheHandler
      *
      * @return Configuration[] Array of configuration entities for active organisation
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-31
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-31
      */
     public function getConfigurationsForActiveOrganisation(): array
     {

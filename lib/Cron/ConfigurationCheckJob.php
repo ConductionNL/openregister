@@ -85,7 +85,7 @@ class ConfigurationCheckJob extends TimedJob
      * @param IAppConfig           $appConfig            App configuration
      * @param LoggerInterface      $logger               Logger
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
      */
     public function __construct(
         ITimeFactory $time,
@@ -136,7 +136,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
      */
     protected function run($argument): void
     {
@@ -186,7 +186,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @return bool True if job is disabled, false otherwise.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
      */
     private function isJobDisabled(): bool
     {
@@ -210,7 +210,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
      */
     private function checkSingleConfiguration($configuration, array &$stats): void
     {
@@ -279,7 +279,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
      */
     private function handleAutoUpdate($configuration, array &$stats): void
     {
@@ -317,7 +317,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-18
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
      */
     private function sendUpdateNotification($configuration): void
     {

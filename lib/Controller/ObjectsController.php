@@ -17,11 +17,11 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-22
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-20
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -35,6 +35,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
@@ -101,21 +102,23 @@ class ObjectsController extends Controller
     /**
      * Constructor for the ObjectsController
      *
-     * @param string             $appName          The name of the app
-     * @param IRequest           $request          The request object
-     * @param IAppConfig         $config           The app configuration object
-     * @param IAppManager        $appManager       The app manager
-     * @param ContainerInterface $container        The DI container
-     * @param RegisterMapper     $registerMapper   The register mapper
-     * @param SchemaMapper       $schemaMapper     The schema mapper
-     * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper
-     * @param ObjectService      $objectService    The object service
-     * @param IUserSession       $userSession      The user session
-     * @param IGroupManager      $groupManager     The group manager
-     * @param ExportService      $exportService    The export service
-     * @param ImportService      $importService    The import service
-     * @param WebhookService     $webhookService   The webhook service (optional)
-     * @param LoggerInterface    $logger           The logger (optional)
+     * @param string                                          $appName          The name of the app
+     * @param IRequest                                        $request          The request object
+     * @param IAppConfig                                      $config           The app configuration object
+     * @param IAppManager                                     $appManager       The app manager
+     * @param ContainerInterface                              $container        The DI container
+     * @param RegisterMapper                                  $registerMapper   The register mapper
+     * @param SchemaMapper                                    $schemaMapper     The schema mapper
+     * @param AuditTrailMapper                                $auditTrailMapper The audit trail mapper
+     * @param ObjectService                                   $objectService    The object service
+     * @param IUserSession                                    $userSession      The user session
+     * @param IGroupManager                                   $groupManager     The group manager
+     * @param ExportService                                   $exportService    The export service
+     * @param ImportService                                   $importService    The import service
+     * @param WebhookService                                  $webhookService   The webhook service (optional)
+     * @param LoggerInterface                                 $logger           The logger (optional)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser  $geoFilterParser  Optional geo wire-format adapter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
      *
      * @return void
      *
@@ -136,7 +139,9 @@ class ObjectsController extends Controller
         ExportService $exportService,
         ImportService $importService,
         private readonly ?WebhookService $webhookService=null,
-        private readonly ?LoggerInterface $logger=null
+        private readonly ?LoggerInterface $logger=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -909,7 +914,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1185,11 +1190,16 @@ class ObjectsController extends Controller
                     );
                 }
 
+                // Spatial post-filter on the magic-mapped result before
+                // returning. Mirrors the hook on the non-magic-mapped
+                // path so geo filtering works for both register layouts.
+                $responseData = $this->applyGeoQueryFilters(params: $params, result: $responseData);
+
                 // Return in expected format.
                 $response = new JSONResponse(data: $responseData);
 
                 // Enable gzip compression for large payloads.
-                if (count($serializedResults) > 10) {
+                if (count($responseData['results'] ?? []) > 10) {
                     $response->addHeader('Content-Encoding', 'gzip');
                     $response->addHeader('Vary', 'Accept-Encoding');
                 }
@@ -1238,6 +1248,12 @@ class ObjectsController extends Controller
             );
         }
 
+        // Spatial post-filter: when ?geo.bbox= / ?geo.near=&geo.radius=
+        // (or ?geo.property=) is set, parse the params via GeoFilterParser
+        // and apply the filters to $result['results']. Pure-PHP fallback;
+        // PostGIS push-down is tracked in `geo-spatial-queries`.
+        $result = $this->applyGeoQueryFilters(params: $params, result: $result);
+
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
         $response = new JSONResponse(data: $result);
 
@@ -1249,6 +1265,162 @@ class ObjectsController extends Controller
 
         return $response;
     }//end index()
+
+    /**
+     * Geo-search endpoint — POST /api/objects/{register}/{schema}/geo-search.
+     *
+     * Body shape (per REQ-GEO-004):
+     *   {
+     *     "geometry": {
+     *       "within":     <GeoJSON Polygon | MultiPolygon>,
+     *       "intersects": <GeoJSON Polygon | MultiPolygon>
+     *     },
+     *     "property": "<optional geo property name>"
+     *   }
+     *
+     * Either `within` or `intersects` (or both) MAY appear; both are
+     * AND-composed. Underlying listing query honours the standard
+     * filter / pagination params from the same request.
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     * @PublicPage
+     */
+    public function geoSearch(string $register, string $schema, ObjectService $objectService): JSONResponse
+    {
+        if ($this->geoFilterParser === null || $this->geoFilterApplier === null) {
+            return new JSONResponse(
+                data: ['error' => 'Geo filtering primitives not configured'],
+                statusCode: 501
+            );
+        }
+
+        $body = $this->request->getParams();
+        try {
+            $filters = $this->geoFilterParser->fromGeoSearchBody(body: $body);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
+        }
+
+        // Reuse the standard listing path, then post-filter.
+        $listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+        $payload = (array) $listing->getData();
+        $rows    = ($payload['results'] ?? []);
+        if (is_array($rows) === false) {
+            return $listing;
+        }
+
+        $filtered           = $this->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
+        $payload['results'] = $filtered;
+        if (isset($payload['total']) === true) {
+            $payload['total'] = count($filtered);
+        }
+
+        return new JSONResponse(data: $payload);
+
+    }//end geoSearch()
+
+    /**
+     * Apply geo query-param filters to a listing result.
+     *
+     * Reads `geo.bbox` / `geo.near` / `geo.radius` / `geo.property` from
+     * the query params via GeoFilterParser and post-filters
+     * `$result['results']` via GeoFilterApplier under AND-composition.
+     *
+     * Null-safe: when the geo deps aren't wired (older fixtures),
+     * returns the result unchanged. Parser failures (malformed bbox,
+     * missing radius) return a 422-like error envelope replacing the
+     * results.
+     *
+     * @param array $params The HTTP query params from the request.
+     * @param array $result The listing-result envelope from objectService.
+     *
+     * @return array The result, possibly with `results` filtered down.
+     */
+    private function applyGeoQueryFilters(array $params, array $result): array
+    {
+        if ($this->geoFilterParser === null || $this->geoFilterApplier === null) {
+            return $result;
+        }
+
+        // NC's IRequest parses `geo.bbox` etc. as a nested array
+        // (`geo: {bbox: ...}`). Re-flatten back to the dotted form the
+        // parser expects, so callers using either notation work.
+        $flatParams = $this->flattenGeoParams(params: $params);
+
+        $hasGeoParam = false;
+        foreach (['geo.bbox', 'geo.near', 'geo.radius', 'geo.property'] as $key) {
+            if (isset($flatParams[$key]) === true) {
+                $hasGeoParam = true;
+                break;
+            }
+        }
+
+        if ($hasGeoParam === false) {
+            return $result;
+        }
+
+        try {
+            $filters = $this->geoFilterParser->fromQueryParams(params: $flatParams);
+        } catch (\InvalidArgumentException $e) {
+            // Malformed input: surface a 422-shape envelope inside the
+            // existing result body so consumers see the validation error
+            // without crashing the whole listing path.
+            return [
+                'error'   => 'geo filter parse error: '.$e->getMessage(),
+                'results' => [],
+                'total'   => 0,
+            ];
+        }
+
+        if ($filters === [] || isset($result['results']) === false || is_array($result['results']) === false) {
+            return $result;
+        }
+
+        $rows     = $result['results'];
+        $filtered = $this->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
+        $result['results'] = $filtered;
+        // Update `total` to reflect the post-filter count when present.
+        if (isset($result['total']) === true) {
+            $result['total'] = count($filtered);
+        }
+
+        return $result;
+
+    }//end applyGeoQueryFilters()
+
+    /**
+     * Flatten NC's nested `geo: {bbox: ...}` query-param shape back into
+     * the dotted `geo.bbox: ...` form the GeoFilterParser expects.
+     *
+     * Accepts both already-flat keys and nested `geo` arrays — the
+     * dotted form takes priority when both are present.
+     *
+     * @param array $params The raw query params from IRequest::getParams.
+     *
+     * @return array The same params with `geo.*` keys hoisted from `geo`.
+     */
+    private function flattenGeoParams(array $params): array
+    {
+        $nested = ($params['geo'] ?? null);
+        if (is_array($nested) === true) {
+            foreach ($nested as $subkey => $value) {
+                $flatKey = 'geo.'.$subkey;
+                if (isset($params[$flatKey]) === false) {
+                    $params[$flatKey] = $value;
+                }
+            }
+        }
+
+        return $params;
+
+    }//end flattenGeoParams()
 
     /**
      * Retrieves a list of all objects across all registers and schemas
@@ -1649,7 +1821,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
      */
     public function create(
         string $register,
@@ -1786,7 +1958,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-62
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
      */
     public function update(
         string $register,
@@ -1916,6 +2088,9 @@ class ObjectsController extends Controller
 
             // Return the successfully saved object directly.
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+        } catch (AppendOnlyException $exception) {
+            // Reject update on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
@@ -2081,6 +2256,9 @@ class ObjectsController extends Controller
             // Return the successfully saved object directly.
             // We already have it in memory from saveObject(), no need to re-fetch.
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+        } catch (AppendOnlyException $exception) {
+            // Reject patch on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             $this->logger->warning(
@@ -2210,6 +2388,9 @@ class ObjectsController extends Controller
             }
 
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+        } catch (AppendOnlyException $exception) {
+            // Reject post-patch on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
         } catch (ValidationException | CustomValidationException $exception) {
             return $objectService->handleValidationException(exception: $exception);
         } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
@@ -2239,7 +2420,7 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
      */
     public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2265,6 +2446,9 @@ class ObjectsController extends Controller
 
             // Return 204 No Content for successful delete (REST convention).
             return new JSONResponse(data: null, statusCode: 204);
+        } catch (AppendOnlyException $exception) {
+            // Reject delete on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
         } catch (ReferentialIntegrityException $exception) {
             return new JSONResponse(
                 data: $exception->toResponseBody(),
@@ -2711,7 +2895,7 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress NoValue
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
     {
@@ -2787,7 +2971,7 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress NoValue
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
      */
     public function import(int $register): JSONResponse
     {
@@ -3026,6 +3210,28 @@ class ObjectsController extends Controller
             // Clean up temporary file after reading.
             if (file_exists($zipInfo['path']) === true) {
                 unlink($zipInfo['path']);
+            }
+
+            // Audit the bulk download as ONE entry tied to the parent object.
+            // Best-effort: an audit-trail failure must not break the download.
+            try {
+                $files     = $fileService->getFiles($object);
+                $fileIds   = [];
+                $fileNames = [];
+                foreach ($files as $f) {
+                    $fileIds[]   = $f->getId();
+                    $fileNames[] = $f->getName();
+                }
+
+                $fileService->getAuditHandler()->logBulkDownload(
+                    $object,
+                    $fileIds,
+                    $fileNames,
+                    $zipInfo['filename'],
+                    $zipInfo['size'] ?? null
+                );
+            } catch (\Throwable $auditError) {
+                // Silently swallow — audit-trail must never break the response.
             }
 
             // Return the ZIP file as a download response.

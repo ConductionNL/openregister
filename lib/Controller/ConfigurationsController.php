@@ -9,7 +9,7 @@
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -418,8 +418,8 @@ class ConfigurationsController extends Controller
 
             // Link the imported registers, schemas and objects to the configuration.
             $registerIds = array_map(static fn($r) => $r->getId(), $result['registers']);
-            $schemaIds   = array_map(static fn($s) => $s->getId(), $result['schemas']);
-            $objectIds   = array_map(static fn($o) => $o->getId(), $result['objects']);
+            $schemaIds   = array_map(static fn($schema) => $schema->getId(), $result['schemas']);
+            $objectIds   = array_map(static fn($obj) => $obj->getId(), $result['objects']);
 
             $configuration->setRegisters(array_values(array_unique($registerIds)));
             $configuration->setSchemas(array_values(array_unique($schemaIds)));

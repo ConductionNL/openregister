@@ -5,7 +5,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editEndpoint'"
-		:name="endpointStore.endpointItem?.id ? 'Edit Endpoint' : 'Add Endpoint'"
+		:name="endpointStore.endpointItem?.id ? t('openregister', 'Edit Endpoint') : t('openregister', 'Add Endpoint')"
 		size="large"
 		:can-close="true"
 		@update:open="navigationStore.setModal(false)">
@@ -13,52 +13,52 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 			<div class="form">
 				<NcTextField
 					:value.sync="endpointStore.endpointItem.name"
-					label="Name*"
+					:label="t('openregister', 'Name*')"
 					required
 					maxlength="255" />
 				<NcTextArea
 					:value.sync="endpointStore.endpointItem.description"
-					label="Description"
+					:label="t('openregister', 'Description')"
 					rows="3" />
 				<NcTextField
 					:value.sync="endpointStore.endpointItem.endpoint"
-					label="Endpoint Path*"
+					:label="t('openregister', 'Endpoint Path*')"
 					:placeholder="endpointPlaceholder"
 					required
 					maxlength="255" />
 				<NcSelect
 					v-model="endpointStore.endpointItem.method"
 					:options="methodOptions"
-					label="Method*"
-					placeholder="Select HTTP method" />
+					:label="t('openregister', 'Method*')"
+					:placeholder="t('openregister', 'Select HTTP method')" />
 				<NcSelect
 					v-model="endpointStore.endpointItem.targetType"
 					:options="targetTypeOptions"
-					label="Target Type*"
-					placeholder="Select target type" />
+					:label="t('openregister', 'Target Type*')"
+					:placeholder="t('openregister', 'Select target type')" />
 				<NcTextField
 					:value.sync="endpointStore.endpointItem.targetId"
-					label="Target ID"
-					placeholder="ID of the target resource" />
+					:label="t('openregister', 'Target ID')"
+					:placeholder="t('openregister', 'ID of the target resource')" />
 				<NcTextField
 					:value.sync="endpointStore.endpointItem.version"
-					label="Version"
+					:label="t('openregister', 'Version')"
 					placeholder="0.0.0" />
 				<NcTextField
 					:value.sync="endpointStore.endpointItem.inputMapping"
-					label="Input Mapping"
-					placeholder="ID of input mapping (optional)" />
+					:label="t('openregister', 'Input Mapping')"
+					:placeholder="t('openregister', 'ID of input mapping (optional)')" />
 				<NcTextField
 					:value.sync="endpointStore.endpointItem.outputMapping"
-					label="Output Mapping"
-					placeholder="ID of output mapping (optional)" />
+					:label="t('openregister', 'Output Mapping')"
+					:placeholder="t('openregister', 'ID of output mapping (optional)')" />
 			</div>
 			<div class="modalFooter">
 				<NcButton @click="navigationStore.setModal(false)">
 					<template #icon>
 						<Cancel :size="20" />
 					</template>
-					Cancel
+					{{ t('openregister', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					:disabled="!endpointStore.endpointItem.name || !endpointStore.endpointItem.endpoint || !endpointStore.endpointItem.method || !endpointStore.endpointItem.targetType"
@@ -67,7 +67,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<ContentSaveOutline :size="20" />
 					</template>
-					Save
+					{{ t('openregister', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

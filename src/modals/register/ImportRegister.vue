@@ -6,7 +6,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 <template>
 	<NcDialog v-if="navigationStore.modal === 'importRegister'"
 		name="import"
-		title="Import Data into Register"
+		:title="t('openregister', 'Import Data into Register')"
 		size="large"
 		:can-close="true"
 		@update:open="handleDialogClose">
@@ -209,8 +209,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:model-value="selectedRegisterValue"
 				:loading="registerLoading"
 				:disabled="registerLoading"
-				aria-label-combobox="Select a register"
-				placeholder="Select a register"
+				:aria-label-combobox="t('openregister', 'Select a register')"
+				:placeholder="t('openregister', 'Select a register')"
 				@update:model-value="handleRegisterChange" />
 
 			<NcSelect v-if="selectedFile && (getFileExtension(selectedFile?.name) === 'csv')"
@@ -218,8 +218,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:model-value="selectedSchemaValue"
 				:loading="schemaLoading"
 				:disabled="!registerStore.registerItem || schemaLoading"
-				aria-label-combobox="Select a schema"
-				placeholder="Select a schema"
+				:aria-label-combobox="t('openregister', 'Select a schema')"
+				:placeholder="t('openregister', 'Select a schema')"
 				@update:model-value="handleSchemaChange" />
 
 			<div class="fileTypes">
@@ -330,7 +330,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
  */
 import {
 	NcButton,
@@ -414,7 +414,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
 		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
@@ -458,7 +458,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
 		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
@@ -674,7 +674,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-14
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
 		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)

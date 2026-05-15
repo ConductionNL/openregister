@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -122,6 +123,8 @@ class ObjectServiceTest extends TestCase
 	private $organisationService;
 	/** @var MockObject&LoggerInterface */
 	private $logger;
+	/** @var MockObject&DateTimeNormalizer */
+	private $dateTimeNormalizer;
 
 	// Real entity instances (magic __call for getters/setters).
 	private Register $register;
@@ -156,6 +159,23 @@ class ObjectServiceTest extends TestCase
 		$this->fileService = $this->createMock(FileService::class);
 		$this->organisationService = $this->createMock(OrganisationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->dateTimeNormalizer = $this->createMock(DateTimeNormalizer::class);
+
+		// Default: normalize() echoes the input parsed as DateTime. Tests that need
+		// a specific return can override via $this->dateTimeNormalizer->method().
+		$this->dateTimeNormalizer->method('normalize')->willReturnCallback(
+			function (?string $input): ?\DateTimeImmutable {
+				if ($input === null || trim($input) === '') {
+					return null;
+				}
+
+				try {
+					return new \DateTimeImmutable($input);
+				} catch (\Throwable $e) {
+					return null;
+				}
+			}
+		);
 
 		// Create real entity instances (magic getters/setters via __call).
 		$this->register = new Register();
@@ -202,6 +222,7 @@ class ObjectServiceTest extends TestCase
 			$this->logger,
 			$this->createMock(CacheHandler::class),
 			$this->createMock(SettingsService::class),
+			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class)
 		);
 
@@ -331,7 +352,11 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test setSchema throws ValidationException when schema not found.
+	 * Test setSchema rethrows DoesNotExistException when schema not found.
+	 *
+	 * setSchema() deliberately rethrows DoesNotExistException so NC's
+	 * dispatcher converts it to a 404; wrapping it in ValidationException
+	 * would surface as a 500. See ObjectService::setSchema().
 	 */
 	public function testSetSchemaThrowsWhenNotFound(): void
 	{
@@ -339,7 +364,7 @@ class ObjectServiceTest extends TestCase
 			->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
-		$this->expectException(\OCA\OpenRegister\Exception\ValidationException::class);
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 
 		$this->service->setSchema(schema: 'nonexistent-slug');
 	}

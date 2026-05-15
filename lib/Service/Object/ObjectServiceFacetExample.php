@@ -9,7 +9,7 @@
  * @category Example
  * @package  OCA\OpenRegister\Service\Objects
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-35
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-35
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -38,7 +38,7 @@ class ObjectServiceFacetExample
      *
      * @param ObjectService $objectService The object service instance
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function __construct(
         private readonly ObjectService $objectService
@@ -54,7 +54,7 @@ class ObjectServiceFacetExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function newFacetingApproach(): array
     {
@@ -84,7 +84,7 @@ class ObjectServiceFacetExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function legacyFacetingApproach(): array
     {
@@ -110,7 +110,7 @@ class ObjectServiceFacetExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function paginatedSearchWithFacets(): array
     {
@@ -151,7 +151,7 @@ class ObjectServiceFacetExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function ecommerceFacetedSearch(): array
     {
@@ -241,7 +241,7 @@ class ObjectServiceFacetExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function analyticsDashboardFacets(): array
     {
@@ -308,7 +308,7 @@ class ObjectServiceFacetExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function disjunctiveFacetingDemo(): array
     {
@@ -350,7 +350,7 @@ class ObjectServiceFacetExample
      *
      * @return array Performance comparison with new_approach, legacy_approach, and improvement.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function performanceComparison(): array
     {
@@ -412,7 +412,7 @@ class ObjectServiceFacetExample
      *
      * @return array Frontend-ready data with search results, pagination, facets, and applied filters.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function frontendIntegrationExample(): array
     {
@@ -468,7 +468,7 @@ class ObjectServiceFacetExample
      *
      * @return array Transformed facets for frontend with field, type, label, and options.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-35
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-35
      */
     private function transformFacetsForFrontend(array $facets): array
     {
@@ -512,7 +512,7 @@ class ObjectServiceFacetExample
      *
      * @return array Frontend-friendly bucket structure with value, label, count, from, and to.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     private function transformBuckets(array $buckets): array
     {
@@ -541,7 +541,7 @@ class ObjectServiceFacetExample
      *
      * @return array Applied filters with field, value, and type for each filter.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     private function extractAppliedFilters(array $query): array
     {
@@ -577,7 +577,7 @@ class ObjectServiceFacetExample
      *
      * @return false True if audit trails are enabled, false otherwise
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     private function isAuditTrailsEnabled(): bool
     {
@@ -594,7 +594,7 @@ class ObjectServiceFacetExample
      *
      * @return float Performance improvement percentage
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     private function calculatePerformanceImprovement(float $legacyTime, float $newTime): float
     {

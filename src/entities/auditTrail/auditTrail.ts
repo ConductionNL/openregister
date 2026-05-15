@@ -12,7 +12,7 @@ export class AuditTrail implements TAuditTrail {
 	public registerUuid: string | null
 	public schemaUuid: string | null
 	public action: string
-	public changed: object | array
+	public changed: object | unknown[]
 	public user: string
 	public userName: string
 	public session: string

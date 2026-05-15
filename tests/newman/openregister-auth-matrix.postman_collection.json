@@ -1,0 +1,142 @@
+{
+	"info": {
+		"_postman_id": "or-auth-matrix-2026-05-02",
+		"name": "OpenRegister Auth Matrix",
+		"description": "Exercises the four authentication classes against canonical OR endpoints: admin (full access), regular user (RBAC-scoped), public (PublicPage routes only), no-auth (no Authorization header). Closes api-test-coverage item: Authentication matrix testing.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost", "type": "string" },
+		{ "key": "username", "value": "admin", "type": "string" },
+		{ "key": "password", "value": "admin", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "01 - Admin (full)",
+			"item": [
+				{
+					"name": "GET /api/registers as admin → 200",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{ "key": "username", "value": "{{username}}", "type": "string" },
+								{ "key": "password", "value": "{{password}}", "type": "string" }
+							]
+						},
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","registers"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('admin can list registers', () => pm.response.to.have.status(200));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "02 - No-auth (anonymous)",
+			"item": [
+				{
+					"name": "GET /api/registers without auth → 401 or 403",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","registers"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('anonymous read of admin route is rejected', () => {",
+									"  const code = pm.response.code;",
+									"  pm.expect([401, 403]).to.include(code);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "GET /api/registers/oas (PublicPage) without auth → 200",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/oas", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","registers","oas"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('OAS endpoint is publicly accessible', () => pm.response.to.have.status(200));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "03 - ETag short-circuit (PublicPage)",
+			"item": [
+				{
+					"name": "First GET → records ETag",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/oas", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","registers","oas"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('200 + ETag header present', () => {",
+									"  pm.response.to.have.status(200);",
+									"  const etag = pm.response.headers.get('ETag');",
+									"  pm.expect(etag, 'ETag header must be set').to.match(/^\"[a-f0-9]+\"$/);",
+									"  pm.collectionVariables.set('oas_etag', etag);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Second GET with If-None-Match → 304",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "If-None-Match", "value": "{{oas_etag}}", "type": "text" }
+						],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/oas", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","registers","oas"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('matching ETag returns 304 Not Modified', () => pm.response.to.have.status(304));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

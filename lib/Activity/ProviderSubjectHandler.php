@@ -8,7 +8,7 @@
  * @category Activity
  * @package  OCA\OpenRegister\Activity
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -54,7 +54,7 @@ class ProviderSubjectHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      */
     public function applySubjectText(IEvent $event, object $l, array $params): void
     {
@@ -86,7 +86,7 @@ class ProviderSubjectHandler
      *
      * @return array The rich parameters.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      */
     private function buildRichParams(IEvent $event, string $title): array
     {
@@ -111,7 +111,7 @@ class ProviderSubjectHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
      */
     private function applySimpleSubject(
         IEvent $event,

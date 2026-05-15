@@ -9,7 +9,7 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -214,17 +214,8 @@ class RegisterMapper extends QBMapper
         bool $_multitenancy=true
     ): Register {
         // Check request-scoped cache to avoid redundant DB queries for the same register.
-        if ($_rbac === true) {
-            $rbacFlag = '1';
-        } else {
-            $rbacFlag = '0';
-        }
-
-        if ($_multitenancy === true) {
-            $mtFlag = '1';
-        } else {
-            $mtFlag = '0';
-        }
+        $rbacFlag = ($_rbac === true) ? '1' : '0';
+        $mtFlag   = ($_multitenancy === true) ? '1' : '0';
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
         if (isset($this->findCache[$cacheKey]) === true) {
@@ -320,18 +311,8 @@ class RegisterMapper extends QBMapper
             $register = $this->findEntity(query: $qb);
 
             // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-            if ($_rbac === true) {
-                $rbacChar = '1';
-            } else {
-                $rbacChar = '0';
-            }
-
-            if ($_multitenancy === true) {
-                $mtChar = '1';
-            } else {
-                $mtChar = '0';
-            }
-
+            $rbacChar   = ($_rbac === true) ? '1' : '0';
+            $mtChar     = ($_multitenancy === true) ? '1' : '0';
             $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
             $this->findCache[$cacheKey] = $register;
             $this->findCache[(string) $register->getId().$rbacSuffix]      = $register;
@@ -361,6 +342,30 @@ class RegisterMapper extends QBMapper
             throw $e;
         }//end try
     }//end find()
+
+    /**
+     * Clear the request-scoped find cache for a specific register
+     *
+     * Used by the runtime-schema-api CRUD path to drop the in-memory
+     * cache entry after a mutation, so the next find() call re-reads
+     * from the database. Clears every cache key that referenced the
+     * given register (by id, uuid, slug) across both RBAC/multi-tenancy
+     * flag combinations.
+     *
+     * @param int $registerId The register ID to drop from the find cache.
+     *
+     * @return void
+     */
+    public function clearFindCache(int $registerId): void
+    {
+        // Find every cache key whose value points at this register ID and unset.
+        foreach (array_keys($this->findCache) as $key) {
+            $cached = $this->findCache[$key];
+            if ($cached instanceof Register && $cached->getId() === $registerId) {
+                unset($this->findCache[$key]);
+            }
+        }
+    }//end clearFindCache()
 
     /**
      * Finds multiple registers by id

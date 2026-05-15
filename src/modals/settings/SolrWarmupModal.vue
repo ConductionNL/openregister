@@ -1,7 +1,11 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog
 		v-if="show"
-		name="SOLR Index Warmup"
+		:name="t('openregister', 'SOLR Index Warmup')"
 		:can-close="!warmingUp"
 		size="large"
 		@closing="$emit('close')">
@@ -280,8 +284,8 @@
 								multiple
 								label="label"
 								track-by="id"
-								placeholder="Select schemas (empty = all schemas)"
-								input-label="Select schemas to warm up"
+								:placeholder="t('openregister', 'Select schemas (empty = all schemas)')"
+								:input-label="t('openregister', 'Select schemas to warm up')"
 								:label-outside="true"
 								class="schema-select">
 								<template #option="option">

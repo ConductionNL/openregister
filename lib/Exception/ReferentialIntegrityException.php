@@ -9,7 +9,7 @@
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -48,7 +48,7 @@ class ReferentialIntegrityException extends Exception
      * @param int              $code     The error code.
      * @param Exception|null   $previous The previous exception.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
      */
     public function __construct(DeletionAnalysis $analysis, int $code=0, ?Exception $previous=null)
     {
@@ -64,7 +64,7 @@ class ReferentialIntegrityException extends Exception
      *
      * @return DeletionAnalysis The analysis containing blocker and target details.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
      */
     public function getAnalysis(): DeletionAnalysis
     {
@@ -76,7 +76,7 @@ class ReferentialIntegrityException extends Exception
      *
      * @return array The structured error response with error code, message, and blockers.
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
      */
     public function toResponseBody(): array
     {

@@ -49,6 +49,12 @@
 		"test:all": "./vendor/bin/phpunit --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
 		"test:docker": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --colors=always'",
 		"test:api": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always'",
+		"test:newman": "bash tests/newman/run-all.sh",
+		"test:newman:fail-fast": "FAIL_FAST=1 bash tests/newman/run-all.sh",
+		"api-test": [
+			"@test:api",
+			"@test:newman"
+		],
 		"test:coverage": "./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always",
 		"test:coverage-docker": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always'",
 		"coverage:check": "php scripts/coverage-guard.php coverage/clover.xml",
@@ -84,6 +90,8 @@
 		"php": "^8.1",
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
+		"cweagans/composer-patches": "^1.7",
+		"dompdf/dompdf": "^3.1",
 		"elasticsearch/elasticsearch": "^v8.14.0",
 		"guzzlehttp/guzzle": "^7.0",
 		"opis/json-schema": "^2.3",
@@ -119,12 +127,21 @@
 			"bamarni/composer-bin-plugin": true,
 			"php-http/discovery": true,
 			"dealerdirect/phpcodesniffer-composer-installer": true,
-			"cyclonedx/cyclonedx-php-composer": true
+			"cyclonedx/cyclonedx-php-composer": true,
+			"cweagans/composer-patches": true
 		},
 		"optimize-autoloader": true,
 		"sort-packages": true,
 		"platform": {
 			"php": "8.1"
+		}
+	},
+	"extra": {
+		"composer-exit-on-patch-failure": true,
+		"patches": {
+			"theodo-group/llphant": {
+				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) — drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch"
+			}
 		}
 	}
 }

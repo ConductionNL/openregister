@@ -207,7 +207,7 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
  */
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -295,7 +295,7 @@ export default {
 		 *
 		 * @return {Array} Array of property options
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
 		 */
 		selectedEventProperties() {
 			if (!this.newWebhook.events || this.newWebhook.events.length === 0) {

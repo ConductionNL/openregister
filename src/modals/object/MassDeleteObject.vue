@@ -1,38 +1,40 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="`Delete ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
+	<NcDialog :name="n('openregister', 'Delete {count} object', 'Delete {count} objects', selectedObjects.length, { count: selectedObjects.length })"
 		:can-close="false"
 		size="normal">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="delete-step">
 			<h3 class="step-title">
-				Confirm Object Deletion
+				{{ t('openregister', 'Confirm Object Deletion') }}
 			</h3>
 
 			<NcNoteCard type="info">
-				Review the selected objects below. You can remove any objects you don't want to delete by clicking the remove button.<br><br>
-				Objects will be soft deleted and moved to the <a href="#" class="deleted-link" @click.prevent="navigateToDeleted">deleted objects section</a>. They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.
+				{{ t('openregister', 'Review the selected objects below. You can remove any objects you don\'t want to delete by clicking the remove button.') }}<br><br>
+				{{ t('openregister', 'Objects will be soft deleted and moved to the') }}
+				<a href="#" class="deleted-link" @click.prevent="navigateToDeleted">{{ t('openregister', 'deleted objects section') }}</a>.
+				{{ t('openregister', 'They will be retained according to their schema\'s configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema\'s settings.') }}
 			</NcNoteCard>
 
 			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ selectedObjects.length }})</h4>
+				<h4>{{ t('openregister', 'Selected Objects ({count})', { count: selectedObjects.length }) }}</h4>
 
 				<div v-if="selectedObjects.length" class="selected-objects-list">
 					<div v-for="obj in selectedObjects"
 						:key="obj.id"
 						class="selected-object-item">
 						<div class="object-info">
-							<strong>{{ obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || 'Unnamed Object' }}</strong>
+							<strong>{{ obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || t('openregister', 'Unnamed Object') }}</strong>
 							<p class="object-id">
-								ID: {{ obj.id || obj['@self']?.id }}
+								{{ t('openregister', 'ID: {id}', { id: obj.id || obj['@self']?.id }) }}
 							</p>
 						</div>
 						<NcButton type="tertiary"
-							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
+							:aria-label="t('openregister', 'Remove {title}', { title: obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id })"
 							@click="removeObject(obj.id)">
 							<template #icon>
 								<Close :size="20" />
@@ -41,16 +43,16 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 
-				<NcEmptyContent v-else name="No objects selected">
+				<NcEmptyContent v-else :name="t('openregister', 'No objects selected')">
 					<template #description>
-						No objects are currently selected for deletion.
+						{{ t('openregister', 'No objects are currently selected for deletion.') }}
 					</template>
 				</NcEmptyContent>
 			</div>
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>Object{{ objectStore.selectedObjects.length > 1 ? 's' : '' }} successfully deleted</p>
+			<p>{{ n('openregister', 'Object successfully deleted', 'Objects successfully deleted', objectStore.selectedObjects.length) }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -61,7 +63,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
+				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
 			</NcButton>
 			<NcButton v-if="success === null"
 				:disabled="loading || selectedObjects.length === 0"
@@ -71,7 +73,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<TrashCanOutline v-if="!loading" :size="20" />
 				</template>
-				Delete
+				{{ t('openregister', 'Delete') }}
 			</NcButton>
 		</template>
 	</NcDialog>

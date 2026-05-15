@@ -15,7 +15,7 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class TmloService
 {
@@ -173,6 +174,8 @@ class TmloService
      * @param Schema       $schema   The schema for default values
      *
      * @return ObjectEntity The object with populated TMLO metadata
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function populateDefaults(ObjectEntity $object, Register $register, Schema $schema): ObjectEntity
     {
@@ -242,6 +245,10 @@ class TmloService
      * @param array $tmlo The TMLO metadata to validate
      *
      * @return array Array of validation errors (empty if valid)
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function validateFieldValues(array $tmlo): array
     {
@@ -252,7 +259,9 @@ class TmloService
             && $tmlo['archiefnominatie'] !== null
             && in_array($tmlo['archiefnominatie'], self::VALID_ARCHIEFNOMINATIE, true) === false
         ) {
-            $errors[] = 'archiefnominatie must be one of: '.implode(', ', self::VALID_ARCHIEFNOMINATIE).'. Got: '.$tmlo['archiefnominatie'];
+            $allowed  = implode(', ', self::VALID_ARCHIEFNOMINATIE);
+            $got      = $tmlo['archiefnominatie'];
+            $errors[] = "archiefnominatie must be one of: {$allowed}. Got: {$got}";
         }
 
         // Validate archiefstatus.
@@ -260,7 +269,9 @@ class TmloService
             && $tmlo['archiefstatus'] !== null
             && in_array($tmlo['archiefstatus'], self::VALID_ARCHIEFSTATUS, true) === false
         ) {
-            $errors[] = 'archiefstatus must be one of: '.implode(', ', self::VALID_ARCHIEFSTATUS).'. Got: '.$tmlo['archiefstatus'];
+            $allowed  = implode(', ', self::VALID_ARCHIEFSTATUS);
+            $got      = $tmlo['archiefstatus'];
+            $errors[] = "archiefstatus must be one of: {$allowed}. Got: {$got}";
         }
 
         // Validate bewaarTermijn as ISO-8601 duration.
@@ -268,7 +279,8 @@ class TmloService
             try {
                 new DateInterval($tmlo['bewaarTermijn']);
             } catch (Exception $e) {
-                $errors[] = 'bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: '.$tmlo['bewaarTermijn'];
+                $got      = $tmlo['bewaarTermijn'];
+                $errors[] = "bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: {$got}";
             }
         }
 
@@ -276,7 +288,8 @@ class TmloService
         if (isset($tmlo['archiefactiedatum']) === true && $tmlo['archiefactiedatum'] !== null) {
             $date = DateTime::createFromFormat('Y-m-d', $tmlo['archiefactiedatum']);
             if ($date === false || $date->format('Y-m-d') !== $tmlo['archiefactiedatum']) {
-                $errors[] = 'archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: '.$tmlo['archiefactiedatum'];
+                $got      = $tmlo['archiefactiedatum'];
+                $errors[] = "archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: {$got}";
             }
         }
 
@@ -295,6 +308,9 @@ class TmloService
      * @param string $oldStatus The current/old archiefstatus
      *
      * @return array Array of validation errors (empty if valid)
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function validateStatusTransition(array $tmlo, string $oldStatus): array
     {
@@ -310,7 +326,13 @@ class TmloService
         $allowedTargets = (self::VALID_TRANSITIONS[$oldStatus] ?? []);
         if (in_array($newStatus, $allowedTargets, true) === false) {
             $allowed  = (empty($allowedTargets) === true ? 'none (terminal state)' : implode(', ', $allowedTargets));
-            $errors[] = "Transition from '{$oldStatus}' to '{$newStatus}' is not allowed. Allowed transitions from '{$oldStatus}': {$allowed}";
+            $errors[] = sprintf(
+                "Transition from '%s' to '%s' is not allowed. Allowed transitions from '%s': %s",
+                $oldStatus,
+                $newStatus,
+                $oldStatus,
+                $allowed
+            );
             return $errors;
         }
 

@@ -90,12 +90,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
-						<BTab title="Data" active>
+						<BTab :title="t('openregister', 'Data')" active>
 							<pre class="json-display"><!-- do not remove this comment
                                 -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
                             </pre>
 						</BTab>
-						<BTab title="Uses">
+						<BTab :title="t('openregister', 'Uses')">
 							<div v-if="objectStore.objectItem.relations && Object.keys(objectStore.objectItem.relations).length > 0">
 								<NcListItem v-for="(relation, key) in objectStore.objectItem.relations"
 									:key="key"
@@ -112,10 +112,10 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								</NcListItem>
 							</div>
 							<div v-else class="tabPanel">
-								No relations found
+								{{ t('openregister', 'No relations found') }}
 							</div>
 						</BTab>
-						<BTab title="Used by">
+						<BTab :title="t('openregister', 'Used by')">
 							<div v-if="objectStore.relations.length">
 								<NcListItem v-for="(relation, key) in objectStore.relations"
 									:key="key"
@@ -140,12 +140,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								No relations found
 							</div>
 						</BTab>
-						<BTab title="Files">
+						<BTab :title="t('openregister', 'Files')">
 							<NcButton @click="openFolder(objectStore.objectItem.folder)">
 								<template #icon>
 									<FolderOutline :size="20" />
 								</template>
-								Open folder
+								{{ t('openregister', 'Open folder') }}
 							</NcButton>
 
 							<div v-if="objectStore.files.results?.length > 0">
@@ -209,12 +209,42 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									name="Bijlagen aan het laden" />
 							</div>
 						</BTab>
-						<BTab title="Syncs">
+						<BTab :title="t('openregister', 'Syncs')">
 							<div v-if="true || !syncs.length" class="tabPanel">
-								No synchronizations found
+								{{ t('openregister', 'No synchronizations found') }}
 							</div>
 						</BTab>
-						<BTab title="Audit Trails">
+						<BTab v-if="relationContext" title="Emails">
+							<EmailsTab
+								:register="relationContext.register"
+								:schema="relationContext.schema"
+								:object-id="relationContext.id" />
+						</BTab>
+						<BTab v-if="relationContext" title="Events">
+							<EventsTab
+								:register="relationContext.register"
+								:schema="relationContext.schema"
+								:object-id="relationContext.id" />
+						</BTab>
+						<BTab v-if="relationContext" title="Contacts">
+							<ContactsTab
+								:register="relationContext.register"
+								:schema="relationContext.schema"
+								:object-id="relationContext.id" />
+						</BTab>
+						<BTab v-if="relationContext" title="Deck">
+							<DeckTab
+								:register="relationContext.register"
+								:schema="relationContext.schema"
+								:object-id="relationContext.id" />
+						</BTab>
+						<BTab v-if="relationContext" title="Relations">
+							<RelationsTab
+								:register="relationContext.register"
+								:schema="relationContext.schema"
+								:object-id="relationContext.id" />
+						</BTab>
+						<BTab :title="t('openregister', 'Audit Trails')">
 							<div v-if="objectStore.auditTrails.results?.length">
 								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails.results"
 									:key="key"
@@ -280,6 +310,11 @@ import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import EmailsTab from '../../components/object-relations/EmailsTab.vue'
+import EventsTab from '../../components/object-relations/EventsTab.vue'
+import ContactsTab from '../../components/object-relations/ContactsTab.vue'
+import DeckTab from '../../components/object-relations/DeckTab.vue'
+import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 
 export default {
 	name: 'ObjectDetails',
@@ -302,6 +337,11 @@ export default {
 		LockOpenOutline,
 		FolderOutline,
 		FileOutline,
+		EmailsTab,
+		EventsTab,
+		ContactsTab,
+		DeckTab,
+		RelationsTab,
 	},
 	data() {
 		return {
@@ -330,6 +370,32 @@ export default {
 				},
 			},
 		}
+	},
+	computed: {
+		/**
+		 * Build the (register, schema, id) triple used by the entity-relations
+		 * tabs (Emails, Events, Contacts, Deck, Relations). Returns null when
+		 * any of the three is missing, so the tabs only render once a saved
+		 * object is being viewed.
+		 *
+		 * @return {{register:(string|number), schema:(string|number), id:string}|null}
+		 */
+		relationContext() {
+			const item = objectStore?.objectItem
+			if (!item) {
+				return null
+			}
+
+			const self = item['@self'] || {}
+			const register = self.register ?? item.register
+			const schema = self.schema ?? item.schema
+			const id = self.id ?? item.id ?? item.uuid
+			if (!register || !schema || !id) {
+				return null
+			}
+
+			return { register, schema, id }
+		},
 	},
 	watch: {
 		'pagination.files.currentPage': {

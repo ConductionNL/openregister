@@ -8,7 +8,7 @@
 			<div class="info-box">
 				<InformationOutline :size="20" />
 				<p>
-					{{ t('openregister', 'Configure Large Language Model (LLM) providers for AI-powered features including semantic search, embeddings, and chat.') }}
+					{{ t('openregister', 'Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.') }}
 				</p>
 			</div>
 
@@ -113,7 +113,7 @@
 						id="ollama-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
+						placeholder="http://localhost:11434"
 						class="input-field">
 					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 				</div>
@@ -178,7 +178,7 @@
 						id="fireworks-base-url"
 						v-model="fireworksConfig.baseUrl"
 						type="text"
-						:placeholder="t('openregister', 'https://api.fireworks.ai/inference/v1')"
+						placeholder="https://api.fireworks.ai/inference/v1"
 						class="input-field">
 					<small>{{ t('openregister', 'Custom API endpoint if using a different region') }}</small>
 				</div>
@@ -261,7 +261,7 @@
 						id="ollama-chat-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
+						placeholder="http://localhost:11434"
 						class="input-field">
 					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 				</div>
@@ -325,7 +325,7 @@
 				<div v-if="selectedVectorBackend && selectedVectorBackend.id === 'solr'" class="solr-config">
 					<div class="info-box">
 						<p>{{ t('openregister', 'Vectors will be stored in your existing object and file collections') }}</p>
-						<p>{{ t('openregister', 'Files → fileCollection, Objects → objectCollection') }}</p>
+						<p>{{ t('openregister', 'Files → filecollection, objects → objectcollection') }}</p>
 						<p><strong>{{ t('openregister', 'Vector field: _embedding_') }}</strong></p>
 					</div>
 				</div>

@@ -1,25 +1,25 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { deletedStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'restoreMultiple'"
-		:name="`Restore ${objectsToRestore.length} object${objectsToRestore.length !== 1 ? 's' : ''}`"
+		:name="n('openregister', 'Restore {count} object', 'Restore {count} objects', objectsToRestore.length, { count: objectsToRestore.length })"
 		size="normal"
 		:can-close="false">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="restore-step">
 			<h3 class="step-title">
-				Confirm Object Restoration
+				{{ t('openregister', 'Confirm Object Restoration') }}
 			</h3>
 
 			<NcNoteCard type="info">
-				Review the selected objects below. You can remove any objects you don't want to restore by clicking the remove button. Objects will be restored to their original location.
+				{{ t('openregister', 'Review the selected objects below. You can remove any objects you don\'t want to restore by clicking the remove button. Objects will be restored to their original location.') }}
 			</NcNoteCard>
 
 			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ objectsToRestore.length }})</h4>
+				<h4>{{ t('openregister', 'Selected Objects ({count})', { count: objectsToRestore.length }) }}</h4>
 
 				<div v-if="objectsToRestore.length" class="selected-objects-list">
 					<div v-for="obj in objectsToRestore"
@@ -28,11 +28,11 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 						<div class="object-info">
 							<strong>{{ getObjectTitle(obj) }}</strong>
 							<p class="object-id">
-								ID: {{ obj.id }}
+								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
 							</p>
 						</div>
 						<NcButton type="tertiary"
-							:aria-label="`Remove ${getObjectTitle(obj)}`"
+							:aria-label="t('openregister', 'Remove {title}', { title: getObjectTitle(obj) })"
 							@click="removeObject(obj.id)">
 							<template #icon>
 								<Close :size="20" />
@@ -41,9 +41,9 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 
-				<NcEmptyContent v-else name="No objects selected">
+				<NcEmptyContent v-else :name="t('openregister', 'No objects selected')">
 					<template #description>
-						No objects are currently selected for restoration.
+						{{ t('openregister', 'No objects are currently selected for restoration.') }}
 					</template>
 				</NcEmptyContent>
 			</div>
@@ -61,7 +61,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
+				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -72,7 +72,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Restore v-if="!loading" :size="20" />
 				</template>
-				Restore
+				{{ t('openregister', 'Restore') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -172,7 +172,7 @@ export default {
 		 */
 		async restoreMultiple() {
 			if (!this.objectsToRestore || this.objectsToRestore.length === 0) {
-				this.error = 'No objects selected for restoration'
+				this.error = t('openregister', 'No objects selected for restoration')
 				return
 			}
 
@@ -184,7 +184,7 @@ export default {
 
 				this.success = true
 				this.error = false
-				this.successMessage = `Successfully restored ${this.objectsToRestore.length} object${this.objectsToRestore.length !== 1 ? 's' : ''}`
+				this.successMessage = n('openregister', 'Successfully restored {count} object', 'Successfully restored {count} objects', this.objectsToRestore.length, { count: this.objectsToRestore.length })
 
 				// Auto-close after 2 seconds
 				this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
@@ -193,7 +193,7 @@ export default {
 				this.$root.$emit('deleted-objects-restored', ids)
 			} catch (error) {
 				this.success = false
-				this.error = error.message || 'An error occurred while restoring the objects'
+				this.error = error.message || t('openregister', 'An error occurred while restoring the objects')
 			} finally {
 				this.loading = false
 			}

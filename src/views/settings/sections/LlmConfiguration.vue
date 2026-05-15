@@ -3,7 +3,7 @@
 		name="LLM Configuration"
 		description="Configure Large Language Model settings for AI features"
 		:loading="loadingStats"
-		loading-message="Loading LLM configuration...">
+		:loading-message="t('openregister', 'Loading LLM configuration...')">
 		<template #actions>
 			<!-- LLM Actions Menu -->
 			<NcActions
@@ -93,7 +93,7 @@
 				{{ llmSettings.enabled ? t('openregister', 'LLM features enabled') : t('openregister', 'LLM features disabled') }}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
-				{{ t('openregister', 'Enable or disable LLM features. Configure providers and models using the LLM Configuration button above.') }}
+				{{ t('openregister', 'Enable or disable LLM features. Configure providers and models using the LLM configuration button above.') }}
 				<span v-if="saving" class="saving-indicator">
 					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
 				</span>

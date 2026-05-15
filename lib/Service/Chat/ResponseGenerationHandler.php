@@ -295,27 +295,39 @@ class ResponseGenerationHandler
                 $functions = $this->toolHandler->convertToolsToFunctions($tools);
             }
 
-            // Initialize response and llmTime before conditional assignment.
+            // Initialize $response (and $llmTime) BEFORE entering any
+            // provider branch. The Ollama branch skips the OpenAIChat
+            // initialisation block; without this default-empty seed the
+            // logger access on `$response` below would tank with an
+            // undefined-variable error if every provider branch chose
+            // not to assign — an easy regression vector when a new
+            // provider is added. The Fireworks/Ollama branches below
+            // overwrite this unconditionally for their own provider.
             $response     = '';
             $llmTime      = 0.0;
             $llmStartTime = microtime(true);
 
-            // Create chat instance based on provider (OpenAI default).
-            $chat = new OpenAIChat($config);
+            // Skip the OpenAIChat instantiation for Ollama — Ollama uses OllamaConfig + OllamaChat
+            // (instantiated in the dedicated branch below). OpenAIChat::__construct() type-errors when
+            // given OllamaConfig.
+            if ($chatProvider !== 'ollama') {
+                // Create chat instance based on provider (OpenAI / Fireworks both use OpenAIConfig).
+                $chat = new OpenAIChat($config);
 
-            // Add functions if available.
-            if (empty($functions) === false) {
-                // Convert array-based function definitions to FunctionInfo objects.
-                $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
-                    functions: $functions,
-                    tools: $tools
-                );
-                $chat->setTools($functionInfoObjects);
+                // Add functions if available.
+                if (empty($functions) === false) {
+                    // Convert array-based function definitions to FunctionInfo objects.
+                    $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
+                        functions: $functions,
+                        tools: $tools
+                    );
+                    $chat->setTools($functionInfoObjects);
+                }
+
+                // Use generateChat() for message arrays, which properly handles tools/functions.
+                $response = $chat->generateChat($messageHistory);
+                $llmTime  = microtime(true) - $llmStartTime;
             }
-
-            // Use generateChat() for message arrays, which properly handles tools/functions.
-            $response = $chat->generateChat($messageHistory);
-            $llmTime  = microtime(true) - $llmStartTime;
 
             if ($chatProvider === 'fireworks') {
                 /*

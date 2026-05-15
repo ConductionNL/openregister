@@ -51,6 +51,8 @@ use Psr\Log\LoggerInterface;
  * @link https://www.OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public method per endpoint route.
  */
 class EndpointsController extends Controller
 {
@@ -407,6 +409,37 @@ class EndpointsController extends Controller
      *     array<never, never>>|JSONResponse<404|500,
      *     array{error: 'Endpoint not found'|'Failed to delete endpoint'},
      *     array<never, never>>
+     */
+
+    /**
+     * Partially update an endpoint by ID.
+     *
+     * The route `endpoints#patch` (`PATCH /api/endpoints/{id}`) delegates to
+     * the same body as `update()` because Nextcloud routes PATCH and PUT to
+     * separate methods even when the handler is identical. Mirrors the same
+     * shape used on `ApplicationsController::patch`.
+     *
+     * @param int $id The ID of the endpoint to patch.
+     *
+     * @return JSONResponse JSON response containing patched endpoint.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update(id: $id);
+
+    }//end patch()
+
+    /**
+     * Delete an endpoint by ID.
+     *
+     * @param int $id The endpoint ID to delete.
+     *
+     * @return JSONResponse Empty response on success or error response on failure.
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

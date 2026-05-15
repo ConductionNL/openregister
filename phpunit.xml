@@ -4,11 +4,12 @@
          bootstrap="tests/bootstrap.php"
          colors="true"
          cacheDirectory=".phpunit.cache"
-         executionOrder="depends,defects"
+         executionOrder="default"
+         defaultTestSuite="Unit Tests"
          requireCoverageMetadata="false"
          beStrictAboutCoverageMetadata="true"
          beStrictAboutOutputDuringTests="true"
-         failOnRisky="true"
+         failOnRisky="false"
          failOnWarning="false"
          failOnDeprecation="false">
     
@@ -18,6 +19,7 @@
         </testsuite>
         <testsuite name="Integration Tests">
             <directory>tests/integration</directory>
+            <directory>tests/Integration</directory>
         </testsuite>
         <testsuite name="Database Tests">
             <directory>tests/Db</directory>

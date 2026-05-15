@@ -9,7 +9,7 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -64,6 +64,8 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method void setSource(?string $source)
  * @method bool getHardValidation()
  * @method void setHardValidation(bool $hardValidation)
+ * @method bool getAppendOnly()
+ * @method void setAppendOnly(bool $appendOnly)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getCreated()
@@ -301,6 +303,17 @@ class Schema extends Entity implements JsonSerializable
     protected bool $immutable = false;
 
     /**
+     * Whether objects of this schema are append-only (INSERT allowed; UPDATE and DELETE rejected)
+     *
+     * When true, new objects can be created but existing objects cannot be mutated or removed.
+     * This is used for append-only audit logs (e.g. xAPI statements, compliance attestations)
+     * where immutability of past records is a business or legal requirement.
+     *
+     * @var boolean
+     */
+    protected bool $appendOnly = false;
+
+    /**
      * Whether objects of this schema should be indexed in SOLR for searching
      *
      * When set to false, objects of this schema will be excluded from SOLR indexing,
@@ -462,6 +475,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'source', type: 'string');
         $this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
         $this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
+        $this->addType(fieldName: 'appendOnly', type: Types::BOOLEAN);
         $this->addType(fieldName: 'searchable', type: Types::BOOLEAN);
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
@@ -1245,7 +1259,7 @@ class Schema extends Entity implements JsonSerializable
      *     slug: null|string, title: null|string, description: null|string,
      *     version: null|string, summary: null|string, icon: null|string,
      *     required: array, properties: array, archive: array|null,
-     *     source: null|string, hardValidation: bool, immutable: bool,
+     *     source: null|string, hardValidation: bool, immutable: bool, appendOnly: bool,
      *     searchable: bool, updated: null|string, created: null|string,
      *     maxDepth: int, owner: null|string, application: null|string,
      *     organisation: null|string,
@@ -1315,6 +1329,7 @@ class Schema extends Entity implements JsonSerializable
             'source'         => $this->source,
             'hardValidation' => $this->hardValidation,
             'immutable'      => $this->immutable,
+            'appendOnly'     => $this->appendOnly,
             'searchable'     => $this->searchable,
         // @todo: should be refactored to strict.
             'updated'        => $updated,
@@ -1596,12 +1611,14 @@ class Schema extends Entity implements JsonSerializable
      * @throws \InvalidArgumentException If validation fails
      *
      * @return array Validated configuration
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function validateConfigurationArray(array $configuration): array
     {
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields      = ['allowFiles'];
+        $boolFields      = ['allowFiles', 'autoPublish'];
         $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
 
         foreach ($configuration as $key => $value) {
@@ -1636,11 +1653,66 @@ class Schema extends Entity implements JsonSerializable
 
             if (in_array($key, $passThrough, true) === true) {
                 $validatedConfig[$key] = $value;
+                continue;
             }
+
+            // Allow declarative annotation extensions to round-trip
+            // through the schema's configuration column. Validation of
+            // their shape is done by the dedicated validators (e.g.
+            // LifecycleAnnotationValidator) at schema-save time.
+            //
+            // The key MUST be in the declared vocabulary — unknown
+            // `x-openregister-*` keys are silently dropped to surface
+            // typos at save time rather than persisting them and having
+            // them silently no-op (e.g. `x-openregister-lifecycl` would
+            // otherwise round-trip without ever firing the listener).
+            if (str_starts_with((string) $key, 'x-openregister-') === true) {
+                if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
+                    $validatedConfig[$key] = $value;
+                } else {
+                    // R07: track unknown `x-openregister-*` keys (almost
+                    // always typos like `x-openregister-lifecycl`) so
+                    // SchemaMapper can log them via its structured
+                    // logger after save. The entity has no DI surface
+                    // for a logger and the ADR added in F06 bans the
+                    // `\OC::$server` static accessor — collecting on
+                    // the entity and bridging through the mapper is
+                    // the cleanest path that still surfaces a signal.
+                    $this->droppedAnnotationKeys[] = (string) $key;
+                }//end if
+            }//end if
         }//end foreach
 
         return $validatedConfig;
     }//end validateConfigurationArray()
+
+    /**
+     * R07: dropped `x-openregister-*` keys collected during the most
+     * recent `validateConfigurationArray()` pass. SchemaMapper reads
+     * this after `setConfiguration()` and emits a logger->warning()
+     * for each entry so operators see a signal without us having to
+     * inject a logger into the entity itself.
+     *
+     * @var array<int, string>
+     */
+    private array $droppedAnnotationKeys = [];
+
+    /**
+     * Return + reset the list of dropped annotation keys.
+     *
+     * Returns the keys collected since the last call (or instance
+     * construction) and then clears the internal buffer so a single
+     * dropped key isn't logged twice across the cleanObject() →
+     * insert/update path.
+     *
+     * @return array<int, string>
+     */
+    public function consumeDroppedAnnotationKeys(): array
+    {
+        $dropped = $this->droppedAnnotationKeys;
+        $this->droppedAnnotationKeys = [];
+        return $dropped;
+    }//end consumeDroppedAnnotationKeys()
 
     /**
      * Validate calendar provider configuration
@@ -1741,6 +1813,27 @@ class Schema extends Entity implements JsonSerializable
     }//end validateAllowedTagsValue()
 
     /**
+     * Declared `x-openregister-*` annotation keys.
+     *
+     * Keys outside this set are dropped at save time so a typo
+     * (e.g. `x-openregister-lifecycl` instead of `…-lifecycle`) is
+     * caught early instead of silently round-tripping through the
+     * configuration column and having the corresponding listener
+     * never fire.
+     *
+     * @var array<int, string>
+     */
+    private const ANNOTATION_VOCABULARY = [
+        'x-openregister-lifecycle',
+        'x-openregister-aggregations',
+        'x-openregister-calculations',
+        'x-openregister-notifications',
+        'x-openregister-widgets',
+        'x-openregister-relations',
+        'x-openregister-processing-activity',
+    ];
+
+    /**
      * Valid linked type values for Nextcloud entity integration
      */
     private const VALID_LINKED_TYPES = [
@@ -1827,6 +1920,19 @@ class Schema extends Entity implements JsonSerializable
         $this->searchable = $searchable;
         $this->markFieldUpdated(attribute: 'searchable');
     }//end setSearchable()
+
+    /**
+     * Check whether objects of this schema are append-only.
+     *
+     * When true, INSERT is permitted but UPDATE and DELETE are rejected with
+     * HTTP 405 and error code SCHEMA_APPEND_ONLY.
+     *
+     * @return bool True if the schema is append-only
+     */
+    public function isAppendOnly(): bool
+    {
+        return $this->appendOnly;
+    }//end isAppendOnly()
 
     /**
      * String representation of the schema

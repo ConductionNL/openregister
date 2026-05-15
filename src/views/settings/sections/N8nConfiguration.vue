@@ -4,7 +4,7 @@
 		name="Workflow Configuration"
 		description="Configure n8n workflow automation integration"
 		:loading="loading"
-		loading-message="Loading n8n configuration...">
+		:loading-message="t('openregister', 'Loading n8n configuration...')">
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -195,7 +195,7 @@
 		<!-- Workflow Management -->
 		<SettingsCard
 			v-if="n8nEnabled && connectionStatus && connectionStatus.success && initResult && initResult.success"
-			title="Workflow Management"
+			:title="t('openregister', 'Workflow Management')"
 			icon="⚙️"
 			:collapsible="true"
 			:default-collapsed="false">

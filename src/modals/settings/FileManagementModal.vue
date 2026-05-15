@@ -10,7 +10,7 @@
 				<div>
 					<h4>{{ t('openregister', 'Using Pre-Generated Chunks') }}</h4>
 					<p>{{ t('openregister', 'Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.') }}</p>
-					<p><strong>{{ t('openregister', 'To adjust chunk size or strategy, go to File Configuration → Processing Limits.') }}</strong></p>
+					<p><strong>{{ t('openregister', 'To adjust chunk size or strategy, go to file configuration → processing limits.') }}</strong></p>
 				</div>
 			</div>
 

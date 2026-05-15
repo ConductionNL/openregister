@@ -6,7 +6,7 @@
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -61,7 +61,7 @@ class ScheduledWorkflowController extends Controller
         $workflows = $this->workflowMapper->findAll();
 
         return new JSONResponse(
-            array_map(fn ($w) => $w->jsonSerialize(), $workflows)
+            array_map(fn ($workflow) => $workflow->jsonSerialize(), $workflows)
         );
     }//end index()
 

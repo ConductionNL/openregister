@@ -8,7 +8,7 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -145,8 +146,8 @@ class SelectionListMapper extends QBMapper
             $entity->setUuid(Uuid::v4()->toRfc4122());
         }
 
-        $entity->setCreated(new \DateTime());
-        $entity->setUpdated(new \DateTime());
+        $entity->setCreated(new DateTime());
+        $entity->setUpdated(new DateTime());
 
         return $this->insert(entity: $entity);
     }//end createEntry()
@@ -160,7 +161,7 @@ class SelectionListMapper extends QBMapper
      */
     public function updateEntry(SelectionList $entity): SelectionList
     {
-        $entity->setUpdated(new \DateTime());
+        $entity->setUpdated(new DateTime());
 
         return $this->update(objectId: $entity);
     }//end updateEntry()

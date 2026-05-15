@@ -6,7 +6,7 @@
  * @category WorkflowEngine
  * @package  OCA\OpenRegister\WorkflowEngine
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -14,9 +14,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-90
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-92
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-90
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-92
  */
 
 declare(strict_types=1);
@@ -38,8 +38,8 @@ interface WorkflowEngineInterface
      *
      * @return string Engine-specific workflow ID
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-90
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-90
      */
     public function deployWorkflow(array $workflowDefinition): string;
 
@@ -51,7 +51,7 @@ interface WorkflowEngineInterface
      *
      * @return string Engine-specific workflow ID (may change on some engines)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
      */
     public function updateWorkflow(string $workflowId, array $workflowDefinition): string;
 
@@ -62,7 +62,7 @@ interface WorkflowEngineInterface
      *
      * @return array<string, mixed> Engine-specific workflow definition
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
      */
     public function getWorkflow(string $workflowId): array;
 
@@ -73,7 +73,7 @@ interface WorkflowEngineInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
      */
     public function deleteWorkflow(string $workflowId): void;
 
@@ -84,7 +84,7 @@ interface WorkflowEngineInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
      */
     public function activateWorkflow(string $workflowId): void;
 
@@ -95,7 +95,7 @@ interface WorkflowEngineInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
      */
     public function deactivateWorkflow(string $workflowId): void;
 
@@ -108,8 +108,8 @@ interface WorkflowEngineInterface
      *
      * @return WorkflowResult Structured execution result
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-92
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-92
      */
     public function executeWorkflow(string $workflowId, array $data, int $timeout=30): WorkflowResult;
 
@@ -120,7 +120,7 @@ interface WorkflowEngineInterface
      *
      * @return string Webhook URL
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
      */
     public function getWebhookUrl(string $workflowId): string;
 
@@ -129,7 +129,7 @@ interface WorkflowEngineInterface
      *
      * @return array<int, array{id: string, name: string}> Array of workflow summaries
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
      */
     public function listWorkflows(): array;
 
@@ -138,7 +138,7 @@ interface WorkflowEngineInterface
      *
      * @return bool True if the engine is reachable and responsive
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-81
      */
     public function healthCheck(): bool;
 }//end interface

@@ -18,6 +18,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
@@ -25,6 +26,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IRequest;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -55,6 +57,7 @@ class RegistersControllerTest extends TestCase
     private GitHubHandler&MockObject $githubService;
     private IAppManager&MockObject $appManager;
     private OasService&MockObject $oasService;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -75,6 +78,7 @@ class RegistersControllerTest extends TestCase
         $this->githubService = $this->createMock(GitHubHandler::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->oasService = $this->createMock(OasService::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
 
         $this->controller = new RegistersController(
             'openregister',
@@ -93,7 +97,9 @@ class RegistersControllerTest extends TestCase
             $this->githubService,
             $this->appManager,
             $this->oasService,
-            $this->createMock(\Psr\Container\ContainerInterface::class)
+            $this->createMock(\Psr\Container\ContainerInterface::class),
+            $this->groupManager,
+            $this->createMock(RegisterCacheHandler::class)
         );
     }
 
@@ -285,8 +291,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturnsEmptyOnSuccess(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
 
         $result = $this->controller->destroy(1);
 
@@ -306,8 +313,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns409OnValidationException(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->method('delete')
             ->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('Objects attached'));
 
@@ -318,8 +326,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns500OnGenericException(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->method('delete')
             ->willThrowException(new Exception('Delete error'));
 
@@ -767,8 +776,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyReturns500OnDatabaseConstraintException(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->method('delete')
             ->willThrowException(new DatabaseConstraintException('Foreign key constraint'));
 
@@ -1774,8 +1784,9 @@ class RegistersControllerTest extends TestCase
 
     public function testDestroyCallsDeleteOnService(): void
     {
-        $register = $this->createMock(Register::class);
+        $register = $this->createRealRegister(1, 'Test');
         $this->registerService->method('find')->willReturn($register);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->registerService->expects($this->once())
             ->method('delete')
             ->with($this->equalTo($register));

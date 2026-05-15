@@ -24,7 +24,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 			:show-mass-copy="false"
 			:show-mass-delete="false"
 			show-view-toggle
-			add-label="Add Schema"
+			:add-label="t('openregister', 'Add Schema')"
 			row-key="id"
 			:empty-text="emptyContentName"
 			:row-class="getRowClass"

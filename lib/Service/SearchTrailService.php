@@ -12,7 +12,7 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
  */
 
 namespace OCA\OpenRegister\Service;
@@ -166,7 +166,7 @@ class SearchTrailService
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
      */
     public function clearExpiredSearchTrails(): array
     {
@@ -214,7 +214,7 @@ class SearchTrailService
      *
      * @psalm-return array{results: array, total: int, page: float|int<1, max>, pages: int, limit: int<1, max>, offset: int}
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
      */
     public function getSearchTrails(array $config=[]): array
     {
@@ -519,7 +519,7 @@ class SearchTrailService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_before kept for API compatibility
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
      */
     public function cleanupSearchTrails(?DateTime $_before=null): array
     {
@@ -563,7 +563,7 @@ class SearchTrailService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional configuration paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive configuration processing
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
      */
     private function processConfig(array $config): array
     {
@@ -875,7 +875,7 @@ class SearchTrailService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple entity lookups with exception handling
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional entity lookups and exception handling
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
      */
     private function enrichTrailsWithNames(array $trails): array
     {

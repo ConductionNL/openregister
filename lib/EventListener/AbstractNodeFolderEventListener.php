@@ -9,7 +9,7 @@
  * @category EventListener
  * @package  OCA\OpenRegister\Event
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -47,7 +47,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -64,7 +64,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     public function handle(Event $event): void
     {
@@ -95,7 +95,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function handleNodeCreated(NodeCreatedEvent $_event): void
     {
@@ -114,7 +114,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function handleNodeDeleted(NodeDeletedEvent $_event): void
     {
@@ -133,7 +133,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function handleNodeTouched(NodeTouchedEvent $_event): void
     {
@@ -152,7 +152,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
      */
     private function handleNodeWritten(NodeWrittenEvent $_event): void
     {

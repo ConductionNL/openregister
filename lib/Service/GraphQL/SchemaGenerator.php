@@ -16,7 +16,7 @@
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -134,7 +134,7 @@ class SchemaGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     public function setResolver(GraphQLResolver $resolver): void
     {
@@ -149,7 +149,7 @@ class SchemaGenerator
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema generation inherently branches per register+schema
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     public function generate(): Schema
     {
@@ -161,13 +161,20 @@ class SchemaGenerator
         $this->initScalars();
         $this->initHandlers();
 
-        // Load all registers and schemas.
-        $registers = $this->registerMapper->findAll();
+        // Load all registers and schemas. Bypass RBAC + multi-tenancy for
+        // type generation: the GraphQL schema is system-scoped (per-request,
+        // APCu-cached), and per-user authorisation happens at resolve time
+        // on each query. Filtering schemas by the caller's organisation here
+        // produces a different GraphQL schema per org, which silently hides
+        // every cross-org schema from the type system even though those
+        // schemas are readable via REST under the same session. Same
+        // rationale as PermissionHandler::resolveSchemaSlug (#1454).
+        $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
         foreach ($registers as $register) {
             $this->registersById[$register->getId()] = $register;
         }
 
-        $schemas = $this->schemaMapper->findAll();
+        $schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
         foreach ($schemas as $schema) {
             $this->schemasById[$schema->getId()] = $schema;
         }
@@ -259,7 +266,7 @@ class SchemaGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
      */
     private function buildQueryFields(
         RegisterSchema $schema,
@@ -495,12 +502,10 @@ class SchemaGenerator
             }
 
             // Annotate authorization requirements in description.
-            if (isset($authInfo[$name]) === true) {
-                if ($description !== null && $description !== '') {
-                    $description = $description.'. '.$authInfo[$name];
-                } else {
-                    $description = $authInfo[$name];
-                }
+            if (isset($authInfo[$name]) === true && $description !== null && $description !== '') {
+                $description = $description.'. '.$authInfo[$name];
+            } else if (isset($authInfo[$name]) === true) {
+                $description = $authInfo[$name];
             }
 
             $fields[$fieldName] = [
@@ -726,7 +731,7 @@ class SchemaGenerator
      *
      * @return array<int, RegisterSchema>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     public function getSchemasById(): array
     {
@@ -739,7 +744,7 @@ class SchemaGenerator
      *
      * @return array<int, Register>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
      */
     public function getRegistersById(): array
     {

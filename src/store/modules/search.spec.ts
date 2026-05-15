@@ -1,27 +1,22 @@
 /* eslint-disable no-console */
 import { createPinia, setActivePinia } from 'pinia'
 
-import { useSearchStore } from './search.js'
+import { useSearchStore } from './search'
 
 describe('Search Store', () => {
-	beforeEach(
-		() => {
-			setActivePinia(createPinia())
-		},
-	)
+	beforeEach(() => {
+		setActivePinia(createPinia())
+	})
 
-	it('clear search correctly', () => {
+	it('clears the object search results', () => {
 		const store = useSearchStore()
 
 		store.searchObjectsResult = [
-			{
-				id: 1,
-				title: 'Lorem ipsum dolor sit amet',
-			},
+			{ id: 1, title: 'Lorem ipsum dolor sit amet' },
 		]
 
-		store.clearObjectSearch()
+		store.clearObjectSearchResults()
 
-		expect(store.searchObjectsResult).toBe({})
+		expect(store.searchObjectsResult).toEqual([])
 	})
 })

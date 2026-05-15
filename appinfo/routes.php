@@ -65,10 +65,10 @@ return [
 	    ['name' => 'Settings\SolrManagement#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
 		
 		// Collection-specific field management.
-		['name' => 'Settings\SolrManagement#getObjectCollectionFields', 'url' => '/api/solr/collections/objects/fields', 'verb' => 'GET'],
-		['name' => 'Settings\SolrManagement#getFileCollectionFields', 'url' => '/api/solr/collections/files/fields', 'verb' => 'GET'],
-		['name' => 'Settings\SolrManagement#createMissingObjectFields', 'url' => '/api/solr/collections/objects/fields/create-missing', 'verb' => 'POST'],
-		['name' => 'Settings\SolrManagement#createMissingFileFields', 'url' => '/api/solr/collections/files/fields/create-missing', 'verb' => 'POST'],
+		['name' => 'Settings\ConfigurationSettings#getObjectCollectionFields', 'url' => '/api/solr/collections/objects/fields', 'verb' => 'GET'],
+		['name' => 'Settings\FileSettings#getFileCollectionFields', 'url' => '/api/solr/collections/files/fields', 'verb' => 'GET'],
+		['name' => 'Settings\ConfigurationSettings#createMissingObjectFields', 'url' => '/api/solr/collections/objects/fields/create-missing', 'verb' => 'POST'],
+		['name' => 'Settings\FileSettings#createMissingFileFields', 'url' => '/api/solr/collections/files/fields/create-missing', 'verb' => 'POST'],
         
         // SOLR Dashboard Management endpoints.
         ['name' => 'Settings\SolrSettings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
@@ -206,12 +206,43 @@ return [
         ['name' => 'Settings\ValidationSettings#validateAllObjects', 'url' => '/api/settings/validate-all-objects', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#massValidateObjects', 'url' => '/api/settings/mass-validate', 'verb' => 'POST'],
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],
+        // Manifest endpoint — returns host-app manifest enriched with runtime.user context.
+        ['name' => 'manifest#index', 'url' => '/api/manifest/{appId}', 'verb' => 'GET', 'requirements' => ['appId' => '[^/]+']],
         // Heartbeat - Keep-alive endpoint for long-running operations.
         ['name' => 'heartbeat#heartbeat', 'url' => '/api/heartbeat', 'verb' => 'GET'],
         // Prometheus metrics endpoint.
         ['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
         // Health check endpoint.
         ['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+        // URN resolution endpoints (RFC 8141 system-independent identifiers).
+        ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
+        ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],
+        ['name' => 'urn#bulk',    'url' => '/api/urn/bulk',    'verb' => 'POST'],
+        // RBAC scope discovery endpoint — clients query effective (register,
+        // schema, action) scopes for the authenticated user without probing
+        // every endpoint individually.
+        ['name' => 'scopes#index', 'url' => '/api/scopes', 'verb' => 'GET'],
+        // AVG / GDPR Art 30 verwerkingsregister CRUD + verantwoordingsdocument.
+        ['name' => 'verwerkingsactiviteiten#index',          'url' => '/api/avg/verwerkingsactiviteiten',        'verb' => 'GET'],
+        ['name' => 'verwerkingsactiviteiten#show',           'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'verwerkingsactiviteiten#create',         'url' => '/api/avg/verwerkingsactiviteiten',        'verb' => 'POST'],
+        ['name' => 'verwerkingsactiviteiten#update',         'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'verwerkingsactiviteiten#destroy',        'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'verwerkingsactiviteiten#verantwoording', 'url' => '/api/avg/verantwoording',                 'verb' => 'GET'],
+        // AVG / GDPR data-subject rights endpoints (Phase 2b).
+        ['name' => 'dsar#inzage',         'url' => '/api/avg/inzage',         'verb' => 'GET'],
+        ['name' => 'dsar#portabiliteit',  'url' => '/api/avg/portabiliteit',  'verb' => 'GET'],
+        ['name' => 'dsar#vergetelheid',   'url' => '/api/avg/vergetelheid',   'verb' => 'POST'],
+        ['name' => 'dsar#rectificatie',   'url' => '/api/avg/rectificatie',   'verb' => 'POST'],
+        ['name' => 'dsar#compliance',     'url' => '/api/avg/compliance',     'verb' => 'GET'],
+        // Realtime cursor-based polling endpoints.
+        ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
+        ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],
+        // Translation sidecar — search, per-object slots + completeness, status updates.
+        ['name' => 'translation#search',        'url' => '/api/translations/search',                                          'verb' => 'GET'],
+        ['name' => 'translation#showByObject',  'url' => '/api/translations/object/{uuid}',                                   'verb' => 'GET'],
+        ['name' => 'translation#setStatus',     'url' => '/api/translations/object/{uuid}/{property}/{language}/status',      'verb' => 'POST'],
+        ['name' => 'translation#bulkTranslate', 'url' => '/api/translations/object/{uuid}/bulk-translate',                    'verb' => 'POST'],
         // Names - Ultra-fast object name lookup endpoints (specific routes first).
         ['name' => 'names#stats', 'url' => '/api/names/stats', 'verb' => 'GET'],
         ['name' => 'names#warmup', 'url' => '/api/names/warmup', 'verb' => 'POST'],
@@ -230,12 +261,91 @@ return [
         ['name' => 'dashboard#getAuditTrailStatistics', 'url' => '/api/dashboard/statistics/audit-trail', 'verb' => 'GET'],
         ['name' => 'dashboard#getAuditTrailActionDistribution', 'url' => '/api/dashboard/statistics/audit-trail-distribution', 'verb' => 'GET'],
         ['name' => 'dashboard#getMostActiveObjects', 'url' => '/api/dashboard/statistics/most-active-objects', 'verb' => 'GET'],
+        // Linked entities (mail sidebar, contacts sidebar, etc.).
+        // Must be before objects/{register}/{schema} routes to avoid wildcard matching.
+        ['name' => 'linked_entity#addObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
+        ['name' => 'linked_entity#removeObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+', 'entityId' => '[^/]+']],
+        ['name' => 'linked_entity#addRegisterLink', 'url' => '/api/registers/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
+        ['name' => 'linked_entity#addSchemaLink', 'url' => '/api/schemas/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
+        ['name' => 'linked_entity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[^/]+', 'entityId' => '.+']],
+
         // Objects.
         ['name' => 'objects#objects', 'url' => '/api/objects', 'verb' => 'GET'],
         ['name' => 'objects#clearBlob', 'url' => '/api/objects/clear-blob', 'verb' => 'DELETE'],
         // ['name' => 'objects#import', 'url' => '/api/objects/{register}/import', 'verb' => 'POST'], // DISABLED: Use registers import endpoint instead
+        // Lifecycle transitions — MUST precede the wildcard {register}/{schema} routes
+        // so /api/objects/{id}/transition isn't grabbed as register=id, schema=transition.
+        ['name' => 'transition#transition', 'url' => '/api/objects/{id}/transition', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'transition#availableActions', 'url' => '/api/objects/{id}/available-actions', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+
+        // Aggregations sugar endpoint.
+        ['name' => 'aggregation#aggregate', 'url' => '/api/objects/aggregations/{register}/{schema}/{name}', 'verb' => 'GET'],
+
+        // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.
+        ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
+
+        // Mail sidebar — reverse lookup of OR objects linked to an email.
+        // Search + bySender are app-global (no register/schema in path); the
+        // CRUD endpoints are scoped to an object so they take register/schema/id.
+        ['name' => 'emails#search',   'url' => '/api/emails/search',                                'verb' => 'GET'],
+        ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender',                             'verb' => 'GET'],
+        ['name' => 'emails#index',    'url' => '/api/objects/{register}/{schema}/{id}/emails',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emails#create',   'url' => '/api/objects/{register}/{schema}/{id}/emails',     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emails#destroy',  'url' => '/api/objects/{register}/{schema}/{id}/emails/{emailId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'emailId' => '[0-9]+']],
+
+        // Contacts — object↔NC contact links + reverse lookup. Match is app-global.
+        ['name' => 'contacts#index',   'url' => '/api/objects/{register}/{schema}/{id}/contacts',                 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#create',  'url' => '/api/objects/{register}/{schema}/{id}/contacts',                 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#update',  'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
+        ['name' => 'contacts#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
+        ['name' => 'contacts#objects', 'url' => '/api/contacts/{contactUid}/objects',                              'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
+
+        // Calendar events — object↔CalDAV event links via DAV principal.
+        ['name' => 'calendarEvents#index',   'url' => '/api/objects/{register}/{schema}/{id}/events',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#create',  'url' => '/api/objects/{register}/{schema}/{id}/events',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#link',    'url' => '/api/objects/{register}/{schema}/{id}/events/link',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/events/{eventId}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'eventId' => '[^/]+']],
+
+        // Deck — object↔Deck card links + reverse lookup.
+        ['name' => 'deck#index',   'url' => '/api/objects/{register}/{schema}/{id}/deck',                  'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deck#create',  'url' => '/api/objects/{register}/{schema}/{id}/deck',                  'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckRef}',        'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckRef' => '[^/]+']],
+        ['name' => 'deck#objects', 'url' => '/api/deck/boards/{boardId}/objects',                          'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
+
+        // Unified relations endpoint — aggregates emails/contacts/calendar/deck for an object.
+        ['name' => 'relations#index', 'url' => '/api/objects/{register}/{schema}/{id}/relations',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+
+        // Linked-entity-types — generic per-{type} link API (mail / event / contact / deck).
+        ['name' => 'linkedEntity#addObjectLink',    'url' => '/api/objects/{uuid}/_{type}',           'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
+        ['name' => 'linkedEntity#removeObjectLink', 'url' => '/api/objects/{uuid}/_{type}/{entityId}','verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+', 'entityId' => '[^/]+']],
+        ['name' => 'linkedEntity#addRegisterLink',  'url' => '/api/registers/{uuid}/_{type}',         'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
+        ['name' => 'linkedEntity#addSchemaLink',    'url' => '/api/schemas/{uuid}/_{type}',           'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
+        ['name' => 'linkedEntity#reverseLookup',    'url' => '/api/linked/_{type}/{entityId}',        'verb' => 'GET',    'requirements' => ['type' => '[a-z]+', 'entityId' => '[^/]+']],
+
+        // TMLO metadata export endpoints (declarative archival metadata per Dutch TMLO standard).
+        ['name' => 'tmlo#summary',      'url' => '/api/tmlo/{register}/{schema}/summary',                'verb' => 'GET'],
+        ['name' => 'tmlo#exportSingle', 'url' => '/api/tmlo/{register}/{schema}/{id}/export',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'tmlo#exportBatch',  'url' => '/api/tmlo/{register}/{schema}/export',                 'verb' => 'GET'],
+
+        // FileSidebar — list OR objects connected to a Files entry + show extraction state.
+        ['name' => 'fileSidebar#getObjectsForFile',    'url' => '/api/files/{fileId}/objects',           'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
+        ['name' => 'fileSidebar#getExtractionStatus',  'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
+
+        // Action registry CRUD + utilities.
+        ['name' => 'actions#index',            'url' => '/api/actions',                          'verb' => 'GET'],
+        ['name' => 'actions#create',           'url' => '/api/actions',                          'verb' => 'POST'],
+        ['name' => 'actions#show',             'url' => '/api/actions/{id}',                     'verb' => 'GET',    'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#update',           'url' => '/api/actions/{id}',                     'verb' => 'PUT',    'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#patch',            'url' => '/api/actions/{id}',                     'verb' => 'PATCH',  'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#destroy',          'url' => '/api/actions/{id}',                     'verb' => 'DELETE', 'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#test',             'url' => '/api/actions/{id}/test',                'verb' => 'POST',   'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#logs',             'url' => '/api/actions/{id}/logs',                'verb' => 'GET',    'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#migrateFromHooks', 'url' => '/api/actions/migrate-hooks/{schemaId}', 'verb' => 'POST',   'requirements' => ['schemaId' => '[0-9]+']],
+
         ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
-        
+
+        ['name' => 'objects#geoSearch', 'url' => '/api/objects/{register}/{schema}/geo-search', 'verb' => 'POST'],
+
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -272,6 +382,12 @@ return [
         ['name' => 'auditTrail#update', 'url' => '/api/audit-trails/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#destroy', 'url' => '/api/audit-trails/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#destroyMultiple', 'url' => '/api/audit-trails', 'verb' => 'DELETE'],
+        // Notification History — read-only audit trail of every dispatch.
+        ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
+        // Notification Subscriptions — per-user (register, schema) opt-in surface.
+        ['name' => 'notificationSubscriptions#index',   'url' => '/api/notification-subscriptions', 'verb' => 'GET'],
+        ['name' => 'notificationSubscriptions#create',  'url' => '/api/notification-subscriptions', 'verb' => 'POST'],
+        ['name' => 'notificationSubscriptions#destroy', 'url' => '/api/notification-subscriptions', 'verb' => 'DELETE'],
         // Search Trails - specific routes first, then general ones.
         ['name' => 'searchTrail#index', 'url' => '/api/search-trails', 'verb' => 'GET'],
         ['name' => 'searchTrail#statistics', 'url' => '/api/search-trails/statistics', 'verb' => 'GET'],
@@ -307,9 +423,24 @@ return [
 		['name' => 'files#delete', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#publish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#depublish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-        
+
+		// File-actions (rename / copy / move / versions / lock / batch / preview / labels).
+		['name' => 'files#rename',         'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/rename',                       'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#copy',           'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/copy',                         'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#move',           'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/move',                         'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#listVersions',   'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/versions',                     'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#restoreVersion', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+', 'versionId' => '[^/]+']],
+		['name' => 'files#lock',           'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/lock',                         'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#unlock',         'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/unlock',                       'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#batch',          'url' => '/api/objects/{register}/{schema}/{id}/files/batch',                                 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'files#preview',        'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/preview',                      'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#updateLabels',   'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/labels',                       'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
+
+        // Tasks: user-scoped listing (all CalDAV VTODOs for current user).
+        ['name' => 'tasks#allUserTasks', 'url' => '/api/tasks', 'verb' => 'GET'],
 
         // Tasks operations under objects (CalDAV VTODO wrapper).
         ['name' => 'tasks#index', 'url' => '/api/objects/{register}/{schema}/{id}/tasks', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -320,6 +451,7 @@ return [
         // Notes operations under objects (Nextcloud Comments wrapper).
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         
         // Schemas.
@@ -335,6 +467,13 @@ return [
         // Registers
         ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#rollbackImport', 'url' => '/api/registers/import/rollback', 'verb' => 'POST'],
+        [
+            'name'         => 'registers#importTemplate',
+            'url'          => '/api/registers/{id}/schemas/{schema}/import-template',
+            'verb'         => 'GET',
+            'requirements' => ['id' => '[^/]+', 'schema' => '[^/]+'],
+        ],
         ['name' => 'registers#publishToGitHub', 'url' => '/api/registers/{id}/publish/github', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#publish', 'url' => '/api/registers/{id}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#depublish', 'url' => '/api/registers/{id}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -372,7 +511,6 @@ return [
         ['name' => 'userSettings#removeGitHubToken', 'url' => '/api/user-settings/github/token', 'verb' => 'DELETE'],
         // Applications.
         ['name' => 'applications#page', 'url' => '/applications', 'verb' => 'GET'],
-        ['name' => 'applications#stats', 'url' => '/api/applications/stats', 'verb' => 'GET'],
         // Agents.
         ['name' => 'agents#page', 'url' => '/agents', 'verb' => 'GET'],
         ['name' => 'agents#stats', 'url' => '/api/agents/stats', 'verb' => 'GET'],
@@ -405,6 +543,9 @@ return [
         ['name' => 'organisation#isolationMetrics', 'url' => '/api/admin/isolation-metrics', 'verb' => 'GET'],
 		// Tags.
 		['name' => 'tags#getAllTags', 'url' => '/api/tags', 'verb' => 'GET'],
+		['name' => 'tags#index',     'url' => '/api/objects/{register}/{schema}/{id}/tags',         'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+		['name' => 'tags#add',       'url' => '/api/objects/{register}/{schema}/{id}/tags',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+		['name' => 'tags#remove',    'url' => '/api/objects/{register}/{schema}/{id}/tags/{tag}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'tag' => '[^/]+']],
 		
 		// Views - Saved search configurations.
 		['name' => 'views#index', 'url' => '/api/views', 'verb' => 'GET'],
@@ -420,6 +561,12 @@ return [
 		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
 		['name' => 'chat#getChatStats', 'url' => '/api/chat/stats', 'verb' => 'GET'],
 		['name' => 'chat#sendFeedback', 'url' => '/api/conversations/{conversationUuid}/messages/{messageId}/feedback', 'verb' => 'POST', 'requirements' => ['conversationUuid' => '[^/]+', 'messageId' => '\\d+']],
+
+		// Chat - Health probe (PublicPage — no auth required).
+		['name' => 'chatHealth#health', 'url' => '/api/chat/health', 'verb' => 'GET'],
+
+		// Chat - SSE streaming endpoint (authenticated).
+		['name' => 'chatStream#stream', 'url' => '/api/chat/stream', 'verb' => 'POST'],
 		
 		// Conversations - AI Conversation management.
 		['name' => 'conversation#index', 'url' => '/api/conversations', 'verb' => 'GET'],
@@ -486,6 +633,12 @@ return [
 		['name' => 'ui#endpointLogs', 'url' => '/endpoints/logs', 'verb' => 'GET'],
 		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
 		['name' => 'ui#entitiesDetails', 'url' => '/entities/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'ui#avg', 'url' => '/avg', 'verb' => 'GET'],
+		['name' => 'ui#reports', 'url' => '/reports', 'verb' => 'GET'],
+		['name' => 'ui#reportView', 'url' => '/reports/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		// Rapportage on-demand render endpoints (Phase 2).
+		['name' => 'reports#render',  'url' => '/api/reports/{id}/render',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'reports#preview', 'url' => '/api/reports/{id}/preview', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
 		// User - Profile management and authentication.
@@ -493,6 +646,21 @@ return [
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
 		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
+
+		// profile-actions — self-service endpoints for the current user (/api/user/me).
+		['name' => 'user#changePassword',                  'url' => '/api/user/me/password',             'verb' => 'PUT'],
+		['name' => 'user#uploadAvatar',                    'url' => '/api/user/me/avatar',               'verb' => 'POST'],
+		['name' => 'user#deleteAvatar',                    'url' => '/api/user/me/avatar',               'verb' => 'DELETE'],
+		['name' => 'user#exportData',                      'url' => '/api/user/me/export',               'verb' => 'GET'],
+		['name' => 'user#getNotificationPreferences',      'url' => '/api/user/me/notifications',        'verb' => 'GET'],
+		['name' => 'user#updateNotificationPreferences',   'url' => '/api/user/me/notifications',        'verb' => 'PUT'],
+		['name' => 'user#getActivity',                     'url' => '/api/user/me/activity',             'verb' => 'GET'],
+		['name' => 'user#listTokens',                      'url' => '/api/user/me/tokens',               'verb' => 'GET'],
+		['name' => 'user#createToken',                     'url' => '/api/user/me/tokens',               'verb' => 'POST'],
+		['name' => 'user#revokeToken',                     'url' => '/api/user/me/tokens/{id}',          'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'user#requestDeactivation',             'url' => '/api/user/me/deactivate',           'verb' => 'POST'],
+		['name' => 'user#getDeactivationStatus',           'url' => '/api/user/me/deactivation-status',  'verb' => 'GET'],
+		['name' => 'user#cancelDeactivation',              'url' => '/api/user/me/deactivate',           'verb' => 'DELETE'],
 
 		// Webhooks.
 		['name' => 'webhooks#index', 'url' => '/api/webhooks', 'verb' => 'GET'],
@@ -515,6 +683,30 @@ return [
 		['name' => 'workflowEngine#update', 'url' => '/api/engines/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'workflowEngine#destroy', 'url' => '/api/engines/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 		['name' => 'workflowEngine#health', 'url' => '/api/engines/{id}/health', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+		['name' => 'workflowEngine#testHook', 'url' => '/api/engines/{id}/test-hook', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+
+		// Workflow Execution History - read/admin-delete persisted hook executions.
+		['name' => 'workflowExecution#index', 'url' => '/api/workflow-executions', 'verb' => 'GET'],
+		['name' => 'workflowExecution#show', 'url' => '/api/workflow-executions/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'workflowExecution#destroy', 'url' => '/api/workflow-executions/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+
+		// Scheduled Workflows - CRUD for TimedJob-driven workflow triggers.
+		['name' => 'scheduledWorkflow#index', 'url' => '/api/scheduled-workflows', 'verb' => 'GET'],
+		['name' => 'scheduledWorkflow#show', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'scheduledWorkflow#create', 'url' => '/api/scheduled-workflows', 'verb' => 'POST'],
+		['name' => 'scheduledWorkflow#update', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+		['name' => 'scheduledWorkflow#destroy', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+
+		// Approval Chains - multi-step approval definitions and per-object progress.
+		['name' => 'approval#index', 'url' => '/api/approval-chains', 'verb' => 'GET'],
+		['name' => 'approval#show', 'url' => '/api/approval-chains/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'approval#create', 'url' => '/api/approval-chains', 'verb' => 'POST'],
+		['name' => 'approval#update', 'url' => '/api/approval-chains/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+		['name' => 'approval#destroy', 'url' => '/api/approval-chains/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+		['name' => 'approval#objects', 'url' => '/api/approval-chains/{id}/objects', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'approval#steps', 'url' => '/api/approval-steps', 'verb' => 'GET'],
+		['name' => 'approval#approve', 'url' => '/api/approval-steps/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+		['name' => 'approval#reject', 'url' => '/api/approval-steps/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
 		// MCP Discovery - Tiered API discovery for AI agents.
 		// CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.

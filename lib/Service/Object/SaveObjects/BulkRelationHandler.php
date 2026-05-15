@@ -46,7 +46,7 @@ class BulkRelationHandler
      * @param MagicMapper           $objectEntityMapper Mapper for object entities.
      * @param LoggerInterface       $logger             Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function __construct(
         private readonly BulkValidationHandler $bulkValidHandler,
@@ -78,7 +78,7 @@ class BulkRelationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex inverse relation handling with multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple code paths for different relation types
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {
@@ -196,7 +196,7 @@ class BulkRelationHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete post-save relation workflow
      * Else branches improve readability for array vs single value handling
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function handlePostSaveInverseRelations(
         array $savedObjects,
@@ -235,10 +235,9 @@ class BulkRelationHandler
                     continue;
                 }
 
+                $relatedObjectIds = [$objectData[$propertyName]];
                 if (is_array($objectData[$propertyName]) === true) {
                     $relatedObjectIds = $objectData[$propertyName];
-                } else {
-                    $relatedObjectIds = [$objectData[$propertyName]];
                 }
 
                 foreach ($relatedObjectIds as $relatedId) {
@@ -287,10 +286,9 @@ class BulkRelationHandler
                     continue;
                 }
 
+                $relatedObjectIds = [$objectData[$propertyName]];
                 if (is_array($objectData[$propertyName]) === true) {
                     $relatedObjectIds = $objectData[$propertyName];
-                } else {
-                    $relatedObjectIds = [$objectData[$propertyName]];
                 }
 
                 foreach ($relatedObjectIds as $relatedId) {
@@ -333,7 +331,7 @@ class BulkRelationHandler
      *
      * Else branch used for early continue when UUID already present
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function performBulkWriteBackUpdatesWithContext(array $writeBackOperations): void
     {
@@ -417,7 +415,7 @@ class BulkRelationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex relation type detection with multiple conditions
      * Else branches handle schema vs heuristic detection paths
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
@@ -432,10 +430,9 @@ class BulkRelationHandler
         }
 
         foreach ($data as $key => $value) {
+            $currentPath = $key;
             if ($prefix !== '') {
                 $currentPath = "$prefix.$key";
-            } else {
-                $currentPath = $key;
             }
 
             // Check if this property is defined in the schema.

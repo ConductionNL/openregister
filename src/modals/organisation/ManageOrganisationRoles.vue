@@ -1,3 +1,7 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog :name="t('openregister', 'Manage Organisation Roles')"
 		size="normal"
@@ -47,7 +51,7 @@
 					:loading="loadingGroups"
 					:filterable="true"
 					label-outside
-					input-label="Nextcloud Groups"
+					:input-label="t('openregister', 'Nextcloud Groups')"
 					@input="addRole">
 					<template #option="{ name, userCount }">
 						<div class="group-option">

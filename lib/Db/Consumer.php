@@ -6,7 +6,7 @@
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
- * @author  Conduction Development Team <dev@conductio.nl>
+ * @author  Conduction Development Team <info@conduction.nl>
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
@@ -42,6 +42,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAuthorizationConfiguration(?array $authorizationConfiguration)
  * @method string|null getUserId()
  * @method void setUserId(?string $userId)
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class Consumer extends Entity implements JsonSerializable
 {

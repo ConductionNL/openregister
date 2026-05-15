@@ -9,7 +9,7 @@
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -17,9 +17,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-28
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-31
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-28
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-31
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -85,7 +85,7 @@ class DeletedController extends Controller
             return false;
         }
 
-        return $this->groupManager->isAdmin($user->getUID());
+        return (bool) $this->groupManager->isAdmin($user->getUID());
     }//end isCurrentUserAdmin()
 
     /**
@@ -190,7 +190,7 @@ class DeletedController extends Controller
      *     page?: int, pages?: 1|float, limit?: int|null, offset?: int|null},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
      */
     public function index(): JSONResponse
     {
@@ -352,7 +352,7 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with restore result
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-31
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-31
      */
     public function restore(string $id): JSONResponse
     {
@@ -405,7 +405,7 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with multiple restore result
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-31
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-31
      */
     public function restoreMultiple(): JSONResponse
     {
@@ -492,7 +492,7 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with deletion result
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-28
      */
     public function destroy(string $id): JSONResponse
     {
@@ -540,7 +540,7 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with multiple deletion result
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-28
      */
     public function destroyMultiple(): JSONResponse
     {

@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.13-unstable.78</version>
+    <version>0.2.13-unstable.80</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -90,11 +90,16 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TransferExecutionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\RealtimeEventRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\BatchNotificationJob</job>
 	</background-jobs>
 
     <navigations>
@@ -112,13 +117,16 @@ Vrij en open source onder de EUPL-licentie.
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
 
-	<!-- TEMPORARILY DISABLED: Commands trigger circular DI during occ bootstrap
 	<commands>
-		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
-		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
-		<command>OCA\OpenRegister\Command\MigrateStorageCommand</command>
+		<!-- Solr / migrate-storage commands trigger circular DI during occ
+		     bootstrap (SettingsService → IndexService → many other services).
+		     Disabled until that's untangled. -->
+		<!-- <command>OCA\OpenRegister\Command\SolrDebugCommand</command> -->
+		<!-- <command>OCA\OpenRegister\Command\SolrManagementCommand</command> -->
+		<!-- <command>OCA\OpenRegister\Command\MigrateStorageCommand</command> -->
+		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
+		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 	</commands>
-	-->
 
 	<notification>
 		<service>OCA\OpenRegister\Notification\Notifier</service>

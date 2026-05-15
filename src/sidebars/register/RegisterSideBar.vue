@@ -180,13 +180,18 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
-						input-label="Schemas"
+						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
 						:close-on-select="false"
 						:loading="schemasLoading"
 						@input="vals => updateField('schemas', vals)" />
+					<RegisterLanguagesEditor
+						:value="formData.languages || []"
+						:label="t('openregister', 'Languages')"
+						:helper-text="t('openregister', 'Ordered BCP 47 language tags. The first language is the register default and drives Accept-Language fallback for translatable properties.')"
+						@input="vals => updateField('languages', vals)" />
 				</div>
 			</template>
 		</CnFormDialog>
@@ -196,6 +201,7 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 <script>
 import { NcAppSidebar, NcAppSidebarTab, NcButton, NcEmptyContent, NcActions, NcActionButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
 import { CnStatsBlock, CnKpiGrid, CnItemCard, CnFormDialog } from '@conduction/nextcloud-vue'
+import RegisterLanguagesEditor from '../../components/i18n/RegisterLanguagesEditor.vue'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
@@ -226,6 +232,7 @@ export default {
 		CnKpiGrid,
 		CnItemCard,
 		CnFormDialog,
+		RegisterLanguagesEditor,
 		ChartBar,
 		FileCodeOutline,
 		Pencil,
@@ -277,6 +284,7 @@ export default {
 					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
 					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
 					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
+					languages: { type: 'array', title: t('openregister', 'Languages'), order: 5 },
 				},
 				required: ['title', 'slug'],
 			}

@@ -11,7 +11,7 @@
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
@@ -68,7 +68,7 @@ class LinkedEntityPropertyHandler
      *
      * @param LoggerInterface $logger Logger for logging operations
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -88,7 +88,7 @@ class LinkedEntityPropertyHandler
      *
      * @return ObjectEntity The updated object entity
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
      */
     public function extractAndPopulate(ObjectEntity $object, Schema $schema, array $data): ObjectEntity
     {
@@ -131,7 +131,9 @@ class LinkedEntityPropertyHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function extractFromProperty(
         string $propertyName,
@@ -179,7 +181,7 @@ class LinkedEntityPropertyHandler
      *
      * @return string|null The extracted ID or null
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
      */
     private function extractIdFromEnvelope(mixed $value): ?string
     {
@@ -209,7 +211,7 @@ class LinkedEntityPropertyHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
      */
     private function mergeIntoMetadataColumn(ObjectEntity $object, string $ncType, array $newIds): void
     {

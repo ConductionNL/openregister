@@ -9,7 +9,7 @@
  * @category Example
  * @package  OCA\OpenRegister\Service\Objects
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -35,7 +35,7 @@ class NewFacetingExample
      *
      * @param ObjectService $objectService The object service instance
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function __construct(
         private readonly ObjectService $objectService
@@ -51,7 +51,7 @@ class NewFacetingExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function basicTermsFaceting(): array
     {
@@ -80,7 +80,7 @@ class NewFacetingExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function dateHistogramFaceting(): array
     {
@@ -116,7 +116,7 @@ class NewFacetingExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function rangeFaceting(): array
     {
@@ -155,7 +155,7 @@ class NewFacetingExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function ecommerceFaceting(): array
     {
@@ -228,7 +228,7 @@ class NewFacetingExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function paginatedSearchWithFacets(): array
     {
@@ -267,7 +267,7 @@ class NewFacetingExample
      *
      * @return array Migration notes and new facets configuration.
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function migrationExample(): array
     {
@@ -317,7 +317,7 @@ class NewFacetingExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function advancedFilteringWithFacets(): array
     {
@@ -383,7 +383,7 @@ class NewFacetingExample
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-9
      */
     public function performanceOptimizedFaceting(): array
     {

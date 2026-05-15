@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
  */
 
 namespace OCA\OpenRegister\Service;
@@ -192,7 +192,7 @@ class ChatService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
      *
-     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
      */
     public function processMessage(
         int $conversationId,
@@ -262,8 +262,11 @@ class ChatService
             );
             $llmTime      = microtime(true) - $llmStartTime;
 
-            // Store AI response with sources.
-            $this->historyHandler->storeMessage(
+            // Store AI response with sources. Capture the return so we can surface
+            // the persisted assistant message's id to the caller (ChatStreamController
+            // needs it to populate the SSE `final` event's messageId field; the widget
+            // uses it as the Vue render key for the assistant bubble).
+            $assistantStored = $this->historyHandler->storeMessage(
                 conversationId: $conversationId,
                 role: Message::ROLE_ASSISTANT,
                 content: $aiResponse,
@@ -295,9 +298,12 @@ class ChatService
             $totalTime = $contextTime + $historyTime + $llmTime;
 
             return [
-                'message' => $aiResponse,
-                'sources' => $context['sources'],
-                'timings' => [
+                'message'   => $aiResponse,
+                // Surface the persisted assistant message id for SSE consumers
+                // (ChatStreamController + the nc-vue widget render key).
+                'messageId' => (string) ($assistantStored->getId() ?? ''),
+                'sources'   => $context['sources'],
+                'timings'   => [
                     'context' => round($contextTime, 2).'s',
                     'history' => round($historyTime, 3).'s',
                     'llm'     => round($llmTime, 2).'s',

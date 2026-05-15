@@ -159,6 +159,8 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -170,7 +172,17 @@ class ContactsController extends Controller
 
             $data = $this->request->getParams();
 
-            if (empty($data['addressbookId']) === false && empty($data['contactUri']) === false) {
+            $hasLinkData   = (empty($data['addressbookId']) === false && empty($data['contactUri']) === false);
+            $hasCreateData = (empty($data['fullName']) === false);
+
+            if ($hasLinkData === false && $hasCreateData === false) {
+                return new JSONResponse(
+                    ['error' => 'Either addressbookId+contactUri or fullName is required'],
+                    400
+                );
+            }
+
+            if ($hasLinkData === true) {
                 // Link existing contact.
                 $link = $this->contactService->linkContact(
                     $object->getUuid(),
@@ -179,19 +191,16 @@ class ContactsController extends Controller
                     $data['contactUri'],
                     $data['role'] ?? null
                 );
-            } else if (empty($data['fullName']) === false) {
+            }
+
+            if ($hasLinkData === false) {
                 // Create new contact.
                 $link = $this->contactService->createAndLinkContact(
                     $object->getUuid(),
                     (int) $object->getRegister(),
                     $data
                 );
-            } else {
-                return new JSONResponse(
-                    ['error' => 'Either addressbookId+contactUri or fullName is required'],
-                    400
-                );
-            }//end if
+            }
 
             return new JSONResponse($link, 201);
         } catch (DoesNotExistException $e) {
@@ -218,6 +227,8 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Route-bound; method 501 pending role updates.
      */
     public function update(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
@@ -353,7 +364,10 @@ class ContactsController extends Controller
         } catch (\Exception $e) {
             $this->logger->error('[ContactsAPI] Match failed: {error}', ['error' => $e->getMessage(), 'exception' => $e]);
 
-            return new JSONResponse(['error' => $this->l10n->t('Internal server error'), 'matches' => [], 'total' => 0], 500);
+            return new JSONResponse(
+                ['error' => $this->l10n->t('Internal server error'), 'matches' => [], 'total' => 0],
+                500
+            );
         }
     }//end match()
 

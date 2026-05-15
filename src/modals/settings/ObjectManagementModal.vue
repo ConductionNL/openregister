@@ -109,7 +109,7 @@
 
 					<div class="cost-note">
 						<InformationOutline :size="16" />
-						<small>{{ t('openregister', 'Tip: Only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.') }}</small>
+						<small>{{ t('openregister', 'Tip: only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.') }}</small>
 					</div>
 				</div>
 			</div>
@@ -148,7 +148,7 @@
 						type="switch">
 						{{ t('openregister', 'Include related object references') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Include IDs and names of related objects for better contextual search') }}</small>
+					<small>{{ t('openregister', 'Include ids and names of related objects for better contextual search') }}</small>
 				</div>
 			</div>
 
@@ -181,7 +181,7 @@
 
 			<!-- Embedding Provider Info -->
 			<div class="config-section">
-				<h3>{{ t('openregister', 'ℹ️ Current Configuration') }}</h3>
+				<h3>{{ t('openregister', 'ℹ️ current configuration') }}</h3>
 
 				<div class="info-grid">
 					<div class="info-item">
@@ -199,7 +199,7 @@
 				</div>
 
 				<div class="info-note">
-					<small>{{ t('openregister', 'To change the embedding provider or model, go to LLM Configuration.') }}</small>
+					<small>{{ t('openregister', 'To change the embedding provider or model, go to LLM configuration.') }}</small>
 				</div>
 			</div>
 		</div>

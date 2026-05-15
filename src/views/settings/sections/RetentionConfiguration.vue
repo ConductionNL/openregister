@@ -3,7 +3,7 @@
 		name="Retention"
 		description="Configure data and log retention policies"
 		:loading="loading"
-		loading-message="Loading retention settings...">
+		:loading-message="t('openregister', 'Loading retention settings...')">
 		<!-- Actions slot -->
 		<template #actions>
 			<NcButton
@@ -276,7 +276,7 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
  */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
@@ -358,7 +358,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
 		 */
 		async saveSettings() {
 			await this.settingsStore.updateRetentionSettings(this.retentionOptions)

@@ -343,6 +343,36 @@ class SchemaCacheHandler
     }//end cacheSchemaProperties()
 
     /**
+     * Invalidate cache for a specific schema (runtime-schema-api contract)
+     *
+     * Public, canonical entry point used by the runtime schema CRUD path
+     * (SchemasController create/update/delete). After this call returns, the
+     * next read in the same PHP worker MUST observe a fresh load from the
+     * database — both the in-memory cache and the persistent cache row for
+     * the given ID are dropped.
+     *
+     * Internally delegates to {@see self::invalidateForSchemaChange()} with
+     * a generic 'mutate' operation tag so audit logs stay informative.
+     *
+     * @param int $schemaId The schema ID to invalidate.
+     *
+     * @return void
+     *
+     * @throws \OCP\DB\Exception If a database error occurs.
+     */
+    public function invalidate(int $schemaId): void
+    {
+        // Delegate to the canonical invalidator used by every controller path.
+        $this->invalidateForSchemaChange(schemaId: $schemaId, operation: 'mutate');
+
+        // Also drop the request-scoped find cache on the SchemaMapper itself
+        // so the next find() reads fresh state from the database within the
+        // same PHP worker. The persistent cache table is already invalidated
+        // above; this call closes the in-mapper micro-cache window.
+        $this->schemaMapper->clearFindCache(schemaId: $schemaId);
+    }//end invalidate()
+
+    /**
      * Invalidate cache for a specific schema
      *
      * **SCHEMA CACHE INVALIDATION**: Called when schemas are created, updated,
@@ -585,12 +615,8 @@ class SchemaCacheHandler
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
-        $now = new DateTime();
-        if ($ttl > 0) {
-            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
-        } else {
-            $expires = null;
-        }
+        $now     = new DateTime();
+        $expires = $ttl > 0 ? (clone $now)->add(new DateInterval("PT{$ttl}S")) : null;
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL/MariaDB compatibility.
         $qb = $this->db->getQueryBuilder();

@@ -622,6 +622,7 @@ services:
       - ../docudesk:/var/www/html/custom_apps/docudesk
       - ../procest:/var/www/html/custom_apps/procest
       - ../pipelinq:/var/www/html/custom_apps/pipelinq
+      - ../decidesk:/var/www/html/custom_apps/decidesk
       - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
       - ../larpingapp:/var/www/html/custom_apps/larpingapp
     environment:
@@ -1057,6 +1058,35 @@ services:
   # ExApp Shared Infrastructure
   # Start with: docker-compose --profile commonground up
   # =============================================================================
+
+  # Greenmail — In-memory SMTP/IMAP/POP3 server for integration tests
+  # Start with: docker-compose --profile mail up -d
+  # Seed test mailboxes via: bash docker/mail/seed-mail.sh
+  # Auto-creates accounts on first message; login = email = password.
+  # Used by `nextcloud-entity-relations` integration tests
+  # (`tests/Service/MailRelationsIntegrationTest.php`) — tests skip
+  # gracefully when this container is not running.
+  greenmail:
+    profiles:
+      - mail
+    image: greenmail/standalone:2.1.0
+    container_name: openregister-greenmail
+    restart: unless-stopped
+    environment:
+      - GREENMAIL_OPTS=-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users.login=email -Dgreenmail.auth.disabled
+    ports:
+      - "3025:3025"  # SMTP
+      - "3110:3110"  # POP3
+      - "3143:3143"  # IMAP
+      - "3465:3465"  # SMTPS
+      - "3993:3993"  # IMAPS
+      - "3995:3995"  # POP3S
+      - "8088:8080"  # Greenmail HTTP API (for inbox inspection in tests)
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo > /dev/tcp/127.0.0.1/3025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Redis - Shared cache and message broker for ExApp services
   # Used by: OpenZaak, OpenKlant, OpenTalk

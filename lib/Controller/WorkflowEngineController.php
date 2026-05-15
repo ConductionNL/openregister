@@ -6,7 +6,7 @@
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -14,9 +14,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-89
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-89
  */
 
 declare(strict_types=1);
@@ -65,7 +65,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function index(): JSONResponse
     {
@@ -109,7 +109,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function create(
         string $name,
@@ -204,8 +204,8 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-91
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function health(int $id): JSONResponse
     {
@@ -225,7 +225,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-89
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-89
      */
     public function available(): JSONResponse
     {

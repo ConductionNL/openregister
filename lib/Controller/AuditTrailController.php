@@ -10,7 +10,7 @@
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -18,13 +18,13 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-12
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-15
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-17
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-81
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-82
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-83
+ * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-12
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-15
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-17
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-81
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-82
+ * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-83
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -46,27 +46,66 @@ use OCP\IRequest;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Controller covers audit trail, verification, verwerkingsregister
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Necessary service dependencies
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)   One public method per audit trail route
  */
 class AuditTrailController extends Controller
 {
     /**
      * Constructor for AuditTrailController
      *
-     * @param string           $appName          The name of the app
-     * @param IRequest         $request          The request object
-     * @param LogService       $logService       The log service
-     * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
-     * @param AuditHashService $auditHashService The audit hash chain service
+     * @param string             $appName          The name of the app
+     * @param IRequest           $request          The request object
+     * @param LogService         $logService       The log service
+     * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper
+     * @param AuditHashService   $auditHashService The audit hash chain service
+     * @param \OCP\IUserSession  $userSession      Active user session for caller identity.
+     * @param \OCP\IGroupManager $groupManager     Group manager for admin / role checks.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly LogService $logService,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly AuditHashService $auditHashService
+        private readonly AuditHashService $auditHashService,
+        private readonly \OCP\IUserSession $userSession,
+        private readonly \OCP\IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Gate destructive / bulk-export audit operations on admin membership.
+     *
+     * SECURITY: `clearAll` wipes the entire audit table — a chain of
+     * trust for AVG/GDPR Art 30 reviews. `export` dumps every row in
+     * bulk and is an obvious recon path across tenants. Both surfaces
+     * are admin-only at the framework level (the methods carry no
+     * `@NoAdminRequired`) and this body-level helper stays as
+     * defence-in-depth so removing the framework gate by accident does
+     * not silently open the surface.
+     *
+     * @return JSONResponse|null 401/403 response when blocked, null when allowed.
+     */
+    private function requireAdmin(): ?JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required'],
+                statusCode: 401
+            );
+        }
+
+        if ($this->groupManager->isAdmin($user->getUID()) === false) {
+            return new JSONResponse(
+                data: ['error' => 'Forbidden: this audit-trail operation is admin-only'],
+                statusCode: 403
+            );
+        }
+
+        return null;
+
+    }//end requireAdmin()
 
     /**
      * Extract pagination, filter, and search parameters from request
@@ -76,7 +115,7 @@ class AuditTrailController extends Controller
      * @SuppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
     private function extractRequestParameters(): array
     {
@@ -191,8 +230,8 @@ class AuditTrailController extends Controller
      *     total: int<0, max>, page: int|null, pages: float, limit: int,
      *     offset: int|null}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-17
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-17
      */
     public function index(): JSONResponse
     {
@@ -239,8 +278,8 @@ class AuditTrailController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-15
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-15
      */
     public function show(int $id): JSONResponse
     {
@@ -264,7 +303,7 @@ class AuditTrailController extends Controller
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
     public function update(int $id): JSONResponse
     {
@@ -293,7 +332,7 @@ class AuditTrailController extends Controller
      *     total?: int<0, max>, page?: int|null, pages?: float, limit?: int,
      *     offset?: int|null}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
     public function objects(string $register, string $schema, string $id): JSONResponse
     {
@@ -333,17 +372,22 @@ class AuditTrailController extends Controller
     /**
      * Export audit trail logs in specified format
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
      *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with export data or error
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-81
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-81
      */
     public function export(): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         // Extract request parameters.
         $params = $this->extractRequestParameters();
 
@@ -411,7 +455,7 @@ class AuditTrailController extends Controller
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
     public function destroy(int $id): JSONResponse
     {
@@ -429,7 +473,7 @@ class AuditTrailController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
     public function destroyMultiple(): JSONResponse
     {
@@ -442,16 +486,21 @@ class AuditTrailController extends Controller
     /**
      * Clear all audit trail logs
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth.
      *
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response confirming clear or error
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
     public function clearAll(): JSONResponse
     {
+        if (($denial = $this->requireAdmin()) !== null) {
+            return $denial;
+        }
+
         try {
             // Use the clearAllLogs method from the mapper.
             $result = $this->auditTrailMapper->clearAllLogs();
@@ -494,8 +543,8 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse Verification result with valid/invalid status
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-12
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-12
      */
     public function verify(): JSONResponse
     {
@@ -529,8 +578,8 @@ class AuditTrailController extends Controller
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-83
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-83
      */
     public function verwerkingsregister(): JSONResponse
     {
@@ -558,8 +607,8 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse Matching audit trail entries grouped by schema
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-82
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-82
      */
     public function inzageverzoek(): JSONResponse
     {

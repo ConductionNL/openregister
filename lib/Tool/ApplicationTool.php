@@ -72,7 +72,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return 'Application Management'
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getName(): string
     {
@@ -86,7 +86,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return 'Manage applications: list, view, create, update, or delete with RBAC permissions.'
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getDescription(): string
     {
@@ -101,7 +101,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @return array<int, array<string, mixed>> Array of function definitions
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getFunctions(): array
     {
@@ -213,7 +213,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function listApplications(int $limit=50, int $offset=0): array
     {
@@ -266,7 +266,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function getApplication(string $uuid): array
     {
@@ -310,7 +310,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function createApplication(
         string $name,
@@ -363,7 +363,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function updateApplication(
         string $uuid,
@@ -421,7 +421,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function deleteApplication(string $uuid): array
     {
@@ -467,7 +467,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      *
      * @return array Response
      *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {

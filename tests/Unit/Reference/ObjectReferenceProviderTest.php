@@ -9,7 +9,7 @@
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Reference
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -295,14 +295,14 @@ class ObjectReferenceProviderTest extends TestCase
         $this->objectService->method('find')
             ->willReturn($object);
 
-        // Mock schema.
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('Producten');
+        // Use real Schema/Register instances (magic __call getters can't be mocked).
+        $schema = new Schema();
+        $schema->setTitle('Producten');
         $this->schemaMapper->method('find')->willReturn($schema);
 
         // Mock register.
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn('Gemeente');
+        $register = new Register();
+        $register->setTitle('Gemeente');
         $this->registerMapper->method('find')->willReturn($register);
 
         // Mock deep link (no deep link registered).

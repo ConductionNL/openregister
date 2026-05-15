@@ -9,7 +9,7 @@
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -135,6 +135,8 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.LongVariable)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -487,6 +489,163 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?float $relevance = null;
 
     /**
+     * RFC 8141 URN identifier for this object.
+     *
+     * Transient property set by `RenderObject` (or `UrnService::buildForObject`)
+     * during render so the @self envelope can carry a stable, system-
+     * independent identifier. Not persisted to the DB — derived from
+     * registerSlug + schemaSlug + uuid at render time.
+     *
+     * @var string|null The RFC 8141 URN, or null when not yet computed
+     */
+    protected ?string $urn = null;
+
+    /**
+     * Per-language translation completeness (Decision 4 from register-i18n).
+     *
+     * Transient property populated by RenderObject during render — shape:
+     *   `[language => ['translated' => int, 'total' => int, 'ratio' => float]]`.
+     * Computed-on-read via TranslationStatusService::completenessForObject;
+     * skipped (null) when the schema has no translatable properties.
+     *
+     * @var array<string, array{translated: int, total: int, ratio: float}>|null
+     */
+    protected ?array $translationCompleteness = null;
+
+    /**
+     * AVG / GDPR Art 30 processing-activity override.
+     *
+     * Transient field — set by callers that want to tag an upcoming
+     * write to a specific verwerkingsactiviteit (highest precedence in
+     * the audit-trail trigger contract; beats schema and register
+     * defaults). Used by data-subject access endpoints
+     * (`/api/avg/inzage`, `/api/avg/vergetelheid`,
+     * `/api/avg/portabiliteit`) so reads/writes performed under a DSAR
+     * are correctly attributed to that processing activity.
+     *
+     * Not persisted to the object itself — the audit trail is the
+     * canonical record. Accepted as either a `code` or a `uuid`; the
+     * audit hook resolves both forms via
+     * `VerwerkingsactiviteitMapper::resolveReference`.
+     *
+     * @var string|null Transient processing-activity reference.
+     */
+    protected ?string $processingActivityId = null;
+
+    /**
+     * Import-job tag transferred to the audit trail on save.
+     *
+     * Transient field — set by `ImportService` at the start of a bulk
+     * import so every object created during that import gets the same
+     * UUID stamped on its `create` audit row. Powers the
+     * `softDeleteByImportJobId` rollback contract: a critical failure
+     * (or explicit user request) hands the UUID back, the audit table
+     * is queried for `action = 'create' AND import_job_id = X`, and
+     * the resulting object UUIDs are soft-deleted as a unit.
+     *
+     * Not persisted to the object itself — the audit trail is the
+     * canonical record so per-magic-table migrations are avoided.
+     *
+     * @var string|null Transient import-job reference (UUID v4).
+     */
+    protected ?string $importJobId = null;
+
+    /**
+     * Get the URN for this object.
+     *
+     * @return string|null URN string, or null when none is set.
+     */
+    public function getUrn(): ?string
+    {
+        return $this->urn;
+    }//end getUrn()
+
+    /**
+     * Get the transient processing-activity override used by the
+     * audit-trail trigger contract. Null when no override is set.
+     *
+     * @return string|null Processing-activity code or UUID, or null.
+     */
+    public function getProcessingActivityId(): ?string
+    {
+        return $this->processingActivityId;
+    }//end getProcessingActivityId()
+
+    /**
+     * Set the transient processing-activity override (code or uuid).
+     * Not persisted to the object — read by `AuditTrailMapper` at
+     * write time only.
+     *
+     * @param string|null $processingActivityId Processing-activity code or UUID.
+     *
+     * @return void
+     */
+    public function setProcessingActivityId(?string $processingActivityId): void
+    {
+        $this->processingActivityId = $processingActivityId;
+    }//end setProcessingActivityId()
+
+    /**
+     * Get the transient import-job UUID that should be stamped on the
+     * next save's audit-trail `create` row. Null when the write is
+     * not part of a tagged bulk import.
+     *
+     * @return string|null Import-job UUID, or null when not part of an import.
+     */
+    public function getImportJobId(): ?string
+    {
+        return $this->importJobId;
+    }//end getImportJobId()
+
+    /**
+     * Set the transient import-job UUID. Not persisted to the object;
+     * read by `AuditTrailMapper::createAuditTrail()` at write time and
+     * stored on the audit row.
+     *
+     * @param string|null $importJobId Import-job UUID to stamp on the next audit row.
+     *
+     * @return void
+     */
+    public function setImportJobId(?string $importJobId): void
+    {
+        $this->importJobId = $importJobId;
+    }//end setImportJobId()
+
+    /**
+     * Set the URN for this object (transient, not persisted).
+     *
+     * @param string|null $urn URN to attach to the object instance.
+     *
+     * @return void
+     */
+    public function setUrn(?string $urn): void
+    {
+        $this->urn = $urn;
+    }//end setUrn()
+
+    /**
+     * Read the cached per-language translation completeness map.
+     *
+     * @return array<string, mixed>|null Completeness map keyed by language, or null when not computed.
+     */
+    public function getTranslationCompleteness(): ?array
+    {
+        return $this->translationCompleteness;
+    }//end getTranslationCompleteness()
+
+    /**
+     * Write the cached per-language translation completeness map.
+     *
+     * @param array<string, mixed>|null $translationCompleteness Completeness map keyed by language.
+     *
+     * @return void
+     */
+    public function setTranslationCompleteness(?array $translationCompleteness): void
+    {
+        $this->translationCompleteness = $translationCompleteness;
+    }//end setTranslationCompleteness()
+
+    /**
      * Initialize the entity and define field types
      */
     public function __construct()
@@ -776,6 +935,21 @@ class ObjectEntity extends Entity implements JsonSerializable
         // Only included when a search was performed with _fuzzy=true.
         if ($this->relevance !== null) {
             $objectArray['relevance'] = $this->relevance;
+        }
+
+        // Add the RFC 8141 URN identifier if computed by the renderer.
+        // The renderer populates $this->urn via UrnService::buildForObject;
+        // when absent (e.g. raw entity not run through RenderObject) the
+        // field is simply omitted from @self.
+        if ($this->urn !== null) {
+            $objectArray['urn'] = $this->urn;
+        }
+
+        // Add per-language translation completeness when computed by the
+        // renderer. Skipped (omitted from @self) when the schema has no
+        // translatable properties or the object hasn't been rendered yet.
+        if ($this->translationCompleteness !== null) {
+            $objectArray['translationCompleteness'] = $this->translationCompleteness;
         }
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).

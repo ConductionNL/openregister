@@ -454,6 +454,24 @@ class SolrBackend implements SearchBackendInterface
     }//end index()
 
     /**
+     * Run an aggregation against this Solr backend.
+     *
+     * The translator already exists at
+     * `Aggregation\SolrAggregationQueryBuilder` — this method is the
+     * HTTP-client adapter on top. Returns null until the dev container
+     * ships a Solr instance the runtime can talk to, so the caller
+     * falls back to the PHP path. Stub matches the interface contract.
+     *
+     * @param \OCA\OpenRegister\Service\Aggregation\AggregationQuery $query Portable aggregation request.
+     *
+     * @return array|null The aggregation result, or null when the backend cannot execute it.
+     */
+    public function aggregate(\OCA\OpenRegister\Service\Aggregation\AggregationQuery $query): ?array
+    {
+        return null;
+    }//end aggregate()
+
+    /**
      * Perform generic search.
      *
      * @param array $params Search parameters

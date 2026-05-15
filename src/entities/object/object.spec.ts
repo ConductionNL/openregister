@@ -60,7 +60,8 @@ describe('Object Entity', () => {
 		expect(object['@self'].created).toBe('2023-01-01T00:00:00Z')
 		expect(object['@self'].locked).toBe(null)
 		expect(object['@self'].owner).toBe(null)
-		expect(object.validate().success).toBe(true)
+		// id is min(1) — empty id must fail validation.
+		expect(object.validate().success).toBe(false)
 	})
 
 	it('should handle locked array and owner string', () => {
@@ -162,6 +163,7 @@ describe('Object Entity', () => {
 		expect(object['@self'].description).toBe(null)
 		expect(object['@self'].folder).toBe(null)
 		expect(object['@self'].validation).toBe(null)
-		expect(object.validate().success).toBe(true)
+		// id is min(1) — empty id must fail validation.
+		expect(object.validate().success).toBe(false)
 	})
 })
