@@ -18,10 +18,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -49,12 +51,15 @@ class EntityRelationMapper extends QBMapper
      * @param IDBConnection    $db               Database connection.
      * @param AuditTrailMapper $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
      * @param IUserSession     $userSession      Session user lookup for audit-trail actor.
+     * @param IEventDispatcher $eventDispatcher  Symfony event dispatcher (used by updateDecisionMetadata
+     *                                           to notify listeners after a decision-metadata write).
      * @param LoggerInterface  $logger           Structured log sink.
      */
     public function __construct(
         IDBConnection $db,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly IUserSession $userSession,
+        private readonly IEventDispatcher $eventDispatcher,
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(db: $db, tableName: 'openregister_entity_relations', entityClass: EntityRelation::class);
@@ -381,6 +386,34 @@ class EntityRelationMapper extends QBMapper
                     'relation_id' => $relationId,
                     'changedKeys' => array_keys($changedFields),
                     'error'       => $auditError->getMessage(),
+                ]
+            );
+        }//end try
+
+        // Notify listeners (downstream apps — e.g. DocuDesk's
+        // publication-clearance-via-anonymise change subscribes here to
+        // create a publicationConsent record whenever skipAnonymization
+        // flips false → true, so the 28-day Woo clock starts ticking at
+        // decision time rather than at anonymise time). Failure to
+        // dispatch / listener failure MUST NOT roll back the persisted
+        // state change — log and continue, same contract as audit.
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new EntityRelationDecisionUpdatedEvent(
+                    relation: $relation,
+                    changedFields: $changedFields,
+                    actingUser: ($actingUser ?? $this->userSession->getUser())
+                )
+            );
+        } catch (\Throwable $dispatchError) {
+            $this->logger->error(
+                message: '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent',
+                context: [
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
+                    'relation_id' => $relationId,
+                    'changedKeys' => array_keys($changedFields),
+                    'error'       => $dispatchError->getMessage(),
                 ]
             );
         }//end try

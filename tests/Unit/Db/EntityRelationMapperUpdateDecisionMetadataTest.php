@@ -8,7 +8,9 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -30,6 +32,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase
     private IDBConnection&MockObject $db;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private IUserSession&MockObject $userSession;
+    private IEventDispatcher&MockObject $eventDispatcher;
     private LoggerInterface&MockObject $logger;
     private IUser&MockObject $user;
 
@@ -38,6 +41,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
+        $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->user = $this->createMock(IUser::class);
 
@@ -55,6 +59,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase
                 $this->db,
                 $this->auditTrailMapper,
                 $this->userSession,
+                $this->eventDispatcher,
                 $this->logger,
             ])
             ->onlyMethods(['update'])
@@ -311,5 +316,106 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase
 
         $this->assertNotNull($captured);
         $this->assertSame('system', $captured->getUser());
+    }
+
+    public function testDispatchesEventOnSkipAnonymizationFlip(): void
+    {
+        $relation = new EntityRelation();
+        $relation->setId(99);
+        $relation->setSkipAnonymization(false);
+
+        $mapper = $this->mapperWithMockedUpdate();
+
+        $captured = null;
+        $this->eventDispatcher
+            ->expects($this->once())
+            ->method('dispatchTyped')
+            ->willReturnCallback(function (EntityRelationDecisionUpdatedEvent $event) use (&$captured) {
+                $captured = $event;
+            });
+
+        $mapper->updateDecisionMetadata(
+            relation: $relation,
+            fields: ['skipAnonymization' => true],
+            actingUser: $this->user
+        );
+
+        $this->assertNotNull($captured);
+        $this->assertSame(99, $captured->getRelation()->getId());
+        $this->assertTrue($captured->isSkipAnonymizationActivated());
+        $this->assertSame($this->user, $captured->getActingUser());
+
+        $diff = $captured->getChangedFields();
+        $this->assertArrayHasKey('skipAnonymization', $diff);
+        $this->assertSame(['previous' => false, 'new' => true], $diff['skipAnonymization']);
+    }
+
+    public function testDispatchesEventOnBasesChange(): void
+    {
+        $relation = new EntityRelation();
+        $relation->setId(7);
+
+        $mapper = $this->mapperWithMockedUpdate();
+
+        $captured = null;
+        $this->eventDispatcher
+            ->expects($this->once())
+            ->method('dispatchTyped')
+            ->willReturnCallback(function (EntityRelationDecisionUpdatedEvent $event) use (&$captured) {
+                $captured = $event;
+            });
+
+        $mapper->updateDecisionMetadata(
+            relation: $relation,
+            fields: ['bases' => ['uuid-a']],
+            actingUser: $this->user
+        );
+
+        $this->assertNotNull($captured);
+        // bases change is NOT a skip-flip — the convenience helper must return false.
+        $this->assertFalse($captured->isSkipAnonymizationActivated());
+        $diff = $captured->getChangedFields();
+        $this->assertArrayHasKey('bases', $diff);
+        $this->assertSame(['previous' => null, 'new' => ['uuid-a']], $diff['bases']);
+    }
+
+    public function testNoEventDispatchedOnSemanticNoOp(): void
+    {
+        $relation = new EntityRelation();
+        $relation->setSkipAnonymization(true);
+
+        $mapper = $this->mapperWithMockedUpdate();
+
+        $this->eventDispatcher->expects($this->never())->method('dispatchTyped');
+
+        $mapper->updateDecisionMetadata(
+            relation: $relation,
+            fields: ['skipAnonymization' => true],
+            actingUser: $this->user
+        );
+    }
+
+    public function testDispatchFailureDoesNotMaskUpdate(): void
+    {
+        $relation = new EntityRelation();
+        $relation->setId(42);
+
+        $mapper = $this->mapperWithMockedUpdate();
+
+        $this->eventDispatcher
+            ->method('dispatchTyped')
+            ->willThrowException(new \RuntimeException('listener exploded'));
+
+        $this->logger->expects($this->atLeastOnce())->method('error');
+
+        // Even though the dispatcher throws, the row update must still
+        // succeed and the method must return the updated relation.
+        $result = $mapper->updateDecisionMetadata(
+            relation: $relation,
+            fields: ['skipAnonymization' => true],
+            actingUser: $this->user
+        );
+
+        $this->assertTrue($result->getSkipAnonymization());
     }
 }

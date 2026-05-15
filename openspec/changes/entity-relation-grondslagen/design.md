@@ -195,6 +195,28 @@ Only fields that actually changed appear under `changedFields`. If the caller PA
 
 Reads MUST NOT produce audit entries — applies to all relation reads in the codebase (mapper find, controller GET, downstream consumers).
 
+### D6a. Event dispatch for downstream listeners (`EntityRelationDecisionUpdatedEvent`)
+
+After the audit-trail entry is persisted, `updateDecisionMetadata` also dispatches a Symfony event so downstream apps can react to operator decisions without polling. The event carries the same diff payload as the audit entry, plus the post-update `EntityRelation` instance and the acting `IUser` (or null when no session user).
+
+```
+class EntityRelationDecisionUpdatedEvent extends Event {
+    getRelation():               EntityRelation
+    getChangedFields():          array<string, {previous, new}>
+    getActingUser():             ?IUser
+    isSkipAnonymizationActivated(): bool  // convenience: false → true flip
+}
+```
+
+**Contract:**
+
+- **Post-commit, informational.** Fires *after* the row update + audit-trail entry have both succeeded. Listeners see the persisted state. The event is NOT vetoable — listeners that need to react (e.g. by reversing the PATCH on policy-rejection) MUST do so via a separate write.
+- **Diff payload identical to the audit entry's `changedFields`** — same keys (`bases`, `skipAnonymization`), same `{previous, new}` shape. Only fields that actually changed appear. Semantic no-ops do not dispatch.
+- **Acting user resolution.** Mirrors the audit entry: explicit `$actingUser` parameter takes precedence over `$userSession->getUser()`. Listeners that attribute downstream effects to an actor should use the event's `getActingUser()` and apply the same "null → system" convention used in the audit subsystem.
+- **Failure isolation.** A listener throwing MUST NOT mask the row update or the audit entry. The dispatcher call is wrapped in `try/catch`; failures are logged at error level with the relation id + changed keys, and the method continues to return the updated relation.
+
+**Why post-commit, not pre-commit-vetoable.** Vetoable pre-events (in the `ObjectCreatingEvent` / `ObjectDeletingEvent` style) couple downstream apps tightly to OR's persistence semantics. The intended downstream consumer (DocuDesk's `publication-clearance-via-anonymise`) handles policy rejection by reversing the PATCH on its own write path — the operator UX surfaces the rejection via a notification, not via a synchronous HTTP failure on the PATCH itself. Keeping the event informational keeps OR as a clean primitive.
+
 ### D7. Authorization: write-access to the relation's parent file/object
 
 PATCH requires that the acting user can **write** to the file or object referenced by the relation (`fileId`, `objectId`, etc.). This mirrors the implicit check that `FileTextController::anonymizeFile` inherits today: anonymising a file requires write-access to the file, so flipping `anonymized=true` on the relations under that file requires the same.
