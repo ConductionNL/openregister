@@ -1834,7 +1834,21 @@ class Schema extends Entity implements JsonSerializable
     ];
 
     /**
-     * Valid linked type values for Nextcloud entity integration
+     * Valid linked type values for Nextcloud entity integration.
+     *
+     * @deprecated since pluggable-integration-registry — kept as
+     * a backwards-compat fallback so existing schemas with values like
+     * 'mail' / 'calendar' / 'talk' / 'deck' continue to validate
+     * while the matching IntegrationProvider leaves land. Once every
+     * leaf in the umbrella's Wave 1 ships, the registry is the only
+     * authority and this constant is removed by
+     * `cleanup-linked-entity-type-map`. New consumers MUST add a
+     * provider via `IntegrationRegistry::addProvider()` rather than
+     * append to this list.
+     *
+     * @see OCA\OpenRegister\Service\Integration\IntegrationRegistry::listIds()
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-8
      */
     private const VALID_LINKED_TYPES = [
         'files',
@@ -1848,13 +1862,28 @@ class Schema extends Entity implements JsonSerializable
     ];
 
     /**
-     * Validate the linkedTypes configuration value
+     * Validate the linkedTypes configuration value.
      *
-     * @param mixed $value The linkedTypes value to validate
+     * Registry-driven validation per AD-5 of pluggable-integration-registry:
+     * an id is valid when it appears in EITHER the registry's listIds()
+     * OR the legacy VALID_LINKED_TYPES fallback. The legacy fallback
+     * keeps existing schemas (e.g. linkedTypes=['mail','calendar'])
+     * working while the matching providers ship. New ids (e.g. 'xwiki')
+     * become valid the moment their provider is registered.
      *
-     * @throws InvalidArgumentException If validation fails
+     * When the integration registry isn't available — i.e. the entity
+     * is constructed outside a request context (unit tests building
+     * Schema instances directly) — validation falls back to
+     * VALID_LINKED_TYPES alone. This preserves the existing test
+     * surface while letting production code benefit from the registry.
+     *
+     * @param mixed $value The linkedTypes value to validate.
+     *
+     * @throws InvalidArgumentException If validation fails.
      *
      * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-7
      */
     private function validateLinkedTypesValue(mixed $value): void
     {
@@ -1866,18 +1895,56 @@ class Schema extends Entity implements JsonSerializable
             throw new InvalidArgumentException("Configuration 'linkedTypes' must be an array or null");
         }
 
+        $registryIds = $this->resolveIntegrationRegistryIds();
+
         foreach ($value as $type) {
             if (is_string($type) === false) {
                 throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
             }
 
-            if (in_array($type, self::VALID_LINKED_TYPES, true) === false) {
+            $valid = in_array($type, self::VALID_LINKED_TYPES, true)
+                || in_array($type, $registryIds, true);
+
+            if ($valid === false) {
+                $combined = array_unique(array_merge(self::VALID_LINKED_TYPES, $registryIds));
+                sort($combined);
                 throw new InvalidArgumentException(
-                    "Invalid linked type '$type'. Valid values: ".implode(', ', self::VALID_LINKED_TYPES)
+                    "Invalid linked type '$type'. Valid values: ".implode(', ', $combined)
                 );
             }
         }
     }//end validateLinkedTypesValue()
+
+    /**
+     * Resolve the current set of registered integration ids.
+     *
+     * Schema is a Nextcloud Entity, not a service — DI doesn't
+     * reach it. We pull the registry from the server container at
+     * validation time. Failures (tests without a booted container,
+     * missing service binding) fall through to an empty list so the
+     * legacy VALID_LINKED_TYPES path keeps working.
+     *
+     * @return array<int,string> Registered integration ids, possibly empty.
+     */
+    private function resolveIntegrationRegistryIds(): array
+    {
+        if (class_exists('\OC') === false || isset(\OC::$server) === false) {
+            return [];
+        }
+
+        try {
+            $registry = \OC::$server->get(
+                \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class
+            );
+            if ($registry instanceof \OCA\OpenRegister\Service\Integration\IntegrationRegistry) {
+                return $registry->listIds();
+            }
+        } catch (\Throwable $e) {
+            // Registry binding not available — fall back to legacy list only.
+        }
+
+        return [];
+    }//end resolveIntegrationRegistryIds()
 
     /**
      * Get the linked types from the schema configuration

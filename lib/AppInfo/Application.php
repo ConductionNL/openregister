@@ -301,6 +301,7 @@ class Application extends App implements IBootstrap
         $this->registerSearchBackend(context: $context);
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
+        $this->registerIntegrationRegistry(context: $context);
         $this->registerEventListeners(context: $context);
 
         // Register the annotation-driven INotifier so notifications fired by
@@ -312,6 +313,11 @@ class Application extends App implements IBootstrap
         // clients can discover URN endpoints + the instance slug without
         // probing routes.
         $context->registerCapability(UrnCapability::class);
+
+        // pluggable-integration-registry task 4.5 (tasks.md#task-22):
+        // advertise the integration registry through the OCS
+        // capabilities endpoint.
+        $context->registerCapability(\OCA\OpenRegister\Capabilities\IntegrationsCapability::class);
     }//end register()
 
     /**
@@ -811,6 +817,221 @@ class Application extends App implements IBootstrap
     }//end registerObjectInteractionServices()
 
     /**
+     * Register the IntegrationRegistry + ExternalIntegrationRouter
+     * services used by the pluggable integration registry.
+     *
+     * Both are shared per-request singletons. Apps that ship their own
+     * IntegrationProvider implementations register them via
+     * `$this->container->get(IntegrationRegistry::class)->addProvider(...)`
+     * from their own Application::register() hook — see
+     * `openspec/changes/pluggable-integration-registry/proposal.md` (AD-1).
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-5
+     */
+    private function registerIntegrationRegistry(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\IntegrationRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // PropertyReferenceTypeValidator — consumed by schema-property
+        // validation paths that opt in to the new referenceType marker
+        // (AD-18). Stays separate from the entity-level
+        // validateLinkedTypesValue path so existing schemas keep
+        // validating exactly as before.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator(
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                );
+            }
+        );
+
+        // Repair step LogDanglingLinkedTypes — runs on install +
+        // post-migration to surface schemas whose linkedTypes contain
+        // ids that the registry can no longer resolve. Strictly
+        // informational; never throws, never modifies data.
+        $context->registerService(
+            \OCA\OpenRegister\Repair\LogDanglingLinkedTypes::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Repair\LogDanglingLinkedTypes(
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $this->registerBuiltinIntegrationProviders($context);
+
+        // IntegrationsController — read-only API over the registry.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\IntegrationsController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\IntegrationsController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // ObjectIntegrationsController — object-scoped sub-resource
+        // dispatch through the registry.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\ObjectIntegrationsController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\ObjectIntegrationsController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // IntegrationsAdminSettings — admin page surfacing the
+        // registry + auth status + Configure deep-links into
+        // OpenConnector (AD-15).
+        $context->registerService(
+            \OCA\OpenRegister\Settings\IntegrationsAdminSettings::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Settings\IntegrationsAdminSettings(
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    router: $container->get(\OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // IntegrationsCapability — surfaces the registry through the
+        // Nextcloud OCS capabilities endpoint, role-redacted per AD-17.
+        $context->registerService(
+            \OCA\OpenRegister\Capabilities\IntegrationsCapability::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Capabilities\IntegrationsCapability(
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager')
+                );
+            }
+        );
+
+    }//end registerIntegrationRegistry()
+
+    /**
+     * Register the 5 BuiltinProviders/* services so they can be
+     * resolved lazily from the container.
+     *
+     * Each provider wraps an existing OR service and exposes it
+     * through the IntegrationProvider contract. They self-register
+     * with the IntegrationRegistry during `boot()` —
+     * `bootBuiltinIntegrationProviders()` walks this same list.
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-12
+     */
+    private function registerBuiltinIntegrationProviders(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider(
+                    fileService: $container->get(\OCA\OpenRegister\Service\FileService::class),
+                    container: $container,
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider(
+                    noteService: $container->get(\OCA\OpenRegister\Service\NoteService::class),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider(
+                    taskService: $container->get(\OCA\OpenRegister\Service\TaskService::class),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider(
+                    tagManager: $container->get('OCP\SystemTag\ISystemTagManager'),
+                    objectMapper: $container->get('OCP\SystemTag\ISystemTagObjectMapper'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider(
+                    mapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // Leaf provider: XWiki (external, OpenConnector-backed). Ships
+        // in-repo as the worked external-storage example; routed
+        // through ExternalIntegrationRouter, credentials on the
+        // OpenConnector `xwiki` source.
+        // @spec openspec/changes/integration-xwiki/tasks.md
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider(
+                    router: $container->get(\OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+    }//end registerBuiltinIntegrationProviders()
+
+    /**
      * Register all event listeners for the application.
      *
      * @param IRegistrationContext $context The registration context
@@ -949,5 +1170,65 @@ class Application extends App implements IBootstrap
         $dispatcher = $server->get(IEventDispatcher::class);
         $registry   = $server->get(DeepLinkRegistryService::class);
         $dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $registry));
+
+        // Register the built-in IntegrationProvider implementations
+        // with the IntegrationRegistry. The 5 wrap existing services
+        // (FileService / NoteService / TaskService / system tag manager /
+        // AuditTrailMapper) and surface them through the unified
+        // registry contract. Each provider is constructed lazily — the
+        // registry never touches a provider's wrapped service unless a
+        // caller actually invokes that provider's CRUD path.
+        $this->bootBuiltinIntegrationProviders($server);
     }//end boot()
+
+    /**
+     * Resolve every BuiltinProviders/* class and register it with the
+     * shared IntegrationRegistry.
+     *
+     * Kept separate from the DI registration in
+     * `registerIntegrationRegistry()` because addProvider() needs the
+     * registry instance — i.e. it has to run after the container has
+     * fully bootstrapped. `boot()` is the canonical post-registration
+     * hook for that.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-17
+     */
+    private function bootBuiltinIntegrationProviders($server): void
+    {
+        try {
+            $integrationRegistry = $server->get(
+                \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class
+            );
+        } catch (\Throwable $e) {
+            // Registry binding not available — skip silently; the
+            // service would log its own warning at use-time anyway.
+            return;
+        }
+
+        $providerClasses = [
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider::class,
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider::class,
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class,
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider::class,
+            \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class,
+            // Leaf: XWiki (external) — see openspec/changes/integration-xwiki.
+            \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class,
+        ];
+
+        foreach ($providerClasses as $providerClass) {
+            try {
+                $provider = $server->get($providerClass);
+                $integrationRegistry->addProvider($provider);
+            } catch (\Throwable $e) {
+                // Provider construction can fail if a wrapped service
+                // is missing on this NC build — don't take the whole
+                // app down for one absent provider. The user-facing
+                // surface will simply not show the failing tab.
+            }
+        }
+    }//end bootBuiltinIntegrationProviders()
 }//end class
