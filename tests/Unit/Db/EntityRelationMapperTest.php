@@ -1,5 +1,20 @@
 <?php
 
+/**
+ * Unit tests for the EntityRelationMapper constructor and inherited surface.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Tests\Unit\Db
+ * @package  OCA\OpenRegister\Tests\Unit\Db
+ *
+ * @author  Conduction Development Team <dev@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;

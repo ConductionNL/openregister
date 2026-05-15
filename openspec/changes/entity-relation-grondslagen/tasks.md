@@ -1,39 +1,39 @@
 ## 1. Database migration
 
-- [ ] 1.1 Add a new migration class under `lib/Migration/` (next-available version, e.g. `Version1Date20260512<HHMMSS>.php`) that adds two columns to `oc_openregister_entity_relations`:
+- [x] 1.1 Add a new migration class under `lib/Migration/` (next-available version, e.g. `Version1Date20260512<HHMMSS>.php`) that adds two columns to `oc_openregister_entity_relations`:
   - `bases` — JSON (or platform-equivalent JSON column type), `notnull => false`, no default.
   - `skip_anonymization` — BOOLEAN, `notnull => true`, `default => false`.
   Use `hasColumn` guards so the migration is idempotent. Match the JSON column type used elsewhere in OR (`OCP\DB\Types::JSON`).
-- [ ] 1.2 Verify the migration is idempotent: running it twice on the same database is a no-op (`hasColumn` guards ensure it).
-- [ ] 1.3 Smoke-test the migration on a populated dev database: confirm existing `EntityRelation` rows are read correctly post-migration — `bases` reads as `null` and `skipAnonymization` reads as `false` for all of them.
+- [x] 1.2 Verify the migration is idempotent: running it twice on the same database is a no-op (`hasColumn` guards ensure it).
+- [x] 1.3 Smoke-test the migration on a populated dev database: confirm existing `EntityRelation` rows are read correctly post-migration — `bases` reads as `null` and `skipAnonymization` reads as `false` for all of them.
 
 ## 2. EntityRelation entity + mapper
 
-- [ ] 2.1 Add `protected ?array $bases = null;` and `protected bool $skipAnonymization = false;` to `lib/Db/EntityRelation.php`.
-- [ ] 2.2 Add `addType(fieldName: 'bases', type: 'json');` and `addType(fieldName: 'skipAnonymization', type: 'boolean');` in `EntityRelation::__construct()`.
-- [ ] 2.3 Add the `getBases(): ?array`, `setBases(?array $bases): void`, `getSkipAnonymization(): bool`, `setSkipAnonymization(bool $skip): void` magic-method docblocks to the class header (mirroring the existing pattern for other fields). Getters/setters are auto-provided by Nextcloud's `Entity` base class once `addType` is registered.
-- [ ] 2.4 Update `jsonSerialize()` to include `bases` and `skipAnonymization` in the returned array. Order them after `anonymizedValue` for consistency.
-- [ ] 2.5 Update the psalm/phpdoc return type on `jsonSerialize` to include both new fields.
-- [ ] 2.6 Confirm `EntityRelationMapper` (`lib/Db/EntityRelationMapper.php`) does not need changes to existing read methods — Nextcloud's `QBMapper` automatically handles columns registered via `addType`. If the mapper has any manual `select(...)` lists, update those to include both new columns.
+- [x] 2.1 Add `protected ?array $bases = null;` and `protected bool $skipAnonymization = false;` to `lib/Db/EntityRelation.php`.
+- [x] 2.2 Add `addType(fieldName: 'bases', type: 'json');` and `addType(fieldName: 'skipAnonymization', type: 'boolean');` in `EntityRelation::__construct()`.
+- [x] 2.3 Add the `getBases(): ?array`, `setBases(?array $bases): void`, `getSkipAnonymization(): bool`, `setSkipAnonymization(bool $skip): void` magic-method docblocks to the class header (mirroring the existing pattern for other fields). Getters/setters are auto-provided by Nextcloud's `Entity` base class once `addType` is registered.
+- [x] 2.4 Update `jsonSerialize()` to include `bases` and `skipAnonymization` in the returned array. Order them after `anonymizedValue` for consistency.
+- [x] 2.5 Update the psalm/phpdoc return type on `jsonSerialize` to include both new fields.
+- [x] 2.6 Confirm `EntityRelationMapper` (`lib/Db/EntityRelationMapper.php`) does not need changes to existing read methods — Nextcloud's `QBMapper` automatically handles columns registered via `addType`. If the mapper has any manual `select(...)` lists, update those to include both new columns.
 
 ## 3. Decision-metadata write path
 
-- [ ] 3.1 Add method `EntityRelationMapper::updateDecisionMetadata(int $id, array $fields, ?IUser $actingUser = null): EntityRelation`. Behaviour:
+- [x] 3.1 Add method `EntityRelationMapper::updateDecisionMetadata(int $id, array $fields, ?IUser $actingUser = null): EntityRelation`. Behaviour:
   - Resolve the row by `$id`; throw `DoesNotExistException` if missing.
   - Enforce whitelist: keys MUST be a subset of `{ 'bases', 'skipAnonymization' }`. Any other key → typed validation exception (mapped to HTTP 400 at the controller).
   - Validate field shape: `bases` MUST be `null` or `array<string>`; `skipAnonymization` MUST be a `bool`. Anything else → typed validation exception.
   - Compute diff against current row state; if no field actually changes, return the row and SKIP audit emission (semantic no-op).
   - Otherwise apply changes, persist via `QBMapper::update`, emit one audit-trail entry via OR's existing audit subsystem (see 3.2). Persist + audit MUST follow the same transactional/error-handling pattern as existing audit-traced mapper writes.
   - Return the updated row.
-- [ ] 3.2 Wire the audit-trail emission inside `updateDecisionMetadata` (NOT at the controller layer). Entry payload:
+- [x] 3.2 Wire the audit-trail emission inside `updateDecisionMetadata` (NOT at the controller layer). Entry payload:
   - `action`: `entity_relation_decision_updated` (or OR's equivalent action vocabulary if one exists).
   - `subjectType`: `openregister_entity_relations` (or OR's canonical naming).
   - `subjectId`: the row id.
   - `actor`: `$actingUser?->getUID()` if provided, else the session-derived UID (per ADR-005, the UID — NOT the display name).
   - `timestamp`: an ISO-8601 datetime.
   - `changedFields`: object whose keys are only the fields that ACTUALLY changed; each value `{ previous: <old>, new: <new> }`. Fields submitted with values matching current state MUST NOT appear.
-- [ ] 3.2a Add `lib/Event/EntityRelationDecisionUpdatedEvent.php` (NEW). Post-commit, informational Symfony event. Constructor takes `EntityRelation`, `array<string, {previous, new}> $changedFields`, `?IUser $actingUser`. Exposes `getRelation()`, `getChangedFields()`, `getActingUser()`, plus convenience `isSkipAnonymizationActivated(): bool` covering the most common listener trigger (false → true flip). Inject `IEventDispatcher` into `EntityRelationMapper` and dispatch the event right after `emitDecisionMetadataAuditEntry`, inside its own `try/catch` — listener failures MUST NOT mask the persisted state change (same isolation as audit). See `design.md` §D6a for the contract.
-- [ ] 3.3 Add `lib/Controller/EntityRelationsController.php` (NEW). Single method: `update(int $id)` mapped to PATCH. Behaviour:
+- [x] 3.2a Add `lib/Event/EntityRelationDecisionUpdatedEvent.php` (NEW). Post-commit, informational Symfony event. Constructor takes `EntityRelation`, `array<string, {previous, new}> $changedFields`, `?IUser $actingUser`. Exposes `getRelation()`, `getChangedFields()`, `getActingUser()`, plus convenience `isSkipAnonymizationActivated(): bool` covering the most common listener trigger (false → true flip). Inject `IEventDispatcher` into `EntityRelationMapper` and dispatch the event right after `emitDecisionMetadataAuditEntry`, inside its own `try/catch` — listener failures MUST NOT mask the persisted state change (same isolation as audit). See `design.md` §D6a for the contract.
+- [x] 3.3 Add `lib/Controller/EntityRelationsController.php` (NEW). Single method: `update(int $id)` mapped to PATCH. Behaviour:
   - `@NoAdminRequired`.
   - Read the JSON body via the standard Nextcloud controller `$this->request->getParams()` pattern.
   - Resolve the relation via `findById`. If 404, return JSONResponse status 404.
@@ -41,22 +41,22 @@
   - Call `EntityRelationMapper::updateDecisionMetadata($id, $fields, $actingUser)`.
   - Catch the typed validation exception → JSONResponse status 400 with error body (`{ error: <code>, field: <name> }`).
   - On success, return JSONResponse 200 with `$relation->jsonSerialize()`.
-- [ ] 3.4 Implement the authorization check as a private method on the controller (or a small helper class). Resolution order:
+- [x] 3.4 Implement the authorization check as a private method on the controller (or a small helper class). Resolution order:
   - If `relation->fileId` set: caller MUST be able to write the file (reuse OR's existing helper — likely the one `FileTextController::anonymizeFile` implicitly inherits).
   - Else if `relation->objectId` set (with `registerId` + `schemaId`): caller MUST be able to update the object.
   - Else if `relation->emailId` set: caller MUST be able to access the email.
   - Otherwise deny.
   - Unauthenticated session → HTTP 401 (Nextcloud's existing session-required path handles this before the controller method runs; verify the route's `@NoAdminRequired` annotation doesn't bypass auth).
-- [ ] 3.5 Add the route to `appinfo/routes.php`:
+- [x] 3.5 Add the route to `appinfo/routes.php`:
   ```
   ['name' => 'entityRelations#update', 'url' => '/api/entity-relations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '\\d+']],
   ```
-- [ ] 3.6 Update `EntityRelationMapper::markAsAnonymized($fileId, $anonymizedValue)` to add `AND skip_anonymization = 0` to the WHERE clause. Rows with `skip_anonymization = true` MUST be untouched by this method.
-- [ ] 3.7 Update `FileTextController::anonymizeFile($fileId)` to filter out skipped rows when building the replacements list. Two implementation options — pick whichever fits OR's existing pattern:
+- [x] 3.6 Update `EntityRelationMapper::markAsAnonymized($fileId, $anonymizedValue)` to add `AND skip_anonymization = 0` to the WHERE clause. Rows with `skip_anonymization = true` MUST be untouched by this method.
+- [x] 3.7 Update `FileTextController::anonymizeFile($fileId)` to filter out skipped rows when building the replacements list. Two implementation options — pick whichever fits OR's existing pattern:
   - **(a)** Add a new mapper method `findEntitiesForAnonymization($fileId)` that returns the same shape as `findEntitiesForFile` but filters `skip_anonymization = 0`. Controller calls this one for the replacements list.
   - **(b)** Keep `findEntitiesForFile` as-is; controller filters in PHP after the read.
   Pick (a) — cleaner separation. Document the new method.
-- [ ] 3.8 Update `FileService::anonymizeDocument(Node $node, array $entities)` to defensively filter skipped rows server-side. Before delegating to `DocumentProcessingHandler`:
+- [x] 3.8 Update `FileService::anonymizeDocument(Node $node, array $entities)` to defensively filter skipped rows server-side. Before delegating to `DocumentProcessingHandler`:
   - For each entity in the caller-supplied array, look up the matching `EntityRelation` row(s) and check `skipAnonymization`.
   - Drop any entity whose row(s) have `skipAnonymization = true`.
   - Pass the filtered array to `DocumentProcessingHandler::anonymizeDocument`.
