@@ -306,6 +306,7 @@ class Application extends App implements IBootstrap
         $this->registerSearchBackend(context: $context);
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
+        $this->registerIntegrationRegistry(context: $context);
         $this->registerEventListeners(context: $context);
         $this->registerMcpToolProviders(context: $context);
 
@@ -813,6 +814,46 @@ class Application extends App implements IBootstrap
             }
         );
     }//end registerObjectInteractionServices()
+
+    /**
+     * Register the IntegrationRegistry + ExternalIntegrationRouter
+     * services used by the pluggable integration registry.
+     *
+     * Both are shared per-request singletons. Apps that ship their own
+     * IntegrationProvider implementations register them via
+     * `$this->container->get(IntegrationRegistry::class)->addProvider(...)`
+     * from their own Application::register() hook — see
+     * `openspec/changes/pluggable-integration-registry/proposal.md` (AD-1).
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-5
+     */
+    private function registerIntegrationRegistry(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\IntegrationRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+    }//end registerIntegrationRegistry()
 
     /**
      * Register all event listeners for the application.
