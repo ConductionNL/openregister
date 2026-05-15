@@ -26,6 +26,7 @@ use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Service\FileService;
 use Throwable;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
@@ -98,11 +99,13 @@ class MappingService
      * @param MappingMapper   $mappingMapper The mapping mapper for database operations
      * @param ICacheFactory   $cacheFactory  Cache factory for distributed caching
      * @param LoggerInterface $logger        Logger for cache diagnostics
+     * @param FileService     $fileService   The file service for object file retrieval
      */
     public function __construct(
         private readonly MappingMapper $mappingMapper,
         ICacheFactory $cacheFactory,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly FileService $fileService,
     ) {
         $loader     = new ArrayLoader([]);
         $this->twig = new Environment($loader);
@@ -111,6 +114,7 @@ class MappingService
             new MappingRuntimeLoader(
                 mappingService: $this,
                 mappingMapper: $this->mappingMapper,
+                fileService: $this->fileService,
             )
         );
 
