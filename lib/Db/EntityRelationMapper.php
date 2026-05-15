@@ -219,7 +219,7 @@ class EntityRelationMapper extends QBMapper
         // callers expect an array (or null when no bases were recorded).
         foreach ($rows as &$row) {
             if (isset($row['bases']) === true && is_string($row['bases']) === true) {
-                $decoded = json_decode($row['bases'], associative: true);
+                $decoded      = json_decode($row['bases'], associative: true);
                 $row['bases'] = is_array($decoded) === true ? $decoded : null;
             }
 
@@ -417,7 +417,10 @@ class EntityRelationMapper extends QBMapper
 
         if (array_key_exists('bases', $fields) === true) {
             $previousBases = $relation->getBases();
-            if ($previousBases !== $fields['bases']) {
+            // Compare as multiset — same UUIDs in different order is a
+            // semantic no-op for redaction policy. Storage preserves
+            // operator-supplied order; only the diff check normalises.
+            if (self::basesAreEqual(a: $previousBases, b: $fields['bases']) === false) {
                 $changedFields['bases'] = [
                     'previous' => $previousBases,
                     'new'      => $fields['bases'],
@@ -441,30 +444,35 @@ class EntityRelationMapper extends QBMapper
             return $relation;
         }
 
-        $relation   = $this->update(entity: $relation);
-        $relationId = (int) $relation->getId();
-
+        // Audit-invariant: every persisted state change MUST have an
+        // audit-trail entry. Both writes go in a single transaction so a
+        // failed audit-INSERT rolls back the row UPDATE — clients see
+        // HTTP 500 instead of an undetectable audit gap. The downstream
+        // event dispatch stays OUTSIDE the transaction (post-commit,
+        // informational; listener failures must not roll back).
+        $this->db->beginTransaction();
         try {
+            $relation   = $this->update(entity: $relation);
+            $relationId = (int) $relation->getId();
             $this->emitDecisionMetadataAuditEntry(
                 relationId: $relationId,
                 changedFields: $changedFields,
                 actingUser: $actingUser
             );
-        } catch (\Throwable $auditError) {
-            // Audit-emission failure MUST NOT mask the persisted state
-            // change — log loudly and continue. The next operator review
-            // surfaces the row's new state; the audit-gap is captured in
-            // the application log.
+            $this->db->commit();
+        } catch (\Throwable $writeError) {
+            $this->db->rollBack();
             $this->logger->error(
-                message: '[EntityRelationMapper] Failed to emit decision-metadata audit entry',
+                message: '[EntityRelationMapper] Transactional decision-metadata write failed, rolled back',
                 context: [
                     'file'        => __FILE__,
                     'line'        => __LINE__,
-                    'relation_id' => $relationId,
+                    'relation_id' => (int) $relation->getId(),
                     'changedKeys' => array_keys($changedFields),
-                    'error'       => $auditError->getMessage(),
+                    'error'       => $writeError->getMessage(),
                 ]
             );
+            throw $writeError;
         }//end try
 
         // Notify listeners (downstream apps — e.g. DocuDesk's
@@ -499,6 +507,42 @@ class EntityRelationMapper extends QBMapper
     }//end updateDecisionMetadata()
 
     /**
+     * Multiset-equality on two `bases` values.
+     *
+     * Distinguishes the four nullability/empty cases that callers care about:
+     *   - null vs null → equal (both "no bases")
+     *   - null vs [] → NOT equal (different intent: "unset" vs "explicitly empty")
+     *   - [a, b] vs [b, a] → equal (order-insensitive for redaction policy)
+     *   - [a, b, a] vs [b, a] → equal (duplicates collapsed)
+     *
+     * Storage preserves operator-supplied order + duplicates; only the
+     * diff check normalises. Used by `updateDecisionMetadata` to avoid
+     * spurious audit entries on cosmetic reorderings.
+     *
+     * @param array|null $a First value.
+     * @param array|null $b Second value.
+     *
+     * @return bool True when the two values represent the same redaction policy.
+     */
+    private static function basesAreEqual(?array $a, ?array $b): bool
+    {
+        if ($a === null && $b === null) {
+            return true;
+        }
+
+        if ($a === null || $b === null) {
+            return false;
+        }
+
+        $normA = array_values(array_unique($a, SORT_STRING));
+        $normB = array_values(array_unique($b, SORT_STRING));
+        sort($normA);
+        sort($normB);
+        return $normA === $normB;
+
+    }//end basesAreEqual()
+
+    /**
      * Emit one audit-trail entry summarising a decision-metadata write.
      *
      * The AuditTrail entity's `object`, `objectUuid`, `register`, `schema`
@@ -518,15 +562,16 @@ class EntityRelationMapper extends QBMapper
         array $changedFields,
         ?IUser $actingUser=null
     ): void {
-        $user     = $actingUser ?? $this->userSession->getUser();
-        $userId   = $user !== null ? $user->getUID() : 'system';
-        $userName = $user !== null ? $user->getDisplayName() : 'System';
+        $user   = $actingUser ?? $this->userSession->getUser();
+        $userId = $user !== null ? $user->getUID() : 'system';
 
         $auditTrail = new AuditTrail();
         $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
         $auditTrail->setAction('entity_relation_decision_updated');
         $auditTrail->setUser($userId);
-        $auditTrail->setUserName($userName);
+        // ADR-005: actor is the UID only. Display name is PII; do not
+        // persist it on entity-relation decision audit entries.
+        $auditTrail->setUserName(null);
         $auditTrail->setCreated(new DateTime());
         $auditTrail->setChanged(
                 [
