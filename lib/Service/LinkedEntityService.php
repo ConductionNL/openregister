@@ -278,13 +278,13 @@ class LinkedEntityService
         $results = [];
 
         // Find schemas that declare this linkedType.
-        // RBAC and multitenancy are intentionally disabled for the schema *enumeration* scan: we need to
-        // find every schema that declares this linkedType across all tenants, because the reverse-lookup
-        // endpoint (GET /api/linked/{type}/{entityId}) is a cross-tenant index by design (mail sidebar,
-        // contacts, etc. link entities regardless of tenant). Per-row tenant isolation is enforced
-        // downstream: each matching row returned by findByLinkedEntity() is validated against the
-        // calling user's access rights before being included in the response. Schema metadata (names,
-        // slugs, linkedType declarations) is therefore intentionally exposed cross-tenant here.
+        // WARNING: RBAC and multitenancy are intentionally disabled here, so schema metadata (names,
+        // slugs, linkedType declarations) and matched object UUIDs/names are returned cross-tenant to
+        // any authenticated user calling GET /api/linked/{type}/{entityId}. There is currently NO
+        // per-row access check before results are returned. This is intentional for the mail-sidebar
+        // use-case where cross-tenant linking is required, but constitutes a cross-tenant data exposure
+        // for multi-tenant SaaS deployments. A per-row access check should be added before this
+        // endpoint is used in strict-isolation deployments. See TODO #1273.
         $allSchemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
         $scanned    = 0;
 
