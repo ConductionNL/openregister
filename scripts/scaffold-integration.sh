@@ -118,6 +118,11 @@ use OCA\\OpenRegister\\Service\\Integration\\AbstractIntegrationProvider;
  * Move this into the appropriate location, fill in the data-access
  * methods, and register it at app bootstrap via
  * IntegrationRegistry::addProvider().
+ *
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 final class ${PASCAL}Provider extends AbstractIntegrationProvider
 {
@@ -172,6 +177,9 @@ final class ${PASCAL}Provider extends AbstractIntegrationProvider
 EOF
 
 cat > "$STUBS/${ID}.js" <<EOF
+// SPDX-License-Identifier: EUPL-1.2
+// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+
 /**
  * Built-in registration stub for the "$LABEL" integration ($ID).
  *
