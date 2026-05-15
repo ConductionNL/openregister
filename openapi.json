@@ -43,6 +43,218 @@
                         "type": "string"
                     }
                 }
+            },
+            "GitHubIssueItem": {
+                "type": "object",
+                "description": "GitHub issue payload after the proxy strips sensitive fields (task 1.10).",
+                "required": [
+                    "number",
+                    "title",
+                    "html_url"
+                ],
+                "properties": {
+                    "number": {
+                        "type": "integer",
+                        "example": 42
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Add GraphQL support"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Issue body, GitHub-flavored markdown. May be empty.",
+                        "example": "It would be useful to have GraphQL alongside the REST API."
+                    },
+                    "html_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://github.com/ConductionNL/openregister/issues/42"
+                    },
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "login": {
+                                "type": "string",
+                                "example": "octocat"
+                            },
+                            "avatar_url": {
+                                "type": "string",
+                                "format": "uri",
+                                "example": "https://avatars.githubusercontent.com/u/1?v=4"
+                            }
+                        }
+                    },
+                    "reactions": {
+                        "type": "object",
+                        "properties": {
+                            "total_count": {
+                                "type": "integer",
+                                "example": 12
+                            },
+                            "+1": {
+                                "type": "integer",
+                                "example": 10
+                            }
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-01-15T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-04-12T09:30:00Z"
+                    },
+                    "labels": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "example": "enhancement"
+                                },
+                                "color": {
+                                    "type": "string",
+                                    "example": "a2eeef"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "GitHubIssuesListResponse": {
+                "type": "object",
+                "required": [
+                    "items"
+                ],
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GitHubIssueItem"
+                        }
+                    },
+                    "hint": {
+                        "type": "string",
+                        "description": "Graceful-degradation marker. Present only when the response is intentionally degraded.",
+                        "enum": [
+                            "github_pat_not_configured",
+                            "github_repo_not_configured"
+                        ]
+                    }
+                }
+            },
+            "GitHubIssueCreatedResponse": {
+                "type": "object",
+                "required": [
+                    "number",
+                    "html_url",
+                    "state",
+                    "used_server_pat"
+                ],
+                "properties": {
+                    "number": {
+                        "type": "integer",
+                        "example": 1247
+                    },
+                    "html_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://github.com/ConductionNL/openregister/issues/1247"
+                    },
+                    "state": {
+                        "type": "string",
+                        "example": "open"
+                    },
+                    "used_server_pat": {
+                        "type": "boolean",
+                        "description": "True when the server-PAT fallback path was used (the attribution prefix was prepended). False when the user's own PAT was used.",
+                        "example": false
+                    },
+                    "specRef": {
+                        "type": "string",
+                        "description": "Echoed back when the original request supplied a specRef.",
+                        "example": "catalog-management"
+                    }
+                }
+            },
+            "GitHubIssueSubmitRequest": {
+                "type": "object",
+                "required": [
+                    "repo",
+                    "title",
+                    "body"
+                ],
+                "properties": {
+                    "repo": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$",
+                        "example": "ConductionNL/openregister"
+                    },
+                    "title": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 200,
+                        "example": "Add dark mode to the dashboard"
+                    },
+                    "body": {
+                        "type": "string",
+                        "minLength": 10,
+                        "example": "It would be helpful to support a dark mode toggle in the dashboard view."
+                    },
+                    "specRef": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+                        "maxLength": 80,
+                        "description": "Optional kebab-case capability slug — pre-filled by useSpecRef() when launched from a widget that declared one.",
+                        "example": "catalog-management"
+                    }
+                }
+            },
+            "StructuredError": {
+                "type": "object",
+                "required": [
+                    "error"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "description": "Machine-readable error code. Stable across releases.",
+                        "enum": [
+                            "repo_invalid_format",
+                            "repo_required",
+                            "repo_not_allowed",
+                            "per_page_out_of_range",
+                            "sort_invalid_value",
+                            "labels_invalid_format",
+                            "labels_too_many",
+                            "title_invalid_length",
+                            "body_invalid_length",
+                            "specref_invalid_format",
+                            "rate_limited",
+                            "user_rate_limited",
+                            "github_rate_limited",
+                            "github_pat_not_configured",
+                            "github_repo_not_configured",
+                            "feature_disabled",
+                            "github_unavailable",
+                            "unauthenticated"
+                        ]
+                    },
+                    "retry_after": {
+                        "type": "integer",
+                        "description": "Seconds the client should wait before retrying. Present on rate-limit responses."
+                    },
+                    "reset_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "ISO-8601 timestamp when GitHub's rate-limit window resets. Present on github_rate_limited responses."
+                    }
+                }
             }
         }
     },
@@ -115,7 +327,260 @@
                     }
                 }
             }
+        },
+        "/index.php/apps/openregister/api/github/issues": {
+            "get": {
+                "operationId": "github-issues-list",
+                "summary": "List GitHub issues for the configured repository",
+                "description": "Cached (15 min) read of GitHub Issues, filtered to the labels supplied in the `labels` query param (OR semantics — issues carrying any of the named labels are returned). Returns a structured `hint` instead of a 4xx when the app-level PAT or repo allowlist is unconfigured so the UI can render a clean empty state. Cache headers: `X-OpenRegister-GitHub-Cache: HIT|MISS`. Auth posture: requires an authenticated Nextcloud user; carries `#[NoCSRFRequired]` on the controller (pure read with no side effects).",
+                "tags": [
+                    "github-issues"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "repo",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                        },
+                        "example": "ConductionNL/openregister"
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "open",
+                                "closed",
+                                "all"
+                            ],
+                            "default": "open"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "reactions-+1",
+                                "created",
+                                "updated",
+                                "comments"
+                            ],
+                            "default": "reactions-+1"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 30
+                        }
+                    },
+                    {
+                        "name": "labels",
+                        "in": "query",
+                        "required": false,
+                        "description": "Comma-separated label list (max 8 entries, each ≤ 50 chars, matching `^[a-z][a-z0-9_-]*$`). Two or more labels yield OR semantics — items with any of the named labels are returned (deduped by issue number).",
+                        "schema": {
+                            "type": "string",
+                            "example": "enhancement,feature"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cached list of issues, or a graceful-degradation response when PAT / repo allowlist is unconfigured.",
+                        "headers": {
+                            "X-OpenRegister-GitHub-Cache": {
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "HIT",
+                                        "MISS"
+                                    ]
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GitHubIssuesListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error (invalid repo / per_page / sort / labels).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StructuredError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated."
+                    },
+                    "403": {
+                        "description": "Repo not allowed (task 1.14), or feature disabled by admin (task 1.21).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StructuredError"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate-limited — either per-user cache-miss budget (`user_rate_limited`) or GitHub-side (`github_rate_limited`).",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StructuredError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "github-issues-submit",
+                "summary": "Submit a GitHub issue (feature request) on behalf of the authenticated user",
+                "description": "Validates the submission body, enforces a per-user 60s rate limit (task 1.6), and creates a GitHub issue. Prefers the user's per-user PAT (`openregister::github_token` in IConfig). When that is empty falls back to the app-level PAT (`openregister::github_api_token` in IAppConfig) with an attribution prefix prepended to the body (`> Submitted by **<display>** via <instance_url>\\n\\n---\\n\\n`). When `specRef` is supplied the body is suffixed with `\\n\\n---\\nRelated capability: ``<specRef>```` and the created issue gets a `specRef:<slug>` label. Auth posture: requires an authenticated Nextcloud user; CSRF middleware MUST run (the controller does NOT carry `#[NoCSRFRequired]`).",
+                "tags": [
+                    "github-issues"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "OCS-APIRequest",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    },
+                    {
+                        "name": "requesttoken",
+                        "in": "header",
+                        "required": true,
+                        "description": "Nextcloud CSRF token. Required because the endpoint does NOT carry #[NoCSRFRequired].",
+                        "schema": {
+                            "type": "string",
+                            "example": "YOUR_API_KEY_HERE"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GitHubIssueSubmitRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Issue created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GitHubIssueCreatedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error (invalid repo / title / body length / specRef format).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StructuredError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated."
+                    },
+                    "403": {
+                        "description": "Repo not allowed (task 1.14), or feature disabled by admin (task 1.21)."
+                    },
+                    "412": {
+                        "description": "Missing or invalid CSRF token (enforced by Nextcloud middleware before the controller runs)."
+                    },
+                    "429": {
+                        "description": "Per-user submission rate limit exceeded (task 1.6).",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StructuredError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Neither user nor app-level PAT configured (`github_pat_not_configured`), or repo allowlist unset on a POST (`github_repo_not_configured`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StructuredError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
-    "tags": []
+    "tags": [
+        {
+            "name": "github-issues",
+            "description": "GitHub issues proxy backing the Features & Roadmap menu component."
+        }
+    ]
 }

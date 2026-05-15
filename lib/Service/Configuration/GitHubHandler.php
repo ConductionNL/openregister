@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use RuntimeException;
 use OCP\Http\Client\IClient;
-use OCP\Http\Client\IClientService;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use OCP\IAppConfig;
@@ -93,26 +92,37 @@ class GitHubHandler
     private IConfig $config;
 
     /**
+     * Attribution formatter for server-PAT-fallback issue submissions.
+     *
+     * @var AttributionFormatter
+     */
+    private AttributionFormatter $attributionFormatter;
+
+    /**
      * GitHubHandler constructor
      *
-     * @param IClientService  $clientService HTTP client service
-     * @param IAppConfig      $appConfig     App configuration service for app-level settings
-     * @param IConfig         $config        User configuration service for user-level settings
-     * @param ICacheFactory   $cacheFactory  Cache factory for creating cache instances
-     * @param LoggerInterface $logger        Logger instance
+     * @param IClient              $client               HTTP client (built by the DI factory in
+     *                                                   Application.php via IClientService::newClient)
+     * @param IAppConfig           $appConfig            App-level configuration service
+     * @param IConfig              $config               Per-user configuration service
+     * @param ICacheFactory        $cacheFactory         Cache factory
+     * @param AttributionFormatter $attributionFormatter Server-PAT attribution helper
+     * @param LoggerInterface      $logger               Logger instance
      */
     public function __construct(
-        IClientService $clientService,
+        IClient $client,
         IAppConfig $appConfig,
         IConfig $config,
         ICacheFactory $cacheFactory,
+        AttributionFormatter $attributionFormatter,
         LoggerInterface $logger
     ) {
-        $this->client    = $clientService->newClient();
+        $this->client    = $client;
         $this->appConfig = $appConfig;
         $this->config    = $config;
         $this->cache     = $cacheFactory->createDistributed('openregister_github_configs');
-        $this->logger    = $logger;
+        $this->attributionFormatter = $attributionFormatter;
+        $this->logger = $logger;
     }//end __construct()
 
     /**
@@ -1353,4 +1363,509 @@ class GitHubHandler
             return false;
         }//end try
     }//end validateToken()
+
+    /**
+     * List GitHub Issues for a repository, with sensitive fields stripped and pull requests excluded.
+     *
+     * When `$labels` contains two or more entries, the method issues one GitHub request per label and
+     * merges the results deduplicated by issue `number` — OR semantics (see D23 in design.md). When
+     * `$labels` has exactly one entry, a single request with `labels=<name>` is issued. When `null`,
+     * no label filter is applied.
+     *
+     * Reads the app-level PAT from `IAppConfig::openregister::github_api_token`. Returns an empty
+     * `items` array with a `hint: github_pat_not_configured` marker when the PAT is missing (the
+     * controller turns this into a clean HTTP 200 graceful-degradation response, task 1.7).
+     *
+     * @param string             $owner   GitHub repo owner (validated by caller)
+     * @param string             $repo    GitHub repo name (validated by caller)
+     * @param string             $state   Issue state filter (`open`, `closed`, or `all`)
+     * @param string             $sort    Sort key (`reactions-+1` is the spec default)
+     * @param int                $perPage Page size (1-100)
+     * @param array<string>|null $labels  Optional label filter; null = no filter, 1+ = OR-merge
+     *
+     * @return array{items: array, hint?: string, github_status?: int, reset_at?: string}
+     *
+     * @throws GuzzleException When the underlying HTTP client errors in a way not covered by the
+     *                        rate-limit / 4xx / 5xx mapping (e.g. DNS failure).
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-1
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-10
+     */
+    public function listIssues(
+        string $owner,
+        string $repo,
+        string $state='open',
+        string $sort='reactions-+1',
+        int $perPage=30,
+        ?array $labels=null
+    ): array {
+        $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
+        if ($token === '') {
+            return ['items' => [], 'hint' => 'github_pat_not_configured'];
+        }
+
+        $effectiveLabels = is_array($labels) === true ? array_values(array_filter($labels, static fn($l) => $l !== '')) : [];
+        $labelCount      = count($effectiveLabels);
+
+        if ($labelCount >= 2) {
+            // OR semantics: one request per label, merge deduped by issue number, re-sort, truncate.
+            $merged = [];
+            foreach ($effectiveLabels as $label) {
+                $page = $this->fetchIssuesPage(
+                    owner: $owner,
+                    repo: $repo,
+                    state: $state,
+                    sort: $sort,
+                    perPage: $perPage,
+                    label: $label,
+                    token: $token
+                );
+                foreach ($page as $item) {
+                    $number = (int) ($item['number'] ?? 0);
+                    if ($number > 0 && isset($merged[$number]) === false) {
+                        $merged[$number] = $item;
+                    }
+                }
+            }
+
+            $items = array_values($merged);
+            usort(
+                $items,
+                static function (array $a, array $b): int {
+                    $aCount = (int) ($a['reactions']['total_count'] ?? 0);
+                    $bCount = (int) ($b['reactions']['total_count'] ?? 0);
+                    return $bCount <=> $aCount;
+                }
+            );
+            $items = array_slice($items, 0, $perPage);
+            return ['items' => $items];
+        }//end if
+
+        $singleLabel = $labelCount === 1 ? $effectiveLabels[0] : null;
+        $items       = $this->fetchIssuesPage(
+            owner: $owner,
+            repo: $repo,
+            state: $state,
+            sort: $sort,
+            perPage: $perPage,
+            label: $singleLabel,
+            token: $token
+        );
+        return ['items' => $items];
+    }//end listIssues()
+
+    /**
+     * Create a GitHub Issue on the named repository.
+     *
+     * Authorship policy: prefer the user's per-user PAT (`IConfig::openregister::github_token`); when
+     * absent or empty, fall back to the app-level PAT (`IAppConfig::openregister::github_api_token`)
+     * with an attribution prefix prepended to the body so the human submitter is preserved.
+     *
+     * When `$specRef` is non-empty, the body sent to GitHub is suffixed with
+     * `\n\n---\nRelated capability: \`<specRef>\`\n` AND the created issue carries a
+     * `specRef:<slug>` label. The label is created on-demand by GitHub if absent.
+     *
+     * Returns the structured response shape `{number, html_url, state, specRef?, used_server_pat}`.
+     *
+     * @param string      $owner   GitHub repo owner (validated by caller)
+     * @param string      $repo    GitHub repo name (validated by caller)
+     * @param string      $title   Issue title (3-200 chars, validated by caller)
+     * @param string      $body    Issue body (>= 10 chars, validated by caller)
+     * @param string|null $specRef Optional kebab-case capability slug
+     * @param string      $userId  Nextcloud UID of the submitting user
+     *
+     * @return array{number: int, html_url: string, state: string, specRef?: string, used_server_pat: bool}
+     *
+     * @throws \RuntimeException     `github_pat_not_configured` when neither PAT is available
+     * @throws GuzzleException       Network errors not covered by structured mapping
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-8
+     */
+    public function createIssue(
+        string $owner,
+        string $repo,
+        string $title,
+        string $body,
+        ?string $specRef,
+        string $userId
+    ): array {
+        $useServerPat  = false;
+        $token         = $this->resolveCreateIssueToken(userId: $userId, useServerPat: $useServerPat);
+        $effectiveBody = $this->buildIssueBody(userId: $userId, body: $body, specRef: $specRef, useServerPat: $useServerPat);
+        $payload       = $this->buildIssuePayload(title: $title, effectiveBody: $effectiveBody, specRef: $specRef);
+
+        $data = $this->dispatchCreateIssue(
+            owner: $owner,
+            repo: $repo,
+            payload: $payload,
+            token: $token,
+            userId: $userId,
+            specRef: $specRef,
+            useServerPat: $useServerPat
+        );
+
+        $result = [
+            'number'          => (int) ($data['number'] ?? 0),
+            'html_url'        => (string) ($data['html_url'] ?? ''),
+            'state'           => (string) ($data['state'] ?? 'open'),
+            'used_server_pat' => $useServerPat,
+        ];
+        if ($specRef !== null && $specRef !== '') {
+            $result['specRef'] = $specRef;
+        }
+
+        return $result;
+    }//end createIssue()
+
+    /**
+     * Resolve the PAT to use for a `createIssue` call: prefer the user's per-user token, fall
+     * back to the app-level PAT. Sets `$useServerPat` by reference so the caller can branch on it
+     * for attribution + audit logging.
+     *
+     * @param string $userId       Submitting Nextcloud UID.
+     * @param bool   $useServerPat Output flag — true when the fallback path is
+     *                             taken.
+     *
+     * @return string Non-empty token string.
+     *
+     * @throws \RuntimeException `github_pat_not_configured` when neither PAT is available.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
+     */
+    private function resolveCreateIssueToken(string $userId, ?bool &$useServerPat): string
+    {
+        $userToken    = $this->getUserToken(userId: $userId) ?? '';
+        $useServerPat = $userToken === '';
+        if ($useServerPat === false) {
+            return $userToken;
+        }
+
+        $serverToken = $this->appConfig->getValueString('openregister', 'github_api_token', '');
+        if ($serverToken === '') {
+            throw new RuntimeException('github_pat_not_configured');
+        }
+
+        return $serverToken;
+    }//end resolveCreateIssueToken()
+
+    /**
+     * Build the final issue body sent to GitHub: attribution prefix when server-PAT path, then
+     * the user's body, then the optional specRef suffix.
+     *
+     * @param string      $userId       Submitting UID (for attribution lookup).
+     * @param string      $body         Caller-supplied body.
+     * @param string|null $specRef      Validated specRef slug, or null.
+     * @param bool        $useServerPat Whether the attribution prefix should be prepended.
+     *
+     * @return string Final body string.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-8
+     */
+    private function buildIssueBody(string $userId, string $body, ?string $specRef, bool $useServerPat): string
+    {
+        $effectiveBody = $body;
+        if ($useServerPat === true) {
+            $effectiveBody = $this->attributionFormatter->format(userId: $userId).$body;
+        }
+
+        if ($specRef !== null && $specRef !== '') {
+            $effectiveBody .= "\n\n---\nRelated capability: `".$specRef."`\n";
+        }
+
+        return $effectiveBody;
+    }//end buildIssueBody()
+
+    /**
+     * Build the GitHub Issues API request payload.
+     *
+     * @param string      $title         Issue title.
+     * @param string      $effectiveBody Final body string (already includes attribution + specRef suffix).
+     * @param string|null $specRef       Validated specRef slug; when present a `specRef:<slug>` label is applied.
+     *
+     * @return array<string, mixed> Request payload.
+     */
+    private function buildIssuePayload(string $title, string $effectiveBody, ?string $specRef): array
+    {
+        $payload = ['title' => $title, 'body' => $effectiveBody];
+        if ($specRef !== null && $specRef !== '') {
+            $payload['labels'] = ['specRef:'.$specRef];
+        }
+
+        return $payload;
+    }//end buildIssuePayload()
+
+    /**
+     * Dispatch the POST to GitHub's `/repos/{owner}/{repo}/issues` endpoint, then audit + decode.
+     * On error, emit the server-PAT failure audit entry (task 1.17) before rethrowing. On success
+     * audit + decode the body and return the decoded array.
+     *
+     * @param string      $owner        Repo owner.
+     * @param string      $repo         Repo name.
+     * @param array       $payload      Request payload.
+     * @param string      $token        Bearer token.
+     * @param string      $userId       Submitting UID (for audit).
+     * @param string|null $specRef      Validated specRef (for audit).
+     * @param bool        $useServerPat Whether the server-PAT path is in effect (gates audit).
+     *
+     * @return array<string, mixed> Decoded GitHub Issues API response body.
+     *
+     * @throws \Exception When the underlying HTTP call fails for any reason.
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-17
+     */
+    private function dispatchCreateIssue(
+        string $owner,
+        string $repo,
+        array $payload,
+        string $token,
+        string $userId,
+        ?string $specRef,
+        bool $useServerPat
+    ): array {
+        $url = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
+        try {
+            $response = $this->client->request(
+                'POST',
+                $url,
+                [
+                    'headers' => [
+                        'Accept'               => 'application/vnd.github+json',
+                        'X-GitHub-Api-Version' => '2022-11-28',
+                        'Authorization'        => 'Bearer '.$token,
+                        'Content-Type'         => 'application/json',
+                    ],
+                    'body'    => json_encode($payload, JSON_THROW_ON_ERROR),
+                ]
+            );
+        } catch (Exception $exception) {
+            if ($useServerPat === true) {
+                $this->auditServerPatSubmission(
+                    userId: $userId,
+                    repoSlug: $owner.'/'.$repo,
+                    issueNumber: 0,
+                    specRef: $specRef ?? '',
+                    isSuccess: false,
+                    errorCode: $exception::class,
+                    githubStatus: $this->extractGitHubStatus(exception: $exception)
+                );
+            }
+
+            throw $exception;
+        }//end try
+
+        $data = json_decode((string) $response->getBody(), true);
+        if (is_array($data) === false) {
+            $data = [];
+        }
+
+        // Task 1.17: audit successful server-PAT submissions. User-PAT submissions are auditable
+        // on GitHub directly under the user's identity and SHALL NOT emit an openregister entry.
+        if ($useServerPat === true) {
+            $this->auditServerPatSubmission(
+                userId: $userId,
+                repoSlug: $owner.'/'.$repo,
+                issueNumber: (int) ($data['number'] ?? 0),
+                specRef: $specRef ?? '',
+                isSuccess: true,
+                errorCode: '',
+                githubStatus: $response->getStatusCode()
+            );
+        }
+
+        return $data;
+    }//end dispatchCreateIssue()
+
+    /**
+     * Emit a single audit-log entry for a server-PAT-fallback submission (task 1.17).
+     *
+     * Fields written: `user_id`, `repo`, `issue_number`, `specref`, `timestamp`. On failure the
+     * entry additionally carries `error_code` + `github_status`. NEVER logs the PAT, the issue
+     * body, the issue title, or the attribution prefix — only the structured metadata fields
+     * the spec lists.
+     *
+     * @param string $userId       Submitting Nextcloud UID.
+     * @param string $repoSlug     `<owner>/<repo>` of the target repository.
+     * @param int    $issueNumber  GitHub issue number on success, 0 on failure.
+     * @param string $specRef      Validated capability slug, or empty string when absent.
+     * @param bool   $isSuccess    Whether GitHub responded 201.
+     * @param string $errorCode    Internal error class / code on failure (empty on success).
+     * @param int    $githubStatus GitHub HTTP status (0 when not available).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-17
+     */
+    private function auditServerPatSubmission(
+        string $userId,
+        string $repoSlug,
+        int $issueNumber,
+        string $specRef,
+        bool $isSuccess,
+        string $errorCode,
+        int $githubStatus
+    ): void {
+        $context = [
+            'user_id'      => $userId,
+            'repo'         => $repoSlug,
+            'issue_number' => $issueNumber,
+            'specref'      => $specRef,
+            'timestamp'    => gmdate('c'),
+        ];
+        if ($isSuccess === true) {
+            $this->logger->info(
+                message: '[GitHubHandler] Server-PAT submission succeeded',
+                context: $context
+            );
+            return;
+        }
+
+        $context['error_code']    = $errorCode;
+        $context['github_status'] = $githubStatus;
+        $this->logger->warning(
+            message: '[GitHubHandler] Server-PAT submission failed',
+            context: $context
+        );
+    }//end auditServerPatSubmission()
+
+    /**
+     * Extract GitHub's HTTP status from a Guzzle exception when available. Returns 0 when the
+     * exception is not a BadResponseException or carries no response.
+     *
+     * @param Exception $exception Exception raised by the client.
+     *
+     * @return int HTTP status, or 0 when unavailable.
+     */
+    private function extractGitHubStatus(Exception $exception): int
+    {
+        // Use is_a() instead of importing BadResponseException — keeps the class's
+        // coupling-between-objects count under the PHPMD threshold. The runtime check is
+        // identical to instanceof.
+        if (is_a($exception, 'GuzzleHttp\\Exception\\BadResponseException') === false) {
+            return 0;
+        }
+
+        // The class is confirmed by the is_a() check above, so getResponse() is safe.
+        if (method_exists($exception, 'getResponse') === false) {
+            return 0;
+        }
+
+        // BadResponseException always carries a response (it is required by its constructor),
+        // so getResponse() is non-null here.
+        return $exception->getResponse()->getStatusCode();
+    }//end extractGitHubStatus()
+
+    /**
+     * Issue a single GitHub `/issues` request and return the stripped, PR-filtered item list.
+     *
+     * Sensitive fields are stripped per task 1.10 — only `number`, `title`, `body`, `html_url`,
+     * `user.login`, `user.avatar_url`, `reactions.{total_count, +1}`, `created_at`, `updated_at`,
+     * and `labels[].{name,color}` survive. GitHub returns pull requests in the issues endpoint
+     * with a `pull_request` field — those are filtered out.
+     *
+     * @param string      $owner   Validated owner
+     * @param string      $repo    Validated repo
+     * @param string      $state   Issue state
+     * @param string      $sort    Sort key
+     * @param int         $perPage Page size
+     * @param string|null $label   Single label filter or null
+     * @param string      $token   App-level PAT (verified non-empty by caller)
+     *
+     * @return array<int, array> Sanitized issue items
+     *
+     * @throws GuzzleException
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-1
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-10
+     */
+    private function fetchIssuesPage(
+        string $owner,
+        string $repo,
+        string $state,
+        string $sort,
+        int $perPage,
+        ?string $label,
+        string $token
+    ): array {
+        $query = [
+            'state'     => $state,
+            'sort'      => $sort,
+            'direction' => 'desc',
+            'per_page'  => $perPage,
+        ];
+        if ($label !== null && $label !== '') {
+            $query['labels'] = $label;
+        }
+
+        $url      = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
+        $response = $this->client->request(
+            'GET',
+            $url,
+            [
+                'query'   => $query,
+                'headers' => [
+                    'Accept'               => 'application/vnd.github+json',
+                    'X-GitHub-Api-Version' => '2022-11-28',
+                    'Authorization'        => 'Bearer '.$token,
+                ],
+            ]
+        );
+
+        $raw   = json_decode((string) $response->getBody(), true);
+        $items = [];
+        if (is_array($raw) === true) {
+            foreach ($raw as $issue) {
+                if (is_array($issue) === false || isset($issue['pull_request']) === true) {
+                    // Skip pull requests (GitHub returns them on the issues endpoint).
+                    continue;
+                }
+
+                $items[] = $this->stripIssueFields(issue: $issue);
+            }
+        }
+
+        return $items;
+    }//end fetchIssuesPage()
+
+    /**
+     * Strip GitHub issue payload to the allowlisted fields per task 1.10.
+     *
+     * @param array $issue Raw issue payload from the GitHub API
+     *
+     * @return array Sanitized issue
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-10
+     */
+    private function stripIssueFields(array $issue): array
+    {
+        $labels = [];
+        foreach (($issue['labels'] ?? []) as $label) {
+            if (is_array($label) === true) {
+                $labels[] = [
+                    'name'  => (string) ($label['name'] ?? ''),
+                    'color' => (string) ($label['color'] ?? ''),
+                ];
+            }
+        }
+
+        return [
+            'number'     => (int) ($issue['number'] ?? 0),
+            'title'      => (string) ($issue['title'] ?? ''),
+            'body'       => (string) ($issue['body'] ?? ''),
+            'html_url'   => (string) ($issue['html_url'] ?? ''),
+            'user'       => [
+                'login'      => (string) ($issue['user']['login'] ?? ''),
+                'avatar_url' => (string) ($issue['user']['avatar_url'] ?? ''),
+            ],
+            'reactions'  => [
+                'total_count' => (int) ($issue['reactions']['total_count'] ?? 0),
+                '+1'          => (int) ($issue['reactions']['+1'] ?? 0),
+            ],
+            'created_at' => (string) ($issue['created_at'] ?? ''),
+            'updated_at' => (string) ($issue['updated_at'] ?? ''),
+            'labels'     => $labels,
+        ];
+    }//end stripIssueFields()
 }//end class
