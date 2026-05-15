@@ -49,6 +49,45 @@ use Throwable;
 class ManifestService
 {
     /**
+     * Maximum accepted length of a manifest-supplied schema slug.
+     *
+     * Bounded length + a strict charset on schemaSlug keep a compromised
+     * manifest.json from steering profile/calculation lookup at arbitrary
+     * schemas — see the manifest review note "schemaSlug not validated".
+     *
+     * @var int
+     */
+    private const MAX_SLUG_LENGTH = 128;
+
+    /**
+     * Regex for accepted schema-slug characters. Mirrors the slugs we
+     * actually emit (lowercase alnum + dash + underscore).
+     *
+     * @var string
+     */
+    private const SLUG_PATTERN = '/^[A-Za-z0-9_\-]{1,128}$/';
+
+    /**
+     * Manifest annotation that declares which profile-object fields are
+     * safe to surface in `runtime.user`. When the schema's configuration
+     * carries no such allowlist, ONLY the fields named by the calling
+     * manifest's calculation map are surfaced. Raw `profile->getObject()`
+     * fields are never blindly merged into runtime.user — that was the
+     * leak path flagged in the review.
+     *
+     * @var string
+     */
+    private const FIELD_ALLOWLIST_KEY = 'x-openregister-manifest-user-fields';
+
+    /**
+     * Built-in profile fields that are ALWAYS safe to surface (no PII,
+     * already exposed via other Nextcloud APIs for the same user).
+     *
+     * @var list<string>
+     */
+    private const DEFAULT_SAFE_FIELDS = ['id', 'roles'];
+
+    /**
      * Constructor.
      *
      * @param ObjectService        $objectService OR object retrieval service.
@@ -82,6 +121,23 @@ class ManifestService
         // 1. No currentUserSchema declared → return unchanged.
         $schemaSlug = ($manifest['currentUserSchema'] ?? null);
         if ($schemaSlug === null || $schemaSlug === '') {
+            return $manifest;
+        }
+
+        // Validate the schema slug before doing ANY lookup with it: a
+        // compromised or malformed manifest must not be able to point
+        // profile/calculation resolution at an attacker-controlled string
+        // (length, charset, non-printable injection). Fail closed when
+        // validation fails.
+        if (is_string($schemaSlug) === false
+            || strlen($schemaSlug) > self::MAX_SLUG_LENGTH
+            || preg_match(self::SLUG_PATTERN, $schemaSlug) !== 1
+        ) {
+            $this->logger->warning(
+                message: sprintf('[ManifestService] Rejected invalid currentUserSchema slug %s', var_export($schemaSlug, true)),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            $manifest['runtime']['user'] = null;
             return $manifest;
         }
 
@@ -146,6 +202,12 @@ class ManifestService
         }
 
         try {
+            // RBAC + multitenancy MUST remain on. The profile lookup is per
+            // current user — disabling RBAC/multitenancy here would silently
+            // return profiles from other tenants whenever the same NC UID
+            // exists in more than one tenant. The (schema, ncUserId) filter
+            // is a *narrowing* filter on top of the tenant scope, not a
+            // substitute for it.
             $results = $this->objectService->findAll(
                 config: [
                     'limit'   => 1,
@@ -153,9 +215,7 @@ class ManifestService
                         'schema'   => $schemaSlug,
                         'ncUserId' => $userId,
                     ],
-                ],
-                _rbac: false,
-                _multitenancy: false
+                ]
             );
 
             return count($results) > 0 ? $results[0] : null;
@@ -189,11 +249,30 @@ class ManifestService
     {
         $data = $profile->getObject() ?? [];
 
+        // Resolve the field allowlist BEFORE merging anything from the
+        // profile object. Without an allowlist every stored field — including
+        // schema-internal or PII fields — would leak verbatim to anything
+        // consuming the manifest. The allowlist lives on the schema
+        // configuration under x-openregister-manifest-user-fields; calculated
+        // (non-materialised) fields named in the calc map are always added,
+        // since by definition they are derived/safe-to-surface values.
+        $calcs        = $this->getCalculations(schemaSlug: $schemaSlug);
+        $allowedNames = $this->resolveAllowedFieldNames(
+            schemaSlug: $schemaSlug,
+            calcs: $calcs
+        );
+
+        $filteredData = [];
+        foreach ($allowedNames as $field) {
+            if (array_key_exists($field, $data) === true) {
+                $filteredData[$field] = $data[$field];
+            }
+        }
+
         // Always surface the Nextcloud user ID as `id`.
-        $context = array_merge($data, ['id' => $userId]);
+        $context = array_merge($filteredData, ['id' => $userId]);
 
         // Evaluate non-materialised calculations to enrich the context.
-        $calcs = $this->getCalculations(schemaSlug: $schemaSlug);
         if ($calcs === null) {
             return $context;
         }
@@ -266,6 +345,86 @@ class ManifestService
         $calcs  = ($config['x-openregister-calculations'] ?? null);
         return is_array($calcs) === true ? $calcs : null;
     }//end getCalculations()
+
+    /**
+     * Resolve the list of profile fields safe to copy into runtime.user.
+     *
+     * Source of truth, in order:
+     * 1. `x-openregister-manifest-user-fields` on the schema configuration
+     *    — an explicit author-provided allowlist (list<string>).
+     * 2. The keys of `x-openregister-calculations` whose entries are
+     *    materialised — these are derived values the schema author has
+     *    already declared safe to surface.
+     * 3. The default safe fields (id, roles).
+     *
+     * NEVER returns the full key list of the profile object: that was the
+     * leak path flagged by review (raw `$profile->getObject()` merge).
+     *
+     * @param string                    $schemaSlug Validated schema slug.
+     * @param array<string, mixed>|null $calcs      Calculation map for the schema.
+     *
+     * @return list<string> Distinct field names allowed in runtime.user.
+     */
+    private function resolveAllowedFieldNames(string $schemaSlug, ?array $calcs): array
+    {
+        $explicit = $this->loadFieldAllowlist(schemaSlug: $schemaSlug);
+        $allowed  = self::DEFAULT_SAFE_FIELDS;
+
+        if ($explicit !== null) {
+            $allowed = array_merge($allowed, $explicit);
+        }
+
+        if ($calcs !== null) {
+            foreach ($calcs as $name => $spec) {
+                if (is_string($name) === false) {
+                    continue;
+                }
+
+                if (is_array($spec) === true && ($spec['materialise'] ?? false) === true) {
+                    $allowed[] = $name;
+                }
+            }
+        }
+
+        return array_values(array_unique($allowed));
+    }//end resolveAllowedFieldNames()
+
+    /**
+     * Load the explicit user-field allowlist from the schema configuration.
+     *
+     * @param string $schemaSlug Validated schema slug.
+     *
+     * @return list<string>|null List of allowed field names, or null when
+     *                           the schema declares no allowlist.
+     */
+    private function loadFieldAllowlist(string $schemaSlug): ?array
+    {
+        try {
+            $schemas = $this->schemaMapper->findBySlug(slug: $schemaSlug, limit: 1);
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (count($schemas) === 0) {
+            return null;
+        }
+
+        $config    = ($schemas[0]->getConfiguration() ?? []);
+        $allowlist = ($config[self::FIELD_ALLOWLIST_KEY] ?? null);
+
+        if (is_array($allowlist) === false) {
+            return null;
+        }
+
+        $normalised = [];
+        foreach ($allowlist as $entry) {
+            if (is_string($entry) === true && $entry !== '') {
+                $normalised[] = $entry;
+            }
+        }
+
+        return $normalised;
+    }//end loadFieldAllowlist()
 
     /**
      * Serialise a calculation result into a JSON-friendly value.

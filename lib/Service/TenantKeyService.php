@@ -36,7 +36,6 @@ use DateTime;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\Security\ICrypto;
-use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -66,15 +65,22 @@ class TenantKeyService
     /**
      * Constructor.
      *
-     * @param IDBConnection   $db           Database connection
-     * @param ICrypto         $crypto       Nextcloud crypto service (encrypt/decrypt at rest)
-     * @param ISecureRandom   $secureRandom Nextcloud CSPRNG
-     * @param LoggerInterface $logger       PSR logger
+     * Note on randomness: this service uses PHP's `random_bytes()` directly
+     * (see generateKey()). It does NOT inject `ISecureRandom`. Both back
+     * the same OS CSPRNG; `random_bytes()` is preferable here because it
+     * raises a typed exception on entropy failure rather than returning a
+     * short string, and the resulting bytes can be hex-encoded without an
+     * extra alphabet round-trip. Don't reintroduce ISecureRandom as a
+     * constructor parameter unless an actual call site needs it — it is
+     * misleading dead-code if it isn't called.
+     *
+     * @param IDBConnection   $db     Database connection
+     * @param ICrypto         $crypto Nextcloud crypto service (encrypt/decrypt at rest)
+     * @param LoggerInterface $logger PSR logger
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly ICrypto $crypto,
-        private readonly ISecureRandom $secureRandom,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -112,26 +118,35 @@ class TenantKeyService
      * verifiers can still re-check evidence records signed under it.
      * A fresh key is inserted with status = 'active'.
      *
+     * Returns metadata ONLY — never the plaintext key material. Callers that
+     * legitimately need the new active key after rotation must call
+     * getCurrentTenantKey() in the same request. This keeps the public API
+     * surface free of audit signing material so a future REST/CLI wiring
+     * cannot accidentally leak it. (See file-level docblock: "Keys are
+     * NEVER exposed through any REST endpoint.")
+     *
      * @param string $tenantId Tenant identifier
      *
      * @return array{
-     *     old: string,
-     *     new: string,
-     *     rotated_at: string
-     * } Old plaintext key, new plaintext key, and ISO-8601 rotation timestamp
+     *     tenant_id: string,
+     *     rotated_at: string,
+     *     retired_key_id: int|null
+     * } Rotation metadata: the tenant, the ISO-8601 rotation timestamp, and
+     *   the primary-key id of the row that was retired (or null when there
+     *   was no prior active key for this tenant).
      *
-     * @throws RuntimeException When key decryption or encryption fails
+     * @throws RuntimeException When key encryption fails
      *
      * @spec openspec/changes/scholiq-deps/tenant-key-api/tasks.md
      */
     public function rotateTenantKey(string $tenantId): array
     {
-        $oldRow = $this->fetchActiveRow(tenantId: $tenantId);
-        $oldKey = null;
+        $oldRow       = $this->fetchActiveRow(tenantId: $tenantId);
+        $retiredKeyId = null;
 
         if ($oldRow !== null) {
-            $oldKey = $this->decrypt(ciphertext: $oldRow['encrypted_key'], tenantId: $tenantId);
-            $this->retireRow(id: (int) $oldRow['id']);
+            $retiredKeyId = (int) $oldRow['id'];
+            $this->retireRow(id: $retiredKeyId);
         }
 
         $newKey    = $this->generateKey();
@@ -144,9 +159,9 @@ class TenantKeyService
         );
 
         return [
-            'old'        => $oldKey ?? '',
-            'new'        => $newKey,
-            'rotated_at' => $rotatedAt,
+            'tenant_id'      => $tenantId,
+            'rotated_at'     => $rotatedAt,
+            'retired_key_id' => $retiredKeyId,
         ];
     }//end rotateTenantKey()
 

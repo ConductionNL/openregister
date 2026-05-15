@@ -98,6 +98,9 @@ class AppendOnlyTest extends TestCase
     /** @var MockObject&SaveObject */
     private MockObject $saveHandler;
 
+    /** @var MockObject&RenderObject */
+    private MockObject $renderHandler;
+
     /** @var MockObject&DeleteObject */
     private MockObject $deleteHandler;
 
@@ -120,10 +123,15 @@ class AppendOnlyTest extends TestCase
         parent::setUp();
 
         $this->saveHandler        = $this->createMock(SaveObject::class);
+        $this->renderHandler      = $this->createMock(RenderObject::class);
         $this->deleteHandler      = $this->createMock(DeleteObject::class);
         $this->objectMapper       = $this->createMock(MagicMapper::class);
         $this->cascadingHandler   = $this->createMock(CascadingHandler::class);
         $this->dateTimeNormalizer = $this->createMock(DateTimeNormalizer::class);
+
+        // saveObject() returns renderHandler->renderEntity($savedObject, …);
+        // echo the saved entity back so the tests can assertSame() on it.
+        $this->renderHandler->method('renderEntity')->willReturnArgument(0);
 
         // normalize() echoes input unchanged (no date coercion side-effects needed here).
         $this->dateTimeNormalizer->method('normalize')->willReturnCallback(
@@ -153,7 +161,7 @@ class AppendOnlyTest extends TestCase
             $this->createMock(GetObject::class),
             $this->createMock(PerformanceHandler::class),
             $this->createMock(PermissionHandler::class),
-            $this->createMock(RenderObject::class),
+            $this->renderHandler,
             $this->saveHandler,
             $this->createMock(SaveObjects::class),
             $this->createMock(SearchQueryHandler::class),
@@ -223,6 +231,11 @@ class AppendOnlyTest extends TestCase
         $schema = new Schema();
         $schema->setId(99);
         $schema->setAppendOnly($appendOnly);
+        // Schema defaults hardValidation to true; these tests only exercise the
+        // append-only guard, so disable validation to avoid the mocked
+        // ValidateObject handler short-circuiting saveObject() with an empty
+        // ValidationException.
+        $schema->setHardValidation(false);
         if ($slug !== null) {
             $schema->setSlug($slug);
         }
@@ -254,7 +267,7 @@ class AppendOnlyTest extends TestCase
 
         $this->saveHandler->method('saveObject')->willReturn($savedEntity);
         $this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
-        $this->saveHandler->method('clearAllCaches')->willReturn(null);
+        // clearAllCaches() returns void — left unconfigured (a void mock method is a no-op).
 
         // ObjectMapper: no existing object with this UUID (it's a new insert).
         $this->objectMapper->method('find')->willThrowException(
@@ -340,7 +353,7 @@ class AppendOnlyTest extends TestCase
 
         $this->saveHandler->method('saveObject')->willReturn($savedEntity);
         $this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
-        $this->saveHandler->method('clearAllCaches')->willReturn(null);
+        // clearAllCaches() returns void — left unconfigured (a void mock method is a no-op).
 
         // Existing object found — normal UPDATE path.
         $existingEntity = new ObjectEntity();

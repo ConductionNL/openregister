@@ -213,8 +213,14 @@ class ManifestServiceTest extends TestCase
 
         $this->userSession->method('getUser')->willReturn($user);
 
-        // Profile object with stored data.
-        $profile = $this->createMock(ObjectEntity::class);
+        // Profile object with stored data. getObject() is a real ObjectEntity
+        // method; the other getters are @method magic via Entity::__call, so they
+        // must be added with addMethods() to be configurable on a mock.
+        $profile = $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getObject'])
+            ->addMethods(['getUuid', 'getRegister', 'getSchema', 'getOwner', 'getCreated', 'getUpdated'])
+            ->getMock();
         $profile->method('getObject')->willReturn([
             'ncUserId'    => 'charlie',
             'primaryRole' => 'compliance-officer',
@@ -297,7 +303,11 @@ class ManifestServiceTest extends TestCase
         $user->method('getUID')->willReturn('dave');
         $this->userSession->method('getUser')->willReturn($user);
 
-        $profile = $this->createMock(ObjectEntity::class);
+        $profile = $this->getMockBuilder(ObjectEntity::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getObject'])
+            ->addMethods(['getUuid', 'getRegister', 'getSchema', 'getOwner', 'getCreated', 'getUpdated'])
+            ->getMock();
         $profile->method('getObject')->willReturn(['ncUserId' => 'dave']);
         $profile->method('getUuid')->willReturn('prof-uuid-2');
         $profile->method('getRegister')->willReturn('reg');

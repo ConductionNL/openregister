@@ -65,6 +65,7 @@ class PermissionHandlerCacheTest extends TestCase
 
     private RegisterMapper&MockObject $registerMapper;
 
+
     /**
      * Wire up a fresh PermissionHandler with mocked collaborators.
      *
@@ -78,9 +79,9 @@ class PermissionHandlerCacheTest extends TestCase
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
         $this->objectEntityMapper = $this->createMock(MagicMapper::class);
         $this->conditionMatcher   = $this->createMock(ConditionMatcher::class);
-        $this->logger         = $this->createMock(LoggerInterface::class);
-        $this->container      = $this->createMock(ContainerInterface::class);
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
+        $this->logger             = $this->createMock(LoggerInterface::class);
+        $this->container          = $this->createMock(ContainerInterface::class);
+        $this->registerMapper     = $this->createMock(RegisterMapper::class);
 
         $this->handler = new PermissionHandler(
             $this->userSession,
@@ -93,6 +94,7 @@ class PermissionHandlerCacheTest extends TestCase
             $this->container
         );
     }//end setUp()
+
 
     /**
      * Helper: stage a logged-in user with the given groups.
@@ -113,6 +115,7 @@ class PermissionHandlerCacheTest extends TestCase
         return $user;
     }//end mockUser()
 
+
     /**
      * Helper: build a Schema with the given id and authorization block.
      *
@@ -130,6 +133,7 @@ class PermissionHandlerCacheTest extends TestCase
         return $schema;
     }//end createSchema()
 
+
     /**
      * Helper: build a Register with the given id (no authorization needed for cache tests).
      *
@@ -146,6 +150,7 @@ class PermissionHandlerCacheTest extends TestCase
         return $register;
     }//end createRegister()
 
+
     /**
      * Helper: glue the schema's parent-register lookup to the mocked mappers.
      *
@@ -161,13 +166,13 @@ class PermissionHandlerCacheTest extends TestCase
                     if ($class === RegisterMapper::class) {
                         return $this->registerMapper;
                     }
-
                     throw new \RuntimeException('Unknown class: '.$class);
                 }
             );
         $this->registerMapper->method('getFirstRegisterWithSchema')->willReturn($register->getId());
         $this->registerMapper->method('find')->willReturn($register);
     }//end setupRegisterForSchema()
+
 
     /**
      * Helper: build an ObjectEntity with stable UUID + payload.
@@ -184,6 +189,7 @@ class PermissionHandlerCacheTest extends TestCase
         $object->setObject($data);
         return $object;
     }//end createObjectEntity()
+
 
     /**
      * Repeated calls with identical inputs must reuse the cached verdict.
@@ -219,6 +225,7 @@ class PermissionHandlerCacheTest extends TestCase
         }
     }//end testRepeatedHasPermissionCallsHitCacheAndAvoidGroupLookup()
 
+
     /**
      * Different actions on the same schema must not collide in the cache.
      *
@@ -237,13 +244,10 @@ class PermissionHandlerCacheTest extends TestCase
             ->method('getUserGroupIds')
             ->willReturn(['behandelaars']);
 
-        $schema = $this->createSchema(
-                1,
-                [
-                    'read'   => ['behandelaars'],
-                    'delete' => ['admin'],
-                ]
-                );
+        $schema = $this->createSchema(1, [
+            'read'   => ['behandelaars'],
+            'delete' => ['admin'],
+        ]);
         $this->setupRegisterForSchema($this->createRegister(10));
 
         $this->assertTrue($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'));
@@ -254,6 +258,7 @@ class PermissionHandlerCacheTest extends TestCase
         $this->assertFalse($this->handler->hasPermission(schema: $schema, action: 'delete', userId: 'jan'));
     }//end testDifferentActionsAreCachedSeparately()
 
+
     /**
      * Different users must not share cache entries.
      *
@@ -261,7 +266,7 @@ class PermissionHandlerCacheTest extends TestCase
      */
     public function testDifferentUsersAreCachedSeparately(): void
     {
-        $jan = $this->createMock(IUser::class);
+        $jan  = $this->createMock(IUser::class);
         $jan->method('getUID')->willReturn('jan');
         $jan->method('getDisplayName')->willReturn('jan');
         $piet = $this->createMock(IUser::class);
@@ -294,14 +299,15 @@ class PermissionHandlerCacheTest extends TestCase
         $this->assertFalse($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'piet'));
     }//end testDifferentUsersAreCachedSeparately()
 
+
     /**
-     * Conditional rules with `match` clauses bypass the cache entirely.
+     * Conditional rules with `match` clauses bypass the per-request cache.
      *
-     * Schemas with at least one `match` rule in their authorization block disable
-     * the per-request permission cache (security fix: a post-mutation hasPermission
-     * re-check must always re-evaluate against fresh object data). Every call to
-     * hasPermission() therefore delegates to ConditionMatcher — four calls produce
-     * four delegations regardless of whether the same UUID is repeated.
+     * SECURITY: a match-rule verdict depends on the *current* object data,
+     * which can change within one request (saveObject / TransitionEngine).
+     * buildPermissionCacheKey() therefore returns null for any schema with a
+     * match rule, so every hasPermission() call re-delegates to
+     * ConditionMatcher — even repeats on the same object UUID.
      *
      * @return void
      */
@@ -309,17 +315,14 @@ class PermissionHandlerCacheTest extends TestCase
     {
         $this->userSession->method('getUser')->willReturn(null);
 
-        $schema = $this->createSchema(
-                1,
-                [
-                    'read' => [
-                        ['group' => 'public', 'match' => ['publishDate' => ['$lte' => '$now']]],
-                    ],
-                ]
-                );
+        $schema = $this->createSchema(1, [
+            'read' => [
+                ['group' => 'public', 'match' => ['publishDate' => ['$lte' => '$now']]],
+            ],
+        ]);
         $this->setupRegisterForSchema($this->createRegister(10));
 
-        // Schemas with match rules bypass the cache — four calls → four delegations.
+        // Match rules disable caching: 4 hasPermission() calls -> 4 delegations.
         $this->conditionMatcher->expects($this->exactly(4))
             ->method('objectMatchesConditions')
             ->willReturnOnConsecutiveCalls(true, false, true, false);
@@ -348,7 +351,7 @@ class PermissionHandlerCacheTest extends TestCase
             )
         );
 
-        // Repeated calls also re-evaluate (no cache for match-rule schemas).
+        // Repeat the same UUIDs — still re-evaluated (match rules bypass cache).
         $this->assertTrue(
             $this->handler->hasPermission(
                 schema: $schema,
@@ -370,6 +373,7 @@ class PermissionHandlerCacheTest extends TestCase
             )
         );
     }//end testConditionalRulesEvaluatePerObjectUuid()
+
 
     /**
      * Object owner is part of the cache key — different owners must not collide.
@@ -404,6 +408,7 @@ class PermissionHandlerCacheTest extends TestCase
         );
     }//end testObjectOwnerIsPartOfCacheKey()
 
+
     /**
      * clearPermissionCache() must invalidate previously memoised verdicts.
      *
@@ -432,6 +437,7 @@ class PermissionHandlerCacheTest extends TestCase
 
         $this->assertTrue($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'));
     }//end testClearPermissionCacheInvalidatesEntries()
+
 
     /**
      * RBAC bypass (_rbac=false) must short-circuit before the cache so it

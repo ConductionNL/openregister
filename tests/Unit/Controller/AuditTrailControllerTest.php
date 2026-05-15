@@ -39,10 +39,13 @@ class AuditTrailControllerTest extends TestCase
         $this->userSession      = $this->createMock(IUserSession::class);
         $this->groupManager     = $this->createMock(IGroupManager::class);
 
-        $adminUser = $this->createMock(IUser::class);
-        $adminUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($adminUser);
-        $this->groupManager->method('isAdmin')->willReturn(true);
+        // Default: an authenticated admin so the requireAdmin() gate on
+        // export()/clearAll() lets the happy-path assertions through. Tests
+        // that exercise non-admin rejection can override these expectations.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
         $this->controller = new AuditTrailController(
             'openregister',

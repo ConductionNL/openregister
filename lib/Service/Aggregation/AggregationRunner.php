@@ -897,6 +897,15 @@ class AggregationRunner
         // SECURITY: gate on list permission for the *target* schema so a
         // cross-schema aggregation cannot leak counts from a schema the
         // caller is not allowed to list.
+        //
+        // `objectOwner: null` is intentional here: this is a list-level
+        // check across the entire target schema (the aggregation hasn't
+        // selected any specific row yet), so there is no single
+        // owner-context to gate against. The owner-specific branch of
+        // permissionHandler->hasPermission() only applies when both
+        // $userId and $objectOwner are non-null. The corresponding
+        // `object: null` reinforces this: PermissionHandler treats the
+        // (null, null) pair as the list-level form.
         $userId = $this->userSession->getUser()?->getUID();
         if ($bypassRbac === false && $this->permissionHandler->hasPermission(
             schema: $targetSchema,
@@ -1105,7 +1114,17 @@ class AggregationRunner
         $registers = $this->registerMapper->findAll();
         foreach ($registers as $register) {
             $schemaIds = $register->getSchemas();
-            if (is_array($schemaIds) === true && in_array($schemaId, $schemaIds, false) === true) {
+            if (is_array($schemaIds) === false) {
+                continue;
+            }
+
+            // Normalise both sides to int before strict comparison: the
+            // schema id is canonically an int and `register->getSchemas()`
+            // may return string representations (legacy rows / DB drivers).
+            // Strict in_array with mixed-type members would silently miss
+            // a match and steer aggregation at the wrong register.
+            $normalised = array_map(static fn($id) => (int) $id, $schemaIds);
+            if (in_array((int) $schemaId, $normalised, true) === true) {
                 return $register;
             }
         }
