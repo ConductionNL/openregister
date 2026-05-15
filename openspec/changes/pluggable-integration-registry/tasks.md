@@ -23,12 +23,12 @@
 
 ## Backend — Built-in Providers (5)
 
-- [ ] `lib/Service/Integration/BuiltinProviders/FilesProvider.php` — wraps existing `FileService` integration, storage='magic-column'
-- [ ] `lib/Service/Integration/BuiltinProviders/NotesProvider.php` — wraps existing `NoteService` integration
-- [ ] `lib/Service/Integration/BuiltinProviders/TasksProvider.php` — wraps existing `TaskService` (todos)
-- [ ] `lib/Service/Integration/BuiltinProviders/TagsProvider.php` — wraps existing tags integration; requiredApp=null (always available)
-- [ ] `lib/Service/Integration/BuiltinProviders/AuditTrailProvider.php` — wraps existing `AuditTrailController`; requiredApp=null
-- [ ] All five register `referenceType: <id>` so schema reference properties can target them
+- [x] `lib/Service/Integration/BuiltinProviders/FilesProvider.php` — wraps `FileService` (magic-column). `list()` delegates to `FileService::getFilesForEntity()` after resolving the ObjectEntity via the container; mutation throws `NotImplementedException` until the controller refactor consolidates writes (tasks 18-22).
+- [x] `lib/Service/Integration/BuiltinProviders/NotesProvider.php` — wraps `NoteService` (link-table). Full CRUD: `list` / `create` / `update` / `delete` delegate to the wrapped service.
+- [x] `lib/Service/Integration/BuiltinProviders/TasksProvider.php` — wraps `TaskService` (link-table, CalDAV). Composite `{calendarId}/{taskUri}` entity ids; full CRUD delegation.
+- [x] `lib/Service/Integration/BuiltinProviders/TagsProvider.php` — wraps NC system tag manager (link-table). `list()` via `ISystemTagObjectMapper::getTagIdsForObjects`; mutation throws (write path stays at TagsController routes for now).
+- [x] `lib/Service/Integration/BuiltinProviders/AuditTrailProvider.php` — wraps `AuditTrailMapper` (query-time, AD-22). Read-only by design; mutation methods inherit `NotImplementedException` from `AbstractIntegrationProvider`.
+- [x] All five register through `addProvider()` at `Application::boot()` time (new `bootBuiltinIntegrationProviders()` helper). Frontend-side `referenceType: <id>` declarations land in tasks 25-30 when each provider gets its JS registry counterpart.
 
 ## Backend — Routes, Controller, Capabilities
 
