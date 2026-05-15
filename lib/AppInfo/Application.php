@@ -898,21 +898,12 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // IntegrationsAdminSettings — admin page surfacing the
-        // registry + auth status + Configure deep-links into
-        // OpenConnector (AD-15).
-        $context->registerService(
-            \OCA\OpenRegister\Settings\IntegrationsAdminSettings::class,
-            function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Settings\IntegrationsAdminSettings(
-                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
-                    router: $container->get(\OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class),
-                    appManager: $container->get('OCP\App\IAppManager'),
-                    urlGenerator: $container->get('OCP\IURLGenerator'),
-                    l10n: $container->get('OCP\IL10N'),
-                );
-            }
-        );
+        // IntegrationsAdminSettings is declared in info.xml <admin> and
+        // resolved by Nextcloud's container — IntegrationRegistry +
+        // ExternalIntegrationRouter are already registered above and the
+        // remaining constructor deps (IAppManager / IURLGenerator /
+        // IL10N) are framework services NC autowires. No explicit
+        // registerService needed, mirroring OpenRegisterAdmin.
 
         // IntegrationsCapability — surfaces the registry through the
         // Nextcloud OCS capabilities endpoint, role-redacted per AD-17.
