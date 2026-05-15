@@ -32,6 +32,7 @@
   - `actor`: `$actingUser?->getUID()` if provided, else the session-derived UID (per ADR-005, the UID — NOT the display name).
   - `timestamp`: an ISO-8601 datetime.
   - `changedFields`: object whose keys are only the fields that ACTUALLY changed; each value `{ previous: <old>, new: <new> }`. Fields submitted with values matching current state MUST NOT appear.
+- [ ] 3.2a Add `lib/Event/EntityRelationDecisionUpdatedEvent.php` (NEW). Post-commit, informational Symfony event. Constructor takes `EntityRelation`, `array<string, {previous, new}> $changedFields`, `?IUser $actingUser`. Exposes `getRelation()`, `getChangedFields()`, `getActingUser()`, plus convenience `isSkipAnonymizationActivated(): bool` covering the most common listener trigger (false → true flip). Inject `IEventDispatcher` into `EntityRelationMapper` and dispatch the event right after `emitDecisionMetadataAuditEntry`, inside its own `try/catch` — listener failures MUST NOT mask the persisted state change (same isolation as audit). See `design.md` §D6a for the contract.
 - [ ] 3.3 Add `lib/Controller/EntityRelationsController.php` (NEW). Single method: `update(int $id)` mapped to PATCH. Behaviour:
   - `@NoAdminRequired`.
   - Read the JSON body via the standard Nextcloud controller `$this->request->getParams()` pattern.

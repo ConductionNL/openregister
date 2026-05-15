@@ -6,6 +6,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -16,16 +17,17 @@ use Psr\Log\LoggerInterface;
  * Lightweight construction-and-wiring test for `EntityRelationMapper`.
  *
  * Verifies the mapper instantiates with its DI dependencies (which now
- * include `AuditTrailMapper`, `IUserSession`, and `LoggerInterface` per
- * the `entity-relation-grondslagen` change). DB-heavy query behaviour
- * is covered by integration tests; the audited write path's logic is
- * covered by `EntityRelationMapperUpdateDecisionMetadataTest`.
+ * include `AuditTrailMapper`, `IUserSession`, `IEventDispatcher`, and
+ * `LoggerInterface` per the `entity-relation-grondslagen` change).
+ * DB-heavy query behaviour is covered by integration tests; the audited
+ * write path's logic is covered by `EntityRelationMapperUpdateDecisionMetadataTest`.
  */
 class EntityRelationMapperTest extends TestCase
 {
     private IDBConnection&MockObject $db;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private IUserSession&MockObject $userSession;
+    private IEventDispatcher&MockObject $eventDispatcher;
     private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
@@ -33,6 +35,7 @@ class EntityRelationMapperTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
+        $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
@@ -42,6 +45,7 @@ class EntityRelationMapperTest extends TestCase
             $this->db,
             $this->auditTrailMapper,
             $this->userSession,
+            $this->eventDispatcher,
             $this->logger
         );
 
