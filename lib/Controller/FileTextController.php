@@ -493,8 +493,11 @@ class FileTextController extends Controller
                 );
             }
 
-            // Get detected entities for this file.
-            $entityData = $this->entityRelationMapper->findEntitiesForFile($fileId);
+            // Get detected entities for this file, excluding those the operator
+            // has flagged with skip_anonymization=true. Per the
+            // `entity-relation-grondslagen` change, the anonymise pass MUST NOT
+            // redact rows that carry an operator skip decision.
+            $entityData = $this->entityRelationMapper->findEntitiesForAnonymization($fileId);
 
             if (empty($entityData) === true) {
                 return new JSONResponse(
