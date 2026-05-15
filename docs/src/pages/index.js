@@ -232,10 +232,10 @@ export default function Home() {
       description="Schema-driven object store with audit trail. The data foundation underneath every Conduction workspace app."
     >
       <main className="marketing-page">
+        {/* status + version dropped — preset 2.10+ auto-derives from appinfo/info.xml */}
         <DetailHero
           background="cobalt"
           appId="openregister"
-          {/* status + version dropped — preset 2.10+ auto-derives from appinfo/info.xml */}
           locales="NL · EN"
           title="OpenRegister"
           tagline={TAGLINE}

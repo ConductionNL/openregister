@@ -60,7 +60,7 @@ graph TB
     Client -->|"Wants to store a JSON object"| API
     API -->|"passes incoming JSON objects"| Adapter
     Adapter -->|"Validates incoming JSON objects"| Validator
-    Validator <--|"Obtains schema definitions"| Registry
+    Registry -->|"Provides schema definitions"| Validator
     Adapter -->|"Saves results after validation"| Storage
     Storage --> DB1
     Storage --> DB2

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\ChatService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Response;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -184,6 +185,7 @@ class ChatStreamController extends Controller
      * @return Response Never returned — emitAndExit() always terminates.
      */
     #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function stream(): Response
     {
         // Hard requirement: clear every output buffer layer (PHP, NC framework,
