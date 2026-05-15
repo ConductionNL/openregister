@@ -593,6 +593,9 @@ return [
 		// File Anonymization - Replace detected entities with placeholders.
 		['name' => 'fileText#anonymizeFile', 'url' => '/api/files/{fileId}/anonymize', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
 
+		// Entity Relations - Decision-metadata PATCH (bases + skipAnonymization). See `entity-relation-grondslagen`.
+		['name' => 'entityRelations#update', 'url' => '/api/entity-relations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '\\d+']],
+
 		// GDPR Entities - Manage detected PII entities.
 		['name' => 'gdprEntities#index', 'url' => '/api/entities', 'verb' => 'GET'],
 		['name' => 'gdprEntities#show', 'url' => '/api/entities/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],

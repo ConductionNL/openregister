@@ -58,6 +58,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAnonymized(bool $anonymized)
  * @method string|null getAnonymizedValue()
  * @method void setAnonymizedValue(?string $anonymizedValue)
+ * @method array|null getBases()
+ * @method void setBases(?array $bases)
+ * @method bool getSkipAnonymization()
+ * @method void setSkipAnonymization(bool $skipAnonymization)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  *
@@ -189,6 +193,32 @@ class EntityRelation extends Entity implements JsonSerializable
     protected ?string $anonymizedValue = null;
 
     /**
+     * Legal bases (grondslagen) under which the entity is being redacted.
+     *
+     * Array of UUID-shaped strings referencing `base` schema objects in a
+     * consumer app's register (DocuDesk's `dossier` register is the first
+     * consumer; see the `entity-relation-grondslagen` change). OpenRegister
+     * does NOT validate that the UUIDs resolve — vocabulary ownership lies
+     * with the consumer app. Set via `EntityRelationMapper::updateDecisionMetadata`
+     * (and its HTTP surface `PATCH /api/entity-relations/{id}`); audit-traced.
+     *
+     * @var array|null
+     */
+    protected ?array $bases = null;
+
+    /**
+     * Operator decision: skip this occurrence from the anonymise pass.
+     *
+     * When `true`, `EntityRelationMapper::markAsAnonymized` excludes this row
+     * from the file-scoped flip, the redaction text-replacement skips it, and
+     * the row retains `anonymized = false`. Set via the same audited
+     * `updateDecisionMetadata` write path as `bases`.
+     *
+     * @var boolean
+     */
+    protected bool $skipAnonymization = false;
+
+    /**
      * Created at timestamp.
      *
      * @var DateTime|null
@@ -216,42 +246,48 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'context', type: 'string');
         $this->addType(fieldName: 'anonymized', type: 'boolean');
         $this->addType(fieldName: 'anonymizedValue', type: 'string');
+        $this->addType(fieldName: 'bases', type: 'json');
+        $this->addType(fieldName: 'skipAnonymization', type: 'boolean');
         $this->addType(fieldName: 'createdAt', type: 'datetime');
     }//end __construct()
 
     /**
      * JSON serialization.
      *
-     * @return (null|scalar)[]
+     * @return array<string, mixed>
      *
      * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
      *     role: null|string, fileId: int|null, objectId: int|null,
-     *     emailId: int|null, positionStart: int, positionEnd: int,
+     *     emailId: int|null, registerId: null|string, schemaId: null|string,
+     *     objectUuid: null|string, positionStart: int, positionEnd: int,
      *     confidence: float, detectionMethod: null|string,
      *     context: null|string, anonymized: bool,
-     *     anonymizedValue: null|string, createdAt: null|string}
+     *     anonymizedValue: null|string, bases: array|null,
+     *     skipAnonymization: bool, createdAt: null|string}
      */
     public function jsonSerialize(): array
     {
         return [
-            'id'              => $this->id,
-            'entityId'        => $this->entityId,
-            'chunkId'         => $this->chunkId,
-            'role'            => $this->role,
-            'fileId'          => $this->fileId,
-            'objectId'        => $this->objectId,
-            'emailId'         => $this->emailId,
-            'registerId'      => $this->registerId,
-            'schemaId'        => $this->schemaId,
-            'objectUuid'      => $this->objectUuid,
-            'positionStart'   => $this->positionStart,
-            'positionEnd'     => $this->positionEnd,
-            'confidence'      => $this->confidence,
-            'detectionMethod' => $this->detectionMethod,
-            'context'         => $this->context,
-            'anonymized'      => $this->anonymized,
-            'anonymizedValue' => $this->anonymizedValue,
-            'createdAt'       => $this->createdAt?->format(DateTime::ATOM),
+            'id'                => $this->id,
+            'entityId'          => $this->entityId,
+            'chunkId'           => $this->chunkId,
+            'role'              => $this->role,
+            'fileId'            => $this->fileId,
+            'objectId'          => $this->objectId,
+            'emailId'           => $this->emailId,
+            'registerId'        => $this->registerId,
+            'schemaId'          => $this->schemaId,
+            'objectUuid'        => $this->objectUuid,
+            'positionStart'     => $this->positionStart,
+            'positionEnd'       => $this->positionEnd,
+            'confidence'        => $this->confidence,
+            'detectionMethod'   => $this->detectionMethod,
+            'context'           => $this->context,
+            'anonymized'        => $this->anonymized,
+            'anonymizedValue'   => $this->anonymizedValue,
+            'bases'             => $this->bases,
+            'skipAnonymization' => $this->skipAnonymization,
+            'createdAt'         => $this->createdAt?->format(DateTime::ATOM),
         ];
     }//end jsonSerialize()
 }//end class
