@@ -105,7 +105,8 @@
 		"theodo-group/llphant": "^0.9.3",
 		"twig/twig": "^3.18",
 		"web-token/jwt-framework": "^3",
-		"webonyx/graphql-php": "^15.0"
+		"webonyx/graphql-php": "^15.0",
+		"zbateson/mail-mime-parser": "^3.0"
 	},
 	"require-dev": {
 		"cyclonedx/cyclonedx-php-composer": "^6.2",

@@ -125,6 +125,10 @@ class TextExtractionService
      * @param EntityRelationMapper     $entityRelationMapper Mapper for entity relations
      * @param SettingsService          $settingsService      Settings service
      * @param RiskLevelService         $riskLevelService     Risk level computation service
+     * @param EmlParser                $emlParser            EML message-parser (used for message/rfc822
+     *                                                       inputs and for the public `parseEmlStructured`
+     *                                                       surface that DocuDesk's `eml-pdf-assembly`
+     *                                                       consumes; see `text-extraction-eml`).
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -141,7 +145,8 @@ class TextExtractionService
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly SettingsService $settingsService,
-        private readonly RiskLevelService $riskLevelService
+        private readonly RiskLevelService $riskLevelService,
+        private readonly \OCA\OpenRegister\Service\TextExtraction\EmlParser $emlParser
     ) {
     }//end __construct()
 
@@ -959,6 +964,10 @@ class TextExtractionService
             } else if ($this->isSpreadsheet(mimeType: $mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet(file: $file);
+            } else if ($mimeType === 'message/rfc822') {
+                // Extract text from EML using EmlParser (parse + flatten).
+                // See `text-extraction-eml` change.
+                $extractedText = $this->extractEml(file: $file);
             }//end if
 
             if (isset($extractedText) === false) {
@@ -1632,6 +1641,59 @@ class TextExtractionService
             throw new Exception("Spreadsheet extraction failed: ".$e->getMessage());
         }//end try
     }//end extractSpreadsheet()
+
+    /**
+     * Extract flat plain-text from an EML (`message/rfc822`) file.
+     *
+     * Follows the existing extraction-failure pattern — returns null on
+     * irrecoverable parse error, with a PII-sanitised log entry. Per
+     * the `text-extraction-eml` change.
+     *
+     * @param \OCP\Files\File $file The EML file.
+     *
+     * @return string|null Flat plain-text, or null when the file cannot be parsed.
+     */
+    private function extractEml(\OCP\Files\File $file): ?string
+    {
+        try {
+            $structure = $this->emlParser->parse(file: $file);
+            return $this->emlParser->flatten(structure: $structure);
+        } catch (\OCA\OpenRegister\Exception\EmlParseException $e) {
+            $sanitised = \OCA\OpenRegister\Service\TextExtraction\EmlParser::sanitisePiiForLogging(message: $e->getMessage());
+            $this->logger->error(
+                message: '[TextExtractionService] EML parse failed: '.$sanitised,
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'fileId'    => $file->getId(),
+                    'mimeType'  => 'message/rfc822',
+                    'exception' => get_class($e),
+                ]
+            );
+            return null;
+        }//end try
+    }//end extractEml()
+
+    /**
+     * Public structured-parse entry point for EML files.
+     *
+     * Used by cross-app consumers (e.g. DocuDesk's `eml-pdf-assembly`)
+     * that need access to headers + body + attachments as structured
+     * data rather than as flat plain-text. MUST throw `EmlParseException`
+     * on irrecoverable malformed input — consumers drive their fallback
+     * paths via exception propagation; see the `text-extraction-eml`
+     * spec ("`parseEmlStructured` MUST throw a typed exception").
+     *
+     * @param \OCP\Files\File $file The EML file.
+     *
+     * @return \OCA\OpenRegister\Service\TextExtraction\EmlStructure
+     *
+     * @throws \OCA\OpenRegister\Exception\EmlParseException
+     */
+    public function parseEmlStructured(\OCP\Files\File $file): \OCA\OpenRegister\Service\TextExtraction\EmlStructure
+    {
+        return $this->emlParser->parse(file: $file);
+    }//end parseEmlStructured()
 
     /**
      * Chunk a document into smaller pieces for processing
