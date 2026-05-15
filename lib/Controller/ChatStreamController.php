@@ -39,7 +39,6 @@ use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\ChatService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Response;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -172,13 +171,19 @@ class ChatStreamController extends Controller
      * formality required by the framework; cleanup before exit; is funnelled
      * through emitAndExit() so DB transactions never leak under PHP-FPM.
      *
+     * CSRF protection is REQUIRED. The endpoint is an authenticated POST that
+     * creates/updates Conversation + Message rows, so removing NC's CSRF
+     * middleware would expose every logged-in user to drive-by chat-thread
+     * forgery from a third-party site. The SSE "EventSource can't carry the
+     * requesttoken header" argument does not apply here: the client invokes
+     * this endpoint via `fetch()` (POST with a JSON body), not EventSource,
+     * and `fetch()` can attach the requesttoken header normally.
+     *
      * @NoAdminRequired
-     * @NoCSRFRequired
      *
      * @return Response Never returned — emitAndExit() always terminates.
      */
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function stream(): Response
     {
         // Hard requirement: clear every output buffer layer (PHP, NC framework,
@@ -317,14 +322,20 @@ class ChatStreamController extends Controller
     }//end stream()
 
     /**
-     * Emit a single SSE frame, commit any open DB transaction, then exit.
+     * Emit a single SSE frame, release any open DB transaction, then exit.
      *
      * Centralising every termination point through this helper ensures that
      * the connection-leak risk of bypassing NC's response pipeline (see the
      * Stream design doc, "exit; under PHP-FPM" section) is mitigated: any
-     * in-flight transaction is committed before the process is torn down.
+     * in-flight transaction is finalised before the process is torn down.
+     * The error path rolls back; only the successful `final` path commits.
      *
-     * @param string               $eventType Event type.
+     * @param string               $eventType Event type. When 'error', any
+     *                                        open transaction is rolled back
+     *                                        instead of committed — partial
+     *                                        writes from a failed
+     *                                        ChatService::processMessage()
+     *                                        call must not be persisted.
      * @param array<string, mixed> $payload   JSON-encodable payload.
      *
      * @return never
@@ -332,29 +343,44 @@ class ChatStreamController extends Controller
     private function emitAndExit(string $eventType, array $payload): never
     {
         $this->emitSseEvent(eventType: $eventType, payload: $payload);
-        $this->safeShutdown();
+        $this->safeShutdown(rollback: $eventType === 'error');
         exit;
     }//end emitAndExit()
 
     /**
-     * Commit any open DB transaction so the connection can be released
+     * Finalise any open DB transaction so the connection can be released
      * cleanly when PHP shuts the process down after exit;.
+     *
+     * On the error path callers pass $rollback=true so partial writes left
+     * behind by a failed service call are discarded. The success path
+     * (the 'final' SSE frame) commits.
      *
      * Best-effort: swallow any exception so cleanup never masks the
      * user-visible SSE frame we just emitted.
      *
+     * @param bool $rollback True to roll back, false to commit.
+     *
      * @return void
      */
-    private function safeShutdown(): void
+    private function safeShutdown(bool $rollback): void
     {
         try {
             if ($this->db->inTransaction() === true) {
-                $this->db->commit();
+                if ($rollback === true) {
+                    $this->db->rollBack();
+                } else {
+                    $this->db->commit();
+                }
             }
         } catch (Throwable $e) {
             $this->logger->warning(
-                message: '[ChatStreamController] Shutdown commit failed',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                message: '[ChatStreamController] Shutdown finalisation failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'rollback' => $rollback,
+                    'error'    => $e->getMessage(),
+                ]
             );
         }
     }//end safeShutdown()

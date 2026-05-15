@@ -6,8 +6,11 @@
  * Covers:
  *  - Fresh-tenant bootstrap: first call inserts a new active key and returns it.
  *  - Idempotency: repeated calls for the same tenant return the same plaintext key.
- *  - Rotation: rotateTenantKey() returns old + new keys and new key differs from old.
- *  - Rotation from scratch: rotateTenantKey() on a tenant with no prior key still works.
+ *  - Rotation: rotateTenantKey() returns metadata only (no plaintext keys) and
+ *    getCurrentTenantKey() returns the new key after rotation, distinct from
+ *    the pre-rotation key.
+ *  - Rotation from scratch: rotateTenantKey() on a tenant with no prior key
+ *    succeeds with retired_key_id=null.
  *  - Retired rows are not returned by getCurrentTenantKey() after rotation.
  *
  * @category Tests
@@ -176,25 +179,30 @@ class TenantKeyServiceTest extends TestCase
     }//end testDifferentTenantsReceiveValidKeys()
 
     /**
-     * Rotation on a bootstrapped tenant returns old key, new key, and timestamp.
-     * The new key is a valid hex string and differs from the old.
+     * Rotation on a bootstrapped tenant returns metadata only (no plaintext
+     * key material) and getCurrentTenantKey() afterwards returns a fresh
+     * 64-char hex key that differs from the pre-rotation key.
      */
-    public function testRotationReturnsBothKeysAndTimestamp(): void
+    public function testRotationReturnsMetadataOnlyAndNewKeyDiffers(): void
     {
         $svc      = $this->makeService();
         $original = $svc->getCurrentTenantKey('tenant-rot');
 
         $result = $svc->rotateTenantKey('tenant-rot');
 
-        $this->assertArrayHasKey('old', $result);
-        $this->assertArrayHasKey('new', $result);
+        $this->assertArrayHasKey('tenant_id', $result);
         $this->assertArrayHasKey('rotated_at', $result);
-        $this->assertSame($original, $result['old'], 'old must equal the pre-rotation active key');
-        $this->assertNotEmpty($result['new'], 'new key must not be empty');
-        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $result['new']);
-        $this->assertNotSame($result['old'], $result['new'], 'New key must differ from old key');
+        $this->assertArrayHasKey('retired_key_id', $result);
+        $this->assertArrayNotHasKey('old', $result, 'plaintext old key must NOT be returned');
+        $this->assertArrayNotHasKey('new', $result, 'plaintext new key must NOT be returned');
+        $this->assertSame('tenant-rot', $result['tenant_id']);
         $this->assertNotEmpty($result['rotated_at']);
-    }//end testRotationReturnsBothKeysAndTimestamp()
+        $this->assertIsInt($result['retired_key_id']);
+
+        $current = $svc->getCurrentTenantKey('tenant-rot');
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $current);
+        $this->assertNotSame($original, $current, 'New key must differ from pre-rotation key');
+    }//end testRotationReturnsMetadataOnlyAndNewKeyDiffers()
 
     /**
      * After rotation, getCurrentTenantKey returns the new key, not the old one.
@@ -202,11 +210,12 @@ class TenantKeyServiceTest extends TestCase
     public function testCurrentKeyAfterRotationIsNewKey(): void
     {
         $svc = $this->makeService();
-        $svc->getCurrentTenantKey('tenant-rot2');
-        $result  = $svc->rotateTenantKey('tenant-rot2');
+        $original = $svc->getCurrentTenantKey('tenant-rot2');
+        $svc->rotateTenantKey('tenant-rot2');
         $current = $svc->getCurrentTenantKey('tenant-rot2');
 
-        $this->assertSame($result['new'], $current, 'getCurrentTenantKey must return new key after rotation');
+        $this->assertNotSame($original, $current, 'getCurrentTenantKey must return new key after rotation');
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $current);
     }//end testCurrentKeyAfterRotationIsNewKey()
 
     /**
@@ -228,15 +237,20 @@ class TenantKeyServiceTest extends TestCase
 
     /**
      * Rotation on a tenant with no prior key still succeeds.
-     * old is empty string, new is a valid 64-char hex key.
+     * retired_key_id is null, and getCurrentTenantKey() returns a fresh
+     * 64-char hex key.
      */
     public function testRotationWithNoPriorKeySucceeds(): void
     {
         $svc    = $this->makeService();
         $result = $svc->rotateTenantKey('brand-new-tenant');
 
-        $this->assertSame('', $result['old'], 'old must be empty string when no prior key exists');
-        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $result['new']);
+        $this->assertNull($result['retired_key_id'], 'retired_key_id must be null when no prior key exists');
+        $this->assertSame('brand-new-tenant', $result['tenant_id']);
+        $this->assertMatchesRegularExpression(
+            '/^[0-9a-f]{64}$/',
+            $svc->getCurrentTenantKey('brand-new-tenant')
+        );
     }//end testRotationWithNoPriorKeySucceeds()
 
     /**

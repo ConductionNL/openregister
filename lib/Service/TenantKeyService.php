@@ -118,26 +118,35 @@ class TenantKeyService
      * verifiers can still re-check evidence records signed under it.
      * A fresh key is inserted with status = 'active'.
      *
+     * Returns metadata ONLY — never the plaintext key material. Callers that
+     * legitimately need the new active key after rotation must call
+     * getCurrentTenantKey() in the same request. This keeps the public API
+     * surface free of audit signing material so a future REST/CLI wiring
+     * cannot accidentally leak it. (See file-level docblock: "Keys are
+     * NEVER exposed through any REST endpoint.")
+     *
      * @param string $tenantId Tenant identifier
      *
      * @return array{
-     *     old: string,
-     *     new: string,
-     *     rotated_at: string
-     * } Old plaintext key, new plaintext key, and ISO-8601 rotation timestamp
+     *     tenant_id: string,
+     *     rotated_at: string,
+     *     retired_key_id: int|null
+     * } Rotation metadata: the tenant, the ISO-8601 rotation timestamp, and
+     *   the primary-key id of the row that was retired (or null when there
+     *   was no prior active key for this tenant).
      *
-     * @throws RuntimeException When key decryption or encryption fails
+     * @throws RuntimeException When key encryption fails
      *
      * @spec openspec/changes/scholiq-deps/tenant-key-api/tasks.md
      */
     public function rotateTenantKey(string $tenantId): array
     {
-        $oldRow = $this->fetchActiveRow(tenantId: $tenantId);
-        $oldKey = null;
+        $oldRow       = $this->fetchActiveRow(tenantId: $tenantId);
+        $retiredKeyId = null;
 
         if ($oldRow !== null) {
-            $oldKey = $this->decrypt(ciphertext: $oldRow['encrypted_key'], tenantId: $tenantId);
-            $this->retireRow(id: (int) $oldRow['id']);
+            $retiredKeyId = (int) $oldRow['id'];
+            $this->retireRow(id: $retiredKeyId);
         }
 
         $newKey    = $this->generateKey();
@@ -150,9 +159,9 @@ class TenantKeyService
         );
 
         return [
-            'old'        => $oldKey ?? '',
-            'new'        => $newKey,
-            'rotated_at' => $rotatedAt,
+            'tenant_id'      => $tenantId,
+            'rotated_at'     => $rotatedAt,
+            'retired_key_id' => $retiredKeyId,
         ];
     }//end rotateTenantKey()
 
