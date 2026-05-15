@@ -1,5 +1,12 @@
 # EML Text Extraction
 
+> **Developer-facing reference.** This page documents the EML
+> (`message/rfc822`) support that consumer apps integrate against
+> (`TextExtractionService::extractFile`, `parseEmlStructured`). For
+> end-user behaviour, see the operator-facing release notes — there is no
+> UI surface dedicated to EML extraction; the extracted text feeds the
+> existing entity-detection pipeline transparently.
+
 OpenRegister's `TextExtractionService` supports `.eml` files (`message/rfc822`) via two output paths that share an underlying `zbateson/mail-mime-parser` invocation:
 
 1. **Flat plain-text** — used by the existing entity-detection pipeline (`TextExtractionService::extractFile`).
@@ -71,7 +78,7 @@ Permitted log payload: file ID, MIME type, exception class name, structural deta
 ## Limitations / follow-ups
 
 - **Inline text extraction for non-EML attachments (PDF, DOCX, text)** is deferred in v1. The flat path lists them by name + MIME type only. The DocuDesk-side `eml-pdf-assembly` consumer renders attachments richly for its PDF/A-3 output and does not depend on flat-path inlining; entity detection on attachment content is the v1 gap if/when it becomes load-bearing.
-- **Address-list parsing** in the flat headers uses a simple comma-split; structured-address iteration (zbateson exposes per-address objects) is a possible refinement if quoted-comma display names emerge as a real pain point.
+- **Address-list parsing** is RFC 2822-aware: the `splitAddressList` walker preserves commas inside double-quoted display names and inside angle-bracketed addresses. Backslash-escaped quotes are honoured. Structured-address iteration via zbateson's per-address objects remains available for richer use cases.
 
 ## Spec references
 

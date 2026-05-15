@@ -34,8 +34,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  *
@@ -240,12 +241,15 @@ class EmlParser
     }//end extractHeaders()
 
     /**
-     * Split a comma-separated address list into an array.
+     * Split an RFC 2822 address-list into individual address tokens.
      *
-     * Best-effort: addresses with commas inside quoted display names are
-     * a known weakness — zbateson's address-header iteration handles the
-     * structured case; this string-split is for the simple header-value
-     * surface we expose in EmlStructure.headers.
+     * Naive comma-split breaks on quoted display names containing commas
+     * (e.g. `"Doe, John" <john@example.com>` parses as two bad tokens).
+     * The walker below preserves commas inside double-quoted strings and
+     * inside angle-bracketed addresses (the two contexts where RFC 2822
+     * permits structural characters to appear).
+     *
+     * Backslash-escaped quotes inside quoted strings are honoured.
      *
      * @param string|null $raw Raw header value.
      *
@@ -257,14 +261,54 @@ class EmlParser
             return [];
         }
 
-        $parts = array_map(
-            callback: 'trim',
-            array: explode(separator: ',', string: $raw)
-        );
+        $tokens  = [];
+        $buffer  = '';
+        $inQuote = false;
+        $inAngle = false;
+        $length  = strlen($raw);
+        for ($i = 0; $i < $length; $i++) {
+            $ch = $raw[$i];
+
+            if ($ch === '\\' && $inQuote === true && $i + 1 < $length) {
+                // Honour escaped character inside a quoted display name.
+                $buffer .= $ch.$raw[++$i];
+                continue;
+            }
+
+            if ($ch === '"' && $inAngle === false) {
+                $inQuote = !$inQuote;
+                $buffer .= $ch;
+                continue;
+            }
+
+            if ($ch === '<' && $inQuote === false) {
+                $inAngle = true;
+                $buffer .= $ch;
+                continue;
+            }
+
+            if ($ch === '>' && $inQuote === false) {
+                $inAngle = false;
+                $buffer .= $ch;
+                continue;
+            }
+
+            if ($ch === ',' && $inQuote === false && $inAngle === false) {
+                $tokens[] = trim($buffer);
+                $buffer   = '';
+                continue;
+            }
+
+            $buffer .= $ch;
+        }//end for
+
+        if ($buffer !== '') {
+            $tokens[] = trim($buffer);
+        }
 
         return array_values(
                 array: array_filter(
-            array: $parts,
+            array: $tokens,
             callback: static fn (string $part): bool => $part !== ''
         )
                 );
@@ -361,27 +405,76 @@ class EmlParser
      * Filename resolution: Content-Disposition `filename` → Content-Type
      * `name` → generated `attachment-<position>`.
      *
+     * Output is sanitised against path-traversal: `basename()` strips any
+     * directory components and `..` sequences a malicious sender may have
+     * encoded into the filename, and a regex strips path separators that
+     * survive on platforms where basename() does not (`\\` on POSIX).
+     * Consumers writing this name to disk (`eml-pdf-assembly` materialises
+     * attachments to a holding directory) MUST be able to use the value
+     * directly as a leaf filename without further validation.
+     *
      * @param IMessagePart $part     Source part.
      * @param int          $position 1-indexed multipart position.
      *
-     * @return string Always non-empty.
+     * @return string Always non-empty, always free of path components.
      */
     private function resolveFilename(IMessagePart $part, int $position): string
     {
+        $raw = null;
+
         $fromDisposition = $part->getFilename();
         if (is_string(value: $fromDisposition) === true && $fromDisposition !== '') {
-            return $fromDisposition;
+            $raw = $fromDisposition;
         }
 
-        if (method_exists(object_or_class: $part, method: 'getHeaderParameter') === true) {
-            $fromType = $part->getHeaderParameter(header: 'Content-Type', param: 'name');
+        if ($raw === null
+            && method_exists(object_or_class: $part, method: 'getHeaderParameter') === true
+        ) {
+            // Positional args here: zbateson's IMessagePart subclasses
+            // expose getHeaderParameter but the interface does not, so
+            // PHPStan analyses against a generic stdClass fallback and
+            // would reject named-parameter calls.
+            $fromType = $part->getHeaderParameter('Content-Type', 'name');
             if (is_string(value: $fromType) === true && $fromType !== '') {
-                return $fromType;
+                $raw = $fromType;
             }
         }
 
-        return 'attachment-'.$position;
+        if ($raw === null) {
+            return 'attachment-'.$position;
+        }
+
+        $sanitised = $this->sanitiseFilename(raw: $raw);
+        if ($sanitised === '') {
+            return 'attachment-'.$position;
+        }
+
+        return $sanitised;
     }//end resolveFilename()
+
+    /**
+     * Strip any path components from a sender-controlled filename.
+     *
+     * `basename()` handles platform-native separators (`/` on POSIX,
+     * `\` on Windows); the follow-up regex covers the cross-platform
+     * case where a malicious sender embeds `\` in a filename on a
+     * POSIX host. Leading/trailing dots and whitespace are trimmed so
+     * residue like `.` or `..` cannot survive as the entire filename.
+     *
+     * @param string $raw Sender-controlled candidate filename.
+     *
+     * @return string Leaf-only filename (may be empty if input had no
+     *                non-separator content).
+     */
+    private function sanitiseFilename(string $raw): string
+    {
+        // Normalise Windows-style separators FIRST so basename() — which on
+        // POSIX hosts only splits on `/` — can correctly strip the
+        // directory components a sender embedded with `\`.
+        $normalised = (string) preg_replace(pattern: '#\\\\+#', replacement: '/', subject: $raw);
+        $leaf       = basename(path: $normalised);
+        return trim(string: $leaf, characters: " \t\n\r\0\x0B.");
+    }//end sanitiseFilename()
 
     /**
      * Parse the bytes of a nested `message/rfc822` attachment.
@@ -509,9 +602,12 @@ class EmlParser
      * Ensure a string is UTF-8; transcode from detected encoding when needed.
      *
      * Per the spec, non-UTF-8 input SHOULD be transcoded via mb_detect_encoding
-     * + mb_convert_encoding. When detection fails, return the raw bytes
-     * unchanged so downstream consumers see at-least-something rather than
-     * an exception.
+     * + mb_convert_encoding. When detection or conversion fails, the raw
+     * bytes are returned unchanged so downstream consumers see at-least-
+     * something rather than an exception — but the failure is logged at
+     * error level per ADR-005's MUST-log on transcoding failure. Operators
+     * need visibility into garbled-character situations to triage
+     * encoding-sensitive senders.
      *
      * @param string $value Possibly-non-UTF-8 string.
      *
@@ -526,6 +622,15 @@ class EmlParser
         $candidates = ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ISO-8859-15'];
         $detected   = mb_detect_encoding(string: $value, encodings: $candidates, strict: true);
         if ($detected === false) {
+            $this->logger->error(
+                message: '[EmlParser] Non-UTF-8 input — encoding detection failed; returning raw bytes',
+                context: [
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
+                    'value_bytes' => strlen($value),
+                    'candidates'  => $candidates,
+                ]
+            );
             return $value;
         }
 
@@ -534,6 +639,16 @@ class EmlParser
             return $converted;
         }
 
+        $this->logger->error(
+            message: '[EmlParser] Non-UTF-8 input — transcoding to UTF-8 failed; returning raw bytes',
+            context: [
+                'file'            => __FILE__,
+                'line'            => __LINE__,
+                'value_bytes'     => strlen($value),
+                'detected_from'   => $detected,
+                'target_encoding' => 'UTF-8',
+            ]
+        );
         return $value;
     }//end ensureUtf8()
 
