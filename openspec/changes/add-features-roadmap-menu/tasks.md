@@ -83,9 +83,9 @@
 
 - [ ] 5.1 Add `@conduction/openspec-manifest` as a devDependency; wire `"prebuild": "openspec-manifest build"` in `package.json`.
 - [ ] 5.2 Verify `docs/features.json` is regenerated on `npm run build`; confirm it is committed (NOT in `.gitignore`).
-- [ ] 5.3 Add `/features-roadmap` route to the Vue router; mount `FeaturesAndRoadmapView` as its component.
-- [ ] 5.4 Mount `<CnFeaturesAndRoadmapLink />` as the first child of `<NcAppNavigationSettings>` in `src/navigation/MainMenu.vue`, above the existing Settings gear.
-- [ ] 5.5 Bump OpenRegister's dependency on `@conduction/nextcloud-vue` to the version that ships the new component family.
+- [x] 5.3 Add `/features-roadmap` route to the Vue router; mount `FeaturesAndRoadmapView` (`CnFeaturesAndRoadmapView`) as its component. — `src/views/roadmap/FeaturesRoadmapIndex.vue` wrapper + route; on PR [#1491](https://github.com/ConductionNL/openregister/pull/1491). (`repo`/`features`/`disabled` from `loadState()` with fallbacks; full `IInitialState` wiring = task 5.11, follow-up.)
+- [x] 5.4 Mount `<CnFeaturesAndRoadmapLink />` as the first child of `<NcAppNavigationSettings>` in `src/navigation/MainMenu.vue`, above the existing Settings gear. — on PR [#1491](https://github.com/ConductionNL/openregister/pull/1491).
+- [x] 5.5 Bump OpenRegister's dependency on `@conduction/nextcloud-vue` to the version that ships the new component family. — bumped `0.1.0-beta.17` → `^1.0.0-beta.32`; the 0.1.x→1.x jump also needs `@nextcloud/axios` pinned to `~2.5.1` (2.6.0 shipped a broken `exports` field — see [openregister#1489](https://github.com/ConductionNL/openregister/issues/1489)). `npm run build` green with both + 5.3/5.4. On PR [#1491](https://github.com/ConductionNL/openregister/pull/1491).
 - [ ] 5.6 Demo: tag 2-3 existing widgets or pages with `specRef` (either `defineOptions({ specRef })` or `meta: { specRef }`) and wire the `useSuggestFeatureAction()` helper into their `NcActions` to validate the end-to-end contract.
 - [ ] 5.7 Install `@conduction/docusaurus-features` in OpenRegister's Docusaurus site; add the plugin and confirm the `/features` page renders.
 - [ ] 5.8 Add a Playwright smoke test: boot OpenRegister, open the navigation sidebar, assert the Features & Roadmap row is visible above the Settings row, click it, assert both tabs render, open the Suggest modal, fill in a valid title + body, submit, assert success toast with issue link.
