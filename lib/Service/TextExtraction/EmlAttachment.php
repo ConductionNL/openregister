@@ -23,8 +23,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  *
@@ -43,16 +44,15 @@ use JsonSerializable;
  */
 final class EmlAttachment implements JsonSerializable
 {
-
     /**
      * Constructor.
      *
-     * @param string             $filename  Resolved filename (always non-empty).
-     * @param string             $mimeType  MIME type from `Content-Type`.
-     * @param string             $content   Decoded binary bytes of the attachment.
-     * @param bool               $isInline  True when the part has `Content-Disposition: inline`.
-     * @param string|null        $contentId `Content-ID` header value with angle brackets stripped, or null.
-     * @param EmlStructure|null  $nestedEml Recursively parsed nested EML, or null beyond the depth cap.
+     * @param string            $filename  Resolved filename (always non-empty).
+     * @param string            $mimeType  MIME type from `Content-Type`.
+     * @param string            $content   Decoded binary bytes of the attachment.
+     * @param bool              $isInline  True when the part has `Content-Disposition: inline`.
+     * @param string|null       $contentId `Content-ID` header value with angle brackets stripped, or null.
+     * @param EmlStructure|null $nestedEml Recursively parsed nested EML, or null beyond the depth cap.
      */
     public function __construct(
         public readonly string $filename,

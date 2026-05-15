@@ -51,6 +51,7 @@ class TextExtractionServiceTest extends TestCase
     private IRootFolder&MockObject $rootFolder;
     private IDBConnection&MockObject $db;
     private LoggerInterface&MockObject $logger;
+    private \OCA\OpenRegister\Service\TextExtraction\EmlParser&MockObject $emlParser;
 
     protected function setUp(): void
     {
@@ -67,6 +68,7 @@ class TextExtractionServiceTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->riskLevelService = $this->createMock(RiskLevelService::class);
+        $this->emlParser = $this->createMock(\OCA\OpenRegister\Service\TextExtraction\EmlParser::class);
 
         $this->service = new TextExtractionService(
             $this->fileMapper,
@@ -81,7 +83,8 @@ class TextExtractionServiceTest extends TestCase
             $this->gdprEntityMapper,
             $this->entityRelationMapper,
             $this->settingsService,
-            $this->riskLevelService
+            $this->riskLevelService,
+            $this->emlParser
         );
     }
 
