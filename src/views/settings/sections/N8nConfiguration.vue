@@ -4,7 +4,7 @@
 		name="Workflow Configuration"
 		description="Configure n8n workflow automation integration"
 		:loading="loading"
-		loading-message="Loading n8n configuration...">
+		:loading-message="t('openregister', 'Loading n8n configuration...')">
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -40,7 +40,7 @@
 				{{ n8nEnabled ? t('openregister', 'n8n integration enabled') : t('openregister', 'n8n integration disabled') }}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
-				{{ t('openregister', 'Enable or disable n8n workflow integration. configure connection settings below.') }}
+				{{ t('openregister', 'Enable or disable n8n workflow integration. Configure connection settings below.') }}
 				<span v-if="saving" class="saving-indicator">
 					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
 				</span>
@@ -205,7 +205,7 @@
 
 			<div class="workflow-management">
 				<p class="section-intro">
-					{{ t('openregister', 'Manage n8n workflows for OpenRegister automation. workflows will be stored in the configured project.') }}
+					{{ t('openregister', 'Manage n8n workflows for OpenRegister automation. Workflows will be stored in the configured project.') }}
 				</p>
 
 				<div class="workflow-actions">
@@ -247,7 +247,7 @@
 					</div>
 				</div>
 				<div v-else-if="!loadingWorkflows" class="no-workflows">
-					<p>{{ t('openregister', 'No workflows found in this project. create workflows in the n8n editor.') }}</p>
+					<p>{{ t('openregister', 'No workflows found in this project. Create workflows in the n8n editor.') }}</p>
 				</div>
 			</div>
 		</SettingsCard>

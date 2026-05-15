@@ -9,7 +9,7 @@
 			<div class="warning-box">
 				<p><strong>⚠️ {{ t('openregister', 'Warning') }}</strong></p>
 				<p>{{ t('openregister', 'ConfigSet:') }} <strong>{{ navigationStore.transferData.name }}</strong></p>
-				<p>{{ t('openregister', 'This action cannot be undone. make sure no collections are using this configset.') }}</p>
+				<p>{{ t('openregister', 'This action cannot be undone. Make sure no collections are using this configset.') }}</p>
 			</div>
 
 			<div class="form-actions">

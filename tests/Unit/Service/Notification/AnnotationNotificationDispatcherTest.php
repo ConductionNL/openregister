@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
+use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -54,6 +55,16 @@ class AnnotationNotificationDispatcherTest extends TestCase
 
     private IServerContainer&MockObject $serverContainer;
 
+    /**
+     * Services the dispatcher resolves via the server container, keyed by id.
+     * Seeded with an IConfig mock; tests using expression resolvers add their
+     * resolver under its DI tag here (the dispatcher calls
+     * IServerContainer::get($tag) — \OC::$server registrations don't reach the mock).
+     *
+     * @var array<string, mixed>
+     */
+    private array $serverServices = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -66,6 +77,20 @@ class AnnotationNotificationDispatcherTest extends TestCase
         $this->activityManager = $this->createMock(IActivityManager::class);
         $this->httpClient      = $this->createMock(IClientService::class);
         $this->serverContainer = $this->createMock(IServerContainer::class);
+
+        // emitTalk()/emitWebhook() resolve the local base URL via the server
+        // container when no IConfig was injected, and resolveExpressionRecipients()
+        // resolves the recipient resolver via IServerContainer::get($tag). Route
+        // both through $this->serverServices: an IConfig mock by default, plus
+        // whatever a test registers under a tag.
+        $config = $this->createMock(IConfig::class);
+        $config->method('getSystemValue')->willReturnCallback(
+            static fn(string $key, mixed $default = null): mixed => $default ?? 'http://localhost'
+        );
+        $this->serverServices[IConfig::class] = $config;
+        $this->serverContainer->method('get')->willReturnCallback(
+            fn(string $id): mixed => $this->serverServices[$id] ?? null
+        );
 
         // F05 added a `userExists` guard to every recipient-uid path.
         // PHPUnit's default `bool` return on an unstubbed mock is `false`,
@@ -234,8 +259,8 @@ class AnnotationNotificationDispatcherTest extends TestCase
 
     public function testExpressionResolverReceivesObjectAndContext(): void
     {
-        // Register a resolver in the OC server container so the dispatcher
-        // can look it up by tag.
+        // Register a resolver under a DI tag the dispatcher resolves via
+        // IServerContainer::get($tag).
         $resolver = new class implements RecipientResolverInterface {
 
             public ?ObjectEntity $sawObject = null;
@@ -249,8 +274,8 @@ class AnnotationNotificationDispatcherTest extends TestCase
                 return ['eve', 'frank'];
             }//end resolve()
         };
-        $tag      = 'OCA\\Test\\DummyResolver_'.bin2hex(random_bytes(4));
-        \OC::$server->registerService($tag, fn() => $resolver);
+        $tag = 'OCA\\Test\\DummyResolver_'.bin2hex(random_bytes(4));
+        $this->serverServices[$tag] = $resolver;
 
         $schema = $this->schemaWithNotification(
                 [
@@ -280,7 +305,7 @@ class AnnotationNotificationDispatcherTest extends TestCase
     public function testExpressionResolverFailsClosedOnInterfaceMismatch(): void
     {
         $tag = 'OCA\\Test\\BadResolver_'.bin2hex(random_bytes(4));
-        \OC::$server->registerService($tag, fn() => new \stdClass());
+        $this->serverServices[$tag] = new \stdClass();
 
         $schema = $this->schemaWithNotification(
                 [
@@ -657,6 +682,101 @@ class AnnotationNotificationDispatcherTest extends TestCase
         $this->assertSame(['admin'], $delivered);
     }//end testNoOrganisationGateLeavesDispatchUnchanged()
 
+    // ====================================================================
+    // Idempotency-key deduplication
+    // "The notification engine MUST deduplicate dispatches by
+    // (notification_slug, resolved_idempotency_key) over a configurable
+    // window (default 24 h)."
+    // ====================================================================
+
+    public function testFirstDispatchWithIdempotencyKeySendsAndLogs(): void
+    {
+        // First dispatch: the log mapper reports no duplicate → notify()
+        // fires and record() is called once.
+        $schema = $this->schemaWithNotification(
+            [
+                'reminderT30' => [
+                    'trigger'        => ['type' => 'updated'],
+                    'channels'       => ['nc-notification'],
+                    'recipients'     => [['kind' => 'users', 'users' => ['learner1']]],
+                    'subject'        => 'Reminder T-30',
+                    'idempotencyKey' => '${@self.uuid}-T30-${@self.dueDate}',
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $logMapper = $this->createMock(NotificationDispatchLogMapper::class);
+        // No duplicate exists — first dispatch.
+        $logMapper->method('isDuplicate')->willReturn(false);
+        $logMapper->expects($this->once())->method('record');
+
+        $this->notificationManager->expects($this->once())->method('notify');
+
+        $object = $this->object($schema);
+        $object->setObject(['title' => 'demo', 'dueDate' => '2026-06-01']);
+
+        $dispatcher = $this->makeDispatcher(dispatchLogMapper: $logMapper);
+        $dispatcher->dispatch($object, 'updated');
+    }//end testFirstDispatchWithIdempotencyKeySendsAndLogs()
+
+    public function testSecondDispatchWithSameKeyIsSkipped(): void
+    {
+        // Second dispatch: the log mapper reports a duplicate within the
+        // window → notify() must never fire and record() is NOT called again.
+        $schema = $this->schemaWithNotification(
+            [
+                'reminderT30' => [
+                    'trigger'        => ['type' => 'updated'],
+                    'channels'       => ['nc-notification'],
+                    'recipients'     => [['kind' => 'users', 'users' => ['learner1']]],
+                    'subject'        => 'Reminder T-30',
+                    'idempotencyKey' => '${@self.uuid}-T30-${@self.dueDate}',
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $logMapper = $this->createMock(NotificationDispatchLogMapper::class);
+        // Duplicate exists — second dispatch should be a no-op.
+        $logMapper->method('isDuplicate')->willReturn(true);
+        $logMapper->expects($this->never())->method('record');
+
+        $this->notificationManager->expects($this->never())->method('notify');
+        $this->logger->expects($this->atLeastOnce())->method('info');
+
+        $object = $this->object($schema);
+        $object->setObject(['title' => 'demo', 'dueDate' => '2026-06-01']);
+
+        $dispatcher = $this->makeDispatcher(dispatchLogMapper: $logMapper);
+        $dispatcher->dispatch($object, 'updated');
+    }//end testSecondDispatchWithSameKeyIsSkipped()
+
+    public function testDispatchWithoutIdempotencyKeyNeverConsultsLog(): void
+    {
+        // Rules without an idempotencyKey must never touch the dispatch log.
+        $schema = $this->schemaWithNotification(
+            [
+                'noKey' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'subject'    => 'no key rule',
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $logMapper = $this->createMock(NotificationDispatchLogMapper::class);
+        $logMapper->expects($this->never())->method('isDuplicate');
+        $logMapper->expects($this->never())->method('record');
+
+        $this->notificationManager->expects($this->once())->method('notify');
+
+        $dispatcher = $this->makeDispatcher(dispatchLogMapper: $logMapper);
+        $dispatcher->dispatch($this->object($schema), 'updated');
+    }//end testDispatchWithoutIdempotencyKeyNeverConsultsLog()
+
     public function testFieldRecipientDroppedWhenUidDoesNotExist(): void
     {
         // F05 contract: when a `field` recipient resolves to a uid that
@@ -712,8 +832,10 @@ class AnnotationNotificationDispatcherTest extends TestCase
         return $object;
     }//end object()
 
-    private function makeDispatcher(?IConfig $config=null): AnnotationNotificationDispatcher
-    {
+    private function makeDispatcher(
+        ?IConfig $config=null,
+        ?NotificationDispatchLogMapper $dispatchLogMapper=null
+    ): AnnotationNotificationDispatcher {
         return new AnnotationNotificationDispatcher(
             $this->schemaMapper,
             $this->notificationManager,
@@ -725,7 +847,11 @@ class AnnotationNotificationDispatcherTest extends TestCase
             $this->httpClient,
             $this->serverContainer,
             null,
-            $config
+            $config,
+            null,
+            null,
+            null,
+            $dispatchLogMapper
         );
     }//end makeDispatcher()
 

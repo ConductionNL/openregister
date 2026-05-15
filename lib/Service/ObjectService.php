@@ -1084,6 +1084,15 @@ class ObjectService
             $this->rejectIfTransferred(uuid: $uuid);
         }
 
+        // Reject UPDATE operations on append-only schemas (INSERT is still allowed).
+        if ($uuid !== null && $this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
+            $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
+            throw new \OCA\OpenRegister\Exception\AppendOnlyException(
+                schemaIdentifier: $schemaSlug,
+                operation: 'update'
+            );
+        }
+
         // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
         $uuidWasNull = ($uuid === null);
 
@@ -1469,6 +1478,15 @@ class ObjectService
     {
         // Reject deletion of transferred objects (archiefstatus = overgebracht).
         $this->rejectIfTransferred(uuid: $uuid);
+
+        // Reject DELETE operations on append-only schemas.
+        if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
+            $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
+            throw new \OCA\OpenRegister\Exception\AppendOnlyException(
+                schemaIdentifier: $schemaSlug,
+                operation: 'delete'
+            );
+        }
 
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {

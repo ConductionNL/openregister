@@ -8,7 +8,7 @@ import { translate as t } from '@nextcloud/l10n'
 		:name="t('openregister', 'API Token Configuration')"
 		:description="t('openregister', 'Configure API tokens for external service integrations')"
 		:loading="loading"
-		:loading-message="t('openregister', 'Loading API tokens...')"
+		:loading-message="t('openregister', 'Loading API tokens...')">
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">

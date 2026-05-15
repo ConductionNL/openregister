@@ -10,7 +10,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 		:can-close="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
-			<p>{{ t('openregister', 'Application successfully') }} {{ applicationStore.applicationItem?.uuid ? t('openregister', 'updated') : t('openregister', 'created') }}</p>
+			<p>{{ applicationStore.applicationItem?.uuid ? t('openregister', 'Application successfully updated') : t('openregister', 'Application successfully created') }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>

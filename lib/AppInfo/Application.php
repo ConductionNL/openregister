@@ -108,6 +108,7 @@ use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\TenantKeyService;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
@@ -211,6 +212,11 @@ use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadH
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
 use OCA\OpenRegister\Capabilities\UrnCapability;
+use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
+use OCA\OpenRegister\Service\Mcp\McpToolsService;
 
 /**
  * Class Application
@@ -301,6 +307,7 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerEventListeners(context: $context);
+        $this->registerMcpToolProviders(context: $context);
 
         // Register the annotation-driven INotifier so notifications fired by
         // AnnotationNotificationDispatcher get a parsed subject — without
@@ -697,6 +704,18 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        // Register TenantKeyService for audit-trail HMAC key management.
+        $context->registerService(
+            TenantKeyService::class,
+            function (ContainerInterface $container) {
+                return new TenantKeyService(
+                    db: $container->get('OCP\IDBConnection'),
+                    crypto: $container->get('OCP\Security\ICrypto'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
     }//end registerSettingsServices()
 
     /**
@@ -914,6 +933,38 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SchemaUpdatedEvent::class, $activityListener);
         $context->registerEventListener(SchemaDeletedEvent::class, $activityListener);
     }//end registerEventListeners()
+
+    /**
+     * Register MCP tool providers (built-ins first).
+     *
+     * Wires the three built-in IMcpToolProvider implementations into
+     * McpToolsService. External apps may call addProvider() after boot
+     * or override the McpToolsService binding to prepend their own providers.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+     * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#mcptoolsservice-provider-discovery-refactor
+     */
+    private function registerMcpToolProviders(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            McpToolsService::class,
+            function (ContainerInterface $container) {
+                $providers = [
+                    $container->get(RegistersToolProvider::class),
+                    $container->get(SchemasToolProvider::class),
+                    $container->get(ObjectsToolProvider::class),
+                ];
+
+                return new McpToolsService(
+                    providers: $providers,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+    }//end registerMcpToolProviders()
 
     /**
      * Boot application components
