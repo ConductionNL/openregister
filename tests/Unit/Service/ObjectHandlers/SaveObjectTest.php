@@ -200,6 +200,7 @@ class SaveObjectTest extends TestCase
             translationHandler: $translationHandler,
             logger: $this->logger,
             tmloService: $this->createMock(TmloService::class),
+            folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             arrayLoader: new ArrayLoader(),
         );
     }

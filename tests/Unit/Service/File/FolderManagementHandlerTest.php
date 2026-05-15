@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -63,6 +64,9 @@ class FolderManagementHandlerTest extends TestCase
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
 
+    /** @var AuditTrailMapper&MockObject */
+    private AuditTrailMapper $auditTrailMapper;
+
     /** @var IUser&MockObject */
     private IUser $mockUser;
 
@@ -79,6 +83,7 @@ class FolderManagementHandlerTest extends TestCase
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 
         // Common mock: user session returns a user
         $this->mockUser = $this->createMock(IUser::class);
@@ -97,7 +102,8 @@ class FolderManagementHandlerTest extends TestCase
             $this->registerMapper,
             $this->userSession,
             $this->groupManager,
-            $this->logger
+            $this->logger,
+            $this->auditTrailMapper
         );
     }
 
@@ -256,7 +262,8 @@ class FolderManagementHandlerTest extends TestCase
             $this->registerMapper,
             $userSession,
             $this->groupManager,
-            $this->logger
+            $this->logger,
+            $this->auditTrailMapper
         );
 
         $this->expectException(Exception::class);

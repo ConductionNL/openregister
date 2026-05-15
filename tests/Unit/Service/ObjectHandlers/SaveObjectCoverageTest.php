@@ -213,6 +213,7 @@ class SaveObjectCoverageTest extends TestCase
             $this->createMock(TranslationHandler::class),
             $this->logger,
             $this->createMock(TmloService::class),
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             new ArrayLoader()
         );
 

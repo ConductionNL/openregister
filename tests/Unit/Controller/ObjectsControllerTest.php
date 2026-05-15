@@ -1493,6 +1493,33 @@ class ObjectsControllerTest extends TestCase
         $this->assertSame(403, $result->getStatus());
     }
 
+    /**
+     * Per the `self-folder-access-control` capability: when the save pipeline
+     * throws `FolderAccessDeniedException`, the controller MUST return HTTP 403
+     * with a structured body `{ "error": "folder_access_denied", "folder": "<id>" }`.
+     */
+    public function testCreateReturns403WithStructuredBodyOnFolderAccessDenied(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Fail', '@self' => ['folder' => '99']]);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')->willThrowException(
+            new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '99')
+        );
+
+        $result = $this->controller->create('1', '2', $this->objectService);
+        $body   = $result->getData();
+
+        $this->assertSame(403, $result->getStatus());
+        $this->assertSame('folder_access_denied', $body['error']);
+        $this->assertSame('99', $body['folder']);
+    }
+
     // =========================================================================
     // update() — success and error paths
     // =========================================================================
