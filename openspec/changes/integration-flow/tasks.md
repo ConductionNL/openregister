@@ -5,7 +5,7 @@
 - [ ] `FlowLink` entity + mapper + migration (schema/object → flow rule id)
 - [ ] `FlowService` — read NC Flow rules via workflowengine Manager, read fire events, CRUD on links
 - [ ] `FlowController` sub-resource endpoints
-- [ ] `FlowProvider` — id='flow', label='Automation', icon='RobotOutline', group='workflow', requiredApp='workflowengine', storage='link-table'
+- [x] `FlowProvider` — id='flow', label='Automation', icon='RobotOutline', group='workflow', requiredApp='workflowengine', storage='link-table'
 - [ ] DI-tag, routes, unit tests
 
 ## Frontend — Tab

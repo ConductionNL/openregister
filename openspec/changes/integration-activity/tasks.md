@@ -8,7 +8,7 @@
 
 - [ ] `ActivityFeedService` — query NC Activity filtered by object + linked entities; merge with OR cross-integration events
 - [ ] `ActivityController` — list endpoint only (no mutations)
-- [ ] `ActivityProvider` — id='activity', label='Activity', icon='Timeline', group='workflow', requiredApp='activity', storage='query-time'; mutation methods throw NotImplemented
+- [x] `ActivityProvider` — id='activity', label='Activity', icon='Timeline', group='workflow', requiredApp='activity', storage='query-time'; mutation methods throw NotImplemented
 - [ ] DI-tag, routes, unit tests
 
 ## Frontend — Tab

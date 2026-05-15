@@ -4,7 +4,7 @@
 
 ## Backend
 
-- [ ] Create `lib/Service/Integration/Providers/CalendarProvider.php` extending `AbstractIntegrationProvider`
+- [x] Create `lib/Service/Integration/Providers/CalendarProvider.php` extending `AbstractIntegrationProvider`
   - getId() returns 'calendar'
   - getLabel() returns translatable 'Meetings'
   - getIcon() returns 'Calendar'
@@ -14,7 +14,7 @@
   - isEnabled() checks NC Calendar app availability
   - list/get/create/update/delete delegate to CalendarEventService
   - health() returns CalDAV status + auth (always 'none')
-- [ ] Register `CalendarProvider` as DI-tagged `IntegrationProvider` in `lib/AppInfo/Application.php`
+- [x] Register `CalendarProvider` as DI-tagged `IntegrationProvider` in `lib/AppInfo/Application.php`
 - [ ] Unit test `tests/Unit/Service/Integration/Providers/CalendarProviderTest.php` — covers contract methods + delegation + isEnabled when app is missing
 
 ## Frontend — Tab
