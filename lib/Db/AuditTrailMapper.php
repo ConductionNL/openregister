@@ -1479,6 +1479,75 @@ class AuditTrailMapper extends QBMapper
 
 
     /**
+     * Count distinct human actors that acted on objects belonging to the given schemas
+     * within the last N hours.
+     *
+     * Returns the number of distinct non-NULL `user` values in the `openregister_audit_trails`
+     * table where `schema IN ($schemaIds)` AND `created >= (now() - $hours hours)`.
+     * Rows where `user IS NULL` (system-initiated events such as CLI repair steps and
+     * background jobs) are deliberately excluded; the count represents human activity only.
+     *
+     * Short-circuits to `0` without issuing a SQL query when `$schemaIds` is empty, because
+     * both PostgreSQL (`IN ()` is a syntax error) and MySQL/MariaDB return the empty set anyway.
+     *
+     * Performance note: `COUNT(DISTINCT user)` over a large audit log is O(N) on matching
+     * rows. A composite index on `(schema, created, user)` would cover the predicate scan and
+     * reduce cost significantly on busy installs. The index migration is deferred; see
+     * openspec/changes/openregister-distinct-actor-aggregation/design.md Decision 5.
+     *
+     * @param array<int> $schemaIds Schema IDs to aggregate over. Returns 0 immediately if empty.
+     * @param int        $hours     Look-back window in hours (must be > 0). Use 24 for one day,
+     *                              168 for one week, 720 for ~30 days, 2160 for ~90 days.
+     *
+     * @return int Count of distinct non-NULL acting users in the time window.
+     *
+     * @throws \InvalidArgumentException When $hours is zero or negative.
+     */
+    public function getDistinctActorCount(array $schemaIds, int $hours): int
+    {
+        // REQ-ORDA-002: empty schema set short-circuits without a DB call.
+        if ($schemaIds === []) {
+            return 0;
+        }
+
+        // REQ-ORDA-003: non-positive hours is a caller bug, reject loudly.
+        if ($hours <= 0) {
+            throw new \InvalidArgumentException(
+                sprintf('hours must be positive, got %d', $hours)
+            );
+        }
+
+        // Compute the window boundary in PHP (mirrors the pattern in getDetailedStatistics,
+        // getActionDistribution, and getMostActiveObjects — bind as PARAM_STR with Y-m-d H:i:s).
+        $since = (new \DateTimeImmutable())->modify(sprintf('-%d hours', $hours));
+
+        $qb = $this->db->getQueryBuilder();
+
+        // The schema column stores IDs as strings (VARCHAR 255) — mirror getStatisticsGroupedBySchema
+        // which converts int IDs to strings before binding with PARAM_STR_ARRAY.
+        $stringIds = array_map('strval', $schemaIds);
+
+        $qb->select($qb->createFunction('COUNT(DISTINCT `user`) AS distinct_actors'))
+            ->from($this->getTableName())
+            ->where($qb->expr()->in('schema', $qb->createNamedParameter($stringIds, IQueryBuilder::PARAM_STR_ARRAY)))
+            ->andWhere(
+                $qb->expr()->gte(
+                    'created',
+                    $qb->createNamedParameter($since->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
+                )
+            )
+            ->andWhere($qb->expr()->isNotNull('user'));
+
+        $result = $qb->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        return (int) ($row['distinct_actors'] ?? 0);
+
+    }//end getDistinctActorCount()
+
+
+    /**
      * Create a custom audit trail entry for archival operations.
      *
      * @param ObjectEntity $object  The object the entry relates to
