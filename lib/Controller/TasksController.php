@@ -84,6 +84,16 @@ class TasksController extends Controller
      * Returns all CalDAV VTODOs from the user's VTODO-supporting calendars,
      * optionally filtered by status or assignee.
      *
+     * Authorization: this endpoint is anchored to the current session user.
+     * TaskService::getAllUserTasks() resolves the calendar set from
+     * IUserSession::getUser()->getUID() (principals/users/<uid>); the request
+     * never controls which user's calendars are read. The optional `assignee`
+     * request parameter is a free-text filter applied to each task's
+     * description ATTENDEE field within the caller's own task list — it is
+     * NOT an identity claim and cannot be used to read another user's tasks.
+     * Per ADR-005 Rule 3, no per-object authorization anchor is needed beyond
+     * the session-user binding already enforced in the service.
+     *
      * @return JSONResponse JSON response with all user tasks
      *
      * @NoAdminRequired
@@ -93,7 +103,7 @@ class TasksController extends Controller
     {
         try {
             $status   = $this->request->getParam('status');
-            $limit    = (int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50);
+            $limit    = min((int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50), 200);
             $offset   = (int) ($this->request->getParam('_offset') ?? $this->request->getParam('offset') ?? 0);
             $assignee = $this->request->getParam('assignee');
 

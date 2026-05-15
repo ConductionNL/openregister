@@ -72,7 +72,7 @@
 						type="password"
 						:placeholder="t('openregister', 'sk-...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your OpenAI API key. get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+					<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
 				</div>
 
 				<div class="form-group">
@@ -113,7 +113,7 @@
 						id="ollama-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
+						placeholder="http://localhost:11434"
 						class="input-field">
 					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 				</div>
@@ -152,7 +152,7 @@
 						type="password"
 						:placeholder="t('openregister', 'fw_...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your Fireworks AI API key. get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
+					<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
 				</div>
 
 				<div class="form-group">
@@ -178,7 +178,7 @@
 						id="fireworks-base-url"
 						v-model="fireworksConfig.baseUrl"
 						type="text"
-						:placeholder="t('openregister', 'https://api.fireworks.ai/inference/v1')"
+						placeholder="https://api.fireworks.ai/inference/v1"
 						class="input-field">
 					<small>{{ t('openregister', 'Custom API endpoint if using a different region') }}</small>
 				</div>
@@ -197,7 +197,7 @@
 						type="password"
 						:placeholder="t('openregister', 'sk-...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your OpenAI API key. get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
+					<small>{{ t('openregister', 'Your OpenAI API key. Get one at') }} <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small>
 				</div>
 
 				<div class="form-group">
@@ -230,7 +230,7 @@
 						type="password"
 						:placeholder="t('openregister', 'fw_...')"
 						class="input-field">
-					<small>{{ t('openregister', 'Your Fireworks AI API key. get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
+					<small>{{ t('openregister', 'Your Fireworks AI API key. Get one at') }} <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small>
 				</div>
 
 				<div class="form-group">
@@ -261,7 +261,7 @@
 						id="ollama-chat-url"
 						v-model="ollamaConfig.url"
 						type="text"
-						:placeholder="t('openregister', 'http://localhost:11434')"
+						placeholder="http://localhost:11434"
 						class="input-field">
 					<small>{{ t('openregister', 'URL where Ollama is running') }}</small>
 				</div>
@@ -876,9 +876,7 @@ export default {
 
 		confirmClearEmbeddings() {
 			// Use native browser confirm to avoid focus-trap conflicts with nested modals
-			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. you will need to re-vectorize all objects and files. this action cannot be undone.
-
-are you sure you want to continue?')
+			const message = this.t('openregister', 'This will permanently delete ALL embeddings (vectors) from the database. You will need to re-vectorize all objects and files. This action cannot be undone.\n\nAre you sure you want to continue?')
 
 			if (confirm(message)) {
 				this.clearAllEmbeddings()

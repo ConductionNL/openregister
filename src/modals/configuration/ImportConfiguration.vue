@@ -332,7 +332,6 @@ import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'ImportConfiguration',

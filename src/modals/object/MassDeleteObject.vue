@@ -88,8 +88,6 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Close from 'vue-material-design-icons/Close.vue'

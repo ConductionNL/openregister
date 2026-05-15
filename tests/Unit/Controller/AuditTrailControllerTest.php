@@ -11,7 +11,10 @@ use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -22,6 +25,8 @@ class AuditTrailControllerTest extends TestCase
     private LogService&MockObject $logService;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private AuditHashService&MockObject $auditHashService;
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -31,13 +36,22 @@ class AuditTrailControllerTest extends TestCase
         $this->logService       = $this->createMock(LogService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->auditHashService = $this->createMock(AuditHashService::class);
+        $this->userSession      = $this->createMock(IUserSession::class);
+        $this->groupManager     = $this->createMock(IGroupManager::class);
+
+        $adminUser = $this->createMock(IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($adminUser);
+        $this->groupManager->method('isAdmin')->willReturn(true);
 
         $this->controller = new AuditTrailController(
             'openregister',
             $this->request,
             $this->logService,
             $this->auditTrailMapper,
-            $this->auditHashService
+            $this->auditHashService,
+            $this->userSession,
+            $this->groupManager
         );
     }
 

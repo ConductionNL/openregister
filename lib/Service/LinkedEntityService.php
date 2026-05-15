@@ -278,7 +278,13 @@ class LinkedEntityService
         $results = [];
 
         // Find schemas that declare this linkedType.
-        // Disable RBAC and multitenancy to search all schemas.
+        // WARNING: RBAC and multitenancy are intentionally disabled here, so schema metadata (names,
+        // slugs, linkedType declarations) and matched object UUIDs/names are returned cross-tenant to
+        // any authenticated user calling GET /api/linked/{type}/{entityId}. There is currently NO
+        // per-row access check before results are returned. This is intentional for the mail-sidebar
+        // use-case where cross-tenant linking is required, but constitutes a cross-tenant data exposure
+        // for multi-tenant SaaS deployments. A per-row access check should be added before this
+        // endpoint is used in strict-isolation deployments. See TODO #1273.
         $allSchemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
         $scanned    = 0;
 
