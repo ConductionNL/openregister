@@ -33,6 +33,9 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
  * @link https://conduction.nl
  *
  * @spec openspec/changes/integration-xwiki/tasks.md
@@ -443,20 +446,23 @@ class XwikiProvider extends AbstractIntegrationProvider
         $reference = (string) ($row['reference'] ?? $row['pageReference'] ?? $row['id'] ?? '');
         $space     = (string) ($row['space'] ?? $row['spaceName'] ?? '');
         $page      = (string) ($row['page'] ?? $row['pageName'] ?? $row['name'] ?? '');
-        $title     = (string) ($row['title'] ?? $page ?? $reference);
+        // `$page` is cast to string above so it's never null — `??` would
+        // never fall through to `$reference`. Use elvis to skip empty
+        // strings so we land on whichever piece carries real content.
+        $title     = ((string) ($row['title'] ?? '')) ?: ($page !== '' ? $page : $reference);
 
         $breadcrumb = $row['breadcrumb'] ?? null;
         if (is_array($breadcrumb) === false || $breadcrumb === []) {
             // Best-effort breadcrumb from the reference if the source
             // didn't supply one — "Space / Page" or just the reference.
             $breadcrumb = array_values(
-                    array_filter(
+                array_filter(
                     array_merge(
-                $space !== '' ? explode('.', $space) : [],
-                [$title]
+                        $space !== '' ? explode('.', $space) : [],
+                        [$title]
                     )
-                    )
-                    );
+                )
+            );
         }
 
         return array_merge(
