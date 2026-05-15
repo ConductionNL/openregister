@@ -162,6 +162,83 @@ class EntityRelationMapper extends QBMapper
     }//end findEntitiesForFile()
 
     /**
+     * Find anonymised entity relations with the full decision-metadata + entity context for a file.
+     *
+     * Differs from {@see findEntitiesForFile} in two ways:
+     *
+     *   1. Filters to rows where `r.anonymized = true` — the caller wants
+     *      the "what was actually redacted" set, not the "what was detected" set.
+     *   2. Selects `r.bases`, `r.skip_anonymization`, `r.anonymized`,
+     *      `r.anonymized_value` so downstream renderers (DocuDesk's
+     *      `anonymisation-grondslagen-summary` change) can produce a
+     *      grondslagen-traceable audit page without an N+1 of `find($id)`
+     *      calls.
+     *
+     * Returned rows are flat associative arrays. `bases` is JSON-decoded
+     * into an `array` (or null if the column is null in the DB).
+     *
+     * @param int $fileId The Nextcloud file ID.
+     *
+     * @return array<int, array<string, mixed>> Rows shaped as
+     *         `{relation_id, entity_id, position_start, position_end, confidence,
+     *           entity_type, entity_value, category, bases (array|null),
+     *           skip_anonymization (bool), anonymized (bool), anonymized_value (string|null)}`.
+     */
+    public function findAnonymisedEntitiesWithBasesForFile(int $fileId): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select(
+            'r.id as relation_id',
+            'r.entity_id',
+            'r.position_start',
+            'r.position_end',
+            'r.confidence',
+            'r.bases',
+            'r.skip_anonymization',
+            'r.anonymized',
+            'r.anonymized_value',
+            'e.type as entity_type',
+            'e.value as entity_value',
+            'e.category'
+        )
+            ->from($this->getTableName(), 'r')
+            ->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
+            ->where(
+                $qb->expr()->andX(
+                    $qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)),
+                    $qb->expr()->eq('r.anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+                )
+            )
+            ->orderBy('r.position_start', 'ASC');
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        // Decode the JSON `bases` column. Doctrine returns it as a string;
+        // callers expect an array (or null when no bases were recorded).
+        foreach ($rows as &$row) {
+            if (isset($row['bases']) === true && is_string($row['bases']) === true) {
+                $decoded = json_decode($row['bases'], associative: true);
+                $row['bases'] = is_array($decoded) === true ? $decoded : null;
+            }
+
+            // Normalise boolean-as-int values returned by some DB drivers.
+            if (isset($row['skip_anonymization']) === true) {
+                $row['skip_anonymization'] = (bool) $row['skip_anonymization'];
+            }
+
+            if (isset($row['anonymized']) === true) {
+                $row['anonymized'] = (bool) $row['anonymized'];
+            }
+        }
+
+        unset($row);
+
+        return $rows;
+    }//end findAnonymisedEntitiesWithBasesForFile()
+
+    /**
      * Mark entity relations as anonymized.
      *
      * Skip-aware: rows where `skip_anonymization = true` are excluded
