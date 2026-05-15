@@ -23,6 +23,9 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
  * @link https://conduction.nl
  *
  * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-4
@@ -285,7 +288,7 @@ class ExternalIntegrationRouter
             // both because the public API surface has evolved.
             if (method_exists($mapper, 'findByReference') === true) {
                 $source = $mapper->findByReference($sourceId);
-            } else if (method_exists($mapper, 'find') === true) {
+            } elseif (method_exists($mapper, 'find') === true) {
                 $source = $mapper->find($sourceId);
             }
 
