@@ -15,6 +15,7 @@ import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
 
 export const useSettingsStore = defineStore('settings', {
 	state: () => ({
@@ -327,7 +328,7 @@ export const useSettingsStore = defineStore('settings', {
 
 			} catch (error) {
 				console.error('Failed to load settings:', error)
-				showError('Failed to load settings: ' + error.message)
+				showError(t('openregister', 'Failed to load settings: {error}', { error: error.message }))
 			} finally {
 				this.loading = false
 				this.loadingInProgress = false
@@ -402,11 +403,11 @@ export const useSettingsStore = defineStore('settings', {
 					this.solrOptions = { ...this.solrOptions, ...processedData }
 				}
 
-				showSuccess('SOLR settings updated successfully')
+				showSuccess(t('openregister', 'SOLR settings updated successfully'))
 				return response.data
 			} catch (error) {
 				console.error('Failed to update SOLR settings:', error)
-				showError('Failed to update SOLR settings: ' + error.message)
+				showError(t('openregister', 'Failed to update SOLR settings: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.saving = false
@@ -432,15 +433,15 @@ export const useSettingsStore = defineStore('settings', {
 				)
 
 				if (response.data.success) {
-					showSuccess('SOLR index warmup completed successfully')
+					showSuccess(t('openregister', 'SOLR index warmup completed successfully'))
 				} else {
-					showError('SOLR warmup failed: ' + response.data.message)
+					showError(t('openregister', 'SOLR warmup failed: {error}', { error: response.data.message }))
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('SOLR warmup failed:', error)
-				showError('SOLR warmup failed: ' + error.message)
+				showError(t('openregister', 'SOLR warmup failed: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.warmingUpSolr = false
@@ -469,16 +470,16 @@ export const useSettingsStore = defineStore('settings', {
 				this.massValidateResults = response.data
 
 				if (response.data.success) {
-					showSuccess('Mass validation completed successfully')
+					showSuccess(t('openregister', 'Mass validation completed successfully'))
 				} else {
-					showError('Mass validation failed: ' + response.data.message)
+					showError(t('openregister', 'Mass validation failed: {error}', { error: response.data.message }))
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Mass validation failed:', error)
 				const errorMessage = error.response?.data?.message || error.message
-				showError('Mass validation failed: ' + errorMessage)
+				showError(t('openregister', 'Mass validation failed: {error}', { error: errorMessage }))
 
 				this.massValidateResults = {
 					success: false,
@@ -585,11 +586,11 @@ export const useSettingsStore = defineStore('settings', {
 					this.rbacOptions = { ...this.rbacOptions, ...response.data.rbac }
 				}
 
-				showSuccess('RBAC settings updated successfully')
+				showSuccess(t('openregister', 'RBAC settings updated successfully'))
 				return response.data
 			} catch (error) {
 				console.error('Failed to update RBAC settings:', error)
-				showError('Failed to update RBAC settings: ' + error.message)
+				showError(t('openregister', 'Failed to update RBAC settings: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.saving = false
@@ -629,11 +630,11 @@ export const useSettingsStore = defineStore('settings', {
 					this.multitenancyOptions = { ...this.multitenancyOptions, ...response.data.multitenancy }
 				}
 
-				showSuccess('Multitenancy settings updated successfully')
+				showSuccess(t('openregister', 'Multitenancy settings updated successfully'))
 				return response.data
 			} catch (error) {
 				console.error('Failed to update Multitenancy settings:', error)
-				showError('Failed to update Multitenancy settings: ' + error.message)
+				showError(t('openregister', 'Failed to update Multitenancy settings: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.saving = false
@@ -670,11 +671,11 @@ export const useSettingsStore = defineStore('settings', {
 					this.retentionOptions = { ...this.retentionOptions, ...response.data }
 				}
 
-				showSuccess('Retention settings updated successfully')
+				showSuccess(t('openregister', 'Retention settings updated successfully'))
 				return response.data
 			} catch (error) {
 				console.error('Failed to update Retention settings:', error)
-				showError('Failed to update Retention settings: ' + error.message)
+				showError(t('openregister', 'Failed to update Retention settings: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.saving = false
@@ -716,11 +717,11 @@ export const useSettingsStore = defineStore('settings', {
 					this.llmOptions = { ...this.llmOptions, ...response.data }
 				}
 
-				showSuccess('LLM settings saved successfully')
+				showSuccess(t('openregister', 'LLM settings saved successfully'))
 				return response.data
 			} catch (error) {
 				console.error('Failed to save LLM settings:', error)
-				showError('Failed to save LLM settings: ' + error.message)
+				showError(t('openregister', 'Failed to save LLM settings: {error}', { error: error.message }))
 				throw error
 			}
 		},
@@ -742,13 +743,13 @@ export const useSettingsStore = defineStore('settings', {
 
 				// Show success message only if not just toggling enabled
 				if (Object.keys(partialData).length > 1 || !Object.prototype.hasOwnProperty.call(partialData, 'enabled')) {
-					showSuccess('LLM settings updated successfully')
+					showSuccess(t('openregister', 'LLM settings updated successfully'))
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Failed to update LLM settings:', error)
-				showError('Failed to update LLM settings: ' + error.message)
+				showError(t('openregister', 'Failed to update LLM settings: {error}', { error: error.message }))
 				throw error
 			}
 		},
@@ -842,11 +843,11 @@ export const useSettingsStore = defineStore('settings', {
 					this.fileOptions = { ...this.fileOptions, ...response.data }
 				}
 
-				showSuccess('File settings saved successfully')
+				showSuccess(t('openregister', 'File settings saved successfully'))
 				return response.data
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
-				showError('Failed to save file settings: ' + error.message)
+				showError(t('openregister', 'Failed to save file settings: {error}', { error: error.message }))
 				throw error
 			}
 		},
@@ -878,7 +879,7 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error('Failed to discover files:', error)
-				showError('Failed to discover files: ' + error.message)
+				showError(t('openregister', 'Failed to discover files: {error}', { error: error.message }))
 				throw error
 			}
 		},
@@ -898,7 +899,7 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error(`Failed to trigger ${type} file extraction:`, error)
-				showError(`Failed to start processing ${type} files: ` + error.message)
+				showError(t('openregister', 'Failed to start processing {type} files: {error}', { type, error: error.message }))
 				throw error
 			}
 		},
@@ -1005,7 +1006,7 @@ export const useSettingsStore = defineStore('settings', {
 				}
 			} catch (error) {
 				console.error('Failed to load statistics:', error)
-				showError('Failed to load statistics: ' + error.message)
+				showError(t('openregister', 'Failed to load statistics: {error}', { error: error.message }))
 			} finally {
 				this.loadingStats = false
 			}
@@ -1024,7 +1025,7 @@ export const useSettingsStore = defineStore('settings', {
 				}
 			} catch (error) {
 				console.error('Failed to load cache statistics:', error)
-				showError('Failed to load cache statistics: ' + error.message)
+				showError(t('openregister', 'Failed to load cache statistics: {error}', { error: error.message }))
 			} finally {
 				this.loadingCacheStats = false
 			}
@@ -1061,17 +1062,17 @@ export const useSettingsStore = defineStore('settings', {
 				})
 
 				if (response.data.success !== false) {
-					showSuccess(`${type} cache cleared successfully`)
+					showSuccess(t('openregister', '{type} cache cleared successfully', { type }))
 					// Reload cache stats to reflect changes
 					await this.loadCacheStats()
 				} else {
-					showError(`Failed to clear ${type} cache: ` + (response.data.message || 'Unknown error'))
+					showError(t('openregister', 'Failed to clear {type} cache: {error}', { type, error: response.data.message || 'Unknown error' }))
 				}
 
 				return response.data
 			} catch (error) {
 				console.error(`Failed to clear ${type} cache:`, error)
-				showError(`Failed to clear ${type} cache: ` + error.message)
+				showError(t('openregister', 'Failed to clear {type} cache: {error}', { type, error: error.message }))
 				throw error
 			} finally {
 				this.clearingCache = false
@@ -1101,16 +1102,16 @@ export const useSettingsStore = defineStore('settings', {
 
 					let cacheMessage = ''
 					if (newCacheSize > oldCacheSize) {
-						cacheMessage = `Cache grew from ${oldCacheSize} to ${newCacheSize} entries.`
+						cacheMessage = t('openregister', 'Cache grew from {old} to {new} entries.', { old: oldCacheSize, new: newCacheSize })
 					} else if (newCacheSize < oldCacheSize) {
-						cacheMessage = `Cache shrunk from ${oldCacheSize} to ${newCacheSize} entries.`
+						cacheMessage = t('openregister', 'Cache shrunk from {old} to {new} entries.', { old: oldCacheSize, new: newCacheSize })
 					} else {
-						cacheMessage = `Cache stayed the same at ${newCacheSize} entries.`
+						cacheMessage = t('openregister', 'Cache stayed the same at {size} entries.', { size: newCacheSize })
 					}
 
-					showSuccess(`Names cache warmed up successfully: ${loadedCount} names loaded in ${executionTime}. ${cacheMessage}`)
+					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}. {message}', { count: loadedCount, time: executionTime, message: cacheMessage }))
 				} else {
-					showError('Failed to warmup names cache: ' + (response.data.error || 'Unknown error'))
+					showError(t('openregister', 'Failed to warmup names cache: {error}', { error: response.data.error || 'Unknown error' }))
 				}
 
 				// Reload cache stats to reflect changes.
@@ -1119,7 +1120,7 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error('Failed to warmup names cache:', error)
-				showError('Failed to warmup names cache: ' + error.message)
+				showError(t('openregister', 'Failed to warmup names cache: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.warmingUpCache = false
@@ -1161,13 +1162,13 @@ export const useSettingsStore = defineStore('settings', {
 					this.warmupInterval = response.data.interval
 					showSuccess(response.data.message)
 				} else {
-					showError('Failed to save warmup interval: ' + (response.data.error || 'Unknown error'))
+					showError(t('openregister', 'Failed to save warmup interval: {error}', { error: response.data.error || 'Unknown error' }))
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Failed to save warmup interval:', error)
-				showError('Failed to save warmup interval: ' + error.message)
+				showError(t('openregister', 'Failed to save warmup interval: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.savingWarmupInterval = false
@@ -1183,17 +1184,17 @@ export const useSettingsStore = defineStore('settings', {
 				const response = await axios.post(generateUrl('/apps/openregister/api/settings/rebase'))
 
 				if (response.data.success !== false) {
-					showSuccess('Rebase operation completed successfully')
+					showSuccess(t('openregister', 'Rebase operation completed successfully'))
 					// Reload statistics to reflect changes
 					await this.loadStats()
 				} else {
-					showError('Rebase operation failed: ' + (response.data.message || 'Unknown error'))
+					showError(t('openregister', 'Rebase operation failed: {error}', { error: response.data.message || 'Unknown error' }))
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Rebase operation failed:', error)
-				showError('Rebase operation failed: ' + error.message)
+				showError(t('openregister', 'Rebase operation failed: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.rebasing = false
@@ -1219,12 +1220,12 @@ export const useSettingsStore = defineStore('settings', {
 				} else {
 					// Fallback to legacy endpoint
 					const response = await axios.put(generateUrl('/apps/openregister/api/settings'), data)
-					showSuccess('Settings updated successfully')
+					showSuccess(t('openregister', 'Settings updated successfully'))
 					return response.data
 				}
 			} catch (error) {
 				console.error('Failed to save settings:', error)
-				showError('Failed to save settings: ' + error.message)
+				showError(t('openregister', 'Failed to save settings: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.saving = false
@@ -1271,7 +1272,7 @@ export const useSettingsStore = defineStore('settings', {
 				}
 			} catch (error) {
 				console.error('Failed to clear cache:', error)
-				showError('Failed to clear cache: ' + error.message)
+				showError(t('openregister', 'Failed to clear cache: {error}', { error: error.message }))
 			} finally {
 				this.clearingCache = false
 			}
@@ -1301,14 +1302,14 @@ export const useSettingsStore = defineStore('settings', {
 				const response = await axios.delete(generateUrl('/apps/openregister/api/audit-trails/clear-all'))
 
 				if (response.data.success) {
-					showSuccess(`Successfully cleared ${response.data.deleted || 0} audit trails`)
+					showSuccess(t('openregister', 'Successfully cleared {count} audit trails', { count: response.data.deleted || 0 }))
 					this.hideClearAuditTrailsDialog()
 				} else {
-					showError('Failed to clear audit trails: ' + (response.data.error || 'Unknown error'))
+					showError(t('openregister', 'Failed to clear audit trails: {error}', { error: response.data.error || 'Unknown error' }))
 				}
 			} catch (error) {
 				console.error('Failed to clear audit trails:', error)
-				showError('Failed to clear audit trails: ' + error.message)
+				showError(t('openregister', 'Failed to clear audit trails: {error}', { error: error.message }))
 			} finally {
 				this.clearingAuditTrails = false
 			}
@@ -1338,14 +1339,14 @@ export const useSettingsStore = defineStore('settings', {
 				const response = await axios.delete(generateUrl('/apps/openregister/api/search-trails/clear-all'))
 
 				if (response.data.success) {
-					showSuccess(`Successfully cleared ${response.data.deleted || 0} search trails`)
+					showSuccess(t('openregister', 'Successfully cleared {count} search trails', { count: response.data.deleted || 0 }))
 					this.hideClearSearchTrailsDialog()
 				} else {
-					showError('Failed to clear search trails: ' + (response.data.error || 'Unknown error'))
+					showError(t('openregister', 'Failed to clear search trails: {error}', { error: response.data.error || 'Unknown error' }))
 				}
 			} catch (error) {
 				console.error('Failed to clear search trails:', error)
-				showError('Failed to clear search trails: ' + error.message)
+				showError(t('openregister', 'Failed to clear search trails: {error}', { error: error.message }))
 			} finally {
 				this.clearingSearchTrails = false
 			}
@@ -1375,14 +1376,14 @@ export const useSettingsStore = defineStore('settings', {
 				const response = await axios.delete(generateUrl('/apps/openregister/api/objects/clear-blob'))
 
 				if (response.data.success) {
-					showSuccess(`Successfully cleared ${response.data.deleted || 0} blob storage objects`)
+					showSuccess(t('openregister', 'Successfully cleared {count} blob storage objects', { count: response.data.deleted || 0 }))
 					this.hideClearBlobObjectsDialog()
 				} else {
-					showError('Failed to clear blob objects: ' + (response.data.error || 'Unknown error'))
+					showError(t('openregister', 'Failed to clear blob objects: {error}', { error: response.data.error || 'Unknown error' }))
 				}
 			} catch (error) {
 				console.error('Failed to clear blob objects:', error)
-				showError('Failed to clear blob objects: ' + error.message)
+				showError(t('openregister', 'Failed to clear blob objects: {error}', { error: error.message }))
 			} finally {
 				this.clearingBlobObjects = false
 			}
@@ -1551,12 +1552,12 @@ export const useSettingsStore = defineStore('settings', {
 				this.setupResults = response.data
 
 				if (response.data.success) {
-					showSuccess('SOLR setup completed successfully!')
+					showSuccess(t('openregister', 'SOLR setup completed successfully!'))
 				} else {
 					// Don't show error toast for propagation timeouts - the modal will handle it
 					const isConfigSetPropagationError = response.data.error_details?.exception_message?.includes('ConfigSet propagation timeout')
 					if (!isConfigSetPropagationError) {
-						showError('SOLR setup failed: ' + (response.data.message || 'Unknown error'))
+						showError(t('openregister', 'SOLR setup failed: {error}', { error: response.data.message || 'Unknown error' }))
 					}
 				}
 
@@ -1584,7 +1585,7 @@ export const useSettingsStore = defineStore('settings', {
 				}
 
 				this.setupResults = setupResults
-				showError(errorMessage)
+				showError(t('openregister', 'Failed to setup SOLR: {error}', { error: errorMessage }))
 				throw error
 			} finally {
 				this.settingUpSolr = false
@@ -1604,15 +1605,15 @@ export const useSettingsStore = defineStore('settings', {
 				this.testResults = response.data
 
 				if (response.data.success) {
-					showSuccess('SOLR connection test successful!')
+					showSuccess(t('openregister', 'SOLR connection test successful!'))
 				} else {
-					showError('SOLR connection test failed: ' + (response.data.message || 'Unknown error'))
+					showError(t('openregister', 'SOLR connection test failed: {error}', { error: response.data.message || 'Unknown error' }))
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Failed to test SOLR connection:', error)
-				const errorMessage = 'Failed to test SOLR connection: ' + error.message
+				const errorMessage = t('openregister', 'Failed to test SOLR connection: {error}', { error: error.message })
 				this.testResults = {
 					success: false,
 					message: errorMessage,
@@ -1669,15 +1670,15 @@ export const useSettingsStore = defineStore('settings', {
 
 				if (response.data.success) {
 					const invalidated = response.data.invalidated?.join(', ') || 'cache'
-					showSuccess(`App store cache invalidated: ${invalidated}`)
+					showSuccess(t('openregister', 'App store cache invalidated: {invalidated}', { invalidated }))
 				} else {
-					showError('Failed to invalidate app store cache: ' + (response.data.error || 'Unknown error'))
+					showError(t('openregister', 'Failed to invalidate app store cache: {error}', { error: response.data.error || 'Unknown error' }))
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Failed to invalidate app store cache:', error)
-				showError('Failed to invalidate app store cache: ' + error.message)
+				showError(t('openregister', 'Failed to invalidate app store cache: {error}', { error: error.message }))
 				throw error
 			} finally {
 				this.clearingAppStoreCache = false

@@ -40,12 +40,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		<div v-if="!success" class="formContainer">
 			<NcTextField
 				:value.sync="process"
-				label="Process Name (optional)"
+				:label="t('openregister', 'Process Name (optional)')"
 				:disabled="loading" />
 			<NcTextField
 				type="number"
 				:value.sync="duration"
-				label="Duration in seconds (optional)"
+				:label="t('openregister', 'Duration in seconds (optional)')"
 				:disabled="loading" />
 		</div>
 	</NcDialog>

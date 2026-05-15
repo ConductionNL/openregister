@@ -1296,11 +1296,18 @@ class MagicMapper extends AbstractObjectMapper
         // Add table prefix.
         $fullTableName = 'oc_'.$tableName;
 
-        // Get metadata column names (common across all tables).
-        $metadataColumns = array_keys($this->getMetadataColumns());
-
-        // Base SELECT with metadata columns.
-        $selectColumns = $metadataColumns;
+        // Get metadata column names, checking each exists in this table.
+        // Newer metadata columns (e.g. _tmlo) may not exist in older tables.
+        // Cast to text for UNION type compatibility (some columns are jsonb, others text).
+        $metadataColumns = $this->getMetadataColumns();
+        $selectColumns   = [];
+        foreach ($metadataColumns as $metaCol => $metaDef) {
+            if ($this->columnExistsInTable(tableName: $tableName, columnName: $metaCol) === true) {
+                $selectColumns[] = "{$metaCol}::text AS {$metaCol}";
+            } else {
+                $selectColumns[] = "NULL::text AS {$metaCol}";
+            }
+        }
 
         /*
          * Every SELECT in the UNION must have identical columns in the same order.
@@ -5853,10 +5860,13 @@ class MagicMapper extends AbstractObjectMapper
                     LIMIT 100";
             if ($isPostgres === true) {
                 // PostgreSQL: use JSONB containment operator.
+                // Note: ::jsonb cast is intentional for polymorphic column support, but defeats any GIN
+                // index on $columnName if it is already jsonb. Acceptable for now; if a GIN index is added
+                // in a future migration for this column, branch the query to omit the cast in the jsonb case.
                 $sql = "SELECT * FROM {$fullTableName}
-                        WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
+                        WHERE (_deleted IS NULL OR _deleted::text = 'null')
                         AND {$columnName} IS NOT NULL
-                        AND {$columnName} @> to_jsonb(?::text)
+                        AND {$columnName}::jsonb @> to_jsonb(?::text)
                         LIMIT 100";
             }
 

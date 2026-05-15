@@ -6,7 +6,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 <template>
 	<NcDialog v-if="navigationStore.modal === 'publishConfiguration'"
 		name="publishConfiguration"
-		title="Publish Configuration to GitHub"
+		:title="t('openregister', 'Publish Configuration to GitHub')"
 		size="large"
 		:can-close="!loading"
 		@update:open="closeModal">
@@ -70,7 +70,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				<h3>{{ t('openregister', 'File Path') }}</h3>
 				<NcTextField
 					:value.sync="filePath"
-					:placeholder="t('openregister', 'e.g., lib/Settings/config.json')"
+					:placeholder="t('openregister', 'e.g., lib/settings/config.json')"
 					:disabled="loading"
 					:label="t('openregister', 'Path in repository')" />
 				<p class="formHint">

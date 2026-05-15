@@ -4,12 +4,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="organisationStore.organisationItem?.uuid && !createAnother ? 'Edit Organisation' : 'Create Organisation'"
+	<NcDialog :name="organisationStore.organisationItem?.uuid && !createAnother ? t('openregister', 'Edit Organisation') : t('openregister', 'Create Organisation')"
 		size="large"
 		:can-close="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
-			<p>Organisation successfully {{ organisationStore.organisationItem?.uuid && !createAnother ? 'updated' : 'created' }}</p>
+			<p>{{ organisationStore.organisationItem?.uuid && !createAnother ? t('openregister', 'Organisation successfully updated') : t('openregister', 'Organisation successfully created') }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -21,31 +21,31 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<BTab active>
 						<template #title>
 							<Cog :size="16" />
-							<span>Settings</span>
+							<span>{{ t('openregister', 'Settings') }}</span>
 						</template>
 						<div class="form-editor">
 							<NcTextField
 								:disabled="loading"
-								label="Name *"
+								:label="t('openregister', 'Name *')"
 								:value.sync="organisationItem.name"
 								:error="!organisationItem.name.trim()"
-								placeholder="Enter organisation name" />
+								:placeholder="t('openregister', 'Enter organisation name')" />
 
 							<NcTextField
 								:disabled="loading"
-								label="Slug"
+								:label="t('openregister', 'Slug')"
 								:value.sync="organisationItem.slug"
-								placeholder="Optional URL-friendly identifier" />
+								:placeholder="t('openregister', 'Optional URL-friendly identifier')" />
 
 							<NcTextArea
 								:disabled="loading"
-								label="Description"
+								:label="t('openregister', 'Description')"
 								:value.sync="organisationItem.description"
-								placeholder="Enter organisation description (optional)"
+								:placeholder="t('openregister', 'Enter organisation description (optional)')"
 								:rows="4" />
 
 							<div class="groups-select-container">
-								<label class="groups-label">Nextcloud Groups</label>
+								<label class="groups-label">{{ t('openregister', 'Nextcloud Groups') }}</label>
 								<NcSelect
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
@@ -55,7 +55,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									:multiple="true"
 									:label-outside="true"
 									:filterable="false"
-									placeholder="Search groups..."
+									:placeholder="t('openregister', 'Search groups...')"
 									@search-change="searchGroups"
 									@input="updateGroups">
 									<template #option="{ name }">
@@ -64,23 +64,23 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										</div>
 									</template>
 									<template #no-options>
-										<span v-if="loadingGroups">Loading groups...</span>
-										<span v-else>No groups found. Try a different search.</span>
+										<span v-if="loadingGroups">{{ t('openregister', 'Loading groups...') }}</span>
+										<span v-else>{{ t('openregister', 'No groups found. Try a different search.') }}</span>
 									</template>
 								</NcSelect>
 								<p class="field-hint">
-									Only members of selected groups can access this organisation
+									{{ t('openregister', 'Only members of selected groups can access this organisation') }}
 								</p>
 							</div>
 
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
 								:checked.sync="organisationItem.active">
-								Active
+								{{ t('openregister', 'Active') }}
 							</NcCheckboxRadioSwitch>
 
 							<NcNoteCard v-if="!organisationItem.active" type="warning">
-								<p>Inactive organisations cannot be used</p>
+								<p>{{ t('openregister', 'Inactive organisations cannot be used') }}</p>
 							</NcNoteCard>
 						</div>
 					</BTab>
@@ -88,46 +88,46 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<BTab>
 						<template #title>
 							<Database :size="16" />
-							<span>Quota</span>
+							<span>{{ t('openregister', 'Quota') }}</span>
 						</template>
 						<div class="form-editor">
 							<NcTextField
 								:disabled="loading"
-								label="Storage Quota (MB)"
+								:label="t('openregister', 'Storage Quota (MB)')"
 								type="number"
-								placeholder="0 = unlimited"
+								:placeholder="t('openregister', '0 = unlimited')"
 								:value="storageQuotaMB"
 								@update:value="updateStorageQuota" />
 
 							<NcTextField
 								:disabled="loading"
-								label="Bandwidth Quota (MB/month)"
+								:label="t('openregister', 'Bandwidth Quota (MB/month)')"
 								type="number"
-								placeholder="0 = unlimited"
+								:placeholder="t('openregister', '0 = unlimited')"
 								:value="bandwidthQuotaMB"
 								@update:value="updateBandwidthQuota" />
 
 							<NcTextField
 								:disabled="loading"
-								label="API Request Quota (requests/day)"
+								:label="t('openregister', 'API Request Quota (requests/day)')"
 								type="number"
-								placeholder="0 = unlimited"
+								:placeholder="t('openregister', '0 = unlimited')"
 								:value="organisationItem.quota?.requests || 0"
 								@update:value="updateRequestQuota" />
 
 							<NcTextField
 								:disabled="loading"
-								label="User Quota"
+								:label="t('openregister', 'User Quota')"
 								type="number"
-								placeholder="0 = unlimited"
+								:placeholder="t('openregister', '0 = unlimited')"
 								:value="organisationItem.quota?.users || 0"
 								@update:value="updateUserQuota" />
 
 							<NcTextField
 								:disabled="loading"
-								label="Group Quota"
+								:label="t('openregister', 'Group Quota')"
 								type="number"
-								placeholder="0 = unlimited"
+								:placeholder="t('openregister', '0 = unlimited')"
 								:value="organisationItem.quota?.groups || 0"
 								@update:value="updateGroupQuota" />
 						</div>
@@ -136,7 +136,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<BTab :disabled="!organisationItem.uuid">
 						<template #title>
 							<AccountMultiple :size="16" />
-							<span>Users</span>
+							<span>{{ t('openregister', 'Users') }}</span>
 						</template>
 						<div class="users-section">
 							<div class="users-header">
@@ -148,23 +148,23 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<template #icon>
 										<AccountPlus :size="20" />
 									</template>
-									Add User
+									{{ t('openregister', 'Add User') }}
 								</NcButton>
 							</div>
 
 							<div v-if="loadingUsers" class="loading-users">
 								<NcLoadingIcon :size="20" />
-								<span>Loading users...</span>
+								<span>{{ t('openregister', 'Loading users...') }}</span>
 							</div>
 
 							<div v-else-if="organisationUsers.length > 0" class="users-list">
-								<h3>Members ({{ organisationUsers.length }})</h3>
+								<h3>{{ t('openregister', 'Members ({count})', { count: organisationUsers.length }) }}</h3>
 								<div class="user-items">
 									<div v-for="userId in organisationUsers" :key="userId" class="user-item">
 										<div class="user-info">
 											<AccountCircle :size="20" class="user-icon" />
 											<span class="user-id">{{ userId }}</span>
-											<span v-if="userId === organisationItem.owner" class="owner-badge">Owner</span>
+											<span v-if="userId === organisationItem.owner" class="owner-badge">{{ t('openregister', 'Owner') }}</span>
 										</div>
 										<NcButton
 											v-if="userId !== organisationItem.owner"
@@ -175,18 +175,18 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 												<NcLoadingIcon v-if="removingUser === userId" :size="16" />
 												<AccountMinus v-else :size="16" />
 											</template>
-											Remove
+											{{ t('openregister', 'Remove') }}
 										</NcButton>
 									</div>
 								</div>
 							</div>
 
 							<div v-else class="no-users">
-								<p>No users in this organisation.</p>
+								<p>{{ t('openregister', 'No users in this organisation.') }}</p>
 							</div>
 
 							<NcNoteCard v-if="!organisationItem.uuid" type="warning">
-								<p>Save the organisation first to manage users.</p>
+								<p>{{ t('openregister', 'Save the organisation first to manage users.') }}</p>
 							</NcNoteCard>
 						</div>
 					</BTab>
@@ -194,18 +194,18 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<BTab>
 						<template #title>
 							<Shield :size="16" />
-							<span>Security</span>
+							<span>{{ t('openregister', 'Security') }}</span>
 						</template>
 						<div class="security-section">
 							<div v-if="loadingGroups" class="loading-groups">
 								<NcLoadingIcon :size="20" />
-								<span>Loading user groups...</span>
+								<span>{{ t('openregister', 'Loading user groups...') }}</span>
 							</div>
 
 							<div v-else class="rbac-container">
 								<BTabs content-class="mt-3" pills>
 									<!-- Registers -->
-									<BTab title="Registers">
+									<BTab :title="t('openregister', 'Registers')">
 										<RbacTable
 											entity-type="register"
 											:authorization="organisationItem.authorization || {}"
@@ -215,7 +215,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									</BTab>
 
 									<!-- Schemas -->
-									<BTab title="Schemas">
+									<BTab :title="t('openregister', 'Schemas')">
 										<RbacTable
 											entity-type="schema"
 											:authorization="organisationItem.authorization || {}"
@@ -225,7 +225,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									</BTab>
 
 									<!-- Objects -->
-									<BTab title="Objects">
+									<BTab :title="t('openregister', 'Objects')">
 										<RbacTable
 											entity-type="object"
 											:authorization="organisationItem.authorization || {}"
@@ -235,7 +235,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									</BTab>
 
 									<!-- Views -->
-									<BTab title="Views">
+									<BTab :title="t('openregister', 'Views')">
 										<RbacTable
 											entity-type="view"
 											:authorization="organisationItem.authorization || {}"
@@ -245,7 +245,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									</BTab>
 
 									<!-- Agents -->
-									<BTab title="Agents">
+									<BTab :title="t('openregister', 'Agents')">
 										<RbacTable
 											entity-type="agent"
 											:authorization="organisationItem.authorization || {}"
@@ -255,7 +255,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									</BTab>
 
 									<!-- Configurations -->
-									<BTab title="Configurations">
+									<BTab :title="t('openregister', 'Configurations')">
 										<RbacTable
 											entity-type="configuration"
 											:authorization="organisationItem.authorization || {}"
@@ -265,7 +265,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									</BTab>
 
 									<!-- Applications -->
-									<BTab title="Applications">
+									<BTab :title="t('openregister', 'Applications')">
 										<RbacTable
 											entity-type="application"
 											:authorization="organisationItem.authorization || {}"
@@ -275,18 +275,18 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									</BTab>
 
 									<!-- Special Rights -->
-									<BTab title="Special Rights">
+									<BTab :title="t('openregister', 'Special Rights')">
 										<div class="special-rights-container">
 											<p class="rbac-description">
-												Grant additional permissions beyond standard CRUD operations
+												{{ t('openregister', 'Grant additional permissions beyond standard CRUD operations') }}
 											</p>
 
 											<table class="rbac-table special-rights-table">
 												<thead>
 													<tr>
-														<th>Right</th>
-														<th>Description</th>
-														<th>Groups</th>
+														<th>{{ t('openregister', 'Right') }}</th>
+														<th>{{ t('openregister', 'Description') }}</th>
+														<th>{{ t('openregister', 'Groups') }}</th>
 													</tr>
 												</thead>
 												<tbody>
@@ -295,7 +295,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 															<span class="right-badge">object_publish</span>
 														</td>
 														<td class="right-description">
-															Publish objects to make them publicly available
+															{{ t('openregister', 'Publish objects to make them publicly available') }}
 														</td>
 														<td class="right-groups">
 															<NcSelect
@@ -304,7 +304,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																label="name"
 																track-by="id"
 																:multiple="true"
-																placeholder="Select groups..."
+																:placeholder="t('openregister', 'Select groups...')"
 																@input="updateSpecialRight('object_publish', $event)" />
 														</td>
 													</tr>
@@ -313,7 +313,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 															<span class="right-badge">agent_use</span>
 														</td>
 														<td class="right-description">
-															Use AI agents for processing and analysis
+															{{ t('openregister', 'Use AI agents for processing and analysis') }}
 														</td>
 														<td class="right-groups">
 															<NcSelect
@@ -322,7 +322,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																label="name"
 																track-by="id"
 																:multiple="true"
-																placeholder="Select groups..."
+																:placeholder="t('openregister', 'Select groups...')"
 																@input="updateSpecialRight('agent_use', $event)" />
 														</td>
 													</tr>
@@ -331,7 +331,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 															<span class="right-badge">dashboard_view</span>
 														</td>
 														<td class="right-description">
-															Access organisation dashboard and analytics
+															{{ t('openregister', 'Access organisation dashboard and analytics') }}
 														</td>
 														<td class="right-groups">
 															<NcSelect
@@ -340,7 +340,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																label="name"
 																track-by="id"
 																:multiple="true"
-																placeholder="Select groups..."
+																:placeholder="t('openregister', 'Select groups...')"
 																@input="updateSpecialRight('dashboard_view', $event)" />
 														</td>
 													</tr>
@@ -349,7 +349,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 															<span class="right-badge">llm_use</span>
 														</td>
 														<td class="right-description">
-															Use Large Language Model features
+															{{ t('openregister', 'Use Large Language Model features') }}
 														</td>
 														<td class="right-groups">
 															<NcSelect
@@ -358,7 +358,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																label="name"
 																track-by="id"
 																:multiple="true"
-																placeholder="Select groups..."
+																:placeholder="t('openregister', 'Select groups...')"
 																@input="updateSpecialRight('llm_use', $event)" />
 														</td>
 													</tr>
@@ -380,13 +380,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				class="create-another-checkbox"
 				:disabled="loading"
 				:checked.sync="createAnother">
-				Create another
+				{{ t('openregister', 'Create another') }}
 			</NcCheckboxRadioSwitch>
 			<NcButton @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? 'Close' : 'Cancel' }}
+				{{ success ? t('openregister', 'Close') : t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton v-if="createAnother || !success"
 				:disabled="loading || !organisationItem.name.trim()"
@@ -397,7 +397,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<ContentSaveOutline v-if="!loading && organisationStore.organisationItem?.uuid" :size="20" />
 					<Plus v-if="!loading && !organisationStore.organisationItem?.uuid" :size="20" />
 				</template>
-				{{ organisationStore.organisationItem?.uuid && !createAnother ? 'Save' : 'Create' }}
+				{{ organisationStore.organisationItem?.uuid && !createAnother ? t('openregister', 'Save') : t('openregister', 'Create') }}
 			</NcButton>
 		</template>
 		<RemoveUserDialog
@@ -576,7 +576,7 @@ export default {
 					this.initializeOrganisationItem()
 				}).catch(error => {
 					console.error('Error loading Nextcloud groups:', error)
-					this.error = 'Failed to load Nextcloud groups'
+					this.error = t('openregister', 'Failed to load Nextcloud groups')
 					this.loadingGroups = false
 				})
 			}
@@ -748,15 +748,15 @@ export default {
 					this.showRemoveUserDialog = false
 					this.userToRemove = null
 
-					showSuccess(this.$t('openregister', 'User removed successfully'))
+					showSuccess(t('openregister', 'User removed successfully'))
 				} else {
 					const errorData = await response.json()
-					this.error = errorData.error || 'Failed to remove user from organisation'
+					this.error = errorData.error || t('openregister', 'Failed to remove user from organisation')
 					showError(this.error)
 				}
 			} catch (error) {
 				console.error('Error removing user:', error)
-				this.error = 'Failed to remove user from organisation'
+				this.error = t('openregister', 'Failed to remove user from organisation')
 				showError(this.error)
 			} finally {
 				this.removingUser = null
@@ -896,7 +896,7 @@ export default {
 
 			// Validate required fields
 			if (!this.organisationItem.name.trim()) {
-				this.error = 'Organisation name is required'
+				this.error = t('openregister', 'Organisation name is required')
 				this.loading = false
 				return
 			}
@@ -952,7 +952,7 @@ export default {
 			} catch (error) {
 				console.error('Error saving organisation:', error)
 				this.success = false
-				this.error = error.message || 'An error occurred while saving the organisation'
+				this.error = error.message || t('openregister', 'An error occurred while saving the organisation')
 			} finally {
 				this.loading = false
 			}

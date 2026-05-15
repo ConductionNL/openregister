@@ -4,7 +4,7 @@
 			name="System Statistics"
 			description="Overview of your Open Register data and potential issues"
 			:loading="loadingStats"
-			loading-message="Loading statistics...">
+			:loading-message="t('openregister', 'Loading statistics...')">
 			<template #actions>
 				<NcButton
 					type="secondary"

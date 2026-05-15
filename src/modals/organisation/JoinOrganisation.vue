@@ -5,12 +5,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog
-		name="Add User to Organisation"
+		:name="t('openregister', 'Add User to Organisation')"
 		size="normal"
 		:can-close="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
-			<p>Successfully added user to organisation: {{ joinedOrganisationName }}</p>
+			<p>{{ t('openregister', 'Successfully added user to organisation: {name}', { name: joinedOrganisationName }) }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -20,29 +20,29 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<div class="selection-section">
 				<!-- Organisation Selection -->
 				<div class="field-group">
-					<label for="organisation-select">Organisation</label>
+					<label for="organisation-select">{{ t('openregister', 'Organisation') }}</label>
 					<NcSelect
 						v-model="selectedOrganisation"
 						input-id="organisation-select"
-						input-label="Organisation"
+						:input-label="t('openregister', 'Organisation')"
 						:disabled="loading"
 						:loading="searchLoading"
 						:options="organisationOptions"
 						:filterable="true"
 						:filter-by="filterOrganisation"
-						placeholder="Type to search for organisations"
+						:placeholder="t('openregister', 'Type to search for organisations')"
 						label-outside
 						@search="handleOrganisationSearch">
 						<template #option="{ name, description, users, isDefault }">
 							<div class="organisation-option">
 								<div class="organisation-header">
 									<span class="organisation-name">{{ name }}</span>
-									<span v-if="isDefault" class="badge badge-default">Default</span>
+									<span v-if="isDefault" class="badge badge-default">{{ t('openregister', 'Default') }}</span>
 								</div>
 								<p v-if="description" class="organisation-description">
 									{{ description }}
 								</p>
-								<span class="organisation-meta">{{ (users?.length || 0) }} members</span>
+								<span class="organisation-meta">{{ t('openregister', '{count} members', { count: users?.length || 0 }) }}</span>
 							</div>
 						</template>
 						<template #selected-option="{ name }">
@@ -53,16 +53,16 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 				<!-- User Selection -->
 				<div class="field-group">
-					<label for="user-select">User</label>
+					<label for="user-select">{{ t('openregister', 'User') }}</label>
 					<NcSelect
 						v-model="selectedUser"
 						input-id="user-select"
-						input-label="User"
+						:input-label="t('openregister', 'User')"
 						:disabled="loading"
 						:loading="loadingUsers"
 						:options="userOptions"
 						:filterable="true"
-						placeholder="Type to search for users"
+						:placeholder="t('openregister', 'Type to search for users')"
 						label-outside
 						@search="handleUserSearch">
 						<template #option="{ id, displayName }">
@@ -76,13 +76,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</template>
 					</NcSelect>
 					<p class="helper-text">
-						Defaults to current user. Select a different user if needed.
+						{{ t('openregister', 'Defaults to current user. Select a different user if needed.') }}
 					</p>
 				</div>
 
 				<div class="info-help">
 					<NcNoteCard type="info">
-						<p>Select an organisation and user to add them as a member. Search for organisations by name.</p>
+						<p>{{ t('openregister', 'Select an organisation and user to add them as a member. Search for organisations by name.') }}</p>
 					</NcNoteCard>
 				</div>
 			</div>
@@ -93,7 +93,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? 'Close' : 'Cancel' }}
+				{{ success ? t('openregister', 'Close') : t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="!success"
@@ -104,7 +104,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="joining" :size="20" />
 					<AccountPlus v-else :size="20" />
 				</template>
-				Add User
+				{{ t('openregister', 'Add User') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -451,12 +451,12 @@ export default {
 		 */
 		async joinSelectedOrganisation() {
 			if (!this.selectedOrganisation) {
-				this.error = 'Please select an organisation'
+				this.error = t('openregister', 'Please select an organisation')
 				return
 			}
 
 			if (!this.selectedUser) {
-				this.error = 'Please select a user'
+				this.error = t('openregister', 'Please select a user')
 				return
 			}
 
@@ -479,7 +479,7 @@ export default {
 				this.closeModalTimeout = setTimeout(this.closeModal, 3000)
 			} catch (error) {
 				console.error('Error joining organisation:', error)
-				this.error = error.message || 'Failed to add user to organisation'
+				this.error = error.message || t('openregister', 'Failed to add user to organisation')
 			} finally {
 				this.joining = false
 			}

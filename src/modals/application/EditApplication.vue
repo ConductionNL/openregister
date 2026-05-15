@@ -4,13 +4,13 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 </script>
 
 <template>
-	<NcDialog :name="applicationStore.applicationItem?.uuid ? 'Edit Application' : 'Create Application'"
+	<NcDialog :name="applicationStore.applicationItem?.uuid ? t('openregister', 'Edit Application') : t('openregister', 'Create Application')"
 		:open="true"
 		size="large"
 		:can-close="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
-			<p>Application successfully {{ applicationStore.applicationItem?.uuid ? 'updated' : 'created' }}</p>
+			<p>{{ applicationStore.applicationItem?.uuid ? t('openregister', 'Application successfully updated') : t('openregister', 'Application successfully created') }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -27,16 +27,16 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 						<div class="form-editor">
 							<NcTextField
 								:disabled="loading"
-								label="Name *"
+								:label="t('openregister', 'Name *')"
 								:value.sync="applicationItem.name"
 								:error="!applicationItem.name.trim()"
-								placeholder="Enter application name" />
+								:placeholder="t('openregister', 'Enter application name')" />
 
 							<NcTextArea
 								:disabled="loading"
-								label="Description"
+								:label="t('openregister', 'Description')"
 								:value.sync="applicationItem.description"
-								placeholder="Enter application description (optional)"
+								:placeholder="t('openregister', 'Enter application description (optional)')"
 								:rows="4" />
 
 							<!-- Organisation is automatically set to active organisation by backend -->
@@ -52,7 +52,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 									:multiple="true"
 									:label-outside="true"
 									:filterable="false"
-									placeholder="Search groups..."
+									:placeholder="t('openregister', 'Search groups...')"
 									@search-change="searchGroups"
 									@input="updateGroups">
 									<template #option="{ name }">
@@ -61,8 +61,8 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 										</div>
 									</template>
 									<template #no-options>
-										<span v-if="loadingGroups">Loading groups...</span>
-										<span v-else>No groups found. Try a different search.</span>
+										<span v-if="loadingGroups">{{ t('openregister', 'Loading groups...') }}</span>
+										<span v-else>{{ t('openregister', 'No groups found. Try a different search.') }}</span>
 									</template>
 								</NcSelect>
 								<p class="field-hint">

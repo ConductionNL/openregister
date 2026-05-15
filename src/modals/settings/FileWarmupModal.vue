@@ -1,3 +1,7 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog :open="showDialog"
 		:name="dialogTitle"
@@ -57,12 +61,12 @@
 
 				<!-- File Type Filter -->
 				<div class="form-group">
-					<label>File Types to Process</label>
+					<label>{{ t('openregister', 'File Types to Process') }}</label>
 					<NcSelect v-model="config.selectedFileTypes"
 						:options="fileTypeOptions"
 						:multiple="true"
 						:label-outside="true"
-						placeholder="All file types">
+						:placeholder="t('openregister', 'All file types')">
 						<template #selected-option="{ label }">
 							<span class="option-label">{{ label }}</span>
 						</template>
@@ -281,7 +285,7 @@ export default {
 		 */
 		async refreshStats() {
 			await this.loadStats()
-			showSuccess('Statistics refreshed')
+			showSuccess(t('openregister', 'Statistics refreshed'))
 		},
 
 		/**
@@ -318,20 +322,20 @@ export default {
 					this.failedFiles = response.data.failed
 
 					if (response.data.failed === 0) {
-						showSuccess(`Successfully processed ${response.data.indexed} files!`)
+						showSuccess(t('openregister', 'Successfully processed {count} files!', { count: response.data.indexed }))
 					} else {
-						showError(`Processed ${response.data.indexed} files, ${response.data.failed} failed`)
+						showError(t('openregister', 'Processed {indexed} files, {failed} failed', { indexed: response.data.indexed, failed: response.data.failed }))
 					}
 
 					// Refresh stats
 					await this.loadStats()
 				} else {
-					showError(response.data.message || 'Warmup failed')
+					showError(response.data.message || t('openregister', 'Warmup failed'))
 				}
 
 			} catch (error) {
 				console.error('Warmup failed:', error)
-				showError('Failed to start file warmup: ' + (error.response?.data?.message || error.message))
+				showError(t('openregister', 'Failed to start file warmup: {error}', { error: error.response?.data?.message || error.message }))
 			} finally {
 				this.isProcessing = false
 			}

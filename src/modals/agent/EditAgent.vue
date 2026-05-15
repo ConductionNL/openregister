@@ -4,12 +4,12 @@ import { agentStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="agentStore.agentItem?.uuid ? 'Edit Agent' : 'Create Agent'"
+	<NcDialog :name="agentStore.agentItem?.uuid ? t('openregister', 'Edit Agent') : t('openregister', 'Create Agent')"
 		size="large"
 		:can-close="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
-			<p>Agent successfully {{ agentStore.agentItem?.uuid ? 'updated' : 'created' }}</p>
+			<p>{{ agentStore.agentItem?.uuid ? t('openregister', 'Agent successfully updated') : t('openregister', 'Agent successfully created') }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -18,30 +18,30 @@ import { agentStore, navigationStore } from '../../store/store.js'
 			<!-- Tabs -->
 			<div class="tabContainer">
 				<BTabs v-model="activeTab" content-class="mt-3" justified>
-					<BTab title="Settings" active>
+					<BTab :title="t('openregister', 'Settings')" active>
 						<div class="form-editor">
 							<NcTextField
 								:disabled="loading"
-								label="Name *"
+								:label="t('openregister', 'Name *')"
 								:value.sync="agentItem.name"
 								:error="!agentItem.name.trim()"
-								placeholder="Enter agent name" />
+								:placeholder="t('openregister', 'Enter agent name')" />
 
 							<NcTextArea
 								:disabled="loading"
-								label="Description"
+								:label="t('openregister', 'Description')"
 								:value.sync="agentItem.description"
-								placeholder="Enter agent description (optional)"
+								:placeholder="t('openregister', 'Enter agent description (optional)')"
 								:rows="4" />
 
 							<NcSelect
 								v-model="selectedType"
 								:disabled="loading"
 								:options="agentTypes"
-								input-label="Agent Type"
+								:input-label="t('openregister', 'Agent Type')"
 								label="label"
 								track-by="value"
-								placeholder="Select agent type"
+								:placeholder="t('openregister', 'Select agent type')"
 								@input="updateType">
 								<template #option="{ label, description }">
 									<div class="option-content">
@@ -53,9 +53,9 @@ import { agentStore, navigationStore } from '../../store/store.js'
 
 							<NcTextArea
 								:disabled="loading"
-								label="System Prompt"
+								:label="t('openregister', 'System Prompt')"
 								:value.sync="agentItem.prompt"
-								placeholder="Enter system prompt for the agent"
+								:placeholder="t('openregister', 'Enter system prompt for the agent')"
 								:rows="6" />
 
 							<div class="form-field">
@@ -78,7 +78,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 
 							<NcTextField
 								:disabled="loading"
-								label="Max Tokens"
+								:label="t('openregister', 'Max Tokens')"
 								type="number"
 								:value.sync="agentItem.maxTokens"
 								placeholder="1000">
@@ -91,7 +91,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 								:checked="agentItem.active"
 								type="switch"
 								@update:checked="agentItem.active = $event">
-								Active
+								{{ t('openregister', 'Active') }}
 							</NcCheckboxRadioSwitch>
 
 							<NcSelect
@@ -99,25 +99,25 @@ import { agentStore, navigationStore } from '../../store/store.js'
 								:disabled="loading || loadingUsers"
 								:loading="loadingUsers"
 								:options="availableUsers"
-								input-label="Default User (for cron/background jobs)"
+								:input-label="t('openregister', 'Default User (for cron/background jobs)')"
 								label="displayName"
 								track-by="id"
-								placeholder="Select a user"
+								:placeholder="t('openregister', 'Select a user')"
 								@input="updateUser">
 								<template #helper-text-message>
-									When agent runs without a user session (e.g., scheduled tasks), this user's context will be used
+									{{ t('openregister', 'When agent runs without a user session (e.g., scheduled tasks), this user\'s context will be used') }}
 								</template>
 							</NcSelect>
 						</div>
 					</BTab>
 
-					<BTab title="RAG Configuration">
+					<BTab :title="t('openregister', 'RAG Configuration')">
 						<div class="form-editor">
 							<NcCheckboxRadioSwitch
 								:checked="agentItem.enableRag"
 								type="switch"
 								@update:checked="agentItem.enableRag = $event">
-								Enable RAG
+								{{ t('openregister', 'Enable RAG') }}
 							</NcCheckboxRadioSwitch>
 
 							<div v-if="agentItem.enableRag" class="rag-config">
@@ -125,10 +125,10 @@ import { agentStore, navigationStore } from '../../store/store.js'
 									v-model="selectedRagSearchMode"
 									:disabled="loading"
 									:options="ragSearchModes"
-									input-label="Search Mode"
+									:input-label="t('openregister', 'Search Mode')"
 									label="label"
 									track-by="value"
-									placeholder="Select search mode"
+									:placeholder="t('openregister', 'Select search mode')"
 									@input="updateRagSearchMode">
 									<template #option="{ label, description }">
 										<div class="option-content">
@@ -140,7 +140,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 
 								<NcTextField
 									:disabled="loading"
-									label="Number of Sources"
+									:label="t('openregister', 'Number of Sources')"
 									type="number"
 									min="1"
 									max="20"
@@ -152,11 +152,11 @@ import { agentStore, navigationStore } from '../../store/store.js'
 										v-model="selectedViews"
 										:disabled="loading || loadingViews"
 										:options="availableViews"
-										input-label="Data Views"
+										:input-label="t('openregister', 'Data Views')"
 										label="name"
 										track-by="id"
 										:multiple="true"
-										placeholder="Select views to filter data (optional)"
+										:placeholder="t('openregister', 'Select views to filter data (optional)')"
 										@input="updateViews">
 										<template #option="{ name, description }">
 											<div class="view-option">
@@ -166,7 +166,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 										</template>
 									</NcSelect>
 									<p class="field-hint">
-										Select views to limit which data the agent can access
+										{{ t('openregister', 'Select views to limit which data the agent can access') }}
 									</p>
 								</div>
 
@@ -174,53 +174,53 @@ import { agentStore, navigationStore } from '../../store/store.js'
 									:checked="agentItem.searchFiles"
 									type="switch"
 									@update:checked="agentItem.searchFiles = $event">
-									Search in Files
+									{{ t('openregister', 'Search in Files') }}
 								</NcCheckboxRadioSwitch>
 
 								<NcCheckboxRadioSwitch
 									:checked="agentItem.searchObjects"
 									type="switch"
 									@update:checked="agentItem.searchObjects = $event">
-									Search in Database Objects
+									{{ t('openregister', 'Search in Database Objects') }}
 								</NcCheckboxRadioSwitch>
 							</div>
 						</div>
 					</BTab>
 
-					<BTab title="Resource Quotas">
+					<BTab :title="t('openregister', 'Resource Quotas')">
 						<div class="form-editor">
 							<NcNoteCard type="info">
-								<p><strong>Resource Quotas</strong></p>
-								<p>Set limits for API usage and token consumption. Use 0 for unlimited resources.</p>
+								<p><strong>{{ t('openregister', 'Resource Quotas') }}</strong></p>
+								<p>{{ t('openregister', 'Set limits for API usage and token consumption. Use 0 for unlimited resources.') }}</p>
 							</NcNoteCard>
 
 							<NcTextField
 								:disabled="loading"
-								label="Request Quota (per day)"
+								:label="t('openregister', 'Request Quota (per day)')"
 								type="number"
-								placeholder="0 = unlimited"
+								:placeholder="t('openregister', '0 = unlimited')"
 								:value.sync="agentItem.requestQuota" />
 
 							<NcTextField
 								:disabled="loading"
-								label="Token Quota (per request)"
+								:label="t('openregister', 'Token Quota (per request)')"
 								type="number"
-								placeholder="0 = unlimited"
+								:placeholder="t('openregister', '0 = unlimited')"
 								:value.sync="agentItem.tokenQuota" />
 						</div>
 					</BTab>
 
-					<BTab title="Security">
+					<BTab :title="t('openregister', 'Security')">
 						<div class="security-section">
 							<NcCheckboxRadioSwitch
 								:checked="agentItem.isPrivate"
 								type="switch"
 								@update:checked="agentItem.isPrivate = $event">
-								Private Agent (Default)
+								{{ t('openregister', 'Private Agent (Default)') }}
 							</NcCheckboxRadioSwitch>
 							<p class="field-hint">
-								<strong>Private agents</strong> are only accessible to invited users.
-								Disable this to make the agent <strong>public</strong> and accessible to all users in selected groups (or all users if no groups selected).
+								<strong>{{ t('openregister', 'Private agents') }}</strong> {{ t('openregister', 'are only accessible to invited users.') }}
+								{{ t('openregister', 'Disable this to make the agent') }} <strong>{{ t('openregister', 'public') }}</strong> {{ t('openregister', 'and accessible to all users in selected groups (or all users if no groups selected).') }}
 							</p>
 
 							<div v-if="!agentItem.isPrivate" class="groups-select-container">
@@ -228,11 +228,11 @@ import { agentStore, navigationStore } from '../../store/store.js'
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
-									input-label="Select groups with access to this agent"
+									:input-label="t('openregister', 'Select groups with access to this agent')"
 									label="name"
 									track-by="id"
 									:multiple="true"
-									placeholder="Select groups (optional)"
+									:placeholder="t('openregister', 'Select groups (optional)')"
 									@input="updateGroups">
 									<template #option="{ name }">
 										<div class="group-option">
@@ -241,7 +241,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 									</template>
 								</NcSelect>
 								<p class="field-hint">
-									Leave empty to allow all users access
+									{{ t('openregister', 'Leave empty to allow all users access') }}
 								</p>
 							</div>
 
@@ -249,24 +249,24 @@ import { agentStore, navigationStore } from '../../store/store.js'
 								<NcTextField
 									:value.sync="newUserInput"
 									:disabled="loading"
-									label="Invite Users"
-									placeholder="Enter username and press Enter"
+									:label="t('openregister', 'Invite Users')"
+									:placeholder="t('openregister', 'Enter username and press Enter')"
 									@keyup.enter="addInvitedUser">
 									<template #trailing-button-icon>
 										<NcButton
 											type="tertiary"
 											:disabled="!newUserInput || loading"
 											@click="addInvitedUser">
-											Add
+											{{ t('openregister', 'Add') }}
 										</NcButton>
 									</template>
 								</NcTextField>
 								<p class="field-hint">
-									Enter Nextcloud usernames to grant access to this private agent
+									{{ t('openregister', 'Enter Nextcloud usernames to grant access to this private agent') }}
 								</p>
 
 								<div v-if="selectedInvitedUsers.length > 0" class="invited-users-list">
-									<h3>Invited Users</h3>
+									<h3>{{ t('openregister', 'Invited Users') }}</h3>
 									<div class="user-items">
 										<div v-for="user in selectedInvitedUsers" :key="user" class="user-item">
 											<span class="user-badge">{{ user }}</span>
@@ -285,22 +285,22 @@ import { agentStore, navigationStore } from '../../store/store.js'
 
 							<div v-if="loadingGroups" class="loading-indicator">
 								<NcLoadingIcon :size="20" />
-								<span>Loading groups...</span>
+								<span>{{ t('openregister', 'Loading groups...') }}</span>
 							</div>
 						</div>
 					</BTab>
 
-					<BTab title="Tools">
+					<BTab :title="t('openregister', 'Tools')">
 						<div class="form-editor">
 							<NcNoteCard type="info">
-								<p><strong>Function Tools</strong></p>
-								<p>Enable tools that allow the agent to interact with data through function calling.</p>
-								<p>Tools respect the agent's views, permissions, and organization boundaries.</p>
+								<p><strong>{{ t('openregister', 'Function Tools') }}</strong></p>
+								<p>{{ t('openregister', 'Enable tools that allow the agent to interact with data through function calling.') }}</p>
+								<p>{{ t('openregister', 'Tools respect the agent\'s views, permissions, and organization boundaries.') }}</p>
 							</NcNoteCard>
 
 							<div v-if="loadingTools" class="loading-indicator">
 								<NcLoadingIcon :size="20" />
-								<span>Loading available tools...</span>
+								<span>{{ t('openregister', 'Loading available tools...') }}</span>
 							</div>
 
 							<div v-else-if="availableTools.length > 0" class="tools-selection">
@@ -336,11 +336,11 @@ import { agentStore, navigationStore } from '../../store/store.js'
 							</div>
 
 							<NcNoteCard v-else type="warning">
-								<p>No tools available. Tools can be registered by installed apps.</p>
+								<p>{{ t('openregister', 'No tools available. Tools can be registered by installed apps.') }}</p>
 							</NcNoteCard>
 
 							<NcNoteCard v-if="agentItem.tools && agentItem.tools.length > 0" type="warning">
-								<p><strong>Note:</strong> Tools execute with the agent's default user permissions when no user session is active (e.g., cron jobs). Configure the default user in the Settings tab.</p>
+								<p><strong>{{ t('openregister', 'Note:') }}</strong> {{ t('openregister', 'Tools execute with the agent\'s default user permissions when no user session is active (e.g., cron jobs). Configure the default user in the Settings tab.') }}</p>
 							</NcNoteCard>
 						</div>
 					</BTab>
@@ -350,7 +350,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 
 		<template #actions>
 			<NcButton @click="closeModal">
-				Cancel
+				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				:disabled="!isValid || loading"
@@ -360,7 +360,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<ContentSaveOutline v-else :size="20" />
 				</template>
-				{{ agentStore.agentItem?.uuid ? 'Update' : 'Create' }}
+				{{ agentStore.agentItem?.uuid ? t('openregister', 'Update') : t('openregister', 'Create') }}
 			</NcButton>
 		</template>
 	</NcDialog>

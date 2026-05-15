@@ -395,12 +395,12 @@ export default {
 		async importSelected() {
 			const configuration = configurationStore.configurationItem
 			if (!configuration || !configuration.id) {
-				showError('No configuration selected')
+				showError(t('openregister', 'No configuration selected'))
 				return
 			}
 
 			if (!this.hasSelection) {
-				showError('Please select at least one item to import')
+				showError(t('openregister', 'Please select at least one item to import'))
 				return
 			}
 
@@ -420,8 +420,11 @@ export default {
 				)
 
 				showSuccess(
-					`Successfully imported: ${response.data.registersCount} registers, `
-					+ `${response.data.schemasCount} schemas, ${response.data.objectsCount} objects`,
+					t('openregister', 'Successfully imported: {registers} registers, {schemas} schemas, {objects} objects', {
+						registers: response.data.registersCount,
+						schemas: response.data.schemasCount,
+						objects: response.data.objectsCount,
+					}),
 				)
 
 				// Refresh the configuration list
