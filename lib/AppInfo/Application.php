@@ -997,6 +997,22 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        // Leaf provider: XWiki (external, OpenConnector-backed). Ships
+        // in-repo as the worked external-storage example; routed
+        // through ExternalIntegrationRouter, credentials on the
+        // OpenConnector `xwiki` source.
+        // @spec openspec/changes/integration-xwiki/tasks.md
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider(
+                    router: $container->get(\OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
     }//end registerBuiltinIntegrationProviders()
 
     /**
@@ -1183,6 +1199,8 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class,
             \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider::class,
             \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class,
+            // Leaf: XWiki (external) — see openspec/changes/integration-xwiki.
+            \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class,
         ];
 
         foreach ($providerClasses as $providerClass) {

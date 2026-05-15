@@ -38,6 +38,7 @@ class ProviderUnavailableException extends \RuntimeException
     public const CAUSE_OPENCONNECTOR_DOWN           = 'openconnector-down';
     public const CAUSE_OPENCONNECTOR_SOURCE_MISSING = 'openconnector-source-missing';
     public const CAUSE_UPSTREAM_SERVICE_DOWN        = 'upstream-service-down';
+    public const CAUSE_PROVIDER_AUTH                = 'provider-auth';
 
     /**
      * The cause classification.

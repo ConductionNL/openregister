@@ -330,11 +330,13 @@ class ExternalIntegrationRouter
 
         if (method_exists($callService, 'call') === true) {
             $response = $callService->call($source, $path, $method, $options);
+            $this->assertUpstreamOk($response);
             return $this->decodeResponse($response);
         }
 
         if (method_exists($callService, 'request') === true) {
             $response = $callService->request($source, $method, $path, $options);
+            $this->assertUpstreamOk($response);
             return $this->decodeResponse($response);
         }
 
@@ -344,11 +346,48 @@ class ExternalIntegrationRouter
     }//end invoke()
 
     /**
+     * Treat a >= 400 upstream status (carried on the CallLog OpenConnector
+     * returns) as an upstream failure rather than letting an error page
+     * leak through as "rows". A 401/403 specifically is re-flagged as
+     * `provider-auth` so the UI shows the "reconnect connector" banner.
+     *
+     * @param mixed $response The CallService return value.
+     *
+     * @return void
+     *
+     * @throws ProviderUnavailableException When the upstream answered >= 400.
+     */
+    private function assertUpstreamOk($response): void
+    {
+        if (is_object($response) === false || method_exists($response, 'getStatusCode') === false) {
+            return;
+        }
+
+        $status = (int) $response->getStatusCode();
+        if ($status < 400) {
+            return;
+        }
+
+        $cause = ($status === 401 || $status === 403)
+            ? ProviderUnavailableException::CAUSE_PROVIDER_AUTH
+            : ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN;
+
+        throw new ProviderUnavailableException(
+            sprintf('Upstream service answered HTTP %d.', $status),
+            $cause
+        );
+    }//end assertUpstreamOk()
+
+    /**
      * Normalise a CallService response into a decoded array.
      *
-     * CallService returns either a CallLog entity (carrying a JSON
-     * body), a raw array, or a scalar string. We always normalise to
-     * an array; non-arrays are wrapped under a `body` key so callers
+     * OpenConnector's CallService returns a `CallLog` whose
+     * `getResponse()` is `{ statusCode, headers, body, encoding, … }` —
+     * the actual upstream payload is the (usually JSON) `body` string
+     * (base64-encoded when the upstream wasn't UTF-8). We unwrap that,
+     * JSON-decode it, and hand the caller the upstream body directly.
+     * A raw array / scalar string from an older CallService is decoded
+     * in place; non-arrays are wrapped under a `body` key so callers
      * have a stable shape to introspect.
      *
      * @param mixed $response The raw return from CallService.
@@ -359,6 +398,23 @@ class ExternalIntegrationRouter
     {
         if (is_array($response) === true) {
             return $response;
+        }
+
+        // CallLog (OpenConnector) — pull the upstream body out of getResponse().
+        if (is_object($response) === true && method_exists($response, 'getResponse') === true) {
+            $payload = $response->getResponse();
+            if (is_array($payload) === true && array_key_exists('body', $payload) === true) {
+                $body = $payload['body'];
+                if (($payload['encoding'] ?? null) === 'base64' && is_string($body) === true) {
+                    $body = (string) base64_decode($body, true);
+                }
+
+                return $this->decodeResponse($body);
+            }
+
+            if (is_array($payload) === true) {
+                return $payload;
+            }
         }
 
         if (is_object($response) === true && method_exists($response, 'jsonSerialize') === true) {
