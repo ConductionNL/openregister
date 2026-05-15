@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -51,6 +52,7 @@ use Psr\Log\LoggerInterface;
  * @link https://www.OpenRegister.app
  *
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facade service coordinates mappers + file/org/serializer deps; coupling is intentional.
  */
 class RegisterService
 {
@@ -110,6 +112,15 @@ class RegisterService
     private readonly LoggerInterface $logger;
 
     /**
+     * Register serializer
+     *
+     * Applies `_extend` post-processing for `findSerialized` / `findAllSerialized`.
+     *
+     * @var RegisterSerializer Register serializer instance
+     */
+    private readonly RegisterSerializer $registerSerializer;
+
+    /**
      * Constructor
      *
      * Initializes service with required dependencies for register operations.
@@ -120,6 +131,7 @@ class RegisterService
      * @param FileService         $fileService         File service for file operations
      * @param OrganisationService $organisationService Organisation service for permissions
      * @param LoggerInterface     $logger              Logger for error tracking
+     * @param RegisterSerializer  $registerSerializer  Register serializer for `_extend` post-processing
      *
      * @return void
      */
@@ -129,7 +141,8 @@ class RegisterService
         IDBConnection $db,
         FileService $fileService,
         OrganisationService $organisationService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        RegisterSerializer $registerSerializer
     ) {
         $this->logger = $logger;
         $this->logger->debug(
@@ -142,6 +155,7 @@ class RegisterService
         $this->db          = $db;
         $this->fileService = $fileService;
         $this->organisationService = $organisationService;
+        $this->registerSerializer  = $registerSerializer;
         $this->logger->debug(
             message: '[RegisterService] RegisterService constructor completed.',
             context: ['file' => __FILE__, 'line' => __LINE__]
@@ -149,13 +163,14 @@ class RegisterService
     }//end __construct()
 
     /**
-     * Find a register by ID with optional extensions
+     * Find a register by ID
      *
-     * Retrieves register entity by ID with optional extended data.
-     * Extensions can include related entities like schemas, objects, etc.
+     * Retrieves a register entity by ID. The `$_extend` parameter is a no-op
+     * placeholder for signature compatibility — extension processing only
+     * happens via `findSerialized()`.
      *
      * @param int|string    $id            The ID of the register to find.
-     * @param array<string> $_extend       Optional array of extension names to include.
+     * @param array<string> $_extend       No-op placeholder; use `findSerialized()` for `_extend` post-processing.
      * @param bool          $_multitenancy Whether to apply multitenancy filtering.
      *
      * @return Register The found register entity
@@ -163,25 +178,64 @@ class RegisterService
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$_extend` is a documented no-op placeholder for signature compatibility.
      */
     public function find(int | string $id, array $_extend=[], bool $_multitenancy=true): Register
     {
-        return $this->registerMapper->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+        return $this->registerMapper->find(id: $id, _multitenancy: $_multitenancy);
     }//end find()
 
     /**
-     * Find all registers with optional filters and extensions
+     * Find a register by ID and return its serialized form with `_extend` post-processing.
+     *
+     * Recognised `_extend` values:
+     *  - `schemas`     — replace schema IDs with full schema objects (orphan IDs preserved in place).
+     *  - `@self.stats` — attach `stats.objects.total` to expanded schemas (only effective alongside `schemas`).
+     *
+     * @param int|string    $id            The ID of the register to find.
+     * @param array<string> $_extend       Recognised: `schemas`, `@self.stats`. Unknown keys ignored.
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering.
+     *
+     * @return array The serialized register array (with `_extend` transformations applied).
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers found (should not happen)
+     * @throws \OCP\DB\Exception If database error occurs
+     */
+    public function findSerialized(int | string $id, array $_extend=[], bool $_multitenancy=true): array
+    {
+        $register = $this->find(id: $id, _multitenancy: $_multitenancy);
+
+        $schemaStats = null;
+        if ($this->shouldComputeSchemaStats(extend: $_extend) === true) {
+            $schemaStats = $this->getSchemaObjectCounts(
+                registerId: (int) $register->getId(),
+                schemas: $this->schemaIdsAsObjects(schemaIds: $register->getSchemas())
+            );
+        }
+
+        return $this->registerSerializer->serialize(
+            register: $register,
+            extend: $_extend,
+            schemaStats: $schemaStats
+        );
+    }//end findSerialized()
+
+    /**
+     * Find all registers with optional filters
      *
      * Retrieves all registers matching optional filters and search conditions.
-     * Supports pagination via limit and offset parameters.
-     * Extensions can include related entities like schemas, objects, etc.
+     * Supports pagination via limit and offset parameters. The `$_extend`
+     * parameter is a no-op placeholder for signature compatibility — extension
+     * processing only happens via `findAllSerialized()`.
      *
      * @param int|null                  $limit            Maximum number of results to return (null = no limit)
      * @param int|null                  $offset           Number of results to skip for pagination
      * @param array<string, mixed>|null $filters          Filters to apply (e.g., ['organisation_id' => 1])
      * @param array<string, mixed>|null $searchConditions Search conditions for advanced filtering
      * @param array<string, mixed>|null $searchParams     Search parameters for query building
-     * @param array<string>             $_extend          Optional extensions to include in results.
+     * @param array<string>|null        $_extend          No-op placeholder; use `findAllSerialized()` for `_extend` post-processing.
      * @param bool                      $_multitenancy    Whether to apply multitenancy filtering.
      *
      * @return Register[] Array of found register entities
@@ -190,6 +244,7 @@ class RegisterService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Optional parameters use null defaults for flexibility
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple optional filter parameters for flexibility
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)  `$_extend` is a documented no-op placeholder for signature compatibility.
      */
     public function findAll(
         ?int $limit=null,
@@ -200,17 +255,121 @@ class RegisterService
         ?array $_extend=[],
         bool $_multitenancy=true
     ): array {
-        // Find all registers with optional filtering, pagination, and extensions.
+        // Find all registers with optional filtering and pagination.
         return $this->registerMapper->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
             searchConditions: $searchConditions,
             searchParams: $searchParams,
-            _extend: $_extend,
             _multitenancy: $_multitenancy
         );
     }//end findAll()
+
+    /**
+     * Find all registers and return their serialized form with `_extend` post-processing.
+     *
+     * Recognised `_extend` values:
+     *  - `schemas`     — replace schema IDs with full schema objects (orphan IDs preserved in place).
+     *  - `@self.stats` — attach `stats.objects.total` to expanded schemas (only effective alongside `schemas`).
+     *
+     * **N+1 query characteristic:** when both `schemas` and `@self.stats` are
+     * requested, this method runs one `getSchemaObjectCounts()` query per
+     * register in the result set (the same pattern that previously existed
+     * inside `RegistersController::index()`). For paginated admin endpoints
+     * this is acceptable; callers invoking this method from cron jobs or
+     * high-volume batch paths should be aware that response time scales with
+     * `count(registers) × count(schemas per register)`. A batched variant
+     * can be added if a real workload demonstrates the need.
+     *
+     * @param int|null                  $limit            Maximum number of results to return (null = no limit)
+     * @param int|null                  $offset           Number of results to skip for pagination
+     * @param array<string, mixed>|null $filters          Filters to apply (e.g., ['organisation_id' => 1])
+     * @param array<string, mixed>|null $searchConditions Search conditions for advanced filtering
+     * @param array<string, mixed>|null $searchParams     Search parameters for query building
+     * @param array<string>             $_extend          Recognised: `schemas`, `@self.stats`. Unknown keys ignored.
+     * @param bool                      $_multitenancy    Whether to apply multitenancy filtering.
+     *
+     * @return array<int, array> Array of serialized register arrays (with `_extend` transformations applied).
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Optional parameters use null defaults for flexibility
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple optional filter parameters for flexibility
+     * @SuppressWarnings(PHPMD.LongVariable)           `$schemaStatsByRegisterId` mirrors the serializer's parameter name from the spec.
+     */
+    public function findAllSerialized(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        array $_extend=[],
+        bool $_multitenancy=true
+    ): array {
+        $registers = $this->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            searchConditions: $searchConditions,
+            searchParams: $searchParams,
+            _multitenancy: $_multitenancy
+        );
+
+        $schemaStatsByRegisterId = null;
+        if ($this->shouldComputeSchemaStats(extend: $_extend) === true) {
+            $schemaStatsByRegisterId = [];
+            foreach ($registers as $register) {
+                $registerId = (int) $register->getId();
+                $schemaStatsByRegisterId[$registerId] = $this->getSchemaObjectCounts(
+                    registerId: $registerId,
+                    schemas: $this->schemaIdsAsObjects(schemaIds: $register->getSchemas())
+                );
+            }
+        }
+
+        return $this->registerSerializer->serializeMany(
+            registers: $registers,
+            extend: $_extend,
+            schemaStatsByRegisterId: $schemaStatsByRegisterId
+        );
+    }//end findAllSerialized()
+
+    /**
+     * Whether `getSchemaObjectCounts` needs to run for the given `_extend` set.
+     *
+     * Stats are only computed when `@self.stats` is requested *and* `schemas`
+     * is also requested — bare-ID schemas do not receive stats per the spec.
+     *
+     * @param array<string> $extend The `_extend` values requested by the caller.
+     *
+     * @return bool True when both `schemas` and `@self.stats` are present.
+     */
+    private function shouldComputeSchemaStats(array $extend): bool
+    {
+        return in_array(needle: 'schemas', haystack: $extend, strict: true) === true
+            && in_array(needle: '@self.stats', haystack: $extend, strict: true) === true;
+    }//end shouldComputeSchemaStats()
+
+    /**
+     * Wrap raw schema IDs into the `[['id' => $id], ...]` shape expected by `getSchemaObjectCounts`.
+     *
+     * Used inside `findSerialized` / `findAllSerialized` so the existing
+     * `getSchemaObjectCounts` implementation can stay unchanged. Orphan IDs
+     * pass through harmlessly — the stats query for a missing schema's magic
+     * table simply returns zeros, and the serializer skips stats for orphans.
+     *
+     * @param array<int|string> $schemaIds Raw schema IDs from `Register::getSchemas()`.
+     *
+     * @return array<int, array{id: int|string}> Schema-id-only array shapes.
+     */
+    private function schemaIdsAsObjects(array $schemaIds): array
+    {
+        $shapes = [];
+        foreach ($schemaIds as $schemaId) {
+            $shapes[] = ['id' => $schemaId];
+        }
+
+        return $shapes;
+    }//end schemaIdsAsObjects()
 
     /**
      * Create a new register from array data.
