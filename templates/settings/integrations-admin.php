@@ -17,21 +17,26 @@ declare(strict_types=1);
 /** @var array<int,array<string,mixed>> $_['rows'] */
 $rows = $_['rows'] ?? [];
 
-$statusBadge = static function (string $status): string {
+// Return data tuples (class + label) and let the template render the
+// HTML — keeps the rule "always escape at output" honest. The original
+// implementation embedded `p()` inside the function body, which prints
+// instead of returning, so the spans were empty and the status text
+// leaked to wherever output buffering went.
+$statusBadgeClass = static function (string $status): string {
     return match ($status) {
-        'ok'         => '<span class="cn-status cn-status--ok">' . p('ok') . '</span>',
-        'degraded'   => '<span class="cn-status cn-status--degraded">' . p('degraded') . '</span>',
-        'unavailable'=> '<span class="cn-status cn-status--unavailable">' . p('unavailable') . '</span>',
-        default      => '<span class="cn-status">' . p($status) . '</span>',
+        'ok'          => 'cn-status cn-status--ok',
+        'degraded'    => 'cn-status cn-status--degraded',
+        'unavailable' => 'cn-status cn-status--unavailable',
+        default       => 'cn-status',
     };
 };
 
-$authBadge = static function (string $authStatus): string {
+$authBadgeClass = static function (string $authStatus): string {
     return match ($authStatus) {
-        'configured' => '<span class="cn-status cn-status--ok">' . p('configured') . '</span>',
-        'missing'    => '<span class="cn-status cn-status--unavailable">' . p('missing') . '</span>',
-        'expired'    => '<span class="cn-status cn-status--degraded">' . p('expired') . '</span>',
-        default      => '<span class="cn-status">' . p($authStatus) . '</span>',
+        'configured' => 'cn-status cn-status--ok',
+        'missing'    => 'cn-status cn-status--unavailable',
+        'expired'    => 'cn-status cn-status--degraded',
+        default      => 'cn-status',
     };
 };
 ?>
@@ -76,8 +81,8 @@ $authBadge = static function (string $authStatus): string {
                                 <?php endif; ?>
                             <?php endif; ?>
                         </td>
-                        <td><?php print_unescaped($statusBadge((string) $row['status'])); ?></td>
-                        <td><?php print_unescaped($authBadge((string) $row['authStatus'])); ?></td>
+                        <td><span class="<?php p($statusBadgeClass((string) $row['status'])); ?>"><?php p((string) $row['status']); ?></span></td>
+                        <td><span class="<?php p($authBadgeClass((string) $row['authStatus'])); ?>"><?php p((string) $row['authStatus']); ?></span></td>
                         <td>
                             <?php if ($row['openConnectorSource'] !== null) : ?>
                                 <code><?php p((string) $row['openConnectorSource']); ?></code>
