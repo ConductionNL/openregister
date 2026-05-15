@@ -116,6 +116,7 @@ Vrij en open source onder de EUPL-licentie.
 
 	<settings>
 		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
+		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
 

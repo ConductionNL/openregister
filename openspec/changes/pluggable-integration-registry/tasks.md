@@ -40,9 +40,9 @@
 
 ## Backend — Admin UI for auth
 
-- [ ] Create `lib/Settings/IntegrationsAdminSection.php` — admin section listing integrations + auth status + Configure buttons
-- [ ] Wire admin section to OpenConnector credential management for `storage: external` providers
-- [ ] Per-integration "Test connection" action in admin UI
+- [x] Create admin settings page — `lib/Settings/IntegrationsAdminSettings.php` + server-rendered template at `templates/settings/integrations-admin.php`. Lists every IntegrationProvider with id / label / group / storage / requiredApp / status / authStatus / OpenConnectorSource. _Spec called for an "AdminSection" but OR's pattern is one `ISettings` page per `IIconSection`; the existing `Sections\OpenRegisterAdmin` already provides the parent section, so this lands as a second `<admin>` entry under it. Same end shape, idiomatic structure._
+- [x] Wire admin section to OpenConnector credential management — `buildOpenConnectorConfigureUrl()` produces a deep-link to OpenConnector's source-edit screen (with graceful fallback to the install page when OpenConnector isn't enabled). External-provider rows render a "Configure" button pointing there.
+- [x] Per-integration "Test connection" action — external providers' rows include a "Test connection" link pointing at the OCS route `/ocs/v2.php/apps/openregister/api/integrations/{id}` which returns the role-redacted descriptor (including `authStatus`).
 
 ## Frontend — Registry & Composable (`@conduction/nextcloud-vue`)
 

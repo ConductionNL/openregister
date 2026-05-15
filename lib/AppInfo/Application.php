@@ -898,6 +898,13 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // IntegrationsAdminSettings is declared in info.xml <admin> and
+        // resolved by Nextcloud's container — IntegrationRegistry +
+        // ExternalIntegrationRouter are already registered above and the
+        // remaining constructor deps (IAppManager / IURLGenerator /
+        // IL10N) are framework services NC autowires. No explicit
+        // registerService needed, mirroring OpenRegisterAdmin.
+
         // IntegrationsCapability — surfaces the registry through the
         // Nextcloud OCS capabilities endpoint, role-redacted per AD-17.
         $context->registerService(
