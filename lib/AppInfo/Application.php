@@ -833,6 +833,35 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // PropertyReferenceTypeValidator — consumed by schema-property
+        // validation paths that opt in to the new referenceType marker
+        // (AD-18). Stays separate from the entity-level
+        // validateLinkedTypesValue path so existing schemas keep
+        // validating exactly as before.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator(
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                );
+            }
+        );
+
+        // Repair step LogDanglingLinkedTypes — runs on install +
+        // post-migration to surface schemas whose linkedTypes contain
+        // ids that the registry can no longer resolve. Strictly
+        // informational; never throws, never modifies data.
+        $context->registerService(
+            \OCA\OpenRegister\Repair\LogDanglingLinkedTypes::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Repair\LogDanglingLinkedTypes(
+                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
     }//end registerIntegrationRegistry()
 
     /**

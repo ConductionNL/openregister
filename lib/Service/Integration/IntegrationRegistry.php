@@ -185,6 +185,22 @@ class IntegrationRegistry
     }//end get()
 
     /**
+     * Whether the given id is a registered integration.
+     *
+     * Used by Schema::validateLinkedTypesValue() (task 7) as part of
+     * the registry-driven validation path. Distinct from `get()` to
+     * keep the schema validator's read intent obvious.
+     *
+     * @param string $id Stable integration id to check.
+     *
+     * @return bool True when the id is registered.
+     */
+    public function isValidIntegrationId(string $id): bool
+    {
+        return isset($this->providers[$id]);
+    }//end isValidIntegrationId()
+
+    /**
      * Return only the providers that are currently usable.
      *
      * A provider is "enabled" when `isEnabled()` returns true —
