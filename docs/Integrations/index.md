@@ -16,27 +16,35 @@ OpenRegister integrates with various external services and models to provide pow
 
 ## Integration Categories
 
-OpenRegister integrations fall into three main categories:
+OpenRegister integrations fall into six categories:
 
-### 1. LLM Hosting Platforms
+### 1. OpenRegister's own push events
+OpenRegister itself emits `notify_custom` events on every object lifecycle change so consumers can subscribe and refresh without polling:
+- **[OpenRegister Push Events](./OpenRegister.md)** — `or-object-{uuid}` and `or-collection-{register}-{schema}` event reference, fan-out semantics, batch mode, subscription examples
+
+### 2. Nextcloud-native integrations
+Apps that ship with or alongside Nextcloud and integrate tightly with OR (and may emit their own push events):
+- **[Deck](./Deck.md)** — Kanban card linking with real-time push events via notify_push
+
+### 3. LLM Hosting Platforms
 Services that host and run Large Language Models locally:
-- **[Ollama](./ollama.md)** - Simple, native API for running LLMs
-- **[Hugging Face](./huggingface.md)** - TGI/vLLM with OpenAI-compatible API
+- **[Ollama](./ollama.md)** — Simple, native API for running LLMs
+- **[Hugging Face](./huggingface.md)** — TGI/vLLM with OpenAI-compatible API
 
-### 2. LLM Models
+### 4. LLM Models
 Specific language models that can be used:
-- **[Mistral](./mistral.md)** - High-performance 7B model
-- **[Dolphin](./dolphin.md)** - Document parsing and OCR model
+- **[Mistral](./mistral.md)** — High-performance 7B model
+- **[Dolphin](./dolphin.md)** — Document parsing and OCR model
 
-### 3. Entity Extraction Services
+### 5. Entity Extraction Services
 Services for detecting and extracting entities from text:
-- **[Presidio](./presidio.md)** - Microsoft's PII detection service
+- **[Presidio](./presidio.md)** — Microsoft's PII detection service
 
-### 4. Automation Platforms
+### 6. Automation Platforms
 Workflow automation and integration platforms:
-- **[n8n](./n8n.md)** - Workflow automation platform
-- **[Windmill](./windmill.md)** - Developer-focused workflow engine
-- **[Custom Webhooks](./custom-webhooks.md)** - Build your own integrations
+- **[n8n](./n8n.md)** — Workflow automation platform
+- **[Windmill](./windmill.md)** — Developer-focused workflow engine
+- **[Custom Webhooks](./custom-webhooks.md)** — Build your own integrations
 
 ## Integration Architecture
 
