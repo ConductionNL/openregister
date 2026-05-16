@@ -34,6 +34,15 @@ Link people to an object with a role per link. The same person can be an *applic
   rightColor="cobalt-700"
   bridgeLabel="link-table + X-OPENREGISTER-*" />
 
+
+## Screenshot
+
+The integration registers in OpenRegister's in-page registry and renders as one of the tabs on the standalone integrations view. The tab is highlighted active here so you can see exactly which surface this leaf controls.
+
+![contacts integration tab active in the OpenRegister integrations view](/screenshots/integrations/contacts.png)
+
+Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://github.com/ConductionNL/openregister/blob/development/tests/e2e/leaf-screenshots.spec.ts) against the seeded `integration-verification` register on the dev container. Empty state (`Nothing linked yet`) is expected on a freshly seeded object — link an upstream entity from the tab's `+ Add` affordance to populate it.
+
 ## What it does
 
 - Lists vCard contacts linked to each Open Register object on the **Contacts** sidebar tab, grouped by role.

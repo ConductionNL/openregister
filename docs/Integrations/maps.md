@@ -33,6 +33,15 @@ Pin geolocations to an Open Register object via NC Maps. The Location tab will l
   rightColor="cobalt-700"
   bridgeLabel="link-table + cached lat/lon" />
 
+
+## Screenshot
+
+The integration registers in OpenRegister's in-page registry and renders as one of the tabs on the standalone integrations view. The tab is highlighted active here so you can see exactly which surface this leaf controls.
+
+![maps integration tab active in the OpenRegister integrations view](/screenshots/integrations/maps.png)
+
+Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://github.com/ConductionNL/openregister/blob/development/tests/e2e/leaf-screenshots.spec.ts) against the seeded `integration-verification` register on the dev container. Empty state (`Nothing linked yet`) is expected on a freshly seeded object — link an upstream entity from the tab's `+ Add` affordance to populate it.
+
 ## What it will do
 
 - Lists locations linked to each Open Register object on the **Location** sidebar tab. Shows an embedded map plus a list view.

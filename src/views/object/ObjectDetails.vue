@@ -96,8 +96,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
                             </pre>
 						</BTab>
 						<BTab :title="t('openregister', 'Uses')">
-							<div v-if="objectStore.objectItem.relations && Object.keys(objectStore.objectItem.relations).length > 0">
-								<NcListItem v-for="(relation, key) in objectStore.objectItem.relations"
+							<div v-if="objectStore.objectItem?.relations && Object.keys(objectStore.objectItem.relations).length > 0">
+								<NcListItem v-for="(relation, key) in objectStore.objectItem?.relations"
 									:key="key"
 									:name="key"
 									:bold="false"
@@ -116,7 +116,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</div>
 						</BTab>
 						<BTab :title="t('openregister', 'Used by')">
-							<div v-if="objectStore.relations.length">
+							<div v-if="objectStore.relations?.length">
 								<NcListItem v-for="(relation, key) in objectStore.relations"
 									:key="key"
 									:name="relation.id"
@@ -130,10 +130,10 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										{{ relation.uri }}
 									</template>
 								</NcListItem>
-								<BPagination v-if="!relationsLoading && objectStore.relations.total > pagination.relations.limit"
+								<BPagination v-if="!relationsLoading && objectStore.relations?.total > pagination.relations.limit"
 									v-model="pagination.relations.currentPage"
 									class="tabPagination"
-									:total-rows="objectStore.relations.total"
+									:total-rows="objectStore.relations?.total"
 									:per-page="pagination.relations.limit" />
 							</div>
 							<div v-else class="tabPanel">
@@ -148,8 +148,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'Open folder') }}
 							</NcButton>
 
-							<div v-if="objectStore.files.results?.length > 0">
-								<NcListItem v-for="(attachment, i) in objectStore.files.results"
+							<div v-if="objectStore.files?.results?.length > 0">
+								<NcListItem v-for="(attachment, i) in objectStore.files?.results"
 									:key="`${attachment}${i}`"
 									:name="attachment.name ?? attachment?.title"
 									:bold="false"
@@ -190,19 +190,19 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									</template>
 								</NcListItem>
 
-								<BPagination v-if="!fileLoading && objectStore.files.total > pagination.files.limit"
+								<BPagination v-if="!fileLoading && objectStore.files?.total > pagination.files.limit"
 									v-model="pagination.files.currentPage"
 									class="tabPagination"
-									:total-rows="objectStore.files.total"
+									:total-rows="objectStore.files?.total"
 									:per-page="pagination.files.limit" />
 							</div>
 
-							<div v-if="objectStore.files.results?.length === 0">
+							<div v-if="objectStore.files?.results?.length === 0">
 								Nog geen bijlage toegevoegd
 							</div>
 
 							<div
-								v-if="objectStore.files.results?.length !== 0 && !objectStore.files.results?.length > 0 && fileLoading">
+								v-if="objectStore.files?.results?.length !== 0 && !objectStore.files?.results?.length > 0 && fileLoading">
 								<NcLoadingIcon :size="64"
 									class="loadingIcon"
 									appearance="dark"
@@ -210,7 +210,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							</div>
 						</BTab>
 						<BTab :title="t('openregister', 'Syncs')">
-							<div v-if="true || !syncs.length" class="tabPanel">
+							<div class="tabPanel">
 								{{ t('openregister', 'No synchronizations found') }}
 							</div>
 						</BTab>
@@ -244,7 +244,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
 						</BTab>
-						<BTab v-if="relationContext && integrationProviders.length" :title="t('openregister', 'Integrations')">
+						<BTab v-if="relationContext && (integrationProviders?.length || 0) > 0" :title="t('openregister', 'Integrations')">
 							<!--
 								Registry-driven integration surface. One inner tab per advertised
 								IntegrationProvider (5 built-ins + xwiki + 18 leaves). OR dogfoods
@@ -265,9 +265,9 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								</BTab>
 							</BTabs>
 						</BTab>
-						<BTab :title="t('openregister', 'Audit Trails')">
-							<div v-if="objectStore.auditTrails.results?.length">
-								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails.results"
+						<BTab v-if="objectStore.auditTrails" :title="t('openregister', 'Audit Trails')">
+							<div v-if="objectStore.auditTrails?.results?.length">
+								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails?.results"
 									:key="key"
 									:name="new Date(auditTrail.created).toLocaleString()"
 									:bold="false"
@@ -290,13 +290,13 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										</NcActionButton>
 									</template>
 								</NcListItem>
-								<BPagination v-if="!auditTrailLoading && objectStore.auditTrails.total > pagination.auditTrails.limit"
+								<BPagination v-if="!auditTrailLoading && objectStore.auditTrails?.total > pagination.auditTrails.limit"
 									v-model="pagination.auditTrails.currentPage"
 									class="tabPagination"
-									:total-rows="objectStore.auditTrails.total"
+									:total-rows="objectStore.auditTrails?.total"
 									:per-page="pagination.auditTrails.limit" />
 							</div>
-							<div v-if="!objectStore.auditTrails.results?.length">
+							<div v-if="!objectStore.auditTrails?.results?.length">
 								No audit trails found
 							</div>
 						</BTab>
@@ -473,7 +473,16 @@ export default {
 		}
 	},
 	methods: {
+		// Race-safe sub-resource fetches. Deep-link navigation primes
+		// objectStore.objectItem from the REST API before the plugins
+		// that own these actions (filesPlugin / auditTrailsPlugin /
+		// relationsPlugin) have installed them. Calling a method that
+		// doesn't exist on the store throws TypeError mid-mount and
+		// aborts the whole render — guard each call.
 		getFiles() {
+			if (!objectStore.objectItem?.id || typeof objectStore.getFiles !== 'function') {
+				return
+			}
 			this.fileLoading = true
 
 			objectStore.getFiles(objectStore.objectItem.id, {
@@ -484,6 +493,9 @@ export default {
 			})
 		},
 		getAuditTrails() {
+			if (!objectStore.objectItem?.id || typeof objectStore.getAuditTrails !== 'function') {
+				return
+			}
 			this.auditTrailLoading = true
 
 			objectStore.getAuditTrails(objectStore.objectItem.id, {
@@ -499,6 +511,9 @@ export default {
 				})
 		},
 		getRelations() {
+			if (!objectStore.objectItem?.id || typeof objectStore.getRelations !== 'function') {
+				return
+			}
 			this.relationsLoading = true
 
 			objectStore.getRelations(objectStore.objectItem.id, {

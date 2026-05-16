@@ -643,6 +643,11 @@ return [
 		// fetches the object so its detail tabs (including the registry-
 		// driven Integrations tab) render directly.
 		['name' => 'ui#objects', 'url' => '/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+		// Standalone integrations view (per-leaf screenshot harness target).
+		// Bypasses ObjectDetails; Vue Router resolves to IntegrationsView.vue.
+		// Has its own action `ui#integrationsView` so the duplicate-route-name
+		// guard in OC's Router doesn't reject it.
+		['name' => 'ui#integrationsView', 'url' => '/integrations/{register}/{schema}/{objectId}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'objectId' => '[^/]+']],
 		['name' => 'ui#tables', 'url' => '/tables', 'verb' => 'GET'],
 		['name' => 'ui#chat', 'url' => '/chat', 'verb' => 'GET'],
 		['name' => 'ui#configurations', 'url' => '/configurations', 'verb' => 'GET'],

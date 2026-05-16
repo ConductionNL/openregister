@@ -31,6 +31,7 @@ import AvgIndex from '../views/avg/AvgIndex.vue'
 import ReportsIndex from '../views/reports/ReportsIndex.vue'
 import ReportView from '../views/reports/ReportView.vue'
 import FeaturesRoadmapIndex from '../views/roadmap/FeaturesRoadmapIndex.vue'
+import IntegrationsView from '../views/integration/IntegrationsView.vue'
 
 Vue.use(Router)
 
@@ -96,6 +97,10 @@ const router = new Router({
 		{ path: '/reports', name: 'reports', component: ReportsIndex },
 		{ path: '/reports/:id', name: 'reportView', component: ReportView },
 		{ path: '/features-roadmap', name: 'features-roadmap', component: FeaturesRoadmapIndex },
+		// Standalone integration registry surface (used by the per-leaf
+		// screenshot harness). Bypasses ObjectDetails so the legacy
+		// sub-resource plugins don't race the render.
+		{ path: '/integrations/:register/:schema/:objectId', name: 'integrationsView', component: IntegrationsView },
 		{ path: '*', redirect: '/' },
 	],
 })

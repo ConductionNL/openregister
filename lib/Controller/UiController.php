@@ -246,6 +246,29 @@ class UiController extends Controller
     }//end objects()
 
     /**
+     * Returns the standalone integrations view template.
+     *
+     * Used by the per-leaf screenshot harness so a single URL of the form
+     * `/integrations/{register}/{schema}/{objectId}` lands on a Vue Router
+     * route that mounts IntegrationsView.vue — bypassing ObjectDetails and
+     * its legacy sub-resource plugin races.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     */
+    public function integrationsView(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end integrationsView()
+
+    /**
      * Returns the tables page template.
      *
      * @NoAdminRequired

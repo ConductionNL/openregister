@@ -22,6 +22,33 @@ import '@conduction/nextcloud-vue/css/index.css'
 installIntegrationRegistry(window)
 registerBuiltinIntegrations()
 registerLeafIntegrations()
+// xwiki is intentionally NOT in nc-vue's leafIntegrations[] — it ships with
+// a richer dedicated tab (CnXwikiTab) that consumer apps register separately.
+// For the per-leaf verification harness we want all 24 advertised providers
+// in the JS registry, so register a generic descriptor here. The tab + widget
+// components come from the registry's resolveWidget AD-19 fallback to the
+// default CnIntegrationTab / CnIntegrationCard set via the leaf descriptor.
+try {
+	const xwikiAlreadyRegistered = window?.OCA?.OpenRegister?.integrations?.has?.('xwiki')
+	if (window?.OCA?.OpenRegister?.integrations?.register && !xwikiAlreadyRegistered) {
+		import('@conduction/nextcloud-vue').then(({ CnIntegrationTab, CnIntegrationCard }) => {
+			window.OCA.OpenRegister.integrations.register({
+				id: 'xwiki',
+				label: t('openregister', 'Articles'),
+				icon: 'FileDocumentMultiple',
+				requiredApp: 'openconnector',
+				order: 31,
+				group: 'external',
+				referenceType: 'xwiki',
+				tab: CnIntegrationTab,
+				widget: CnIntegrationCard,
+				defaultSize: { w: 4, h: 3 },
+			})
+		}).catch(e => console.error('[main] failed to register xwiki descriptor', e))
+	}
+} catch (e) {
+	console.error('[main] xwiki registry guard failed', e)
+}
 import { Fragment } from 'vue-frag'
 
 import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'

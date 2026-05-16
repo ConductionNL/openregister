@@ -75,6 +75,14 @@ export default {
 				return
 			}
 			try {
+				// Prime filter state up-front so the surrounding ObjectsList
+				// component (which mounts in the same NcAppContent #list
+				// slot) has the (register, schema) pair its refreshObjectList
+				// action needs — otherwise it throws 'Register and schema
+				// are required.' mid-mount.
+				if (typeof objectStore.setFilters === 'function') {
+					objectStore.setFilters({ register, schema })
+				}
 				const url = `/index.php/apps/openregister/api/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}/${encodeURIComponent(id)}`
 				const response = await fetch(url, {
 					headers: {

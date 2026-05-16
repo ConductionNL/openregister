@@ -34,6 +34,15 @@ Tie a report or dataset in NC Analytics to an Open Register object so the chart 
   rightColor="cobalt-700"
   bridgeLabel="link-table (pending)" />
 
+
+## Screenshot
+
+The integration registers in OpenRegister's in-page registry and renders as one of the tabs on the standalone integrations view. The tab is highlighted active here so you can see exactly which surface this leaf controls.
+
+![analytics integration tab active in the OpenRegister integrations view](/screenshots/integrations/analytics.png)
+
+Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://github.com/ConductionNL/openregister/blob/development/tests/e2e/leaf-screenshots.spec.ts) against the seeded `integration-verification` register on the dev container. Empty state (`Nothing linked yet`) is expected on a freshly seeded object — link an upstream entity from the tab's `+ Add` affordance to populate it.
+
 ## What it will do
 
 - Lists Analytics reports linked to each Open Register object on the **Analytics** sidebar tab, with inline chart previews.
