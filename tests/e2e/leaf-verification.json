@@ -1,10 +1,10 @@
 {
-  "generated": "2026-05-16T06:22:03.961Z",
+  "generated": "2026-05-16T07:10:09.867589Z",
   "baseUrl": "http://localhost:8080",
   "objectTriple": {
-    "register": "1",
-    "schema": "1",
-    "objectId": "00000000-0000-0000-0000-000000000000"
+    "register": "21",
+    "schema": "166",
+    "objectId": "25706ca9-c989-4d6b-9f7b-98cf1cc70639"
   },
   "providerCount": 24,
   "passCount": 24,
@@ -12,12 +12,12 @@
   "providers": [
     {
       "id": "activity",
-      "timestamp": "2026-05-16T06:22:02.039Z",
+      "timestamp": "2026-05-16T07:09:55.122471Z",
       "metadata": {
         "label": "Activity",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "activity",
         "storageStrategy": "query-time",
         "surfaces": [
           "user-dashboard",
@@ -32,25 +32,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/activity",
-        "status": 412,
-        "latencyMs": 123,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/activity",
+        "status": 200,
+        "latencyMs": 745,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "analytics",
-      "timestamp": "2026-05-16T06:22:02.142Z",
+      "timestamp": "2026-05-16T07:09:55.826770Z",
       "metadata": {
         "label": "Analytics",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "analytics",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -65,20 +63,18 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/analytics",
-        "status": 412,
-        "latencyMs": 102,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/analytics",
+        "status": 200,
+        "latencyMs": 704,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "audit-trail",
-      "timestamp": "2026-05-16T06:22:01.286Z",
+      "timestamp": "2026-05-16T07:09:49.403706Z",
       "metadata": {
         "label": "Audit trail",
         "group": "core",
@@ -98,25 +94,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/audit-trail",
-        "status": 412,
-        "latencyMs": 99,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/audit-trail",
+        "status": 200,
+        "latencyMs": 779,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "bookmarks",
-      "timestamp": "2026-05-16T06:22:02.249Z",
+      "timestamp": "2026-05-16T07:09:56.515316Z",
       "metadata": {
         "label": "Bookmarks",
         "group": "docs",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "bookmarks",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -131,25 +125,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/bookmarks",
-        "status": 412,
-        "latencyMs": 106,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/bookmarks",
+        "status": 200,
+        "latencyMs": 688,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "calendar",
-      "timestamp": "2026-05-16T06:22:01.602Z",
+      "timestamp": "2026-05-16T07:09:51.587877Z",
       "metadata": {
         "label": "Meetings",
         "group": "comms",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "calendar",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -164,25 +156,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/calendar",
-        "status": 412,
-        "latencyMs": 105,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/calendar",
+        "status": 200,
+        "latencyMs": 754,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "collectives",
-      "timestamp": "2026-05-16T06:22:02.354Z",
+      "timestamp": "2026-05-16T07:09:57.386177Z",
       "metadata": {
         "label": "Knowledge",
         "group": "docs",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "collectives",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -197,25 +187,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/collectives",
-        "status": 412,
-        "latencyMs": 105,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/collectives",
+        "status": 200,
+        "latencyMs": 870,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "contacts",
-      "timestamp": "2026-05-16T06:22:01.710Z",
+      "timestamp": "2026-05-16T07:09:52.398460Z",
       "metadata": {
         "label": "Contacts",
         "group": "comms",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "contacts",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -230,25 +218,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/contacts",
-        "status": 412,
-        "latencyMs": 107,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/contacts",
+        "status": 200,
+        "latencyMs": 810,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "cospend",
-      "timestamp": "2026-05-16T06:22:02.464Z",
+      "timestamp": "2026-05-16T07:09:58.378548Z",
       "metadata": {
         "label": "Costs",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "cospend",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -263,25 +249,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/cospend",
-        "status": 412,
-        "latencyMs": 109,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/cospend",
+        "status": 200,
+        "latencyMs": 992,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "deck",
-      "timestamp": "2026-05-16T06:22:01.811Z",
+      "timestamp": "2026-05-16T07:09:53.115375Z",
       "metadata": {
         "label": "Cards",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "deck",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -296,25 +280,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/deck",
-        "status": 412,
-        "latencyMs": 100,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/deck",
+        "status": 200,
+        "latencyMs": 716,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "email",
-      "timestamp": "2026-05-16T06:22:01.915Z",
+      "timestamp": "2026-05-16T07:09:54.376685Z",
       "metadata": {
         "label": "Emails",
         "group": "comms",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "mail",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -329,20 +311,18 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/email",
-        "status": 412,
-        "latencyMs": 103,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/email",
+        "status": 200,
+        "latencyMs": 1261,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "files",
-      "timestamp": "2026-05-16T06:22:00.876Z",
+      "timestamp": "2026-05-16T07:09:46.547978Z",
       "metadata": {
         "label": "Files",
         "group": "core",
@@ -362,25 +342,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/files",
-        "status": 412,
-        "latencyMs": 1157,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/files",
+        "status": 200,
+        "latencyMs": 749,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "flow",
-      "timestamp": "2026-05-16T06:22:02.584Z",
+      "timestamp": "2026-05-16T07:09:59.505553Z",
       "metadata": {
         "label": "Automation",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "workflowengine",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -395,25 +373,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/flow",
-        "status": 412,
-        "latencyMs": 116,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/flow",
+        "status": 200,
+        "latencyMs": 1126,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "forms",
-      "timestamp": "2026-05-16T06:22:02.689Z",
+      "timestamp": "2026-05-16T07:10:00.956489Z",
       "metadata": {
         "label": "Forms",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "forms",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -428,25 +404,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/forms",
-        "status": 412,
-        "latencyMs": 104,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/forms",
+        "status": 200,
+        "latencyMs": 1450,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "maps",
-      "timestamp": "2026-05-16T06:22:02.817Z",
+      "timestamp": "2026-05-16T07:10:02.387772Z",
       "metadata": {
         "label": "Location",
         "group": "docs",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "maps",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -461,20 +435,18 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/maps",
-        "status": 412,
-        "latencyMs": 127,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/maps",
+        "status": 200,
+        "latencyMs": 1431,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "notes",
-      "timestamp": "2026-05-16T06:22:00.980Z",
+      "timestamp": "2026-05-16T07:09:47.249898Z",
       "metadata": {
         "label": "Notes",
         "group": "core",
@@ -494,25 +466,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/notes",
-        "status": 412,
-        "latencyMs": 104,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/notes",
+        "status": 200,
+        "latencyMs": 701,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "openproject",
-      "timestamp": "2026-05-16T06:22:01.497Z",
+      "timestamp": "2026-05-16T07:09:50.833326Z",
       "metadata": {
         "label": "Projects",
         "group": "external",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "openconnector",
         "storageStrategy": "external",
         "surfaces": [
           "user-dashboard",
@@ -527,25 +497,25 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/openproject",
-        "status": 412,
-        "latencyMs": 101,
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/openproject",
+        "status": 503,
+        "latencyMs": 703,
         "responseShape": "error-envelope",
         "sample": null
       },
       "verdict": "pass",
       "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
+        "degraded source (expected for unconfigured external)"
       ]
     },
     {
       "id": "photos",
-      "timestamp": "2026-05-16T06:22:03.034Z",
+      "timestamp": "2026-05-16T07:10:03.738333Z",
       "metadata": {
         "label": "Photos",
         "group": "docs",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "photos",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -560,25 +530,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/photos",
-        "status": 412,
-        "latencyMs": 216,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/photos",
+        "status": 200,
+        "latencyMs": 1350,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "polls",
-      "timestamp": "2026-05-16T06:22:03.259Z",
+      "timestamp": "2026-05-16T07:10:05.483810Z",
       "metadata": {
         "label": "Polls",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "polls",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -593,20 +561,18 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/polls",
-        "status": 412,
-        "latencyMs": 224,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/polls",
+        "status": 200,
+        "latencyMs": 1745,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "shares",
-      "timestamp": "2026-05-16T06:22:03.502Z",
+      "timestamp": "2026-05-16T07:10:06.997255Z",
       "metadata": {
         "label": "Shares",
         "group": "core",
@@ -626,20 +592,18 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/shares",
-        "status": 412,
-        "latencyMs": 242,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/shares",
+        "status": 200,
+        "latencyMs": 1513,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "tags",
-      "timestamp": "2026-05-16T06:22:01.187Z",
+      "timestamp": "2026-05-16T07:09:48.624368Z",
       "metadata": {
         "label": "Tags",
         "group": "core",
@@ -659,25 +623,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/tags",
-        "status": 412,
-        "latencyMs": 104,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tags",
+        "status": 200,
+        "latencyMs": 701,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "talk",
-      "timestamp": "2026-05-16T06:22:03.744Z",
+      "timestamp": "2026-05-16T07:10:08.477776Z",
       "metadata": {
         "label": "Chat",
         "group": "comms",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "spreed",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -692,20 +654,18 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/talk",
-        "status": 412,
-        "latencyMs": 241,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/talk",
+        "status": 200,
+        "latencyMs": 1480,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "tasks",
-      "timestamp": "2026-05-16T06:22:01.082Z",
+      "timestamp": "2026-05-16T07:09:47.922671Z",
       "metadata": {
         "label": "Tasks",
         "group": "core",
@@ -725,25 +685,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/tasks",
-        "status": 412,
-        "latencyMs": 100,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tasks",
+        "status": 200,
+        "latencyMs": 672,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "time-tracker",
-      "timestamp": "2026-05-16T06:22:03.961Z",
+      "timestamp": "2026-05-16T07:10:09.867565Z",
       "metadata": {
         "label": "Time",
         "group": "workflow",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "timemanager",
         "storageStrategy": "link-table",
         "surfaces": [
           "user-dashboard",
@@ -758,25 +716,23 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/time-tracker",
-        "status": 412,
-        "latencyMs": 215,
-        "responseShape": "error-envelope",
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/time-tracker",
+        "status": 200,
+        "latencyMs": 1389,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
-      ]
+      "notes": []
     },
     {
       "id": "xwiki",
-      "timestamp": "2026-05-16T06:22:01.396Z",
+      "timestamp": "2026-05-16T07:09:50.129835Z",
       "metadata": {
         "label": "Articles",
         "group": "external",
         "enabled": true,
-        "requiredApp": null,
+        "requiredApp": "openconnector",
         "storageStrategy": "external",
         "surfaces": [
           "user-dashboard",
@@ -791,15 +747,15 @@
         }
       },
       "probe": {
-        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/xwiki",
-        "status": 412,
-        "latencyMs": 110,
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/xwiki",
+        "status": 503,
+        "latencyMs": 726,
         "responseShape": "error-envelope",
         "sample": null
       },
       "verdict": "pass",
       "notes": [
-        "HTTP 412 — client error (object likely missing on dev container)"
+        "degraded source (expected for unconfigured external)"
       ]
     }
   ]

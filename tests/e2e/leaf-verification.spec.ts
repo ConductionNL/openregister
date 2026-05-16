@@ -58,12 +58,51 @@ async function fetchProviders(request: APIRequestContext): Promise<Array<Record<
 	return body?.ocs?.data?.capabilities?.openregister?.integrations?.providers ?? []
 }
 
+/**
+ * Resolve a {register, schema, objectId} triple to probe against.
+ *
+ * Order of preference:
+ *
+ *   1. The `integration-verification` / `verification-probe` register
+ *      + schema seeded for this harness — if it exists and has at least
+ *      one object, probe that. This yields real list envelopes from
+ *      every leaf.
+ *   2. Any other register / schema with at least one object — first
+ *      register with a non-empty listing.
+ *   3. A synthetic UUID against register=1 / schema=1 — exercises the
+ *      missing-object branch (HTTP 412). Still non-5xx, still useful
+ *      as a smoke check.
+ *
+ * @param request Playwright request context.
+ */
 async function pickObjectTriple(request: APIRequestContext): Promise<{ register: string; schema: string; objectId: string }> {
-	const listing = await request.get('/index.php/apps/openregister/api/objects/1/1?_limit=1', {
-		headers: { Accept: 'application/json' },
+	// 1. Seeded sandbox register first.
+	const sandboxRegisters = await request.get('/index.php/apps/openregister/api/registers?slug=integration-verification', {
+		headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
 	})
-	if (listing.ok()) {
-		const body = await listing.json()
+	if (sandboxRegisters.ok()) {
+		const body = await sandboxRegisters.json()
+		const reg = (body.results ?? []).find((r: { slug?: string }) => r.slug === 'integration-verification')
+		if (reg?.id && Array.isArray(reg.schemas) && reg.schemas.length > 0) {
+			const schemaId = reg.schemas[0]
+			const objects = await request.get(`/index.php/apps/openregister/api/objects/${reg.id}/${schemaId}?_limit=1`, {
+				headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
+			})
+			if (objects.ok()) {
+				const objBody = await objects.json()
+				const first = (objBody.results ?? [])[0]
+				if (first?.id) {
+					return { register: String(reg.id), schema: String(schemaId), objectId: first.id }
+				}
+			}
+		}
+	}
+	// 2. Fall back to any register that happens to have objects.
+	const fallback = await request.get('/index.php/apps/openregister/api/objects/1/1?_limit=1', {
+		headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
+	})
+	if (fallback.ok()) {
+		const body = await fallback.json()
 		const first = (body.results ?? [])[0]
 		if (first) {
 			const meta = first['@self'] ?? {}
@@ -74,6 +113,7 @@ async function pickObjectTriple(request: APIRequestContext): Promise<{ register:
 			}
 		}
 	}
+	// 3. Synthetic — exercises the precondition branch.
 	return { register: '1', schema: '1', objectId: '00000000-0000-0000-0000-000000000000' }
 }
 
@@ -102,6 +142,10 @@ function firstItem(body: unknown): unknown {
 test.describe('Leaf verification harness', () => {
 	const reports: ProviderReport[] = []
 
+	// 24 providers × ~700-1700ms each → ~20s typical, with headroom for
+	// the lazy-cache warmup on the first /files hit (4s on a cold cache).
+	test.setTimeout(120_000)
+
 	test('captures per-leaf verification data and writes the report', async ({ request }) => {
 		const providers = await fetchProviders(request)
 		expect(providers.length, 'registry should advertise providers').toBeGreaterThan(0)
@@ -112,7 +156,12 @@ test.describe('Leaf verification harness', () => {
 			const id = p.id as string
 			const url = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/integrations/${id}`
 			const start = Date.now()
-			const response = await request.get(url, { headers: { Accept: 'application/json' } })
+			// `OCS-APIRequest: true` bypasses NC's session-CSRF guard for
+			// programmatic clients; without it the controller short-
+			// circuits with HTTP 412 before the provider ever runs.
+			const response = await request.get(url, {
+				headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
+			})
 			const latencyMs = Date.now() - start
 			const status = response.status()
 			let body: unknown = null
@@ -122,14 +171,20 @@ test.describe('Leaf verification harness', () => {
 			const sample = firstItem(body)
 
 			const notes: string[] = []
-			if (status >= 500) notes.push(`HTTP ${status} — server error`)
+			// 503 is the documented "degraded source" status — the
+			// provider is wired but the upstream connector isn't
+			// configured. Per the registry contract, that counts as
+			// pass (the provider responded with a structured cause,
+			// not a stack trace). Anything else >= 500 means the
+			// provider crashed.
 			if (status === 503) notes.push('degraded source (expected for unconfigured external)')
+			else if (status >= 500) notes.push(`HTTP ${status} — server error`)
 			if (status === 401 || status === 403) notes.push('auth required / forbidden')
-			if (status >= 400 && status < 500 && status !== 401 && status !== 403 && status !== 503) {
+			if (status >= 400 && status < 500 && status !== 401 && status !== 403) {
 				notes.push(`HTTP ${status} — client error (object likely missing on dev container)`)
 			}
 
-			const verdict: ProviderReport['verdict'] = status < 500 ? 'pass' : 'fail'
+			const verdict: ProviderReport['verdict'] = status < 500 || status === 503 ? 'pass' : 'fail'
 
 			reports.push({
 				id,
@@ -159,8 +214,10 @@ test.describe('Leaf verification harness', () => {
 			providers: reports.sort((a, b) => a.id.localeCompare(b.id)),
 		}, null, 2))
 
-		// Hard contract: zero 5xx across the whole registry.
-		const fails = reports.filter(r => r.verdict === 'fail')
-		expect(fails, `5xx providers: ${fails.map(f => f.id).join(', ')}`).toEqual([])
+		// Hard contract: zero non-503 5xx across the whole registry.
+		// A 503 is the documented "degraded source" response; anything
+		// else >= 500 means the provider crashed.
+		const fails = reports.filter(r => r.verdict === 'fail').map(f => `${f.id}(${f.probe.status})`)
+		expect(fails, `provider crashes (5xx, excluding 503): ${fails.join(', ')}`).toEqual([])
 	})
 })

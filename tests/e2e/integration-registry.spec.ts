@@ -95,7 +95,7 @@ async function pickObjectTriple(request: APIRequestContext): Promise<{ register:
 	// default seed values on the dev container, but the test stays
 	// generic.
 	const listing = await request.get('/index.php/apps/openregister/api/objects/1/1?_limit=1', {
-		headers: { Accept: 'application/json' },
+		headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
 	})
 	if (listing.ok()) {
 		const body = await listing.json()
@@ -218,7 +218,12 @@ test.describe('Integration registry — sub-resource', () => {
 			const { register, schema, objectId } = await pickObjectTriple(request)
 			const url = `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/integrations/${provider.id}`
 
-			const response = await request.get(url, { headers: { Accept: 'application/json' } })
+			// `OCS-APIRequest: true` bypasses session-CSRF for programmatic
+			// clients; without it the controller short-circuits with 412
+			// before the provider runs and the probe becomes meaningless.
+			const response = await request.get(url, {
+				headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
+			})
 
 			// Never a 5xx — degraded sources return 503 with a
 			// structured body, missing objects 4xx, normal listings
@@ -246,7 +251,7 @@ test.describe('Integration registry — sub-resource', () => {
 		const { register, schema, objectId } = await pickObjectTriple(request)
 		const response = await request.get(
 			`/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/integrations/this-provider-does-not-exist`,
-			{ headers: { Accept: 'application/json' } },
+			{ headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' } },
 		)
 		expect(response.status()).toBeGreaterThanOrEqual(400)
 		expect(response.status()).toBeLessThan(500)

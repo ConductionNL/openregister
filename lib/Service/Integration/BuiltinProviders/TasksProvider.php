@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IL10N;
@@ -96,7 +97,15 @@ class TasksProvider extends AbstractIntegrationProvider
 
     public function list(string $register, string $schema, string $objectId, array $filters = []): array
     {
-        return $this->taskService->getTasksForObject($objectId);
+        try {
+            return $this->taskService->getTasksForObject($objectId);
+        } catch (NoVtodoCalendarException $e) {
+            // User has no VTODO-capable calendar yet — that's a setup
+            // state, not a crash. Empty list keeps the contract honest
+            // (provider never returns 5xx on a missing-prereq) and lets
+            // the UI fall back to the "no tasks yet" empty state.
+            return [];
+        }
     }//end list()
 
     public function create(string $register, string $schema, string $objectId, array $payload): array
