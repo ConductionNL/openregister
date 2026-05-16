@@ -638,6 +638,11 @@ return [
 		['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
 		['name' => 'ui#organisation', 'url' => '/organisation', 'verb' => 'GET'],
 		['name' => 'ui#objects', 'url' => '/objects', 'verb' => 'GET'],
+		// Deep-link to a specific object — same SPA shell, Vue Router
+		// parses the {register, schema, id} params and ObjectsIndex
+		// fetches the object so its detail tabs (including the registry-
+		// driven Integrations tab) render directly.
+		['name' => 'ui#objects', 'url' => '/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
 		['name' => 'ui#tables', 'url' => '/tables', 'verb' => 'GET'],
 		['name' => 'ui#chat', 'url' => '/chat', 'verb' => 'GET'],
 		['name' => 'ui#configurations', 'url' => '/configurations', 'verb' => 'GET'],

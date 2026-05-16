@@ -71,6 +71,12 @@ const router = new Router({
 		{ path: '/applications', name: 'applications', component: ApplicationsIndex },
 		{ path: '/applications/:id', name: 'applicationDetails', component: ApplicationDetails },
 		{ path: '/objects', component: ObjectsIndex },
+		// Deep-link to a specific object. ObjectsIndex watches the
+		// {register, schema, id} params and primes objectStore.objectItem
+		// so the detail view (and its registry-driven Integrations tab)
+		// renders without needing a click-through. This is what the
+		// per-leaf screenshot harness targets.
+		{ path: '/objects/:register/:schema/:id', name: 'objectDetail', component: ObjectsIndex },
 		{ path: '/tables', component: SearchIndex },
 		{ path: '/chat', component: ChatIndex },
 		{ path: '/files', component: FilesIndex },

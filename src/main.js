@@ -5,8 +5,23 @@ import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip.js'
 import pinia from './pinia.js'
 import App from './App.vue'
 import router from './router/index.js'
-import { registerIcons } from '@conduction/nextcloud-vue'
+import {
+	registerIcons,
+	installIntegrationRegistry,
+	registerBuiltinIntegrations,
+	registerLeafIntegrations,
+} from '@conduction/nextcloud-vue'
 import '@conduction/nextcloud-vue/css/index.css'
+
+// Install the in-page integration registry on window.OCA.OpenRegister and
+// pre-register the 5 always-on built-ins (files/notes/tags/tasks/audit) plus
+// the 18 leaf descriptors. OR is the producer of this registry — every
+// consumer app's bootstrap reaches into the same singleton — so registering
+// the defaults here means object-detail surfaces inside OR itself exercise
+// the full set without depending on a consumer app's wiring.
+installIntegrationRegistry(window)
+registerBuiltinIntegrations()
+registerLeafIntegrations()
 import { Fragment } from 'vue-frag'
 
 import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'

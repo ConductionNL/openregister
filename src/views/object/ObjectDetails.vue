@@ -244,6 +244,27 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
 						</BTab>
+						<BTab v-if="relationContext && integrationProviders.length" :title="t('openregister', 'Integrations')">
+							<!--
+								Registry-driven integration surface. One inner tab per advertised
+								IntegrationProvider (5 built-ins + xwiki + 18 leaves). OR dogfoods
+								the registry on its own object-detail page so every leaf becomes a
+								deterministic Playwright target — no consumer-app wiring needed
+								to verify a provider end-to-end.
+							-->
+							<BTabs content-class="mt-2" pills small>
+								<BTab v-for="provider in integrationProviders"
+									:key="provider.id"
+									:title="provider.label || provider.id"
+									:title-attr="`${provider.id} (${provider.group || 'integration'})`">
+									<CnIntegrationTab
+										:integration-id="provider.id"
+										:register="String(relationContext.register)"
+										:schema="String(relationContext.schema)"
+										:object-id="String(relationContext.id)" />
+								</BTab>
+							</BTabs>
+						</BTab>
 						<BTab :title="t('openregister', 'Audit Trails')">
 							<div v-if="objectStore.auditTrails.results?.length">
 								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails.results"
@@ -315,6 +336,8 @@ import EventsTab from '../../components/object-relations/EventsTab.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
+import { computed } from 'vue'
+import { CnIntegrationTab, useIntegrationRegistry } from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'ObjectDetails',
@@ -342,6 +365,18 @@ export default {
 		ContactsTab,
 		DeckTab,
 		RelationsTab,
+		CnIntegrationTab,
+	},
+	setup() {
+		// Reactive snapshot of every IntegrationProvider registered through
+		// nc-vue's in-page registry — drained from window.OCA.OpenRegister
+		// once main.js has called installIntegrationRegistry() +
+		// registerBuiltinIntegrations() + registerLeafIntegrations(). Used
+		// by the "Integrations" BTab below to render one inner sub-tab per
+		// advertised provider.
+		const { integrations } = useIntegrationRegistry()
+		const integrationProviders = computed(() => integrations.value || [])
+		return { integrationProviders }
 	},
 	data() {
 		return {
@@ -352,21 +387,28 @@ export default {
 			relations: [],
 			activeAttachment: null,
 			fileLoading: false,
+			// Guard against the race where deep-link navigation primes
+			// objectStore.objectItem before its sub-resource plugins
+			// (filesPlugin / auditTrailsPlugin / relationsPlugin) have
+			// populated their backing state. Under the original
+			// click-through nav flow these are always set by the time
+			// the user opens an object's detail; the deep-link route
+			// (/objects/:register/:schema/:id) skips that warm-up.
 			pagination: {
 				files: {
 					limit: 200,
-					currentPage: objectStore.files.page || 1,
-					totalPages: objectStore.files.total || 1,
+					currentPage: objectStore.files?.page || 1,
+					totalPages: objectStore.files?.total || 1,
 				},
 				auditTrails: {
 					limit: 200,
-					currentPage: objectStore.auditTrails.page || 1,
-					totalPages: objectStore.auditTrails.total || 1,
+					currentPage: objectStore.auditTrails?.page || 1,
+					totalPages: objectStore.auditTrails?.total || 1,
 				},
 				relations: {
 					limit: 200,
-					currentPage: objectStore.relations.page || 1,
-					totalPages: objectStore.relations.total || 1,
+					currentPage: objectStore.relations?.page || 1,
+					totalPages: objectStore.relations?.total || 1,
 				},
 			},
 		}
