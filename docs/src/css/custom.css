@@ -119,3 +119,25 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ----------------------------------------------------------------
+   Body grows with content (override Infima default).
+
+   Infima ships `html, body { height: 100% }`. With long pages whose
+   content exceeds the viewport (landing page, content-rich docs),
+   body's white background only covers the first 100vh; everything
+   below renders against the OS-level browser canvas. On screens
+   with a dark OS canvas (Chrome on macOS dark mode, Windows
+   high-contrast, some Linux distros) this surfaces as a dark band
+   between content and the canal-footer.
+
+   Replacing `height: 100%` with `min-height: 100vh` lets body fill
+   the viewport when content is short AND grow with content when
+   it's long. Same visual result on short pages, no dark canvas
+   leak on long ones.
+   ---------------------------------------------------------------- */
+html,
+body {
+  height: auto;
+  min-height: 100vh;
+}
