@@ -776,25 +776,79 @@ class RegisterMapper extends QBMapper
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
+        // The previous implementation used MySQL's `REGEXP` operator
+        // with `[[:<:]]N[[:>:]]` word-boundary syntax. SQLite ships
+        // without REGEXP (no user function registered), so every CI
+        // run on the default sqlite quality-workflow threw
+        // "no such function: REGEXP" (openbuilt#50).
+        //
+        // Two-stage portable lookup:
+        //
+        //   1. Use a portable `LIKE` filter to narrow rows to those
+        //      whose `schemas` column TEXT happens to contain the ID
+        //      somewhere. This is a fast prefilter — produces zero
+        //      false-negatives (every real match is a substring) and
+        //      some false-positives (e.g. id 12 matching "123").
+        //   2. Decode the `schemas` JSON in PHP and check exact
+        //      membership to eliminate the false-positives.
+        //
+        // Registers are O(10s) per install, so the PHP filter cost is
+        // trivial; the prefilter keeps us from materialising the full
+        // table when most rows don't contain the digit at all.
         $qb = $this->db->getQueryBuilder();
-
-        // REGEXP: match number with optional whitespace and newlines.
-        $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
-
-        $qb->select('id')
+        $qb->select('id', 'schemas')
             ->from('openregister_registers')
-            ->where('`schemas` REGEXP :pattern')
-            ->setParameter('pattern', $pattern)
-            ->setMaxResults(1);
+            ->where(
+                $qb->expr()->like(
+                    'schemas',
+                    $qb->createNamedParameter('%'.$schemaId.'%')
+                )
+            );
 
-        $result = $qb->executeQuery()->fetchOne();
+        $candidates = $qb->executeQuery()->fetchAllAssociative();
+        $needle     = (string) $schemaId;
 
-        if ($result !== false) {
-            return (int) $result;
+        foreach ($candidates as $row) {
+            $schemas = $this->decodeSchemasField(raw: ($row['schemas'] ?? null));
+            foreach ($schemas as $candidate) {
+                if ((string) $candidate === $needle) {
+                    return (int) $row['id'];
+                }
+            }
         }
 
         return null;
     }//end getFirstRegisterWithSchema()
+
+    /**
+     * Decode the persisted `schemas` column into a flat ID list.
+     *
+     * Accepts the column's raw value (typically a JSON array) and
+     * returns the contained schema IDs. Tolerates legacy shapes
+     * (comma-separated string) and unexpected types by returning [].
+     *
+     * @param mixed $raw The raw column value
+     *
+     * @return array<int,int|string>
+     */
+    private function decodeSchemasField(mixed $raw): array
+    {
+        if (is_array($raw) === true) {
+            return $raw;
+        }
+
+        if (is_string($raw) === true && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded) === true) {
+                return $decoded;
+            }
+
+            // Legacy comma-separated fallback.
+            return array_filter(array_map('trim', explode(',', $raw)));
+        }
+
+        return [];
+    }//end decodeSchemasField()
 
     /**
      * Check if a register has a schema with a specific title
