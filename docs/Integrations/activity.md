@@ -58,6 +58,51 @@ Open any object whose schema declares `linkedTypes: ['activity']`. The **Activit
 | **Refresh** | Per render | — |
 | **Permissions** | Inherits from object RBAC + Activity's per-user filter | NC Activity ACL |
 
+## Local verification setup
+
+The leaf-verification harness in [`tests/e2e/leaf-verification.spec.ts`](https://github.com/ConductionNL/openregister/blob/development/tests/e2e/leaf-verification.spec.ts) probes every advertised provider against the seeded `integration-verification` register; you can reproduce a single-leaf check by hand against any OpenRegister dev container.
+
+### 1. Install the `activity` Nextcloud app
+
+```bash
+docker exec -u www-data nextcloud php occ app:install activity
+docker exec -u www-data nextcloud php occ app:enable activity
+docker exec nextcloud apache2ctl graceful   # bust OPcache so the registry sees the new app
+```
+
+Without `activity` enabled, the `activity` provider reports `enabled: false` on the OCS capabilities payload and its sub-resource endpoint refuses to dispatch.
+
+### 2. Probe the registry to confirm the provider is advertised
+
+```bash
+curl -s -u admin:admin -H 'OCS-APIRequest: true' \
+  http://localhost:8080/ocs/v2.php/cloud/capabilities?format=json \
+  | jq '.ocs.data.capabilities.openregister.integrations.providers[] | select(.id == "activity")'
+```
+
+Expected payload — the `enabled` flag flips to `true` once the required app is installed.
+
+### 3. Probe the per-object sub-resource
+
+```bash
+curl -s -u admin:admin -H 'OCS-APIRequest: true' \
+  "http://localhost:8080/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/activity"
+```
+
+Most recent harness run (against the seeded `verification-probe` object on this dev container):
+
+- **Status**: `200` (`list-envelope`)
+- **Latency**: 88ms
+- **Body**: matches the documented list envelope below
+
+```json
+{
+  "items": []
+}
+```
+
+The `OCS-APIRequest: true` header is mandatory — without it, Nextcloud's session-CSRF guard short-circuits with HTTP 412 before the provider runs. An empty `items: []` is the correct response for a freshly-seeded object that hasn't been linked to any upstream `activity` entity yet.
+
 ## Current status
 
 The provider is registered: the admin row appears, the JS sidebar tab renders, the OCS capability advertises `activity`. The wrapped read path (filter NC's activity stream by associated actors/events) lands in a follow-up issue tracked under [openspec/changes/integration-activity](https://github.com/ConductionNL/openregister/tree/development/openspec/changes/integration-activity).
