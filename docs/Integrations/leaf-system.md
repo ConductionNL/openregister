@@ -196,6 +196,7 @@ The registration descriptor can pass surface-specific overrides (`widgetCompact`
 - **[xWiki leaf](./xwiki.md)** — the worked external example (OpenConnector-backed).
 - **[Calendar leaf](./calendar.md)** — the worked NC-native example (CalDAV link-table).
 - **[Pluggable integration registry reference](./pluggable-integration-registry.md)** — the full ADR-019 contract.
+- **[Verification report](./verification-report.md)** — live status for all 24 advertised providers from the smoke harness.
 - **Build your own leaf** — `scripts/scaffold-integration.sh <id>` in the openregister repo generates the openspec change, PHP provider stub, and JS registration stub.
 
 :::tip Add your own leaf

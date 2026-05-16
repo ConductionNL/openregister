@@ -1,0 +1,806 @@
+{
+  "generated": "2026-05-16T06:22:03.961Z",
+  "baseUrl": "http://localhost:8080",
+  "objectTriple": {
+    "register": "1",
+    "schema": "1",
+    "objectId": "00000000-0000-0000-0000-000000000000"
+  },
+  "providerCount": 24,
+  "passCount": 24,
+  "failCount": 0,
+  "providers": [
+    {
+      "id": "activity",
+      "timestamp": "2026-05-16T06:22:02.039Z",
+      "metadata": {
+        "label": "Activity",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "query-time",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/activity",
+        "status": 412,
+        "latencyMs": 123,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "analytics",
+      "timestamp": "2026-05-16T06:22:02.142Z",
+      "metadata": {
+        "label": "Analytics",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/analytics",
+        "status": 412,
+        "latencyMs": 102,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "audit-trail",
+      "timestamp": "2026-05-16T06:22:01.286Z",
+      "metadata": {
+        "label": "Audit trail",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "query-time",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/audit-trail",
+        "status": 412,
+        "latencyMs": 99,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "bookmarks",
+      "timestamp": "2026-05-16T06:22:02.249Z",
+      "metadata": {
+        "label": "Bookmarks",
+        "group": "docs",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/bookmarks",
+        "status": 412,
+        "latencyMs": 106,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "calendar",
+      "timestamp": "2026-05-16T06:22:01.602Z",
+      "metadata": {
+        "label": "Meetings",
+        "group": "comms",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/calendar",
+        "status": 412,
+        "latencyMs": 105,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "collectives",
+      "timestamp": "2026-05-16T06:22:02.354Z",
+      "metadata": {
+        "label": "Knowledge",
+        "group": "docs",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/collectives",
+        "status": 412,
+        "latencyMs": 105,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "contacts",
+      "timestamp": "2026-05-16T06:22:01.710Z",
+      "metadata": {
+        "label": "Contacts",
+        "group": "comms",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/contacts",
+        "status": 412,
+        "latencyMs": 107,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "cospend",
+      "timestamp": "2026-05-16T06:22:02.464Z",
+      "metadata": {
+        "label": "Costs",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/cospend",
+        "status": 412,
+        "latencyMs": 109,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "deck",
+      "timestamp": "2026-05-16T06:22:01.811Z",
+      "metadata": {
+        "label": "Cards",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/deck",
+        "status": 412,
+        "latencyMs": 100,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "email",
+      "timestamp": "2026-05-16T06:22:01.915Z",
+      "metadata": {
+        "label": "Emails",
+        "group": "comms",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/email",
+        "status": 412,
+        "latencyMs": 103,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "files",
+      "timestamp": "2026-05-16T06:22:00.876Z",
+      "metadata": {
+        "label": "Files",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "magic-column",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/files",
+        "status": 412,
+        "latencyMs": 1157,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "flow",
+      "timestamp": "2026-05-16T06:22:02.584Z",
+      "metadata": {
+        "label": "Automation",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/flow",
+        "status": 412,
+        "latencyMs": 116,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "forms",
+      "timestamp": "2026-05-16T06:22:02.689Z",
+      "metadata": {
+        "label": "Forms",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/forms",
+        "status": 412,
+        "latencyMs": 104,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "maps",
+      "timestamp": "2026-05-16T06:22:02.817Z",
+      "metadata": {
+        "label": "Location",
+        "group": "docs",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/maps",
+        "status": 412,
+        "latencyMs": 127,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "notes",
+      "timestamp": "2026-05-16T06:22:00.980Z",
+      "metadata": {
+        "label": "Notes",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/notes",
+        "status": 412,
+        "latencyMs": 104,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "openproject",
+      "timestamp": "2026-05-16T06:22:01.497Z",
+      "metadata": {
+        "label": "Projects",
+        "group": "external",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "external",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "unavailable",
+          "authStatus": "missing",
+          "message": "OpenConnector source \"openproject\" for integration \"openproject\" is missing or unreadable."
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/openproject",
+        "status": 412,
+        "latencyMs": 101,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "photos",
+      "timestamp": "2026-05-16T06:22:03.034Z",
+      "metadata": {
+        "label": "Photos",
+        "group": "docs",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/photos",
+        "status": 412,
+        "latencyMs": 216,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "polls",
+      "timestamp": "2026-05-16T06:22:03.259Z",
+      "metadata": {
+        "label": "Polls",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/polls",
+        "status": 412,
+        "latencyMs": 224,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "shares",
+      "timestamp": "2026-05-16T06:22:03.502Z",
+      "metadata": {
+        "label": "Shares",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "query-time",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/shares",
+        "status": 412,
+        "latencyMs": 242,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "tags",
+      "timestamp": "2026-05-16T06:22:01.187Z",
+      "metadata": {
+        "label": "Tags",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/tags",
+        "status": 412,
+        "latencyMs": 104,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "talk",
+      "timestamp": "2026-05-16T06:22:03.744Z",
+      "metadata": {
+        "label": "Chat",
+        "group": "comms",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/talk",
+        "status": 412,
+        "latencyMs": 241,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "tasks",
+      "timestamp": "2026-05-16T06:22:01.082Z",
+      "metadata": {
+        "label": "Tasks",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/tasks",
+        "status": 412,
+        "latencyMs": 100,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "time-tracker",
+      "timestamp": "2026-05-16T06:22:03.961Z",
+      "metadata": {
+        "label": "Time",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/time-tracker",
+        "status": 412,
+        "latencyMs": 215,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    },
+    {
+      "id": "xwiki",
+      "timestamp": "2026-05-16T06:22:01.396Z",
+      "metadata": {
+        "label": "Articles",
+        "group": "external",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "external",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "unavailable",
+          "authStatus": "missing",
+          "message": "OpenConnector source \"xwiki\" for integration \"xwiki\" is missing or unreadable."
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/1/1/00000000-0000-0000-0000-000000000000/integrations/xwiki",
+        "status": 412,
+        "latencyMs": 110,
+        "responseShape": "error-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": [
+        "HTTP 412 — client error (object likely missing on dev container)"
+      ]
+    }
+  ]
+}
