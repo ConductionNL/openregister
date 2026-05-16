@@ -7,7 +7,7 @@ keywords: [verification, smoke test, registry, leaf system, ADR-019]
 
 # Verification Report
 
-**Generated**: `2026-05-16T07:10:09.867589Z`  
+**Generated**: `2026-05-16T09:35:53.840500Z`  
 **Target**: `http://localhost:8080`  
 **Object triple**: register=`21` · schema=`166` · object=`25706ca9-c989-4d6b-9f7b-98cf1cc70639`  
 **Providers advertised**: 24  
@@ -29,35 +29,35 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 
 | ID | Group | Required app | Storage | Status | Shape | Latency | Notes |
 |---|---|---|---|---|---|---|---|
-| `calendar` | comms | `calendar` | link-table | :white_check_mark: 200 | `list-envelope` | 754ms | — |
-| `contacts` | comms | `contacts` | link-table | :white_check_mark: 200 | `list-envelope` | 810ms | — |
-| `email` | comms | `mail` | link-table | :white_check_mark: 200 | `list-envelope` | 1261ms | — |
-| `talk` | comms | `spreed` | link-table | :white_check_mark: 200 | `list-envelope` | 1480ms | — |
-| `audit-trail` | core | _none_ | query-time | :white_check_mark: 200 | `list-envelope` | 779ms | — |
-| `files` | core | _none_ | magic-column | :white_check_mark: 200 | `list-envelope` | 749ms | — |
-| `notes` | core | _none_ | link-table | :white_check_mark: 200 | `list-envelope` | 701ms | — |
-| `shares` | core | _none_ | query-time | :white_check_mark: 200 | `list-envelope` | 1513ms | — |
-| `tags` | core | _none_ | link-table | :white_check_mark: 200 | `list-envelope` | 701ms | — |
-| `tasks` | core | _none_ | link-table | :white_check_mark: 200 | `list-envelope` | 672ms | — |
-| `bookmarks` | docs | `bookmarks` | link-table | :white_check_mark: 200 | `list-envelope` | 688ms | — |
-| `collectives` | docs | `collectives` | link-table | :white_check_mark: 200 | `list-envelope` | 870ms | — |
-| `maps` | docs | `maps` | link-table | :white_check_mark: 200 | `list-envelope` | 1431ms | — |
-| `photos` | docs | `photos` | link-table | :white_check_mark: 200 | `list-envelope` | 1350ms | — |
-| `openproject` | external | `openconnector` | external | :warning: 503 | `error-envelope` | 703ms | degraded source (expected for unconfigured external) |
-| `xwiki` | external | `openconnector` | external | :warning: 503 | `error-envelope` | 726ms | degraded source (expected for unconfigured external) |
-| `activity` | workflow | `activity` | query-time | :white_check_mark: 200 | `list-envelope` | 745ms | — |
-| `analytics` | workflow | `analytics` | link-table | :white_check_mark: 200 | `list-envelope` | 704ms | — |
-| `cospend` | workflow | `cospend` | link-table | :white_check_mark: 200 | `list-envelope` | 992ms | — |
-| `deck` | workflow | `deck` | link-table | :white_check_mark: 200 | `list-envelope` | 716ms | — |
-| `flow` | workflow | `workflowengine` | link-table | :white_check_mark: 200 | `list-envelope` | 1126ms | — |
-| `forms` | workflow | `forms` | link-table | :white_check_mark: 200 | `list-envelope` | 1450ms | — |
-| `polls` | workflow | `polls` | link-table | :white_check_mark: 200 | `list-envelope` | 1745ms | — |
-| `time-tracker` | workflow | `timemanager` | link-table | :white_check_mark: 200 | `list-envelope` | 1389ms | — |
+| `calendar` | comms | `calendar` | link-table | :white_check_mark: 200 | `list-envelope` | 610ms | — |
+| `contacts` | comms | `contacts` | link-table | :white_check_mark: 200 | `list-envelope` | 629ms | — |
+| `email` | comms | `mail` | link-table | :white_check_mark: 200 | `list-envelope` | 1159ms | — |
+| `talk` | comms | `spreed` | link-table | :white_check_mark: 200 | `list-envelope` | 599ms | — |
+| `audit-trail` | core | _none_ | query-time | :white_check_mark: 200 | `list-envelope` | 579ms | — |
+| `files` | core | _none_ | magic-column | :white_check_mark: 200 | `list-envelope` | 650ms | — |
+| `notes` | core | _none_ | link-table | :white_check_mark: 200 | `list-envelope` | 599ms | — |
+| `shares` | core | _none_ | query-time | :white_check_mark: 200 | `list-envelope` | 598ms | — |
+| `tags` | core | _none_ | link-table | :white_check_mark: 200 | `list-envelope` | 639ms | — |
+| `tasks` | core | _none_ | link-table | :white_check_mark: 200 | `list-envelope` | 596ms | — |
+| `bookmarks` | docs | `bookmarks` | link-table | :white_check_mark: 200 | `list-envelope` | 589ms | — |
+| `collectives` | docs | `collectives` | link-table | :white_check_mark: 200 | `list-envelope` | 613ms | — |
+| `maps` | docs | `maps` | link-table | :white_check_mark: 200 | `list-envelope` | 622ms | — |
+| `photos` | docs | `photos` | link-table | :white_check_mark: 200 | `list-envelope` | 596ms | — |
+| `openproject` | external | `openconnector` | external | :white_check_mark: 200 | `list-envelope` | 627ms | — |
+| `xwiki` | external | `openconnector` | external | :white_check_mark: 200 | `list-envelope` | 595ms | — |
+| `activity` | workflow | `activity` | query-time | :white_check_mark: 200 | `list-envelope` | 588ms | — |
+| `analytics` | workflow | `analytics` | link-table | :white_check_mark: 200 | `list-envelope` | 596ms | — |
+| `cospend` | workflow | `cospend` | link-table | :white_check_mark: 200 | `list-envelope` | 592ms | — |
+| `deck` | workflow | `deck` | link-table | :white_check_mark: 200 | `list-envelope` | 598ms | — |
+| `flow` | workflow | `workflowengine` | link-table | :white_check_mark: 200 | `list-envelope` | 599ms | — |
+| `forms` | workflow | `forms` | link-table | :white_check_mark: 200 | `list-envelope` | 597ms | — |
+| `polls` | workflow | `polls` | link-table | :white_check_mark: 200 | `list-envelope` | 581ms | — |
+| `time-tracker` | workflow | `timemanager` | link-table | :white_check_mark: 200 | `list-envelope` | 582ms | — |
 
 ## Findings
 
-- **22 / 24 providers return HTTP 200** with the documented `{items: []}` list envelope. The seeded probe object has no linked upstream items in any leaf, so every list is empty — but the shape, the timing, and the success path are all proven.
-- **2 / 24 providers return HTTP 503** (`xwiki`, `openproject`) — both are OpenConnector-backed externals and the dev container has no configured connector source. The 503 carries a structured `{message, details}` payload the UI can render, which is the documented "degraded source" contract from AD-19.
+- **24 / 24 providers return HTTP 200** with the documented `{items: []}` list envelope. The seeded probe object has no linked upstream items in any leaf, so every list is empty — but the shape, the timing, and the success path are all proven.
+- **0 / 24 providers return HTTP 503**. Both OpenConnector-backed externals (`xwiki` + `openproject`) are wired against real local services in `docker-compose.integration-verification.yml`. See [xwiki](./xwiki.md) and [openproject](./openproject.md) for the setup paths.
 - **0 / 24 providers crash**. An earlier `tasks` HTTP 500 — `NoVtodoCalendarException` thrown when the user has no VTODO-capable calendar — was fixed in this run: the provider now catches the exception and returns an empty list, treating "no calendar yet" as a setup state rather than a server error.
 
 ## Per-group breakdown
@@ -71,7 +71,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/audit-trail`
-- **Status**: 200 (`list-envelope`, 779ms)
+- **Status**: 200 (`list-envelope`, 579ms)
 
 #### `files` — Files
 
@@ -80,7 +80,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/files`
-- **Status**: 200 (`list-envelope`, 749ms)
+- **Status**: 200 (`list-envelope`, 650ms)
 
 #### `notes` — Notes
 
@@ -89,7 +89,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/notes`
-- **Status**: 200 (`list-envelope`, 701ms)
+- **Status**: 200 (`list-envelope`, 599ms)
 
 #### `shares` — Shares
 
@@ -98,7 +98,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/shares`
-- **Status**: 200 (`list-envelope`, 1513ms)
+- **Status**: 200 (`list-envelope`, 598ms)
 
 #### `tags` — Tags
 
@@ -107,7 +107,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tags`
-- **Status**: 200 (`list-envelope`, 701ms)
+- **Status**: 200 (`list-envelope`, 639ms)
 
 #### `tasks` — Tasks
 
@@ -116,7 +116,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tasks`
-- **Status**: 200 (`list-envelope`, 672ms)
+- **Status**: 200 (`list-envelope`, 596ms)
 
 ### Group: `comms`
 
@@ -127,7 +127,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/calendar`
-- **Status**: 200 (`list-envelope`, 754ms)
+- **Status**: 200 (`list-envelope`, 610ms)
 
 #### `contacts` — Contacts
 
@@ -136,7 +136,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/contacts`
-- **Status**: 200 (`list-envelope`, 810ms)
+- **Status**: 200 (`list-envelope`, 629ms)
 
 #### `email` — Emails
 
@@ -145,7 +145,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/email`
-- **Status**: 200 (`list-envelope`, 1261ms)
+- **Status**: 200 (`list-envelope`, 1159ms)
 
 #### `talk` — Chat
 
@@ -154,7 +154,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/talk`
-- **Status**: 200 (`list-envelope`, 1480ms)
+- **Status**: 200 (`list-envelope`, 599ms)
 
 ### Group: `docs`
 
@@ -165,7 +165,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/bookmarks`
-- **Status**: 200 (`list-envelope`, 688ms)
+- **Status**: 200 (`list-envelope`, 589ms)
 
 #### `collectives` — Knowledge
 
@@ -174,7 +174,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/collectives`
-- **Status**: 200 (`list-envelope`, 870ms)
+- **Status**: 200 (`list-envelope`, 613ms)
 
 #### `maps` — Location
 
@@ -183,7 +183,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/maps`
-- **Status**: 200 (`list-envelope`, 1431ms)
+- **Status**: 200 (`list-envelope`, 622ms)
 
 #### `photos` — Photos
 
@@ -192,7 +192,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/photos`
-- **Status**: 200 (`list-envelope`, 1350ms)
+- **Status**: 200 (`list-envelope`, 596ms)
 
 ### Group: `workflow`
 
@@ -203,7 +203,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/activity`
-- **Status**: 200 (`list-envelope`, 745ms)
+- **Status**: 200 (`list-envelope`, 588ms)
 
 #### `analytics` — Analytics
 
@@ -212,7 +212,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/analytics`
-- **Status**: 200 (`list-envelope`, 704ms)
+- **Status**: 200 (`list-envelope`, 596ms)
 
 #### `cospend` — Costs
 
@@ -221,7 +221,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/cospend`
-- **Status**: 200 (`list-envelope`, 992ms)
+- **Status**: 200 (`list-envelope`, 592ms)
 
 #### `deck` — Cards
 
@@ -230,7 +230,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/deck`
-- **Status**: 200 (`list-envelope`, 716ms)
+- **Status**: 200 (`list-envelope`, 598ms)
 
 #### `flow` — Automation
 
@@ -239,7 +239,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/flow`
-- **Status**: 200 (`list-envelope`, 1126ms)
+- **Status**: 200 (`list-envelope`, 599ms)
 
 #### `forms` — Forms
 
@@ -248,7 +248,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/forms`
-- **Status**: 200 (`list-envelope`, 1450ms)
+- **Status**: 200 (`list-envelope`, 597ms)
 
 #### `polls` — Polls
 
@@ -257,7 +257,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/polls`
-- **Status**: 200 (`list-envelope`, 1745ms)
+- **Status**: 200 (`list-envelope`, 581ms)
 
 #### `time-tracker` — Time
 
@@ -266,7 +266,7 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
 - **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/time-tracker`
-- **Status**: 200 (`list-envelope`, 1389ms)
+- **Status**: 200 (`list-envelope`, 582ms)
 
 ### Group: `external`
 
@@ -275,20 +275,18 @@ Earlier runs reported 412s across the board — that was a CSRF false-pass; the 
 - **Required app**: `openconnector`
 - **Storage strategy**: `external`
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
-- **Auth**: `unavailable` / `missing`
+- **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/openproject`
-- **Status**: 503 (`error-envelope`, 703ms)
-- **Notes**: degraded source (expected for unconfigured external)
+- **Status**: 200 (`list-envelope`, 627ms)
 
 #### `xwiki` — Articles
 
 - **Required app**: `openconnector`
 - **Storage strategy**: `external`
 - **Surfaces**: `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
-- **Auth**: `unavailable` / `missing`
+- **Auth**: `ok` / `configured`
 - **Probe**: `GET /index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/xwiki`
-- **Status**: 503 (`error-envelope`, 726ms)
-- **Notes**: degraded source (expected for unconfigured external)
+- **Status**: 200 (`list-envelope`, 595ms)
 
 ## Reproducing locally
 

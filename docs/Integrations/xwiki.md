@@ -72,6 +72,48 @@ The **Configure** link deep-links into OpenConnector's source page. **Test conne
 
 Open any object whose schema declares `linkedTypes: ['xwiki']`. The **Articles** tab appears in the sidebar. Paste an xWiki URL (parsed to a canonical `Space.Page` reference) or type the path directly. Unlink removes the pairing only. It never deletes the page in xWiki.
 
+## Local verification setup
+
+The repo ships a docker-compose template that boots a real xWiki instance for the leaf-verification harness. Run from the openregister checkout:
+
+```bash
+docker compose -f docker-compose.integration-verification.yml up -d verification-xwiki-db verification-xwiki
+```
+
+The compose file pre-grants the MariaDB `PROCESS` privilege via `data/xwiki-mariadb-init/grant-process.sql`. Without it XWiki's first-boot data migration throws `Access denied; you need (at least one of) the PROCESS privilege(s)` halfway through, corrupts the schema, and leaves the install unrecoverable.
+
+First boot needs the distribution wizard (admin user + flavor + extensions report). Either complete it in a browser at [http://localhost:8081](http://localhost:8081) or drive it with Playwright — `tests/e2e/integration-registry.spec.ts` has the click-through pattern. For a smoke install, the **Let the wiki be empty** flavor is enough: the REST API ships in the core, no flavor extension required.
+
+Once the wizard is done, create the OpenConnector source with the admin credentials you just set up. Note that the docker image deploys XWiki at the Tomcat ROOT context, so the REST root is `/rest`, **not** `/xwiki/rest`:
+
+```bash
+curl -u admin:admin -H 'OCS-APIRequest: true' -X POST \
+  http://localhost:8080/index.php/apps/openconnector/api/sources \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "XWiki",
+    "slug": "xwiki",
+    "reference": "xwiki",
+    "location": "http://verification-xwiki:8080/rest/wikis/xwiki",
+    "isEnabled": true,
+    "type": "api",
+    "auth": "basic",
+    "username": "admin",
+    "password": "<your-password>",
+    "headers": {"Accept": "application/json"}
+  }'
+```
+
+Probe the leaf to confirm the full chain works:
+
+```bash
+curl -u admin:admin -H 'OCS-APIRequest: true' \
+  "http://localhost:8080/index.php/apps/openregister/api/objects/{register}/{schema}/{object}/integrations/xwiki"
+# → 200 {"items": []}
+```
+
+Without the source row the same call returns 503 with a `OpenConnector source "xwiki" for integration "xwiki" is missing or unreadable` body — that's the documented degraded-source contract from AD-19.
+
 ## Configuration
 
 | Field | Open Register side | xWiki side |

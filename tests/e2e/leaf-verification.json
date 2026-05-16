@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-16T07:10:09.867589Z",
+  "generated": "2026-05-16T09:35:53.840500Z",
   "baseUrl": "http://localhost:8080",
   "objectTriple": {
     "register": "21",
@@ -12,7 +12,7 @@
   "providers": [
     {
       "id": "activity",
-      "timestamp": "2026-05-16T07:09:55.122471Z",
+      "timestamp": "2026-05-16T09:35:46.670937Z",
       "metadata": {
         "label": "Activity",
         "group": "workflow",
@@ -34,7 +34,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/activity",
         "status": 200,
-        "latencyMs": 745,
+        "latencyMs": 588,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -43,7 +43,7 @@
     },
     {
       "id": "analytics",
-      "timestamp": "2026-05-16T07:09:55.826770Z",
+      "timestamp": "2026-05-16T09:35:47.267553Z",
       "metadata": {
         "label": "Analytics",
         "group": "workflow",
@@ -65,7 +65,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/analytics",
         "status": 200,
-        "latencyMs": 704,
+        "latencyMs": 596,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -74,7 +74,7 @@
     },
     {
       "id": "audit-trail",
-      "timestamp": "2026-05-16T07:09:49.403706Z",
+      "timestamp": "2026-05-16T09:35:41.861617Z",
       "metadata": {
         "label": "Audit trail",
         "group": "core",
@@ -96,7 +96,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/audit-trail",
         "status": 200,
-        "latencyMs": 779,
+        "latencyMs": 579,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -105,7 +105,7 @@
     },
     {
       "id": "bookmarks",
-      "timestamp": "2026-05-16T07:09:56.515316Z",
+      "timestamp": "2026-05-16T09:35:47.857430Z",
       "metadata": {
         "label": "Bookmarks",
         "group": "docs",
@@ -127,7 +127,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/bookmarks",
         "status": 200,
-        "latencyMs": 688,
+        "latencyMs": 589,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -136,7 +136,7 @@
     },
     {
       "id": "calendar",
-      "timestamp": "2026-05-16T07:09:51.587877Z",
+      "timestamp": "2026-05-16T09:35:43.695087Z",
       "metadata": {
         "label": "Meetings",
         "group": "comms",
@@ -158,7 +158,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/calendar",
         "status": 200,
-        "latencyMs": 754,
+        "latencyMs": 610,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -167,7 +167,7 @@
     },
     {
       "id": "collectives",
-      "timestamp": "2026-05-16T07:09:57.386177Z",
+      "timestamp": "2026-05-16T09:35:48.470552Z",
       "metadata": {
         "label": "Knowledge",
         "group": "docs",
@@ -189,7 +189,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/collectives",
         "status": 200,
-        "latencyMs": 870,
+        "latencyMs": 613,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -198,7 +198,7 @@
     },
     {
       "id": "contacts",
-      "timestamp": "2026-05-16T07:09:52.398460Z",
+      "timestamp": "2026-05-16T09:35:44.324432Z",
       "metadata": {
         "label": "Contacts",
         "group": "comms",
@@ -220,7 +220,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/contacts",
         "status": 200,
-        "latencyMs": 810,
+        "latencyMs": 629,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -229,7 +229,7 @@
     },
     {
       "id": "cospend",
-      "timestamp": "2026-05-16T07:09:58.378548Z",
+      "timestamp": "2026-05-16T09:35:49.062603Z",
       "metadata": {
         "label": "Costs",
         "group": "workflow",
@@ -251,7 +251,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/cospend",
         "status": 200,
-        "latencyMs": 992,
+        "latencyMs": 592,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -260,7 +260,7 @@
     },
     {
       "id": "deck",
-      "timestamp": "2026-05-16T07:09:53.115375Z",
+      "timestamp": "2026-05-16T09:35:44.923441Z",
       "metadata": {
         "label": "Cards",
         "group": "workflow",
@@ -282,7 +282,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/deck",
         "status": 200,
-        "latencyMs": 716,
+        "latencyMs": 598,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -291,7 +291,7 @@
     },
     {
       "id": "email",
-      "timestamp": "2026-05-16T07:09:54.376685Z",
+      "timestamp": "2026-05-16T09:35:46.082659Z",
       "metadata": {
         "label": "Emails",
         "group": "comms",
@@ -313,7 +313,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/email",
         "status": 200,
-        "latencyMs": 1261,
+        "latencyMs": 1159,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -322,7 +322,7 @@
     },
     {
       "id": "files",
-      "timestamp": "2026-05-16T07:09:46.547978Z",
+      "timestamp": "2026-05-16T09:35:39.446246Z",
       "metadata": {
         "label": "Files",
         "group": "core",
@@ -344,7 +344,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/files",
         "status": 200,
-        "latencyMs": 749,
+        "latencyMs": 650,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -353,7 +353,7 @@
     },
     {
       "id": "flow",
-      "timestamp": "2026-05-16T07:09:59.505553Z",
+      "timestamp": "2026-05-16T09:35:49.662442Z",
       "metadata": {
         "label": "Automation",
         "group": "workflow",
@@ -375,7 +375,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/flow",
         "status": 200,
-        "latencyMs": 1126,
+        "latencyMs": 599,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -384,7 +384,7 @@
     },
     {
       "id": "forms",
-      "timestamp": "2026-05-16T07:10:00.956489Z",
+      "timestamp": "2026-05-16T09:35:50.259777Z",
       "metadata": {
         "label": "Forms",
         "group": "workflow",
@@ -406,7 +406,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/forms",
         "status": 200,
-        "latencyMs": 1450,
+        "latencyMs": 597,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -415,7 +415,7 @@
     },
     {
       "id": "maps",
-      "timestamp": "2026-05-16T07:10:02.387772Z",
+      "timestamp": "2026-05-16T09:35:50.882360Z",
       "metadata": {
         "label": "Location",
         "group": "docs",
@@ -437,7 +437,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/maps",
         "status": 200,
-        "latencyMs": 1431,
+        "latencyMs": 622,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -446,7 +446,7 @@
     },
     {
       "id": "notes",
-      "timestamp": "2026-05-16T07:09:47.249898Z",
+      "timestamp": "2026-05-16T09:35:40.046055Z",
       "metadata": {
         "label": "Notes",
         "group": "core",
@@ -468,7 +468,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/notes",
         "status": 200,
-        "latencyMs": 701,
+        "latencyMs": 599,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -477,7 +477,7 @@
     },
     {
       "id": "openproject",
-      "timestamp": "2026-05-16T07:09:50.833326Z",
+      "timestamp": "2026-05-16T09:35:43.084381Z",
       "metadata": {
         "label": "Projects",
         "group": "external",
@@ -491,26 +491,24 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "unavailable",
-          "authStatus": "missing",
-          "message": "OpenConnector source \"openproject\" for integration \"openproject\" is missing or unreadable."
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/openproject",
-        "status": 503,
-        "latencyMs": 703,
-        "responseShape": "error-envelope",
+        "status": 200,
+        "latencyMs": 627,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "degraded source (expected for unconfigured external)"
-      ]
+      "notes": []
     },
     {
       "id": "photos",
-      "timestamp": "2026-05-16T07:10:03.738333Z",
+      "timestamp": "2026-05-16T09:35:51.479051Z",
       "metadata": {
         "label": "Photos",
         "group": "docs",
@@ -532,7 +530,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/photos",
         "status": 200,
-        "latencyMs": 1350,
+        "latencyMs": 596,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -541,7 +539,7 @@
     },
     {
       "id": "polls",
-      "timestamp": "2026-05-16T07:10:05.483810Z",
+      "timestamp": "2026-05-16T09:35:52.060333Z",
       "metadata": {
         "label": "Polls",
         "group": "workflow",
@@ -563,7 +561,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/polls",
         "status": 200,
-        "latencyMs": 1745,
+        "latencyMs": 581,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -572,7 +570,7 @@
     },
     {
       "id": "shares",
-      "timestamp": "2026-05-16T07:10:06.997255Z",
+      "timestamp": "2026-05-16T09:35:52.658634Z",
       "metadata": {
         "label": "Shares",
         "group": "core",
@@ -594,7 +592,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/shares",
         "status": 200,
-        "latencyMs": 1513,
+        "latencyMs": 598,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -603,7 +601,7 @@
     },
     {
       "id": "tags",
-      "timestamp": "2026-05-16T07:09:48.624368Z",
+      "timestamp": "2026-05-16T09:35:41.281927Z",
       "metadata": {
         "label": "Tags",
         "group": "core",
@@ -625,7 +623,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tags",
         "status": 200,
-        "latencyMs": 701,
+        "latencyMs": 639,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -634,7 +632,7 @@
     },
     {
       "id": "talk",
-      "timestamp": "2026-05-16T07:10:08.477776Z",
+      "timestamp": "2026-05-16T09:35:53.258037Z",
       "metadata": {
         "label": "Chat",
         "group": "comms",
@@ -656,7 +654,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/talk",
         "status": 200,
-        "latencyMs": 1480,
+        "latencyMs": 599,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -665,7 +663,7 @@
     },
     {
       "id": "tasks",
-      "timestamp": "2026-05-16T07:09:47.922671Z",
+      "timestamp": "2026-05-16T09:35:40.642485Z",
       "metadata": {
         "label": "Tasks",
         "group": "core",
@@ -687,7 +685,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tasks",
         "status": 200,
-        "latencyMs": 672,
+        "latencyMs": 596,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -696,7 +694,7 @@
     },
     {
       "id": "time-tracker",
-      "timestamp": "2026-05-16T07:10:09.867565Z",
+      "timestamp": "2026-05-16T09:35:53.840486Z",
       "metadata": {
         "label": "Time",
         "group": "workflow",
@@ -718,7 +716,7 @@
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/time-tracker",
         "status": 200,
-        "latencyMs": 1389,
+        "latencyMs": 582,
         "responseShape": "list-envelope",
         "sample": null
       },
@@ -727,7 +725,7 @@
     },
     {
       "id": "xwiki",
-      "timestamp": "2026-05-16T07:09:50.129835Z",
+      "timestamp": "2026-05-16T09:35:42.457283Z",
       "metadata": {
         "label": "Articles",
         "group": "external",
@@ -741,22 +739,20 @@
           "single-entity"
         ],
         "authStatus": {
-          "status": "unavailable",
-          "authStatus": "missing",
-          "message": "OpenConnector source \"xwiki\" for integration \"xwiki\" is missing or unreadable."
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
         }
       },
       "probe": {
         "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/xwiki",
-        "status": 503,
-        "latencyMs": 726,
-        "responseShape": "error-envelope",
+        "status": 200,
+        "latencyMs": 595,
+        "responseShape": "list-envelope",
         "sample": null
       },
       "verdict": "pass",
-      "notes": [
-        "degraded source (expected for unconfigured external)"
-      ]
+      "notes": []
     }
   ]
 }

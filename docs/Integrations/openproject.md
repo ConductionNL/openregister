@@ -74,6 +74,56 @@ Open any object whose schema declares `linkedTypes: ['openproject']`. The **Proj
 - **Link an existing work package** — paste an OpenProject URL or work-package id.
 - **Create a new work package** — pick a project + work-package type, give it a subject and description. The new work package lands in OpenProject and the link is recorded.
 
+## Local verification setup
+
+The repo ships a docker-compose template that boots a real OpenProject all-in-one container alongside XWiki for the leaf-verification harness:
+
+```bash
+docker compose -f docker-compose.integration-verification.yml up -d verification-openproject
+```
+
+The compose service sets `OPENPROJECT_ADDITIONAL__HOST__NAMES` to include both `localhost:8082` (browser admin) and `verification-openproject` (container-to-container). Without it OpenProject's Rails host-authorization layer rejects every cross-container request with HTTP 400 `Invalid host_name configuration` before it reaches a controller.
+
+First-boot needs an admin password reset:
+
+1. Visit [http://localhost:8082/login](http://localhost:8082/login), sign in as `admin` / `admin`.
+2. OpenProject forces a password change. Pick a 10+ character one (e.g. `OpenProject1234`).
+3. Dismiss the onboarding tour (it overlays UI elements and blocks the next step).
+4. Go to **My account → Access tokens → API token → Create**.
+5. Copy the token. **OpenProject shows it once, never again.**
+
+Both steps are scriptable with Playwright — the same browser harness used for the XWiki distribution wizard handles them in one pass.
+
+Create the OpenConnector source pointing at the API base (`/api/v3`):
+
+```bash
+curl -u admin:admin -H 'OCS-APIRequest: true' -X POST \
+  http://localhost:8080/index.php/apps/openconnector/api/sources \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "OpenProject",
+    "slug": "openproject",
+    "reference": "openproject",
+    "location": "http://verification-openproject:80/api/v3",
+    "isEnabled": true,
+    "type": "api",
+    "auth": "basic",
+    "username": "apikey",
+    "password": "<your-api-token>",
+    "headers": {"Accept": "application/json"}
+  }'
+```
+
+OpenProject accepts HTTP Basic with `apikey` as the username and the API token as the password — that's the simplest auth for headless integrations. For production prefer OAuth2 with a scoped service account.
+
+Probe the leaf:
+
+```bash
+curl -u admin:admin -H 'OCS-APIRequest: true' \
+  "http://localhost:8080/index.php/apps/openregister/api/objects/{register}/{schema}/{object}/integrations/openproject"
+# → 200 {"items": []}
+```
+
 ## Configuration
 
 | Field | Open Register side | OpenProject side |
