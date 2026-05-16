@@ -1,28 +1,127 @@
-# XWiki Integration ("Articles")
+---
+title: xWiki
+sidebar_position: 30
+description: Link xWiki pages to Open Register objects. External, routed through OpenConnector. Read-only previews, no macros executed.
+keywords:
+  - Open Register
+  - Integrations
+  - xWiki
+  - OpenConnector
+  - External
+---
 
-Link XWiki pages to OpenRegister objects. Appears as the **Articles** tab in the object sidebar, as an `xwiki` widget on dashboards and detail pages, and as a single-entity reference renderer for schema properties that declare `referenceType: 'xwiki'`.
+import {LeafCard, Pair} from '@conduction/docusaurus-preset/components';
 
-This is an **external** integration (storage strategy `external`, group `external`) — it is the worked example for the [pluggable integration registry](pluggable-integration-registry.md). It carries no HTTP client and no credentials of its own: all CRUD is delegated to an OpenConnector source named `xwiki`.
+# xWiki integration
+
+<LeafCard
+  id="xwiki"
+  label="Articles"
+  icon="FileDocumentMultiple"
+  group="external"
+  requiredApp="openconnector"
+  storage="external"
+  status="external"
+  description="Link xWiki pages to Open Register objects. The Articles tab surfaces linked pages with their breadcrumb; the detail-page widget shows a text preview of the first linked page." />
+
+Pair a Conduction app with an xWiki instance and your users get articles, knowledge-base entries, and runbooks delivered inside the object sidebar. The integration runs through [OpenConnector](https://github.com/ConductionNL/openconnector) so credentials live in one place. One source can feed multiple apps.
+
+<Pair
+  leftLabel="Open Register"
+  leftCaption="object · sidebar · widget"
+  rightLabel="xWiki"
+  rightCaption="xwiki.example.org"
+  rightColor="cobalt-700"
+  bridgeLabel="OpenConnector source: xwiki" />
+
+## What it does
+
+- Lists xWiki pages linked to each Open Register object on the **Articles** sidebar tab.
+- Renders a short text preview of the first linked page on the detail-page widget. Macros are not executed.
+- Resolves a `referenceType: 'xwiki'` schema property to a single-entity chip in `CnFormDialog` and `CnDetailGrid`.
+- Surfaces auth and reachability status on Administration → Open Register → Integrations.
+- Degrades gracefully: a missing source or an unreachable wiki yields a 503 with a clear cause, never a broken tab.
 
 ## Setup
 
-1. **Install OpenConnector** (the `openconnector` Nextcloud app). The Articles integration is hidden until it's installed and enabled.
-2. **Create the `xwiki` source in OpenConnector** — import the template at [`xwiki-openconnector-source.yaml`](xwiki-openconnector-source.yaml), then fill in:
-   - `location` — your XWiki REST base URL, e.g. `https://wiki.example.org/rest/wikis/xwiki`
-   - the `auth` block — HTTP Basic (works on every XWiki version) **or** OAuth2 (xwiki-platform-oidc; newer instances). Keep exactly one.
-3. **Verify** in OpenRegister → Administration → OpenRegister → Integrations: the `xwiki` row should show storage `external`, required app `openconnector`, and an auth/health status. The "Configure" link deep-links into OpenConnector's source page; "Test connection" probes the source.
+### 1. Install OpenConnector
+
+Install the **openconnector** Nextcloud app. The Articles integration is hidden until OpenConnector is installed and enabled. The admin row appears once both are present.
+
+### 2. Create the `xwiki` source
+
+Open OpenConnector → Sources → New source. Import the template at [xwiki-openconnector-source.yaml](xwiki-openconnector-source.yaml). Set:
+
+- **location** — your xWiki REST base URL, for example `https://wiki.example.org/rest/wikis/xwiki`
+- **auth** — HTTP Basic (works on every xWiki version) or OAuth2 (needs `xwiki-platform-oidc`, xWiki 14+)
+
+Keep exactly one auth block. Save, then click **Test connection**.
+
+### 3. Verify in Open Register
+
+Go to Administration → Open Register → Integrations. The `xwiki` row should report:
+
+- Storage: `external`
+- Required app: `openconnector`
+- Auth status: `configured`
+- Health: `ok`
+
+The **Configure** link deep-links into OpenConnector's source page. **Test connection** probes the source live.
+
+### 4. Use it on an object
+
+Open any object whose schema declares `linkedTypes: ['xwiki']`. The **Articles** tab appears in the sidebar. Paste an xWiki URL (parsed to a canonical `Space.Page` reference) or type the path directly. Unlink removes the pairing only. It never deletes the page in xWiki.
+
+## Configuration
+
+| Field | Open Register side | xWiki side |
+|---|---|---|
+| **Source slug** | `xwiki` | — |
+| **Storage** | `external` (no link table) | — |
+| **Mapping** | xWiki page reference, breadcrumb, URL, content | REST `/rest/wikis/xwiki/pages/...` |
+| **Refresh** | Per render (cached briefly via OpenConnector) | — |
+| **Auth** | HTTP Basic or OAuth2 (one) | Personal token or service user |
+| **Permissions** | Inherits from object RBAC | `view` on linked pages |
+
+### Authentication
+
+Personal tokens are user-scoped. For production, create a dedicated service user in xWiki and issue its token. Never reuse a developer's personal token in production. OpenConnector encrypts the token at rest.
+
+For OAuth2, register the OpenConnector callback URL with `xwiki-platform-oidc`. The integration surfaces an "authentication expired" banner when the OIDC token can no longer be refreshed.
 
 ## Using it
 
-- **Sidebar (Articles tab)** — shows linked pages with their full breadcrumb ("Wiki / Department / Subspace / Page"), since two pages can share a title in different spaces. Link a page by pasting its **URL** (parsed to a canonical `Space.Page` reference) or by typing the **path** directly. Unlink removes the pairing only — it never deletes the page in XWiki. An "authentication expired" banner appears if the source's credentials need re-connecting.
-- **Detail-page widget** — linked pages list plus a **text preview** (the first ~500 characters of the page's rendered content) and a link to the full page. **XWiki macros are not executed** in the preview (no Velocity templates / scripts run inside Nextcloud) — click through to XWiki for full rendering.
-- **Dashboard widget** — recent linked pages (user dashboard) or app-scoped (app dashboard).
-- **Reference property** — a schema property with `referenceType: 'xwiki'` renders the linked page's title + breadcrumb chip in `CnFormDialog` / `CnDetailGrid`.
+### Articles sidebar tab
 
-## Notes
+The tab lists linked pages with their full breadcrumb ("Wiki / Department / Subspace / Page"). Two pages can share a title in different spaces, so the breadcrumb is the disambiguator. Each row shows the page title, breadcrumb, and an "open in xWiki" anchor. The unlink button removes the pairing only.
 
-- **Permissions** — the integration inherits access from the underlying object's RBAC plus OpenConnector's own. If a user has Nextcloud access to the object but not XWiki access to a page, they see a "No access to page" placeholder, not an internal error.
-- **XWiki versions** — 5.x / 10.x+ / 14.x+ are all supported; the OpenConnector adapter normalises REST field-name drift, so the provider stays version-agnostic.
-- **Failure modes** — if OpenConnector is missing/disabled, the source is missing, or the remote XWiki is down, the tab degrades to an empty state with a clear message rather than a broken tab (AD-23).
+### Detail-page widget
 
-See [pluggable-integration-registry.md](pluggable-integration-registry.md) for how this integration is wired into the registry, and `openspec/changes/integration-xwiki/` for the change spec.
+The widget shows the linked-pages list plus a **text preview** of the first linked page. The preview is HTML-stripped to the first 500 characters. Macros are not executed: no Velocity templates or scripts run inside Nextcloud. Click through to xWiki for full rendering.
+
+### Dashboard widgets
+
+The `user-dashboard` and `app-dashboard` surfaces render compact lists (max 5 entries). Use a schema with `linkedTypes: ['xwiki']` and the widget appears in dashboards that scope to that schema.
+
+### Reference property
+
+A schema property typed as `{ "type": "string", "referenceType": "xwiki" }` renders the linked page's title + breadcrumb chip in `CnFormDialog` and `CnDetailGrid`. The chip is read-only.
+
+## Troubleshooting
+
+- **No articles appear, even after linking.** The xWiki source is reachable but the user has no `view` permission on the linked space. Check the xWiki page's access controls.
+- **"Authentication expired" banner.** The source's credentials are no longer valid. Open OpenConnector → Sources → xwiki → re-authenticate. The banner clears on next render.
+- **Article shows up but the link 404s.** The xWiki base URL is misconfigured. Update `location` on the source.
+- **Pages take a long time to load.** Large spaces should be browsed by path rather than searched. The integration paginates at 50 per page.
+- **Tab is missing on the sidebar.** Either OpenConnector is not installed or the schema's `linkedTypes` does not include `'xwiki'`. Check both.
+
+## Supported xWiki versions
+
+5.x, 10.x+, and 14.x+ are all supported. The OpenConnector adapter normalises REST field-name drift, so the provider stays version-agnostic. xWiki versions before 5.x have not been tested.
+
+## Related
+
+- **[Leaf integration system](./leaf-system.md)** — how every leaf wires the same way.
+- **[Collectives leaf](./collectives.md)** — the NC-native alternative if you don't need an external wiki.
+- **[OpenConnector docs](https://github.com/ConductionNL/openconnector)** — how to manage sources and credentials.
+- **[Pluggable integration registry](./pluggable-integration-registry.md)** — the full ADR-019 contract.
