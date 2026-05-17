@@ -776,34 +776,20 @@ class RegisterMapper extends QBMapper
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
-        // The previous implementation used MySQL's `REGEXP` operator
-        // with `[[:<:]]N[[:>:]]` word-boundary syntax. SQLite ships
-        // without REGEXP (no user function registered), so every CI
-        // run on the default sqlite quality-workflow threw
-        // "no such function: REGEXP" (openbuilt#50).
+        // Three platforms in production: SQLite (no REGEXP function),
+        // MariaDB / MySQL (has REGEXP), and Postgres (has SIMILAR TO
+        // but stores the `schemas` column as `json`, which doesn't
+        // even cast cleanly to text for a LIKE prefilter without an
+        // explicit `::text` cast). The intersection of "portable" and
+        // "works regardless of `schemas` column type" is "fetch every
+        // register row and decode in PHP".
         //
-        // Two-stage portable lookup:
-        //
-        //   1. Use a portable `LIKE` filter to narrow rows to those
-        //      whose `schemas` column TEXT happens to contain the ID
-        //      somewhere. This is a fast prefilter — produces zero
-        //      false-negatives (every real match is a substring) and
-        //      some false-positives (e.g. id 12 matching "123").
-        //   2. Decode the `schemas` JSON in PHP and check exact
-        //      membership to eliminate the false-positives.
-        //
-        // Registers are O(10s) per install, so the PHP filter cost is
-        // trivial; the prefilter keeps us from materialising the full
-        // table when most rows don't contain the digit at all.
+        // Registers are O(10s) per install, so the cost is trivial.
+        // The previous MySQL-only REGEXP query (with `[[:<:]]N[[:>:]]`
+        // word-boundary syntax) is replaced wholesale — see #50.
         $qb = $this->db->getQueryBuilder();
         $qb->select('id', 'schemas')
-            ->from('openregister_registers')
-            ->where(
-                $qb->expr()->like(
-                    'schemas',
-                    $qb->createNamedParameter('%'.$schemaId.'%')
-                )
-            );
+            ->from('openregister_registers');
 
         $candidates = $qb->executeQuery()->fetchAllAssociative();
         $needle     = (string) $schemaId;
