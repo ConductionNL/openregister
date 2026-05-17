@@ -116,6 +116,19 @@ class AuditTrailProvider extends AbstractIntegrationProvider
             }
 
             if (method_exists($this->mapper, 'findAll') === true) {
+                // The audit table's `object` column is INTEGER (numeric
+                // object id) while `object_uuid` is the UUID string the
+                // sub-resource controller actually receives. Try the
+                // UUID-typed filter first and fall back to `object` for
+                // older schemas.
+                try {
+                    $entries = $this->mapper->findAll(filters: ['object_uuid' => $objectId]);
+                    if (is_array($entries) === true && count($entries) > 0) {
+                        return $this->normalize($entries);
+                    }
+                } catch (\Throwable $e) {
+                    // fall through to legacy filter
+                }
                 $entries = $this->mapper->findAll(filters: ['object' => $objectId]);
                 return $this->normalize($entries);
             }
