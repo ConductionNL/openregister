@@ -1106,8 +1106,6 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
             // @spec openspec/changes/integration-analytics/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
-            // @spec openspec/changes/integration-bookmarks/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider::class,
             // @spec openspec/changes/integration-collectives/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
             // @spec openspec/changes/integration-cospend/tasks.md.
@@ -1120,10 +1118,6 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
             // @spec openspec/changes/integration-photos/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
-            // @spec openspec/changes/integration-polls/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class,
-            // @spec openspec/changes/integration-talk/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class,
             // @spec openspec/changes/integration-time-tracker/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
         ];
@@ -1148,6 +1142,56 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new \OCA\OpenRegister\Service\Integration\Providers\SharesProvider(
                     shareManager: $container->get('OCP\Share\IManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // BookmarksProvider needs the container (for late-bound NC
+        // Bookmarks classes — they're only on the classpath when the
+        // Bookmarks app is installed) plus IUserSession to scope the
+        // bookmark query to the current user.
+        // @spec openspec/changes/integration-bookmarks/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider(
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // TalkProvider — needs container for late-bound `OCA\Talk\Manager`
+        // (only on the classpath with `spreed` installed) plus
+        // IUserSession to scope `getRoomsForUser`.
+        // @spec openspec/changes/integration-talk/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\TalkProvider(
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // PollsProvider — late-bound `OCA\Polls\Service\PollService`
+        // (only on classpath with the `polls` app installed) + user
+        // session for scoping. Links via the `[or:{objectUuid}]`
+        // marker in the poll title.
+        // @spec openspec/changes/integration-polls/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\PollsProvider(
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
                     l10n: $container->get('OCP\IL10N'),
                 );
             }
@@ -1297,15 +1341,76 @@ class Application extends App implements IBootstrap
         $context->registerService(
             McpToolsService::class,
             function (ContainerInterface $container) {
+                $logger    = $container->get('Psr\Log\LoggerInterface');
                 $providers = [
                     $container->get(RegistersToolProvider::class),
                     $container->get(SchemasToolProvider::class),
                     $container->get(ObjectsToolProvider::class),
                 ];
 
+                // Per-app tool providers: try two discovery paths for each
+                // installed app:
+                //   1) the alias key `OCA\OpenRegister\Mcp\IMcpToolProvider::<appId>`
+                //      (works only if the app registered the alias on this same
+                //      container instance — NC scopes alias registration per app);
+                //   2) the canonical FQCN `OCA\<AppId>\Mcp\<AppId>ToolProvider`
+                //      (resolved via NC's autoloader + DI autowiring, which works
+                //      cross-app since the autoloader is process-global).
+                try {
+                    $appManager = $container->get('OCP\App\IAppManager');
+                    foreach ($appManager->getInstalledApps() as $appId) {
+                        $candidates = [
+                            'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
+                            'OCA\\'.ucfirst($appId).'\\Mcp\\'.ucfirst($appId).'ToolProvider',
+                        ];
+                        foreach ($candidates as $key) {
+                            try {
+                                if (str_contains($key, '\\') === true && str_contains($key, '::') === false) {
+                                    // FQCN — only try if the class actually
+                                    // exists; calling get() on a non-existent
+                                    // class would throw NotFoundExceptionInterface
+                                    // for every installed app (noisy).
+                                    if (class_exists($key) === false) {
+                                        $logger->warning(
+                                            '[McpToolsService] Class does not exist',
+                                            ['appId' => $appId, 'fqcn' => $key]
+                                        );
+                                        continue;
+                                    }
+                                }
+
+                                $appProvider = $container->get($key);
+                                if ($appProvider instanceof IMcpToolProvider) {
+                                    $providers[] = $appProvider;
+                                    $logger->warning(
+                                        '[McpToolsService] Discovered per-app tool provider',
+                                        ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
+                                    );
+                                    break;
+                                } else {
+                                    $logger->warning(
+                                        '[McpToolsService] Resolved but not IMcpToolProvider',
+                                        ['appId' => $appId, 'via' => $key, 'class' => is_object($appProvider) ? get_class($appProvider) : gettype($appProvider)]
+                                    );
+                                }
+                            } catch (\Throwable $e) {
+                                $logger->warning(
+                                    '[McpToolsService] Resolve failed',
+                                    ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
+                                );
+                                continue;
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $logger->warning(
+                        '[McpToolsService] Per-app provider enumeration failed: '.$e->getMessage()
+                    );
+                }
+
                 return new McpToolsService(
                     providers: $providers,
-                    logger: $container->get('Psr\Log\LoggerInterface')
+                    logger: $logger
                 );
             }
         );
