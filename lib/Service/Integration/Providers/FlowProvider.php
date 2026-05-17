@@ -1,16 +1,12 @@
 <?php
 
 /**
- * FlowProvider — exposes NC `workflowengine` rules + fire events scoped
- * to an OR schema/object via the IntegrationProvider contract.
+ * FlowProvider — exposes NC Automation entities linked to an OpenRegister
+ * object via a `[or:{objectUuid}]` marker in the entity's `name`
+ * field.
  *
- * `workflowengine` is NC core (always present on install) but may be
- * disabled per instance — so `isEnabled()` checks via IAppManager.
- *
- * `link-table` storage (a future `openregister_flow_links` pairs
- * schema/object ↔ flow rule) + read-time aggregation from NC Flow's
- * fire events; the wrapping FlowService lands in a follow-up — this
- * provider registers the registry surface today.
+ * Storage strategy is `link-table` — the marker lives in the upstream
+ * app's own table (`flow_operations`), not in OR.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -19,27 +15,33 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://conduction.nl
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/integration-flow/tasks.md
+ * @link https://conduction.nl
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
+use OCP\IDBConnection;
 use OCP\IL10N;
 
 class FlowProvider extends AbstractIntegrationProvider
 {
+    use MarkerLookupTrait;
 
     private const REQUIRED_APP = 'workflowengine';
 
+    private const MARKER_PREFIX = '[or:';
+
     public function __construct(
+        private IDBConnection $db,
         private IAppManager $appManager,
         private IL10N $l10n,
     ) {
@@ -80,18 +82,46 @@ class FlowProvider extends AbstractIntegrationProvider
         return $this->appManager->isInstalled(self::REQUIRED_APP);
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
+    /**
+     * List linked Automation entities for an OR object.
+     *
+     * Linking convention: the entity's `name` field contains
+     * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
+     * rows are normalised into the registry leaf row shape.
+     */
+    public function list(string $register, string $schema, string $objectId, array $filters = []): array
     {
-        return [];
+        if ($this->isEnabled() === false) {
+            return [];
+        }
+
+        $marker = self::MARKER_PREFIX . $objectId . ']';
+        $rows   = $this->findByMarker(
+            db: $this->db,
+            table: 'flow_operations',
+            markerColumn: 'name',
+            marker: $marker,
+            extraColumns: ['class', 'entity'],
+            idColumn: 'id',
+        );
+
+        return array_map(static function (array $row): array {
+            return [
+                'id'    => (string) ($row['id'] ?? ''),
+                'title' => (string) ($row['name'] ?? ''),
+                'url'   => '/index.php/settings/admin/workflow#' . (string) ($row['id'] ?? ''),
+                'data'  => $row,
+            ];
+        }, $rows);
     }//end list()
 
     public function health(): array
     {
-        $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+        $available = $this->isEnabled();
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $available === true ? 'ok' : 'unavailable',
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC workflowengine is not available',
+            'message'    => $available === true ? null : 'NC Automation app is not installed',
         ];
     }//end health()
 }//end class

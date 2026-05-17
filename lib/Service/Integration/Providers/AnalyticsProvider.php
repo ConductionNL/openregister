@@ -1,16 +1,12 @@
 <?php
 
 /**
- * AnalyticsProvider — exposes NC Analytics reports linked to an OR
- * object through the IntegrationProvider contract.
+ * AnalyticsProvider — exposes NC Analytics entities linked to an OpenRegister
+ * object via a `[or:{objectUuid}]` marker in the entity's `name`
+ * field.
  *
- * Storage strategy is `link-table`: a future
- * `openregister_analytics_links` table will pair an object/schema with
- * an analytics report id; the provider's read path will return those
- * links with embedded chart previews. The wrapping AnalyticsReportService
- * + migration land in a follow-up — this provider registers as a
- * registry surface today, gated on the Analytics app, returning an
- * empty list from `list()` until the service ships.
+ * Storage strategy is `link-table` — the marker lives in the upstream
+ * app's own table (`analytics_report`), not in OR.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -19,30 +15,33 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://conduction.nl
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/integration-analytics/tasks.md
+ * @link https://conduction.nl
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
+use OCP\IDBConnection;
 use OCP\IL10N;
 
-/**
- * Analytics (NC Analytics reports + datasets) integration provider.
- */
 class AnalyticsProvider extends AbstractIntegrationProvider
 {
+    use MarkerLookupTrait;
 
     private const REQUIRED_APP = 'analytics';
 
+    private const MARKER_PREFIX = '[or:';
+
     public function __construct(
+        private IDBConnection $db,
         private IAppManager $appManager,
         private IL10N $l10n,
     ) {
@@ -83,18 +82,46 @@ class AnalyticsProvider extends AbstractIntegrationProvider
         return $this->appManager->isInstalled(self::REQUIRED_APP);
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
+    /**
+     * List linked Analytics entities for an OR object.
+     *
+     * Linking convention: the entity's `name` field contains
+     * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
+     * rows are normalised into the registry leaf row shape.
+     */
+    public function list(string $register, string $schema, string $objectId, array $filters = []): array
     {
-        return [];
+        if ($this->isEnabled() === false) {
+            return [];
+        }
+
+        $marker = self::MARKER_PREFIX . $objectId . ']';
+        $rows   = $this->findByMarker(
+            db: $this->db,
+            table: 'analytics_report',
+            markerColumn: 'name',
+            marker: $marker,
+            extraColumns: ['subheader', 'type'],
+            idColumn: 'id',
+        );
+
+        return array_map(static function (array $row): array {
+            return [
+                'id'    => (string) ($row['id'] ?? ''),
+                'title' => (string) ($row['name'] ?? ''),
+                'url'   => '/index.php/apps/analytics/#/r/' . (string) ($row['id'] ?? ''),
+                'data'  => $row,
+            ];
+        }, $rows);
     }//end list()
 
     public function health(): array
     {
-        $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+        $available = $this->isEnabled();
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $available === true ? 'ok' : 'unavailable',
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Analytics app is not installed',
+            'message'    => $available === true ? null : 'NC Analytics app is not installed',
         ];
     }//end health()
 }//end class

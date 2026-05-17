@@ -1,14 +1,12 @@
 <?php
 
 /**
- * CollectivesProvider — exposes Collectives pages linked to an OR
- * object via the IntegrationProvider contract.
+ * CollectivesProvider — exposes NC Knowledge entities linked to an OpenRegister
+ * object via a `[or:{objectUuid}]` marker in the entity's `slug`
+ * field.
  *
- * Positions as a native alternative to the XWiki external integration:
- * markdown pages, in-NC, no external service required. `link-table`
- * storage (a future `openregister_collective_links` pairs object ↔
- * collective page); the wrapping CollectivesPageService lands in a
- * follow-up — this provider registers the registry surface today.
+ * Storage strategy is `link-table` — the marker lives in the upstream
+ * app's own table (`collectives_pages`), not in OR.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -17,27 +15,33 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://conduction.nl
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/integration-collectives/tasks.md
+ * @link https://conduction.nl
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
+use OCP\IDBConnection;
 use OCP\IL10N;
 
 class CollectivesProvider extends AbstractIntegrationProvider
 {
+    use MarkerLookupTrait;
 
     private const REQUIRED_APP = 'collectives';
 
+    private const MARKER_PREFIX = '[or:';
+
     public function __construct(
+        private IDBConnection $db,
         private IAppManager $appManager,
         private IL10N $l10n,
     ) {
@@ -78,18 +82,46 @@ class CollectivesProvider extends AbstractIntegrationProvider
         return $this->appManager->isInstalled(self::REQUIRED_APP);
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
+    /**
+     * List linked Knowledge entities for an OR object.
+     *
+     * Linking convention: the entity's `slug` field contains
+     * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
+     * rows are normalised into the registry leaf row shape.
+     */
+    public function list(string $register, string $schema, string $objectId, array $filters = []): array
     {
-        return [];
+        if ($this->isEnabled() === false) {
+            return [];
+        }
+
+        $marker = self::MARKER_PREFIX . $objectId . ']';
+        $rows   = $this->findByMarker(
+            db: $this->db,
+            table: 'collectives_pages',
+            markerColumn: 'slug',
+            marker: $marker,
+            extraColumns: ['emoji', 'last_user_id'],
+            idColumn: 'id',
+        );
+
+        return array_map(static function (array $row): array {
+            return [
+                'id'    => (string) ($row['id'] ?? ''),
+                'title' => (string) ($row['slug'] ?? ''),
+                'url'   => '/index.php/apps/collectives/' . (string) ($row['id'] ?? ''),
+                'data'  => $row,
+            ];
+        }, $rows);
     }//end list()
 
     public function health(): array
     {
-        $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+        $available = $this->isEnabled();
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $available === true ? 'ok' : 'unavailable',
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Collectives app is not installed',
+            'message'    => $available === true ? null : 'NC Knowledge app is not installed',
         ];
     }//end health()
 }//end class

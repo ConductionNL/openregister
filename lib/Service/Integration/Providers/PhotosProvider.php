@@ -1,15 +1,12 @@
 <?php
 
 /**
- * PhotosProvider — exposes the image subset of the object's linked
- * files (with NC Photos metadata) via the IntegrationProvider contract.
+ * PhotosProvider — exposes NC Photos entities linked to an OpenRegister
+ * object via a `[or:{objectUuid}]` marker in the entity's `name`
+ * field.
  *
- * Builds on the Files integration: filters the object's linked files to
- * image MIME types and enriches each row with metadata (EXIF, taken-at,
- * camera, dimensions) from NC Photos. `link-table` storage strategy at
- * the registry level (reuses file links). The wrapping PhotoService
- * lands in a follow-up — this provider registers the registry surface
- * today, gated on the Photos app.
+ * Storage strategy is `link-table` — the marker lives in the upstream
+ * app's own table (`photos_albums`), not in OR.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -18,27 +15,33 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://conduction.nl
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/integration-photos/tasks.md
+ * @link https://conduction.nl
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
+use OCP\IDBConnection;
 use OCP\IL10N;
 
 class PhotosProvider extends AbstractIntegrationProvider
 {
+    use MarkerLookupTrait;
 
     private const REQUIRED_APP = 'photos';
 
+    private const MARKER_PREFIX = '[or:';
+
     public function __construct(
+        private IDBConnection $db,
         private IAppManager $appManager,
         private IL10N $l10n,
     ) {
@@ -79,18 +82,46 @@ class PhotosProvider extends AbstractIntegrationProvider
         return $this->appManager->isInstalled(self::REQUIRED_APP);
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
+    /**
+     * List linked Photos entities for an OR object.
+     *
+     * Linking convention: the entity's `name` field contains
+     * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
+     * rows are normalised into the registry leaf row shape.
+     */
+    public function list(string $register, string $schema, string $objectId, array $filters = []): array
     {
-        return [];
+        if ($this->isEnabled() === false) {
+            return [];
+        }
+
+        $marker = self::MARKER_PREFIX . $objectId . ']';
+        $rows   = $this->findByMarker(
+            db: $this->db,
+            table: 'photos_albums',
+            markerColumn: 'name',
+            marker: $marker,
+            extraColumns: ['user', 'created'],
+            idColumn: 'album_id',
+        );
+
+        return array_map(static function (array $row): array {
+            return [
+                'id'    => (string) ($row['album_id'] ?? ''),
+                'title' => (string) ($row['name'] ?? ''),
+                'url'   => '/index.php/apps/photos/albums/' . (string) ($row['album_id'] ?? ''),
+                'data'  => $row,
+            ];
+        }, $rows);
     }//end list()
 
     public function health(): array
     {
-        $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+        $available = $this->isEnabled();
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $available === true ? 'ok' : 'unavailable',
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Photos app is not installed',
+            'message'    => $available === true ? null : 'NC Photos app is not installed',
         ];
     }//end health()
 }//end class

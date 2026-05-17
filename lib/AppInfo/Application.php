@@ -1121,11 +1121,15 @@ class Application extends App implements IBootstrap
             // @spec openspec/changes/integration-time-tracker/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
         ];
+        // Each greenfield provider now uses MarkerLookupTrait to query
+        // its upstream app's main table directly via IDBConnection. All
+        // share the same constructor signature (db, appManager, l10n).
         foreach ($greenfieldProviders as $providerClass) {
             $context->registerService(
                 $providerClass,
                 function (ContainerInterface $container) use ($providerClass) {
                     return new $providerClass(
+                        db: $container->get('OCP\IDBConnection'),
                         appManager: $container->get('OCP\App\IAppManager'),
                         l10n: $container->get('OCP\IL10N'),
                     );
@@ -1133,15 +1137,15 @@ class Application extends App implements IBootstrap
             );
         }
 
-        // SharesProvider takes the Share Manager rather than IAppManager —
-        // shares are NC core (always-available) so the required-app gate
-        // is moot, but `delete()` delegates to IManager::deleteShare().
+        // SharesProvider — NC core (no app gate); uses MarkerLookupTrait
+        // against the `share` table's `note` column.
         // @spec openspec/changes/integration-shares/tasks.md.
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\SharesProvider::class,
             function (ContainerInterface $container) {
                 return new \OCA\OpenRegister\Service\Integration\Providers\SharesProvider(
-                    shareManager: $container->get('OCP\Share\IManager'),
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                 );
             }
@@ -1363,6 +1367,34 @@ class Application extends App implements IBootstrap
                             'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
                             'OCA\\'.ucfirst($appId).'\\Mcp\\'.ucfirst($appId).'ToolProvider',
                         ];
+
+                        // Third candidate: trust <namespace> from info.xml when
+                        // the app declares one (e.g. `openbuilt` → `OpenBuilt`,
+                        // `softwarecatalog` → `SoftwareCatalog`). ucfirst() on
+                        // the appId alone mangles camel-cased namespaces.
+                        //
+                        // NC's bootstrap nulls libxml's external-entity resolver
+                        // for XXE-hardening, which makes simplexml_load_file()
+                        // return false on well-formed files. Read first, parse
+                        // the string.
+                        try {
+                            $infoPath = $appManager->getAppPath($appId).'/appinfo/info.xml';
+                            if (is_file($infoPath) === true) {
+                                $body = @file_get_contents($infoPath);
+                                if ($body !== false && $body !== '') {
+                                    $xml = @simplexml_load_string($body);
+                                    if ($xml !== false && isset($xml->namespace) === true) {
+                                        $ns = (string) $xml->namespace;
+                                        if ($ns !== '' && $ns !== ucfirst($appId)) {
+                                            $candidates[] = 'OCA\\'.$ns.'\\Mcp\\'.$ns.'ToolProvider';
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            // Path-resolution failures are benign; the other two
+                            // candidates already cover the common case.
+                        }
                         foreach ($candidates as $key) {
                             try {
                                 if (str_contains($key, '\\') === true && str_contains($key, '::') === false) {

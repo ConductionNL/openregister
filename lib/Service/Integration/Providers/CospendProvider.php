@@ -1,12 +1,12 @@
 <?php
 
 /**
- * CospendProvider — exposes NC Cospend projects/bills linked to an OR
- * object via the IntegrationProvider contract.
+ * CospendProvider — exposes NC Costs entities linked to an OpenRegister
+ * object via a `[or:{objectUuid}]` marker in the entity's `name`
+ * field.
  *
- * `link-table` storage (a future `openregister_cospend_links` pairs
- * object ↔ Cospend project/bill); the wrapping CospendService lands in
- * a follow-up — this provider registers the registry surface today.
+ * Storage strategy is `link-table` — the marker lives in the upstream
+ * app's own table (`cospend_projects`), not in OR.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -15,27 +15,33 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://conduction.nl
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/integration-cospend/tasks.md
+ * @link https://conduction.nl
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
+use OCP\IDBConnection;
 use OCP\IL10N;
 
 class CospendProvider extends AbstractIntegrationProvider
 {
+    use MarkerLookupTrait;
 
     private const REQUIRED_APP = 'cospend';
 
+    private const MARKER_PREFIX = '[or:';
+
     public function __construct(
+        private IDBConnection $db,
         private IAppManager $appManager,
         private IL10N $l10n,
     ) {
@@ -76,18 +82,46 @@ class CospendProvider extends AbstractIntegrationProvider
         return $this->appManager->isInstalled(self::REQUIRED_APP);
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
+    /**
+     * List linked Costs entities for an OR object.
+     *
+     * Linking convention: the entity's `name` field contains
+     * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
+     * rows are normalised into the registry leaf row shape.
+     */
+    public function list(string $register, string $schema, string $objectId, array $filters = []): array
     {
-        return [];
+        if ($this->isEnabled() === false) {
+            return [];
+        }
+
+        $marker = self::MARKER_PREFIX . $objectId . ']';
+        $rows   = $this->findByMarker(
+            db: $this->db,
+            table: 'cospend_projects',
+            markerColumn: 'name',
+            marker: $marker,
+            extraColumns: ['currency_name', 'user_id'],
+            idColumn: 'id',
+        );
+
+        return array_map(static function (array $row): array {
+            return [
+                'id'    => (string) ($row['id'] ?? ''),
+                'title' => (string) ($row['name'] ?? ''),
+                'url'   => '/index.php/apps/cospend/p/' . (string) ($row['id'] ?? ''),
+                'data'  => $row,
+            ];
+        }, $rows);
     }//end list()
 
     public function health(): array
     {
-        $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+        $available = $this->isEnabled();
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $available === true ? 'ok' : 'unavailable',
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Cospend app is not installed',
+            'message'    => $available === true ? null : 'NC Costs app is not installed',
         ];
     }//end health()
 }//end class

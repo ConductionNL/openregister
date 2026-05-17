@@ -1,21 +1,12 @@
 <?php
 
 /**
- * ActivityProvider — surfaces NC Activity events related to an OR
- * object through the IntegrationProvider contract.
+ * ActivityProvider — exposes NC Activity entities linked to an OpenRegister
+ * object via a `[or:{objectUuid}]` marker in the entity's `subject`
+ * field.
  *
- * Storage strategy is `query-time` (AD-22): activity events are
- * transient — they live in NC's activity stream and are queried live
- * per render, never stored locally. Mutation methods therefore throw
- * NotImplementedException via the AbstractIntegrationProvider default;
- * activity feeds are read-only by design.
- *
- * The wrapped read-path (filtering NC's activity stream by the OR
- * object's associated actors/events) is implemented in a follow-up
- * leaf — the provider registers as a registry surface so the tab/widget
- * slot exists and the admin UI can advertise availability gated on the
- * Activity app, but `list()` returns an empty result until the
- * filter service is wired (see openspec/changes/integration-activity).
+ * Storage strategy is `link-table` — the marker lives in the upstream
+ * app's own table (`activity`), not in OR.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -24,43 +15,33 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://conduction.nl
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/integration-activity/tasks.md
+ * @link https://conduction.nl
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
+use OCP\IDBConnection;
 use OCP\IL10N;
 
-/**
- * Activity (read-only event stream) integration provider.
- */
 class ActivityProvider extends AbstractIntegrationProvider
 {
+    use MarkerLookupTrait;
 
-    /**
-     * NC app id required for this integration.
-     *
-     * @var string
-     */
     private const REQUIRED_APP = 'activity';
 
-    /**
-     * Constructor.
-     *
-     * @param IAppManager $appManager NC app manager.
-     * @param IL10N       $l10n       Localisation.
-     *
-     * @return void
-     */
+    private const MARKER_PREFIX = '[or:';
+
     public function __construct(
+        private IDBConnection $db,
         private IAppManager $appManager,
         private IL10N $l10n,
     ) {
@@ -102,32 +83,45 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end isEnabled()
 
     /**
-     * List activity events relevant to an OR object.
+     * List linked Activity entities for an OR object.
      *
-     * Backing read-path (filtering NC's activity stream by linked
-     * actors/files/objects) lands in a follow-up. Stubbed to an empty
-     * list so the tab/widget slot renders an empty state rather than
-     * a 500.
-     *
-     * @param string              $register Register slug or numeric id.
-     * @param string              $schema   Schema slug or numeric id.
-     * @param string              $objectId Object uuid.
-     * @param array<string,mixed> $filters  Optional filters (ignored).
-     *
-     * @return array<int,array<string,mixed>>
+     * Linking convention: the entity's `subject` field contains
+     * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
+     * rows are normalised into the registry leaf row shape.
      */
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
+    public function list(string $register, string $schema, string $objectId, array $filters = []): array
     {
-        return [];
+        if ($this->isEnabled() === false) {
+            return [];
+        }
+
+        $marker = self::MARKER_PREFIX . $objectId . ']';
+        $rows   = $this->findByMarker(
+            db: $this->db,
+            table: 'activity',
+            markerColumn: 'subject',
+            marker: $marker,
+            extraColumns: ['type', 'affecteduser', 'timestamp', 'object_id'],
+            idColumn: 'activity_id',
+        );
+
+        return array_map(static function (array $row): array {
+            return [
+                'id'    => (string) ($row['activity_id'] ?? ''),
+                'title' => (string) ($row['subject'] ?? ''),
+                'url'   => '/index.php/apps/activity/' . (string) ($row['activity_id'] ?? ''),
+                'data'  => $row,
+            ];
+        }, $rows);
     }//end list()
 
     public function health(): array
     {
-        $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+        $available = $this->isEnabled();
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $available === true ? 'ok' : 'unavailable',
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Activity app is not installed',
+            'message'    => $available === true ? null : 'NC Activity app is not installed',
         ];
     }//end health()
 }//end class
