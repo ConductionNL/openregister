@@ -1165,6 +1165,33 @@ class Schema extends Entity implements JsonSerializable
             $object['hardValidation'] = true;
         }
 
+        // Fold top-level `x-openregister-*` annotation blocks (e.g. the
+        // OpenAPI seed's sibling-of-properties `x-openregister-lifecycle`
+        // declaration) into the `configuration` array BEFORE the per-key
+        // setter loop runs. Without this the keys fall through to a
+        // non-existent `setXOpenregisterLifecycle()` setter, the silent-
+        // catch below swallows the call, and the annotation is dropped on
+        // the floor — so OR's TransitionEngine never sees a state machine
+        // and every transition 422s ("schema does not declare
+        // x-openregister-lifecycle"; openregister#1520).
+        $existingConfig = ($object['configuration'] ?? []);
+        if (is_array($existingConfig) === false) {
+            $existingConfig = [];
+        }
+
+        $annotationsFolded = false;
+        foreach ($object as $key => $value) {
+            if (is_string($key) === true && str_starts_with($key, 'x-openregister-') === true) {
+                $existingConfig[$key] = $value;
+                $annotationsFolded    = true;
+                unset($object[$key]);
+            }
+        }
+
+        if ($annotationsFolded === true) {
+            $object['configuration'] = $existingConfig;
+        }
+
         foreach ($object as $key => $value) {
             // Special handling for 'required' field - must always be an array, never NULL.
             if ($key === 'required') {
