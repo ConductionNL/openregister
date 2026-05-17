@@ -4,7 +4,7 @@
 
 ## Backend
 
-- [ ] Create `lib/Service/Integration/Providers/ContactsProvider.php` — id='contacts', label='Contacts', icon='AccountMultiple', group='core', requiredApp='contacts', storage='link-table'
+- [x] Create `lib/Service/Integration/Providers/ContactsProvider.php` — id='contacts', label='Contacts', icon='AccountMultiple', group='core', requiredApp='contacts', storage='link-table'
 - [ ] DI-tag in `Application.php`
 - [ ] Unit test
 
