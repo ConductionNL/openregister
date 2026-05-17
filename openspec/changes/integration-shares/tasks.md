@@ -4,7 +4,7 @@
 
 - [ ] `ShareService` — walk object's linked files, query `IManager::getSharesBy()`, merge + deduplicate
 - [ ] `SharesController` — list + revoke endpoints
-- [ ] `SharesProvider` — id='shares', label='Shares', icon='Share', group='core', requiredApp=null, storage='query-time'; create/update throw NotImplemented; delete delegates to `IManager::deleteShare()`
+- [x] `SharesProvider` — id='shares', label='Shares', icon='Share', group='core', requiredApp=null, storage='query-time'; create/update throw NotImplemented; delete delegates to `IManager::deleteShare()`
 - [ ] DI-tag, routes, unit tests
 
 ## Frontend — Tab

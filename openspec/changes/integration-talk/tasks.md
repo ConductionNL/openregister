@@ -4,7 +4,7 @@
 
 ## Backend
 
-- [ ] Create `lib/Service/Integration/Providers/TalkProvider.php` — id='talk', label='Chat', icon='ChatOutline', group='comms', requiredApp='spreed', storage='link-table'; injects Chat + Conversation services
+- [x] Create `lib/Service/Integration/Providers/TalkProvider.php` — id='talk', label='Chat', icon='ChatOutline', group='comms', requiredApp='spreed', storage='link-table'; injects Chat + Conversation services
 - [ ] DI-tag in `Application.php`
 - [ ] Unit test covering both service-delegation paths
 
