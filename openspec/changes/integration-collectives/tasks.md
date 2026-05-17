@@ -5,7 +5,7 @@
 - [ ] `CollectiveLink` entity + mapper + migration
 - [ ] `CollectivesPageService` wrapping Collectives REST API
 - [ ] `CollectivesController`
-- [ ] `CollectivesProvider` — id='collectives', label='Knowledge', icon='BookOpenPageVariant', group='docs', requiredApp='collectives', storage='link-table'
+- [x] `CollectivesProvider` — id='collectives', label='Knowledge', icon='BookOpenPageVariant', group='docs', requiredApp='collectives', storage='link-table'
 - [ ] DI-tag, routes, unit tests
 
 ## Frontend — Tab

@@ -13,8 +13,8 @@ import { generateUrl } from '@nextcloud/router'
 		</div>
 		<div v-for="step in steps" :key="step.id" class="step-row">
 			<span class="step-order">{{ t('openregister', 'Step') }} {{ step.stepOrder }}</span>
-			<span class="step-role">{{ step.role }}</span>
-			<span :class="['status-badge', `status-${step.status}`]">{{ step.status }}</span>
+			<span class="step-role">{{ t('openregister', step.role) }}</span>
+			<span :class="['status-badge', `status-${step.status}`]">{{ t('openregister', step.status) }}</span>
 			<span v-if="step.decidedBy" class="decided-by">{{ t('openregister', 'by') }} {{ step.decidedBy }}</span>
 			<div v-if="step.status === 'pending' && canDecide(step)" class="step-actions">
 				<input v-model="comments[step.id]" type="text" :placeholder="t('openregister', 'Comment...')">
@@ -30,10 +30,6 @@ import { generateUrl } from '@nextcloud/router'
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-
 export default {
 	name: 'ApprovalStepList',
 	components: { NcButton },
