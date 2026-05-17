@@ -21,9 +21,13 @@
 namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Tool\McpProviderBridge;
 use OCA\OpenRegister\Tool\ToolInterface;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCP\EventDispatcher\IEventDispatcher;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -100,7 +104,8 @@ class ToolRegistry
      */
     public function __construct(
         IEventDispatcher $eventDispatcher,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        private readonly ?ContainerInterface $container=null
     ) {
         $this->eventDispatcher = $eventDispatcher;
         $this->logger          = $logger;
@@ -127,6 +132,12 @@ class ToolRegistry
         $event = new ToolRegistrationEvent(registry: $this);
         $this->eventDispatcher->dispatchTyped($event);
 
+        // Bridge: enumerate IMcpToolProvider implementations and register
+        // one McpProviderBridge per app. The bridge wraps each provider so
+        // its MCP tool descriptors become LLphant function definitions the
+        // chat orchestrator can pass to the LLM.
+        $this->loadMcpBridgedTools();
+
         $this->loaded = true;
 
         $this->logger->info(
@@ -139,6 +150,125 @@ class ToolRegistry
             ]
         );
     }//end loadTools()
+
+    /**
+     * Enumerate per-app IMcpToolProvider implementations and register one
+     * McpProviderBridge per provider with the registry. Each tool descriptor
+     * from a provider becomes a function on its bridge — the LLM sees one
+     * tool per app whose getFunctions() lists every MCP descriptor.
+     */
+    private function loadMcpBridgedTools(): void
+    {
+        if ($this->container === null) {
+            return;
+        }
+
+        try {
+            $mcp = $this->container->get(McpToolsService::class);
+        } catch (\Throwable $e) {
+            $this->logger->info('[ToolRegistry] McpToolsService unavailable: '.$e->getMessage());
+            return;
+        }
+
+        // McpToolsService doesn't expose its providers list directly; pull
+        // tools/list and group by app id (everything before the first dot).
+        $listing = $mcp->listTools();
+        $tools   = is_array($listing) === true ? ($listing['tools'] ?? []) : [];
+        if (empty($tools) === true) {
+            return;
+        }
+
+        $byApp = [];
+        foreach ($tools as $descriptor) {
+            $id = (string) ($descriptor['id'] ?? '');
+            $dot = strpos($id, '.');
+            if ($dot === false) {
+                continue;
+            }
+
+            $appId           = substr($id, 0, $dot);
+            $byApp[$appId][] = $descriptor;
+        }
+
+        // Skip built-in OR tools — those are already registered by
+        // ToolRegistrationListener as real ToolInterface impls.
+        unset($byApp['openregister']);
+
+        foreach ($byApp as $appId => $descriptors) {
+            // Resolve the actual IMcpToolProvider so the bridge can call
+            // invokeTool() directly (cheaper than going back through MCP).
+            $providerCandidates = [
+                'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
+                'OCA\\'.ucfirst($appId).'\\Mcp\\'.ucfirst($appId).'ToolProvider',
+            ];
+
+            $provider = null;
+            foreach ($providerCandidates as $key) {
+                try {
+                    if (str_contains($key, '\\') === true && str_contains($key, '::') === false && class_exists($key) === false) {
+                        continue;
+                    }
+
+                    $candidate = $this->container->get($key);
+                    if ($candidate instanceof IMcpToolProvider) {
+                        $provider = $candidate;
+                        break;
+                    }
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+
+            if ($provider === null) {
+                $this->logger->info(
+                    '[ToolRegistry] No IMcpToolProvider resolvable for app — skipping bridge',
+                    ['appId' => $appId]
+                );
+                continue;
+            }
+
+            $bridge = new McpProviderBridge($provider, $this->logger);
+            $bridgeId = $appId.'.mcp_bridge';
+            try {
+                $this->registerTool($bridgeId, $bridge, [
+                    'name'        => ucfirst($appId).' tools',
+                    'description' => 'MCP-bridged tools from the '.$appId.' app.',
+                    'icon'        => 'icon-category-app-bundles',
+                    'app'         => $appId,
+                ]);
+
+                // Also register one alias tool ID per MCP descriptor so
+                // agents whose `tools` JSON lists IDs like
+                // "decidesk.createMeeting" can match without changing format.
+                foreach ($descriptors as $descriptor) {
+                    $rawId = (string) ($descriptor['id'] ?? '');
+                    if ($rawId === '' || $rawId === $bridgeId) {
+                        continue;
+                    }
+
+                    // Same bridge serves all descriptors of this app; we
+                    // just multiplex by ID so getAgentTools() finds them
+                    // when the agent's tools array names them directly.
+                    if (($this->tools[$rawId] ?? null) === null) {
+                        $this->tools[$rawId] = [
+                            'tool'     => $bridge,
+                            'metadata' => [
+                                'name'        => (string) ($descriptor['name'] ?? $rawId),
+                                'description' => (string) ($descriptor['description'] ?? ''),
+                                'icon'        => 'icon-category-app-bundles',
+                                'app'         => $appId,
+                            ],
+                        ];
+                    }
+                }
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    '[ToolRegistry] Failed to register MCP bridge',
+                    ['appId' => $appId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+    }//end loadMcpBridgedTools()
 
     /**
      * Register a tool
@@ -159,9 +289,11 @@ class ToolRegistry
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
         // Validate ID format (should be app_name.tool_name).
-        if (preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $id) === 0) {
+        // Permitted: app_name.tool_name OR app_name.toolName (camelCase
+        // accommodates MCP tool descriptors bridged via McpProviderBridge).
+        if (preg_match('/^[a-z0-9_]+\.[a-zA-Z0-9_]+$/', $id) === 0) {
             throw new InvalidArgumentException(
-                "Invalid tool ID format: {$id}. Must be 'app_name.tool_name'"
+                "Invalid tool ID format: {$id}. Must be 'app_name.tool_name' (camelCase tool names allowed)"
             );
         }
 

@@ -5,7 +5,7 @@
 - [ ] `MapLink` entity + mapper (with `lat`/`lon`/`address`/`address_source` columns) + migration
 - [ ] `MapLocationService` — geocode (via Maps), reverse-geocode, CRUD
 - [ ] `MapsController` with sub-resource endpoints
-- [ ] `MapsProvider` — id='maps', label='Location', icon='MapMarker', group='docs', requiredApp='maps', storage='link-table'
+- [x] `MapsProvider` — id='maps', label='Location', icon='MapMarker', group='docs', requiredApp='maps', storage='link-table'
 - [ ] DI-tag, routes, unit tests
 
 ## Frontend — Tab

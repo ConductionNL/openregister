@@ -245,7 +245,20 @@ class ToolManagementHandler
             }//end if
 
             if (($func['parameters']['required'] ?? null) !== null) {
-                $required = $func['parameters']['required'];
+                // LLPhant's FunctionInfo expects an array of Parameter objects
+                // for `requiredParameters`, not the raw JSON-Schema array of
+                // strings. Map each required name back to its Parameter so
+                // ToolFormatter (line 51) can call ->name on each entry.
+                $rawRequired = $func['parameters']['required'];
+                $required    = [];
+                foreach ($rawRequired as $reqName) {
+                    foreach ($parameters as $p) {
+                        if ($p->name === $reqName) {
+                            $required[] = $p;
+                            break;
+                        }
+                    }
+                }
             }
 
             // Find the tool instance that has this function.

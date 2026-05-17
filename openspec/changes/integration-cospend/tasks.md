@@ -5,7 +5,7 @@
 - [ ] `CospendLink` entity + mapper + migration (with `link_type` = project|bill)
 - [ ] `CospendService` wrapping Cospend REST API
 - [ ] `CospendController`
-- [ ] `CospendProvider` — id='cospend', label='Costs', icon='CurrencyEur', group='workflow', requiredApp='cospend', storage='link-table'
+- [x] `CospendProvider` — id='cospend', label='Costs', icon='CurrencyEur', group='workflow', requiredApp='cospend', storage='link-table'
 - [ ] DI-tag, routes, unit tests
 
 ## Frontend — Tab

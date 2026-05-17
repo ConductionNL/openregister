@@ -212,11 +212,23 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
+        // Drop the register/schema keys from filters once the upstream caller
+        // has already resolved Register/Schema objects — MagicMapper treats
+        // unknown filter keys as object properties, which silently filters
+        // out every row.
+        $cleanFilters = $filters;
+        if ($register !== null) {
+            unset($cleanFilters['register']);
+        }
+        if ($schema !== null) {
+            unset($cleanFilters['schema']);
+        }
+
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectMapper->findAll(
             limit: $limit,
             offset: $offset,
-            filters: $filters,
+            filters: $cleanFilters,
             sort: $sort,
             search: $search,
             ids: $ids,
