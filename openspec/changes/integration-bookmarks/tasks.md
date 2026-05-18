@@ -5,7 +5,7 @@
 - [ ] `BookmarkLink` entity + mapper + migration
 - [ ] `BookmarkService` wrapping Bookmarks REST API
 - [ ] `BookmarksController`
-- [ ] `BookmarksProvider` — id='bookmarks', label='Bookmarks', icon='Bookmark', group='docs', requiredApp='bookmarks', storage='link-table'
+- [x] `BookmarksProvider` — id='bookmarks', label='Bookmarks', icon='Bookmark', group='docs', requiredApp='bookmarks', storage='link-table'
 - [ ] DI-tag, routes, unit tests
 
 ## Frontend — Tab

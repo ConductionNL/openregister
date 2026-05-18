@@ -49,6 +49,19 @@ class LinkedEntityService
 {
     /**
      * Valid linked entity types and their column names.
+     *
+     * @deprecated since pluggable-integration-registry — the registry
+     * (`IntegrationRegistry`) is the new source of truth for what
+     * integrations exist; this map is retained as an implementation
+     * detail of the magic-column built-in providers until every
+     * Wave-1 leaf has shipped. The follow-up change
+     * `cleanup-linked-entity-type-map` removes it entirely once the
+     * built-in providers (FilesProvider / NotesProvider / TagsProvider /
+     * AuditTrailProvider / etc.) own their own column resolution.
+     *
+     * @see OCA\OpenRegister\Service\Integration\IntegrationRegistry
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-9
      */
     private const TYPE_COLUMN_MAP = [
         'mail'     => 'mail',
@@ -278,7 +291,13 @@ class LinkedEntityService
         $results = [];
 
         // Find schemas that declare this linkedType.
-        // Disable RBAC and multitenancy to search all schemas.
+        // WARNING: RBAC and multitenancy are intentionally disabled here, so schema metadata (names,
+        // slugs, linkedType declarations) and matched object UUIDs/names are returned cross-tenant to
+        // any authenticated user calling GET /api/linked/{type}/{entityId}. There is currently NO
+        // per-row access check before results are returned. This is intentional for the mail-sidebar
+        // use-case where cross-tenant linking is required, but constitutes a cross-tenant data exposure
+        // for multi-tenant SaaS deployments. A per-row access check should be added before this
+        // endpoint is used in strict-isolation deployments. See TODO #1273.
         $allSchemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
         $scanned    = 0;
 

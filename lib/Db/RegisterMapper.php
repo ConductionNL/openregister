@@ -776,25 +776,65 @@ class RegisterMapper extends QBMapper
      */
     public function getFirstRegisterWithSchema(int $schemaId): ?int
     {
+        // Three platforms in production: SQLite (no REGEXP function),
+        // MariaDB / MySQL (has REGEXP), and Postgres (has SIMILAR TO
+        // but stores the `schemas` column as `json`, which doesn't
+        // even cast cleanly to text for a LIKE prefilter without an
+        // explicit `::text` cast). The intersection of "portable" and
+        // "works regardless of `schemas` column type" is "fetch every
+        // register row and decode in PHP".
+        //
+        // Registers are O(10s) per install, so the cost is trivial.
+        // The previous MySQL-only REGEXP query (with `[[:<:]]N[[:>:]]`
+        // word-boundary syntax) is replaced wholesale — see #50.
         $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'schemas')
+            ->from('openregister_registers');
 
-        // REGEXP: match number with optional whitespace and newlines.
-        $pattern = '[[:<:]]'.$schemaId.'[[:>:]]';
+        $candidates = $qb->executeQuery()->fetchAllAssociative();
+        $needle     = (string) $schemaId;
 
-        $qb->select('id')
-            ->from('openregister_registers')
-            ->where('`schemas` REGEXP :pattern')
-            ->setParameter('pattern', $pattern)
-            ->setMaxResults(1);
-
-        $result = $qb->executeQuery()->fetchOne();
-
-        if ($result !== false) {
-            return (int) $result;
+        foreach ($candidates as $row) {
+            $schemas = $this->decodeSchemasField(raw: ($row['schemas'] ?? null));
+            foreach ($schemas as $candidate) {
+                if ((string) $candidate === $needle) {
+                    return (int) $row['id'];
+                }
+            }
         }
 
         return null;
     }//end getFirstRegisterWithSchema()
+
+    /**
+     * Decode the persisted `schemas` column into a flat ID list.
+     *
+     * Accepts the column's raw value (typically a JSON array) and
+     * returns the contained schema IDs. Tolerates legacy shapes
+     * (comma-separated string) and unexpected types by returning [].
+     *
+     * @param mixed $raw The raw column value
+     *
+     * @return array<int,int|string>
+     */
+    private function decodeSchemasField(mixed $raw): array
+    {
+        if (is_array($raw) === true) {
+            return $raw;
+        }
+
+        if (is_string($raw) === true && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded) === true) {
+                return $decoded;
+            }
+
+            // Legacy comma-separated fallback.
+            return array_filter(array_map('trim', explode(',', $raw)));
+        }
+
+        return [];
+    }//end decodeSchemasField()
 
     /**
      * Check if a register has a schema with a specific title

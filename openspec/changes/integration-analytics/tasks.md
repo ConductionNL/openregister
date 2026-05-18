@@ -5,7 +5,7 @@
 - [ ] `AnalyticsLink` entity + mapper + migration (schema/object → report id)
 - [ ] `AnalyticsReportService` — fetch report config + latest data
 - [ ] `AnalyticsController`
-- [ ] `AnalyticsProvider` — id='analytics', label='Analytics', icon='ChartBar', group='workflow', requiredApp='analytics', storage='link-table'
+- [x] `AnalyticsProvider` — id='analytics', label='Analytics', icon='ChartBar', group='workflow', requiredApp='analytics', storage='link-table'
 - [ ] DI-tag, routes, unit tests
 
 ## Frontend — Tab

@@ -30,6 +30,8 @@ import MyAccount from '../views/account/MyAccount.vue'
 import AvgIndex from '../views/avg/AvgIndex.vue'
 import ReportsIndex from '../views/reports/ReportsIndex.vue'
 import ReportView from '../views/reports/ReportView.vue'
+import FeaturesRoadmapIndex from '../views/roadmap/FeaturesRoadmapIndex.vue'
+import IntegrationsView from '../views/integration/IntegrationsView.vue'
 
 Vue.use(Router)
 
@@ -70,6 +72,12 @@ const router = new Router({
 		{ path: '/applications', name: 'applications', component: ApplicationsIndex },
 		{ path: '/applications/:id', name: 'applicationDetails', component: ApplicationDetails },
 		{ path: '/objects', component: ObjectsIndex },
+		// Deep-link to a specific object. ObjectsIndex watches the
+		// {register, schema, id} params and primes objectStore.objectItem
+		// so the detail view (and its registry-driven Integrations tab)
+		// renders without needing a click-through. This is what the
+		// per-leaf screenshot harness targets.
+		{ path: '/objects/:register/:schema/:id', name: 'objectDetail', component: ObjectsIndex },
 		{ path: '/tables', component: SearchIndex },
 		{ path: '/chat', component: ChatIndex },
 		{ path: '/files', component: FilesIndex },
@@ -88,6 +96,11 @@ const router = new Router({
 		{ path: '/avg', name: 'avg', component: AvgIndex },
 		{ path: '/reports', name: 'reports', component: ReportsIndex },
 		{ path: '/reports/:id', name: 'reportView', component: ReportView },
+		{ path: '/features-roadmap', name: 'features-roadmap', component: FeaturesRoadmapIndex },
+		// Standalone integration registry surface (used by the per-leaf
+		// screenshot harness). Bypasses ObjectDetails so the legacy
+		// sub-resource plugins don't race the render.
+		{ path: '/integrations/:register/:schema/:objectId', name: 'integrationsView', component: IntegrationsView },
 		{ path: '*', redirect: '/' },
 	],
 })

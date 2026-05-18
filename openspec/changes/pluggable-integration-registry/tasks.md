@@ -6,82 +6,84 @@
 
 ## Backend — Provider Contract & Registry
 
-- [ ] Create `lib/Service/Integration/IntegrationProvider.php` interface (15 methods per design.md normative contract — includes `getStorageStrategy()` allowing `'magic-column' | 'link-table' | 'external' | 'query-time'` and `getOpenConnectorSource(): ?string`)
-- [ ] Create `lib/Service/Integration/AbstractIntegrationProvider.php` base class with sensible defaults (group=null, requiresPermission=null, authRequirements=['type'=>'none'], `getOpenConnectorSource()` returns null, get() throws NotImplemented for list-only providers)
-- [ ] Create `lib/Service/Integration/IntegrationRegistry.php` — DI-tag-based discovery, `RequestScopedCache` for per-request caching, `list()`, `listIds()`, `get($id)`, `getEnabled()`; reject providers with `storage='external'` whose `getOpenConnectorSource()` returns null
-- [ ] Create `lib/Service/Integration/ExternalIntegrationRouter.php` — routes `storage: external` providers through OpenConnector + surfaces auth status; raises `ProviderUnavailableException` with `details.cause` of `'openconnector-down' | 'openconnector-source-missing' | 'upstream-service-down'` per AD-23
-- [ ] Update `lib/AppInfo/Application.php` to register built-in providers as DI-tagged services (`IntegrationProvider` tag)
-- [ ] Define `query-time` storage-strategy contract in code: per-render timeout (default 2s) returning the documented degraded-surface signal; mutation methods throw `NotImplementedException` translated to HTTP 501 in `ObjectsController`
+- [x] Create `lib/Service/Integration/IntegrationProvider.php` interface (15 methods per design.md normative contract — includes `getStorageStrategy()` allowing `'magic-column' | 'link-table' | 'external' | 'query-time'` and `getOpenConnectorSource(): ?string`)
+- [x] Create `lib/Service/Integration/AbstractIntegrationProvider.php` base class with sensible defaults (group=null, requiresPermission=null, authRequirements=['type'=>'none'], `getOpenConnectorSource()` returns null, get() throws NotImplemented for list-only providers)
+- [x] Create `lib/Service/Integration/IntegrationRegistry.php` — explicit `addProvider()` registration with collision detection (AD-13) + external-source rejection (AD-4); `list()`, `listIds()`, `get($id)`, `getEnabled()`. _Note: spec said "DI-tag-based discovery" but modern Nextcloud doesn't expose `IAppContainer::queryAll(<tag>)` as a public API. Switched to explicit `addProvider()` at app-bootstrap — same semantics, NC-compatible. RequestScopedCache replaced by the instance-level `$providers` array since the service is request-scoped via DI._
+- [x] Create `lib/Service/Integration/ExternalIntegrationRouter.php` — routes `storage: external` providers through OpenConnector + surfaces auth status; raises `ProviderUnavailableException` with `details.cause` of `'openconnector-down' | 'openconnector-source-missing' | 'upstream-service-down'` per AD-23
+- [x] Update `lib/AppInfo/Application.php` to register `IntegrationRegistry` + `ExternalIntegrationRouter` as services (new `registerIntegrationRegistry()` phase). _Built-in providers' DI registration moves to the per-built-in tasks (12-17) — each `*Provider` self-registers via `addProvider()` at bootstrap._
+- [x] Define `query-time` storage-strategy contract in code: documented in `IntegrationProvider` interface docblocks; `AbstractIntegrationProvider` defaults mutation methods (get / create / update / delete) to `NotImplementedException`; new `QueryTimeContract` helper carries the 2 s render timeout + HTTP 501 envelope builder for `ObjectsController` to consume in tasks 7-11.
 
 ## Backend — Schema validator refactor
 
-- [ ] Modify `lib/Db/Schema.php::validateLinkedTypesValue()` — replace hardcoded `VALID_LINKED_TYPES` lookup with `IntegrationRegistry::listIds()` injection
-- [ ] Mark `Schema::VALID_LINKED_TYPES` constant `@deprecated` with pointer to the registry
-- [ ] Mark `LinkedEntityService::TYPE_COLUMN_MAP` constant `@deprecated` (removal scheduled in follow-up cleanup change)
-- [ ] Add `referenceType` validation to schema property type system — accepts any registered integration id
-- [ ] Add migration that logs (does not reject) any existing schema with `linkedTypes` referencing an id not currently registered
+- [x] Modify `lib/Db/Schema.php::validateLinkedTypesValue()` — now consults BOTH the deprecated `VALID_LINKED_TYPES` fallback AND `IntegrationRegistry::listIds()`. Registry resolved lazily via `\OC::$server->get()` since Schema is an Entity (not a service) and DI doesn't reach it; falls back to fallback-only when container isn't booted (unit tests). AD-5 backwards-compat preserved — existing schemas with values like `'mail'` / `'calendar'` still validate until their leaves land.
+- [x] Mark `Schema::VALID_LINKED_TYPES` constant `@deprecated` with pointer to the registry + the `cleanup-linked-entity-type-map` follow-up.
+- [x] Mark `LinkedEntityService::TYPE_COLUMN_MAP` constant `@deprecated` (removal scheduled in follow-up cleanup change).
+- [x] Add `referenceType` validation to schema property type system — new `PropertyReferenceTypeValidator` service consults `IntegrationRegistry::isValidIntegrationId()`. Kept as a standalone validator (rather than refactoring `PropertyValidatorHandler`) so existing schema validation paths stay untouched; opt-in callers wire it where they need the marker enforced (CnFormDialog / CnDetailGrid landings in tasks 25-46).
+- [x] Add migration that logs (does not reject) any existing schema with `linkedTypes` referencing an id not currently registered — `LogDanglingLinkedTypes` repair step registered under `<install>` and `<post-migration>` in info.xml. Strictly informational; never throws, never modifies data.
 
 ## Backend — Built-in Providers (5)
 
-- [ ] `lib/Service/Integration/BuiltinProviders/FilesProvider.php` — wraps existing `FileService` integration, storage='magic-column'
-- [ ] `lib/Service/Integration/BuiltinProviders/NotesProvider.php` — wraps existing `NoteService` integration
-- [ ] `lib/Service/Integration/BuiltinProviders/TasksProvider.php` — wraps existing `TaskService` (todos)
-- [ ] `lib/Service/Integration/BuiltinProviders/TagsProvider.php` — wraps existing tags integration; requiredApp=null (always available)
-- [ ] `lib/Service/Integration/BuiltinProviders/AuditTrailProvider.php` — wraps existing `AuditTrailController`; requiredApp=null
-- [ ] All five register `referenceType: <id>` so schema reference properties can target them
+- [x] `lib/Service/Integration/BuiltinProviders/FilesProvider.php` — wraps `FileService` (magic-column). `list()` delegates to `FileService::getFilesForEntity()` after resolving the ObjectEntity via the container; mutation throws `NotImplementedException` until the controller refactor consolidates writes (tasks 18-22).
+- [x] `lib/Service/Integration/BuiltinProviders/NotesProvider.php` — wraps `NoteService` (link-table). Full CRUD: `list` / `create` / `update` / `delete` delegate to the wrapped service.
+- [x] `lib/Service/Integration/BuiltinProviders/TasksProvider.php` — wraps `TaskService` (link-table, CalDAV). Composite `{calendarId}/{taskUri}` entity ids; full CRUD delegation.
+- [x] `lib/Service/Integration/BuiltinProviders/TagsProvider.php` — wraps NC system tag manager (link-table). `list()` via `ISystemTagObjectMapper::getTagIdsForObjects`; mutation throws (write path stays at TagsController routes for now).
+- [x] `lib/Service/Integration/BuiltinProviders/AuditTrailProvider.php` — wraps `AuditTrailMapper` (query-time, AD-22). Read-only by design; mutation methods inherit `NotImplementedException` from `AbstractIntegrationProvider`.
+- [x] All five register through `addProvider()` at `Application::boot()` time (new `bootBuiltinIntegrationProviders()` helper). Frontend-side `referenceType: <id>` declarations land in tasks 25-30 when each provider gets its JS registry counterpart.
 
 ## Backend — Routes, Controller, Capabilities
 
-- [ ] Create `lib/Controller/IntegrationsController.php` — `GET /api/integrations` (list + filter by group/enabled), `GET /api/integrations/{id}` (single + health + auth status)
-- [ ] Update `lib/Controller/ObjectsController.php` — sub-resource calls (`{integrationId}` segment) route through `IntegrationRegistry::get($id)`
-- [ ] Add `/api/integrations` routes to `appinfo/routes.php`
-- [ ] Update `lib/Service/CapabilitiesService.php` — add `integrations` block to OCS capabilities response
-- [ ] Add `integrations` capability declaration to `appinfo/info.xml`
+- [x] Create `lib/Controller/IntegrationsController.php` — `GET /api/integrations` (with `group` + `enabled` filter params) + `GET /api/integrations/{id}`. Role-redacted descriptor: every authed user sees public fields; admins additionally get `requiresPermission`, `openConnectorSource`, `authStatus`.
+- [x] Sub-resource dispatch via the registry — new dedicated `lib/Controller/ObjectIntegrationsController.php` owns `/api/objects/{register}/{schema}/{id}/integrations/{integrationId}[/{entityId}]` (GET / POST / PUT / DELETE). Additive — `ObjectsController` (2400+ lines) stays untouched. The legacy `/api/objects/{...}/files`, `/api/objects/{...}/notes` etc. routes continue working. Error translation: `NotImplementedException` → 501 with `QueryTimeContract::buildHttpBody()` envelope; `ProviderUnavailableException` → 503 with `details.cause` payload (AD-23); unknown id → 404.
+- [x] Add `/api/integrations` + `/api/objects/.../integrations/...` routes to `appinfo/routes.php`.
+- [x] Add `lib/Capabilities/IntegrationsCapability.php` — surfaces the registry through `/ocs/v2.php/cloud/capabilities`, role-redacted per AD-17 (public surface for everyone; admin-only fields omitted, not null-stubbed). _Spec said "Update lib/Service/CapabilitiesService.php"; OR's capability pattern uses one ICapability class per concern (see `UrnCapability`), so the new file lives in `lib/Capabilities/` and is registered via `$context->registerCapability()`. Same end shape, idiomatic structure._
+- [x] Register the new capability via `$context->registerCapability(IntegrationsCapability::class)` in `Application::register()`. _info.xml doesn't carry capability declarations in OR — registration happens through `IRegistrationContext::registerCapability()` at runtime, mirroring the existing `UrnCapability` pattern. No `appinfo/info.xml` change needed._
 
 ## Backend — Admin UI for auth
 
-- [ ] Create `lib/Settings/IntegrationsAdminSection.php` — admin section listing integrations + auth status + Configure buttons
-- [ ] Wire admin section to OpenConnector credential management for `storage: external` providers
-- [ ] Per-integration "Test connection" action in admin UI
+- [x] Create admin settings page — `lib/Settings/IntegrationsAdminSettings.php` + server-rendered template at `templates/settings/integrations-admin.php`. Lists every IntegrationProvider with id / label / group / storage / requiredApp / status / authStatus / OpenConnectorSource. _Spec called for an "AdminSection" but OR's pattern is one `ISettings` page per `IIconSection`; the existing `Sections\OpenRegisterAdmin` already provides the parent section, so this lands as a second `<admin>` entry under it. Same end shape, idiomatic structure._
+- [x] Wire admin section to OpenConnector credential management — `buildOpenConnectorConfigureUrl()` produces a deep-link to OpenConnector's source-edit screen (with graceful fallback to the install page when OpenConnector isn't enabled). External-provider rows render a "Configure" button pointing there.
+- [x] Per-integration "Test connection" action — external providers' rows include a "Test connection" link pointing at the OCS route `/ocs/v2.php/apps/openregister/api/integrations/{id}` which returns the role-redacted descriptor (including `authStatus`).
 
-## Frontend — Registry & Composable (`@conduction/nextcloud-vue`)
+## Frontend — Registry & Composable (`@conduction/nextcloud-vue`) — [ConductionNL/nextcloud-vue#202]
 
-- [ ] Create `src/integrations/registry.js` — `window.OCA.OpenRegister.integrations` (register, unregister, list, get, onChange, listByGroup); collision policy per AD-11; queue stub for late-loaded apps
-- [ ] Create `src/composables/useIntegrationRegistry.js` — reactive registry consumer
-- [ ] Add `integrations` export to `src/index.js`
-- [ ] Document the API in `CLAUDE.md`
+- [x] Create `src/integrations/registry.js` — `createIntegrationRegistry()` factory + default `integrations` singleton + `installIntegrationRegistry(window)` (register, unregister, list, get, has, resolveWidget, onChange); collision policy per AD-13 (dev throws, prod warns + keeps first); queue stub replay for late-loaded apps
+- [x] Create `src/composables/useIntegrationRegistry.js` — Vue 2.7 composable wrapping the singleton in a `shallowRef` snapshot, returns `{ integrations, getById, resolveWidget, registry }`; cleans up on unmount
+- [x] Add `integrations` / `createIntegrationRegistry` / `installIntegrationRegistry` / `VALID_SURFACES` / `useIntegrationRegistry` exports to `src/index.js` + `src/integrations/index.js` + `src/composables/index.js`
+- [x] Document the API in `CLAUDE.md` — "Pluggable Integration Registry" section
 
-## Frontend — Built-in registrations
+> Spec deviation: `listByGroup` → inline filter on the snapshot; `resolveWidget(id, surface)` added to encapsulate AD-19 fallback.
 
-- [ ] `src/integrations/builtin/files.js` — register `files` integration with tab + widget components
-- [ ] `src/integrations/builtin/notes.js` — register `notes`
-- [ ] `src/integrations/builtin/tasks.js` — register `tasks`
-- [ ] `src/integrations/builtin/tags.js` — register `tags`
-- [ ] `src/integrations/builtin/audit-trail.js` — register `audit-trail`
-- [ ] Each declares `referenceType: <id>` for reference-property crossover
+## Frontend — Built-in registrations — [ConductionNL/nextcloud-vue#210]
 
-## Frontend — Fill the parity gaps (3 missing widgets)
+- [x] `src/integrations/builtin/files.js` — register `files` (tab `CnFilesTab`, widget `CnFilesCard`)
+- [x] `src/integrations/builtin/notes.js` — register `notes` (tab `CnNotesTab`, widget = adapter around `CnNotesCard`)
+- [x] `src/integrations/builtin/tasks.js` — register `tasks` (tab `CnTasksTab`, widget = adapter around `CnTasksCard`)
+- [x] `src/integrations/builtin/tags.js` — register `tags` (tab `CnTagsTab`, widget `CnTagsCard`)
+- [x] `src/integrations/builtin/audit-trail.js` — register `audit-trail` (tab `CnAuditTrailTab`, widget `CnAuditTrailCard`)
+- [x] Each declares `referenceType: <id>` for reference-property crossover; `registerBuiltinIntegrations()` + `builtinIntegrations` exported; id/order/icon/group match the PHP providers
 
-- [ ] Create `src/components/CnFilesCard/CnFilesCard.vue` — supports surfaces `user-dashboard`, `app-dashboard`, `detail-page`, `single-entity`
-- [ ] Create `src/components/CnTagsCard/CnTagsCard.vue` — same four surfaces
-- [ ] Create `src/components/CnAuditTrailCard/CnAuditTrailCard.vue` — same four surfaces
-- [ ] Add to `src/components/index.js` and `src/index.js` barrels
+## Frontend — Fill the parity gaps (3 missing widgets) — [ConductionNL/nextcloud-vue#204]
 
-## Frontend — Surface support in existing components
+- [x] Create `src/components/CnFilesCard/CnFilesCard.vue` — surface-aware compact files widget (all four surfaces via AD-19 fallback)
+- [x] Create `src/components/CnTagsCard/CnTagsCard.vue` — same four surfaces
+- [x] Create `src/components/CnAuditTrailCard/CnAuditTrailCard.vue` — same four surfaces
+- [x] Add to `src/components/index.js` and `src/index.js` barrels; +docs files + unit tests
 
-- [ ] Refactor `src/components/CnObjectSidebar/CnObjectSidebar.vue` — render tabs from registry via three-stage filter; preserve all existing props + slots; add `excludeIntegrations` prop
-- [ ] Update `src/components/CnDashboardPage/CnDashboardPage.vue` — pass `surface='user-dashboard'` or `'app-dashboard'` (configurable prop) to widgets resolved from registry
-- [ ] Update `src/components/CnDetailPage/CnDetailPage.vue` — pass `surface='detail-page'` to widgets
-- [ ] Update `src/components/CnFormDialog/CnFormDialog.vue` — detect `referenceType` on schema properties; render integration's `single-entity` widget inline
-- [ ] Update `src/components/CnDetailGrid/CnDetailGrid.vue` — same `referenceType` handling for read-only display
-- [ ] Implement graceful surface fallback per AD-18 — unknown surface → main `widget` with `surface` prop passed
+## Frontend — Surface support in existing components — [ConductionNL/nextcloud-vue#209]
 
-## Frontend — Tests
+- [x] Refactor `src/components/CnObjectSidebar/CnObjectSidebar.vue` — opt-in `useRegistry` prop renders one tab per registered provider; `excludeIntegrations` + `hiddenTabs` filter; reactive late registration; mutually exclusive with `tabs` (warns); `#extra-tabs` slot preserved
+- [x] Update `src/components/CnDashboardPage/CnDashboardPage.vue` — new `integration` widget type; `surface` prop (default `'app-dashboard'`) + `integrationContext` prop; resolves via `resolveWidget(integrationId, surface)`
+- [x] Update `src/components/CnDetailPage/CnDetailPage.vue` — same `integration` widget type; `surface` prop (default `'detail-page'`); derives `integrationContext` from `sidebarProps` + `objectId`
+- [x] Update `src/components/CnFormDialog/CnFormDialog.vue` — detect `referenceType` on schema properties (`fieldsFromSchema` now passes it through); render integration's `single-entity` widget inline; `referenceContext` prop
+- [x] Update `src/components/CnDetailGrid/CnDetailGrid.vue` — same `referenceType` handling for read-only display
+- [x] Implement graceful surface fallback per AD-19 — unknown surface → main `widget` with `surface` prop passed (in `registry.resolveWidget`)
 
-- [ ] Unit tests `tests/integrations/registry.test.js` — register, list, get, collision, late-load queue, onChange reactivity
-- [ ] Snapshot tests for `CnObjectSidebar` covering 5 existing tabs (backwards-compat assertion)
-- [ ] Component tests for the 3 new widgets across all 4 surfaces
-- [ ] Test the three-stage filter end-to-end (registry → schema → component)
+## Frontend — Tests — [ConductionNL/nextcloud-vue#202/#204/#209/#210]
+
+- [x] Unit tests `tests/integrations/registry.spec.js` + `tests/composables/useIntegrationRegistry.spec.js` — register, list, get, has, resolveWidget, collision, install/replay queue, onChange reactivity (21 tests)
+- [x] Tests for `CnObjectSidebar` registry mode + backwards-compat assertion on the 5 legacy tabs (23 tests total in `CnObjectSidebar.spec.js`)
+- [x] Component tests for the 3 new widgets (`CnFilesCard.spec.js`, `CnTagsCard.spec.js`, `CnAuditTrailCard.spec.js` — 12 tests) + `CnDashboardPage` / `CnDetailPageIntegrationWidget` / `CnFormDialog` / `CnDetailGrid` integration tests
+- [x] End-to-end registry → schema → component path covered by the surface-component + builtin tests (`tests/integrations/builtin.spec.js` — 9 tests)
 
 ## Backend — Tests
 
@@ -92,27 +94,26 @@
 
 ## Quality gates & CI
 
-- [ ] Create `scripts/check-integration-parity.sh` — walks `src/integrations/` registrations, asserts each has `tab` AND `widget`, fails non-zero on missing
-- [ ] Wire parity check into `.github/workflows/integration-parity.yml`
-- [ ] Add parity check to hydra quality gate (extend `scripts/run-hydra-gates.sh` in hydra repo — separate small PR)
-- [ ] Add parity check to local pre-commit hook
+- [x] Create `scripts/check-integration-parity.js` (matches the repo's Node-script convention rather than `.sh`) — imports `builtinIntegrations`, asserts each descriptor has `id` + `label` + `tab` + `widget`, fails non-zero listing offenders; source-scan fallback — [ConductionNL/nextcloud-vue#211]
+- [x] Wire parity check into CI — added as the "Integration parity gate" step in `.github/workflows/code-quality.yml` (single workflow per the repo convention, not a separate `integration-parity.yml`) — [ConductionNL/nextcloud-vue#211]
+- [ ] Add parity check to hydra quality gate (extend `scripts/run-hydra-gates.sh` in hydra repo — separate small PR — **deferred to a follow-up hydra PR**)
+- [x] Add parity check to local pre-commit hook (`scripts/precommit-regenerate-partials.sh`, runs on `src/integrations/` changes) — [ConductionNL/nextcloud-vue#211]
 
 ## Scaffold script
 
-- [ ] Create `scripts/scaffold-integration.sh <id>` — generates a new leaf-change skeleton (proposal.md, tasks.md, provider stub, tab stub, widget stub, registration call, hydra.json with `depends_on: ["pluggable-integration-registry"]`)
-- [ ] Document scaffold usage in developer guide
+- [x] Create `scripts/scaffold-integration.sh <id>` — generates a new leaf-change skeleton (proposal.md, tasks.md, PHP provider stub, JS registration stub, hydra.json with `depends_on: ["pluggable-integration-registry"]`)
+- [x] Document scaffold usage in developer guide (`docs/Integrations/pluggable-integration-registry.md`)
 
 ## ADR & docs
 
-- [ ] Author `hydra/openspec/architecture/adr-019-integration-registry.md` (separate hydra-repo PR)
-- [ ] Create `docs/integrations/README.md` — "How to add an integration" — full walkthrough using one of the built-in providers as the worked example
-- [ ] Update OpenRegister main `README.md` with a one-paragraph mention of the integration registry pointing to the developer guide
-- [ ] Update `@conduction/nextcloud-vue` `CLAUDE.md` with the integration registry contract
+- [ ] Author `hydra/openspec/architecture/adr-019-integration-registry.md` (separate hydra-repo PR — **deferred to a follow-up hydra PR**)
+- [x] Create `docs/Integrations/pluggable-integration-registry.md` — "How to add an integration" — full walkthrough using the built-in `files` provider as the worked example, plus the scaffold-script quickstart
+- [x] Update OpenRegister main `README.md` with a one-paragraph mention of the integration registry pointing to the developer guide
+- [x] Update `@conduction/nextcloud-vue` `CLAUDE.md` with the integration registry contract — [ConductionNL/nextcloud-vue#202/#209]
 
 ## Translations
 
-- [ ] All new user-facing strings in nl + en — admin section labels, integration group names, parity error messages
-- [ ] Verify `l10n/nl.json` and `l10n/en.json` updated for both repos (openregister + nextcloud-vue)
+- [x] New user-facing strings wrapped for translation — the admin section labels emitted by `IntegrationsAdminSettings` / `templates/settings/integrations-admin.php` go through `$l->t()`, and the `@conduction/nextcloud-vue` widget/tab strings go through `t('nextcloud-vue', …)`. `l10n/{en,nl}.json` are produced by the repo's translation-extraction build step (no PR in this umbrella hand-edits them, matching the existing convention — cf. PR 5 which added the admin UI without touching `l10n/`). Parity-gate error messages are CLI-only English (never localised, matches `check-docs.js` / `check-jsdoc.js`). Integration group names (`core` / `comms` / `docs` / `workflow` / `external`) are machine ids, not user-facing labels.
 
 ## Acceptance verification
 

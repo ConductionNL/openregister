@@ -47,7 +47,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="organisationStore.viewMode"
-							:v-tooltip="t('openregister', 'See organisations as cards')"
+							v-tooltip="t('openregister', 'See organisations as cards')"
 							:button-variant="true"
 							value="cards"
 							name="view_mode_radio"
@@ -57,7 +57,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="organisationStore.viewMode"
-							:v-tooltip="t('openregister', 'See organisations as a table')"
+							v-tooltip="t('openregister', 'See organisations as a table')"
 							:button-variant="true"
 							value="table"
 							name="view_mode_radio"

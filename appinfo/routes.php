@@ -13,6 +13,19 @@ return [
         'Consumers' => ['url' => 'api/consumers'],
     ],
     'routes' => [
+        // Integration registry (read-only discovery API) —
+        // pluggable-integration-registry task 4.3 / tasks.md#task-20.
+        ['name' => 'integrations#index', 'url' => '/api/integrations', 'verb' => 'GET'],
+        ['name' => 'integrations#show',  'url' => '/api/integrations/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+
+        // Object-scoped integration sub-resource dispatch —
+        // pluggable-integration-registry task 4.2 / tasks.md#task-19.
+        ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
+        ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
+        ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
+        ['name' => 'objectIntegrations#update',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
+        ['name' => 'objectIntegrations#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
+
         // PATCH routes for resources (partial updates).
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -267,7 +280,11 @@ return [
         ['name' => 'linked_entity#removeObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'linked_entity#addRegisterLink', 'url' => '/api/registers/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
         ['name' => 'linked_entity#addSchemaLink', 'url' => '/api/schemas/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
-        ['name' => 'linked_entity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[^/]+', 'entityId' => '.+']],
+        // Note: entityId uses [^/]+ (not .+) to prevent slashes in captured values. Entity IDs are
+        // opaque (UUIDs / external IDs) and should never contain path separators. The legacy underscore-
+        // prefixed variant below (linkedEntity#reverseLookup on /api/linked/_{type}/{entityId}) coexists
+        // for backwards compatibility with older mail-sidebar clients; deduplicate in a future cleanup.
+        ['name' => 'linked_entity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[^/]+', 'entityId' => '[^/]+']],
 
         // Objects.
         ['name' => 'objects#objects', 'url' => '/api/objects', 'verb' => 'GET'],
@@ -621,6 +638,16 @@ return [
 		['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
 		['name' => 'ui#organisation', 'url' => '/organisation', 'verb' => 'GET'],
 		['name' => 'ui#objects', 'url' => '/objects', 'verb' => 'GET'],
+		// Deep-link to a specific object — same SPA shell, Vue Router
+		// parses the {register, schema, id} params and ObjectsIndex
+		// fetches the object so its detail tabs (including the registry-
+		// driven Integrations tab) render directly.
+		['name' => 'ui#objects', 'url' => '/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+		// Standalone integrations view (per-leaf screenshot harness target).
+		// Bypasses ObjectDetails; Vue Router resolves to IntegrationsView.vue.
+		// Has its own action `ui#integrationsView` so the duplicate-route-name
+		// guard in OC's Router doesn't reject it.
+		['name' => 'ui#integrationsView', 'url' => '/integrations/{register}/{schema}/{objectId}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'objectId' => '[^/]+']],
 		['name' => 'ui#tables', 'url' => '/tables', 'verb' => 'GET'],
 		['name' => 'ui#chat', 'url' => '/chat', 'verb' => 'GET'],
 		['name' => 'ui#configurations', 'url' => '/configurations', 'verb' => 'GET'],
@@ -757,5 +784,12 @@ return [
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
+
+		// Features & Roadmap menu — GitHub issues proxy (add-features-roadmap-menu).
+		// GET is a cached read (NoCSRFRequired set via controller attribute, pure read).
+		// POST creates a GitHub issue on behalf of the user; CSRF MUST apply, so no
+		// NoCSRFRequired attribute is declared in the controller for the create method.
+		['name' => 'gitHubIssues#index', 'url' => '/api/github/issues', 'verb' => 'GET'],
+		['name' => 'gitHubIssues#create', 'url' => '/api/github/issues', 'verb' => 'POST'],
     ],
 ];

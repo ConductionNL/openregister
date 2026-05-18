@@ -4,7 +4,7 @@
 
 ## Backend
 
-- [ ] Create `lib/Service/Integration/Providers/DeckProvider.php` — id='deck', label='Cards', icon='ViewColumn', group='workflow', requiredApp='deck', storage='link-table'
+- [x] Create `lib/Service/Integration/Providers/DeckProvider.php` — id='deck', label='Cards', icon='ViewColumn', group='workflow', requiredApp='deck', storage='link-table'
 - [ ] DI-tag in `Application.php`
 - [ ] Extend `SettingsService` to persist schema-level default board+stack
 - [ ] Unit test

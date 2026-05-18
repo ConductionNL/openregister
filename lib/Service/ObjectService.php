@@ -579,21 +579,33 @@ class ObjectService
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ?ObjectEntity {
-        // Check if a register is provided and set the current register context.
+        // Resolve the call's register / schema, isolating it from any
+        // stale `currentRegister` / `currentSchema` state left over from
+        // a previous call on this service instance. When the caller
+        // omits either argument we want MagicMapper's cross-table search
+        // to resolve the object — NOT a previous caller's leftover
+        // schema (openbuilt#75 / openregister#1520: TransitionController
+        // was 500-ing because `objectService->find(id: $uuid)` from
+        // `TransitionEngine::transition()` inherited a stale schema and
+        // hit the wrong magic table).
+        $callRegister = null;
+        $callSchema   = null;
         if ($register !== null) {
             $this->setRegister(register: $register);
+            $callRegister = $this->currentRegister;
         }
 
-        // Check if a schema is provided and set the current schema context.
         if ($schema !== null) {
             $this->setSchema(schema: $schema);
+            $callSchema = $this->currentSchema;
         }
 
-        // Retrieve the object using the current register, schema, ID, extend properties, and file information.
+        // Retrieve the object — when both call args are null, MagicMapper
+        // falls back to its `findAcrossAllMagicTables` path.
         $object = $this->getHandler->find(
             id: $id,
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
+            register: $callRegister,
+            schema: $callSchema,
             _extend: $_extend,
             files: $files,
             _rbac: $_rbac,
@@ -605,9 +617,20 @@ class ObjectService
             return null;
         }
 
-        // If no schema was provided but we have an object, derive the schema from the object.
-        if ($this->currentSchema === null) {
+        // When the caller did NOT specify register/schema we just did a
+        // cross-table find. Re-anchor `currentSchema` / `currentRegister`
+        // to the freshly-resolved object so the downstream rendering /
+        // RBAC code points at the right context — never at the stale
+        // leftover from a previous call.
+        if ($callSchema === null) {
             $this->setSchema(schema: $object->getSchema());
+        }
+
+        if ($callRegister === null) {
+            $registerRef = $object->getRegister();
+            if ($registerRef !== null && $registerRef !== '') {
+                $this->setRegister(register: $registerRef);
+            }
         }
 
         // Check user has permission to read this specific object (includes object owner check).
@@ -731,6 +754,8 @@ class ObjectService
         $config = $this->prepareFindAllConfig(config: $config);
 
         // Delegate the findAll operation to the handler.
+        // Pass the resolved register/schema context so MagicMapper::findAll
+        // does not bail out with "called without register/schema context".
         $objects = $this->getHandler->findAll(
             limit: $config['limit'] ?? null,
             offset: $config['offset'] ?? null,
@@ -739,6 +764,8 @@ class ObjectService
             search: $config['search'] ?? null,
             files: $config['files'] ?? false,
             uses: $config['uses'] ?? null,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
             ids: $config['ids'] ?? null,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy

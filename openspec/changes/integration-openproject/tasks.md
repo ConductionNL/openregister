@@ -5,13 +5,13 @@
 ## Umbrella coordination
 
 - [ ] Add `getOpenConnectorSource(): ?string` to umbrella `IntegrationProvider` interface (tiny umbrella PR)
-- [ ] `AbstractIntegrationProvider` default returns `null`
+- [x] `AbstractIntegrationProvider` default returns `null`
 
 ## Backend
 
-- [ ] Create `lib/Service/Integration/Providers/OpenProjectProvider.php` — id='openproject', label='Projects', icon='Briefcase', group='external', requiredApp=null, storage='external', `getOpenConnectorSource()` returns 'openproject'
-- [ ] Declare auth requirements `{type: 'oauth2', configSchema: {url, client_id, client_secret, scope}}`
-- [ ] Delegate CRUD to `ExternalIntegrationRouter` (from umbrella)
+- [x] Create `lib/Service/Integration/Providers/OpenProjectProvider.php` — id='openproject', label='Projects', icon='Briefcase', group='external', requiredApp=null, storage='external', `getOpenConnectorSource()` returns 'openproject'
+- [x] Declare auth requirements `{type: 'oauth2', configSchema: {url, client_id, client_secret, scope}}`
+- [x] Delegate CRUD to `ExternalIntegrationRouter` (from umbrella)
 - [ ] Ship OpenConnector source config template `config/openconnector-sources/openproject.yaml`
 - [ ] DI-tag
 - [ ] Unit tests (OpenConnector client mocked)
