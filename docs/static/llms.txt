@@ -1,0 +1,27 @@
+# OpenRegister
+
+> OpenRegister is an open-source data register app for the Nextcloud workspace.
+
+OpenRegister is an open-source data register app for the Nextcloud workspace. It stores domain-specific objects (client records, social-security entries, custom registers) validated against JSON Schema, with full version history, audit trails, soft deletion, and object-level locking. Schemas can be authored by hand or imported from Schema.org and the Dutch GGM (Gemeentelijk Gegevensmodel), and objects persist into Nextcloud, MySQL, PostgreSQL, or MongoDB without changing application logic. Released under EUPL-1.2 and maintained by Conduction since 2019.
+
+## Docs
+
+- [Tutorials](https://openregister.conduction.nl/tutorials): step-by-step walkthroughs.
+- [Features](https://openregister.conduction.nl/Features): what the app does, organised by capability.
+- [Use cases](https://openregister.conduction.nl/UseCases): real customer scenarios.
+- [Integrations](https://openregister.conduction.nl/Integrations): which external systems the app talks to.
+- [Technical](https://openregister.conduction.nl/Technical): architecture, data model, security posture.
+- [User guide](https://openregister.conduction.nl/user-guide): end-user documentation.
+- [API](https://openregister.conduction.nl/api): OpenAPI reference.
+
+## Optional
+
+- [Install](https://openregister.conduction.nl/installation): install from the Nextcloud app store.
+- [Source](https://openregister.conduction.nl): repository and issue tracker.
+- [App page](https://www.conduction.nl/apps/openregister): product positioning on conduction.nl.
+
+## Contact
+
+- Email: info@conduction.nl
+- GitHub: https://github.com/ConductionNL/openregister
+- Conduction B.V. · KvK 76741850 · Lauriergracht 14h, Amsterdam, Netherlands
