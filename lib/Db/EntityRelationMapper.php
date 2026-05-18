@@ -239,6 +239,55 @@ class EntityRelationMapper extends QBMapper
     }//end findAnonymisedEntitiesWithBasesForFile()
 
     /**
+     * Build a `(entity_value → {id, type})` map for every entity relation on a file.
+     *
+     * Used by `DocumentProcessingHandler::anonymizeDocument` to look up the
+     * stable `entity_id` for each entity occurrence so the in-file
+     * placeholder format `[<TYPE>: <entity_id>]` matches what downstream
+     * consumers (DocuDesk's grondslagen-summary report) display. Without
+     * this lookup the anonymise step generates a fresh UUID-prefix per
+     * call, and the report's view of "what's in the file" diverges from
+     * the actual substitution.
+     *
+     * Returns a single entry per distinct `entity_value` on the file.
+     * When the same value is detected as multiple `entity_types`, the
+     * first one encountered wins — callers should use their own
+     * `entityType` to discriminate at the substitution site.
+     *
+     * @param int $fileId The Nextcloud file ID whose entity relations are mapped.
+     *
+     * @return array<string, array{id: int, type: string}> Map keyed by entity value.
+     */
+    public function findEntityIdsByValueForFile(int $fileId): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->selectDistinct(['e.id', 'e.type', 'e.value'])
+            ->from($this->getTableName(), 'r')
+            ->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
+            ->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $value = (string) ($row['value'] ?? '');
+            if ($value === '' || isset($map[$value]) === true) {
+                continue;
+            }
+
+            $map[$value] = [
+                'id'   => (int) ($row['id'] ?? 0),
+                'type' => (string) ($row['type'] ?? ''),
+            ];
+        }
+
+        return $map;
+
+    }//end findEntityIdsByValueForFile()
+
+    /**
      * Mark entity relations as anonymized.
      *
      * Skip-aware: rows where `skip_anonymization = true` are excluded
