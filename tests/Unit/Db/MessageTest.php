@@ -24,6 +24,7 @@ class MessageTest extends TestCase
         $this->assertSame('string', $fieldTypes['role']);
         $this->assertSame('string', $fieldTypes['content']);
         $this->assertSame('json', $fieldTypes['sources']);
+        $this->assertSame('json', $fieldTypes['context']);
         $this->assertSame('datetime', $fieldTypes['created']);
     }
 
@@ -35,6 +36,9 @@ class MessageTest extends TestCase
         $this->assertNull($this->message->getContent());
         $this->assertNull($this->message->getSources());
         $this->assertNull($this->message->getCreated());
+
+        // getContext() shadows the magic getter to normalise null -> [].
+        $this->assertSame([], $this->message->getContext());
     }
 
     public function testConstants(): void
@@ -98,7 +102,7 @@ class MessageTest extends TestCase
     {
         $json = $this->message->jsonSerialize();
 
-        $expectedKeys = ['id', 'uuid', 'conversationId', 'role', 'content', 'sources', 'created'];
+        $expectedKeys = ['id', 'uuid', 'conversationId', 'role', 'content', 'sources', 'context', 'created'];
         foreach ($expectedKeys as $key) {
             $this->assertArrayHasKey($key, $json);
         }
@@ -114,7 +118,59 @@ class MessageTest extends TestCase
         $this->assertNull($json['role']);
         $this->assertNull($json['content']);
         $this->assertNull($json['sources']);
+        $this->assertSame([], $json['context']);
         $this->assertNull($json['created']);
+    }
+
+    /**
+     * §9.5 — getContext() normalises null -> [] for callers; setContext
+     * shadows the magic setter with non-null array semantics and the
+     * `json` addType binding handles serialisation on persist.
+     */
+    public function testGetContextReturnsEmptyArrayWhenUnset(): void
+    {
+        $this->assertSame([], $this->message->getContext());
+    }
+
+    public function testSetAndGetContext(): void
+    {
+        $context = ['app' => 'openbuilt', 'slug' => 'my-app', 'view' => 'detail'];
+        $this->message->setContext($context);
+        $this->assertSame($context, $this->message->getContext());
+    }
+
+    public function testSetContextOverwritesPreviousValue(): void
+    {
+        $this->message->setContext(['stale' => true]);
+        $this->message->setContext(['fresh' => 'value']);
+        $this->assertSame(['fresh' => 'value'], $this->message->getContext());
+    }
+
+    public function testSetContextWithEmptyArrayKeepsEmpty(): void
+    {
+        // Calling setContext([]) is legal and getContext() reflects it.
+        $this->message->setContext([]);
+        $this->assertSame([], $this->message->getContext());
+    }
+
+    public function testSetContextWithNestedStructure(): void
+    {
+        // Frontend may send nested objects + arrays — must round-trip.
+        $context = [
+            'app'  => 'openbuilt',
+            'page' => ['id' => 'Dashboard', 'route' => '/'],
+            'tags' => ['draft', 'wip'],
+        ];
+        $this->message->setContext($context);
+        $this->assertSame($context, $this->message->getContext());
+    }
+
+    public function testJsonSerializeIncludesContext(): void
+    {
+        $context = ['register' => 'decidesk', 'schema' => 'meeting'];
+        $this->message->setContext($context);
+        $json = $this->message->jsonSerialize();
+        $this->assertSame($context, $json['context']);
     }
 
     public function testJsonSerializeWithValues(): void
@@ -136,6 +192,7 @@ class MessageTest extends TestCase
         $this->assertSame('assistant', $json['role']);
         $this->assertSame('Test response', $json['content']);
         $this->assertSame($sources, $json['sources']);
+        $this->assertSame([], $json['context']); // default when unset
         $this->assertSame($created->format('c'), $json['created']);
     }
 

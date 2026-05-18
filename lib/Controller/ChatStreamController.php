@@ -187,14 +187,12 @@ class ChatStreamController extends Controller
     public function stream(): Response
     {
         // Hard requirement: clear every output buffer layer (PHP, NC framework,
-        // any plugin) so the first echo is flushed immediately.
-        while (ob_get_level() > 0) {
-            ob_end_clean();
-        }
+        // any plugin) so the first echo is flushed immediately. Extracted to
+        // its own method so unit tests can override and skip — closing
+        // PHPUnit's output buffer trips its "risky" detector.
+        $this->clearOutputBuffers();
 
-        header('Content-Type: text/event-stream');
-        header('Cache-Control: no-cache');
-        header('X-Accel-Buffering: no');
+        $this->emitSseHeaders();
 
         try {
             $user = $this->userSession->getUser();
@@ -349,7 +347,7 @@ class ChatStreamController extends Controller
      *
      * @return never
      */
-    private function emitAndExit(string $eventType, array $payload): never
+    protected function emitAndExit(string $eventType, array $payload): never
     {
         $this->emitSseEvent(eventType: $eventType, payload: $payload);
         $this->safeShutdown(rollback: $eventType === 'error');
@@ -404,12 +402,37 @@ class ChatStreamController extends Controller
      *
      * @return void
      */
-    private function emitSseEvent(string $eventType, array $payload): void
+    protected function emitSseEvent(string $eventType, array $payload): void
     {
         echo 'event: '.$eventType."\n";
         echo 'data: '.json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n\n";
         flush();
     }//end emitSseEvent()
+
+    /**
+     * Clear every output buffer layer (PHP, NC framework, any plugin) so
+     * the first SSE echo is flushed immediately. Extracted from stream()
+     * so unit tests can override and skip — closing PHPUnit's output
+     * buffer trips its "risky" detector.
+     */
+    protected function clearOutputBuffers(): void
+    {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+    }//end clearOutputBuffers()
+
+    /**
+     * Emit the three SSE response headers. Extracted so tests can skip
+     * (header() emits a "headers already sent" warning under PHPUnit
+     * because the test runner has already written output).
+     */
+    protected function emitSseHeaders(): void
+    {
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache');
+        header('X-Accel-Buffering: no');
+    }//end emitSseHeaders()
 
     /**
      * Find an agent the current user is allowed to start a conversation with.

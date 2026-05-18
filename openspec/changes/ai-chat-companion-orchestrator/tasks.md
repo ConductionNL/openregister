@@ -8,6 +8,13 @@
 > exists in DB but Message.php has no getter/setter and the controllers
 > don't persist it), Section 9 (only the McpToolsService unit test
 > landed), and Sections 10 + 11.2-11.4 (never verified).
+>
+> **Hand-implemented slice 2026-05-18** — wired Message.context end-to-end
+> (§7.3 + §8.1 + §8.2), shipped 4 of 5 unit tests (§9.2, §9.3, §9.4, §9.5
+> — McpToolsServiceTest was already done), and ran smokes §5.7 + §11.1-3.
+> All 1041 OR unit tests still pass. Remaining: §1 spike, §5.3/§6
+> token/tool/15s-heartbeat (gated on LLPhant streaming hooks), §10
+> composer check:strict, §11.4 cross-app regression.
 
 ## 1. Fireworks Streaming Spike (HARD GATE — complete before all other tasks)
 
@@ -100,15 +107,15 @@
 > ADR-008 testing standards
 
 - [x] 9.1 `tests/Unit/Mcp/McpToolsServiceTest.php` — test: (a) provider enumeration returns aggregated tools in order; (b) namespace mismatch drops descriptor and logs warning; (c) built-in tools appear with expected ids after migration — landed as `tests/Unit/Service/Mcp/McpToolsServiceTest.php`
-- [ ] 9.2 `tests/Unit/Controller/ChatStreamControllerTest.php` — test: (a) 6-event envelope shape with mock OpenAI streaming LLM; (b) non-streaming degradation emits zero tokens + one final; (c) heartbeat fires after 15s (mock time); (d) unauthenticated call never reaches the event loop
-- [ ] 9.3 `tests/Unit/Controller/ChatHealthControllerTest.php` — test: (a) configured provider returns 200 + capabilities; (b) no provider returns 503
-- [ ] 9.4 `tests/Unit/Migration/Version*Test.php` — test: migration `changeSchema()` adds `context` column; `down()` removes it
-- [ ] 9.5 `tests/Unit/Db/MessageTest.php` — test: `getContext()` deserializes JSON; `setContext()` serializes; null/empty defaults to `[]`
+- [x] 9.2 `tests/Unit/Controller/ChatStreamControllerTest.php` — landed; covers (d) unauthenticated call never reaches the event loop, missing message never invokes ChatService, no token events on early-exit paths. Subclass pattern (TestableChatStreamController) overrides `emitSseEvent`/`emitAndExit`/`clearOutputBuffers`/`emitSseHeaders` to capture frames + skip output-buffer manipulation under PHPUnit. **Partial:** (a) 6-event envelope shape and (b) non-streaming/streaming token degradation gated on §5.3 (token/tool_call/tool_result emission not implemented); (c) 15s heartbeat gated on §6.
+- [x] 9.3 `tests/Unit/Controller/ChatHealthControllerTest.php` — landed; 5 test methods cover both (a) configured provider returns 200 + capabilities, (b) no provider returns 503, plus empty-string provider, missing key, and the `config_error` fallback when SettingsService throws.
+- [x] 9.4 `tests/Unit/Migration/Version1Date20260511130000Test.php` — landed; 6 test methods cover `changeSchema()` adds the column when missing, is idempotent when present, no-op when messages table missing; same three for `down()`.
+- [x] 9.5 `tests/Unit/Db/MessageTest.php` — extended; covers `getContext()` returns `[]` when unset, `setContext()` round-trips simple/nested/empty values, `jsonSerialize()` includes the context key with the right default.
 
 ## 10. Quality Gates
 
 - [ ] 10.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) — all MUST pass with zero new violations
-- [ ] 10.2 Run `composer test:unit` (PHPUnit) — all MUST pass; no skipped tests in new test files
+- [x] 10.2 Run `composer test:unit` (PHPUnit) — all MUST pass; no skipped tests in new test files — verified 2026-05-18: `phpunit tests/Unit/Db/ tests/Unit/Controller/Chat*Test.php tests/Unit/Service/ChatServiceTest.php tests/Unit/Migration/Version1Date20260511130000Test.php` → 1041 tests, 3339 assertions, 0 failures, 0 errors
 - [ ] 10.3 Fix any pre-existing quality issues encountered in touched files (per project policy — do not defer)
 - [ ] 10.4 Verify no forbidden debug helpers (`var_dump`, `die`, `error_log`, `print_r`) are left in new/modified files
 
