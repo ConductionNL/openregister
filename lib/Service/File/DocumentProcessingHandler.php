@@ -192,7 +192,33 @@ class DocumentProcessingHandler
             $anonymizedFileName .= '.'.$fileExtension;
         }
 
-        return $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName);
+        $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName);
+
+        // Flip the source's EntityRelation rows to `anonymized = 1` so the
+        // anonymised state is queryable downstream. `markAsAnonymized`
+        // skips rows where `skip_anonymization = 1` per the
+        // `entity-relation-grondslagen` contract — operator skips are
+        // preserved. The placeholder value is a generic "[REDACTED]"
+        // because each entity got its own per-row replacement key earlier
+        // in this method; the column stores a single representative value
+        // per anonymise call, not the full per-entity placeholder list.
+        if (is_int($fileId) === true && $fileId > 0 && empty($replacements) === false) {
+            try {
+                $this->entityRelationMapper->markAsAnonymized($fileId, '[REDACTED]');
+            } catch (\Throwable $e) {
+                // Persistence-side failure on the audit flag MUST NOT mask
+                // the successful redaction; the file is already written.
+                // Surface via warning log; downstream summary reports
+                // simply won't see this file until the next anonymise
+                // call retries the mark.
+                $this->logger->warning(
+                    'DocumentProcessingHandler: markAsAnonymized failed after redaction',
+                    ['fileId' => $fileId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        return $anonymizedFile;
     }//end anonymizeDocument()
 
     /**
