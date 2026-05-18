@@ -367,6 +367,9 @@ class ObjectService
                     // Save the entity with the new folder ID.
                     $this->objectMapper->update($entity);
                 }
+            } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
+                // Access denials must propagate to the controller for HTTP 403 mapping.
+                throw $e;
             } catch (Exception $e) {
                 // Log the error but don't fail the object creation/update.
                 // The object can still function without a folder.
