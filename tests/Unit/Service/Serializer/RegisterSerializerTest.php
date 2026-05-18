@@ -160,7 +160,7 @@ class RegisterSerializerTest extends TestCase
         $this->logger->expects($this->once())
             ->method('warning')
             ->with(
-                $this->stringContains('Schema not found'),
+                $this->stringContains('Schema unresolvable for expansion'),
                 $this->callback(
                     function (array $context): bool {
                         return $context['schemaId'] === 999;
