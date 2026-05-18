@@ -29,9 +29,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IL10N;
 
@@ -48,13 +51,19 @@ class TasksProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param TaskService $taskService Tasks service.
-     * @param IL10N       $l10n        Localisation.
+     * @param TaskService    $taskService    Tasks service.
+     * @param RegisterMapper $registerMapper Register lookup (slug/uuid/id → entity).
+     * @param SchemaMapper   $schemaMapper   Schema lookup (slug/uuid/id → entity).
+     * @param ObjectService  $objectService  Object lookup (for the LINK label title).
+     * @param IL10N          $l10n           Localisation.
      *
      * @return void
      */
     public function __construct(
         private TaskService $taskService,
+        private RegisterMapper $registerMapper,
+        private SchemaMapper $schemaMapper,
+        private ObjectService $objectService,
         private IL10N $l10n,
     ) {
     }//end __construct()
@@ -155,26 +164,59 @@ class TasksProvider extends AbstractIntegrationProvider
     /**
      * Create a VTODO task linked to the given OR object.
      *
+     * Accepts the per-provider `(register, schema, objectId)` triple
+     * (slugs OR ids) and a free-form payload. Resolves the register +
+     * schema entities so the task carries the int ids that
+     * `TaskService::createTask` expects, and looks up the object for the
+     * RFC 9253 LINK label. The user's default VTODO calendar is
+     * auto-discovered downstream — `payload.calendarId` is ignored.
+     *
+     * Payload keys honoured: `summary`, `description`, `priority`, `due`,
+     * `status`. Anything else is ignored.
+     *
      * @param string              $register Register slug or numeric id.
      * @param string              $schema   Schema slug or numeric id.
      * @param string              $objectId Owning object uuid.
      * @param array<string,mixed> $payload  Task payload.
      *
      * @return array<string,mixed> Created task row.
+     *
+     * @throws \RuntimeException When the register/schema can't be resolved
+     *                           or the underlying VTODO write fails.
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
-        $calendarId  = (string) ($payload['calendarId'] ?? '');
-        $summary     = (string) ($payload['summary'] ?? '');
-        $description = (string) ($payload['description'] ?? '');
-        $due         = isset($payload['due']) === true ? (string) $payload['due'] : null;
-        $priority    = isset($payload['priority']) === true ? (int) $payload['priority'] : null;
+        $registerEntity = $this->registerMapper->find(id: $register);
+        $schemaEntity   = $this->schemaMapper->find(id: $schema);
 
-        // TODO(#1539): call signature mismatched against TaskService::createTask
-        // (expects int registerId, int schemaId, string objectUuid, string objectTitle, array data) —
-        // suppressing here so phpcs stays green; fix tracked in #1539.
-        // @phpcs:ignore CustomSniffs.Functions.NamedParameters
-        $task = $this->taskService->createTask($calendarId, $summary, $description, $due, $priority, $objectId);
+        // Object lookup is best-effort — the LINK label is cosmetic. A
+        // missing object still allows the task to be created with a
+        // synthetic fallback title; the linked-entity scan finds it via
+        // the X-OPENREGISTER-OBJECT uuid regardless.
+        $objectEntity = $this->objectService->find(
+            id: $objectId,
+            register: $registerEntity,
+            schema: $schemaEntity
+        );
+        $objectTitle  = $objectEntity?->getName() ?? $objectId;
+
+        $data = [
+            'summary'     => (string) ($payload['summary'] ?? ''),
+            'description' => (string) ($payload['description'] ?? ''),
+            'priority'    => isset($payload['priority']) === true ? (int) $payload['priority'] : 0,
+            'status'      => (string) ($payload['status'] ?? 'NEEDS-ACTION'),
+        ];
+        if (isset($payload['due']) === true) {
+            $data['due'] = (string) $payload['due'];
+        }
+
+        $task = $this->taskService->createTask(
+            registerId: $registerEntity->getId(),
+            schemaId: $schemaEntity->getId(),
+            objectUuid: $objectId,
+            objectTitle: $objectTitle,
+            data: $data
+        );
 
         if ($task === null) {
             throw new \RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');

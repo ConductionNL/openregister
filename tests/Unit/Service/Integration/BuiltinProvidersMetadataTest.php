@@ -29,6 +29,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
@@ -37,6 +42,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IL10N;
 use OCP\SystemTag\ISystemTagManager;
@@ -117,10 +123,7 @@ class BuiltinProvidersMetadataTest extends TestCase
 
     public function testTasksProviderMetadata(): void
     {
-        $provider = new TasksProvider(
-            $this->createMock(TaskService::class),
-            $this->buildL10n(),
-        );
+        $provider = $this->buildTasksProvider($this->createMock(TaskService::class));
 
         $this->assertSame('tasks', $provider->getId());
         $this->assertSame('Tasks', $provider->getLabel());
@@ -130,13 +133,118 @@ class BuiltinProvidersMetadataTest extends TestCase
 
     public function testTasksProviderUpdateRejectsBadEntityId(): void
     {
-        $provider = new TasksProvider(
-            $this->createMock(TaskService::class),
-            $this->buildL10n(),
-        );
+        $provider = $this->buildTasksProvider($this->createMock(TaskService::class));
         $this->expectException(NotImplementedException::class);
         $provider->update('r', 's', 'o', 'not-a-composite', []);
     }//end testTasksProviderUpdateRejectsBadEntityId()
+
+    public function testTasksProviderCreateResolvesRegisterSchemaAndObjectTitle(): void
+    {
+        $taskService = $this->createMock(TaskService::class);
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $objectService = $this->createMock(ObjectService::class);
+
+        $register = new Register();
+        $register->setId(42);
+        $schema = new Schema();
+        $schema->setId(7);
+        $object = new ObjectEntity();
+        $object->setName('My Object');
+
+        $registerMapper->expects($this->once())->method('find')->with('my-register')->willReturn($register);
+        $schemaMapper->expects($this->once())->method('find')->with('my-schema')->willReturn($schema);
+        $objectService->expects($this->once())
+            ->method('find')
+            ->with('obj-uuid-1', [], false, $register, $schema)
+            ->willReturn($object);
+
+        $taskService->expects($this->once())
+            ->method('createTask')
+            ->with(
+                42,
+                7,
+                'obj-uuid-1',
+                'My Object',
+                [
+                    'summary'     => 'Do the thing',
+                    'description' => 'Details here',
+                    'priority'    => 5,
+                    'status'      => 'NEEDS-ACTION',
+                    'due'         => '2026-06-01T12:00:00Z',
+                ]
+            )
+            ->willReturn(['id' => 'cal/task.ics', 'summary' => 'Do the thing']);
+
+        $provider = new TasksProvider(
+            taskService: $taskService,
+            registerMapper: $registerMapper,
+            schemaMapper: $schemaMapper,
+            objectService: $objectService,
+            l10n: $this->buildL10n()
+        );
+
+        $result = $provider->create('my-register', 'my-schema', 'obj-uuid-1', [
+            'summary'     => 'Do the thing',
+            'description' => 'Details here',
+            'priority'    => 5,
+            'due'         => '2026-06-01T12:00:00Z',
+            // calendarId is intentionally ignored — TaskService auto-finds.
+            'calendarId'  => 'this-should-be-ignored',
+        ]);
+
+        $this->assertSame(['id' => 'cal/task.ics', 'summary' => 'Do the thing'], $result);
+    }//end testTasksProviderCreateResolvesRegisterSchemaAndObjectTitle()
+
+    public function testTasksProviderCreateFallsBackToObjectIdWhenObjectMissing(): void
+    {
+        $taskService = $this->createMock(TaskService::class);
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $objectService = $this->createMock(ObjectService::class);
+
+        $register = new Register();
+        $register->setId(1);
+        $schema = new Schema();
+        $schema->setId(2);
+
+        $registerMapper->method('find')->willReturn($register);
+        $schemaMapper->method('find')->willReturn($schema);
+        $objectService->method('find')->willReturn(null);
+
+        $taskService->expects($this->once())
+            ->method('createTask')
+            ->with(
+                1,
+                2,
+                'missing-uuid',
+                'missing-uuid',
+                $this->callback(static fn (array $d): bool => $d['summary'] === 'x')
+            )
+            ->willReturn(['id' => 'cal/task.ics']);
+
+        $provider = new TasksProvider(
+            taskService: $taskService,
+            registerMapper: $registerMapper,
+            schemaMapper: $schemaMapper,
+            objectService: $objectService,
+            l10n: $this->buildL10n()
+        );
+
+        $result = $provider->create('r', 's', 'missing-uuid', ['summary' => 'x']);
+        $this->assertSame(['id' => 'cal/task.ics'], $result);
+    }//end testTasksProviderCreateFallsBackToObjectIdWhenObjectMissing()
+
+    private function buildTasksProvider(TaskService $taskService): TasksProvider
+    {
+        return new TasksProvider(
+            taskService: $taskService,
+            registerMapper: $this->createMock(RegisterMapper::class),
+            schemaMapper: $this->createMock(SchemaMapper::class),
+            objectService: $this->createMock(ObjectService::class),
+            l10n: $this->buildL10n()
+        );
+    }//end buildTasksProvider()
 
     public function testTagsProviderMetadata(): void
     {
