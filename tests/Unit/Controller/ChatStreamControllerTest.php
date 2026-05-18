@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Tests for ChatStreamController.
  *
  * Strategy: ChatStreamController emits SSE frames via `echo` and
@@ -47,7 +47,7 @@ use RuntimeException;
  */
 class ChatStreamControllerStopSignal extends RuntimeException
 {
-}
+}//end class
 
 /**
  * Subclass that captures SSE frames instead of writing them to stdout
@@ -55,52 +55,74 @@ class ChatStreamControllerStopSignal extends RuntimeException
  */
 class TestableChatStreamController extends ChatStreamController
 {
-    /** @var array<int, array{type: string, payload: array}> */
+
+    /**
+     * @var array<int, array{type: string, payload: array}>
+     */
     public array $capturedEvents = [];
 
     protected function emitSseEvent(string $eventType, array $payload): void
     {
         $this->capturedEvents[] = ['type' => $eventType, 'payload' => $payload];
-    }
+    }//end emitSseEvent()
 
     protected function emitAndExit(string $eventType, array $payload): never
     {
         $this->capturedEvents[] = ['type' => $eventType, 'payload' => $payload];
         throw new ChatStreamControllerStopSignal("emitAndExit({$eventType})");
-    }
+    }//end emitAndExit()
 
-    /** Skip — closing PHPUnit's output buffer would trip its risky detector. */
+    /**
+     * Skip — closing PHPUnit's output buffer would trip its risky detector.
+     */
     protected function clearOutputBuffers(): void
     {
-    }
+    }//end clearOutputBuffers()
 
-    /** Skip — header() under PHPUnit warns "headers already sent". */
+    /**
+     * Skip — header() under PHPUnit warns "headers already sent".
+     */
     protected function emitSseHeaders(): void
     {
-    }
-}
+    }//end emitSseHeaders()
+}//end class
 
 class ChatStreamControllerTest extends TestCase
 {
-    /** @var IRequest&MockObject */
+
+    /**
+     * @var IRequest&MockObject
+     */
     private IRequest $request;
 
-    /** @var ChatService&MockObject */
+    /**
+     * @var ChatService&MockObject
+     */
     private ChatService $chatService;
 
-    /** @var ConversationMapper&MockObject */
+    /**
+     * @var ConversationMapper&MockObject
+     */
     private ConversationMapper $conversationMapper;
 
-    /** @var AgentMapper&MockObject */
+    /**
+     * @var AgentMapper&MockObject
+     */
     private AgentMapper $agentMapper;
 
-    /** @var LoggerInterface&MockObject */
+    /**
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface $logger;
 
-    /** @var IUserSession&MockObject */
+    /**
+     * @var IUserSession&MockObject
+     */
     private IUserSession $userSession;
 
-    /** @var IDBConnection&MockObject */
+    /**
+     * @var IDBConnection&MockObject
+     */
     private IDBConnection $db;
 
     protected function setUp(): void
@@ -110,10 +132,10 @@ class ChatStreamControllerTest extends TestCase
         $this->chatService        = $this->createMock(ChatService::class);
         $this->conversationMapper = $this->createMock(ConversationMapper::class);
         $this->agentMapper        = $this->createMock(AgentMapper::class);
-        $this->logger             = $this->createMock(LoggerInterface::class);
-        $this->userSession        = $this->createMock(IUserSession::class);
-        $this->db                 = $this->createMock(IDBConnection::class);
-    }
+        $this->logger      = $this->createMock(LoggerInterface::class);
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->db          = $this->createMock(IDBConnection::class);
+    }//end setUp()
 
     private function makeController(): TestableChatStreamController
     {
@@ -127,7 +149,7 @@ class ChatStreamControllerTest extends TestCase
             userSession: $this->userSession,
             db: $this->db
         );
-    }
+    }//end makeController()
 
     /**
      * Drive the controller's stream() method and absorb the sentinel
@@ -140,7 +162,7 @@ class ChatStreamControllerTest extends TestCase
         } catch (ChatStreamControllerStopSignal $e) {
             // Expected — production code calls exit; here we capture.
         }
-    }
+    }//end runStream()
 
     /**
      * §9.2(d) — unauthenticated call never reaches the event loop.
@@ -166,7 +188,7 @@ class ChatStreamControllerTest extends TestCase
         $this->assertGreaterThanOrEqual(1, count($controller->capturedEvents));
         $this->assertSame('error', $controller->capturedEvents[0]['type']);
         $this->assertSame('unauthenticated', $controller->capturedEvents[0]['payload']['code']);
-    }
+    }//end testUnauthenticatedEmitsErrorAndStopsBeforeProcessing()
 
     /**
      * Missing message body emits a `missing_message` error as the FIRST
@@ -198,7 +220,7 @@ class ChatStreamControllerTest extends TestCase
             fn ($e) => $e['type'] === 'final'
         );
         $this->assertCount(0, $finalFrames, 'final must never be emitted without a valid message');
-    }
+    }//end testMissingMessageDoesNotInvokeChatService()
 
     /**
      * §9.2(b) — non-streaming-provider degradation: zero `token` events
@@ -217,5 +239,5 @@ class ChatStreamControllerTest extends TestCase
             fn ($e) => $e['type'] === 'token'
         );
         $this->assertCount(0, $tokenFrames, 'tokens must never be emitted on the unauthenticated path');
-    }
-}
+    }//end testNoTokenEventsOnEarlyExitPaths()
+}//end class

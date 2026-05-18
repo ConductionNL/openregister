@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
+use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use Psr\Log\LoggerInterface;
 
@@ -173,18 +174,27 @@ class ChatService
      *
      * Main orchestration method that coordinates all handlers.
      *
-     * @param int    $conversationId Conversation ID.
-     * @param string $userId         User ID.
-     * @param string $userMessage    User message text.
-     * @param array  $selectedViews  View filters for multitenancy (optional).
-     * @param array  $selectedTools  Tool UUIDs to use (optional).
-     * @param array  $ragSettings    RAG configuration overrides (optional).
+     * @param int                     $conversationId Conversation ID.
+     * @param string                  $userId         User ID.
+     * @param string                  $userMessage    User message text.
+     * @param array                   $selectedViews  View filters for multitenancy (optional).
+     * @param array                   $selectedTools  Tool UUIDs to use (optional).
+     * @param array                   $ragSettings    RAG configuration overrides (optional).
+     * @param array                   $context        CnAiContext snapshot the frontend sent
+     *                                                (orchestrator §8). Persisted on the
+     *                                                user-authored Message row when non-empty.
+     * @param StreamYieldChannel|null $channel        Streaming channel forwarded to the response
+     *                                                handler so SSE consumers (ChatStreamController)
+     *                                                can interleave `token` / `tool_call` /
+     *                                                `tool_result` frames as the LLM yields. Null
+     *                                                for blocking callers (POST /api/chat/send,
+     *                                                background workers) — behaviour unchanged.
      *
      * @return ((array|string)[]|string)[]
      *
      * @throws \Exception If processing fails
      *
-     * @psalm-return array{message: string, sources: list<array>,
+     * @psalm-return array{message: string, messageId: string, sources: list<array>,
      *     timings: array{context: string, history: string, llm: string,
      *     total: string}}
      *
@@ -201,7 +211,8 @@ class ChatService
         array $selectedViews=[],
         array $selectedTools=[],
         array $ragSettings=[],
-        array $context=[]
+        array $context=[],
+        ?StreamYieldChannel $channel=null
     ): array {
         $this->logger->info(
             message: '[ChatService] Processing message',
@@ -227,19 +238,26 @@ class ChatService
                 $agent = $this->agentMapper->find($conversation->getAgentId());
             }
 
+            // Capture the CnAiContext snapshot under its own name before
+            // the retrieveContext() call below reuses `$context` for the
+            // RAG context object. Without this rename the snapshot would
+            // be silently overwritten and the LLM would never see it.
+            $cnAiContext = $context;
+
             // Store user message with the CnAiContext snapshot.
             $this->historyHandler->storeMessage(
                 conversationId: $conversationId,
                 role: Message::ROLE_USER,
                 content: $userMessage,
                 sources: null,
-                context: $context
+                context: $cnAiContext
             );
 
             // Check if conversation needs summarization.
             $this->conversationHandler->checkAndSummarize($conversation);
 
-            // Retrieve RAG context.
+            // Retrieve RAG context. Note: `$context` is now the RAG
+            // context shape `{text, sources}`, distinct from `$cnAiContext`.
             $contextStartTime = microtime(true);
             $context          = $this->contextHandler->retrieveContext(
                 query: $userMessage,
@@ -254,14 +272,19 @@ class ChatService
             $messageHistory   = $this->historyHandler->buildMessageHistory($conversationId);
             $historyTime      = microtime(true) - $historyStartTime;
 
-            // Generate LLM response.
+            // Generate LLM response. Forward the CnAiContext snapshot so
+            // the system prompt can include "the user is currently in
+            // {app}" — without it the model would default to generic
+            // platform-wide phrasing and pick the wrong tool family.
             $llmStartTime = microtime(true);
             $aiResponse   = $this->responseHandler->generateResponse(
                 userMessage: $userMessage,
                 context: $context,
                 messageHistory: $messageHistory,
                 agent: $agent,
-                selectedTools: $selectedTools
+                selectedTools: $selectedTools,
+                channel: $channel,
+                cnAiContext: $cnAiContext
             );
             $llmTime      = microtime(true) - $llmStartTime;
 

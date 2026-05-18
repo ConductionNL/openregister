@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Tests for ChatHealthController.
  *
  * Covers the three response shapes per the orchestrator spec:
@@ -31,13 +31,20 @@ use RuntimeException;
 
 class ChatHealthControllerTest extends TestCase
 {
-    /** @var IRequest&MockObject */
+
+    /**
+     * @var IRequest&MockObject
+     */
     private IRequest $request;
 
-    /** @var SettingsService&MockObject */
+    /**
+     * @var SettingsService&MockObject
+     */
     private SettingsService $settingsService;
 
-    /** @var LoggerInterface&MockObject */
+    /**
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface $logger;
 
     protected function setUp(): void
@@ -46,7 +53,7 @@ class ChatHealthControllerTest extends TestCase
         $this->request         = $this->createMock(IRequest::class);
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->logger          = $this->createMock(LoggerInterface::class);
-    }
+    }//end setUp()
 
     private function makeController(): ChatHealthController
     {
@@ -56,7 +63,7 @@ class ChatHealthControllerTest extends TestCase
             settingsService: $this->settingsService,
             logger: $this->logger
         );
-    }
+    }//end makeController()
 
     /**
      * §9.3a — configured provider returns 200 + capabilities.
@@ -74,7 +81,7 @@ class ChatHealthControllerTest extends TestCase
         $this->assertSame('ok', $data['status']);
         $this->assertContains('chat', $data['capabilities']);
         $this->assertContains('stream', $data['capabilities']);
-    }
+    }//end testHealthReturns200WhenChatProviderConfigured()
 
     /**
      * §9.3b — no provider returns 503 + {status:no_provider}.
@@ -87,7 +94,7 @@ class ChatHealthControllerTest extends TestCase
         $response = $this->makeController()->health();
         $this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
         $this->assertSame('no_provider', $response->getData()['status']);
-    }
+    }//end testHealthReturns503WhenProviderMissing()
 
     /**
      * Empty-string chatProvider is treated identically to null/missing.
@@ -100,7 +107,7 @@ class ChatHealthControllerTest extends TestCase
         $response = $this->makeController()->health();
         $this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
         $this->assertSame('no_provider', $response->getData()['status']);
-    }
+    }//end testHealthReturns503WhenProviderIsEmptyString()
 
     /**
      * Settings service missing the key entirely is also treated as unconfigured.
@@ -113,7 +120,7 @@ class ChatHealthControllerTest extends TestCase
         $response = $this->makeController()->health();
         $this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
         $this->assertSame('no_provider', $response->getData()['status']);
-    }
+    }//end testHealthReturns503WhenChatProviderKeyAbsent()
 
     /**
      * Settings service throwing returns 503 + config_error and logs a warning
@@ -134,5 +141,5 @@ class ChatHealthControllerTest extends TestCase
         $response = $this->makeController()->health();
         $this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
         $this->assertSame('config_error', $response->getData()['status']);
-    }
-}
+    }//end testHealthReturns503ConfigErrorWhenSettingsServiceThrows()
+}//end class

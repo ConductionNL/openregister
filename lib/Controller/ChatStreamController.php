@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Response;
@@ -126,6 +127,16 @@ class ChatStreamController extends Controller
      * @var IDBConnection
      */
     private readonly IDBConnection $db;
+
+    /**
+     * Wall-clock timestamp (microtime float) of the most recently emitted
+     * SSE frame of any type. Used by the heartbeat-interleave pre-check
+     * inside the channel callbacks: when `now() - $lastEventAt >= 15.0`
+     * we emit a `heartbeat` frame before forwarding the next event.
+     *
+     * @var float
+     */
+    private float $lastEventAt = 0.0;
 
     /**
      * Constructor.
@@ -272,18 +283,42 @@ class ChatStreamController extends Controller
             // Emit a heartbeat right after headers so the client knows we're alive
             // (the synchronous LLM call may take >15s on cold-load).
             $this->emitSseEvent(eventType: 'heartbeat', payload: ['ts' => gmdate('c')]);
-            $lastEventAt = microtime(true);
+            $this->lastEventAt = $this->now();
 
-            // Long-running LLM calls (>15s on cold-load with a local Ollama)
-            // need periodic heartbeats so the proxy + browser don't drop the
-            // SSE connection. The LLM call below is synchronous so we can't
-            // interleave events with it — instead we launch the call inside
-            // a pcntl-style soft loop via output_add_rewrite_var? — no, PHP
-            // FPM doesn't run a background loop. Heartbeat-during-LLM is
-            // §6 of the orchestrator and requires either LLPhant streaming
-            // hooks (token-by-token) or a separate worker. For now the
-            // initial heartbeat keeps us under the typical 30s proxy timeout
-            // for the cold call; warm calls return in <5s.
+            // Build the streaming channel and register four callbacks. Each
+            // callback funnels through `forwardWithHeartbeat()` which checks
+            // wall-clock since the last emit and interleaves a `heartbeat`
+            // frame when more than 15s have elapsed (design D3). When the
+            // active provider supports LLPhant streaming the handler invokes
+            // the channel; otherwise the channel sits idle and the existing
+            // initial heartbeat is the only one — that's the synchronous-
+            // fallback degradation explicitly allowed by the SSE contract.
+            $channel = new StreamYieldChannel();
+            $channel->onToken(
+                fn (string $delta) => $this->forwardWithHeartbeat(
+                    eventType: 'token',
+                    payload: ['delta' => $delta]
+                )
+            );
+            $channel->onToolCall(
+                fn (array $payload) => $this->forwardWithHeartbeat(
+                    eventType: 'tool_call',
+                    payload: $payload
+                )
+            );
+            $channel->onToolResult(
+                fn (array $payload) => $this->forwardWithHeartbeat(
+                    eventType: 'tool_result',
+                    payload: $payload
+                )
+            );
+            $channel->onHeartbeat(
+                fn () => $this->forwardWithHeartbeat(
+                    eventType: 'heartbeat',
+                    payload: ['ts' => gmdate('c')]
+                )
+            );
+
             $result = $this->chatService->processMessage(
                 conversationId: $conversation->getId(),
                 userId: $userId,
@@ -291,7 +326,8 @@ class ChatStreamController extends Controller
                 selectedViews: [],
                 selectedTools: [],
                 ragSettings: [],
-                context: $contextArr
+                context: $contextArr,
+                channel: $channel
             );
 
             // Emit final event with the full assistant text.
@@ -410,10 +446,54 @@ class ChatStreamController extends Controller
     }//end emitSseEvent()
 
     /**
+     * Current wall-clock seconds as a float. Production returns
+     * `microtime(true)`; tests override to drive a fake clock.
+     *
+     * @return float Seconds since the Unix epoch.
+     */
+    protected function now(): float
+    {
+        return microtime(true);
+    }//end now()
+
+    /**
+     * Emit a payload as an SSE frame, interleaving a `heartbeat` frame
+     * first whenever ≥15s have elapsed since the last emit. Both the
+     * heartbeat (when emitted) and the incoming frame update
+     * `$this->lastEventAt` so back-to-back frames within the same yield
+     * cycle do not retrigger the interleave.
+     *
+     * The 15-second threshold is fixed per design D3. Pre-emit
+     * interleaving (rather than post-emit scheduling) keeps the contract
+     * exactly: "heartbeat appears immediately before the next outgoing
+     * frame when the wall-clock interval since the last event exceeds
+     * 15.0s".
+     *
+     * @param string               $eventType Frame type to emit after the
+     *                                        optional heartbeat.
+     * @param array<string, mixed> $payload   Frame payload.
+     *
+     * @return void
+     */
+    protected function forwardWithHeartbeat(string $eventType, array $payload): void
+    {
+        $now = $this->now();
+        if (($now - $this->lastEventAt) >= 15.0) {
+            $this->emitSseEvent(eventType: 'heartbeat', payload: ['ts' => gmdate('c')]);
+            $this->lastEventAt = $now;
+        }
+
+        $this->emitSseEvent(eventType: $eventType, payload: $payload);
+        $this->lastEventAt = $this->now();
+    }//end forwardWithHeartbeat()
+
+    /**
      * Clear every output buffer layer (PHP, NC framework, any plugin) so
      * the first SSE echo is flushed immediately. Extracted from stream()
      * so unit tests can override and skip — closing PHPUnit's output
      * buffer trips its "risky" detector.
+     *
+     * @return void
      */
     protected function clearOutputBuffers(): void
     {
@@ -426,6 +506,8 @@ class ChatStreamController extends Controller
      * Emit the three SSE response headers. Extracted so tests can skip
      * (header() emits a "headers already sent" warning under PHPUnit
      * because the test runner has already written output).
+     *
+     * @return void
      */
     protected function emitSseHeaders(): void
     {

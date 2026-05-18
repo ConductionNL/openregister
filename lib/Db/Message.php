@@ -171,11 +171,13 @@ class Message extends Entity implements JsonSerializable
      * The `json` addType binding handles JSON-encoding on persist.
      *
      * @param array<string,mixed> $context Context snapshot
+     *
+     * @return void
      */
     public function setContext(array $context): void
     {
         $this->context = $context;
-        $this->markFieldUpdated('context');
+        $this->markFieldUpdated(attribute: 'context');
 
     }//end setContext()
 
