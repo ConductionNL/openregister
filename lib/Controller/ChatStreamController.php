@@ -414,6 +414,8 @@ class ChatStreamController extends Controller
      * the first SSE echo is flushed immediately. Extracted from stream()
      * so unit tests can override and skip — closing PHPUnit's output
      * buffer trips its "risky" detector.
+     *
+     * @return void
      */
     protected function clearOutputBuffers(): void
     {
@@ -426,6 +428,8 @@ class ChatStreamController extends Controller
      * Emit the three SSE response headers. Extracted so tests can skip
      * (header() emits a "headers already sent" warning under PHPUnit
      * because the test runner has already written output).
+     *
+     * @return void
      */
     protected function emitSseHeaders(): void
     {

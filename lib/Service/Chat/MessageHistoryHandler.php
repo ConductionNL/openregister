@@ -194,6 +194,8 @@ class MessageHistoryHandler
      * @param string     $role           Message role (user or assistant).
      * @param string     $content        Message content.
      * @param array|null $sources        Optional RAG sources.
+     * @param array|null $context        Optional CnAiContext snapshot the user
+     *                                   sent with the message (orchestrator §8).
      *
      * @return Message Stored message entity
      */

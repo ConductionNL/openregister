@@ -179,12 +179,15 @@ class ChatService
      * @param array  $selectedViews  View filters for multitenancy (optional).
      * @param array  $selectedTools  Tool UUIDs to use (optional).
      * @param array  $ragSettings    RAG configuration overrides (optional).
+     * @param array  $context        CnAiContext snapshot the frontend sent
+     *                               (orchestrator §8). Persisted on the
+     *                               user-authored Message row when non-empty.
      *
      * @return ((array|string)[]|string)[]
      *
      * @throws \Exception If processing fails
      *
-     * @psalm-return array{message: string, sources: list<array>,
+     * @psalm-return array{message: string, messageId: string, sources: list<array>,
      *     timings: array{context: string, history: string, llm: string,
      *     total: string}}
      *

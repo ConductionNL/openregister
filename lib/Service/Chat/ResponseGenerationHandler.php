@@ -6,6 +6,15 @@
  * Handler for generating LLM responses using configured providers.
  * Supports OpenAI, Fireworks AI, and Ollama with function calling.
  *
+ * Streaming-mode outcome (orchestrator §1): currently `non-streaming-only`.
+ * All three providers are invoked via LLPhant's blocking surfaces
+ * (`generateText()` / `generateChatOrReturnFunctionCalls()`) — the full
+ * response arrives in one call. The SSE controller therefore emits zero
+ * `token` events and one `final` event per the spec's "non-streaming-
+ * provider degradation" clause. Token-by-token streaming would require
+ * wiring LLPhant's `generateStreamOfText()` callback into this handler
+ * with a yield channel back to ChatStreamController.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *

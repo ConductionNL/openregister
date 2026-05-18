@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Tests for Version1Date20260511130000 — adds Message.context column.
  *
  * Verifies: (a) changeSchema() adds the column when missing,
@@ -26,13 +26,14 @@ use PHPUnit\Framework\TestCase;
 
 class Version1Date20260511130000Test extends TestCase
 {
+
     private Version1Date20260511130000 $migration;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->migration = new Version1Date20260511130000();
-    }
+    }//end setUp()
 
     public function testChangeSchemaAddsContextColumnWhenMissing(): void
     {
@@ -45,11 +46,13 @@ class Version1Date20260511130000Test extends TestCase
             ->with(
                 'context',
                 Types::TEXT,
-                $this->callback(function ($opts) {
-                    return $opts['notnull'] === false
-                        && $opts['default'] === '{}'
-                        && is_string($opts['comment']);
-                })
+                $this->callback(
+                        function ($opts) {
+                            return $opts['notnull'] === false
+                            && $opts['default'] === '{}'
+                            && is_string($opts['comment']);
+                        }
+                        )
             );
 
         $schema = $this->createMock(ISchemaWrapper::class);
@@ -58,7 +61,7 @@ class Version1Date20260511130000Test extends TestCase
 
         $result = $this->migration->changeSchema($output, fn () => $schema, []);
         $this->assertSame($schema, $result);
-    }
+    }//end testChangeSchemaAddsContextColumnWhenMissing()
 
     public function testChangeSchemaIsIdempotentWhenColumnAlreadyExists(): void
     {
@@ -74,7 +77,7 @@ class Version1Date20260511130000Test extends TestCase
 
         $result = $this->migration->changeSchema($output, fn () => $schema, []);
         $this->assertNull($result);
-    }
+    }//end testChangeSchemaIsIdempotentWhenColumnAlreadyExists()
 
     public function testChangeSchemaIsNoOpWhenMessagesTableMissing(): void
     {
@@ -86,7 +89,7 @@ class Version1Date20260511130000Test extends TestCase
 
         $result = $this->migration->changeSchema($output, fn () => $schema, []);
         $this->assertNull($result);
-    }
+    }//end testChangeSchemaIsNoOpWhenMessagesTableMissing()
 
     public function testDownRemovesContextColumnWhenPresent(): void
     {
@@ -104,7 +107,7 @@ class Version1Date20260511130000Test extends TestCase
 
         $result = $this->migration->down($output, fn () => $schema, []);
         $this->assertSame($schema, $result);
-    }
+    }//end testDownRemovesContextColumnWhenPresent()
 
     public function testDownIsIdempotentWhenColumnAlreadyAbsent(): void
     {
@@ -120,7 +123,7 @@ class Version1Date20260511130000Test extends TestCase
 
         $result = $this->migration->down($output, fn () => $schema, []);
         $this->assertNull($result);
-    }
+    }//end testDownIsIdempotentWhenColumnAlreadyAbsent()
 
     public function testDownIsNoOpWhenMessagesTableMissing(): void
     {
@@ -132,5 +135,5 @@ class Version1Date20260511130000Test extends TestCase
 
         $result = $this->migration->down($output, fn () => $schema, []);
         $this->assertNull($result);
-    }
-}
+    }//end testDownIsNoOpWhenMessagesTableMissing()
+}//end class
