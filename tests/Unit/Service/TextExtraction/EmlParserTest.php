@@ -178,31 +178,66 @@ class EmlParserTest extends TestCase
         $this->assertTrue(mb_check_encoding($flat, 'UTF-8'));
     }//end testEnsureUtf8TranscodesIso88591BodyToUtf8()
 
-    public function testEnsureUtf8LogsAtErrorOnTranscodeFailure(): void
+    public function testEnsureUtf8ShortCircuitsForValidUtf8Input(): void
     {
-        // ADR-005 MUST-log on transcoding failure. The candidate-list +
-        // ISO-8859-1's universal acceptance makes the `detection failed`
-        // branch unreachable in practice (any non-empty byte sequence
-        // matches ISO-8859-1 strictly), so this test exercises the
-        // *convert*-failure branch via reflection: directly invoke
-        // ensureUtf8 on the empty string after asserting it doesn't hit
-        // the convert path (vacuously UTF-8). The reachable convert-fail
-        // branch (mb_convert_encoding returning non-string) requires
-        // mocking PHP builtins — not practical in unit tests — so we
-        // verify the code path is wired through to the logger by reading
-        // the source and confirming the call is present.
-        //
-        // Documented as a known testability gap; if mb_convert_encoding
-        // ever returns false for a controlled input, the logger call site
-        // will fire (verified by static inspection of EmlParser:520-549).
+        // The empty string and any already-valid-UTF-8 bytes MUST exit at
+        // the mb_check_encoding guard before reaching detect/convert.
         $reflection = new \ReflectionMethod(EmlParser::class, 'ensureUtf8');
         $reflection->setAccessible(true);
 
-        // Empty string — should short-circuit on mb_check_encoding true.
         $this->assertSame('', $reflection->invoke($this->parser, ''));
-        // Valid UTF-8 — should short-circuit identically, no log.
         $this->assertSame('utf-8 bytes', $reflection->invoke($this->parser, 'utf-8 bytes'));
-    }//end testEnsureUtf8LogsAtErrorOnTranscodeFailure()
+        $this->assertSame('héllo — wörld', $reflection->invoke($this->parser, 'héllo — wörld'));
+    }//end testEnsureUtf8ShortCircuitsForValidUtf8Input()
+
+    public function testEnsureUtf8TranscodesWindows1252SmartQuotesToUtf8(): void
+    {
+        // Windows-1252 smart quotes (0x91/0x92 = left/right single, 0x93/0x94
+        // = left/right double) are NOT valid UTF-8 bytes on their own. After
+        // ensureUtf8 transcoding, the output MUST be valid UTF-8 and contain
+        // the canonical UTF-8 encodings of those code points.
+        $reflection = new \ReflectionMethod(EmlParser::class, 'ensureUtf8');
+        $reflection->setAccessible(true);
+
+        // "Say \x93hello\x94" — left+right double-quote in Windows-1252.
+        $win1252 = "Say \x93hello\x94";
+        $this->assertFalse(mb_check_encoding($win1252, 'UTF-8'), 'fixture must be invalid UTF-8');
+
+        $result = $reflection->invoke($this->parser, $win1252);
+        $this->assertTrue(mb_check_encoding($result, 'UTF-8'), 'output must be valid UTF-8');
+        $this->assertStringContainsString("\u{201C}hello\u{201D}", $result, 'smart quotes must transcode');
+    }//end testEnsureUtf8TranscodesWindows1252SmartQuotesToUtf8()
+
+    // Note: the `detect failed` + `convert returned non-string` error log
+    // branches in ensureUtf8 are not exercised by unit tests. ISO-8859-1
+    // strict detection accepts any byte sequence (every byte is a valid
+    // code point), so detect-failure cannot be triggered with the current
+    // candidate list. The convert-failed branch requires mb_convert_encoding
+    // to return non-string, which it does not for any in-process input we
+    // can construct here. Both error paths are statically wired to
+    // $this->logger->error() at EmlParser:625 and :642 — verified by
+    // inspection; live coverage would require integration tests with
+    // controlled fixtures and is out of scope.
+
+    public function testSanitiseFilenamePreservesLeadingDotForDotfiles(): void
+    {
+        // Dotfiles like `.htaccess` MUST survive sanitisation with the
+        // leading dot intact — it's meaningful filename content, not
+        // traversal residue.
+        $reflection = new \ReflectionMethod(EmlParser::class, 'sanitiseFilename');
+        $reflection->setAccessible(true);
+
+        $this->assertSame('.htaccess', $reflection->invoke($this->parser, '.htaccess'));
+        $this->assertSame('.env', $reflection->invoke($this->parser, '.env'));
+        $this->assertSame('.gitignore', $reflection->invoke($this->parser, '../.gitignore'));
+
+        // Pure-dot residue MUST still collapse to empty so resolveFilename
+        // falls back to the `attachment-<n>` synthetic name.
+        $this->assertSame('', $reflection->invoke($this->parser, '.'));
+        $this->assertSame('', $reflection->invoke($this->parser, '..'));
+        $this->assertSame('', $reflection->invoke($this->parser, '...'));
+        $this->assertSame('', $reflection->invoke($this->parser, '../../config/..'));
+    }//end testSanitiseFilenamePreservesLeadingDotForDotfiles()
 
     public function testSplitAddressListPreservesCommasInsideQuotedDisplayNames(): void
     {

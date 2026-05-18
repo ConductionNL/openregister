@@ -458,8 +458,11 @@ class EmlParser
      * `basename()` handles platform-native separators (`/` on POSIX,
      * `\` on Windows); the follow-up regex covers the cross-platform
      * case where a malicious sender embeds `\` in a filename on a
-     * POSIX host. Leading/trailing dots and whitespace are trimmed so
-     * residue like `.` or `..` cannot survive as the entire filename.
+     * POSIX host. Whitespace is trimmed and pure-dot residue (`.`,
+     * `..`, `...`) is collapsed to an empty string so traversal
+     * sequences cannot survive as the entire filename — but a genuine
+     * leading dot on a dotfile (e.g. `.htaccess`) is preserved, since
+     * the dot is meaningful filename content rather than traversal.
      *
      * @param string $raw Sender-controlled candidate filename.
      *
@@ -472,8 +475,12 @@ class EmlParser
         // POSIX hosts only splits on `/` — can correctly strip the
         // directory components a sender embedded with `\`.
         $normalised = (string) preg_replace(pattern: '#\\\\+#', replacement: '/', subject: $raw);
-        $leaf       = basename(path: $normalised);
-        return trim(string: $leaf, characters: " \t\n\r\0\x0B.");
+        $leaf       = trim(string: basename(path: $normalised), characters: " \t\n\r\0\x0B");
+        if ($leaf === '' || preg_match(pattern: '/^\.+$/', subject: $leaf) === 1) {
+            return '';
+        }
+
+        return $leaf;
     }//end sanitiseFilename()
 
     /**

@@ -3724,4 +3724,68 @@ class TextExtractionServiceTest extends TestCase
 
         $this->assertTrue(true); // no exception
     }
+
+    // ────────────────────────────────────────────────────────
+    // EML delegation — parseEmlStructured + extractEml
+    // ────────────────────────────────────────────────────────
+
+    public function testParseEmlStructuredDelegatesToEmlParser(): void
+    {
+        $file = $this->createMock(File::class);
+        $structure = new \OCA\OpenRegister\Service\TextExtraction\EmlStructure(
+            headers: ['Subject' => 'hello'],
+            body: new \OCA\OpenRegister\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
+            attachments: []
+        );
+
+        $this->emlParser->expects($this->once())
+            ->method('parse')
+            ->with($file)
+            ->willReturn($structure);
+
+        $this->assertSame($structure, $this->service->parseEmlStructured($file));
+    }
+
+    public function testParseEmlStructuredPropagatesEmlParseException(): void
+    {
+        $file = $this->createMock(File::class);
+        $this->emlParser->expects($this->once())
+            ->method('parse')
+            ->willThrowException(new \OCA\OpenRegister\Exception\EmlParseException('bad bytes'));
+
+        $this->expectException(\OCA\OpenRegister\Exception\EmlParseException::class);
+        $this->service->parseEmlStructured($file);
+    }
+
+    public function testExtractEmlReturnsFlattenedStringOnSuccess(): void
+    {
+        $file = $this->createMock(File::class);
+        $structure = new \OCA\OpenRegister\Service\TextExtraction\EmlStructure(
+            headers: ['Subject' => 'hello'],
+            body: new \OCA\OpenRegister\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
+            attachments: []
+        );
+
+        $this->emlParser->expects($this->once())->method('parse')->with($file)->willReturn($structure);
+        $this->emlParser->expects($this->once())
+            ->method('flatten')
+            ->with($structure)
+            ->willReturn("Subject: hello\n\nbody");
+
+        $this->assertSame("Subject: hello\n\nbody", $this->invokePrivate('extractEml', [$file]));
+    }
+
+    public function testExtractEmlReturnsNullAndLogsOnParseException(): void
+    {
+        $file = $this->createMock(File::class);
+        $file->method('getId')->willReturn(99);
+
+        $this->emlParser->expects($this->once())
+            ->method('parse')
+            ->willThrowException(new \OCA\OpenRegister\Exception\EmlParseException('header parse failed'));
+        $this->emlParser->expects($this->never())->method('flatten');
+        $this->logger->expects($this->once())->method('error');
+
+        $this->assertNull($this->invokePrivate('extractEml', [$file]));
+    }
 }
