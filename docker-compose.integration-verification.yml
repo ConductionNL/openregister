@@ -1,0 +1,105 @@
+# Integration verification companion stack.
+#
+# Adds the two external services the OpenRegister leaf system delegates
+# to (`xwiki` + `openproject`) so the leaf-verification harness can drive
+# them end-to-end instead of stopping at the "no OpenConnector source"
+# 503 they otherwise return.
+#
+# Both services attach to the existing `openregister-network` so the
+# `nextcloud` container can reach them by service name:
+#
+#   - http://verification-xwiki:8080/xwiki/rest
+#   - http://verification-openproject:8080/api/v3
+#
+# Run:
+#   docker compose -f docker-compose.integration-verification.yml up -d
+#
+# First boot is slow (XWiki bootstraps Tomcat + Hibernate; OpenProject
+# seeds its Rails DB on first start) — give them ~5–10 minutes before
+# expecting healthy.
+services:
+  # ---------------------------------------------------------------
+  # XWiki LTS + MariaDB. Single-instance configuration; admin user is
+  # auto-created on first boot with the default credentials
+  # superadmin / pass — fine for a local dev sandbox.
+  # ---------------------------------------------------------------
+  verification-xwiki-db:
+    image: mariadb:11
+    container_name: verification-xwiki-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: xwiki
+      MARIADB_USER: xwiki
+      MARIADB_PASSWORD: xwiki
+      MARIADB_DATABASE: xwiki
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_bin
+      - --explicit-defaults-for-timestamp=1
+    volumes:
+      - verification_xwiki_db:/var/lib/mysql
+      # Grant PROCESS on first DB boot — XWiki LTS calls SHOW
+      # PROCESSLIST during data migrations, and a missing PROCESS
+      # privilege corrupts the half-migrated schema (Unknown column
+      # 'XWD_ARCHIVE' and friends). Pre-grant keeps the install
+      # recoverable.
+      - ./data/xwiki-mariadb-init/grant-process.sql:/docker-entrypoint-initdb.d/00-grant-process.sql:ro
+    networks:
+      - openregister-network
+
+  verification-xwiki:
+    image: xwiki:lts-mariadb-tomcat
+    container_name: verification-xwiki
+    restart: unless-stopped
+    depends_on:
+      - verification-xwiki-db
+    environment:
+      DB_USER: xwiki
+      DB_PASSWORD: xwiki
+      DB_DATABASE: xwiki
+      DB_HOST: verification-xwiki-db
+    ports:
+      - "8081:8080"
+    volumes:
+      - verification_xwiki_data:/usr/local/xwiki
+    networks:
+      - openregister-network
+
+  # ---------------------------------------------------------------
+  # OpenProject all-in-one. Bundles PostgreSQL + Rails + Apache; the
+  # `OPENPROJECT_SECRET_KEY_BASE` is dev-only; replace for any non-
+  # sandbox usage.
+  # ---------------------------------------------------------------
+  verification-openproject:
+    image: openproject/openproject:14
+    container_name: verification-openproject
+    restart: unless-stopped
+    environment:
+      OPENPROJECT_SECRET_KEY_BASE: dev-only-not-a-secret-please-rotate
+      OPENPROJECT_HOST__NAME: verification-openproject
+      OPENPROJECT_HTTPS: "false"
+      OPENPROJECT_DEFAULT__LANGUAGE: en
+      # Permit cross-container reach + the browser-on-host URL the
+      # admin uses for the API-token UI. OpenProject's host_authorization
+      # check rejects any Host header that's not on this list, returning
+      # HTTP 400 'Invalid host_name configuration' before the request
+      # reaches a controller.
+      OPENPROJECT_RAILS__RELATIVE__URL__ROOT: ""
+      OPENPROJECT_ADDITIONAL__HOST__NAMES: localhost,localhost:8082,verification-openproject,verification-openproject:80
+    ports:
+      - "8082:80"
+    volumes:
+      - verification_op_pgdata:/var/openproject/pgdata
+      - verification_op_assets:/var/openproject/assets
+    networks:
+      - openregister-network
+
+volumes:
+  verification_xwiki_db:
+  verification_xwiki_data:
+  verification_op_pgdata:
+  verification_op_assets:
+
+networks:
+  openregister-network:
+    external: true

@@ -9,7 +9,11 @@
 					:key="org.uuid"
 					class="organisationOption"
 					:class="{ active: isActive(org) }"
-					@click="$emit('switch', org)">
+					role="button"
+					tabindex="0"
+					@click="$emit('switch', org)"
+					@keydown.enter="$emit('switch', org)"
+					@keydown.space.prevent="$emit('switch', org)">
 					<div class="organisationOptionContent">
 						<span class="organisationOptionName">{{ org.name }}</span>
 						<span v-if="org.isDefault" class="defaultBadge">{{ t('openregister', 'Default') }}</span>

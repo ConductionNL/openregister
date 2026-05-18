@@ -1,0 +1,758 @@
+{
+  "generated": "2026-05-16T14:53:32.208Z",
+  "baseUrl": "http://localhost:8080",
+  "objectTriple": {
+    "register": "21",
+    "schema": "166",
+    "objectId": "25706ca9-c989-4d6b-9f7b-98cf1cc70639"
+  },
+  "providerCount": 24,
+  "passCount": 24,
+  "failCount": 0,
+  "providers": [
+    {
+      "id": "activity",
+      "timestamp": "2026-05-16T14:53:30.957Z",
+      "metadata": {
+        "label": "Activity",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "query-time",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/activity",
+        "status": 200,
+        "latencyMs": 103,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "analytics",
+      "timestamp": "2026-05-16T14:53:31.058Z",
+      "metadata": {
+        "label": "Analytics",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/analytics",
+        "status": 200,
+        "latencyMs": 101,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "audit-trail",
+      "timestamp": "2026-05-16T14:53:26.869Z",
+      "metadata": {
+        "label": "Audit trail",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "query-time",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/audit-trail",
+        "status": 200,
+        "latencyMs": 102,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "bookmarks",
+      "timestamp": "2026-05-16T14:53:31.159Z",
+      "metadata": {
+        "label": "Bookmarks",
+        "group": "docs",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/bookmarks",
+        "status": 200,
+        "latencyMs": 101,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "calendar",
+      "timestamp": "2026-05-16T14:53:30.036Z",
+      "metadata": {
+        "label": "Meetings",
+        "group": "comms",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/calendar",
+        "status": 200,
+        "latencyMs": 104,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "collectives",
+      "timestamp": "2026-05-16T14:53:31.263Z",
+      "metadata": {
+        "label": "Knowledge",
+        "group": "docs",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/collectives",
+        "status": 200,
+        "latencyMs": 103,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "contacts",
+      "timestamp": "2026-05-16T14:53:30.140Z",
+      "metadata": {
+        "label": "Contacts",
+        "group": "comms",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/contacts",
+        "status": 200,
+        "latencyMs": 102,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "cospend",
+      "timestamp": "2026-05-16T14:53:31.361Z",
+      "metadata": {
+        "label": "Costs",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/cospend",
+        "status": 200,
+        "latencyMs": 98,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "deck",
+      "timestamp": "2026-05-16T14:53:30.245Z",
+      "metadata": {
+        "label": "Cards",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/deck",
+        "status": 200,
+        "latencyMs": 105,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "email",
+      "timestamp": "2026-05-16T14:53:30.853Z",
+      "metadata": {
+        "label": "Emails",
+        "group": "comms",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/email",
+        "status": 200,
+        "latencyMs": 608,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "files",
+      "timestamp": "2026-05-16T14:53:26.449Z",
+      "metadata": {
+        "label": "Files",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "magic-column",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/files",
+        "status": 200,
+        "latencyMs": 148,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "flow",
+      "timestamp": "2026-05-16T14:53:31.463Z",
+      "metadata": {
+        "label": "Automation",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/flow",
+        "status": 200,
+        "latencyMs": 101,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "forms",
+      "timestamp": "2026-05-16T14:53:31.563Z",
+      "metadata": {
+        "label": "Forms",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/forms",
+        "status": 200,
+        "latencyMs": 99,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "maps",
+      "timestamp": "2026-05-16T14:53:31.695Z",
+      "metadata": {
+        "label": "Location",
+        "group": "docs",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/maps",
+        "status": 200,
+        "latencyMs": 130,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "notes",
+      "timestamp": "2026-05-16T14:53:26.554Z",
+      "metadata": {
+        "label": "Notes",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/notes",
+        "status": 200,
+        "latencyMs": 105,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "openproject",
+      "timestamp": "2026-05-16T14:53:29.932Z",
+      "metadata": {
+        "label": "Projects",
+        "group": "external",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "external",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/openproject",
+        "status": 200,
+        "latencyMs": 123,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "photos",
+      "timestamp": "2026-05-16T14:53:31.797Z",
+      "metadata": {
+        "label": "Photos",
+        "group": "docs",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/photos",
+        "status": 200,
+        "latencyMs": 101,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "polls",
+      "timestamp": "2026-05-16T14:53:31.900Z",
+      "metadata": {
+        "label": "Polls",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/polls",
+        "status": 200,
+        "latencyMs": 103,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "shares",
+      "timestamp": "2026-05-16T14:53:32.005Z",
+      "metadata": {
+        "label": "Shares",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "query-time",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/shares",
+        "status": 200,
+        "latencyMs": 104,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "tags",
+      "timestamp": "2026-05-16T14:53:26.765Z",
+      "metadata": {
+        "label": "Tags",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tags",
+        "status": 200,
+        "latencyMs": 103,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "talk",
+      "timestamp": "2026-05-16T14:53:32.106Z",
+      "metadata": {
+        "label": "Chat",
+        "group": "comms",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/talk",
+        "status": 200,
+        "latencyMs": 101,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "tasks",
+      "timestamp": "2026-05-16T14:53:26.662Z",
+      "metadata": {
+        "label": "Tasks",
+        "group": "core",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/tasks",
+        "status": 200,
+        "latencyMs": 108,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "time-tracker",
+      "timestamp": "2026-05-16T14:53:32.208Z",
+      "metadata": {
+        "label": "Time",
+        "group": "workflow",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "link-table",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/time-tracker",
+        "status": 200,
+        "latencyMs": 102,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    },
+    {
+      "id": "xwiki",
+      "timestamp": "2026-05-16T14:53:29.809Z",
+      "metadata": {
+        "label": "Articles",
+        "group": "external",
+        "enabled": true,
+        "requiredApp": null,
+        "storageStrategy": "external",
+        "surfaces": [
+          "user-dashboard",
+          "app-dashboard",
+          "detail-page",
+          "single-entity"
+        ],
+        "authStatus": {
+          "status": "ok",
+          "authStatus": "configured",
+          "message": null
+        }
+      },
+      "probe": {
+        "url": "/index.php/apps/openregister/api/objects/21/166/25706ca9-c989-4d6b-9f7b-98cf1cc70639/integrations/xwiki",
+        "status": 200,
+        "latencyMs": 2940,
+        "responseShape": "list-envelope",
+        "sample": null
+      },
+      "verdict": "pass",
+      "notes": []
+    }
+  ]
+}

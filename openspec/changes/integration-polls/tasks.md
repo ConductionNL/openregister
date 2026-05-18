@@ -5,7 +5,7 @@
 - [ ] `PollLink` entity + mapper + migration
 - [ ] `PollService` wrapping Polls REST API
 - [ ] `PollsController`
-- [ ] `PollsProvider` — id='polls', label='Polls', icon='Poll', group='workflow', requiredApp='polls', storage='link-table'
+- [x] `PollsProvider` — id='polls', label='Polls', icon='Poll', group='workflow', requiredApp='polls', storage='link-table'
 - [ ] DI-tag, routes, unit tests
 
 ## Frontend — Tab

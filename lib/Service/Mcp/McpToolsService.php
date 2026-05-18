@@ -246,12 +246,35 @@ class McpToolsService
     /**
      * Add a provider to the list at runtime (e.g. from external apps).
      *
+     * Idempotent: if a provider with the same `getAppId()` is already
+     * registered, the call is a no-op. This handles the dual-path case
+     * where (a) OR's factory in `Application::registerMcpToolProviders`
+     * discovers the provider by walking `IAppManager::getInstalledApps()`
+     * AND (b) the consumer app's own `Application::boot()` also calls
+     * `addProvider()` to be self-sufficient when OR's discovery path
+     * misses the app (e.g. alias not registered on OR's container scope).
+     *
      * @param IMcpToolProvider $provider The provider to add
      *
      * @return void
      */
     public function addProvider(IMcpToolProvider $provider): void
     {
+        $appId = $provider->getAppId();
+        foreach ($this->providers as $existing) {
+            if ($existing->getAppId() === $appId) {
+                $this->logger->debug(
+                    message: '[McpToolsService] addProvider() skipped — provider with same appId already registered',
+                    context: [
+                        'appId'         => $appId,
+                        'incomingClass' => get_class($provider),
+                        'existingClass' => get_class($existing),
+                    ]
+                );
+                return;
+            }
+        }
+
         $this->providers[] = $provider;
     }//end addProvider()
 }//end class

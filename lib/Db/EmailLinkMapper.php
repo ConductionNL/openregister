@@ -65,15 +65,30 @@ class EmailLinkMapper extends QBMapper
             return $this->tableExistsCache;
         }
 
+        // Doctrine's createSchema() can miss tables created outside the
+        // migration framework. Fall back to a direct information_schema
+        // query so manual CREATEs (e.g. recovery, dev sandboxes) are
+        // honoured.
         try {
             $schema = $this->db->createSchema();
-            $this->tableExistsCache = $schema->hasTable('*PREFIX*'.$this->getTableName());
-            // Some drivers strip the prefix; check both.
-            if ($this->tableExistsCache === false) {
-                $this->tableExistsCache = $schema->hasTable($this->getTableName());
-            }
+            $this->tableExistsCache = $schema->hasTable('*PREFIX*'.$this->getTableName())
+                || $schema->hasTable($this->getTableName());
         } catch (\Throwable $e) {
             $this->tableExistsCache = false;
+        }
+
+        if ($this->tableExistsCache === false) {
+            try {
+                $qb     = $this->db->getQueryBuilder();
+                $qb->select($qb->func()->count('*'))
+                    ->from('information_schema.tables')
+                    ->where($qb->expr()->eq('table_name', $qb->createNamedParameter('oc_'.$this->getTableName())));
+                $result                  = $qb->executeQuery();
+                $row                     = $result->fetch();
+                $this->tableExistsCache  = $row !== false && (int) reset($row) > 0;
+            } catch (\Throwable $e) {
+                $this->tableExistsCache = false;
+            }
         }
 
         return $this->tableExistsCache;
@@ -90,10 +105,11 @@ class EmailLinkMapper extends QBMapper
      */
     public function findByObjectUuid(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
-        if ($this->tableExists() === false) {
-            return [];
-        }
-
+        // Note: tableExists() short-circuits removed — Doctrine's schema
+        // cache can lag manual CREATE TABLE statements (e.g. sandboxes
+        // that recreated the table outside the migration framework).
+        // The query below catches a real "table missing" via the
+        // try/catch wrapper at the call site (provider).
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -120,10 +136,6 @@ class EmailLinkMapper extends QBMapper
      */
     public function countByObjectUuid(string $objectUuid): int
     {
-        if ($this->tableExists() === false) {
-            return 0;
-        }
-
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->getTableName())
@@ -145,10 +157,6 @@ class EmailLinkMapper extends QBMapper
      */
     public function findBySender(string $sender): array
     {
-        if ($this->tableExists() === false) {
-            return [];
-        }
-
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -168,10 +176,6 @@ class EmailLinkMapper extends QBMapper
      */
     public function findByObjectAndMessage(string $objectUuid, int $mailMessageId): ?EmailLink
     {
-        if ($this->tableExists() === false) {
-            return null;
-        }
-
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -199,10 +203,6 @@ class EmailLinkMapper extends QBMapper
      */
     public function deleteByObjectUuid(string $objectUuid): int
     {
-        if ($this->tableExists() === false) {
-            return 0;
-        }
-
         $qb = $this->db->getQueryBuilder();
         $qb->delete($this->getTableName())
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));

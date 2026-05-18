@@ -5,7 +5,7 @@
 - [ ] Create `FormLink` entity + `FormLinkMapper` + migration for `openregister_form_links`
 - [ ] Create `FormResponseService` wrapping Forms REST API (list responses, link/unlink, form-mapping management)
 - [ ] Create `FormResponsesController` with sub-resource endpoints
-- [ ] Create `FormsProvider` — id='forms', label='Forms', icon='ClipboardText', group='workflow', requiredApp='forms', storage='link-table'
+- [x] Create `FormsProvider` — id='forms', label='Forms', icon='ClipboardText', group='workflow', requiredApp='forms', storage='link-table'
 - [ ] DI-tag in `Application.php`
 - [ ] Add routes to `appinfo/routes.php`
 - [ ] Unit tests for service + provider

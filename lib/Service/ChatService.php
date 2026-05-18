@@ -200,7 +200,8 @@ class ChatService
         string $userMessage,
         array $selectedViews=[],
         array $selectedTools=[],
-        array $ragSettings=[]
+        array $ragSettings=[],
+        array $context=[]
     ): array {
         $this->logger->info(
             message: '[ChatService] Processing message',
@@ -226,11 +227,13 @@ class ChatService
                 $agent = $this->agentMapper->find($conversation->getAgentId());
             }
 
-            // Store user message.
+            // Store user message with the CnAiContext snapshot.
             $this->historyHandler->storeMessage(
                 conversationId: $conversationId,
                 role: Message::ROLE_USER,
-                content: $userMessage
+                content: $userMessage,
+                sources: null,
+                context: $context
             );
 
             // Check if conversation needs summarization.
