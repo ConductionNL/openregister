@@ -98,6 +98,41 @@ jobs:
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable openregister"
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:list" | grep openregister
 
+      - name: Wait for Apache + OpenRegister API to serve HTTP
+        # `occ status` only proves the DB-side install completed; Apache may
+        # still not be answering on :8080. The Newman suite runs from the
+        # host and previously hit `[errored]` on every request because the
+        # HTTP listener wasn't ready yet. Poll both the NC entry page (proves
+        # Apache is up + port-forwarded) and the OpenRegister settings
+        # endpoint (proves the app is enabled + dispatching).
+        run: |
+          # 1. Apache reachable on the host-mapped port.
+          for i in $(seq 1 60); do
+            if curl -fsS -o /dev/null -w '' http://localhost:8080/status.php; then
+              echo "✓ Apache responding on localhost:8080 (try $i)"
+              break
+            fi
+            echo "Waiting for Apache... ($i/60)"
+            sleep 2
+          done
+
+          # 2. OpenRegister API dispatching (admin GET against a stable endpoint).
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              -u admin:admin \
+              http://localhost:8080/index.php/apps/openregister/api/settings/rbac || echo "000")
+            if [ "$code" = "200" ] || [ "$code" = "401" ] || [ "$code" = "405" ]; then
+              echo "✓ OpenRegister API responding (HTTP $code, try $i)"
+              break
+            fi
+            echo "Waiting for OpenRegister API... (try $i, last HTTP=$code)"
+            sleep 2
+          done
+
+          # 3. Final sanity probe — fail fast if still down.
+          curl -fsS -u admin:admin http://localhost:8080/index.php/apps/openregister/api/settings/rbac -o /dev/null \
+            || (echo "::error::OpenRegister API still not responding after wait" && exit 1)
+
       - name: Run Newman orchestrator
         env:
           BASE_URL: http://localhost:8080
