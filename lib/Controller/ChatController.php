@@ -256,6 +256,17 @@ class ChatController extends Controller
             'numSourcesObjects' => $this->request->getParam('numSourcesObjects') ?? 5,
         ];
 
+        // Extract optional CnAiContext snapshot. Frontend sends a plain JSON
+        // object describing the user's current scope (selected register,
+        // schema, object id, recent search query, etc.). Anything that is
+        // not an associative array is silently dropped — the column has a
+        // DEFAULT '{}' so a missing context is fine.
+        $contextParam = $this->request->getParam('context');
+        $context      = [];
+        if (is_array($contextParam) === true) {
+            $context = $contextParam;
+        }
+
         return [
             'conversationUuid' => $conversationUuid,
             'agentUuid'        => $agentUuid,
@@ -263,6 +274,7 @@ class ChatController extends Controller
             'selectedViews'    => $selectedViews,
             'selectedTools'    => $selectedTools,
             'ragSettings'      => $ragSettings,
+            'context'          => $context,
         ];
     }//end extractMessageRequestParams()
 
@@ -461,7 +473,8 @@ class ChatController extends Controller
                 userMessage: $params['message'],
                 selectedViews: $params['selectedViews'],
                 selectedTools: $params['selectedTools'],
-                ragSettings: $params['ragSettings']
+                ragSettings: $params['ragSettings'],
+                context: $params['context']
             );
 
             // Add conversation UUID to result for frontend.

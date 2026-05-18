@@ -201,7 +201,8 @@ class MessageHistoryHandler
         int $conversationId,
         string $role,
         string $content,
-        ?array $sources=null
+        ?array $sources=null,
+        ?array $context=null
     ): Message {
         $message = new Message();
         $message->setUuid(Uuid::v4()->toRfc4122());
@@ -213,6 +214,15 @@ class MessageHistoryHandler
         // Add sources metadata if provided.
         if ($sources !== null && empty($sources) === false) {
             $message->setMetadata(['sources' => $sources]);
+        }
+
+        // Persist the CnAiContext snapshot the frontend sent with the
+        // message so future replays + the LLM can ground answers in the
+        // user's scope at send-time. Only set when non-empty; null/empty
+        // leaves the column at its DEFAULT '{}' to avoid noise in the
+        // audit trail.
+        if ($context !== null && empty($context) === false) {
+            $message->setContext($context);
         }
 
         $this->messageMapper->insert($message);

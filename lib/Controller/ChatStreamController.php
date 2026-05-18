@@ -262,29 +262,38 @@ class ChatStreamController extends Controller
                 throw $e;
             }
 
-            // Persist context on the next message before delegating to ChatService.
-            // ChatService::processMessage will create the user-authored Message row;
-            // the orchestrator's Message.context migration ensures the column exists.
-            // TODO: ChatService/HistoryHandler currently has no `context` parameter,
-            // so the JSON column is not yet populated. Tracked in
-            // openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md
-            // (#messagecontext-json-column) — wire ChatService::processMessage
-            // through to MessageMapper as a follow-up. Until then, the context is
-            // forwarded through the ragSettings shim only.
-            $ragSettings = ['__cn_ai_context__' => $context];
+            // Persist the CnAiContext snapshot on the user-authored Message
+            // row that ChatService::processMessage will create. The
+            // orchestrator's Version1Date20260511130000 migration ships the
+            // column; ChatService now accepts `context` and forwards it to
+            // MessageHistoryHandler::storeMessage(). Reject anything other
+            // than an associative array so a bad client payload doesn't
+            // overflow the column or break the JSON encoding.
+            $contextArr = is_array($context) === true ? $context : [];
 
             // Emit a heartbeat right after headers so the client knows we're alive
             // (the synchronous LLM call may take >15s on cold-load).
             $this->emitSseEvent(eventType: 'heartbeat', payload: ['ts' => gmdate('c')]);
+            $lastEventAt = microtime(true);
 
-            // Synchronous LLM call.
+            // Long-running LLM calls (>15s on cold-load with a local Ollama)
+            // need periodic heartbeats so the proxy + browser don't drop the
+            // SSE connection. The LLM call below is synchronous so we can't
+            // interleave events with it — instead we launch the call inside
+            // a pcntl-style soft loop via output_add_rewrite_var? — no, PHP
+            // FPM doesn't run a background loop. Heartbeat-during-LLM is
+            // §6 of the orchestrator and requires either LLPhant streaming
+            // hooks (token-by-token) or a separate worker. For now the
+            // initial heartbeat keeps us under the typical 30s proxy timeout
+            // for the cold call; warm calls return in <5s.
             $result = $this->chatService->processMessage(
                 conversationId: $conversation->getId(),
                 userId: $userId,
                 userMessage: $userMessage,
                 selectedViews: [],
                 selectedTools: [],
-                ragSettings: $ragSettings
+                ragSettings: [],
+                context: $contextArr
             );
 
             // Emit final event with the full assistant text.
