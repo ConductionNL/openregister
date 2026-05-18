@@ -6,8 +6,8 @@
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "build": "docusaurus build",
-    "postbuild": "node scripts/validate-ai-baseline.mjs",
-    "validate:ai-baseline": "node scripts/validate-ai-baseline.mjs",
+    "postbuild": "validate-ai-baseline",
+    "validate:ai-baseline": "validate-ai-baseline",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
@@ -17,7 +17,7 @@
     "ci": "npm ci --legacy-peer-deps && npm run build"
   },
   "dependencies": {
-    "@conduction/docusaurus-preset": "^3.4.0",
+    "@conduction/docusaurus-preset": "^3.5.0",
     "@docusaurus/core": "^3.7.0",
     "@docusaurus/preset-classic": "^3.7.0",
     "@docusaurus/theme-mermaid": "^3.7.0",
