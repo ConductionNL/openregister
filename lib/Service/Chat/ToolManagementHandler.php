@@ -125,13 +125,29 @@ class ToolManagementHandler
         $tools = [];
 
         foreach ($enabledToolIds as $toolId) {
-            // Support both old format (register, schema, objects) and new format (app.tool).
-            $fullToolId = 'openregister.'.$toolId;
-            if (strpos($toolId, '.') !== false) {
-                $fullToolId = $toolId;
+            // Try three formats in turn so agent records from different
+            // eras keep working:
+            //   1. The raw id as stored ("openbuilt", "openregister.register")
+            //   2. The legacy openregister-prefixed form ("openregister.objects"
+            //      when the agent stores just "objects")
+            //   3. An "openbuilt" -> "openbuilt.{x}" fallback handled by
+            //      the McpProviderBridge — that bridge exposes every
+            //      function under one appId-level registration.
+            $candidates = [$toolId];
+            if (strpos($toolId, '.') === false) {
+                $candidates[] = 'openregister.'.$toolId;
             }
 
-            $tool = $this->toolRegistry->getTool($fullToolId);
+            $tool       = null;
+            $fullToolId = $toolId;
+            foreach ($candidates as $candidate) {
+                $tool = $this->toolRegistry->getTool($candidate);
+                if ($tool !== null) {
+                    $fullToolId = $candidate;
+                    break;
+                }
+            }
+
             if ($tool !== null) {
                 $tool->setAgent($agent);
                 $tools[] = $tool;

@@ -238,19 +238,26 @@ class ChatService
                 $agent = $this->agentMapper->find($conversation->getAgentId());
             }
 
+            // Capture the CnAiContext snapshot under its own name before
+            // the retrieveContext() call below reuses `$context` for the
+            // RAG context object. Without this rename the snapshot would
+            // be silently overwritten and the LLM would never see it.
+            $cnAiContext = $context;
+
             // Store user message with the CnAiContext snapshot.
             $this->historyHandler->storeMessage(
                 conversationId: $conversationId,
                 role: Message::ROLE_USER,
                 content: $userMessage,
                 sources: null,
-                context: $context
+                context: $cnAiContext
             );
 
             // Check if conversation needs summarization.
             $this->conversationHandler->checkAndSummarize($conversation);
 
-            // Retrieve RAG context.
+            // Retrieve RAG context. Note: `$context` is now the RAG
+            // context shape `{text, sources}`, distinct from `$cnAiContext`.
             $contextStartTime = microtime(true);
             $context          = $this->contextHandler->retrieveContext(
                 query: $userMessage,
@@ -265,7 +272,10 @@ class ChatService
             $messageHistory   = $this->historyHandler->buildMessageHistory($conversationId);
             $historyTime      = microtime(true) - $historyStartTime;
 
-            // Generate LLM response.
+            // Generate LLM response. Forward the CnAiContext snapshot so
+            // the system prompt can include "the user is currently in
+            // {app}" — without it the model would default to generic
+            // platform-wide phrasing and pick the wrong tool family.
             $llmStartTime = microtime(true);
             $aiResponse   = $this->responseHandler->generateResponse(
                 userMessage: $userMessage,
@@ -273,7 +283,8 @@ class ChatService
                 messageHistory: $messageHistory,
                 agent: $agent,
                 selectedTools: $selectedTools,
-                channel: $channel
+                channel: $channel,
+                cnAiContext: $cnAiContext
             );
             $llmTime      = microtime(true) - $llmStartTime;
 

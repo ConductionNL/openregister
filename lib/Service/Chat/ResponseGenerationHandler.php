@@ -148,7 +148,8 @@ class ResponseGenerationHandler
         array $messageHistory,
         ?Agent $agent,
         array $selectedTools=[],
-        ?StreamYieldChannel $channel=null
+        ?StreamYieldChannel $channel=null,
+        array $cnAiContext=[]
     ): string {
         $startTime = microtime(true);
 
@@ -303,6 +304,24 @@ class ResponseGenerationHandler
             $defaultPrompt = "You are a helpful AI assistant that helps users find and understand their data.";
             $systemPrompt  = $agent?->getPrompt() ?? $defaultPrompt;
 
+            // Inject the CnAiContext snapshot the widget sends with each
+            // message. Without this the LLM has no idea which app the user
+            // is in — so on /apps/openbuilt/ it would call decidesk tools
+            // (or default to OpenRegister-platform language) instead of
+            // routing to openbuilt.*. The snapshot is small and free-form
+            // (typically {app, slug, view, objectId}); we render it as a
+            // bullet list so the model can quote individual fields.
+            if (empty($cnAiContext) === false) {
+                $systemPrompt .= "\n\nCURRENT APP CONTEXT (this is where the user is RIGHT NOW — prefer tools that match this app):\n";
+                foreach ($cnAiContext as $key => $value) {
+                    if (is_scalar($value) === true) {
+                        $systemPrompt .= "- {$key}: ".(string) $value."\n";
+                    } else {
+                        $systemPrompt .= "- {$key}: ".json_encode($value, JSON_UNESCAPED_SLASHES)."\n";
+                    }
+                }
+            }
+
             if (empty($context['text']) === false) {
                 $systemPrompt .= "\n\nUse the following context to answer the user's question:\n\n";
                 $systemPrompt .= "CONTEXT:\n".$context['text']."\n\n";
@@ -348,6 +367,10 @@ class ResponseGenerationHandler
                         functions: $functions,
                         tools: $tools
                     );
+                    $functionInfoObjects = $this->wrapToolsForStreaming(
+                        functionInfoObjects: $functionInfoObjects,
+                        channel: $channel
+                    );
                     $chat->setTools($functionInfoObjects);
                 }
 
@@ -385,6 +408,10 @@ class ResponseGenerationHandler
                     $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
                         functions: $functions,
                         tools: $tools
+                    );
+                    $functionInfoObjects = $this->wrapToolsForStreaming(
+                        functionInfoObjects: $functionInfoObjects,
+                        channel: $channel
                     );
                     $chat->setTools($functionInfoObjects);
                 }
@@ -450,13 +477,61 @@ class ResponseGenerationHandler
      * @return string Full assistant text (concatenation of streamed chunks
      *                when streaming was used).
      */
+    /**
+     * Wrap each FunctionInfo's tool instance with a
+     * StreamingToolInstanceWrapper when streaming is active so
+     * LLPhant's `$instance->{$func}(...$args)` dispatch goes through
+     * the wrapper's `__call` and fans `tool_call` + `tool_result`
+     * SSE frames out to the channel. When `$channel === null` the
+     * function info list passes through verbatim — load-bearing for
+     * the blocking `POST /api/chat/send` path.
+     *
+     * @param array                   $functionInfoObjects LLPhant FunctionInfo[] from
+     *                                                     ToolManagementHandler::convertFunctionsToFunctionInfo.
+     * @param StreamYieldChannel|null $channel             Streaming channel, or null for blocking mode.
+     *
+     * @return array FunctionInfo[] with `$instance` rewritten when wrapping is active.
+     *
+     * @psalm-param  list<\LLPhant\Chat\FunctionInfo\FunctionInfo> $functionInfoObjects
+     * @psalm-return list<\LLPhant\Chat\FunctionInfo\FunctionInfo>
+     */
+    private function wrapToolsForStreaming(array $functionInfoObjects, ?StreamYieldChannel $channel): array
+    {
+        if ($channel === null) {
+            return $functionInfoObjects;
+        }
+
+        foreach ($functionInfoObjects as $fi) {
+            if (is_object($fi->instance) === true) {
+                $fi->instance = new \OCA\OpenRegister\Tool\StreamingToolInstanceWrapper(
+                    wrapped: $fi->instance,
+                    channel: $channel
+                );
+            }
+        }
+
+        return $functionInfoObjects;
+
+    }//end wrapToolsForStreaming()
+
     private function invokeChat(
         OpenAIChat|OllamaChat $chat,
         array $messageHistory,
         ?StreamYieldChannel $channel,
         string $provider
     ): string {
-        if ($channel !== null && method_exists($chat, 'generateStreamOfText') === true) {
+        // Ollama-with-tools degrades to blocking. OllamaChat::generateChatStream
+        // does NOT process tool_calls — it just streams the raw assistant
+        // delta. Only the blocking `generateChat` path handles the
+        // tool-call branch and calls our wrapped FunctionInfo instances.
+        // OpenAI's createStreamedResponse handles tool_calls during the
+        // stream, so it stays on the streaming path.
+        $ollamaWithTools = ($chat instanceof OllamaChat) && $this->chatHasTools($chat);
+
+        if ($channel !== null
+            && $ollamaWithTools === false
+            && method_exists($chat, 'generateStreamOfText') === true
+        ) {
             try {
                 return $this->streamChat(chat: $chat, messageHistory: $messageHistory, channel: $channel);
             } catch (MissingFeatureException $e) {
@@ -473,10 +548,40 @@ class ResponseGenerationHandler
             }
         }
 
-        // Non-streaming fallback — load-bearing for POST /api/chat/send and
-        // for providers without streaming support (Fireworks today).
+        // Non-streaming fallback — load-bearing for POST /api/chat/send,
+        // for providers without streaming support (Fireworks today), and
+        // for Ollama-with-tools where our StreamingToolInstanceWrapper
+        // still fires from the blocking callFunction path so tool_call /
+        // tool_result frames reach the SSE consumer even without token
+        // streaming.
         return $chat->generateChat($messageHistory);
     }//end invokeChat()
+
+    /**
+     * Reflect into LLPhant's chat instance to check whether any tools are
+     * registered. The `tools` property is protected on both OpenAIChat
+     * and OllamaChat; we read it via reflection to avoid forking LLPhant
+     * just to add a public getter.
+     *
+     * @param OpenAIChat|OllamaChat $chat Configured chat instance
+     *
+     * @return bool True when the instance has at least one FunctionInfo registered
+     */
+    private function chatHasTools(OpenAIChat|OllamaChat $chat): bool
+    {
+        try {
+            $refl = new \ReflectionClass($chat);
+            if ($refl->hasProperty(name: 'tools') === false) {
+                return false;
+            }
+            $prop = $refl->getProperty(name: 'tools');
+            $prop->setAccessible(accessible: true);
+            $tools = $prop->getValue($chat);
+            return is_array($tools) && $tools !== [];
+        } catch (\Throwable) {
+            return false;
+        }
+    }//end chatHasTools()
 
     /**
      * Drive the LLPhant streaming surface, forwarding each chunk to the

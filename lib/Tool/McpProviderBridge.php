@@ -34,10 +34,28 @@ class McpProviderBridge implements ToolInterface
 
     private ?\OCA\OpenRegister\Db\Agent $agent = null;
 
+    /**
+     * Optional whitelist — when set, getFunctions() returns ONLY the
+     * descriptor whose MCP id matches this name. Used by
+     * ToolRegistrationListener so each (provider, function) pair can be
+     * registered as a separate ToolRegistry entry under its full
+     * `appId.functionName` id (the registry enforces a two-part format
+     * and won't accept the bare appId).
+     */
+    private ?string $onlyMcpId = null;
+
     public function __construct(
         private readonly IMcpToolProvider $provider,
         private readonly LoggerInterface $logger,
     ) {
+    }
+
+    /**
+     * Restrict this bridge instance to one specific MCP function id.
+     */
+    public function setOnlyMcpId(string $mcpId): void
+    {
+        $this->onlyMcpId = $mcpId;
     }
 
     public function getName(): string
@@ -61,6 +79,10 @@ class McpProviderBridge implements ToolInterface
         foreach ($this->provider->getTools() as $descriptor) {
             $rawId = (string) ($descriptor['id'] ?? '');
             if ($rawId === '') {
+                continue;
+            }
+
+            if ($this->onlyMcpId !== null && $rawId !== $this->onlyMcpId) {
                 continue;
             }
 

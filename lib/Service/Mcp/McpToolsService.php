@@ -69,6 +69,21 @@ class McpToolsService
     }//end __construct()
 
     /**
+     * Return the registered providers in order so the chat-side
+     * ToolRegistrationListener can wrap each one in an McpProviderBridge
+     * and register it on the ToolRegistry. Read-only accessor; the
+     * underlying list cannot be mutated post-construction (use
+     * addProvider() for that).
+     *
+     * @return list<IMcpToolProvider>
+     */
+    public function getProviders(): array
+    {
+        return $this->providers;
+
+    }//end getProviders()
+
+    /**
      * List available MCP tools
      *
      * Aggregates tool descriptors from all registered providers. Descriptors
