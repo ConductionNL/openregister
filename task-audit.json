@@ -1,0 +1,27 @@
+{
+  "spec": "openspec/changes/aggregations-backend-native",
+  "verified": [
+    {"task": "1.1", "file": "lib/Service/Aggregation/AggregationQuery.php", "ok": true},
+    {"task": "1.1", "file": "lib/Service/Index/SearchBackendInterface.php", "ok": true},
+    {"task": "2.1", "file": "lib/Service/Aggregation/AggregationRunner.php", "ok": true},
+    {"task": "3.1", "file": "lib/Service/Aggregation/SolrAggregationQueryBuilder.php", "ok": true},
+    {"task": "3.1", "file": "lib/Service/Index/Backends/SolrBackend.php", "ok": true},
+    {"task": "4.1", "file": "lib/Service/Aggregation/ElasticsearchAggregationQueryBuilder.php", "ok": true},
+    {"task": "4.1", "file": "lib/Service/Index/Backends/ElasticsearchBackend.php", "ok": true},
+    {"task": "5.1", "file": "lib/Service/Aggregation/AggregationRunner.php", "ok": true},
+    {"task": "6.1", "file": "lib/Service/Aggregation/AggregationCache.php", "ok": true},
+    {"task": "6.2", "file": "lib/EventListener/AggregationCacheInvalidationListener.php", "ok": true},
+    {"task": "6.3", "file": "lib/Controller/AggregationController.php", "ok": true},
+    {"task": "6.3", "file": "appinfo/routes.php", "ok": true},
+    {"task": "7.1", "file": "docs/Features/aggregations.md", "ok": true},
+    {"task": "1.1", "file": "tests/Unit/Service/Aggregation/AggregationQueryTest.php", "ok": true},
+    {"task": "6.1", "file": "tests/Unit/Service/Aggregation/AggregationCacheTest.php", "ok": true},
+    {"task": "3.1", "file": "tests/Unit/Service/Aggregation/SolrAggregationQueryBuilderTest.php", "ok": true},
+    {"task": "4.1", "file": "tests/Unit/Service/Aggregation/ElasticsearchAggregationQueryBuilderTest.php", "ok": true},
+    {"task": "6.2", "file": "tests/Unit/EventListener/AggregationCacheInvalidationListenerTest.php", "ok": true},
+    {"task": "5.1", "file": "tests/Unit/Service/Aggregation/AggregationRunnerTest.php", "ok": true},
+    {"task": "6.3", "file": "tests/Unit/Controller/AggregationControllerTest.php", "ok": true}
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
