@@ -155,17 +155,36 @@ class DocumentProcessingHandler
      */
     public function anonymizeDocument(Node $node, array $entities): File
     {
+        // Resolve the source file id once — the substitution placeholder
+        // format and the post-redaction audit flag both key off it.
+        $fileId = 0;
+        if (method_exists($node, 'getId') === true) {
+            $candidate = $node->getId();
+            if (is_int($candidate) === true && $candidate > 0) {
+                $fileId = $candidate;
+            }
+        }
+
         // Defensive filter — per the `entity-relation-grondslagen` change,
         // the DI anonymise path MUST honour the operator's skip decisions
         // even when the caller's entities[] array includes flagged
         // occurrences. The OR contract is "skipped relations are never
         // redacted, full stop", regardless of caller filtering behaviour.
         $skippedValues = [];
-        if (method_exists($node, 'getId') === true) {
-            $fileId = $node->getId();
-            if (is_int($fileId) === true && $fileId > 0) {
-                $skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
-            }
+        if ($fileId > 0) {
+            $skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
+        }
+
+        // Resolve the existing entity-id map for this file so substitutions
+        // use the stable `[<TYPE>: <entity_id>]` placeholder format —
+        // matches what DocuDesk's grondslagen-summary report shows and
+        // makes re-runs of anonymise on the same document idempotent
+        // (the previous UUID-prefix fallback produced a fresh placeholder
+        // per call, so re-anonymising the same file produced byte-divergent
+        // output despite identical inputs).
+        $entityIdMap = [];
+        if ($fileId > 0) {
+            $entityIdMap = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
         }
 
         // Build replacements array from entities.
@@ -173,14 +192,26 @@ class DocumentProcessingHandler
         foreach ($entities as $entity) {
             $originalText = $entity['text'] ?? '';
             $entityType   = $entity['entityType'] ?? 'UNKNOWN';
-            $key          = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
 
-            if (empty($originalText) === false
-                && in_array($originalText, $skippedValues, true) === false
+            if (empty($originalText) === true
+                || in_array($originalText, $skippedValues, true) === true
             ) {
+                continue;
+            }
+
+            // Prefer stable per-entity placeholder. Fall back to the
+            // legacy UUID-prefix only when there is no matching entity
+            // row on the file (shouldn't happen in the normal
+            // extract → review → anonymise flow, but defensive against
+            // direct DI callers that bypass extraction).
+            if (isset($entityIdMap[$originalText]) === true) {
+                $stableId = $entityIdMap[$originalText]['id'];
+                $replacements[$originalText] = '['.$entityType.': '.$stableId.']';
+            } else {
+                $key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
                 $replacements[$originalText] = '['.$entityType.': '.$key.']';
             }
-        }
+        }//end foreach
 
         // Generate anonymized file name.
         $fileName      = $node->getName();
@@ -202,7 +233,7 @@ class DocumentProcessingHandler
         // because each entity got its own per-row replacement key earlier
         // in this method; the column stores a single representative value
         // per anonymise call, not the full per-entity placeholder list.
-        if (is_int($fileId) === true && $fileId > 0 && empty($replacements) === false) {
+        if ($fileId > 0 && empty($replacements) === false) {
             try {
                 $this->entityRelationMapper->markAsAnonymized($fileId, '[REDACTED]');
             } catch (\Throwable $e) {
