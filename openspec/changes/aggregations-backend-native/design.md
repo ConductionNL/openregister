@@ -32,3 +32,15 @@ Implementations: `PostgresSearchBackend`, `SolrSearchBackend`, `ElasticsearchBac
 - Aggregations over relations (cross-schema joins). The v1 spec said "single field with optional time-bucket only"; v2 keeps that.
 - User-pluggable backend implementations beyond the three NC-supported ones.
 - Real-time aggregations (push). The 60s cache + write-invalidation is the freshness contract.
+
+## Implementation notes
+
+Implemented as specified, with the following deviations from the original spec:
+- `SchemaIndexService::getBackend()` does not exist in the current codebase; `IndexService::getBackend()` is used instead, with `instanceof SolrBackend` / `instanceof ElasticsearchBackend` checks for dispatch.
+- The `AggregationQuery` value object wraps the metric/field/filter/groupBy parameters (not raw strings/arrays) for type-safety.
+- ObjectTransitionedEvent does not exist; cache invalidation uses ObjectCreatedEvent, ObjectUpdatedEvent, ObjectDeletedEvent.
+- REST endpoint at `GET /api/objects/aggregations/{register}/{schema}/{name}` with `X-OR-Cache: hit|miss` header.
+
+## Status
+
+status: pr-created
