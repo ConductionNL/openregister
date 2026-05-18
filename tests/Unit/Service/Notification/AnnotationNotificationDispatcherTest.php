@@ -722,8 +722,9 @@ class AnnotationNotificationDispatcherTest extends TestCase
 
     public function testSecondDispatchWithSameKeyIsSkipped(): void
     {
-        // Second dispatch: the log mapper reports a duplicate within the
-        // window → notify() must never fire and record() is NOT called again.
+        // Second dispatch: the dispatcher uses claim-first semantics — record()
+        // throws DuplicateDispatchException when the unique (slug, key, window)
+        // index conflicts. notify() must never fire when the claim is rejected.
         $schema = $this->schemaWithNotification(
             [
                 'reminderT30' => [
@@ -738,9 +739,11 @@ class AnnotationNotificationDispatcherTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($schema);
 
         $logMapper = $this->createMock(NotificationDispatchLogMapper::class);
-        // Duplicate exists — second dispatch should be a no-op.
-        $logMapper->method('isDuplicate')->willReturn(true);
-        $logMapper->expects($this->never())->method('record');
+        // Concurrent dispatcher / prior dispatch already holds the (slug, key)
+        // slot — record() throws DuplicateDispatchException and dispatch must abort.
+        $logMapper->method('record')->willThrowException(
+            new \OCA\OpenRegister\Db\DuplicateDispatchException('duplicate (slug, key)')
+        );
 
         $this->notificationManager->expects($this->never())->method('notify');
         $this->logger->expects($this->atLeastOnce())->method('info');

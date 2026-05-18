@@ -12,6 +12,12 @@ import {
 	registerLeafIntegrations,
 } from '@conduction/nextcloud-vue'
 import '@conduction/nextcloud-vue/css/index.css'
+import { Fragment } from 'vue-frag'
+
+import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 
 // Install the in-page integration registry on window.OCA.OpenRegister and
 // pre-register the 5 always-on built-ins (files/notes/tags/tasks/audit) plus
@@ -49,12 +55,6 @@ try {
 } catch (e) {
 	console.error('[main] xwiki registry guard failed', e)
 }
-import { Fragment } from 'vue-frag'
-
-import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 
 registerIcons({
 	AccountGroupOutline,

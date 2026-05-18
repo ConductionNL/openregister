@@ -233,8 +233,11 @@ class ManifestServiceTest extends TestCase
         $profile->method('getUpdated')->willReturn(null);
 
         // Schema with a non-materialised calculation: displayName = concat(ncUserId, "!")
+        // The explicit user-field allowlist controls which raw profile fields surface in
+        // runtime.user. Materialised calculations are added to the allowlist automatically.
         $schema = $this->createMock(Schema::class);
         $schema->method('getConfiguration')->willReturn([
+            'x-openregister-manifest-user-fields' => ['primaryRole'],
             'x-openregister-calculations' => [
                 'displayName' => [
                     'materialise' => false,

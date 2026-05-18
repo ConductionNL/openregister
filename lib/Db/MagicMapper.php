@@ -335,16 +335,14 @@ class MagicMapper extends AbstractObjectMapper
         private readonly ContainerInterface $container
     ) {
         self::$constructCount++;
-        file_put_contents(
-            '/tmp/or-debug.log',
-            "MagicMapper::__construct #".self::$constructCount."\n",
-            FILE_APPEND
-        );
         if (self::$constructCount > 2) {
-            file_put_contents(
-                '/tmp/or-debug.log',
-                "CIRCULAR! Stack:\n".(new Exception())->getTraceAsString()."\n",
-                FILE_APPEND
+            // Guard against the circular-construction case under
+            // investigation (#1564). When tripped the mapper is left
+            // without handlers — operations against it will fail
+            // explicitly rather than recursing infinitely.
+            $this->logger->warning(
+                '[MagicMapper] circular construction guard hit (count={count}) — handlers not initialized',
+                ['count' => self::$constructCount, 'app' => 'openregister']
             );
             return;
         }
