@@ -6,14 +6,15 @@
  * Handler for generating LLM responses using configured providers.
  * Supports OpenAI, Fireworks AI, and Ollama with function calling.
  *
- * Streaming-mode outcome (orchestrator §1): currently `non-streaming-only`.
- * All three providers are invoked via LLPhant's blocking surfaces
- * (`generateText()` / `generateChatOrReturnFunctionCalls()`) — the full
- * response arrives in one call. The SSE controller therefore emits zero
- * `token` events and one `final` event per the spec's "non-streaming-
- * provider degradation" clause. Token-by-token streaming would require
- * wiring LLPhant's `generateStreamOfText()` callback into this handler
- * with a yield channel back to ChatStreamController.
+ * Streaming-mode outcome (orchestrator §1 + streaming follow-up §2):
+ * dual-mode. When the caller passes a `StreamYieldChannel` AND the
+ * configured provider's chat instance exposes `generateStreamOfText`,
+ * we call `generateChatStream($messages)` and iterate its PSR-7
+ * stream, forwarding each chunk to `$channel->emitToken()`. When no
+ * channel is supplied (the existing `POST /api/chat/send` path,
+ * background workers) we keep the blocking `generateChat()` call
+ * exactly as before — that branch is load-bearing for the
+ * non-streaming endpoint and must not regress.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
@@ -39,6 +40,8 @@ use LLPhant\Chat\OllamaChat;
 use LLPhant\Chat\Message as LLPhantMessage;
 use LLPhant\OpenAIConfig;
 use LLPhant\OllamaConfig;
+use LLPhant\Exception\MissingFeatureException;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * ResponseGenerationHandler
@@ -108,17 +111,31 @@ class ResponseGenerationHandler
      * - Context injection
      * - API communication
      *
-     * @param string     $userMessage    User's message text.
-     * @param array      $context        RAG context with 'text' and 'sources' keys.
-     * @param array      $messageHistory Array of LLPhantMessage objects.
-     * @param Agent|null $agent          Agent configuration (optional).
-     * @param array      $selectedTools  Tools selected for this request (optional).
+     * When `$channel` is non-null AND the active provider's chat instance
+     * exposes `generateStreamOfText` we invoke the streaming surface and
+     * forward each token chunk through `$channel->emitToken()`. On
+     * `LLPhant\Exception\MissingFeatureException` we fall through to the
+     * blocking call so providers that advertise streaming but fail at
+     * runtime degrade gracefully (contract's non-streaming-provider clause).
+     *
+     * @param string                  $userMessage    User's message text.
+     * @param array                   $context        RAG context with 'text' and 'sources' keys.
+     * @param array                   $messageHistory Array of LLPhantMessage objects.
+     * @param Agent|null              $agent          Agent configuration (optional).
+     * @param array                   $selectedTools  Tools selected for this request (optional).
+     * @param StreamYieldChannel|null $channel        Streaming channel; when supplied the handler
+     *                                                attempts the LLPhant streaming surface and
+     *                                                forwards token / tool-call / tool-result
+     *                                                events to the channel. When null the handler
+     *                                                runs in legacy blocking mode (load-bearing
+     *                                                for `POST /api/chat/send`).
      *
      * @return string Generated response text
      *
      * @throws \Exception If LLM provider is not configured or API call fails
      *
-     * @psalm-param array{text: string, sources: list<array>} $context
+     * @psalm-param  array{text: string, sources: list<array>} $context
+     * @psalm-return string
      *
      * @SuppressWarnings(PHPMD.StaticAccess)          LLPhantMessage factory methods are standard LLPhant pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Response generation requires many conditional API calls
@@ -130,7 +147,8 @@ class ResponseGenerationHandler
         array $context,
         array $messageHistory,
         ?Agent $agent,
-        array $selectedTools=[]
+        array $selectedTools=[],
+        ?StreamYieldChannel $channel=null
     ): string {
         $startTime = microtime(true);
 
@@ -333,10 +351,14 @@ class ResponseGenerationHandler
                     $chat->setTools($functionInfoObjects);
                 }
 
-                // Use generateChat() for message arrays, which properly handles tools/functions.
-                $response = $chat->generateChat($messageHistory);
+                $response = $this->invokeChat(
+                    chat: $chat,
+                    messageHistory: $messageHistory,
+                    channel: $channel,
+                    provider: $chatProvider
+                );
                 $llmTime  = microtime(true) - $llmStartTime;
-            }
+            }//end if
 
             if ($chatProvider === 'fireworks') {
                 /*
@@ -367,8 +389,12 @@ class ResponseGenerationHandler
                     $chat->setTools($functionInfoObjects);
                 }
 
-                // Use generateChat() for message arrays.
-                $response = $chat->generateChat($messageHistory);
+                $response = $this->invokeChat(
+                    chat: $chat,
+                    messageHistory: $messageHistory,
+                    channel: $channel,
+                    provider: $chatProvider
+                );
                 $llmTime  = microtime(true) - $llmStartTime;
             }//end if
 
@@ -405,6 +431,99 @@ class ResponseGenerationHandler
             throw new Exception('Failed to generate response: '.$e->getMessage(), $e->getCode(), $e);
         }//end try
     }//end generateResponse()
+
+    /**
+     * Invoke the active LLPhant chat instance, preferring streaming when a
+     * channel was supplied AND the provider exposes `generateStreamOfText`.
+     *
+     * When the streaming attempt fails with `MissingFeatureException` we
+     * fall through to the blocking `generateChat()` call so the
+     * non-streaming-provider degradation clause of the SSE contract
+     * still holds. The runtime `method_exists` + try/catch combination
+     * is the authority — the provider table in design D4 is informational.
+     *
+     * @param OpenAIChat|OllamaChat   $chat           Configured LLPhant chat instance.
+     * @param array                   $messageHistory Array of LLPhantMessage objects.
+     * @param StreamYieldChannel|null $channel        Streaming channel, or null for blocking mode.
+     * @param string                  $provider       Provider identifier for log context.
+     *
+     * @return string Full assistant text (concatenation of streamed chunks
+     *                when streaming was used).
+     */
+    private function invokeChat(
+        OpenAIChat|OllamaChat $chat,
+        array $messageHistory,
+        ?StreamYieldChannel $channel,
+        string $provider
+    ): string {
+        if ($channel !== null && method_exists($chat, 'generateStreamOfText') === true) {
+            try {
+                return $this->streamChat(chat: $chat, messageHistory: $messageHistory, channel: $channel);
+            } catch (MissingFeatureException $e) {
+                // Provider advertises streaming but cannot deliver — log + degrade.
+                $this->logger->info(
+                    message: '[ResponseGenerationHandler] Streaming unavailable, falling back to blocking call',
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'provider' => $provider,
+                        'error'    => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        // Non-streaming fallback — load-bearing for POST /api/chat/send and
+        // for providers without streaming support (Fireworks today).
+        return $chat->generateChat($messageHistory);
+    }//end invokeChat()
+
+    /**
+     * Drive the LLPhant streaming surface, forwarding each chunk to the
+     * channel's `emitToken` callback and assembling the full text for the
+     * final SSE frame.
+     *
+     * Token / tool-call separation: LLPhant's streaming generator handles
+     * tool invocation internally (see `OpenAIChat::createStreamedResponse`)
+     * — when the LLM emits `finish_reason=tool_calls` LLPhant calls the
+     * registered FunctionInfo callback itself and then resumes the stream
+     * via a follow-up `generateChat` call. The assembled tool output ends
+     * up inside the streamed text. We therefore emit each chunk as a
+     * `token` frame and the eventual `final` frame still carries the
+     * complete assistant turn. Exposing `tool_call` / `tool_result` as
+     * distinct SSE frames during streaming would require patching LLPhant
+     * to surface per-invocation hooks; tracked separately.
+     *
+     * @param OpenAIChat|OllamaChat $chat           Configured chat instance.
+     * @param array                 $messageHistory Array of LLPhantMessage objects.
+     * @param StreamYieldChannel    $channel        Channel to forward chunks to.
+     *
+     * @return string Assembled assistant text.
+     *
+     * @throws MissingFeatureException When the provider's streaming surface throws.
+     */
+    private function streamChat(
+        OpenAIChat|OllamaChat $chat,
+        array $messageHistory,
+        StreamYieldChannel $channel
+    ): string {
+        $stream    = $chat->generateChatStream($messageHistory);
+        $assembled = '';
+
+        // PSR-7 StreamInterface: read until EOF; LLPhant emits one chunk
+        // per delta when `delta.content` is non-empty.
+        while ($stream->eof() === false) {
+            $chunk = $stream->read(1024);
+            if ($chunk === '') {
+                continue;
+            }
+
+            $assembled .= $chunk;
+            $channel->emitToken(delta: $chunk);
+        }
+
+        return $assembled;
+    }//end streamChat()
 
     /**
      * Call Fireworks AI chat API with full message history

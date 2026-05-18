@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
+use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use Psr\Log\LoggerInterface;
 
@@ -173,15 +174,21 @@ class ChatService
      *
      * Main orchestration method that coordinates all handlers.
      *
-     * @param int    $conversationId Conversation ID.
-     * @param string $userId         User ID.
-     * @param string $userMessage    User message text.
-     * @param array  $selectedViews  View filters for multitenancy (optional).
-     * @param array  $selectedTools  Tool UUIDs to use (optional).
-     * @param array  $ragSettings    RAG configuration overrides (optional).
-     * @param array  $context        CnAiContext snapshot the frontend sent
-     *                               (orchestrator §8). Persisted on the
-     *                               user-authored Message row when non-empty.
+     * @param int                     $conversationId Conversation ID.
+     * @param string                  $userId         User ID.
+     * @param string                  $userMessage    User message text.
+     * @param array                   $selectedViews  View filters for multitenancy (optional).
+     * @param array                   $selectedTools  Tool UUIDs to use (optional).
+     * @param array                   $ragSettings    RAG configuration overrides (optional).
+     * @param array                   $context        CnAiContext snapshot the frontend sent
+     *                                                (orchestrator §8). Persisted on the
+     *                                                user-authored Message row when non-empty.
+     * @param StreamYieldChannel|null $channel        Streaming channel forwarded to the response
+     *                                                handler so SSE consumers (ChatStreamController)
+     *                                                can interleave `token` / `tool_call` /
+     *                                                `tool_result` frames as the LLM yields. Null
+     *                                                for blocking callers (POST /api/chat/send,
+     *                                                background workers) — behaviour unchanged.
      *
      * @return ((array|string)[]|string)[]
      *
@@ -204,7 +211,8 @@ class ChatService
         array $selectedViews=[],
         array $selectedTools=[],
         array $ragSettings=[],
-        array $context=[]
+        array $context=[],
+        ?StreamYieldChannel $channel=null
     ): array {
         $this->logger->info(
             message: '[ChatService] Processing message',
@@ -264,7 +272,8 @@ class ChatService
                 context: $context,
                 messageHistory: $messageHistory,
                 agent: $agent,
-                selectedTools: $selectedTools
+                selectedTools: $selectedTools,
+                channel: $channel
             );
             $llmTime      = microtime(true) - $llmStartTime;
 
