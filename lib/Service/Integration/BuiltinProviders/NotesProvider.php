@@ -38,7 +38,6 @@ use OCP\IL10N;
  */
 class NotesProvider extends AbstractIntegrationProvider
 {
-
     /**
      * Constructor.
      *
@@ -53,63 +52,138 @@ class NotesProvider extends AbstractIntegrationProvider
     ) {
     }//end __construct()
 
+    /**
+     * Stable provider id used in routes and configs.
+     *
+     * @return string Stable provider identifier.
+     */
     public function getId(): string
     {
         return 'notes';
     }//end getId()
 
+    /**
+     * Translated, human-readable provider label.
+     *
+     * @return string Translated, human-readable provider label.
+     */
     public function getLabel(): string
     {
         return $this->l10n->t('Notes');
     }//end getLabel()
 
+    /**
+     * MDI icon name for the provider.
+     *
+     * @return string MDI icon name for the provider.
+     */
     public function getIcon(): string
     {
         return 'CommentTextOutline';
     }//end getIcon()
 
+    /**
+     * Group identifier for UI grouping (or null).
+     *
+     * @return string|null Group identifier for UI grouping.
+     */
     public function getGroup(): ?string
     {
         return 'core';
     }//end getGroup()
 
+    /**
+     * Required NC app id (null = built-in).
+     *
+     * @return string|null Required app id (null = built-in).
+     */
     public function getRequiredApp(): ?string
     {
         return null;
     }//end getRequiredApp()
 
+    /**
+     * Storage strategy hint for the registry.
+     *
+     * @return string Storage strategy hint for the registry.
+     */
     public function getStorageStrategy(): string
     {
         return 'link-table';
     }//end getStorageStrategy()
 
+    /**
+     * True when the provider is available for use.
+     *
+     * @return bool True when the provider is available for use.
+     */
     public function isEnabled(): bool
     {
         return true;
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
+    /**
+     * List notes linked to the given OR object.
+     *
+     * @param string              $register Register slug or numeric id.
+     * @param string              $schema   Schema slug or numeric id.
+     * @param string              $objectId Owning object uuid.
+     * @param array<string,mixed> $filters  Pagination filters (_limit / _page).
+     *
+     * @return array<int,array<string,mixed>> Notes rows.
+     */
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         $limit  = (int) ($filters['_limit'] ?? 50);
         $offset = (int) ($filters['_page'] ?? 0) * $limit;
-        return $this->noteService->getNotesForObject($objectId, $limit, max(0, $offset));
+        return $this->noteService->getNotesForObject(objectUuid: $objectId, limit: $limit, offset: max(0, $offset));
     }//end list()
 
+    /**
+     * Create a note linked to the given OR object.
+     *
+     * @param string              $register Register slug or numeric id.
+     * @param string              $schema   Schema slug or numeric id.
+     * @param string              $objectId Owning object uuid.
+     * @param array<string,mixed> $payload  Note payload (message field).
+     *
+     * @return array<string,mixed> Created note row.
+     */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
         $message = (string) ($payload['message'] ?? '');
-        return $this->noteService->createNote($objectId, $message);
+        return $this->noteService->createNote(objectUuid: $objectId, message: $message);
     }//end create()
 
+    /**
+     * Update an existing note.
+     *
+     * @param string              $register Register slug or numeric id.
+     * @param string              $schema   Schema slug or numeric id.
+     * @param string              $objectId Owning object uuid.
+     * @param string              $entityId Note id (numeric string).
+     * @param array<string,mixed> $payload  Update payload (message field).
+     *
+     * @return array<string,mixed> Updated note row.
+     */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
         $message = (string) ($payload['message'] ?? '');
-        return $this->noteService->updateNote((int) $entityId, $message);
+        return $this->noteService->updateNote(noteId: (int) $entityId, message: $message);
     }//end update()
 
+    /**
+     * Delete a note.
+     *
+     * @param string $register Register slug or numeric id.
+     * @param string $schema   Schema slug or numeric id.
+     * @param string $objectId Owning object uuid.
+     * @param string $entityId Note id (numeric string).
+     *
+     * @return void
+     */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
-        $this->noteService->deleteNote((int) $entityId);
+        $this->noteService->deleteNote(noteId: (int) $entityId);
     }//end delete()
-
 }//end class

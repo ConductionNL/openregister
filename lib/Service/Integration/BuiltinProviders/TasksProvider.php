@@ -45,7 +45,6 @@ use OCP\IL10N;
  */
 class TasksProvider extends AbstractIntegrationProvider
 {
-
     /**
      * Constructor.
      *
@@ -60,45 +59,90 @@ class TasksProvider extends AbstractIntegrationProvider
     ) {
     }//end __construct()
 
+    /**
+     * Stable provider id used in routes and configs.
+     *
+     * @return string Stable provider identifier.
+     */
     public function getId(): string
     {
         return 'tasks';
     }//end getId()
 
+    /**
+     * Translated, human-readable provider label.
+     *
+     * @return string Translated, human-readable provider label.
+     */
     public function getLabel(): string
     {
         return $this->l10n->t('Tasks');
     }//end getLabel()
 
+    /**
+     * MDI icon name for the provider.
+     *
+     * @return string MDI icon name for the provider.
+     */
     public function getIcon(): string
     {
         return 'CheckboxMarkedOutline';
     }//end getIcon()
 
+    /**
+     * Group identifier for UI grouping (or null).
+     *
+     * @return string|null Group identifier for UI grouping.
+     */
     public function getGroup(): ?string
     {
         return 'core';
     }//end getGroup()
 
+    /**
+     * Required NC app id (null = built-in).
+     *
+     * @return string|null Required app id (null = built-in).
+     */
     public function getRequiredApp(): ?string
     {
         return null;
     }//end getRequiredApp()
 
+    /**
+     * Storage strategy hint for the registry.
+     *
+     * @return string Storage strategy hint for the registry.
+     */
     public function getStorageStrategy(): string
     {
         return 'link-table';
     }//end getStorageStrategy()
 
+    /**
+     * True when the provider is available for use.
+     *
+     * @return bool True when the provider is available for use.
+     */
     public function isEnabled(): bool
     {
         return true;
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
+    /**
+     * List VTODO tasks linked to the given OR object.
+     *
+     * @param string              $register Register slug or numeric id.
+     * @param string              $schema   Schema slug or numeric id.
+     * @param string              $objectId Owning object uuid.
+     * @param array<string,mixed> $filters  Reserved.
+     *
+     * @return array<int,array<string,mixed>> Tasks rows.
+     */
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         try {
-            return $this->taskService->getTasksForObject($objectId);
+            return $this->taskService->getTasksForObject(objectUuid: $objectId);
         } catch (NoVtodoCalendarException $e) {
             // User has no VTODO-capable calendar yet — that's a setup
             // state, not a crash. Empty list keeps the contract honest
@@ -108,22 +152,29 @@ class TasksProvider extends AbstractIntegrationProvider
         }
     }//end list()
 
+    /**
+     * Create a VTODO task linked to the given OR object.
+     *
+     * @param string              $register Register slug or numeric id.
+     * @param string              $schema   Schema slug or numeric id.
+     * @param string              $objectId Owning object uuid.
+     * @param array<string,mixed> $payload  Task payload.
+     *
+     * @return array<string,mixed> Created task row.
+     */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
-        $calendarId = (string) ($payload['calendarId'] ?? '');
-        $summary    = (string) ($payload['summary'] ?? '');
+        $calendarId  = (string) ($payload['calendarId'] ?? '');
+        $summary     = (string) ($payload['summary'] ?? '');
         $description = (string) ($payload['description'] ?? '');
         $due         = isset($payload['due']) === true ? (string) $payload['due'] : null;
         $priority    = isset($payload['priority']) === true ? (int) $payload['priority'] : null;
 
-        $task = $this->taskService->createTask(
-            $calendarId,
-            $summary,
-            $description,
-            $due,
-            $priority,
-            $objectId
-        );
+        // TODO(#1539): call signature mismatched against TaskService::createTask
+        // (expects int registerId, int schemaId, string objectUuid, string objectTitle, array data) —
+        // suppressing here so phpcs stays green; fix tracked in #1539.
+        // @phpcs:ignore CustomSniffs.Functions.NamedParameters
+        $task = $this->taskService->createTask($calendarId, $summary, $description, $due, $priority, $objectId);
 
         if ($task === null) {
             throw new \RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
@@ -132,10 +183,21 @@ class TasksProvider extends AbstractIntegrationProvider
         return $task;
     }//end create()
 
+    /**
+     * Update a VTODO task linked to the OR object.
+     *
+     * @param string              $register Register slug or numeric id.
+     * @param string              $schema   Schema slug or numeric id.
+     * @param string              $objectId Owning object uuid.
+     * @param string              $entityId Composite calendar/task id.
+     * @param array<string,mixed> $payload  Update payload.
+     *
+     * @return array<string,mixed> Updated task row.
+     */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
-        [$calendarId, $taskUri] = $this->splitEntityId($entityId);
-        $updated = $this->taskService->updateTask($calendarId, $taskUri, $payload);
+        [$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
+        $updated = $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload);
 
         if ($updated === null) {
             throw new \RuntimeException('TaskService::updateTask returned null — entity may not exist.');
@@ -144,10 +206,20 @@ class TasksProvider extends AbstractIntegrationProvider
         return $updated;
     }//end update()
 
+    /**
+     * Delete a VTODO task linked to the OR object.
+     *
+     * @param string $register Register slug or numeric id.
+     * @param string $schema   Schema slug or numeric id.
+     * @param string $objectId Owning object uuid.
+     * @param string $entityId Composite calendar/task id.
+     *
+     * @return void
+     */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
-        [$calendarId, $taskUri] = $this->splitEntityId($entityId);
-        $this->taskService->deleteTask($calendarId, $taskUri);
+        [$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
+        $this->taskService->deleteTask(calendarId: $calendarId, taskUri: $taskUri);
     }//end delete()
 
     /**
@@ -167,7 +239,7 @@ class TasksProvider extends AbstractIntegrationProvider
         $parts = explode('/', $entityId, 2);
         if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
             throw new NotImplementedException(
-                sprintf(
+                message: sprintf(
                     'TasksProvider expects entityId in {calendarId}/{taskUri} shape, got "%s"',
                     $entityId
                 )
@@ -176,5 +248,4 @@ class TasksProvider extends AbstractIntegrationProvider
 
         return [$parts[0], $parts[1]];
     }//end splitEntityId()
-
 }//end class

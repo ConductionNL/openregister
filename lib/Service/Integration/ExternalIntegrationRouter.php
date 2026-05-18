@@ -58,7 +58,7 @@ class ExternalIntegrationRouter
      *
      * Null means "not yet checked" — the first call resolves it.
      *
-     * @var bool|null
+     * @var boolean|null
      */
     private ?bool $openConnectorAvailable = null;
 
@@ -111,16 +111,16 @@ class ExternalIntegrationRouter
         IntegrationProvider $provider,
         string $method,
         string $path,
-        array $options = [],
+        array $options=[],
     ): array {
-        $this->assertProviderIsExternal($provider);
+        $this->assertProviderIsExternal(provider: $provider);
         $this->assertOpenConnectorAvailable();
 
         $sourceId = (string) $provider->getOpenConnectorSource();
-        $source   = $this->loadSource($sourceId, $provider->getId());
+        $source   = $this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
 
         try {
-            return $this->invoke($source, $method, $path, $options);
+            return $this->invoke(source: $source, method: $method, path: $path, options: $options);
         } catch (ProviderUnavailableException $e) {
             // Already classified — surface as-is.
             throw $e;
@@ -138,12 +138,12 @@ class ExternalIntegrationRouter
                 ['exception' => $e]
             );
             throw new ProviderUnavailableException(
-                sprintf(
+                message: sprintf(
                     'Upstream service for integration "%s" is unreachable.',
                     $provider->getId()
                 ),
-                ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN,
-                $e
+                cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN,
+                previous: $e
             );
         }//end try
     }//end call()
@@ -179,7 +179,7 @@ class ExternalIntegrationRouter
 
         $sourceId = (string) $provider->getOpenConnectorSource();
         try {
-            $this->loadSource($sourceId, $provider->getId());
+            $this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
         } catch (ProviderUnavailableException $e) {
             return [
                 'status'     => 'unavailable',
@@ -218,11 +218,11 @@ class ExternalIntegrationRouter
 
         if ($provider->getOpenConnectorSource() === null) {
             throw new ProviderUnavailableException(
-                sprintf(
+                message: sprintf(
                     'External provider "%s" did not declare an OpenConnector source.',
                     $provider->getId()
                 ),
-                ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING
+                cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING
             );
         }
     }//end assertProviderIsExternal()
@@ -242,8 +242,8 @@ class ExternalIntegrationRouter
         }
 
         throw new ProviderUnavailableException(
-            'OpenConnector app is not installed or enabled.',
-            ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN
+            message: 'OpenConnector app is not installed or enabled.',
+            cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN
         );
     }//end assertOpenConnectorAvailable()
 
@@ -288,7 +288,7 @@ class ExternalIntegrationRouter
             // both because the public API surface has evolved.
             if (method_exists($mapper, 'findByReference') === true) {
                 $source = $mapper->findByReference($sourceId);
-            } elseif (method_exists($mapper, 'find') === true) {
+            } else if (method_exists($mapper, 'find') === true) {
                 $source = $mapper->find($sourceId);
             }
 
@@ -299,13 +299,13 @@ class ExternalIntegrationRouter
             return $source;
         } catch (\Throwable $e) {
             throw new ProviderUnavailableException(
-                sprintf(
+                message: sprintf(
                     'OpenConnector source "%s" for integration "%s" is missing or unreadable.',
                     $sourceId,
                     $providerId
                 ),
-                ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING,
-                $e
+                cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING,
+                previous: $e
             );
         }//end try
     }//end loadSource()
@@ -333,14 +333,14 @@ class ExternalIntegrationRouter
 
         if (method_exists($callService, 'call') === true) {
             $response = $callService->call($source, $path, $method, $options);
-            $this->assertUpstreamOk($response);
-            return $this->decodeResponse($response);
+            $this->assertUpstreamOk(response: $response);
+            return $this->decodeResponse(response: $response);
         }
 
         if (method_exists($callService, 'request') === true) {
             $response = $callService->request($source, $method, $path, $options);
-            $this->assertUpstreamOk($response);
-            return $this->decodeResponse($response);
+            $this->assertUpstreamOk(response: $response);
+            return $this->decodeResponse(response: $response);
         }
 
         throw new \RuntimeException(
@@ -371,13 +371,15 @@ class ExternalIntegrationRouter
             return;
         }
 
-        $cause = ($status === 401 || $status === 403)
-            ? ProviderUnavailableException::CAUSE_PROVIDER_AUTH
-            : ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN;
+        if ($status === 401 || $status === 403) {
+            $cause = ProviderUnavailableException::CAUSE_PROVIDER_AUTH;
+        } else {
+            $cause = ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN;
+        }
 
         throw new ProviderUnavailableException(
-            sprintf('Upstream service answered HTTP %d.', $status),
-            $cause
+            message: sprintf('Upstream service answered HTTP %d.', $status),
+            cause: $cause
         );
     }//end assertUpstreamOk()
 
@@ -412,7 +414,7 @@ class ExternalIntegrationRouter
                     $body = (string) base64_decode($body, true);
                 }
 
-                return $this->decodeResponse($body);
+                return $this->decodeResponse(response: $body);
             }
 
             if (is_array($payload) === true) {
@@ -436,5 +438,4 @@ class ExternalIntegrationRouter
 
         return ['body' => $response];
     }//end decodeResponse()
-
 }//end class

@@ -60,7 +60,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectIntegrationsController extends Controller
 {
-
     /**
      * Constructor.
      *
@@ -77,7 +76,7 @@ class ObjectIntegrationsController extends Controller
         private IntegrationRegistry $registry,
         private LoggerInterface $logger,
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
@@ -97,8 +96,8 @@ class ObjectIntegrationsController extends Controller
     public function index(string $register, string $schema, string $id, string $integrationId): JSONResponse
     {
         return $this->dispatch(
-            $integrationId,
-            fn ($provider) => ['items' => $provider->list($register, $schema, $id, $this->collectFilters())]
+            integrationId: $integrationId,
+            callback: fn ($provider) => ['items' => $provider->list($register, $schema, $id, $this->collectFilters())]
         );
     }//end index()
 
@@ -119,8 +118,8 @@ class ObjectIntegrationsController extends Controller
     public function show(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
     {
         return $this->dispatch(
-            $integrationId,
-            fn ($provider) => $provider->get($register, $schema, $id, $entityId)
+            integrationId: $integrationId,
+            callback: fn ($provider) => $provider->get($register, $schema, $id, $entityId)
         );
     }//end show()
 
@@ -141,9 +140,9 @@ class ObjectIntegrationsController extends Controller
     {
         $payload = $this->collectPayload();
         return $this->dispatch(
-            $integrationId,
-            fn ($provider) => $provider->create($register, $schema, $id, $payload),
-            Http::STATUS_CREATED
+            integrationId: $integrationId,
+            callback: fn ($provider) => $provider->create($register, $schema, $id, $payload),
+            okStatus: Http::STATUS_CREATED
         );
     }//end create()
 
@@ -165,8 +164,8 @@ class ObjectIntegrationsController extends Controller
     {
         $payload = $this->collectPayload();
         return $this->dispatch(
-            $integrationId,
-            fn ($provider) => $provider->update($register, $schema, $id, $entityId, $payload)
+            integrationId: $integrationId,
+            callback: fn ($provider) => $provider->update($register, $schema, $id, $entityId, $payload)
         );
     }//end update()
 
@@ -187,15 +186,15 @@ class ObjectIntegrationsController extends Controller
     public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
     {
         try {
-            $provider = $this->resolveProvider($integrationId);
+            $provider = $this->resolveProvider(integrationId: $integrationId);
             $provider->delete($register, $schema, $id, $entityId);
             return new JSONResponse(null, Http::STATUS_NO_CONTENT);
         } catch (NotImplementedException $e) {
-            return $this->respondNotImplemented($e, $integrationId);
+            return $this->respondNotImplemented(exception: $e, integrationId: $integrationId);
         } catch (ProviderUnavailableException $e) {
-            return $this->respondUnavailable($e);
+            return $this->respondUnavailable(exception: $e);
         } catch (\Throwable $e) {
-            return $this->respondInternalError($e, $integrationId);
+            return $this->respondInternalError(exception: $e, integrationId: $integrationId);
         }
     }//end destroy()
 
@@ -209,20 +208,20 @@ class ObjectIntegrationsController extends Controller
      *
      * @return JSONResponse
      */
-    private function dispatch(string $integrationId, callable $callback, int $okStatus = Http::STATUS_OK): JSONResponse
+    private function dispatch(string $integrationId, callable $callback, int $okStatus=Http::STATUS_OK): JSONResponse
     {
         try {
-            $provider = $this->resolveProvider($integrationId);
+            $provider = $this->resolveProvider(integrationId: $integrationId);
             $body     = $callback($provider);
             return new JSONResponse($body, $okStatus);
         } catch (NotImplementedException $e) {
-            return $this->respondNotImplemented($e, $integrationId);
+            return $this->respondNotImplemented(exception: $e, integrationId: $integrationId);
         } catch (ProviderUnavailableException $e) {
-            return $this->respondUnavailable($e);
+            return $this->respondUnavailable(exception: $e);
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
         } catch (\Throwable $e) {
-            return $this->respondInternalError($e, $integrationId);
+            return $this->respondInternalError(exception: $e, integrationId: $integrationId);
         }
     }//end dispatch()
 
@@ -246,7 +245,7 @@ class ObjectIntegrationsController extends Controller
             sort($registered);
             $hint = ($registered === []) ? '(no providers registered)' : implode(', ', $registered);
             throw new NotImplementedException(
-                sprintf("Integration '%s' is not registered. Registered: %s", $integrationId, $hint)
+                message: sprintf("Integration '%s' is not registered. Registered: %s", $integrationId, $hint)
             );
         }
 
@@ -257,7 +256,7 @@ class ObjectIntegrationsController extends Controller
      * Translate `NotImplementedException` to the 501 envelope shape
      * documented in QueryTimeContract::buildHttpBody().
      *
-     * @param NotImplementedException $exception  Exception.
+     * @param NotImplementedException $exception     Exception.
      * @param string                  $integrationId Integration id.
      *
      * @return JSONResponse
@@ -337,6 +336,7 @@ class ObjectIntegrationsController extends Controller
             if (in_array($key, ['register', 'schema', 'id', 'integrationId', 'entityId'], true) === true) {
                 continue;
             }
+
             $filters[$key] = $value;
         }
 
@@ -354,5 +354,4 @@ class ObjectIntegrationsController extends Controller
         unset($raw['register'], $raw['schema'], $raw['id'], $raw['integrationId'], $raw['entityId']);
         return $raw;
     }//end collectPayload()
-
 }//end class

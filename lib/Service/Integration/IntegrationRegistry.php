@@ -144,7 +144,7 @@ class IntegrationRegistry
     {
         $this->providers = [];
         foreach ($providers as $provider) {
-            $this->addProvider($provider);
+            $this->addProvider(provider: $provider);
         }
     }//end withProviders()
 
@@ -220,5 +220,4 @@ class IntegrationRegistry
 
         return $enabled;
     }//end getEnabled()
-
 }//end class

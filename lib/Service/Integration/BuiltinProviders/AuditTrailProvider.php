@@ -41,7 +41,6 @@ use OCP\IL10N;
  */
 class AuditTrailProvider extends AbstractIntegrationProvider
 {
-
     /**
      * Constructor.
      *
@@ -56,36 +55,71 @@ class AuditTrailProvider extends AbstractIntegrationProvider
     ) {
     }//end __construct()
 
+    /**
+     * Stable provider id used in routes and configs.
+     *
+     * @return string Stable provider identifier.
+     */
     public function getId(): string
     {
         return 'audit-trail';
     }//end getId()
 
+    /**
+     * Translated, human-readable provider label.
+     *
+     * @return string Translated, human-readable provider label.
+     */
     public function getLabel(): string
     {
         return $this->l10n->t('Audit trail');
     }//end getLabel()
 
+    /**
+     * MDI icon name for the provider.
+     *
+     * @return string MDI icon name for the provider.
+     */
     public function getIcon(): string
     {
         return 'History';
     }//end getIcon()
 
+    /**
+     * Group identifier for UI grouping (or null).
+     *
+     * @return string|null Group identifier for UI grouping.
+     */
     public function getGroup(): ?string
     {
         return 'core';
     }//end getGroup()
 
+    /**
+     * Required NC app id (null = built-in).
+     *
+     * @return string|null Required app id (null = built-in).
+     */
     public function getRequiredApp(): ?string
     {
         return null;
     }//end getRequiredApp()
 
+    /**
+     * Storage strategy hint for the registry.
+     *
+     * @return string Storage strategy hint for the registry.
+     */
     public function getStorageStrategy(): string
     {
         return 'query-time';
     }//end getStorageStrategy()
 
+    /**
+     * True when the provider is available for use.
+     *
+     * @return bool True when the provider is available for use.
+     */
     public function isEnabled(): bool
     {
         return true;
@@ -107,12 +141,12 @@ class AuditTrailProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      */
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         try {
             if (method_exists($this->mapper, 'findAllByObject') === true) {
                 $entries = $this->mapper->findAllByObject($objectId);
-                return $this->normalize($entries);
+                return $this->normalize(entries: $entries);
             }
 
             if (method_exists($this->mapper, 'findAll') === true) {
@@ -124,18 +158,20 @@ class AuditTrailProvider extends AbstractIntegrationProvider
                 try {
                     $entries = $this->mapper->findAll(filters: ['object_uuid' => $objectId]);
                     if (is_array($entries) === true && count($entries) > 0) {
-                        return $this->normalize($entries);
+                        return $this->normalize(entries: $entries);
                     }
                 } catch (\Throwable $e) {
-                    // fall through to legacy filter
+                    // Fall through to legacy filter.
+                    unset($e);
                 }
+
                 $entries = $this->mapper->findAll(filters: ['object' => $objectId]);
-                return $this->normalize($entries);
+                return $this->normalize(entries: $entries);
             }
         } catch (\Throwable $e) {
             // AuditTrail history is a soft surface — never block the
             // detail page on a stale or missing audit row.
-        }
+        }//end try
 
         return [];
     }//end list()
@@ -169,5 +205,4 @@ class AuditTrailProvider extends AbstractIntegrationProvider
 
         return $rows;
     }//end normalize()
-
 }//end class

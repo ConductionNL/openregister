@@ -118,8 +118,8 @@ class PollsProvider extends AbstractIntegrationProvider
         // Going through the raw DB row sidesteps that and is sufficient
         // for the marker-based link filter.
         try {
-            $db    = $this->container->get('OCP\\IDBConnection');
-            $qb    = $db->getQueryBuilder();
+            $db = $this->container->get('OCP\\IDBConnection');
+            $qb = $db->getQueryBuilder();
             $qb->select('*')->from('polls_polls')->where(
                 $qb->expr()->eq('owner', $qb->createNamedParameter($user->getUID()))
             );
@@ -134,7 +134,8 @@ class PollsProvider extends AbstractIntegrationProvider
             if (str_contains($title, $marker) === false) {
                 continue;
             }
-            $id  = (string) ($row['id'] ?? '');
+
+            $id    = (string) ($row['id'] ?? '');
             $out[] = [
                 'id'          => $id,
                 'title'       => $title,

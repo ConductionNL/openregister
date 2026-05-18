@@ -50,15 +50,14 @@ use OCP\Settings\ISettings;
  */
 class IntegrationsAdminSettings implements ISettings
 {
-
     /**
      * Constructor.
      *
-     * @param IntegrationRegistry       $registry    Integration registry.
-     * @param ExternalIntegrationRouter $router      External router (for probe()).
-     * @param IAppManager               $appManager  NC app manager.
+     * @param IntegrationRegistry       $registry     Integration registry.
+     * @param ExternalIntegrationRouter $router       External router (for probe()).
+     * @param IAppManager               $appManager   NC app manager.
      * @param IURLGenerator             $urlGenerator URL generator (Configure deep-link).
-     * @param IL10N                     $l10n        Localisation.
+     * @param IL10N                     $l10n         Localisation.
      *
      * @return void
      */
@@ -72,7 +71,11 @@ class IntegrationsAdminSettings implements ISettings
     }//end __construct()
 
     /**
+     * Render the admin settings template.
+     *
      * @inheritDoc
+     *
+     * @return TemplateResponse Rendered integrations admin template.
      */
     public function getForm(): TemplateResponse
     {
@@ -85,7 +88,11 @@ class IntegrationsAdminSettings implements ISettings
     }//end getForm()
 
     /**
+     * Identify the settings section this form lives under.
+     *
      * @inheritDoc
+     *
+     * @return string Section identifier (`openregister`).
      */
     public function getSection(): string
     {
@@ -93,7 +100,11 @@ class IntegrationsAdminSettings implements ISettings
     }//end getSection()
 
     /**
+     * Set the render priority within the settings section.
+     *
      * @inheritDoc
+     *
+     * @return int Priority (lower = higher in the section).
      */
     public function getPriority(): int
     {
@@ -116,7 +127,7 @@ class IntegrationsAdminSettings implements ISettings
     {
         $rows = [];
         foreach ($this->registry->list() as $provider) {
-            $rows[] = $this->describe($provider);
+            $rows[] = $this->describe(provider: $provider);
         }
 
         return $rows;
@@ -131,13 +142,14 @@ class IntegrationsAdminSettings implements ISettings
      */
     private function describe(IntegrationProvider $provider): array
     {
-        $requiredApp     = $provider->getRequiredApp();
-        $isExternal      = ($provider->getStorageStrategy() === 'external');
-        $health          = $this->probeHealth($provider);
-        $openConnSource  = $provider->getOpenConnectorSource();
-        $configureUrl    = ($isExternal === true && $openConnSource !== null)
-            ? $this->buildOpenConnectorConfigureUrl($openConnSource)
-            : null;
+        $requiredApp    = $provider->getRequiredApp();
+        $isExternal     = ($provider->getStorageStrategy() === 'external');
+        $health         = $this->probeHealth(provider: $provider);
+        $openConnSource = $provider->getOpenConnectorSource();
+        $configureUrl   = null;
+        if ($isExternal === true && $openConnSource !== null) {
+            $configureUrl = $this->buildOpenConnectorConfigureUrl(sourceId: $openConnSource);
+        }
 
         return [
             'id'                  => $provider->getId(),
@@ -153,12 +165,10 @@ class IntegrationsAdminSettings implements ISettings
             'status'              => $health['status'],
             'message'             => $health['message'],
             'configureUrl'        => $configureUrl,
-            'testConnectionUrl'   => ($isExternal === true)
-                ? $this->urlGenerator->linkToOCSRouteAbsolute(
+            'testConnectionUrl'   => ($isExternal === true) ? $this->urlGenerator->linkToOCSRouteAbsolute(
                     'openregister.integrations.show',
                     ['id' => $provider->getId()]
-                )
-                : null,
+                ) : null,
         ];
     }//end describe()
 
@@ -223,5 +233,4 @@ class IntegrationsAdminSettings implements ISettings
             );
         }
     }//end buildOpenConnectorConfigureUrl()
-
 }//end class

@@ -129,6 +129,8 @@ class ResponseGenerationHandler
      *                                                events to the channel. When null the handler
      *                                                runs in legacy blocking mode (load-bearing
      *                                                for `POST /api/chat/send`).
+     * @param array                   $cnAiContext    Optional Conduction AI context overrides
+     *                                                (provider/model hints, defaults to empty array).
      *
      * @return string Generated response text
      *
@@ -477,6 +479,7 @@ class ResponseGenerationHandler
      * @return string Full assistant text (concatenation of streamed chunks
      *                when streaming was used).
      */
+
     /**
      * Wrap each FunctionInfo's tool instance with a
      * StreamingToolInstanceWrapper when streaming is active so
@@ -514,6 +517,16 @@ class ResponseGenerationHandler
 
     }//end wrapToolsForStreaming()
 
+    /**
+     * Invoke the configured chat client, preferring streaming where possible.
+     *
+     * @param OpenAIChat|OllamaChat   $chat           Configured chat client.
+     * @param array                   $messageHistory LLPhant message history.
+     * @param StreamYieldChannel|null $channel        Optional streaming channel.
+     * @param string                  $provider       Provider slug (for logging).
+     *
+     * @return string The assistant's textual response.
+     */
     private function invokeChat(
         OpenAIChat|OllamaChat $chat,
         array $messageHistory,
@@ -526,7 +539,7 @@ class ResponseGenerationHandler
         // tool-call branch and calls our wrapped FunctionInfo instances.
         // OpenAI's createStreamedResponse handles tool_calls during the
         // stream, so it stays on the streaming path.
-        $ollamaWithTools = ($chat instanceof OllamaChat) && $this->chatHasTools($chat);
+        $ollamaWithTools = ($chat instanceof OllamaChat) && $this->chatHasTools(chat: $chat);
 
         if ($channel !== null
             && $ollamaWithTools === false
@@ -574,6 +587,7 @@ class ResponseGenerationHandler
             if ($refl->hasProperty(name: 'tools') === false) {
                 return false;
             }
+
             $prop = $refl->getProperty(name: 'tools');
             $prop->setAccessible(accessible: true);
             $tools = $prop->getValue($chat);

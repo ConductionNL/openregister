@@ -321,7 +321,7 @@ class Application extends App implements IBootstrap
         // probing routes.
         $context->registerCapability(UrnCapability::class);
 
-        // pluggable-integration-registry task 4.5 (tasks.md#task-22):
+        // Pluggable-integration-registry task 4.5 (tasks.md#task-22):
         // advertise the integration registry through the OCS
         // capabilities endpoint.
         $context->registerCapability(\OCA\OpenRegister\Capabilities\IntegrationsCapability::class);
@@ -889,7 +889,7 @@ class Application extends App implements IBootstrap
             }
         );
 
-        $this->registerBuiltinIntegrationProviders($context);
+        $this->registerBuiltinIntegrationProviders(context: $context);
 
         // IntegrationsController — read-only API over the registry.
         $context->registerService(
@@ -926,7 +926,6 @@ class Application extends App implements IBootstrap
         // remaining constructor deps (IAppManager / IURLGenerator /
         // IL10N) are framework services NC autowires. No explicit
         // registerService needed, mirroring OpenRegisterAdmin.
-
         // IntegrationsCapability — surfaces the registry through the
         // Nextcloud OCS capabilities endpoint, role-redacted per AD-17.
         $context->registerService(
@@ -1354,12 +1353,12 @@ class Application extends App implements IBootstrap
 
                 // Per-app tool providers: try two discovery paths for each
                 // installed app:
-                //   1) the alias key `OCA\OpenRegister\Mcp\IMcpToolProvider::<appId>`
-                //      (works only if the app registered the alias on this same
-                //      container instance — NC scopes alias registration per app);
-                //   2) the canonical FQCN `OCA\<AppId>\Mcp\<AppId>ToolProvider`
-                //      (resolved via NC's autoloader + DI autowiring, which works
-                //      cross-app since the autoloader is process-global).
+                // 1) the alias key `OCA\OpenRegister\Mcp\IMcpToolProvider::<appId>`
+                // (works only if the app registered the alias on this same
+                // container instance — NC scopes alias registration per app);
+                // 2) the canonical FQCN `OCA\<AppId>\Mcp\<AppId>ToolProvider`
+                // (resolved via NC's autoloader + DI autowiring, which works
+                // cross-app since the autoloader is process-global).
                 try {
                     $appManager = $container->get('OCP\App\IAppManager');
                     foreach ($appManager->getInstalledApps() as $appId) {
@@ -1395,6 +1394,7 @@ class Application extends App implements IBootstrap
                             // Path-resolution failures are benign; the other two
                             // candidates already cover the common case.
                         }
+
                         foreach ($candidates as $key) {
                             try {
                                 if (str_contains($key, '\\') === true && str_contains($key, '::') === false) {
@@ -1420,9 +1420,10 @@ class Application extends App implements IBootstrap
                                     );
                                     break;
                                 } else {
+                                    $resolvedClass = is_object($appProvider) === true ? get_class($appProvider) : gettype($appProvider);
                                     $logger->warning(
                                         '[McpToolsService] Resolved but not IMcpToolProvider',
-                                        ['appId' => $appId, 'via' => $key, 'class' => is_object($appProvider) ? get_class($appProvider) : gettype($appProvider)]
+                                        ['appId' => $appId, 'via' => $key, 'class' => $resolvedClass]
                                     );
                                 }
                             } catch (\Throwable $e) {
@@ -1431,14 +1432,14 @@ class Application extends App implements IBootstrap
                                     ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
                                 );
                                 continue;
-                            }
-                        }
-                    }
+                            }//end try
+                        }//end foreach
+                    }//end foreach
                 } catch (\Throwable $e) {
                     $logger->warning(
                         '[McpToolsService] Per-app provider enumeration failed: '.$e->getMessage()
                     );
-                }
+                }//end try
 
                 return new McpToolsService(
                     providers: $providers,
@@ -1475,7 +1476,7 @@ class Application extends App implements IBootstrap
         // registry contract. Each provider is constructed lazily — the
         // registry never touches a provider's wrapped service unless a
         // caller actually invokes that provider's CRUD path.
-        $this->bootBuiltinIntegrationProviders($server);
+        $this->bootBuiltinIntegrationProviders(server: $server);
     }//end boot()
 
     /**

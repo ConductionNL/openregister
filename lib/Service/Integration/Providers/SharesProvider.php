@@ -86,14 +86,21 @@ class SharesProvider extends AbstractIntegrationProvider
      * Linking convention: the entity's `note` field contains
      * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
      * rows are normalised into the registry leaf row shape.
+     *
+     * @param string $register Register slug for the parent object.
+     * @param string $schema   Schema slug for the parent object.
+     * @param string $objectId UUID of the OR object whose rows we want.
+     * @param array  $filters  Optional registry filters (unused).
+     *
+     * @return array List of registry leaf rows.
      */
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         if ($this->isEnabled() === false) {
             return [];
         }
 
-        $marker = self::MARKER_PREFIX . $objectId . ']';
+        $marker = self::MARKER_PREFIX.$objectId.']';
         $rows   = $this->findByMarker(
             db: $this->db,
             table: 'share',
@@ -103,14 +110,17 @@ class SharesProvider extends AbstractIntegrationProvider
             idColumn: 'id',
         );
 
-        return array_map(static function (array $row): array {
-            return [
-                'id'    => (string) ($row['id'] ?? ''),
-                'title' => (string) ($row['note'] ?? ''),
-                'url'   => '/index.php/apps/files/?fileid=' . (string) ($row['id'] ?? ''),
-                'data'  => $row,
-            ];
-        }, $rows);
+        return array_map(
+                static function (array $row): array {
+                    return [
+                        'id'    => (string) ($row['id'] ?? ''),
+                        'title' => (string) ($row['note'] ?? ''),
+                        'url'   => '/index.php/apps/files/?fileid='.(string) ($row['id'] ?? ''),
+                        'data'  => $row,
+                    ];
+                },
+                $rows
+                );
     }//end list()
 
     public function health(): array

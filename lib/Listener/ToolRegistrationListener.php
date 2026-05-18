@@ -87,6 +87,8 @@ class ToolRegistrationListener implements IEventListener
      * @param ObjectsTool     $objectsTool     Objects tool.
      * @param ApplicationTool $applicationTool Application tool.
      * @param AgentTool       $agentTool       Agent tool.
+     * @param McpToolsService $mcpToolsService MCP tools service used to register MCP-sourced tools.
+     * @param LoggerInterface $logger          PSR logger.
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
      */
@@ -199,6 +201,7 @@ class ToolRegistrationListener implements IEventListener
             if (in_array($appId, ['registers', 'schemas', 'objects', 'openregister'], true) === true) {
                 continue;
             }
+
             try {
                 foreach ($provider->getTools() as $descriptor) {
                     $mcpId = (string) ($descriptor['id'] ?? '');
@@ -223,13 +226,13 @@ class ToolRegistrationListener implements IEventListener
                             'app'         => $appId,
                         ]
                     );
-                }
+                }//end foreach
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     '[ToolRegistrationListener] Failed to bridge MCP provider',
                     ['appId' => $appId, 'error' => $e->getMessage()]
                 );
-            }
-        }
+            }//end try
+        }//end foreach
     }//end handle()
 }//end class

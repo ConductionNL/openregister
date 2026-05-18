@@ -41,7 +41,6 @@ use OCP\IUserSession;
  */
 class IntegrationsCapability implements ICapability
 {
-
     /**
      * Constructor.
      *
@@ -59,6 +58,8 @@ class IntegrationsCapability implements ICapability
     }//end __construct()
 
     /**
+     * Expose the registered integration providers as a capability.
+     *
      * @inheritDoc
      *
      * @return array<string,mixed>
@@ -69,14 +70,14 @@ class IntegrationsCapability implements ICapability
         $rows    = [];
 
         foreach ($this->registry->list() as $provider) {
-            $rows[] = $this->describe($provider, $isAdmin);
+            $rows[] = $this->describe(provider: $provider, isAdmin: $isAdmin);
         }
 
         return [
             'openregister' => [
                 'integrations' => [
-                    'version'      => 1,
-                    'providers'    => $rows,
+                    'version'   => 1,
+                    'providers' => $rows,
                 ],
             ],
         ];
@@ -135,5 +136,4 @@ class IntegrationsCapability implements ICapability
 
         return $this->groupManager->isAdmin($user->getUID());
     }//end currentUserIsAdmin()
-
 }//end class

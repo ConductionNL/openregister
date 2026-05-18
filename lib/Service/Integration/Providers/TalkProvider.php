@@ -132,18 +132,25 @@ class TalkProvider extends AbstractIntegrationProvider
                     $name = $displayName;
                 }
             }
+
             if (str_contains($name, $marker) === false) {
                 continue;
             }
+
+            $lastActivity = null;
+            if (method_exists($room, 'getLastActivity') === true && $room->getLastActivity() !== null) {
+                $lastActivity = $room->getLastActivity()->getTimestamp();
+            }
+
             $out[] = [
                 'id'           => method_exists($room, 'getToken') === true ? (string) $room->getToken() : '',
                 'title'        => $name,
                 'type'         => method_exists($room, 'getType') === true ? (int) $room->getType() : null,
                 'participants' => method_exists($room, 'getActiveSince') === true ? null : null,
-                'lastActivity' => method_exists($room, 'getLastActivity') === true && $room->getLastActivity() !== null ? $room->getLastActivity()->getTimestamp() : null,
+                'lastActivity' => $lastActivity,
                 'url'          => '/index.php/call/'.(method_exists($room, 'getToken') === true ? $room->getToken() : ''),
             ];
-        }
+        }//end foreach
 
         return $out;
     }//end list()

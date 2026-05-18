@@ -47,7 +47,6 @@ use Psr\Log\LoggerInterface;
  */
 class LogDanglingLinkedTypes implements IRepairStep
 {
-
     /**
      * Constructor.
      *
@@ -96,7 +95,7 @@ class LogDanglingLinkedTypes implements IRepairStep
         }
 
         $registeredIds = $this->registry->listIds();
-        $dangling      = $this->scan($schemas, $registeredIds);
+        $dangling      = $this->scan(schemas: $schemas, registeredIds: $registeredIds);
 
         if ($dangling === []) {
             $output->info('[OpenRegister] All schemas linkedTypes are covered by registered integrations.');
@@ -104,9 +103,11 @@ class LogDanglingLinkedTypes implements IRepairStep
         }
 
         foreach ($dangling as $row) {
-            $message = sprintf(
-                '[OpenRegister] Schema "%s" (id=%s) declares linkedType "%s" which is not registered. '
-                .'Add the matching IntegrationProvider before the deprecated VALID_LINKED_TYPES fallback is removed.',
+            $template  = '[OpenRegister] Schema "%s" (id=%s) declares linkedType "%s"';
+            $template .= ' which is not registered. Add the matching IntegrationProvider';
+            $template .= ' before the deprecated VALID_LINKED_TYPES fallback is removed.';
+            $message   = sprintf(
+                $template,
                 $row['slug'],
                 $row['id'],
                 $row['danglingType']
@@ -157,13 +158,13 @@ class LogDanglingLinkedTypes implements IRepairStep
     {
         $dangling = [];
         foreach ($schemas as $schema) {
-            $linkedTypes = $this->extractLinkedTypes($schema);
+            $linkedTypes = $this->extractLinkedTypes(schema: $schema);
             if ($linkedTypes === []) {
                 continue;
             }
 
-            $slug = $this->safeStringAccessor($schema, ['getSlug', 'getName']) ?? 'unknown';
-            $id   = (string) ($this->safeStringAccessor($schema, ['getId', 'getUuid']) ?? '');
+            $slug = $this->safeStringAccessor(schema: $schema, accessors: ['getSlug', 'getName']) ?? 'unknown';
+            $id   = (string) ($this->safeStringAccessor(schema: $schema, accessors: ['getId', 'getUuid']) ?? '');
 
             foreach ($linkedTypes as $type) {
                 if (is_string($type) === false) {
@@ -180,7 +181,7 @@ class LogDanglingLinkedTypes implements IRepairStep
                     'danglingType' => $type,
                 ];
             }
-        }
+        }//end foreach
 
         return $dangling;
     }//end scan()
@@ -215,11 +216,11 @@ class LogDanglingLinkedTypes implements IRepairStep
             }
 
             if ($accessor === 'getConfiguration' && is_array($value) === true) {
-                if (isset($value['linkedTypes']) && is_array($value['linkedTypes']) === true) {
+                if (isset($value['linkedTypes']) === true && is_array($value['linkedTypes']) === true) {
                     return $value['linkedTypes'];
                 }
             }
-        }
+        }//end foreach
 
         return [];
     }//end extractLinkedTypes()
@@ -256,5 +257,4 @@ class LogDanglingLinkedTypes implements IRepairStep
 
         return null;
     }//end safeStringAccessor()
-
 }//end class

@@ -92,8 +92,8 @@ class StreamingToolInstanceWrapper
      * verbatim — so downstream consumers don't have to know the
      * difference.
      *
-     * @param string                $functionName The function LLPhant resolved
-     * @param array<int, mixed>     $args         Positional or single-array argument list
+     * @param string            $functionName The function LLPhant resolved
+     * @param array<int, mixed> $args         Positional or single-array argument list
      *
      * @return mixed Whatever the wrapped instance returned — preserved verbatim
      *
@@ -101,7 +101,7 @@ class StreamingToolInstanceWrapper
      */
     public function __call(string $functionName, array $args): mixed
     {
-        $arguments = $this->normaliseArguments($args);
+        $arguments = $this->normaliseArguments(args: $args);
 
         $this->channel->emitToolCall(
             payload: [
@@ -126,11 +126,12 @@ class StreamingToolInstanceWrapper
             throw $e;
         }
 
+        $resultPayload = is_array($result) === true ? $result : ['value' => $result];
         $this->channel->emitToolResult(
             payload: [
                 'toolId'  => $functionName,
-                'result'  => is_array($result) ? $result : ['value' => $result],
-                'isError' => $this->detectIsError($result),
+                'result'  => $resultPayload,
+                'isError' => $this->detectIsError(result: $result),
             ]
         );
 
