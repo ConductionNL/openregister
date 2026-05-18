@@ -681,7 +681,7 @@ class FileService
                 ]
             );
             return null;
-        }
+        }//end try
     }//end createEntityFolder()
 
     /**
