@@ -38,6 +38,11 @@ final class CalculationAnnotationValidator
 {
 
     /**
+     * Supported unit values for the dateDiff operator.
+     */
+    private const VALID_DATE_DIFF_UNITS = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds'];
+
+    /**
      * Operator vocabulary recognised by the v1 calculation evaluator.
      */
     private const VALID_OPS = [
@@ -62,6 +67,7 @@ final class CalculationAnnotationValidator
         'now',
         'diffDays',
         'formatDate',
+        'dateDiff',
     ];
 
     /**
@@ -252,6 +258,12 @@ final class CalculationAnnotationValidator
             return;
         }//end if
 
+        // DateDiff uses a named-key dict {from, to, unit} rather than a positional array.
+        if ($op === 'dateDiff') {
+            $this->walkDateDiff(args: $args, owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
+            return;
+        }
+
         if (is_array($args) === false) {
             $this->walk(expr: $args, owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
             return;
@@ -261,6 +273,62 @@ final class CalculationAnnotationValidator
             $this->walk(expr: $sub, owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
         }
     }//end walk()
+
+    /**
+     * Validate a `dateDiff` operator's named-key argument dict.
+     *
+     * Required keys: `from`, `to`, `unit`. Each is itself a sub-expression
+     * (scalar literal or nested expression). The `unit` value, when a bare
+     * string literal, is additionally checked against the allowed list.
+     *
+     * @param mixed                                            $args    The dateDiff argument value.
+     * @param string                                           $owner   Name of the calc currently being walked.
+     * @param array<int, string>                               $allRefs Available property + calc names.
+     * @param array<int, array{code: string, message: string}> $errors  Mutable error accumulator.
+     * @param array<int, string>                               $deps    Mutable list of calc deps for the current calc.
+     *
+     * @return void
+     */
+    private function walkDateDiff(
+        mixed $args,
+        string $owner,
+        array $allRefs,
+        array &$errors,
+        array &$deps
+    ): void {
+        if (is_array($args) === false
+            || array_key_exists('from', $args) === false
+            || array_key_exists('to', $args) === false
+            || array_key_exists('unit', $args) === false
+        ) {
+            $errors[] = [
+                'code'    => 'calculation-dateDiff-missing-keys',
+                'message' => sprintf(
+                    'Calculation "%s": dateDiff requires keys: from, to, unit.',
+                    $owner
+                ),
+            ];
+            return;
+        }
+
+        // Walk from and to as sub-expressions so prop refs are validated.
+        $this->walk(expr: $args['from'], owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
+        $this->walk(expr: $args['to'], owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
+
+        // Validate unit when it's a plain string literal (not a nested expression).
+        $unit = $args['unit'];
+        if (is_string($unit) === true && in_array($unit, self::VALID_DATE_DIFF_UNITS, true) === false) {
+            $errors[] = [
+                'code'    => 'calculation-dateDiff-invalid-unit',
+                'message' => sprintf(
+                    'Calculation "%s": dateDiff unit "%s" is invalid. Supported: %s.',
+                    $owner,
+                    $unit,
+                    implode(', ', self::VALID_DATE_DIFF_UNITS)
+                ),
+            ];
+        }
+    }//end walkDateDiff()
 
     /**
      * Find a cycle in the calculation dependency graph using DFS colouring.

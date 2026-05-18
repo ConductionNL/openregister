@@ -2,7 +2,7 @@
 
 ## Backend
 
-- [ ] Create `lib/Service/Integration/Providers/EmailProvider.php` — id='email', label='Emails', icon='Email', group='comms', requiredApp='mail', storage='link-table', delegates to `EmailService`
+- [x] Create `lib/Service/Integration/Providers/EmailProvider.php` — id='email', label='Emails', icon='Email', group='comms', requiredApp='mail', storage='link-table', delegates to `EmailService`
 - [ ] DI-tag `EmailProvider` in `lib/AppInfo/Application.php`
 - [ ] Unit test `tests/Unit/Service/Integration/Providers/EmailProviderTest.php`
 

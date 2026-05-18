@@ -35,6 +35,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
@@ -2087,6 +2088,9 @@ class ObjectsController extends Controller
 
             // Return the successfully saved object directly.
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+        } catch (AppendOnlyException $exception) {
+            // Reject update on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
@@ -2252,6 +2256,9 @@ class ObjectsController extends Controller
             // Return the successfully saved object directly.
             // We already have it in memory from saveObject(), no need to re-fetch.
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+        } catch (AppendOnlyException $exception) {
+            // Reject patch on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             $this->logger->warning(
@@ -2381,6 +2388,9 @@ class ObjectsController extends Controller
             }
 
             return new JSONResponse(data: $objectEntity->jsonSerialize());
+        } catch (AppendOnlyException $exception) {
+            // Reject post-patch on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
         } catch (ValidationException | CustomValidationException $exception) {
             return $objectService->handleValidationException(exception: $exception);
         } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
@@ -2436,6 +2446,9 @@ class ObjectsController extends Controller
 
             // Return 204 No Content for successful delete (REST convention).
             return new JSONResponse(data: null, statusCode: 204);
+        } catch (AppendOnlyException $exception) {
+            // Reject delete on append-only schema with HTTP 405.
+            return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
         } catch (ReferentialIntegrityException $exception) {
             return new JSONResponse(
                 data: $exception->toResponseBody(),

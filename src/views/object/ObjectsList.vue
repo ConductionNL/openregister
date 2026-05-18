@@ -166,6 +166,18 @@ export default {
 		},
 	},
 	mounted() {
+		// Skip the refresh when neither a register nor a schema is in
+		// scope — the deep-link route /objects/:register/:schema/:id
+		// mounts this list with empty stores, and refreshObjectList()
+		// throws 'Register and schema are required.' which crashes the
+		// surrounding Vue render. Once the user picks a register/schema
+		// in the side bars the existing watchers re-trigger the call.
+		const registerSet = !!objectStore?.filters?.register
+		const schemaSet = !!objectStore?.filters?.schema
+		if (!registerSet || !schemaSet) {
+			this.loading = false
+			return
+		}
 		this.loading = true
 		objectStore.refreshObjectList({ limit: this.limit, page: this.currentPage, search: this.search }).finally(() => {
 			this.loading = false

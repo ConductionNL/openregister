@@ -104,8 +104,8 @@ describe('fileMetadata API helpers', () => {
 				objectId: 'obj-uuid',
 				fileId: 42,
 				description: '', // explicit clear
-				category: '',    // explicit clear
-				labels: null,    // skip
+				category: '', // explicit clear
+				labels: null, // skip
 			})
 
 			const body = JSON.parse(fetchMock.mock.calls[0][1].body)

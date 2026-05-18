@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Service\Notification;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Db\DuplicateDispatchException;
+use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -67,6 +69,7 @@ class AnnotationNotificationDispatcher
      * @param NotificationHistoryMapper|null                           $historyMapper       Optional history mapper for delivery audit rows.
      * @param NotificationCoalescer|null                               $coalescer           Optional coalescer for burst suppression.
      * @param \OCA\OpenRegister\Db\NotificationSubscriptionMapper|null $subscriptionMapper  Optional subscription mapper for opt-in filtering.
+     * @param NotificationDispatchLogMapper|null                       $dispatchLogMapper   Optional dispatch-log mapper for idempotency-key dedup.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
      */
@@ -84,7 +87,8 @@ class AnnotationNotificationDispatcher
         private readonly ?IConfig $config=null,
         private readonly ?NotificationHistoryMapper $historyMapper=null,
         private readonly ?NotificationCoalescer $coalescer=null,
-        private readonly ?\OCA\OpenRegister\Db\NotificationSubscriptionMapper $subscriptionMapper=null
+        private readonly ?\OCA\OpenRegister\Db\NotificationSubscriptionMapper $subscriptionMapper=null,
+        private readonly ?NotificationDispatchLogMapper $dispatchLogMapper=null
     ) {
     }//end __construct()
 
@@ -92,8 +96,9 @@ class AnnotationNotificationDispatcher
      * Fire any notifications declared on the schema whose trigger matches.
      *
      * @param ObjectEntity         $object  The object the event happened on.
-     * @param string               $trigger 'created' | 'updated' | 'transition'.
-     * @param array<string, mixed> $context Trigger-specific extras (e.g. `action`, `from`, `to`).
+     * @param string               $trigger 'created' | 'updated' | 'transition' | 'calculatedChange'.
+     * @param array<string, mixed> $context Trigger-specific extras (e.g. `action`, `from`, `to`,
+     *                                      `_newData`, `_oldData` for calculatedChange).
      *
      * @return void
      *
@@ -141,6 +146,43 @@ class AnnotationNotificationDispatcher
             // UUID/slug) or an array of strings (any-of matching).
             if ($this->organisationGateAllows(spec: $spec, object: $object) === false) {
                 continue;
+            }
+
+            // Idempotency-key dedup: when the rule declares an
+            // `idempotencyKey` template, resolve it against the object
+            // and CLAIM the slot in the dispatch log BEFORE sending.
+            //
+            // The previous design checked the log first, sent, then
+            // recorded after success — that left a TOCTOU window where
+            // two concurrent dispatchers could both pass the check, both
+            // send, then both try to record. With the unique
+            // (notification_slug, idempotency_key) index installed in
+            // Version1Date20260511120000, claim-first turns the index
+            // into the authoritative serialisation point: only the
+            // dispatcher whose INSERT wins proceeds.
+            //
+            // Trade-off acknowledged: a failed send after a successful
+            // claim leaves a dedup row that prevents retry until the
+            // window expires. That is preferable to double-sending
+            // under concurrency (which is what the prior order did).
+            $idempotencyKeyTemplate = ($spec['idempotencyKey'] ?? null);
+            $resolvedIdempotencyKey = null;
+            if (is_string($idempotencyKeyTemplate) === true && $idempotencyKeyTemplate !== '') {
+                $resolvedIdempotencyKey = $this->resolveIdempotencyKey(
+                    template: $idempotencyKeyTemplate,
+                    object: $object,
+                    data: $data
+                );
+                if ($this->claimIdempotencyKey(slug: (string) $name, key: $resolvedIdempotencyKey) === false) {
+                    $this->logger->info(
+                        sprintf(
+                            '[AnnotationNotificationDispatcher] deduplicated rule="%s" key="%s"',
+                            $name,
+                            $resolvedIdempotencyKey
+                        )
+                    );
+                    continue;
+                }
             }
 
             $recipients = $this->resolveRecipients(
@@ -466,6 +508,119 @@ class AnnotationNotificationDispatcher
     }//end coalesceAllows()
 
     /**
+     * Claim the idempotency slot for (slug, key) atomically.
+     *
+     * Inserts the dedup row up-front so the unique
+     * (notification_slug, idempotency_key) index is the authoritative
+     * serialisation point under concurrency. Returns true when the
+     * claim succeeded (caller may dispatch) and false when the row
+     * already exists within the dedup window (caller must skip).
+     *
+     * A null mapper (test contexts, older fixtures) always allows so
+     * no test has to construct the mapper just to pass the guard.
+     *
+     * Side-effects:
+     *   - Runs a best-effort prune before claiming so the table does
+     *     not grow unboundedly without a separate cron job.
+     *   - On non-duplicate DB error returns true (the dispatch should
+     *     not be blocked by infrastructure failure) and logs at warning
+     *     level so the operator can investigate.
+     *
+     * @param string $slug The notification annotation key.
+     * @param string $key  The resolved idempotency key.
+     *
+     * @return bool True when the dispatch may proceed (claim succeeded
+     *              or mapper unavailable); false when a competing
+     *              dispatcher already claimed this (slug, key).
+     */
+    private function claimIdempotencyKey(string $slug, string $key): bool
+    {
+        if ($this->dispatchLogMapper === null) {
+            return true;
+        }
+
+        // Prune expired rows lazily — best-effort, failures are swallowed
+        // inside the mapper.
+        $this->dispatchLogMapper->pruneExpired();
+
+        try {
+            $this->dispatchLogMapper->record(
+                notificationSlug: $slug,
+                idempotencyKey: $key
+            );
+            return true;
+        } catch (DuplicateDispatchException) {
+            // Concurrent dispatcher beat us to the (slug, key) slot, or
+            // a previous send within the window already recorded it.
+            // Either way: do not dispatch.
+            return false;
+        } catch (\Throwable $e) {
+            // Genuine DB failure (table missing in test fixtures, etc.).
+            // Fail-open: dispatch proceeds so a transient infra issue
+            // doesn't silently drop user-visible notifications.
+            $this->logger->warning(
+                sprintf(
+                    '[AnnotationNotificationDispatcher] idempotency claim failed (slug=%s key=%s): %s',
+                    $slug,
+                    $key,
+                    $e->getMessage()
+                )
+            );
+            return true;
+        }//end try
+
+    }//end claimIdempotencyKey()
+
+    /**
+     * Resolve a `${@self.<field>}` idempotency-key template against the object.
+     *
+     * The template syntax mirrors the spec example:
+     *   `${@self.id}-T30-${@self.dueDate}`
+     *
+     * Each `${@self.<field>}` token is replaced with the value of
+     * `<field>` from the object's stored data (or the object's built-in
+     * accessor for `id` and `uuid`). Unknown tokens are replaced with
+     * an empty string so the template never returns null.
+     *
+     * Values are cast to string and limited to 128 characters each to
+     * avoid the 512-char column limit being hit by adversarial data.
+     *
+     * @param string               $template Raw idempotency-key template.
+     * @param ObjectEntity         $object   Owning object.
+     * @param array<string, mixed> $data     Pre-fetched object data array.
+     *
+     * @return string The resolved key.
+     */
+    private function resolveIdempotencyKey(string $template, ObjectEntity $object, array $data): string
+    {
+        return preg_replace_callback(
+            '/\$\{@self\.([a-zA-Z0-9_.-]+)\}/',
+            static function (array $matches) use ($object, $data): string {
+                $field = $matches[1];
+
+                // Built-in accessors for the most common fields.
+                if ($field === 'id' || $field === 'uuid') {
+                    return substr((string) ($object->getUuid() ?? ''), 0, 128);
+                }
+
+                // Fall through to the stored object data.
+                $value = ($data[$field] ?? null);
+                if ($value === null) {
+                    return '';
+                }
+
+                if (is_scalar($value) === false) {
+                    return '';
+                }
+
+                return substr((string) $value, 0, 128);
+            },
+            $template
+        ) ?? $template;
+
+    }//end resolveIdempotencyKey()
+
+    /**
      * Persist a row in `openregister_notification_history`.
      *
      * Best-effort: a null mapper (older test fixtures) or a database
@@ -772,11 +927,18 @@ class AnnotationNotificationDispatcher
     /**
      * Decide whether a notification's `trigger` block matches the active event.
      *
+     * For `calculatedChange` triggers, both `condition` (new value) and
+     * `previously` (old value) must be satisfied for the rule to fire —
+     * this is the boundary-crossing / debounce check.
+     *
      * @param array<string, mixed> $triggerSpec The declared `trigger` sub-document.
      * @param string               $trigger     The active event type.
      * @param array<string, mixed> $context     Per-event context (e.g. `action`).
      *
      * @return bool True when the rule should fire for this event.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function matches(array $triggerSpec, string $trigger, array $context): bool
     {
@@ -797,8 +959,87 @@ class AnnotationNotificationDispatcher
             }
         }
 
+        // `calculatedChange` boundary-crossing check.
+        // `field` names the calculated property to monitor.
+        // `condition` operators the NEW value must satisfy.
+        // `previously` operators the OLD value must satisfy.
+        // Both must hold simultaneously. When either condition or
+        // previously is absent the gate is open (partial spec is treated
+        // as "just the declared side must match"). When _newData/_oldData
+        // are absent in context (e.g. missing old object) the check
+        // cannot be evaluated and the rule is skipped (fail-closed).
+        if ($trigger === 'calculatedChange') {
+            $field = (string) ($triggerSpec['field'] ?? '');
+            if ($field === '') {
+                return false;
+            }
+
+            $newData = ($context['_newData'] ?? null);
+            $oldData = ($context['_oldData'] ?? null);
+            if (is_array($newData) === false || is_array($oldData) === false) {
+                return false;
+            }
+
+            $newValue = ($newData[$field] ?? null);
+            $oldValue = ($oldData[$field] ?? null);
+
+            $condition  = ($triggerSpec['condition'] ?? null);
+            $previously = ($triggerSpec['previously'] ?? null);
+
+            if (is_array($condition) === true
+                && $this->numericConditionMatches(value: $newValue, operators: $condition) === false
+            ) {
+                return false;
+            }
+
+            if (is_array($previously) === true
+                && $this->numericConditionMatches(value: $oldValue, operators: $previously) === false
+            ) {
+                return false;
+            }
+        }//end if
+
         return true;
     }//end matches()
+
+    /**
+     * Evaluate a set of plain comparison operators against a numeric value.
+     *
+     * Operators mirror the JSON-schema style used by the notification spec:
+     * `lt`, `lte`, `gt`, `gte`, `eq`, `ne`. All comparisons are numeric
+     * (int/float); a non-numeric value returns false for every ordering
+     * operator (`lt`, `lte`, `gt`, `gte`) and casts to string for `eq`/`ne`.
+     *
+     * Multiple operators in the map are ANDed together (all must hold).
+     *
+     * @param mixed                $value     The field value to test.
+     * @param array<string, mixed> $operators Map of operator → threshold (e.g. `['lt' => 0.85]`).
+     *
+     * @return bool True when the value satisfies every declared operator.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function numericConditionMatches(mixed $value, array $operators): bool
+    {
+        foreach ($operators as $op => $threshold) {
+            $numeric = is_numeric($value) === true && is_numeric($threshold) === true;
+            $result  = match ((string) $op) {
+                'lt'  => $numeric && (float) $value < (float) $threshold,
+                'lte' => $numeric && (float) $value <= (float) $threshold,
+                'gt'  => $numeric && (float) $value > (float) $threshold,
+                'gte' => $numeric && (float) $value >= (float) $threshold,
+                'eq'  => (string) $value === (string) $threshold,
+                'ne'  => (string) $value !== (string) $threshold,
+                default => false,
+            };
+
+            if ($result === false) {
+                return false;
+            }
+        }
+
+        return true;
+    }//end numericConditionMatches()
 
     /**
      * Resolve a `recipients` block to a flat list of UIDs.

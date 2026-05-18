@@ -393,8 +393,9 @@ class RegisterService
             // Build UNION queries for each schema's magic table.
             // Cast syntax differs across platforms — PostgreSQL uses `::text`
             // while MariaDB/MySQL require CAST AS CHAR (mirrors lib/Db/MagicMapper.php:1346-1349).
+            // get_debug_type() is null-safe (a mocked IDBConnection returns null here in unit tests).
             $platform   = $this->db->getDatabasePlatform();
-            $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
+            $isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
 
             $unionQueries = [];
 

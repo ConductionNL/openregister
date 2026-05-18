@@ -36,7 +36,7 @@
 					<!-- Info Box -->
 					<div class="info-box">
 						<h4>ℹ️ {{ t('openregister', 'About ConfigSets') }}</h4>
-						<p>{{ t('openregister', 'ConfigSets define the schema and configuration for your SOLR collections. they contain field definitions, analyzers, and other search settings.') }}</p>
+						<p>{{ t('openregister', 'ConfigSets define the schema and configuration for your SOLR collections. They contain field definitions, analyzers, and other search settings.') }}</p>
 						<p>{{ t('openregister', 'You can create new configsets based on the _default template, or upload custom ones directly to your SOLR server.') }}</p>
 					</div>
 

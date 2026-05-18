@@ -20,13 +20,16 @@
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
+use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Tool\AgentTool;
+use OCA\OpenRegister\Tool\ApplicationTool;
+use OCA\OpenRegister\Tool\McpProviderBridge;
+use OCA\OpenRegister\Tool\ObjectsTool;
 use OCA\OpenRegister\Tool\RegisterTool;
 use OCA\OpenRegister\Tool\SchemaTool;
-use OCA\OpenRegister\Tool\ObjectsTool;
-use OCA\OpenRegister\Tool\ApplicationTool;
-use OCA\OpenRegister\Tool\AgentTool;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use Psr\Log\LoggerInterface;
 
 /**
  * Tool Registration Listener
@@ -84,6 +87,8 @@ class ToolRegistrationListener implements IEventListener
      * @param ObjectsTool     $objectsTool     Objects tool.
      * @param ApplicationTool $applicationTool Application tool.
      * @param AgentTool       $agentTool       Agent tool.
+     * @param McpToolsService $mcpToolsService MCP tools service used to register MCP-sourced tools.
+     * @param LoggerInterface $logger          PSR logger.
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
      */
@@ -92,7 +97,9 @@ class ToolRegistrationListener implements IEventListener
         SchemaTool $schemaTool,
         ObjectsTool $objectsTool,
         ApplicationTool $applicationTool,
-        AgentTool $agentTool
+        AgentTool $agentTool,
+        private readonly McpToolsService $mcpToolsService,
+        private readonly LoggerInterface $logger
     ) {
         $this->registerTool    = $registerTool;
         $this->schemaTool      = $schemaTool;
@@ -172,5 +179,60 @@ class ToolRegistrationListener implements IEventListener
                 'app'         => 'openregister',
             ]
         );
+
+        // Bridge every per-app IMcpToolProvider's function into the
+        // chat ToolRegistry. Without this, only the 5 built-in tools
+        // above ever reach the LLM — every chat agent's tools array
+        // stays unresolvable for openbuilt.*, decidesk.*, etc.
+        //
+        // ToolRegistry enforces the id format `app_name.tool_name` so
+        // we register ONE bridge instance per (provider, function)
+        // pair under its full MCP id (e.g. `openbuilt.createApp`).
+        // The bridge is configured via setOnlyMcpId() so each entry's
+        // getFunctions() returns just that one descriptor — preventing
+        // the LLM from seeing the same provider's tool list duplicated
+        // across N registry entries.
+        foreach ($this->mcpToolsService->getProviders() as $provider) {
+            $appId = $provider->getAppId();
+            // Skip the 3 built-in MCP providers (registers/schemas/objects);
+            // their functionality is already covered by the 5 hardcoded
+            // ToolRegistry entries above. Avoids the LLM seeing two
+            // parallel sets with subtly different shapes.
+            if (in_array($appId, ['registers', 'schemas', 'objects', 'openregister'], true) === true) {
+                continue;
+            }
+
+            try {
+                foreach ($provider->getTools() as $descriptor) {
+                    $mcpId = (string) ($descriptor['id'] ?? '');
+                    if ($mcpId === '' || preg_match('/^[a-z0-9_]+\.[a-zA-Z0-9_]+$/', $mcpId) === 0) {
+                        // Tool id is non-conforming (camelCase or missing
+                        // dot). Skip — the LLM-visible id MUST match the
+                        // ToolRegistry regex, and the agent's tools array
+                        // stores MCP ids verbatim.
+                        continue;
+                    }
+
+                    $bridge = new McpProviderBridge(provider: $provider, logger: $this->logger);
+                    $bridge->setOnlyMcpId($mcpId);
+
+                    $event->registerTool(
+                        id: $mcpId,
+                        tool: $bridge,
+                        metadata: [
+                            'name'        => (string) ($descriptor['name'] ?? $mcpId),
+                            'description' => (string) ($descriptor['description'] ?? ''),
+                            'icon'        => 'icon-category-integration',
+                            'app'         => $appId,
+                        ]
+                    );
+                }//end foreach
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    '[ToolRegistrationListener] Failed to bridge MCP provider',
+                    ['appId' => $appId, 'error' => $e->getMessage()]
+                );
+            }//end try
+        }//end foreach
     }//end handle()
 }//end class

@@ -4,7 +4,7 @@
 			name="Cache Management"
 			description="Monitor and manage API caching for optimal performance"
 			:loading="loadingCache"
-			loading-message="Loading cache statistics...">
+			:loading-message="t('openregister', 'Loading cache statistics...')">
 			<template #actions>
 				<NcButton
 					type="secondary"

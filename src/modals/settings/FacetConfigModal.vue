@@ -350,7 +350,6 @@ import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 // import { VueDraggable } from 'vue-draggable-plus'
 
 export default {

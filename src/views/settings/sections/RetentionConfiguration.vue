@@ -3,7 +3,7 @@
 		name="Retention"
 		description="Configure data and log retention policies"
 		:loading="loading"
-		loading-message="Loading retention settings...">
+		:loading-message="t('openregister', 'Loading retention settings...')">
 		<!-- Actions slot -->
 		<template #actions>
 			<NcButton

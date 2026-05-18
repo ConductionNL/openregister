@@ -353,7 +353,11 @@ class ObjectServiceDeepTest extends TestCase
 
 
     /**
-     * Test setSchema throws ValidationException when not found
+     * Test setSchema rethrows DoesNotExistException when not found.
+     *
+     * setSchema() deliberately rethrows the DoesNotExistException so NC's
+     * dispatcher converts it to a 404; wrapping it in ValidationException
+     * would surface as a 500. See ObjectService::setSchema().
      *
      * @return void
      */
@@ -362,7 +366,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->schemaMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
-        $this->expectException(\OCA\OpenRegister\Exception\ValidationException::class);
+        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
         $this->service->setSchema('nonexistent');
 
     }//end testSetSchemaThrowsOnNotFound()

@@ -48,6 +48,7 @@ use RuntimeException;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
 class AggregationRunner
 {
@@ -76,6 +77,8 @@ class AggregationRunner
      * @param SearchBackendInterface|null $searchBackend       Optional Solr/ES backend for native aggregation.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
@@ -94,16 +97,25 @@ class AggregationRunner
     /**
      * Run the named aggregation on the given (register, schema).
      *
-     * @param string $registerRef Register slug/uuid/id.
-     * @param string $schemaRef   Schema slug/uuid/id.
-     * @param string $name        Aggregation name (key in the annotation).
-     * @param bool   $bypassRbac  Internal-system mode: skip the F04 list-permission gate.
-     *                            Pass `true` ONLY from non-controller callers that already
-     *                            hold an authoritative reason to compute the aggregation
-     *                            (e.g. report rendering for a viewer who has dashboard read,
-     *                            threshold listeners reacting to a write event).
-     *                            Defaults to `false` so HTTP-driven callers (the
-     *                            controller) keep the F04 verdict.
+     * When the aggregation spec declares a `from` key the call is
+     * transparently delegated to {@see runCrossSchema()}: the named
+     * schema is the aggregation *source*, the current schema supplies
+     * the optional `@self.*` parent-reference values via `$parentRow`.
+     *
+     * @param string               $registerRef Register slug/uuid/id.
+     * @param string               $schemaRef   Schema slug/uuid/id.
+     * @param string               $name        Aggregation name (key in the annotation).
+     * @param bool                 $bypassRbac  Internal-system mode: skip the F04 list-permission gate.
+     *                                          Pass `true` ONLY from non-controller callers that already
+     *                                          hold an authoritative reason to compute the aggregation
+     *                                          (e.g. report rendering for a viewer who has dashboard read,
+     *                                          threshold listeners reacting to a write event).
+     *                                          Defaults to `false` so HTTP-driven callers (the
+     *                                          controller) keep the F04 verdict.
+     * @param array<string, mixed> $parentRow   Parent object's field values, used to resolve `@self.<field>`
+     *                                          references in a cross-schema `where` clause.  Pass the
+     *                                          plain object array from the parent read path.  Ignored when
+     *                                          the aggregation spec has no `from` key.
      *
      * @return array{
      *   name: string,
@@ -121,8 +133,13 @@ class AggregationRunner
      * @SuppressWarnings(PHPMD.StaticAccess)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Internal-mode toggle, intentional.
      */
-    public function run(string $registerRef, string $schemaRef, string $name, bool $bypassRbac=false): array
-    {
+    public function run(
+        string $registerRef,
+        string $schemaRef,
+        string $name,
+        bool $bypassRbac=false,
+        array $parentRow=[]
+    ): array {
         $schema   = $this->loadSchema(schemaRef: $schemaRef);
         $register = $this->loadRegister(registerRef: $registerRef);
 
@@ -177,10 +194,31 @@ class AggregationRunner
             throw new RuntimeException(sprintf('Aggregation "%s" is not declared on this schema.', $name));
         }
 
-        $spec    = $annotation[$name];
-        $metric  = (string) ($spec['metric'] ?? '');
+        $spec = $annotation[$name];
+
+        // Cross-schema aggregation: delegate to dedicated path when `from`
+        // is declared.  Supports the new DSL (`from`, `where`, `select`) in
+        // addition to the legacy DSL (`filter`, `metric`).  The delegation
+        // happens *after* the RBAC/annotation guards above so the same
+        // permission gates cover both intra- and cross-schema calls.
+        $fromSchema = ($spec['from'] ?? null);
+        if (is_string($fromSchema) === true && $fromSchema !== '') {
+            return $this->runCrossSchema(
+                parentRegister: $register,
+                parentSchema: $schema,
+                name: $name,
+                spec: $spec,
+                parentRow: $parentRow,
+                bypassRbac: $bypassRbac
+            );
+        }
+
+        // Support `select` as an alias for `metric` (new DSL) and
+        // `where` as an alias for `filter` (new DSL) so callers can
+        // use either vocabulary on intra-schema specs too.
+        $metric  = (string) ($spec['metric'] ?? $spec['select'] ?? '');
         $field   = ($spec['field'] ?? null);
-        $filter  = (array) ($spec['filter'] ?? []);
+        $filter  = (array) ($spec['filter'] ?? $spec['where'] ?? []);
         $groupBy = ($spec['groupBy'] ?? null);
 
         $resolvedFilter = $this->placeholders->resolveArray($filter);
@@ -368,13 +406,28 @@ class AggregationRunner
 
         return match ($metric) {
             'count'          => count($rows),
-            'sum'            => $this->reduceNumeric(rows: $rows, field: (string) $field, reducer: $sumReducer, initial: 0.0),
+            'sum'            => $this->reduceNumeric(
+                rows: $rows,
+                field: (string) $field,
+                reducer: $sumReducer,
+                initial: 0.0
+            ),
             'avg'            => $this->avg(rows: $rows, field: (string) $field),
-            'min'            => $this->reduceNumeric(rows: $rows, field: (string) $field, reducer: $minReducer, initial: null),
-            'max'            => $this->reduceNumeric(rows: $rows, field: (string) $field, reducer: $maxReducer, initial: null),
+            'min'            => $this->reduceNumeric(
+                rows: $rows,
+                field: (string) $field,
+                reducer: $minReducer,
+                initial: null
+            ),
+            'max'            => $this->reduceNumeric(
+                rows: $rows,
+                field: (string) $field,
+                reducer: $maxReducer,
+                initial: null
+            ),
             'count_distinct' => count($distinct),
             default          => null,
-        };
+        };//end match
     }//end computeMetric()
 
     /**
@@ -783,6 +836,301 @@ class AggregationRunner
         $name = preg_replace('/_+/', '_', $name);
         return rtrim((string) $name, '_');
     }//end sanitizeColumnName()
+
+    /**
+     * Execute a cross-schema aggregation.
+     *
+     * Called by `run()` when the aggregation spec declares a `from` key.
+     * Loads the *target* schema (the one named by `from`), finds its
+     * register, applies RBAC, resolves `@self.<field>` references in the
+     * `where` clause against the parent object row, then delegates to the
+     * same three-path pipeline (external → Postgres-native → PHP fallback)
+     * that the intra-schema path uses.
+     *
+     * Security notes
+     * - The parent schema's RBAC gate already ran in `run()` before this
+     *   method is called.
+     * - An additional RBAC gate is applied here on the *target* schema so
+     *   a caller cannot use a cross-schema aggregation to leak counts from
+     *   a schema it is not allowed to list.
+     * - The active-organisation predicate is carried into `tryNativeAggregation()`
+     *   unchanged; the target table belongs to the same tenant.
+     *
+     * @param Register             $parentRegister The register that owns the *parent* schema.
+     * @param Schema               $parentSchema   The schema whose annotation we read.
+     * @param string               $name           Aggregation name.
+     * @param array<string, mixed> $spec           The raw aggregation spec from the annotation.
+     * @param array<string, mixed> $parentRow      Parent object fields for `@self.*` resolution.
+     * @param bool                 $bypassRbac     Whether to skip the RBAC gate on the target schema.
+     *
+     * @return array<string, mixed> Aggregation result envelope.
+     *
+     * @throws RuntimeException When the target schema/register cannot be resolved or RBAC fails.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
+    private function runCrossSchema(
+        Register $parentRegister,
+        Schema $parentSchema,
+        string $name,
+        array $spec,
+        array $parentRow,
+        bool $bypassRbac
+    ): array {
+        $fromRef = (string) ($spec['from'] ?? '');
+        if ($fromRef === '') {
+            throw new RuntimeException('Cross-schema aggregation spec is missing a non-empty `from` key.');
+        }
+
+        // Resolve `select` / `metric` alias.
+        $metric = (string) ($spec['metric'] ?? $spec['select'] ?? 'count');
+        $field  = ($spec['field'] ?? null);
+        // Resolve `where` / `filter` alias.
+        $rawWhere = (array) ($spec['where'] ?? $spec['filter'] ?? []);
+        $groupBy  = ($spec['groupBy'] ?? null);
+
+        // Load the target schema.
+        $targetSchema = $this->loadSchema(schemaRef: $fromRef);
+
+        // SECURITY: gate on list permission for the *target* schema so a
+        // cross-schema aggregation cannot leak counts from a schema the
+        // caller is not allowed to list.
+        //
+        // `objectOwner: null` is intentional here: this is a list-level
+        // check across the entire target schema (the aggregation hasn't
+        // selected any specific row yet), so there is no single
+        // owner-context to gate against. The owner-specific branch of
+        // permissionHandler->hasPermission() only applies when both
+        // $userId and $objectOwner are non-null. The corresponding
+        // `object: null` reinforces this: PermissionHandler treats the
+        // (null, null) pair as the list-level form.
+        $userId = $this->userSession->getUser()?->getUID();
+        if ($bypassRbac === false && $this->permissionHandler->hasPermission(
+            schema: $targetSchema,
+            action: 'list',
+            userId: $userId,
+            objectOwner: null,
+            _rbac: true,
+            object: null
+        ) === false
+        ) {
+            throw new RuntimeException(
+                sprintf(
+                    'Forbidden: caller lacks list permission on cross-schema target "%s".',
+                    $fromRef
+                )
+            );
+        }
+
+        // Find the register that owns the target schema.
+        $targetRegister = $this->findRegisterForSchema(schema: $targetSchema);
+        if ($targetRegister === null) {
+            throw new RuntimeException(
+                sprintf('No register found that contains schema "%s".', $fromRef)
+            );
+        }
+
+        // Resolve `@self.<field>` references against the parent row, then
+        // apply placeholder resolution ($now, $currentUser, etc.).
+        $resolvedWhere = $this->resolveAtSelfReferences(
+            where: $rawWhere,
+            parentRow: $parentRow
+        );
+        $resolvedWhere = $this->placeholders->resolveArray($resolvedWhere);
+
+        // Build the cache key, including the parent row values that were
+        // substituted so two parent objects with different field values
+        // cache independently.
+        $activeOrg = $this->organisationService->getActiveOrganisation();
+        $cacheKey  = [
+            'cross'   => true,
+            'from'    => $fromRef,
+            'metric'  => $metric,
+            'field'   => $field,
+            'where'   => $resolvedWhere,
+            'groupBy' => $groupBy,
+            'userId'  => $userId,
+            'org'     => $activeOrg?->getUuid(),
+        ];
+
+        $cached = $this->cache->get(
+            registerSlug: (string) $parentRegister->getSlug(),
+            schemaSlug: (string) $parentSchema->getSlug(),
+            name: $name,
+            filter: $cacheKey
+        );
+        if ($cached !== null) {
+            $cached['cached'] = true;
+            return $cached;
+        }
+
+        // Attempt Postgres-native aggregation on the target schema table.
+        $native = $this->tryNativeAggregation(
+            register: $targetRegister,
+            schema: $targetSchema,
+            metric: $metric,
+            field: is_string($field) === true ? $field : null,
+            filter: $resolvedWhere,
+            groupBy: is_array($groupBy) === true ? $groupBy : null
+        );
+
+        if ($native !== null) {
+            $result = [
+                'name'      => $name,
+                'metric'    => $metric,
+                'field'     => is_string($field) === true ? $field : null,
+                'from'      => $fromRef,
+                'backend'   => 'postgres',
+                'truncated' => false,
+            ] + $native;
+
+            $this->cache->set(
+                registerSlug: (string) $parentRegister->getSlug(),
+                schemaSlug: (string) $parentSchema->getSlug(),
+                name: $name,
+                filter: $cacheKey,
+                result: $result
+            );
+            return $result;
+        }//end if
+
+        // PHP fallback path for the target schema.
+        $objects   = $this->magicMapper->findAllInRegisterSchemaTable(
+            register: $targetRegister,
+            schema: $targetSchema,
+            limit: self::PHP_FALLBACK_ROW_CAP
+        );
+        $truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
+
+        $rows = [];
+        foreach ($objects as $entity) {
+            $rows[] = $entity instanceof \OCA\OpenRegister\Db\ObjectEntity ? $entity->getObject() : (array) $entity;
+        }
+
+        $rows = $this->applyFilter(rows: $rows, filter: $resolvedWhere);
+
+        $result = [
+            'name'      => $name,
+            'metric'    => $metric,
+            'field'     => is_string($field) === true ? $field : null,
+            'from'      => $fromRef,
+            'backend'   => 'php-fallback',
+            'truncated' => $truncated,
+        ];
+
+        if (is_array($groupBy) === true && isset($groupBy['field']) === true) {
+            $result['groups'] = $this->computeGrouped(
+                rows: $rows,
+                metric: $metric,
+                field: $field,
+                groupField: (string) $groupBy['field']
+            );
+        }
+
+        if (isset($result['groups']) === false) {
+            $result['value'] = $this->computeMetric(rows: $rows, metric: $metric, field: $field);
+        }
+
+        $this->cache->set(
+            registerSlug: (string) $parentRegister->getSlug(),
+            schemaSlug: (string) $parentSchema->getSlug(),
+            name: $name,
+            filter: $cacheKey,
+            result: $result
+        );
+        return $result;
+    }//end runCrossSchema()
+
+    /**
+     * Resolve `@self.<field>` references in a `where` clause against the parent row.
+     *
+     * Given a where map such as:
+     *   `{ "regulationSlug": "@self.slug", "mandatory": true }`
+     * and a parent row `{ "slug": "abc" }`, the method returns:
+     *   `{ "regulationSlug": "abc", "mandatory": true }`
+     *
+     * References are resolved recursively so they work inside operator
+     * maps (`{ "ne": "@self.slug" }`).  Unknown `@self.<field>` references
+     * (i.e. the field is absent in `$parentRow`) are replaced with `null`,
+     * which causes the filter to match nothing — fail-closed behaviour.
+     *
+     * @param array<string, mixed> $where     Raw where/filter clause from the aggregation spec.
+     * @param array<string, mixed> $parentRow Parent object's field values.
+     *
+     * @return array<string, mixed> Where clause with `@self.*` references resolved.
+     */
+    private function resolveAtSelfReferences(array $where, array $parentRow): array
+    {
+        $resolved = [];
+        foreach ($where as $key => $value) {
+            if (is_array($value) === true) {
+                $resolved[$key] = $this->resolveAtSelfReferences(
+                    where: $value,
+                    parentRow: $parentRow
+                );
+                continue;
+            }
+
+            if (is_string($value) === true && str_starts_with($value, '@self.') === true) {
+                // Strip the leading '@self.' prefix (6 characters) to get the field name.
+                $fieldName      = substr($value, 6);
+                $resolved[$key] = ($parentRow[$fieldName] ?? null);
+                continue;
+            }
+
+            $resolved[$key] = $value;
+        }//end foreach
+
+        return $resolved;
+    }//end resolveAtSelfReferences()
+
+    /**
+     * Find the first register that contains the given schema.
+     *
+     * Iterates over all registers visible to the current organisation
+     * (multitenancy respected) and returns the first one whose `schemas`
+     * list includes the schema's integer ID.  Returns null when no match
+     * is found (schema is not attached to any register).
+     *
+     * Performance: the result is not cached here; callers that need to
+     * invoke this repeatedly should consider their own request-scoped
+     * caching.  In practice this method is called at most once per
+     * cross-schema aggregation request.
+     *
+     * @param Schema $schema The target schema to find a register for.
+     *
+     * @return Register|null The first matching register, or null.
+     */
+    private function findRegisterForSchema(Schema $schema): ?Register
+    {
+        $schemaId = $schema->getId();
+        if ($schemaId === null) {
+            return null;
+        }
+
+        // Fetch all registers visible in the current tenant.
+        $registers = $this->registerMapper->findAll();
+        foreach ($registers as $register) {
+            $schemaIds = $register->getSchemas();
+            if (is_array($schemaIds) === false) {
+                continue;
+            }
+
+            // Normalise both sides to int before strict comparison: the
+            // schema id is canonically an int and `register->getSchemas()`
+            // may return string representations (legacy rows / DB drivers).
+            // Strict in_array with mixed-type members would silently miss
+            // a match and steer aggregation at the wrong register.
+            $normalised = array_map(static fn($id) => (int) $id, $schemaIds);
+            if (in_array((int) $schemaId, $normalised, true) === true) {
+                return $register;
+            }
+        }
+
+        return null;
+    }//end findRegisterForSchema()
 
     /**
      * Load a schema by ref, throwing a RuntimeException when missing.

@@ -285,60 +285,60 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $roles = null;
 
     /**
+     * Linked mail app data.
+     *
+     * @var array|null
+     */
+    protected ?array $mail = null;
+
+    /**
+     * Linked contacts app data.
+     *
+     * @var array|null
+     */
+    protected ?array $contacts = null;
+
+    /**
+     * Linked notes app data.
+     *
+     * @var array|null
+     */
+    protected ?array $notes = null;
+
+    /**
+     * Linked todos app data.
+     *
+     * @var array|null
+     */
+    protected ?array $todos = null;
+
+    /**
+     * Linked calendar app data.
+     *
+     * @var array|null
+     */
+    protected ?array $calendar = null;
+
+    /**
+     * Linked talk app data.
+     *
+     * @var array|null
+     */
+    protected ?array $talk = null;
+
+    /**
+     * Linked deck app data.
+     *
+     * @var array|null
+     */
+    protected ?array $deck = null;
+
+    /**
      * User count for this organisation (computed property, not stored in database)
      *
      * @var integer|null Number of users in this organisation
      */
     public ?int $userCount = null;
-
-    /**
-     * Linked mail entity IDs for this organisation.
-     *
-     * @var array|null Linked mail entity IDs
-     */
-    protected ?array $mail = null;
-
-    /**
-     * Linked contact entity IDs for this organisation.
-     *
-     * @var array|null Linked contact entity IDs
-     */
-    protected ?array $contacts = null;
-
-    /**
-     * Linked note entity IDs for this organisation.
-     *
-     * @var array|null Linked note entity IDs
-     */
-    protected ?array $notes = null;
-
-    /**
-     * Linked todo entity IDs for this organisation.
-     *
-     * @var array|null Linked todo entity IDs
-     */
-    protected ?array $todos = null;
-
-    /**
-     * Linked calendar event entity IDs for this organisation.
-     *
-     * @var array|null Linked calendar entity IDs
-     */
-    protected ?array $calendar = null;
-
-    /**
-     * Linked Talk conversation IDs for this organisation.
-     *
-     * @var array|null Linked Talk entity IDs
-     */
-    protected ?array $talk = null;
-
-    /**
-     * Linked Deck card IDs for this organisation.
-     *
-     * @var array|null Linked Deck entity IDs
-     */
-    protected ?array $deck = null;
 
     /**
      * Organisation constructor

@@ -96,6 +96,27 @@ function openregisterObjectPlugin() {
 			setAuditTrailItem(item) {
 				this.auditTrailItem = item || false
 			},
+
+			// Stub: DashboardSideBar.vue + SearchSideBar.vue call this on
+			// mount + schema change. The implementation that originally
+			// lived alongside them was refactored out, but the call sites
+			// remained — and on routes where those side-bars mount, the
+			// missing method throws a TypeError mid-bootstrap, which kills
+			// every subsequent mounted() hook in the SPA (including App.vue).
+			// A no-op stub lets the SPA finish mounting; the original
+			// behaviour (per-column filter init) is now handled inline by
+			// the filter components themselves.
+			initializeColumnFilters() {
+				// Intentionally empty.
+			},
+
+			// Stub: paired with initializeColumnFilters above. Called from
+			// the same code paths in DashboardSideBar.vue when a schema
+			// becomes available. The new schema-aware property store
+			// handles this elsewhere; a no-op keeps the call site safe.
+			initializeProperties(_schema) {
+				// Intentionally empty.
+			},
 		},
 	}
 }

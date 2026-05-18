@@ -81,11 +81,26 @@ class AnnotationNotificationListener implements IEventListener
         }
 
         if ($event instanceof ObjectUpdatedEvent) {
-            $object = $this->extractObject(event: $event);
-            if ($object !== null) {
-                $this->dispatcher->dispatch(object: $object, trigger: 'updated');
-            }
-        }
+            $newObject = $event->getNewObject();
+            $oldObject = $event->getOldObject();
+
+            $this->dispatcher->dispatch(object: $newObject, trigger: 'updated');
+
+            // Also evaluate calculatedChange rules when both old and new
+            // objects are available. Pass the previous and new calculated
+            // field values so the dispatcher can detect boundary crossings
+            // without re-reading versioned history.
+            if ($oldObject !== null) {
+                $this->dispatcher->dispatch(
+                    object: $newObject,
+                    trigger: 'calculatedChange',
+                    context: [
+                        '_newData' => $newObject->getObject() ?? [],
+                        '_oldData' => $oldObject->getObject() ?? [],
+                    ]
+                );
+            }//end if
+        }//end if
     }//end handle()
 
     /**

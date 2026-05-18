@@ -1,7 +1,7 @@
 <template>
 	<NcSettingsSection
 		:name="t('openregister', 'Organisation Configuration')"
-		:description="t('openregister', 'Configure default organisation and organisation-related settings')"
+		:description="t('openregister', 'Configure default organisation and organisation-related settings')">
 		<NcNoteCard v-if="saveSuccess" type="success">
 			{{ t('openregister', 'Organisation settings saved successfully') }}
 		</NcNoteCard>

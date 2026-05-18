@@ -422,7 +422,6 @@ import {
 } from '@nextcloud/vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 import { showSuccess, showError } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'

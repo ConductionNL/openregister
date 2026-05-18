@@ -764,16 +764,31 @@ class ImportService
                 );
             }
 
-            $saveResult = $this->objectService->saveObjects(
-                objects: $allObjects,
-                register: $register,
-                schema: $schema,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                validation: $validation,
-                events: $events,
-                enrich: $enrich
-            );
+            // @todo add-live-updates/task-6: Wrap with NotifyPushListener::setBatchMode(true) and
+            // flushBatch($queue, $permissionHandler) once IQueue and PermissionHandler are injected
+            // into ImportService. Pattern:
+            // NotifyPushListener::setBatchMode(true);
+            // try { ... saveObjects ... } finally {
+            // NotifyPushListener::flushBatch($queue, $permissionHandler);
+            // NotifyPushListener::setBatchMode(false);
+            // }
+            \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(true);
+            try {
+                $saveResult = $this->objectService->saveObjects(
+                    objects: $allObjects,
+                    register: $register,
+                    schema: $schema,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
+                    validation: $validation,
+                    events: $events,
+                    enrich: $enrich
+                );
+            } finally {
+                // Cannot call flushBatch here without IQueue — batch mode is cleared
+                // so individual events are re-enabled for subsequent calls.
+                \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(false);
+            }
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -945,16 +960,23 @@ class ImportService
                 );
             }
 
-            $saveResult = $this->objectService->saveObjects(
-                objects: $allObjects,
-                register: $register,
-                schema: $schema,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                validation: $validation,
-                events: $events,
-                enrich: $enrich
-            );
+            // @todo add-live-updates/task-6: Wrap with NotifyPushListener batch mode once
+            // IQueue and PermissionHandler are injected into ImportService.
+            \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(true);
+            try {
+                $saveResult = $this->objectService->saveObjects(
+                    objects: $allObjects,
+                    register: $register,
+                    schema: $schema,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
+                    validation: $validation,
+                    events: $events,
+                    enrich: $enrich
+                );
+            } finally {
+                \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(false);
+            }
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.

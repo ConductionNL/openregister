@@ -1102,11 +1102,11 @@ export const useSettingsStore = defineStore('settings', {
 
 					let cacheMessage = ''
 					if (newCacheSize > oldCacheSize) {
-						cacheMessage = `Cache grew from ${oldCacheSize} to ${newCacheSize} entries.`
+						cacheMessage = t('openregister', 'Cache grew from {old} to {new} entries.', { old: oldCacheSize, new: newCacheSize })
 					} else if (newCacheSize < oldCacheSize) {
-						cacheMessage = `Cache shrunk from ${oldCacheSize} to ${newCacheSize} entries.`
+						cacheMessage = t('openregister', 'Cache shrunk from {old} to {new} entries.', { old: oldCacheSize, new: newCacheSize })
 					} else {
-						cacheMessage = `Cache stayed the same at ${newCacheSize} entries.`
+						cacheMessage = t('openregister', 'Cache stayed the same at {size} entries.', { size: newCacheSize })
 					}
 
 					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}. {message}', { count: loadedCount, time: executionTime, message: cacheMessage }))

@@ -14,8 +14,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-48
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-52
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-52
  */
 
 declare(strict_types=1);
@@ -24,11 +24,11 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
-use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\Util;
 use Psr\Log\LoggerInterface;
 
@@ -71,19 +71,22 @@ class MailAppScriptListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-48
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-52
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-52
      */
     public function handle(Event $event): void
     {
-        /*
-         * Handle two shapes of "mail app is rendering" events:
-         * 1. An OCA\Mail\* custom event (legacy Mail-app-specific events).
-         * 2. Nextcloud core BeforeTemplateRenderedEvent whose response->getApp()
-         *    is 'mail' (what Mail actually dispatches today).
-         */
+        // Only handle the core BeforeTemplateRenderedEvent rendered by the Mail app.
+        if ($event instanceof BeforeTemplateRenderedEvent === false) {
+            return;
+        }
 
-        if ($this->isMailRenderEvent(event: $event) === false) {
+        $response = $event->getResponse();
+        if ($response instanceof TemplateResponse === false) {
+            return;
+        }
+
+        if ($response->getApp() !== 'mail') {
             return;
         }
 
@@ -119,7 +122,7 @@ class MailAppScriptListener implements IEventListener
      *
      * @return bool True if the user has register access.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-48
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
      */
     private function userHasRegisterAccess(): bool
     {
@@ -134,30 +137,4 @@ class MailAppScriptListener implements IEventListener
             return false;
         }
     }//end userHasRegisterAccess()
-
-    /**
-     * Whether $event signals that the Mail app is about to render a template.
-     *
-     * Accepts OCA\Mail\* custom events (legacy) AND Nextcloud core
-     * BeforeTemplateRenderedEvent whose response app is 'mail'.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return bool True if this is a mail-app render event.
-     */
-    private function isMailRenderEvent(Event $event): bool
-    {
-        if (str_contains(get_class($event), 'OCA\\Mail\\') === true) {
-            return true;
-        }
-
-        if ($event instanceof BeforeTemplateRenderedEvent) {
-            $response = $event->getResponse();
-            if ($response instanceof TemplateResponse && $response->getApp() === 'mail') {
-                return true;
-            }
-        }
-
-        return false;
-    }//end isMailRenderEvent()
 }//end class

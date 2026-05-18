@@ -8,7 +8,7 @@
 			<div class="info-box">
 				<InformationOutline :size="20" />
 				<p>
-					{{ t('openregister', 'Configure how database objects are converted into vector embeddings for semantic search. objects are directly vectorized without needing text extraction.') }}
+					{{ t('openregister', 'Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.') }}
 				</p>
 			</div>
 
@@ -64,7 +64,7 @@
 			<div v-if="config.vectorizationEnabled" class="config-section">
 				<h3>{{ t('openregister', '💰 View Selection (Cost Optimization)') }}</h3>
 				<p class="section-description">
-					{{ t('openregister', 'Control which object views should be vectorized to reduce API costs. only vectorize views that benefit from semantic search.') }}
+					{{ t('openregister', 'Control which object views should be vectorized to reduce API costs. Only vectorize views that benefit from semantic search.') }}
 				</p>
 
 				<div class="form-group">
@@ -104,12 +104,12 @@
 
 					<div v-else class="no-views">
 						<AlertCircle :size="24" />
-						<p>{{ t('openregister', 'No views found. create views first before configuring vectorization.') }}</p>
+						<p>{{ t('openregister', 'No views found. Create views first before configuring vectorization.') }}</p>
 					</div>
 
 					<div class="cost-note">
 						<InformationOutline :size="16" />
-						<small>{{ t('openregister', 'Tip: only enable views that need semantic search to minimize embedding costs. simple lookup tables rarely need vectorization.') }}</small>
+						<small>{{ t('openregister', 'Tip: only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.') }}</small>
 					</div>
 				</div>
 			</div>
@@ -118,7 +118,7 @@
 			<div v-if="config.vectorizationEnabled" class="config-section">
 				<h3>{{ t('openregister', '📄 Object Serialization') }}</h3>
 				<p class="section-description">
-					{{ t('openregister', 'Configure how objects are converted to text before vectorization. these settings affect search quality and context.') }}
+					{{ t('openregister', 'Configure how objects are converted to text before vectorization. These settings affect search quality and context.') }}
 				</p>
 
 				<div class="form-group">
@@ -139,7 +139,7 @@
 						min="1"
 						max="20"
 						class="input-field">
-					<small>{{ t('openregister', 'How deep to traverse nested object properties (1-20). higher values capture more detail but increase vector size.') }}</small>
+					<small>{{ t('openregister', 'How deep to traverse nested object properties (1-20). Higher values capture more detail but increase vector size.') }}</small>
 				</div>
 
 				<div class="form-group">
@@ -166,7 +166,7 @@
 						max="100"
 						step="1"
 						class="input-field">
-					<small>{{ t('openregister', 'Number of objects to vectorize in one API call. higher = faster but more memory. recommended: 10-50.') }}</small>
+					<small>{{ t('openregister', 'Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.') }}</small>
 				</div>
 
 				<div class="form-group">

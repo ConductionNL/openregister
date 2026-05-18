@@ -3,7 +3,7 @@
 		name="Text Extraction"
 		description="Configure extraction pipelines for files, objects, and detected entities"
 		:loading="settingsStore.loadingFileSettings"
-		loading-message="Loading text extraction settings...">
+		:loading-message="t('openregister', 'Loading text extraction settings...')">
 		<template #actions>
 			<!-- File Actions Menu -->
 			<NcActions
@@ -358,7 +358,7 @@
 							<label for="presidio-endpoint">Presidio API Endpoint</label>
 							<NcTextField id="presidio-endpoint"
 								v-model="fileSettings.presidioApiEndpoint"
-								:placeholder="t('openregister', 'http://openregister-presidio-analyzer:3000')"
+								:placeholder="'http://openregister-presidio-analyzer:3000'"
 								@update:value="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />

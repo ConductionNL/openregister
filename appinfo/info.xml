@@ -72,9 +72,11 @@ Vrij en open source onder de EUPL-licentie.
 	<repair-steps>
 		<post-migration>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
+			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 		</install>
 	</repair-steps>
 
@@ -114,6 +116,7 @@ Vrij en open source onder de EUPL-licentie.
 
 	<settings>
 		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
+		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
 

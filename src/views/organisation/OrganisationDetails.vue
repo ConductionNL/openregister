@@ -188,7 +188,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { NcActions, NcActionButton, NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'

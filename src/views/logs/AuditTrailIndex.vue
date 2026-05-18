@@ -625,7 +625,7 @@ export default {
 		async bulkDeleteAuditTrails() {
 			if (this.selectedAuditTrails.length === 0) return
 
-			if (!confirm(this.t('openregister', 'Are you sure you want to delete the selected audit trails? this action cannot be undone.'))) {
+			if (!confirm(this.t('openregister', 'Are you sure you want to delete the selected audit trails? This action cannot be undone.'))) {
 				return
 			}
 

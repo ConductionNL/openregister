@@ -230,7 +230,7 @@
 			@closing="showChatSettings = false">
 			<div class="chat-settings-dialog">
 				<p class="settings-description">
-					{{ t('openregister', 'Control which views and tools the AI can use in this conversation. by default, all agent capabilities are enabled.') }}
+					{{ t('openregister', 'Control which views and tools the AI can use in this conversation. By default, all agent capabilities are enabled.') }}
 				</p>
 
 				<!-- Views Section -->
@@ -794,7 +794,7 @@ export default {
 
 				// Hide input after saving
 				this.$set(message, 'showFeedbackInput', false)
-				showSuccess(this.t('openregister', 'Additional feedback saved. thank you!'))
+				showSuccess(this.t('openregister', 'Additional feedback saved. Thank you!'))
 			} catch (error) {
 				console.error('Failed to save feedback comment:', error)
 				showError(this.t('openregister', 'Failed to save additional feedback'))

@@ -1,60 +1,38 @@
-- [ ] 1. Create the Serializer namespace and RegisterSerializer
-  - [ ] 1.1 Create directory `lib/Service/Serializer/` (PHP namespace `OCA\OpenRegister\Service\Serializer`).
-  - [ ] 1.2 Create `lib/Service/Serializer/RegisterSerializer.php` with constructor DI for `SchemaMapper` and `LoggerInterface`.
-  - [ ] 1.3 Implement `RegisterSerializer::serialize(Register $register, array $extend = [], ?array $schemaStats = null): array` — calls `$register->jsonSerialize()`, then applies `$extend` transformations.
-  - [ ] 1.4 Implement `RegisterSerializer::serializeMany(array $registers, array $extend = [], ?array $schemaStatsByRegisterId = null): array` — iterates and delegates to `serialize()`.
-  - [ ] 1.5 Implement the `'schemas'` extension: for each ID in the register's `schemas` field, attempt `SchemaMapper::find($id, _multitenancy: false)`. On success, place the schema's `jsonSerialize()` output in the same array position. On `DoesNotExistException`, **retain the original ID in its position** (do NOT drop it) and log a warning via `LoggerInterface` with the failed ID in context.
-  - [ ] 1.6 Implement the `'@self.stats'` extension: only effective when `'schemas'` is also in `$extend`. For each successfully expanded schema object, set `stats.objects.total` from the provided `$schemaStats` lookup; default to `0` when the ID is absent from the lookup. Orphan ID entries are NOT augmented.
-  - [ ] 1.7 Unknown `_extend` keys are silently ignored (no exception, no log).
-  - [ ] 1.8 Do NOT strip the `properties` field from expanded schemas (the serializer preserves it; stripping is a consumer concern).
+## 1. Serializer namespace + RegisterSerializer
 
-- [ ] 2. Wire RegisterSerializer into RegisterService
-  - [ ] 2.1 Add `RegisterSerializer` as a constructor dependency on `RegisterService`.
-  - [ ] 2.2 Add `RegisterService::findSerialized(string|int $id, array $_extend = [], bool $_multitenancy = true): array` — calls existing `find()`, pre-computes stats if `'@self.stats'` AND `'schemas'` are requested (via existing `getSchemaObjectCounts()`), delegates to `RegisterSerializer::serialize()`.
-  - [ ] 2.3 Add `RegisterService::findAllSerialized(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], array $_extend = [], bool $_multitenancy = true): array` — calls existing `findAll()`, pre-computes per-register schema stats if requested, delegates to `RegisterSerializer::serializeMany()`.
-  - [ ] 2.4 Keep `RegisterService::findAll()` and `::find()` signatures and return types unchanged (still return `Register[]` / `Register`). The `_extend` parameter on these methods is documented as a no-op placeholder for signature compatibility.
+- [ ] 1.1 Create `lib/Service/Serializer/RegisterSerializer.php` (PHP ns `OCA\OpenRegister\Service\Serializer`) with constructor DI for `SchemaMapper` + `LoggerInterface`. Expose `serialize(Register $register, array $extend = [], ?array $schemaStats = null): array` (calls `$register->jsonSerialize()` then applies `$extend`) and `serializeMany(array $registers, array $extend = [], ?array $schemaStatsByRegisterId = null): array` (iterates + delegates).
+- [ ] 1.2 Implement the `'schemas'` extension: for each ID in the register's `schemas` field, attempt `SchemaMapper::find($id, _multitenancy: false)`. On success place the schema's `jsonSerialize()` output in the same array position; on `DoesNotExistException` retain the original ID in its position (do NOT drop) and log a warning via `LoggerInterface`. Preserve the `properties` field on expanded schemas (stripping is a consumer concern). Unknown `_extend` keys are silently ignored.
+- [ ] 1.3 Implement the `'@self.stats'` extension: only effective when `'schemas'` is also in `$extend`. For each successfully expanded schema, set `stats.objects.total` from the provided `$schemaStats` lookup; default to `0` when the ID is absent. Orphan ID entries are NOT augmented.
 
-- [ ] 3. Refactor RegistersController::index() to delegate
-  - [ ] 3.1 Replace the inline schema-expansion block in `lib/Controller/RegistersController.php::index()` (currently the loop after `findAll()` that calls `SchemaMapper::find()` per schema ID) with a single call to `$this->registerService->findAllSerialized(...)`, passing the parsed `$_extend` array.
-  - [ ] 3.2 Remove the direct `SchemaMapper` usage for expansion within `index()` (keep any other usages intact).
-  - [ ] 3.3 Remove the inline `getSchemaObjectCounts()` call and per-schema stats loop from `index()` — the serializer now owns this.
-  - [ ] 3.4 Verify `RegistersController::index()` body is thin (routing, param parsing, service call, response formatting only) per ADR-008.
+## 2. Wire RegisterSerializer into RegisterService
 
-- [ ] 4. Clean up `@SuppressWarnings(PHPMD.UnusedFormalParameter)` on `_extend`
-  - [ ] 4.1 Drop `_extend` from `RegisterMapper::findAll()` signature and remove the `@SuppressWarnings(PHPMD.UnusedFormalParameter)` pragma on that method.
-  - [ ] 4.2 Drop `_extend` from `RegisterMapper::find()` signature and remove the `@SuppressWarnings` pragma on that method.
-  - [ ] 4.3 Update `RegisterService::findAll()` and `::find()` to stop forwarding `_extend` to the mapper (the mapper no longer accepts it).
-  - [ ] 4.4 Run `composer check:strict` — PHPCS / PHPMD / Psalm / PHPStan must pass, including any new sniff complaints arising from the signature change.
+- [ ] 2.1 Add `RegisterSerializer` as a constructor dependency on `RegisterService`. Add `findSerialized(string|int $id, array $_extend = [], bool $_multitenancy = true): array` (calls existing `find()`, pre-computes stats via existing `getSchemaObjectCounts()` when `'@self.stats'` + `'schemas'` requested, delegates to `RegisterSerializer::serialize()`).
+- [ ] 2.2 Add `findAllSerialized(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = [], array $_extend = [], bool $_multitenancy = true): array` (calls existing `findAll()`, pre-computes per-register schema stats if requested, delegates to `serializeMany()`). Keep `RegisterService::findAll()` and `::find()` signatures + return types unchanged (still entities); the `_extend` parameter on those methods is documented as a no-op placeholder for signature compatibility.
 
-- [ ] 5. Unit tests for RegisterSerializer
-  - [ ] 5.1 Test: no `_extend` passed → output `schemas` is the ID array from `Register::jsonSerialize()`, unchanged. No `SchemaMapper::find()` calls made.
-  - [ ] 5.2 Test: `_extend: ['schemas']` with all schemas resolvable → output `schemas` is an array of schema objects in original order; each object contains `id`, `title`, and `properties`.
-  - [ ] 5.3 Test: `_extend: ['schemas']` with one orphan ID → output contains the orphan ID in its original array position (mixed object/ID array); logger receives a warning with the failing ID in context; no exception thrown.
-  - [ ] 5.4 Test: `_extend: ['schemas']` with mixed numeric and UUID schema references where both orphans → each orphan retains its original type (int stays int; string stays string).
-  - [ ] 5.5 Test: `_extend: ['schemas', '@self.stats']` with precomputed stats `[10 => 5, 20 => 0]` → schema 10 has `stats.objects.total == 5`; schema 20 has `stats.objects.total == 0`.
-  - [ ] 5.6 Test: `_extend: ['schemas', '@self.stats']` where one schema ID is orphan → expanded schemas have stats; orphan ID is a bare int/string with no wrapping.
-  - [ ] 5.7 Test: `_extend: ['@self.stats']` alone (no `'schemas'`) → `schemas` field is unchanged ID array; no stats anywhere.
-  - [ ] 5.8 Test: `_extend: ['schemas', 'unknown-key']` → output identical to `_extend: ['schemas']`; no warnings emitted for the unknown key.
-  - [ ] 5.9 Test: `Register::jsonSerialize()` after all changes → `schemas` field is still an ID array (entity contract unchanged).
+## 3. Refactor RegistersController::index() to delegate
 
-- [ ] 6. Integration tests / parity check
-  - [ ] 6.1 Add an integration test that hits `GET /api/registers?_extend=schemas` and compares the response to a snapshot captured before the refactor — must be byte-identical for the happy path (no orphan IDs in test fixtures).
-  - [ ] 6.2 Add an integration test that hits `GET /api/registers?_extend=schemas` with a fixture containing a register referencing a deleted schema — verifies the orphan ID is preserved in the response (post-refactor behavior change).
-  - [ ] 6.3 Add an integration test for `GET /api/registers?_extend=schemas&_extend=@self.stats` → each expanded schema has `stats.objects.total`.
-  - [ ] 6.4 Add a service-level integration test that calls `$registerService->findAllSerialized(_extend: ['schemas'])` via DI and asserts identical output to the HTTP path (same fixture, ignoring HTTP envelope).
+- [ ] 3.1 Replace the inline schema-expansion block in `lib/Controller/RegistersController.php::index()` (the post-`findAll()` loop calling `SchemaMapper::find()` per schema ID, plus its `getSchemaObjectCounts()` + per-schema stats loop) with a single call to `$this->registerService->findAllSerialized(...)`, passing the parsed `$_extend` array. Remove the now-unused direct `SchemaMapper` usage (keep any other usages intact). Verify the controller body is thin (routing, param parsing, service call, response formatting only) per ADR-008.
 
-- [ ] 7. Cross-repo verification
-  - [ ] 7.1 Grep `opencatalogi/` and `softwarecatalog/` for `RegisterService::findAll(` and `RegisterService::find(` with `_extend` — note any consumers that may benefit from the new `findAllSerialized` / `findSerialized` methods. Do NOT change them in this PR; file follow-up issues if any are found.
-  - [ ] 7.2 Grep `docudesk/lib/Service/RegisterDiscoveryService.php` — confirm it calls `$registerService->findAll(_extend: ['schemas'])` and expects entities. Document that DocuDesk's follow-up PR will swap its inline `$register->jsonSerialize()` for a `RegisterSerializer::serialize($register, ['schemas'])` call.
+## 4. Drop unused `_extend` plumbing in the mapper
 
-- [ ] 8. Documentation
-  - [ ] 8.1 Update `openregister/docs/` or relevant section to document the `lib/Service/Serializer/` namespace and `RegisterSerializer` usage (example call for a DI consumer).
-  - [ ] 8.2 Add a CHANGELOG entry noting: (a) new `findAllSerialized` / `findSerialized` on `RegisterService`, (b) new `RegisterSerializer`, (c) the orphan-schema-ID retention behavior change for `/api/registers?_extend=schemas`.
-  - [ ] 8.3 Update or create the follow-up ticket in DocuDesk (internal tracker / GitHub issue) referencing this change and describing the one-line swap needed in `RegisterDiscoveryService::serializeRegister()`.
+- [ ] 4.1 Drop `_extend` from `RegisterMapper::findAll()` AND `RegisterMapper::find()` signatures and remove the `@SuppressWarnings(PHPMD.UnusedFormalParameter)` pragmas. Update `RegisterService::findAll()` and `::find()` to stop forwarding `_extend` to the mapper (the mapper no longer accepts it). Run `composer check:strict` and resolve any sniff complaints from the signature change.
 
-- [ ] 9. Quality gates
-  - [ ] 9.1 `composer check:strict` passes (PHPCS, PHPMD, Psalm, PHPStan).
-  - [ ] 9.2 Existing test suite passes (`composer test` or equivalent).
-  - [ ] 9.3 New unit and integration tests from sections 5 and 6 pass.
-  - [ ] 9.4 Psalm/PHPStan show zero new issues on the changed files.
-  - [ ] 9.5 Code review: confirm ADR-008 alignment (controller is thin; business logic in service/serializer).
+## 5. Unit tests for RegisterSerializer
+
+- [ ] 5.1 Tests for default + `'schemas'` expansion: no `_extend` → output `schemas` is the unchanged ID array (no `SchemaMapper::find()` calls); `_extend: ['schemas']` with all schemas resolvable → ordered array of schema objects each with `id`, `title`, `properties`; entity contract unchanged (`Register::jsonSerialize()` still returns ID array).
+- [ ] 5.2 Tests for orphan-ID retention: `_extend: ['schemas']` with one orphan → orphan ID kept in original array position (mixed object/ID array), logger receives warning with the failing ID in context, no exception; mixed numeric + UUID schema references both orphans retain their original PHP types (int stays int, string stays string).
+- [ ] 5.3 Tests for `@self.stats` interaction: `_extend: ['schemas', '@self.stats']` with precomputed `[10 => 5, 20 => 0]` → schema 10 has `stats.objects.total == 5`, schema 20 has `0`; orphan ID gets NO stats wrapping; `_extend: ['@self.stats']` alone (no `'schemas'`) → `schemas` field unchanged, no stats anywhere; `_extend: ['schemas', 'unknown-key']` → identical to `['schemas']`, no warning for the unknown key.
+
+## 6. Integration tests / HTTP parity
+
+- [ ] 6.1 Add an integration test that hits `GET /api/registers?_extend=schemas` and compares against a pre-refactor snapshot — must be byte-identical for the happy path (no orphans in fixture). Add a second test with a fixture register referencing a deleted schema — verifies orphan ID is preserved (post-refactor behaviour change).
+- [ ] 6.2 Add an integration test for `GET /api/registers?_extend=schemas&_extend=@self.stats` — each expanded schema carries `stats.objects.total`. Add a service-level integration test that calls `$registerService->findAllSerialized(_extend: ['schemas'])` via DI and asserts identical output to the HTTP path (same fixture, ignoring HTTP envelope).
+
+## 7. Cross-repo verification + docs
+
+- [ ] 7.1 Grep `opencatalogi/`, `softwarecatalog/`, and `docudesk/lib/Service/RegisterDiscoveryService.php` for `RegisterService::findAll(` / `::find(` with `_extend`. Do NOT change consumers in this PR; file a follow-up issue per consumer that should swap to `findAllSerialized`/`findSerialized` (including the DocuDesk `RegisterDiscoveryService::serializeRegister()` one-line swap).
+- [ ] 7.2 Update `openregister/docs/` to document the new `lib/Service/Serializer/` namespace + `RegisterSerializer` usage (example DI consumer call). Add a `CHANGELOG.md` entry noting: (a) new `findAllSerialized` / `findSerialized` on `RegisterService`, (b) new `RegisterSerializer`, (c) the orphan-schema-ID retention behaviour change for `/api/registers?_extend=schemas`.
+
+## 8. Quality gates
+
+- [ ] 8.1 `composer check:strict` passes (PHPCS, PHPMD, Psalm, PHPStan) with zero new issues on changed files; existing test suite + new section-5/6 tests pass; `openspec validate extend-schemas-in-register-service` passes; ADR-008 alignment confirmed (controller thin; logic in service/serializer).

@@ -206,7 +206,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									<!-- Tags Buttons -->
 									<NcButton
 										v-if="editingTags !== file.name"
-										:v-tooltip="t('openregister', 'Edit labels')"
+										v-tooltip="t('openregister', 'Edit labels')"
 										:disabled="editingTags && editingTags !== file.name || loading || file.status === 'too_large' || tagsLoading"
 										:aria-label="t('openregister', 'Edit tags for {name}', { name: file.name })"
 										type="secondary"
@@ -218,7 +218,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="editingTags === file.name"
-										:v-tooltip="t('openregister', 'Save labels')"
+										v-tooltip="t('openregister', 'Save labels')"
 										type="primary"
 										:aria-label="t('openregister', 'Save tags for {name}', { name: file.name })"
 										class="editTagsButton"
@@ -230,7 +230,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 									<!-- File Actions -->
 									<NcButton v-if="file.status === 'failed'"
-										:v-tooltip="t('openregister', 'Retry upload')"
+										v-tooltip="t('openregister', 'Retry upload')"
 										type="primary"
 										@click="addAttachments(file)">
 										<template #icon>
@@ -239,7 +239,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="file.status === 'too_large'"
-										:v-tooltip="t('openregister', 'Remove from list')"
+										v-tooltip="t('openregister', 'Remove from list')"
 										type="primary"
 										@click="removeFile(file.name)">
 										<template #icon>
@@ -258,7 +258,6 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 <script>
 import { ref } from 'vue'
-import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 import Plus from 'vue-material-design-icons/Plus.vue'

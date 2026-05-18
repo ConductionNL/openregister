@@ -38,7 +38,7 @@ import { translate as t } from '@nextcloud/l10n'
 								{{ t('openregister', 'Register / Schema') }}
 							</th>
 							<th v-for="action in actions" :key="action" class="action-column">
-								{{ action }}
+								{{ t('openregister', action) }}
 							</th>
 							<th class="action-column">
 								{{ t('openregister', 'Public') }}

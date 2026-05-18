@@ -67,6 +67,7 @@ It is the shared data backbone for apps like [OpenCatalogi](https://github.com/C
 
 ### Integrations
 
+- **Pluggable integration registry** — Object surfaces (sidebar tabs, dashboard widgets, detail pages, reference properties) are driven by a registry of `IntegrationProvider`s. Five built-ins ship out of the box (Files, Notes, Tags, Tasks, Audit Trail); apps add their own — including OpenConnector-backed external integrations like xWiki — without touching OpenRegister core. See [docs/Integrations/pluggable-integration-registry.md](docs/Integrations/pluggable-integration-registry.md) for the "how to add an integration" walkthrough.
 - **SOLR Integration** — Optional Apache Solr for advanced search scenarios
 - **Source Synchronization** — Keep registers in sync with external data sources
 - **Schema Import** — Import schemas from Schema.org, OpenAPI, and GGM standards

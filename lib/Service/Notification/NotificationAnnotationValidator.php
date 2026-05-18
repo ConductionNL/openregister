@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Notification;
 final class NotificationAnnotationValidator
 {
 
-    private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold'];
+    private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange'];
 
     private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation', 'object-acl', 'expression'];
 
@@ -151,6 +151,55 @@ final class NotificationAnnotationValidator
                         ),
                     ];
                 }
+            }//end if
+
+            if ($triggerType === 'calculatedChange') {
+                $field = is_array($trigger) === true ? ($trigger['field'] ?? null) : null;
+                if (is_string($field) === false || $field === '') {
+                    $errors[] = [
+                        'code'    => 'notification-calculated-change-no-field',
+                        'message' => sprintf(
+                            'Notification "%s" trigger.type=calculatedChange requires trigger.field (non-empty string).',
+                            $name
+                        ),
+                    ];
+                }
+
+                $validOps = ['lt', 'lte', 'gt', 'gte', 'eq', 'ne'];
+
+                foreach (['condition', 'previously'] as $clauseKey) {
+                    $clause = is_array($trigger) === true ? ($trigger[$clauseKey] ?? null) : null;
+                    if ($clause === null) {
+                        continue;
+                    }
+
+                    if (is_array($clause) === false || count($clause) === 0) {
+                        $errors[] = [
+                            'code'    => 'notification-calculated-change-bad-clause',
+                            'message' => sprintf(
+                                'Notification "%s" trigger.%s must be a non-empty operator map.',
+                                $name,
+                                $clauseKey
+                            ),
+                        ];
+                        continue;
+                    }
+
+                    foreach (array_keys($clause) as $op) {
+                        if (in_array((string) $op, $validOps, true) === false) {
+                            $errors[] = [
+                                'code'    => 'notification-calculated-change-bad-op',
+                                'message' => sprintf(
+                                    'Notification "%s" trigger.%s operator "%s" must be one of [%s].',
+                                    $name,
+                                    $clauseKey,
+                                    (string) $op,
+                                    implode(', ', $validOps)
+                                ),
+                            ];
+                        }
+                    }
+                }//end foreach
             }//end if
 
             $channels = ($spec['channels'] ?? []);

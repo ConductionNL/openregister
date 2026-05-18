@@ -293,13 +293,6 @@ class MagicMapper extends AbstractObjectMapper
     private ?bool $hasPgTrgm = null;
 
     /**
-     * Count of constructor calls.
-     *
-     * @var integer
-     */
-    private static int $constructCount = 0;
-
-    /**
      * Constructor for MagicMapper service.
      *
      * Initializes the service with required dependencies for database operations,
@@ -334,22 +327,12 @@ class MagicMapper extends AbstractObjectMapper
         private readonly SettingsService $settingsService,
         private readonly ContainerInterface $container
     ) {
-        self::$constructCount++;
-        file_put_contents(
-            '/tmp/or-debug.log',
-            "MagicMapper::__construct #".self::$constructCount."\n",
-            FILE_APPEND
-        );
-        if (self::$constructCount > 2) {
-            file_put_contents(
-                '/tmp/or-debug.log',
-                "CIRCULAR! Stack:\n".(new Exception())->getTraceAsString()."\n",
-                FILE_APPEND
-            );
-            return;
-        }
-
         // Initialize specialized handlers for modular functionality.
+        // The circular-construction guard that lived here previously (#1564)
+        // was a holdover from a March 2026 refactor; the cycles it guarded
+        // (CacheHandler→RegisterMapper→MagicMapper, SettingsService→MagicMapper)
+        // were since broken via lazy container resolution + the
+        // `objectMapper`-removed-from-SettingsService fix.
         $this->initializeHandlers();
     }//end __construct()
 
@@ -5860,6 +5843,9 @@ class MagicMapper extends AbstractObjectMapper
                     LIMIT 100";
             if ($isPostgres === true) {
                 // PostgreSQL: use JSONB containment operator.
+                // Note: ::jsonb cast is intentional for polymorphic column support, but defeats any GIN
+                // index on $columnName if it is already jsonb. Acceptable for now; if a GIN index is added
+                // in a future migration for this column, branch the query to omit the cast in the jsonb case.
                 $sql = "SELECT * FROM {$fullTableName}
                         WHERE (_deleted IS NULL OR _deleted::text = 'null')
                         AND {$columnName} IS NOT NULL

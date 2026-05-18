@@ -221,9 +221,13 @@ class ConversationManagementHandler
             $title = '';
 
             // Generate title based on provider.
-            // OpenAI chat (default).
-            $chat  = new OpenAIChat($config);
-            $title = $chat->generateText($prompt);
+            // OpenAIChat::__construct() type-errors when given OllamaConfig — skip the
+            // default-OpenAI instantiation for Ollama; the dedicated Ollama branch below
+            // does the right thing.
+            if ($chatProvider !== 'ollama') {
+                $chat  = new OpenAIChat($config);
+                $title = $chat->generateText($prompt);
+            }
 
             if ($chatProvider === 'fireworks') {
                 // Use ResponseGenerationHandler's Fireworks method.

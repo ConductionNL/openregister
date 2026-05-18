@@ -241,7 +241,6 @@ import {
 	NcEmptyContent,
 } from '@nextcloud/vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
