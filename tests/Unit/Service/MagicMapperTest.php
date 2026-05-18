@@ -215,12 +215,6 @@ class MagicMapperTest extends TestCase
         $this->mockSchema->setVersion('1.0');
         $this->mockSchema->testConfiguration = [];
 
-        // Reset static construct counter to avoid circular dependency guard.
-        $ref = new \ReflectionClass(MagicMapper::class);
-        $prop = $ref->getProperty('constructCount');
-        $prop->setAccessible(true);
-        $prop->setValue(null, 0);
-
         // Build a container mock that returns the DateTimeNormalizer when asked
         // — MagicMapper resolves it lazily from the container to construct
         // MagicBulkHandler, and the typed parameter rejects null.

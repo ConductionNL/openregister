@@ -293,13 +293,6 @@ class MagicMapper extends AbstractObjectMapper
     private ?bool $hasPgTrgm = null;
 
     /**
-     * Count of constructor calls.
-     *
-     * @var integer
-     */
-    private static int $constructCount = 0;
-
-    /**
      * Constructor for MagicMapper service.
      *
      * Initializes the service with required dependencies for database operations,
@@ -334,20 +327,12 @@ class MagicMapper extends AbstractObjectMapper
         private readonly SettingsService $settingsService,
         private readonly ContainerInterface $container
     ) {
-        self::$constructCount++;
-        if (self::$constructCount > 2) {
-            // Guard against the circular-construction case under
-            // investigation (#1564). When tripped the mapper is left
-            // without handlers — operations against it will fail
-            // explicitly rather than recursing infinitely.
-            $this->logger->warning(
-                '[MagicMapper] circular construction guard hit (count={count}) — handlers not initialized',
-                ['count' => self::$constructCount, 'app' => 'openregister']
-            );
-            return;
-        }
-
         // Initialize specialized handlers for modular functionality.
+        // The circular-construction guard that lived here previously (#1564)
+        // was a holdover from a March 2026 refactor; the cycles it guarded
+        // (CacheHandler→RegisterMapper→MagicMapper, SettingsService→MagicMapper)
+        // were since broken via lazy container resolution + the
+        // `objectMapper`-removed-from-SettingsService fix.
         $this->initializeHandlers();
     }//end __construct()
 
