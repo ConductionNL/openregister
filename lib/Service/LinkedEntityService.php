@@ -313,7 +313,7 @@ class LinkedEntityService
         // returned objects — this is intentional for the mail-sidebar use-case (cross-tenant linking
         // is required there) but constitutes a cross-tenant data exposure for multi-tenant SaaS
         // deployments. Operators in strict-isolation deployments should disable the flag via:
-        //   occ config:app:set openregister linkedEntity.crossTenantScan --value=0
+        // occ config:app:set openregister linkedEntity.crossTenantScan --value=0
         // which falls back to standard RBAC + multitenancy-scoped findAll(). Follow-up tracked in
         // issue #1534 (per-row access check + caller scoping + audit log).
         $crossTenantScan = ((string) $this->appConfig->getValueString('openregister', self::CONFIG_CROSS_TENANT_SCAN, '1')) === '1';
@@ -322,7 +322,8 @@ class LinkedEntityService
         } else {
             $allSchemas = $this->schemaMapper->findAll();
         }
-        $scanned    = 0;
+
+        $scanned = 0;
 
         foreach ($allSchemas as $schema) {
             if ($scanned >= self::MAX_TABLES_TO_SCAN) {

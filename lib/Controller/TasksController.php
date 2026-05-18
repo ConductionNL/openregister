@@ -102,8 +102,8 @@ class TasksController extends Controller
     public function allUserTasks(): JSONResponse
     {
         try {
-            $status   = $this->request->getParam('status');
-            $limit    = min(max((int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50), 1), 200);
+            $status = $this->request->getParam('status');
+            $limit  = min(max((int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50), 1), 200);
             // Clamp offset symmetrically with limit. Without an upper bound a client can pass
             // _offset=10000000 and force TaskService to walk N calendars before slicing — the
             // same DoS surface the limit clamp closes (PR #1273 review).
