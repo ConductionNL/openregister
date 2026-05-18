@@ -373,7 +373,7 @@ class ObjectService
             } catch (Exception $e) {
                 // Log the error but don't fail the object creation/update.
                 // The object can still function without a folder.
-            }
+            }//end try
         }//end if
     }//end ensureObjectFolderExists()
 
@@ -1444,9 +1444,23 @@ class ObjectService
             try {
                 $existingObject = $this->objectMapper->find($uuid);
                 $folder         = $existingObject->getFolder();
-                $isString       = is_string($folder) === true;
 
-                if ($folder === null || $folder === '' || $isString === true) {
+                // The `_folder` column is `varchar(255)` — every populated
+                // value is a string. The earlier `is_string($folder) === true`
+                // clause matched ANY non-empty string and so triggered an
+                // auto-create on every update, overwriting valid folder
+                // bindings with freshly-generated auto-folders under the
+                // register's storage tree. The intent of the string branch
+                // was to handle LEGACY non-numeric string paths that
+                // pre-date the integer-id storage convention; restrict the
+                // check to that case.
+                $needsAutoCreate = (
+                    $folder === null
+                    || $folder === ''
+                    || (is_string($folder) === true && is_numeric($folder) === false)
+                );
+
+                if ($needsAutoCreate === true) {
                     try {
                         $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
                     } catch (Exception $e) {
@@ -1458,7 +1472,7 @@ class ObjectService
                 // Let SaveObject handle the creation with the provided UUID.
             } catch (Exception $e) {
                 // Other errors - let SaveObject handle the creation.
-            }
+            }//end try
         }//end if
 
         return $folderId;
