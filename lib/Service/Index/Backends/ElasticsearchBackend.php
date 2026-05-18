@@ -19,6 +19,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Index\Backends;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Aggregation\AggregationResult;
+use OCA\OpenRegister\Service\Aggregation\ElasticsearchAggregationQueryBuilder;
 use OCA\OpenRegister\Service\Index\SearchBackendInterface;
 use OCA\OpenRegister\Service\Index\Backends\Elasticsearch\ElasticsearchHttpClient;
 use OCA\OpenRegister\Service\Index\Backends\Elasticsearch\ElasticsearchIndexManager;
@@ -562,4 +565,85 @@ class ElasticsearchBackend implements SearchBackendInterface
     {
         return [];
     }//end fixMismatchedFields()
+
+    /**
+     * Execute a backend-native Elasticsearch aggregation.
+     *
+     * Translates the AggregationQuery into an ES _search request body
+     * and posts it to the active index. Parses the response into an AggregationResult.
+     *
+     * @param AggregationQuery $query The aggregation request.
+     *
+     * @return AggregationResult Aggregation result with backend: "elasticsearch".
+     *
+     * @spec openspec/changes/aggregations-backend-native/tasks.md#task-4
+     */
+    public function aggregate(AggregationQuery $query): AggregationResult
+    {
+        $builder  = new ElasticsearchAggregationQueryBuilder();
+        $body     = $builder->build(query: $query);
+        $index    = $this->indexManager->getActiveIndexName();
+        $url      = $this->httpClient->getEndpointUrl(index: $index).'/_search';
+        $response = $this->httpClient->post(url: $url, data: $body);
+
+        return $this->parseEsResponse(response: $response, query: $query);
+    }//end aggregate()
+
+    /**
+     * Parse a raw ES _search response into an AggregationResult.
+     *
+     * @param array            $response Raw ES response.
+     * @param AggregationQuery $query    Original query (for metric context).
+     *
+     * @return AggregationResult
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function parseEsResponse(array $response, AggregationQuery $query): AggregationResult
+    {
+        // Pure count — total_hits.
+        if ($query->metric === 'count' && $query->groupBy === null) {
+            $total = (int) ($response['hits']['total']['value'] ?? 0);
+            return new AggregationResult(value: $total, groups: null, backend: 'elasticsearch');
+        }
+
+        $aggs = $response['aggregations'] ?? [];
+
+        // Count with groupBy → terms bucket agg.
+        if ($query->metric === 'count' && $query->groupBy !== null) {
+            $field   = $query->groupBy['field'];
+            $buckets = $aggs[$field]['buckets'] ?? [];
+            $groups  = [];
+            $total   = 0;
+            foreach ($buckets as $bucket) {
+                $cnt      = (int) ($bucket['doc_count'] ?? 0);
+                $total   += $cnt;
+                $groups[] = ['group' => $bucket['key'] ?? '', 'value' => $cnt];
+            }
+
+            return new AggregationResult(value: $total, groups: $groups, backend: 'elasticsearch');
+        }
+
+        // Ungrouped metric.
+        if ($query->groupBy === null) {
+            $metricKey = 'metric_'.$query->metric;
+            $raw       = $aggs[$metricKey]['value'] ?? 0;
+            return new AggregationResult(value: (float) $raw, groups: null, backend: 'elasticsearch');
+        }
+
+        // Grouped metric.
+        $field     = $query->groupBy['field'];
+        $buckets   = $aggs[$field]['buckets'] ?? [];
+        $metricKey = 'metric_'.$query->metric;
+        $groups    = [];
+        $total     = 0.0;
+
+        foreach ($buckets as $bucket) {
+            $v        = (float) ($bucket[$metricKey]['value'] ?? 0);
+            $total   += $v;
+            $groups[] = ['group' => $bucket['key'] ?? '', 'value' => $v];
+        }
+
+        return new AggregationResult(value: $total, groups: $groups, backend: 'elasticsearch');
+    }//end parseEsResponse()
 }//end class

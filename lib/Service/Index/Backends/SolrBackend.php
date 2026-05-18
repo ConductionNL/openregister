@@ -20,6 +20,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Index\Backends;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Aggregation\AggregationResult;
+use OCA\OpenRegister\Service\Aggregation\SolrAggregationQueryBuilder;
 use OCA\OpenRegister\Service\Index\SearchBackendInterface;
 use OCA\OpenRegister\Service\Index\Backends\Solr\SolrHttpClient;
 use OCA\OpenRegister\Service\Index\Backends\Solr\SolrCollectionManager;
@@ -620,4 +623,92 @@ class SolrBackend implements SearchBackendInterface
     {
         return [];
     }//end fixMismatchedFields()
+
+    /**
+     * Execute a backend-native Solr aggregation.
+     *
+     * Translates the AggregationQuery into Solr facet/stats query parameters
+     * and posts to the /select endpoint. Parses the response into an AggregationResult.
+     *
+     * @param AggregationQuery $query The aggregation request.
+     *
+     * @return AggregationResult Aggregation result with backend: "solr".
+     *
+     * @spec openspec/changes/aggregations-backend-native/tasks.md#task-3
+     */
+    public function aggregate(AggregationQuery $query): AggregationResult
+    {
+        $builder    = new SolrAggregationQueryBuilder();
+        $params     = $builder->build(query: $query);
+        $collection = $this->collectionManager->getActiveCollectionName();
+        $url        = $this->httpClient->getEndpointUrl(collection: $collection).'/select';
+        $response   = $this->httpClient->get(url: $url, opts: ['query' => $params]);
+
+        return $this->parseSolrResponse(response: $response, query: $query);
+    }//end aggregate()
+
+    /**
+     * Parse a raw Solr /select response into an AggregationResult.
+     *
+     * @param array            $response Raw Solr response.
+     * @param AggregationQuery $query    Original query (for metric context).
+     *
+     * @return AggregationResult
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function parseSolrResponse(array $response, AggregationQuery $query): AggregationResult
+    {
+        // Count-only (no groupBy, no stats).
+        if ($query->metric === 'count' && $query->groupBy === null) {
+            $total = (int) ($response['response']['numFound'] ?? 0);
+            return new AggregationResult(value: $total, groups: null, backend: 'solr');
+        }
+
+        // Count + groupBy → facet_counts.
+        if ($query->metric === 'count' && $query->groupBy !== null) {
+            $field  = $query->groupBy['field'];
+            $facets = $response['facet_counts']['facet_fields'][$field] ?? [];
+            $groups = [];
+            $total  = 0;
+            for ($i = 0; $i < count($facets) - 1; $i += 2) {
+                $grp      = $facets[$i];
+                $cnt      = (int) $facets[$i + 1];
+                $total   += $cnt;
+                $groups[] = ['group' => $grp, 'value' => $cnt];
+            }
+
+            return new AggregationResult(value: $total, groups: $groups, backend: 'solr');
+        }
+
+        // Ungrouped stats.
+        if ($query->groupBy === null) {
+            $statsData = $response['stats']['stats_fields'][$query->field] ?? [];
+            $value     = match ($query->metric) {
+                'sum' => (float) ($statsData['sum'] ?? 0),
+                'avg' => (float) ($statsData['mean'] ?? 0),
+                'min' => (float) ($statsData['min'] ?? 0),
+                'max' => (float) ($statsData['max'] ?? 0),
+                default => 0.0,
+            };
+
+            return new AggregationResult(value: $value, groups: null, backend: 'solr');
+        }
+
+        // Grouped stats via JSON Facet.
+        $field       = $query->groupBy['field'];
+        $facetBucket = $response['facets'][$field]['buckets'] ?? [];
+        $groups      = [];
+        $total       = 0.0;
+
+        foreach ($facetBucket as $bucket) {
+            $grp      = $bucket['val'] ?? '';
+            $m        = $bucket['metric'] ?? 0;
+            $v        = (float) $m;
+            $total   += $v;
+            $groups[] = ['group' => $grp, 'value' => $v];
+        }
+
+        return new AggregationResult(value: $total, groups: $groups, backend: 'solr');
+    }//end parseSolrResponse()
 }//end class

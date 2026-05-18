@@ -92,6 +92,8 @@ use OCA\OpenRegister\Service\Index\Backends\Solr\SolrQueryExecutor;
 use OCA\OpenRegister\Service\Index\Backends\Solr\SolrFacetProcessor;
 use OCA\OpenRegister\Service\Index\Backends\Solr\SolrSchemaManager;
 use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\VectorizationService;
@@ -133,6 +135,7 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\EventListener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
@@ -439,6 +442,30 @@ class Application extends App implements IBootstrap
                     groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     fileService: null
+                );
+            }
+        );
+        // AggregationCache — 60s TTL distributed cache for aggregation results.
+        $context->registerService(
+            AggregationCache::class,
+            function (ContainerInterface $container) {
+                return new AggregationCache(
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // AggregationRunner — dispatches aggregations to the best available backend.
+        $context->registerService(
+            AggregationRunner::class,
+            function (ContainerInterface $container) {
+                return new AggregationRunner(
+                    db: $container->get('OCP\IDBConnection'),
+                    magicMapper: $container->get(MagicMapper::class),
+                    indexService: $container->get(IndexService::class),
+                    cache: $container->get(AggregationCache::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
         );
@@ -790,6 +817,11 @@ class Application extends App implements IBootstrap
 
         // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+
+        // AggregationCacheInvalidationListener evicts the 60s aggregation cache on object writes.
+        $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
 
         // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
         $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);

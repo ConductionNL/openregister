@@ -2,17 +2,17 @@
 
 return [
     'resources' => [
-        'Registers' => ['url' => 'api/registers'],
-        'Schemas' => ['url' => 'api/schemas'],
-        'Sources' => ['url' => 'api/sources'],
+        'Registers'      => ['url' => 'api/registers'],
+        'Schemas'        => ['url' => 'api/schemas'],
+        'Sources'        => ['url' => 'api/sources'],
         'Configurations' => ['url' => 'api/configurations'],
-        'Applications' => ['url' => 'api/applications'],
-        'Agents' => ['url' => 'api/agents'],
-        'Endpoints' => ['url' => 'api/endpoints'],
-        'Mappings' => ['url' => 'api/mappings'],
-        'Consumers' => ['url' => 'api/consumers'],
+        'Applications'   => ['url' => 'api/applications'],
+        'Agents'         => ['url' => 'api/agents'],
+        'Endpoints'      => ['url' => 'api/endpoints'],
+        'Mappings'       => ['url' => 'api/mappings'],
+        'Consumers'      => ['url' => 'api/consumers'],
     ],
-    'routes' => [
+    'routes'    => [
         // PATCH routes for resources (partial updates).
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -42,7 +42,7 @@ return [
         // Migration - Move objects between blob storage and magic tables.
         ['name' => 'migration#status', 'url' => '/api/migration/status/{register}/{schema}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
         ['name' => 'migration#migrate', 'url' => '/api/migration/migrate', 'verb' => 'POST'],
-        
+
         // Settings - Focused endpoints for better performance.
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PUT'],
@@ -59,29 +59,29 @@ return [
         ['name' => 'Settings\SolrSettings#discoverSolrFacets', 'url' => '/api/solr/discover-facets', 'verb' => 'GET'],
         ['name' => 'Settings\SolrSettings#getSolrFacetConfigWithDiscovery', 'url' => '/api/solr/facet-config', 'verb' => 'GET'],
         ['name' => 'Settings\SolrSettings#updateSolrFacetConfigWithDiscovery', 'url' => '/api/solr/facet-config', 'verb' => 'POST'],
-		['name' => 'Settings\SolrManagement#getSolrFields', 'url' => '/api/solr/fields', 'verb' => 'GET'],
-		['name' => 'Settings\SolrManagement#createMissingSolrFields', 'url' => '/api/solr/fields/create-missing', 'verb' => 'POST'],
-		['name' => 'Settings\SolrManagement#fixMismatchedSolrFields', 'url' => '/api/solr/fields/fix-mismatches', 'verb' => 'POST'],
-	    ['name' => 'Settings\SolrManagement#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
-		
-		// Collection-specific field management.
-		['name' => 'Settings\SolrManagement#getObjectCollectionFields', 'url' => '/api/solr/collections/objects/fields', 'verb' => 'GET'],
-		['name' => 'Settings\SolrManagement#getFileCollectionFields', 'url' => '/api/solr/collections/files/fields', 'verb' => 'GET'],
-		['name' => 'Settings\SolrManagement#createMissingObjectFields', 'url' => '/api/solr/collections/objects/fields/create-missing', 'verb' => 'POST'],
-		['name' => 'Settings\SolrManagement#createMissingFileFields', 'url' => '/api/solr/collections/files/fields/create-missing', 'verb' => 'POST'],
-        
+        ['name' => 'Settings\SolrManagement#getSolrFields', 'url' => '/api/solr/fields', 'verb' => 'GET'],
+        ['name' => 'Settings\SolrManagement#createMissingSolrFields', 'url' => '/api/solr/fields/create-missing', 'verb' => 'POST'],
+        ['name' => 'Settings\SolrManagement#fixMismatchedSolrFields', 'url' => '/api/solr/fields/fix-mismatches', 'verb' => 'POST'],
+        ['name' => 'Settings\SolrManagement#deleteSolrField', 'url' => '/api/solr/fields/{fieldName}', 'verb' => 'DELETE', 'requirements' => ['fieldName' => '[^/]+']],
+
+        // Collection-specific field management.
+        ['name' => 'Settings\SolrManagement#getObjectCollectionFields', 'url' => '/api/solr/collections/objects/fields', 'verb' => 'GET'],
+        ['name' => 'Settings\SolrManagement#getFileCollectionFields', 'url' => '/api/solr/collections/files/fields', 'verb' => 'GET'],
+        ['name' => 'Settings\SolrManagement#createMissingObjectFields', 'url' => '/api/solr/collections/objects/fields/create-missing', 'verb' => 'POST'],
+        ['name' => 'Settings\SolrManagement#createMissingFileFields', 'url' => '/api/solr/collections/files/fields/create-missing', 'verb' => 'POST'],
+
         // SOLR Dashboard Management endpoints.
         ['name' => 'Settings\SolrSettings#getSolrDashboardStats', 'url' => '/api/solr/dashboard/stats', 'verb' => 'GET'],
         ['name' => 'Settings\SolrOperations#inspectSolrIndex', 'url' => '/api/settings/solr/inspect', 'verb' => 'POST'],
         ['name' => 'Settings\SolrOperations#manageSolr', 'url' => '/api/solr/manage/{operation}', 'verb' => 'POST'],
         ['name' => 'Settings\SolrOperations#setupSolr', 'url' => '/api/solr/setup', 'verb' => 'POST'],
         ['name' => 'Settings\SolrOperations#testSetupHandler', 'url' => '/api/solr/test-setup', 'verb' => 'POST'],
-    
+
         // Collection-specific operations (with collection name parameter).
         ['name' => 'Settings\SolrManagement#deleteSpecificSolrCollection', 'url' => '/api/solr/collections/{name}', 'verb' => 'DELETE', 'requirements' => ['name' => '[^/]+']],
         ['name' => 'Settings\SolrManagement#clearSpecificCollection', 'url' => '/api/solr/collections/{name}/clear', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
         ['name' => 'Settings\SolrManagement#reindexSpecificCollection', 'url' => '/api/solr/collections/{name}/reindex', 'verb' => 'POST', 'requirements' => ['name' => '[^/]+']],
-        
+
         // SOLR Collection and ConfigSet Management endpoints (SolrController).
         ['name' => 'solr#listCollections', 'url' => '/api/solr/collections', 'verb' => 'GET'],
         ['name' => 'solr#createCollection', 'url' => '/api/solr/collections', 'verb' => 'POST'],
@@ -90,13 +90,13 @@ return [
         ['name' => 'solr#deleteConfigSet', 'url' => '/api/solr/configsets/{name}', 'verb' => 'DELETE'],
         ['name' => 'solr#copyCollection', 'url' => '/api/solr/collections/copy', 'verb' => 'POST'],
         ['name' => 'Settings\SolrManagement#updateSolrCollectionAssignments', 'url' => '/api/solr/collections/assignments', 'verb' => 'PUT'],
-        
+
         // Vector Search endpoints (Semantic and Hybrid Search) - SolrController.
         ['name' => 'solr#semanticSearch', 'url' => '/api/search/semantic', 'verb' => 'POST'],
         ['name' => 'solr#hybridSearch', 'url' => '/api/search/hybrid', 'verb' => 'POST'],
         ['name' => 'solr#getVectorStats', 'url' => '/api/vectors/stats', 'verb' => 'GET'],
         ['name' => 'solr#testVectorEmbedding', 'url' => '/api/vectors/test', 'verb' => 'POST'],
-        
+
         // Object Vectorization endpoints - SolrController.
         ['name' => 'solr#vectorizeObject', 'url' => '/api/objects/{objectId}/vectorize', 'verb' => 'POST'],
         ['name' => 'solr#bulkVectorizeObjects', 'url' => '/api/objects/vectorize/bulk', 'verb' => 'POST'],
@@ -109,15 +109,15 @@ return [
         ['name' => 'Settings\ConfigurationSettings#getRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PATCH'],
         ['name' => 'Settings\ConfigurationSettings#updateRbacSettings', 'url' => '/api/settings/rbac', 'verb' => 'PUT'],
-        
+
         ['name' => 'Settings\ConfigurationSettings#getMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PATCH'],
         ['name' => 'Settings\ConfigurationSettings#updateMultitenancySettings', 'url' => '/api/settings/multitenancy', 'verb' => 'PUT'],
-        
+
         ['name' => 'Settings\ConfigurationSettings#getOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PATCH'],
         ['name' => 'Settings\ConfigurationSettings#updateOrganisationSettings', 'url' => '/api/settings/organisation', 'verb' => 'PUT'],
-        
+
         ['name' => 'Settings\LlmSettings#getLLMSettings', 'url' => '/api/settings/llm', 'verb' => 'GET'],
         ['name' => 'settings#getDatabaseInfo', 'url' => '/api/settings/database', 'verb' => 'GET'],
         ['name' => 'settings#refreshDatabaseInfo', 'url' => '/api/settings/database/refresh', 'verb' => 'POST'],
@@ -142,15 +142,15 @@ return [
         ['name' => 'Settings\ConfigurationSettings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'POST'],
         ['name' => 'Settings\ConfigurationSettings#patchObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PATCH'],
         ['name' => 'Settings\ConfigurationSettings#updateObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'PUT'],
-        
+
         // Object vectorization endpoints.
         ['name' => 'objects#vectorizeBatch', 'url' => '/api/objects/vectorize/batch', 'verb' => 'POST'],
         ['name' => 'objects#getObjectVectorizationCount', 'url' => '/api/objects/vectorize/count', 'verb' => 'GET'],
         ['name' => 'objects#getObjectVectorizationStats', 'url' => '/api/objects/vectorize/stats', 'verb' => 'GET'],
-        
+
         // Object validation endpoint.
         ['name' => 'objects#validate', 'url' => '/api/objects/validate', 'verb' => 'POST'],
-        
+
         // Core file extraction endpoints (use fileExtraction controller to avoid conflict with files controller).
         // NOTE: Specific routes MUST come before parameterized routes like {id}
         ['name' => 'fileExtraction#index', 'url' => '/api/files', 'verb' => 'GET'],
@@ -163,22 +163,22 @@ return [
         ['name' => 'fileExtraction#cleanup', 'url' => '/api/files/cleanup', 'verb' => 'POST'],
         ['name' => 'fileExtraction#show', 'url' => '/api/files/{id}', 'verb' => 'GET'],
         ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
-        
+
         ['name' => 'Settings\ConfigurationSettings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
-        
+
         // Debug endpoints for type filtering issue.
         ['name' => 'settings#debugTypeFiltering', 'url' => '/api/debug/type-filtering', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PATCH'],
         ['name' => 'Settings\ConfigurationSettings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PUT'],
-        
+
         ['name' => 'settings#getVersionInfo', 'url' => '/api/settings/version', 'verb' => 'GET'],
-        
+
         // API Tokens for GitHub and GitLab.
         ['name' => 'Settings\ApiTokenSettings#getApiTokens', 'url' => '/api/settings/api-tokens', 'verb' => 'GET'],
         ['name' => 'Settings\ApiTokenSettings#saveApiTokens', 'url' => '/api/settings/api-tokens', 'verb' => 'POST'],
         ['name' => 'Settings\ApiTokenSettings#testGitHubToken', 'url' => '/api/settings/api-tokens/test/github', 'verb' => 'POST'],
         ['name' => 'Settings\ApiTokenSettings#testGitLabToken', 'url' => '/api/settings/api-tokens/test/gitlab', 'verb' => 'POST'],
-        
+
         // n8n workflow integration.
         ['name' => 'Settings\N8nSettings#getN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'GET'],
         ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'POST'],
@@ -187,10 +187,10 @@ return [
         ['name' => 'Settings\N8nSettings#testN8nConnection', 'url' => '/api/settings/n8n/test', 'verb' => 'POST'],
         ['name' => 'Settings\N8nSettings#initializeN8n', 'url' => '/api/settings/n8n/initialize', 'verb' => 'POST'],
         ['name' => 'Settings\N8nSettings#getWorkflows', 'url' => '/api/settings/n8n/workflows', 'verb' => 'GET'],
-        
-        // Statistics endpoint.  
+
+        // Statistics endpoint.
         ['name' => 'settings#getStatistics', 'url' => '/api/settings/statistics', 'verb' => 'GET'],
-        
+
         // Cache management.
         ['name' => 'Settings\CacheSettings#getCacheStats', 'url' => '/api/settings/cache', 'verb' => 'GET'],
         ['name' => 'Settings\CacheSettings#clearCache', 'url' => '/api/settings/cache', 'verb' => 'DELETE'],
@@ -230,12 +230,19 @@ return [
         ['name' => 'dashboard#getAuditTrailStatistics', 'url' => '/api/dashboard/statistics/audit-trail', 'verb' => 'GET'],
         ['name' => 'dashboard#getAuditTrailActionDistribution', 'url' => '/api/dashboard/statistics/audit-trail-distribution', 'verb' => 'GET'],
         ['name' => 'dashboard#getMostActiveObjects', 'url' => '/api/dashboard/statistics/most-active-objects', 'verb' => 'GET'],
+        // Aggregations — named aggregation execution per register/schema.
+        [
+            'name'         => 'aggregation#aggregate',
+            'url'          => '/api/objects/aggregations/{register}/{schema}/{name}',
+            'verb'         => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'name' => '[^/]+'],
+        ],
         // Objects.
         ['name' => 'objects#objects', 'url' => '/api/objects', 'verb' => 'GET'],
         ['name' => 'objects#clearBlob', 'url' => '/api/objects/clear-blob', 'verb' => 'DELETE'],
         // ['name' => 'objects#import', 'url' => '/api/objects/{register}/import', 'verb' => 'POST'], // DISABLED: Use registers import endpoint instead
         ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
-        
+
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -295,19 +302,19 @@ return [
         ['name' => 'deleted#destroyMultiple', 'url' => '/api/deleted', 'verb' => 'DELETE'],
         // Revert.
         ['name' => 'revert#revert', 'url' => '/api/objects/{register}/{schema}/{id}/revert', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        
+
         // Files operations under objects.
-		['name' => 'files#create', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'files#save', 'url' => '/api/objects/{register}/{schema}/{id}/files/save', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'files#index', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'files#create', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'files#save', 'url' => '/api/objects/{register}/{schema}/{id}/files/save', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'files#index', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
         ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'files#update', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-		['name' => 'files#delete', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-		['name' => 'files#publish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-		['name' => 'files#depublish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-        
+        ['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'files#update', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#delete', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#publish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#depublish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 
@@ -321,7 +328,7 @@ return [
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
-        
+
         // Schemas.
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
@@ -347,7 +354,7 @@ return [
         ['name' => 'configuration#preview', 'url' => '/api/configurations/{id}/preview', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         ['name' => 'configuration#import', 'url' => '/api/configurations/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-        
+
         // Configuration discovery endpoints.
         ['name' => 'configuration#discover', 'url' => '/api/configurations/discover', 'verb' => 'GET'],
         ['name' => 'configuration#enrichDetails', 'url' => '/api/configurations/enrich', 'verb' => 'GET'],
@@ -356,16 +363,16 @@ return [
         ['name' => 'configuration#getGitHubConfigurations', 'url' => '/api/configurations/github/files', 'verb' => 'GET'],
         ['name' => 'configuration#getGitLabBranches', 'url' => '/api/configurations/gitlab/branches', 'verb' => 'GET'],
         ['name' => 'configuration#getGitLabConfigurations', 'url' => '/api/configurations/gitlab/files', 'verb' => 'GET'],
-        
+
         // Configuration import endpoints.
         ['name' => 'configurations#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
         ['name' => 'configuration#importFromGitHub', 'url' => '/api/configurations/import/github', 'verb' => 'POST'],
         ['name' => 'configuration#importFromGitLab', 'url' => '/api/configurations/import/gitlab', 'verb' => 'POST'],
         ['name' => 'configuration#importFromUrl', 'url' => '/api/configurations/import/url', 'verb' => 'POST'],
-        
+
         // Configuration publish endpoints.
         ['name' => 'configuration#publishToGitHub', 'url' => '/api/configurations/{id}/publish/github', 'verb' => 'POST'],
-        
+
         // User Settings - GitHub Integration.
         ['name' => 'userSettings#getGitHubTokenStatus', 'url' => '/api/user-settings/github/status', 'verb' => 'GET'],
         ['name' => 'userSettings#setGitHubToken', 'url' => '/api/user-settings/github/token', 'verb' => 'POST'],
@@ -403,167 +410,168 @@ return [
         // Admin - Tenant isolation verification and metrics.
         ['name' => 'organisation#isolationVerify', 'url' => '/api/admin/isolation-verify', 'verb' => 'POST'],
         ['name' => 'organisation#isolationMetrics', 'url' => '/api/admin/isolation-metrics', 'verb' => 'GET'],
-		// Tags.
-		['name' => 'tags#getAllTags', 'url' => '/api/tags', 'verb' => 'GET'],
-		
-		// Views - Saved search configurations.
-		['name' => 'views#index', 'url' => '/api/views', 'verb' => 'GET'],
-		['name' => 'views#show', 'url' => '/api/views/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'views#create', 'url' => '/api/views', 'verb' => 'POST'],
-		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
-		
-		// Chat - AI Assistant endpoints.
-		['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
-		['name' => 'chat#getHistory', 'url' => '/api/chat/history', 'verb' => 'GET'],
-		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
-		['name' => 'chat#getChatStats', 'url' => '/api/chat/stats', 'verb' => 'GET'],
-		['name' => 'chat#sendFeedback', 'url' => '/api/conversations/{conversationUuid}/messages/{messageId}/feedback', 'verb' => 'POST', 'requirements' => ['conversationUuid' => '[^/]+', 'messageId' => '\\d+']],
-		
-		// Conversations - AI Conversation management.
-		['name' => 'conversation#index', 'url' => '/api/conversations', 'verb' => 'GET'],
-		['name' => 'conversation#show', 'url' => '/api/conversations/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
-		['name' => 'conversation#messages', 'url' => '/api/conversations/{uuid}/messages', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
-		['name' => 'conversation#create', 'url' => '/api/conversations', 'verb' => 'POST'],
-		['name' => 'conversation#update', 'url' => '/api/conversations/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
-		['name' => 'conversation#destroy', 'url' => '/api/conversations/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
-		['name' => 'conversation#restore', 'url' => '/api/conversations/{uuid}/restore', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
-		['name' => 'conversation#destroyPermanent', 'url' => '/api/conversations/{uuid}/permanent', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
-		
-		// File Text Management - Extract and manage text from files.
-		['name' => 'fileText#getFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
-		['name' => 'fileText#extractFileText', 'url' => '/api/files/{fileId}/extract', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
-		['name' => 'fileText#bulkExtract', 'url' => '/api/files/extract/bulk', 'verb' => 'POST'],
-		['name' => 'fileText#getStats', 'url' => '/api/files/extraction/stats', 'verb' => 'GET'],
-		['name' => 'fileText#deleteFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'DELETE', 'requirements' => ['fileId' => '\\d+']],
-		
-		// File Chunking & Indexing - Process extracted files and index chunks in SOLR.
-		['name' => 'fileText#processAndIndexExtracted', 'url' => '/api/files/chunks/process', 'verb' => 'POST'],
-		['name' => 'fileText#processAndIndexFile', 'url' => '/api/files/{fileId}/chunks/process', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
-		['name' => 'fileText#getChunkingStats', 'url' => '/api/files/chunks/stats', 'verb' => 'GET'],
+        // Tags.
+        ['name' => 'tags#getAllTags', 'url' => '/api/tags', 'verb' => 'GET'],
 
-		// File Anonymization - Replace detected entities with placeholders.
-		['name' => 'fileText#anonymizeFile', 'url' => '/api/files/{fileId}/anonymize', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+        // Views - Saved search configurations.
+        ['name' => 'views#index', 'url' => '/api/views', 'verb' => 'GET'],
+        ['name' => 'views#show', 'url' => '/api/views/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'views#create', 'url' => '/api/views', 'verb' => 'POST'],
+        ['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
 
-		// GDPR Entities - Manage detected PII entities.
-		['name' => 'gdprEntities#index', 'url' => '/api/entities', 'verb' => 'GET'],
-		['name' => 'gdprEntities#show', 'url' => '/api/entities/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
-		['name' => 'gdprEntities#destroy', 'url' => '/api/entities/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
-		['name' => 'gdprEntities#getTypes', 'url' => '/api/entities/types', 'verb' => 'GET'],
-		['name' => 'gdprEntities#getCategories', 'url' => '/api/entities/categories', 'verb' => 'GET'],
-		['name' => 'gdprEntities#getStats', 'url' => '/api/entities/stats', 'verb' => 'GET'],
+        // Chat - AI Assistant endpoints.
+        ['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
+        ['name' => 'chat#getHistory', 'url' => '/api/chat/history', 'verb' => 'GET'],
+        ['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
+        ['name' => 'chat#getChatStats', 'url' => '/api/chat/stats', 'verb' => 'GET'],
+        ['name' => 'chat#sendFeedback', 'url' => '/api/conversations/{conversationUuid}/messages/{messageId}/feedback', 'verb' => 'POST', 'requirements' => ['conversationUuid' => '[^/]+', 'messageId' => '\\d+']],
 
-		// File Warmup & Indexing - Bulk process and index files in SOLR.
-		['name' => 'Settings\FileSettings#warmupFiles', 'url' => '/api/solr/warmup/files', 'verb' => 'POST'],
-		['name' => 'Settings\FileSettings#indexFile', 'url' => '/api/solr/files/{fileId}/index', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
-		['name' => 'Settings\FileSettings#reindexFiles', 'url' => '/api/solr/files/reindex', 'verb' => 'POST'],
-		['name' => 'Settings\FileSettings#getFileIndexStats', 'url' => '/api/solr/files/stats', 'verb' => 'GET'],
-		
-		// File Search - Keyword, semantic, and hybrid search over file contents.
-		['name' => 'fileSearch#keywordSearch', 'url' => '/api/search/files/keyword', 'verb' => 'POST'],
-		['name' => 'fileSearch#semanticSearch', 'url' => '/api/search/files/semantic', 'verb' => 'POST'],
-		['name' => 'fileSearch#hybridSearch', 'url' => '/api/search/files/hybrid', 'verb' => 'POST'],
+        // Conversations - AI Conversation management.
+        ['name' => 'conversation#index', 'url' => '/api/conversations', 'verb' => 'GET'],
+        ['name' => 'conversation#show', 'url' => '/api/conversations/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+        ['name' => 'conversation#messages', 'url' => '/api/conversations/{uuid}/messages', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+        ['name' => 'conversation#create', 'url' => '/api/conversations', 'verb' => 'POST'],
+        ['name' => 'conversation#update', 'url' => '/api/conversations/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
+        ['name' => 'conversation#destroy', 'url' => '/api/conversations/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+        ['name' => 'conversation#restore', 'url' => '/api/conversations/{uuid}/restore', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+        ['name' => 'conversation#destroyPermanent', 'url' => '/api/conversations/{uuid}/permanent', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
 
-		// Page routes.
-		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'], // you cannot remove `dashboard#page` as the dashboard expects this.
-		['name' => 'ui#registers', 'url' => '/registers', 'verb' => 'GET'],
-		['name' => 'ui#registersDetails', 'url' => '/registers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'ui#schemas', 'url' => '/schemas', 'verb' => 'GET'],
-		['name' => 'ui#schemasDetails', 'url' => '/schemas/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
-		['name' => 'ui#organisation', 'url' => '/organisation', 'verb' => 'GET'],
-		['name' => 'ui#objects', 'url' => '/objects', 'verb' => 'GET'],
-		['name' => 'ui#tables', 'url' => '/tables', 'verb' => 'GET'],
-		['name' => 'ui#chat', 'url' => '/chat', 'verb' => 'GET'],
-		['name' => 'ui#configurations', 'url' => '/configurations', 'verb' => 'GET'],
-		['name' => 'ui#deleted', 'url' => '/deleted', 'verb' => 'GET'],
-		['name' => 'ui#auditTrail', 'url' => '/audit-trails', 'verb' => 'GET'],
-		['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
-		['name' => 'ui#webhooks', 'url' => '/webhooks', 'verb' => 'GET'],
-		['name' => 'ui#webhooksLogs', 'url' => '/webhooks/logs', 'verb' => 'GET'],
-		['name' => 'ui#endpoints', 'url' => '/endpoints', 'verb' => 'GET'],
-		['name' => 'ui#endpointLogs', 'url' => '/endpoints/logs', 'verb' => 'GET'],
-		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
-		['name' => 'ui#entitiesDetails', 'url' => '/entities/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
+        // File Text Management - Extract and manage text from files.
+        ['name' => 'fileText#getFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
+        ['name' => 'fileText#extractFileText', 'url' => '/api/files/{fileId}/extract', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+        ['name' => 'fileText#bulkExtract', 'url' => '/api/files/extract/bulk', 'verb' => 'POST'],
+        ['name' => 'fileText#getStats', 'url' => '/api/files/extraction/stats', 'verb' => 'GET'],
+        ['name' => 'fileText#deleteFileText', 'url' => '/api/files/{fileId}/text', 'verb' => 'DELETE', 'requirements' => ['fileId' => '\\d+']],
 
-		// User - Profile management and authentication.
-		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
-		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
-		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
-		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
+        // File Chunking & Indexing - Process extracted files and index chunks in SOLR.
+        ['name' => 'fileText#processAndIndexExtracted', 'url' => '/api/files/chunks/process', 'verb' => 'POST'],
+        ['name' => 'fileText#processAndIndexFile', 'url' => '/api/files/{fileId}/chunks/process', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+        ['name' => 'fileText#getChunkingStats', 'url' => '/api/files/chunks/stats', 'verb' => 'GET'],
 
-		// Webhooks.
-		['name' => 'webhooks#index', 'url' => '/api/webhooks', 'verb' => 'GET'],
-		['name' => 'webhooks#show', 'url' => '/api/webhooks/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'webhooks#create', 'url' => '/api/webhooks', 'verb' => 'POST'],
-		['name' => 'webhooks#update', 'url' => '/api/webhooks/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'webhooks#destroy', 'url' => '/api/webhooks/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-		['name' => 'webhooks#test', 'url' => '/api/webhooks/{id}/test', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-		['name' => 'webhooks#events', 'url' => '/api/webhooks/events', 'verb' => 'GET'],
-		['name' => 'webhooks#logs', 'url' => '/api/webhooks/{id}/logs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'webhooks#logStats', 'url' => '/api/webhooks/{id}/logs/stats', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'webhooks#allLogs', 'url' => '/api/webhooks/logs', 'verb' => 'GET'],
-		['name' => 'webhooks#retry', 'url' => '/api/webhooks/logs/{logId}/retry', 'verb' => 'POST', 'requirements' => ['logId' => '\d+']],
+        // File Anonymization - Replace detected entities with placeholders.
+        ['name' => 'fileText#anonymizeFile', 'url' => '/api/files/{fileId}/anonymize', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
 
-		// Workflow Engines - CRUD and health check.
-		['name' => 'workflowEngine#available', 'url' => '/api/engines/available', 'verb' => 'GET'],
-		['name' => 'workflowEngine#index', 'url' => '/api/engines', 'verb' => 'GET'],
-		['name' => 'workflowEngine#create', 'url' => '/api/engines', 'verb' => 'POST'],
-		['name' => 'workflowEngine#show', 'url' => '/api/engines/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#update', 'url' => '/api/engines/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#destroy', 'url' => '/api/engines/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#health', 'url' => '/api/engines/{id}/health', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        // GDPR Entities - Manage detected PII entities.
+        ['name' => 'gdprEntities#index', 'url' => '/api/entities', 'verb' => 'GET'],
+        ['name' => 'gdprEntities#show', 'url' => '/api/entities/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'gdprEntities#destroy', 'url' => '/api/entities/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'gdprEntities#getTypes', 'url' => '/api/entities/types', 'verb' => 'GET'],
+        ['name' => 'gdprEntities#getCategories', 'url' => '/api/entities/categories', 'verb' => 'GET'],
+        ['name' => 'gdprEntities#getStats', 'url' => '/api/entities/stats', 'verb' => 'GET'],
 
-		// MCP Discovery - Tiered API discovery for AI agents.
-		// CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.
-		['name' => 'mcp#discover', 'url' => '/api/mcp/v1/discover', 'verb' => 'GET'],
-		['name' => 'mcp#discoverCapability', 'url' => '/api/mcp/v1/discover/{capability}', 'verb' => 'GET', 'requirements' => ['capability' => '[a-z-]+']],
+        // File Warmup & Indexing - Bulk process and index files in SOLR.
+        ['name' => 'Settings\FileSettings#warmupFiles', 'url' => '/api/solr/warmup/files', 'verb' => 'POST'],
+        ['name' => 'Settings\FileSettings#indexFile', 'url' => '/api/solr/files/{fileId}/index', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+        ['name' => 'Settings\FileSettings#reindexFiles', 'url' => '/api/solr/files/reindex', 'verb' => 'POST'],
+        ['name' => 'Settings\FileSettings#getFileIndexStats', 'url' => '/api/solr/files/stats', 'verb' => 'GET'],
 
-		// MCP Standard Protocol — JSON-RPC 2.0 Streamable HTTP endpoint.
-		['name' => 'mcpServer#handle', 'url' => '/api/mcp', 'verb' => 'POST'],
+        // File Search - Keyword, semantic, and hybrid search over file contents.
+        ['name' => 'fileSearch#keywordSearch', 'url' => '/api/search/files/keyword', 'verb' => 'POST'],
+        ['name' => 'fileSearch#semanticSearch', 'url' => '/api/search/files/semantic', 'verb' => 'POST'],
+        ['name' => 'fileSearch#hybridSearch', 'url' => '/api/search/files/hybrid', 'verb' => 'POST'],
 
-		// GraphQL API.
-		['name' => 'graphQL#execute', 'url' => '/api/graphql', 'verb' => 'POST'],
-		['name' => 'graphQL#explorer', 'url' => '/api/graphql/explorer', 'verb' => 'GET'],
+        // Page routes.
+        ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
+    // you cannot remove `dashboard#page` as the dashboard expects this.
+        ['name' => 'ui#registers', 'url' => '/registers', 'verb' => 'GET'],
+        ['name' => 'ui#registersDetails', 'url' => '/registers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'ui#schemas', 'url' => '/schemas', 'verb' => 'GET'],
+        ['name' => 'ui#schemasDetails', 'url' => '/schemas/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
+        ['name' => 'ui#organisation', 'url' => '/organisation', 'verb' => 'GET'],
+        ['name' => 'ui#objects', 'url' => '/objects', 'verb' => 'GET'],
+        ['name' => 'ui#tables', 'url' => '/tables', 'verb' => 'GET'],
+        ['name' => 'ui#chat', 'url' => '/chat', 'verb' => 'GET'],
+        ['name' => 'ui#configurations', 'url' => '/configurations', 'verb' => 'GET'],
+        ['name' => 'ui#deleted', 'url' => '/deleted', 'verb' => 'GET'],
+        ['name' => 'ui#auditTrail', 'url' => '/audit-trails', 'verb' => 'GET'],
+        ['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
+        ['name' => 'ui#webhooks', 'url' => '/webhooks', 'verb' => 'GET'],
+        ['name' => 'ui#webhooksLogs', 'url' => '/webhooks/logs', 'verb' => 'GET'],
+        ['name' => 'ui#endpoints', 'url' => '/endpoints', 'verb' => 'GET'],
+        ['name' => 'ui#endpointLogs', 'url' => '/endpoints/logs', 'verb' => 'GET'],
+        ['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
+        ['name' => 'ui#entitiesDetails', 'url' => '/entities/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
-		// GraphQL Subscriptions (SSE).
-		['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
+        // User - Profile management and authentication.
+        ['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
+        ['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
+        ['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
+        ['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
 
-		// Retention management: archival settings.
-		['name' => 'Settings\ConfigurationSettings#getArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'GET'],
-		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PUT'],
-		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PATCH'],
+        // Webhooks.
+        ['name' => 'webhooks#index', 'url' => '/api/webhooks', 'verb' => 'GET'],
+        ['name' => 'webhooks#show', 'url' => '/api/webhooks/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'webhooks#create', 'url' => '/api/webhooks', 'verb' => 'POST'],
+        ['name' => 'webhooks#update', 'url' => '/api/webhooks/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'webhooks#destroy', 'url' => '/api/webhooks/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+        ['name' => 'webhooks#test', 'url' => '/api/webhooks/{id}/test', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'webhooks#events', 'url' => '/api/webhooks/events', 'verb' => 'GET'],
+        ['name' => 'webhooks#logs', 'url' => '/api/webhooks/{id}/logs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'webhooks#logStats', 'url' => '/api/webhooks/{id}/logs/stats', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'webhooks#allLogs', 'url' => '/api/webhooks/logs', 'verb' => 'GET'],
+        ['name' => 'webhooks#retry', 'url' => '/api/webhooks/logs/{logId}/retry', 'verb' => 'POST', 'requirements' => ['logId' => '\d+']],
 
-		// Retention management: destruction list approval workflow.
-		['name' => 'retention#approveDestructionList', 'url' => '/api/retention/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'retention#rejectDestructionList', 'url' => '/api/retention/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Workflow Engines - CRUD and health check.
+        ['name' => 'workflowEngine#available', 'url' => '/api/engines/available', 'verb' => 'GET'],
+        ['name' => 'workflowEngine#index', 'url' => '/api/engines', 'verb' => 'GET'],
+        ['name' => 'workflowEngine#create', 'url' => '/api/engines', 'verb' => 'POST'],
+        ['name' => 'workflowEngine#show', 'url' => '/api/engines/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'workflowEngine#update', 'url' => '/api/engines/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'workflowEngine#destroy', 'url' => '/api/engines/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+        ['name' => 'workflowEngine#health', 'url' => '/api/engines/{id}/health', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
-		// Retention management: legal holds.
-		['name' => 'retention#placeLegalHold', 'url' => '/api/retention/legal-holds', 'verb' => 'POST'],
-		['name' => 'retention#releaseLegalHold', 'url' => '/api/retention/legal-holds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'retention#placeBulkLegalHold', 'url' => '/api/retention/legal-holds/bulk', 'verb' => 'POST'],
+        // MCP Discovery - Tiered API discovery for AI agents.
+        // CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.
+        ['name' => 'mcp#discover', 'url' => '/api/mcp/v1/discover', 'verb' => 'GET'],
+        ['name' => 'mcp#discoverCapability', 'url' => '/api/mcp/v1/discover/{capability}', 'verb' => 'GET', 'requirements' => ['capability' => '[a-z-]+']],
 
-		// Archival destruction workflow endpoints (spec-compliant /api/archival/ prefix).
-		['name' => 'archival#listDestructionLists', 'url' => '/api/archival/destruction-lists', 'verb' => 'GET'],
-		['name' => 'archival#getDestructionList', 'url' => '/api/archival/destruction-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'archival#approveDestructionList', 'url' => '/api/archival/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'archival#rejectDestructionList', 'url' => '/api/archival/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'archival#createLegalHold', 'url' => '/api/archival/legal-holds', 'verb' => 'POST'],
-		['name' => 'archival#releaseLegalHold', 'url' => '/api/archival/legal-holds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'archival#listLegalHolds', 'url' => '/api/archival/legal-holds', 'verb' => 'GET'],
-		['name' => 'archival#listCertificates', 'url' => '/api/archival/certificates', 'verb' => 'GET'],
+        // MCP Standard Protocol — JSON-RPC 2.0 Streamable HTTP endpoint.
+        ['name' => 'mcpServer#handle', 'url' => '/api/mcp', 'verb' => 'POST'],
 
-		// e-Depot transfer settings.
-		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],
-		['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PUT'],
-		['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PATCH'],
-		['name' => 'Settings\EdepotSettings#testEdepotConnection', 'url' => '/api/settings/edepot/test', 'verb' => 'POST'],
+        // GraphQL API.
+        ['name' => 'graphQL#execute', 'url' => '/api/graphql', 'verb' => 'POST'],
+        ['name' => 'graphQL#explorer', 'url' => '/api/graphql/explorer', 'verb' => 'GET'],
 
-		// e-Depot transfer management.
-		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
-		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
+        // GraphQL Subscriptions (SSE).
+        ['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
+
+        // Retention management: archival settings.
+        ['name' => 'Settings\ConfigurationSettings#getArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'GET'],
+        ['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PUT'],
+        ['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PATCH'],
+
+        // Retention management: destruction list approval workflow.
+        ['name' => 'retention#approveDestructionList', 'url' => '/api/retention/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'retention#rejectDestructionList', 'url' => '/api/retention/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
+        // Retention management: legal holds.
+        ['name' => 'retention#placeLegalHold', 'url' => '/api/retention/legal-holds', 'verb' => 'POST'],
+        ['name' => 'retention#releaseLegalHold', 'url' => '/api/retention/legal-holds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'retention#placeBulkLegalHold', 'url' => '/api/retention/legal-holds/bulk', 'verb' => 'POST'],
+
+        // Archival destruction workflow endpoints (spec-compliant /api/archival/ prefix).
+        ['name' => 'archival#listDestructionLists', 'url' => '/api/archival/destruction-lists', 'verb' => 'GET'],
+        ['name' => 'archival#getDestructionList', 'url' => '/api/archival/destruction-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#approveDestructionList', 'url' => '/api/archival/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#rejectDestructionList', 'url' => '/api/archival/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#createLegalHold', 'url' => '/api/archival/legal-holds', 'verb' => 'POST'],
+        ['name' => 'archival#releaseLegalHold', 'url' => '/api/archival/legal-holds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#listLegalHolds', 'url' => '/api/archival/legal-holds', 'verb' => 'GET'],
+        ['name' => 'archival#listCertificates', 'url' => '/api/archival/certificates', 'verb' => 'GET'],
+
+        // e-Depot transfer settings.
+        ['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],
+        ['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PUT'],
+        ['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PATCH'],
+        ['name' => 'Settings\EdepotSettings#testEdepotConnection', 'url' => '/api/settings/edepot/test', 'verb' => 'POST'],
+
+        // e-Depot transfer management.
+        ['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
+        ['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
     ],
 ];

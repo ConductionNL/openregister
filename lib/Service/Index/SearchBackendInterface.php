@@ -21,6 +21,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
+ * @spec openspec/changes/aggregations-backend-native/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -28,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Index;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Aggregation\AggregationResult;
 
 /**
  * Search Backend Interface
@@ -361,4 +364,18 @@ interface SearchBackendInterface
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array;
+
+    /**
+     * Execute a backend-native aggregation query.
+     *
+     * Translates the AggregationQuery into the backend's native form
+     * (Solr facet/stats, ES aggs clause) and returns the result.
+     *
+     * @param AggregationQuery $query The aggregation request.
+     *
+     * @return AggregationResult The aggregation result with backend attribution.
+     *
+     * @spec openspec/changes/aggregations-backend-native/tasks.md#task-1
+     */
+    public function aggregate(AggregationQuery $query): AggregationResult;
 }//end interface
