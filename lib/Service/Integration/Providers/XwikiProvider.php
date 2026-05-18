@@ -449,7 +449,10 @@ class XwikiProvider extends AbstractIntegrationProvider
         // `$page` is cast to string above so it's never null — `??` would
         // never fall through to `$reference`. Use elvis to skip empty
         // strings so we land on whichever piece carries real content.
-        $title     = ((string) ($row['title'] ?? '')) ?: ($page !== '' ? $page : $reference);
+        $title = (string) ($row['title'] ?? '');
+        if ($title === '') {
+            $title = $page !== '' ? $page : $reference;
+        }
 
         $breadcrumb = $row['breadcrumb'] ?? null;
         if (is_array($breadcrumb) === false || $breadcrumb === []) {

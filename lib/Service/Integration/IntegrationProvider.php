@@ -48,7 +48,6 @@ namespace OCA\OpenRegister\Service\Integration;
  */
 interface IntegrationProvider
 {
-
     /**
      * Stable id used to address this integration.
      *
@@ -183,7 +182,7 @@ interface IntegrationProvider
      *
      * @return array<int,array<string,mixed>> List of linked things.
      */
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array;
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array;
 
     /**
      * Get a single linked thing by id.
@@ -265,5 +264,4 @@ interface IntegrationProvider
      * @return array<string,mixed> Health + auth descriptor.
      */
     public function health(): array;
-
 }//end interface

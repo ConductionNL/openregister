@@ -79,13 +79,13 @@ class EmailLinkMapper extends QBMapper
 
         if ($this->tableExistsCache === false) {
             try {
-                $qb     = $this->db->getQueryBuilder();
+                $qb = $this->db->getQueryBuilder();
                 $qb->select($qb->func()->count('*'))
                     ->from('information_schema.tables')
                     ->where($qb->expr()->eq('table_name', $qb->createNamedParameter('oc_'.$this->getTableName())));
-                $result                  = $qb->executeQuery();
-                $row                     = $result->fetch();
-                $this->tableExistsCache  = $row !== false && (int) reset($row) > 0;
+                $result = $qb->executeQuery();
+                $row    = $result->fetch();
+                $this->tableExistsCache = $row !== false && (int) reset($row) > 0;
             } catch (\Throwable $e) {
                 $this->tableExistsCache = false;
             }

@@ -127,17 +127,20 @@ class BookmarksProvider extends AbstractIntegrationProvider
             return [];
         }
 
-        return array_map(static function ($bookmark): array {
-            $arr = method_exists($bookmark, 'toArray') === true ? $bookmark->toArray() : (array) $bookmark;
-            return [
-                'id'          => (string) ($arr['id'] ?? ''),
-                'title'       => (string) ($arr['title'] ?? ($arr['url'] ?? '')),
-                'description' => (string) ($arr['description'] ?? ''),
-                'url'         => (string) ($arr['url'] ?? ''),
-                'tags'        => $arr['tags'] ?? [],
-                'added'       => isset($arr['added']) === true ? (int) $arr['added'] : null,
-            ];
-        }, $bookmarks);
+        return array_map(
+                static function ($bookmark): array {
+                    $arr = method_exists($bookmark, 'toArray') === true ? $bookmark->toArray() : (array) $bookmark;
+                    return [
+                        'id'          => (string) ($arr['id'] ?? ''),
+                        'title'       => (string) ($arr['title'] ?? ($arr['url'] ?? '')),
+                        'description' => (string) ($arr['description'] ?? ''),
+                        'url'         => (string) ($arr['url'] ?? ''),
+                        'tags'        => $arr['tags'] ?? [],
+                        'added'       => isset($arr['added']) === true ? (int) $arr['added'] : null,
+                    ];
+                },
+                $bookmarks
+                );
     }//end list()
 
     public function health(): array

@@ -68,10 +68,10 @@ final class QueryTimeContract
      * have a single error-decoding path regardless of which provider
      * surfaced the failure.
      *
-     * @param NotImplementedException $exception The exception thrown
-     *                                           by the provider.
+     * @param NotImplementedException $exception     The exception thrown
+     *                                               by the provider.
      * @param string                  $integrationId The provider id
-     *                                           (for the details payload).
+     *                                               (for the details payload).
      *
      * @return array{message: string, code: int, details: array<string,string>}
      */
@@ -86,5 +86,4 @@ final class QueryTimeContract
             ],
         ];
     }//end buildHttpBody()
-
 }//end class

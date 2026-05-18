@@ -1050,7 +1050,7 @@ class PermissionHandler
                 ]
             );
             return [];
-        }
+        }//end try
 
         $authorization = $this->resolveAuthorization(schema: $schema);
 

@@ -45,7 +45,6 @@ use Psr\Container\ContainerInterface;
  */
 class FilesProvider extends AbstractIntegrationProvider
 {
-
     /**
      * Constructor.
      *
@@ -68,51 +67,96 @@ class FilesProvider extends AbstractIntegrationProvider
     ) {
     }//end __construct()
 
+    /**
+     * Stable provider id used in routes and configs.
+     *
+     * @return string Stable provider identifier.
+     */
     public function getId(): string
     {
         return 'files';
     }//end getId()
 
+    /**
+     * Translated, human-readable provider label.
+     *
+     * @return string Translated, human-readable provider label.
+     */
     public function getLabel(): string
     {
         return $this->l10n->t('Files');
     }//end getLabel()
 
+    /**
+     * MDI icon name for the provider.
+     *
+     * @return string MDI icon name for the provider.
+     */
     public function getIcon(): string
     {
         return 'Paperclip';
     }//end getIcon()
 
+    /**
+     * Group identifier for UI grouping (or null).
+     *
+     * @return string|null Group identifier for UI grouping.
+     */
     public function getGroup(): ?string
     {
         return 'core';
     }//end getGroup()
 
+    /**
+     * Required NC app id (null = built-in).
+     *
+     * @return string|null Required app id (null = built-in).
+     */
     public function getRequiredApp(): ?string
     {
         return null;
     }//end getRequiredApp()
 
+    /**
+     * Storage strategy hint for the registry.
+     *
+     * @return string Storage strategy hint for the registry.
+     */
     public function getStorageStrategy(): string
     {
         return 'magic-column';
     }//end getStorageStrategy()
 
+    /**
+     * True when the provider is available for use.
+     *
+     * @return bool True when the provider is available for use.
+     */
     public function isEnabled(): bool
     {
         return true;
     }//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
+    /**
+     * List files linked to the given OR object.
+     *
+     * @param string              $register Register slug or numeric id.
+     * @param string              $schema   Schema slug or numeric id.
+     * @param string              $objectId Owning object uuid.
+     * @param array<string,mixed> $filters  Reserved for future use.
+     *
+     * @return array<int,array<string,mixed>> Files rows.
+     */
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         try {
-            $object = $this->resolveObject($objectId);
+            $object = $this->resolveObject(objectId: $objectId);
             if ($object === null) {
                 return [];
             }
 
             $nodes = $this->fileService->getFilesForEntity($object);
-            return $this->normalize($nodes);
+            return $this->normalize(nodes: $nodes);
         } catch (\Throwable $e) {
             return [];
         }//end try
@@ -128,12 +172,11 @@ class FilesProvider extends AbstractIntegrationProvider
      */
     private function resolveObject(string $objectId)
     {
-        foreach (
-            [
-                '\OCA\OpenRegister\Db\ObjectEntityMapper',
-                '\OCA\OpenRegister\Db\MagicMapper',
-                '\OCA\OpenRegister\Db\AbstractObjectMapper',
-            ] as $candidate
+        foreach ([
+            '\OCA\OpenRegister\Db\ObjectEntityMapper',
+            '\OCA\OpenRegister\Db\MagicMapper',
+            '\OCA\OpenRegister\Db\AbstractObjectMapper',
+        ] as $candidate
         ) {
             try {
                 $mapper = $this->container->get($candidate);
@@ -164,7 +207,7 @@ class FilesProvider extends AbstractIntegrationProvider
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
         throw new NotImplementedException(
-            'FilesProvider write path delegates to FileController for now (umbrella tasks 18-22).'
+            message: 'FilesProvider write path delegates to FileController for now (umbrella tasks 18-22).'
         );
     }//end create()
 
@@ -198,19 +241,20 @@ class FilesProvider extends AbstractIntegrationProvider
                 if (method_exists($node, $accessor) === false) {
                     continue;
                 }
+
                 try {
                     $value = $node->{$accessor}();
                 } catch (\Throwable $e) {
                     continue;
                 }
+
                 $key       = lcfirst(substr($accessor, 3));
                 $row[$key] = $value;
             }
 
             $rows[] = $row;
-        }
+        }//end foreach
 
         return $rows;
     }//end normalize()
-
 }//end class

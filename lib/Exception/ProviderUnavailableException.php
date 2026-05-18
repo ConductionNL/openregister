@@ -41,7 +41,7 @@ class ProviderUnavailableException extends \RuntimeException
     public const CAUSE_OPENCONNECTOR_DOWN           = 'openconnector-down';
     public const CAUSE_OPENCONNECTOR_SOURCE_MISSING = 'openconnector-source-missing';
     public const CAUSE_UPSTREAM_SERVICE_DOWN        = 'upstream-service-down';
-    public const CAUSE_PROVIDER_AUTH                = 'provider-auth';
+    public const CAUSE_PROVIDER_AUTH = 'provider-auth';
 
     /**
      * The cause classification.
@@ -59,9 +59,9 @@ class ProviderUnavailableException extends \RuntimeException
      *
      * @return void
      */
-    public function __construct(string $message, string $cause, ?\Throwable $previous = null)
+    public function __construct(string $message, string $cause, ?\Throwable $previous=null)
     {
-        parent::__construct($message, 0, $previous);
+        parent::__construct(message: $message, code: 0, previous: $previous);
         $this->cause = $cause;
     }//end __construct()
 
@@ -86,5 +86,4 @@ class ProviderUnavailableException extends \RuntimeException
     {
         return ['cause' => $this->cause];
     }//end getDetails()
-
 }//end class

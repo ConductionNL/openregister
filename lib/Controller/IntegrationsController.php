@@ -54,7 +54,6 @@ use Psr\Log\LoggerInterface;
  */
 class IntegrationsController extends Controller
 {
-
     /**
      * Constructor.
      *
@@ -75,7 +74,7 @@ class IntegrationsController extends Controller
         private IGroupManager $groupManager,
         private LoggerInterface $logger,
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
@@ -107,7 +106,7 @@ class IntegrationsController extends Controller
                     continue;
                 }
 
-                $rows[] = $this->describe($provider, $isAdmin);
+                $rows[] = $this->describe(provider: $provider, isAdmin: $isAdmin);
             }
 
             return new JSONResponse(['integrations' => $rows], Http::STATUS_OK);
@@ -139,7 +138,7 @@ class IntegrationsController extends Controller
         }
 
         return new JSONResponse(
-            $this->describe($provider, $this->currentUserIsAdmin()),
+            $this->describe(provider: $provider, isAdmin: $this->currentUserIsAdmin()),
             Http::STATUS_OK
         );
     }//end show()
@@ -210,5 +209,4 @@ class IntegrationsController extends Controller
 
         return $this->groupManager->isAdmin($user->getUID());
     }//end currentUserIsAdmin()
-
 }//end class

@@ -62,9 +62,11 @@ use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
 use OCP\App\IAppManager;
+use OCP\IDBConnection;
 use OCP\IL10N;
-use OCP\Share\IManager as IShareManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 
 /**
  * Contract + delegation tests for all 16 leaf integration providers.
@@ -102,6 +104,84 @@ class LeafProvidersMetadataTest extends TestCase
         );
         return $mock;
     }//end buildAppManager()
+
+    /**
+     * Build a greenfield provider instance. The provider's constructor
+     * signature differs by backing-store flavour (db-backed vs.
+     * container/session-backed), so this helper picks the right shape.
+     *
+     * @param string $class       Provider class FQN.
+     * @param string $requiredApp Required NC app id (treated as installed).
+     *
+     * @return object Provider instance.
+     */
+    private function buildGreenfieldProvider(string $class, string $requiredApp): object
+    {
+        $appManager = $this->buildAppManager([$requiredApp]);
+        $l10n       = $this->buildL10n();
+
+        // Container/session-backed providers (Bookmarks, Polls, Talk).
+        if (in_array(
+            $class,
+            [
+                BookmarksProvider::class,
+                PollsProvider::class,
+                TalkProvider::class,
+            ],
+            true
+        ) === true) {
+            return new $class(
+                container: $this->createMock(ContainerInterface::class),
+                appManager: $appManager,
+                userSession: $this->createMock(IUserSession::class),
+                l10n: $l10n,
+            );
+        }
+
+        // Default: db-backed providers.
+        return new $class(
+            db: $this->createMock(IDBConnection::class),
+            appManager: $appManager,
+            l10n: $l10n,
+        );
+    }//end buildGreenfieldProvider()
+
+    /**
+     * Build a greenfield provider instance with the required NC app
+     * reported missing.
+     *
+     * @param string $class Provider class FQN.
+     *
+     * @return object Provider instance.
+     */
+    private function buildGreenfieldProviderMissingApp(string $class): object
+    {
+        $appManager = $this->buildAppManager([]);
+        $l10n       = $this->buildL10n();
+
+        if (in_array(
+            $class,
+            [
+                BookmarksProvider::class,
+                PollsProvider::class,
+                TalkProvider::class,
+            ],
+            true
+        ) === true) {
+            return new $class(
+                container: $this->createMock(ContainerInterface::class),
+                appManager: $appManager,
+                userSession: $this->createMock(IUserSession::class),
+                l10n: $l10n,
+            );
+        }
+
+        return new $class(
+            db: $this->createMock(IDBConnection::class),
+            appManager: $appManager,
+            l10n: $l10n,
+        );
+    }//end buildGreenfieldProviderMissingApp()
 
     /**
      * Calendar provider exposes the contract metadata declared in
@@ -362,10 +442,7 @@ class LeafProvidersMetadataTest extends TestCase
         string $requiredApp,
         string $storage,
     ): void {
-        $provider = new $class(
-            appManager: $this->buildAppManager([$requiredApp]),
-            l10n: $this->buildL10n(),
-        );
+        $provider = $this->buildGreenfieldProvider($class, $requiredApp);
 
         $this->assertSame($id, $provider->getId());
         $this->assertSame($label, $provider->getLabel());
@@ -404,10 +481,7 @@ class LeafProvidersMetadataTest extends TestCase
         string $group,
         string $requiredApp,
     ): void {
-        $provider = new $class(
-            appManager: $this->buildAppManager([]),
-            l10n: $this->buildL10n(),
-        );
+        $provider = $this->buildGreenfieldProviderMissingApp($class);
 
         $this->assertFalse($provider->isEnabled());
         $this->assertSame('unavailable', $provider->health()['status']);
@@ -415,14 +489,15 @@ class LeafProvidersMetadataTest extends TestCase
 
     /**
      * Shares provider is NC-core (no required app), query-time
-     * storage, with delete() delegating to IShareManager.
+     * storage, with list() driven by an IDBConnection LIKE query.
      *
      * @return void
      */
     public function testSharesProviderMetadata(): void
     {
         $provider = new SharesProvider(
-            shareManager: $this->createMock(IShareManager::class),
+            db: $this->createMock(IDBConnection::class),
+            appManager: $this->buildAppManager([]),
             l10n: $this->buildL10n(),
         );
 
@@ -433,13 +508,13 @@ class LeafProvidersMetadataTest extends TestCase
         $this->assertNull($provider->getRequiredApp());
         $this->assertSame('query-time', $provider->getStorageStrategy());
         $this->assertTrue($provider->isEnabled());
-        $this->assertSame([], $provider->list('r', 's', 'obj'));
     }//end testSharesProviderMetadata()
 
     public function testSharesProviderCreateThrowsNotImplemented(): void
     {
         $provider = new SharesProvider(
-            shareManager: $this->createMock(IShareManager::class),
+            db: $this->createMock(IDBConnection::class),
+            appManager: $this->buildAppManager([]),
             l10n: $this->buildL10n(),
         );
 

@@ -43,13 +43,12 @@ use OCP\SystemTag\ISystemTagObjectMapper;
  */
 class TagsProvider extends AbstractIntegrationProvider
 {
-
     /**
      * Constructor.
      *
-     * @param ISystemTagManager       $tagManager   System tag manager.
-     * @param ISystemTagObjectMapper  $objectMapper Tag-to-object mapper.
-     * @param IL10N                   $l10n         Localisation service.
+     * @param ISystemTagManager      $tagManager   System tag manager.
+     * @param ISystemTagObjectMapper $objectMapper Tag-to-object mapper.
+     * @param IL10N                  $l10n         Localisation service.
      *
      * @return void
      */
@@ -60,36 +59,71 @@ class TagsProvider extends AbstractIntegrationProvider
     ) {
     }//end __construct()
 
+    /**
+     * Stable provider id used in routes and configs.
+     *
+     * @return string Stable provider identifier.
+     */
     public function getId(): string
     {
         return 'tags';
     }//end getId()
 
+    /**
+     * Translated, human-readable provider label.
+     *
+     * @return string Translated, human-readable provider label.
+     */
     public function getLabel(): string
     {
         return $this->l10n->t('Tags');
     }//end getLabel()
 
+    /**
+     * MDI icon name for the provider.
+     *
+     * @return string MDI icon name for the provider.
+     */
     public function getIcon(): string
     {
         return 'TagOutline';
     }//end getIcon()
 
+    /**
+     * Group identifier for UI grouping (or null).
+     *
+     * @return string|null Group identifier for UI grouping (or null).
+     */
     public function getGroup(): ?string
     {
         return 'core';
     }//end getGroup()
 
+    /**
+     * Required NC app id (null = built-in).
+     *
+     * @return string|null Required app id (null = built-in).
+     */
     public function getRequiredApp(): ?string
     {
         return null;
     }//end getRequiredApp()
 
+    /**
+     * Storage strategy hint for the registry.
+     *
+     * @return string Storage strategy hint for the registry.
+     */
     public function getStorageStrategy(): string
     {
         return 'link-table';
     }//end getStorageStrategy()
 
+    /**
+     * True when the provider is available for use.
+     *
+     * @return bool True when the provider is available for use.
+     */
     public function isEnabled(): bool
     {
         return true;
@@ -105,7 +139,7 @@ class TagsProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      */
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         try {
             $tagIds = $this->objectMapper->getTagIdsForObjects([$objectId], 'openregister');
@@ -152,8 +186,7 @@ class TagsProvider extends AbstractIntegrationProvider
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
         throw new NotImplementedException(
-            'TagsProvider write path delegates to TagsController for now (umbrella tasks 18-22).'
+            message: 'TagsProvider write path delegates to TagsController for now (umbrella tasks 18-22).'
         );
     }//end create()
-
 }//end class

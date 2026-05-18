@@ -38,17 +38,16 @@ use Throwable;
 
 trait MarkerLookupTrait
 {
-
     /**
      * Find rows in an upstream NC app's table whose marker column
      * contains the given marker substring.
      *
-     * @param IDBConnection      $db           NC DB connection.
-     * @param string             $table        Table name without the `oc_` prefix.
-     * @param string             $markerColumn Column to search the marker in.
-     * @param string             $marker       Marker substring (e.g. `[or:UUID]`).
-     * @param array<int,string>  $extraColumns Other columns to return alongside the row.
-     * @param string             $idColumn     Primary-key column (default `id`).
+     * @param IDBConnection     $db           NC DB connection.
+     * @param string            $table        Table name without the `oc_` prefix.
+     * @param string            $markerColumn Column to search the marker in.
+     * @param string            $marker       Marker substring (e.g. `[or:UUID]`).
+     * @param array<int,string> $extraColumns Other columns to return alongside the row.
+     * @param string            $idColumn     Primary-key column (default `id`).
      *
      * @return array<int,array<string,mixed>> Matching rows.
      */
@@ -57,8 +56,8 @@ trait MarkerLookupTrait
         string $table,
         string $markerColumn,
         string $marker,
-        array $extraColumns = [],
-        string $idColumn = 'id'
+        array $extraColumns=[],
+        string $idColumn='id'
     ): array {
         try {
             $qb     = $db->getQueryBuilder();
@@ -75,14 +74,20 @@ trait MarkerLookupTrait
             // older versions — iterate manually.
             $result = $qb->executeQuery();
             $rows   = [];
-            while ($row = $result->fetch()) {
+            $row    = $result->fetch();
+            while ($row !== false) {
                 $rows[] = $row;
+                $row    = $result->fetch();
             }
+
             return $rows;
         } catch (Throwable $e) {
-            error_log('[MarkerLookupTrait] '.$table.'.'.$markerColumn.' query failed: '.$e->getMessage());
+            \OCP\Server::get(\Psr\Log\LoggerInterface::class)->debug(
+                '[MarkerLookupTrait] '.$table.'.'.$markerColumn.' query failed: '.$e->getMessage(),
+                ['exception' => $e]
+            );
             // Schema mismatch / app uninstalled / column missing — empty list (AD-23).
             return [];
-        }
+        }//end try
     }//end findByMarker()
 }//end trait

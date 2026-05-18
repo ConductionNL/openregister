@@ -45,7 +45,6 @@ use InvalidArgumentException;
  */
 class PropertyReferenceTypeValidator
 {
-
     /**
      * Constructor.
      *
@@ -75,7 +74,7 @@ class PropertyReferenceTypeValidator
      * @throws InvalidArgumentException When referenceType is non-string
      *                                  or refers to an unregistered id.
      */
-    public function validate(array $property, ?string $propertyName = null): void
+    public function validate(array $property, ?string $propertyName=null): void
     {
         if (array_key_exists('referenceType', $property) === false) {
             return;
@@ -88,13 +87,13 @@ class PropertyReferenceTypeValidator
 
         if (is_string($value) === false) {
             throw new InvalidArgumentException(
-                $this->formatError($propertyName, 'must be a string or null')
+                $this->formatError(propertyName: $propertyName, detail: 'must be a string or null')
             );
         }
 
         if ($value === '') {
             throw new InvalidArgumentException(
-                $this->formatError($propertyName, 'must not be empty')
+                $this->formatError(propertyName: $propertyName, detail: 'must not be empty')
             );
         }
 
@@ -103,8 +102,8 @@ class PropertyReferenceTypeValidator
             sort($validIds);
             throw new InvalidArgumentException(
                 $this->formatError(
-                    $propertyName,
-                    sprintf(
+                    propertyName: $propertyName,
+                    detail: sprintf(
                         "refers to unregistered integration '%s'. Registered ids: %s",
                         $value,
                         ($validIds === []) ? '(none)' : implode(', ', $validIds)
@@ -129,7 +128,8 @@ class PropertyReferenceTypeValidator
     {
         foreach ($properties as $name => $definition) {
             if (is_array($definition) === true) {
-                $this->validate($definition, is_string($name) ? $name : null);
+                $resolvedName = is_string($name) === true ? $name : null;
+                $this->validate(property: $definition, propertyName: $resolvedName);
             }
         }
     }//end validateAll()
@@ -145,11 +145,8 @@ class PropertyReferenceTypeValidator
      */
     private function formatError(?string $propertyName, string $detail): string
     {
-        $prefix = $propertyName === null
-            ? "referenceType"
-            : sprintf("Property '%s' referenceType", $propertyName);
+        $prefix = $propertyName === null ? "referenceType" : sprintf("Property '%s' referenceType", $propertyName);
 
         return sprintf('%s %s', $prefix, $detail);
     }//end formatError()
-
 }//end class

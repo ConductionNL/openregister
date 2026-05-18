@@ -127,12 +127,12 @@ class ToolManagementHandler
         foreach ($enabledToolIds as $toolId) {
             // Try three formats in turn so agent records from different
             // eras keep working:
-            //   1. The raw id as stored ("openbuilt", "openregister.register")
-            //   2. The legacy openregister-prefixed form ("openregister.objects"
-            //      when the agent stores just "objects")
-            //   3. An "openbuilt" -> "openbuilt.{x}" fallback handled by
-            //      the McpProviderBridge — that bridge exposes every
-            //      function under one appId-level registration.
+            // 1. The raw id as stored ("openbuilt", "openregister.register")
+            // 2. The legacy openregister-prefixed form ("openregister.objects"
+            // when the agent stores just "objects")
+            // 3. An "openbuilt" -> "openbuilt.{x}" fallback handled by
+            // the McpProviderBridge — that bridge exposes every
+            // function under one appId-level registration.
             $candidates = [$toolId];
             if (strpos($toolId, '.') === false) {
                 $candidates[] = 'openregister.'.$toolId;

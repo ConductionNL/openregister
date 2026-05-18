@@ -47,7 +47,6 @@ use OCA\OpenRegister\Exception\NotImplementedException;
  */
 abstract class AbstractIntegrationProvider implements IntegrationProvider
 {
-
     /**
      * Optional group identifier.
      *
@@ -109,7 +108,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
     public function get(string $register, string $schema, string $objectId, string $entityId): array
     {
         throw new NotImplementedException(
-            sprintf('Provider %s does not support get()', $this->getId())
+            message: sprintf('Provider %s does not support get()', $this->getId())
         );
     }//end get()
 
@@ -128,7 +127,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
         throw new NotImplementedException(
-            sprintf('Provider %s does not support create()', $this->getId())
+            message: sprintf('Provider %s does not support create()', $this->getId())
         );
     }//end create()
 
@@ -148,7 +147,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
         throw new NotImplementedException(
-            sprintf('Provider %s does not support update()', $this->getId())
+            message: sprintf('Provider %s does not support update()', $this->getId())
         );
     }//end update()
 
@@ -167,7 +166,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
         throw new NotImplementedException(
-            sprintf('Provider %s does not support delete()', $this->getId())
+            message: sprintf('Provider %s does not support delete()', $this->getId())
         );
     }//end delete()
 
@@ -188,5 +187,4 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
             'message'    => null,
         ];
     }//end health()
-
 }//end class
