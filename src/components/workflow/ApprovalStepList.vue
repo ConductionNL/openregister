@@ -11,6 +11,11 @@ import { generateUrl } from '@nextcloud/router'
 		<div v-if="steps.length === 0">
 			<p>{{ t('openregister', 'No approval steps for this object.') }}</p>
 		</div>
+		<!--
+			Dynamic translation contract (mirrored in l10n/en.json + l10n/nl.json):
+			- step.status enum: pending | approved | rejected | waiting (see ApprovalService.php)
+			- step.role:        free-text from workflow config (best-effort identity fallback).
+		-->
 		<div v-for="step in steps" :key="step.id" class="step-row">
 			<span class="step-order">{{ t('openregister', 'Step') }} {{ step.stepOrder }}</span>
 			<span class="step-role">{{ t('openregister', step.role) }}</span>

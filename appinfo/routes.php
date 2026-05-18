@@ -283,7 +283,7 @@ return [
         // Note: entityId uses [^/]+ (not .+) to prevent slashes in captured values. Entity IDs are
         // opaque (UUIDs / external IDs) and should never contain path separators. The legacy underscore-
         // prefixed variant below (linkedEntity#reverseLookup on /api/linked/_{type}/{entityId}) coexists
-        // for backwards compatibility with older mail-sidebar clients; deduplicate in a future cleanup.
+        // for backwards compatibility with older mail-sidebar clients; removal tracked in issue #1535.
         ['name' => 'linked_entity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[^/]+', 'entityId' => '[^/]+']],
 
         // Objects.

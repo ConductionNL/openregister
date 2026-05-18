@@ -103,8 +103,11 @@ class TasksController extends Controller
     {
         try {
             $status   = $this->request->getParam('status');
-            $limit    = min((int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50), 200);
-            $offset   = (int) ($this->request->getParam('_offset') ?? $this->request->getParam('offset') ?? 0);
+            $limit    = min(max((int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50), 1), 200);
+            // Clamp offset symmetrically with limit. Without an upper bound a client can pass
+            // _offset=10000000 and force TaskService to walk N calendars before slicing — the
+            // same DoS surface the limit clamp closes (PR #1273 review).
+            $offset   = min(max((int) ($this->request->getParam('_offset') ?? $this->request->getParam('offset') ?? 0), 0), 10000);
             $assignee = $this->request->getParam('assignee');
 
             $result = $this->taskService->getAllUserTasks(

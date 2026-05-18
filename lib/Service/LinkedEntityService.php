@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\DB\Exception as DbException;
+use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -80,12 +81,25 @@ class LinkedEntityService
     private const MAX_TABLES_TO_SCAN = 50;
 
     /**
+     * App-config key controlling whether scanMagicTables() may bypass RBAC + multitenancy
+     * to support cross-tenant reverse-lookups from the mail sidebar.
+     *
+     * '1' (default): bypass enabled — required for the mail-sidebar feature.
+     * '0':           strict-isolation mode — falls back to standard RBAC-scoped findAll().
+     *
+     * Operators in multi-tenant SaaS deployments should set this to '0' until issue #1534
+     * (per-row access check + caller scoping + audit log) lands.
+     */
+    private const CONFIG_CROSS_TENANT_SCAN = 'linkedEntity.crossTenantScan';
+
+    /**
      * Constructor for LinkedEntityService.
      *
      * @param MagicMapper        $magicMapper        Magic mapper for object operations
      * @param SchemaMapper       $schemaMapper       Schema mapper
      * @param RegisterMapper     $registerMapper     Register mapper
      * @param OrganisationMapper $organisationMapper Organisation mapper
+     * @param IAppConfig         $appConfig          App config for strict-isolation flag
      * @param LoggerInterface    $logger             Logger
      */
     public function __construct(
@@ -93,6 +107,7 @@ class LinkedEntityService
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly OrganisationMapper $organisationMapper,
+        private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -291,14 +306,22 @@ class LinkedEntityService
         $results = [];
 
         // Find schemas that declare this linkedType.
-        // WARNING: RBAC and multitenancy are intentionally disabled here, so schema metadata (names,
-        // slugs, linkedType declarations) and matched object UUIDs/names are returned cross-tenant to
-        // any authenticated user calling GET /api/linked/{type}/{entityId}. There is currently NO
-        // per-row access check before results are returned. This is intentional for the mail-sidebar
-        // use-case where cross-tenant linking is required, but constitutes a cross-tenant data exposure
-        // for multi-tenant SaaS deployments. A per-row access check should be added before this
-        // endpoint is used in strict-isolation deployments. See TODO #1273.
-        $allSchemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+        // WARNING: when the cross-tenant-scan flag is enabled (default), RBAC and multitenancy are
+        // disabled so schema metadata (names, slugs, linkedType declarations) and matched object
+        // UUIDs/names are returned cross-tenant to any authenticated caller of
+        // GET /api/linked/{type}/{entityId}. There is currently NO per-row access check on the
+        // returned objects — this is intentional for the mail-sidebar use-case (cross-tenant linking
+        // is required there) but constitutes a cross-tenant data exposure for multi-tenant SaaS
+        // deployments. Operators in strict-isolation deployments should disable the flag via:
+        //   occ config:app:set openregister linkedEntity.crossTenantScan --value=0
+        // which falls back to standard RBAC + multitenancy-scoped findAll(). Follow-up tracked in
+        // issue #1534 (per-row access check + caller scoping + audit log).
+        $crossTenantScan = ((string) $this->appConfig->getValueString('openregister', self::CONFIG_CROSS_TENANT_SCAN, '1')) === '1';
+        if ($crossTenantScan === true) {
+            $allSchemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+        } else {
+            $allSchemas = $this->schemaMapper->findAll();
+        }
         $scanned    = 0;
 
         foreach ($allSchemas as $schema) {
