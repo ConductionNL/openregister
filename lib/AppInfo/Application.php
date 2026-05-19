@@ -492,7 +492,8 @@ class Application extends App implements IBootstrap
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
-                    fileService: null
+                    fileService: null,
+                    auditTrailMapper: $container->get(AuditTrailMapper::class)
                 );
             }
         );

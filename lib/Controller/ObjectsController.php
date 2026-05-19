@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
@@ -147,6 +148,33 @@ class ObjectsController extends Controller
         $this->exportService = $exportService;
         $this->importService = $importService;
     }//end __construct()
+
+    /**
+     * Build a structured HTTP 403 JSON response for a folder-access denial.
+     *
+     * Reused by create(), update(), patch(), and postPatch() so that the
+     * structured body { "error": "folder_access_denied", "folder": "<id>" }
+     * is consistent across all save endpoints without copy-pasting the
+     * try/catch block.  Catching FolderAccessDeniedException BEFORE the
+     * generic \Exception catch prevents it from being absorbed as a generic error.
+     *
+     * @param FolderAccessDeniedException $exception The exception thrown by
+     *                                               FolderManagementHandler.
+     *
+     * @return JSONResponse HTTP 403 with structured body.
+     *
+     * @spec openspec/changes/validate-self-folder-access/tasks.md#task-5
+     */
+    private function handleFolderAccessDeniedException(FolderAccessDeniedException $exception): JSONResponse
+    {
+        return new JSONResponse(
+            data: [
+                'error'  => 'folder_access_denied',
+                'folder' => $exception->getFolderId(),
+            ],
+            statusCode: Http::STATUS_FORBIDDEN
+        );
+    }//end handleFolderAccessDeniedException()
 
     /**
      * Check if the current user is in the admin group.
@@ -1924,6 +1952,9 @@ class ObjectsController extends Controller
                 ],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // Catch BEFORE generic \Exception to emit the structured 403 body.
+            return $this->handleFolderAccessDeniedException(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -2099,6 +2130,9 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // Catch BEFORE generic \Exception to emit the structured 403 body.
+            return $this->handleFolderAccessDeniedException(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -2275,6 +2309,9 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // Catch BEFORE generic \Exception to emit the structured 403 body.
+            return $this->handleFolderAccessDeniedException(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             $this->logger->error(
@@ -2398,6 +2435,9 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // Catch BEFORE generic \Exception to emit the structured 403 body.
+            return $this->handleFolderAccessDeniedException(exception: $exception);
         } catch (\Exception $exception) {
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         }//end try

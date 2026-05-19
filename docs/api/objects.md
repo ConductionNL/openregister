@@ -416,6 +416,73 @@ curl -X POST /api/objects/1/3 \
 
 **Status:** `201 Created`
 
+### Folder Binding (`@self.folder`)
+
+When creating or updating an object, callers may supply an explicit Nextcloud node ID in the `@self.folder` field to bind the object's file storage to a specific, pre-existing folder rather than letting OpenRegister auto-create one.
+
+#### Success behaviour
+
+If `@self.folder` is set to a numeric node ID and the acting user has read access to that node:
+
+1. The folder is resolved from the acting user's own mount (not the root filesystem).
+2. The folder is used as the object's storage folder for all file operations.
+3. The response object contains `@self.folder` with the bound node ID.
+
+```bash
+curl -X POST /api/objects/1/3 \
+  -u bob:bob \
+  -H "Content-Type: application/json" \
+  -d '{
+    "naam": "My Object",
+    "@self": { "folder": "42" }
+  }'
+```
+
+**Status:** `201 Created` — the returned object's `@self.folder` reflects the bound node ID.
+
+#### Auto-create behaviour (preserved)
+
+If `@self.folder` is **absent** or **empty**, OpenRegister auto-creates a folder under the register's default path. This behaviour is unchanged:
+
+```bash
+curl -X POST /api/objects/1/3 \
+  -u bob:bob \
+  -H "Content-Type: application/json" \
+  -d '{"naam": "My Object"}'
+```
+
+**Status:** `201 Created` — folder is auto-created and assigned.
+
+#### Denial behaviour (HTTP 403) — BREAKING
+
+> **BREAKING CHANGE (added in this release):** Previously, supplying a numeric `@self.folder` that the acting user could not access caused a silent cross-tenant bind — the object was attached to the foreign folder without any error. This has been corrected.
+
+If `@self.folder` is a numeric node ID that the acting user **cannot access** (the folder does not exist in their mount, the node is a file rather than a folder, or it is not readable), the request is rejected with HTTP 403:
+
+```json
+{
+  "error": "folder_access_denied",
+  "folder": "<attempted-id>"
+}
+```
+
+**Conditions that trigger HTTP 403:**
+
+| Condition | Example |
+|---|---|
+| Node ID does not exist in the user's accessible tree | Node owned by another tenant |
+| Node is a file, not a folder | A document node ID |
+| Folder is not readable by the acting user | Permissions revoked |
+| No authenticated user is available to perform the check | Misconfigured public endpoint |
+
+**Audit trail:** Every denial is recorded in the OpenRegister audit trail with `action: "folder_access_denied"`, `actor: <uid>`, and the attempted folder ID. The denial is recorded even if the caller catches and suppresses the 403 response.
+
+**Migration note for downstream callers:** Any client that currently sets `@self.folder` to a node ID must ensure the acting user has read access to that folder in their Nextcloud account. Callers that relied on the silent cross-tenant bind to attach objects to shared infrastructure folders must instead use a folder ID that is explicitly shared with the acting user.
+
+**Status:** `403 Forbidden`
+
+**Status:** `201 Created`
+
 ### Update Object (Full Replace)
 
 **PUT** `/api/objects/{register}/{schema}/{id}`

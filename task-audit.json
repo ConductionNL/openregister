@@ -1,0 +1,67 @@
+{
+  "spec": "openspec/changes/validate-self-folder-access",
+  "verified": [
+    {
+      "task": "1.1",
+      "file": "lib/Exception/FolderAccessDeniedException.php",
+      "ok": true,
+      "note": "Exists, extends \\Exception, has getFolderId() method, phpcs clean"
+    },
+    {
+      "task": "2.1",
+      "file": "lib/Service/File/FolderManagementHandler.php",
+      "ok": true,
+      "note": "assertFolderIsAccessible() added as private method; uses rootFolder->getUserFolder() only, no getNodeById() fallback; inline comment explains why"
+    },
+    {
+      "task": "3.1",
+      "file": "lib/Service/File/FolderManagementHandler.php",
+      "ok": true,
+      "note": "createObjectFolderById() branches: empty/non-numeric => auto-create; numeric => assertFolderIsAccessible() => return resolved Folder"
+    },
+    {
+      "task": "3.2",
+      "file": "lib/Service/File/FolderManagementHandler.php",
+      "ok": true,
+      "note": "FolderAccessDeniedException propagates out; getExistingFolderFromProperty() still called for empty/legacy branch"
+    },
+    {
+      "task": "4.1",
+      "file": "lib/Service/File/FolderManagementHandler.php",
+      "ok": true,
+      "note": "logFolderAccessDenied() writes AuditTrail before throw; handles mapper failure with warning log"
+    },
+    {
+      "task": "5.1",
+      "file": "lib/Controller/ObjectsController.php",
+      "ok": true,
+      "note": "handleFolderAccessDeniedException() shared helper added; FolderAccessDeniedException caught in create(), update(), patch(), postPatch() BEFORE generic Exception catch"
+    },
+    {
+      "task": "6.1",
+      "file": "lib/",
+      "ok": true,
+      "note": "All setFolder() callers audited: MagicSearchHandler (read path), SaveObject (internal folderId param), ObjectService (post-creation), RegisterService (register folder). No cron jobs affected."
+    },
+    {
+      "task": "7.1",
+      "file": "tests/Unit/Service/File/FolderManagementHandlerAccessControlTest.php",
+      "ok": true,
+      "note": "15 tests covering all scenarios: owned/shared-readable success, cross-user deny, non-existent ID, file node, trashed/unreadable, empty folder, legacy non-numeric, explicit currentUser override, null user deny, audit trail write, audit failure propagation, exception class hierarchy"
+    },
+    {
+      "task": "7.2",
+      "file": "tests/Unit/Service/File/FolderManagementHandlerAccessControlTest.php",
+      "ok": true,
+      "note": "Exception hierarchy test: extends Exception, NOT NotPermittedException. getFolderId() test. 15/15 passing."
+    },
+    {
+      "task": "10.1",
+      "file": "lib/",
+      "ok": true,
+      "note": "phpcs: 0 errors on all touched files (1 warning suppressed by --warning-severity=0). Unit tests: 15/15 passing."
+    }
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
