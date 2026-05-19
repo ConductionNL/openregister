@@ -1,0 +1,14 @@
+--- a/src/Chat/FunctionInfo/FunctionFormatter.php
++++ b/src/Chat/FunctionInfo/FunctionFormatter.php
+@@ -107,7 +107,10 @@
+                 ];
+             }
+
+-            $param['properties'] = $properties;
++            // Force JSON object encoding even when no nested properties are
++            // defined — Ollama rejects empty arrays for the `properties` slot
++            // ("Value looks like object, but can't find closing '}' symbol").
++            $param['properties'] = $properties === [] ? new \stdClass() : $properties;
+         }
+
+         if ($parameter->enum) {

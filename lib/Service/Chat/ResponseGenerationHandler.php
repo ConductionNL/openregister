@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\Chat;
 use Exception;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Chat\ClaudeCliChat;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
@@ -296,9 +297,19 @@ class ResponseGenerationHandler
 
                     $config->temperature = $agent->getTemperature();
                 }
+            } else if ($chatProvider === 'claude') {
+                // Local-dev only: route through the WSL-host claude-bridge.
+                // No LLPhant config — ClaudeCliChat is instantiated directly
+                // in the per-provider branch below. Stub object so the
+                // perf-log $config->model lookup still works.
+                $claudeConfig = $llmConfig['claudeConfig'] ?? [];
+                if (empty($claudeConfig['url']) === true) {
+                    throw new Exception('Claude CLI bridge URL is not configured');
+                }
+                $config = (object) ['model' => $claudeConfig['chatModel'] ?? 'sonnet'];
             }//end if
 
-            if ($chatProvider !== 'ollama' && $chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
+            if ($chatProvider !== 'ollama' && $chatProvider !== 'openai' && $chatProvider !== 'fireworks' && $chatProvider !== 'claude') {
                 throw new Exception("Unsupported chat provider: {$chatProvider}");
             }
 
@@ -355,10 +366,10 @@ class ResponseGenerationHandler
             $llmTime      = 0.0;
             $llmStartTime = microtime(true);
 
-            // Skip the OpenAIChat instantiation for Ollama — Ollama uses OllamaConfig + OllamaChat
-            // (instantiated in the dedicated branch below). OpenAIChat::__construct() type-errors when
-            // given OllamaConfig.
-            if ($chatProvider !== 'ollama') {
+            // Skip the OpenAIChat instantiation for Ollama and Claude — each has its own
+            // dedicated client + config in the per-provider branch below. OpenAIChat::__construct()
+            // type-errors when given anything other than an OpenAIConfig.
+            if ($chatProvider !== 'ollama' && $chatProvider !== 'claude') {
                 // Create chat instance based on provider (OpenAI / Fireworks both use OpenAIConfig).
                 $chat = new OpenAIChat($config);
 
@@ -424,6 +435,27 @@ class ResponseGenerationHandler
                     channel: $channel,
                     provider: $chatProvider
                 );
+                $llmTime  = microtime(true) - $llmStartTime;
+            } else if ($chatProvider === 'claude') {
+                // Claude CLI bridge — plain text only, no tool routing.
+                // Bridge handles the CLI bootstrap + OAuth on the WSL host;
+                // we just send the message history over HTTP.
+                $claudeConfig = $llmConfig['claudeConfig'] ?? [];
+                $chat         = new ClaudeCliChat(
+                    baseUrl: (string) $claudeConfig['url'],
+                    model: (string) ($claudeConfig['chatModel'] ?? 'sonnet'),
+                    temperature: (float) ($agent?->getTemperature() ?? 0.7),
+                    timeoutSeconds: 120,
+                    logger: $this->logger,
+                );
+
+                if ($channel !== null) {
+                    // Pre-LLM heartbeat: bridge call can take 1-3s warm or
+                    // ~10s cold; one frame here keeps the SSE alive.
+                    $channel->emitHeartbeat();
+                }
+
+                $response = $chat->generateChat($messageHistory);
                 $llmTime  = microtime(true) - $llmStartTime;
             }//end if
 
