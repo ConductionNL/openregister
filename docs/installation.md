@@ -1,3 +1,8 @@
+---
+title: Installation
+description: Install OpenRegister on Nextcloud. App-store install, Docker dev setup, PostgreSQL, MariaDB and MongoDB backends with the full configuration guide.
+---
+
 # Installation Guide
 
 This guide covers all installation methods for OpenRegister, from the Nextcloud App Store to Docker development environments.
