@@ -1,3 +1,8 @@
+---
+title: Introduction
+description: Get started with OpenRegister, the schema-driven object store for Nextcloud. JSON Schema validation, REST and GraphQL APIs, audit logs built in.
+---
+
 # Introduction
 
 Open Register is a versatile system for creating and managing domain-specific or organizational data registers. Whether you need to build a social security database, manage client information, or create any other structured data repository, Open Register provides a storage-independent solution for managing and validating data objects.
