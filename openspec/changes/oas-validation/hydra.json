@@ -1,0 +1,54 @@
+{
+  "schema_version": 2,
+  "spec_slug": "oas-validation",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "issue": 1555,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "orchestrator",
+      "started_at": "2026-05-19T03:30:44Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": [
+        {
+          "stage": "build",
+          "persona": "Al Gorithm",
+          "model": "sonnet",
+          "container": "hydra-builder",
+          "started_at": "2026-05-19T02:09:06Z",
+          "ended_at": "2026-05-19T03:30:24Z",
+          "exit_code": 0,
+          "turns_used": 261,
+          "turns_budget": 200,
+          "checks_run": [
+            "composer check:strict (phpcs)",
+            "composer test:unit (phpunit)"
+          ],
+          "checks_skipped": [],
+          "findings": [],
+          "decisions": [],
+          "verdict": "pass",
+          "duration_seconds": 4878
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "runs": 1,
+    "turns_used": 261,
+    "cost_usd": 0.0,
+    "duration_seconds": 4878,
+    "cycles": 1,
+    "by_stage": {
+      "build": {
+        "runs": 1,
+        "turns_used": 261,
+        "cost_usd": 0.0,
+        "duration_seconds": 4878
+      }
+    }
+  }
+}
