@@ -461,7 +461,11 @@ class ResponseGenerationHandler
                     $channel->emitHeartbeat();
                 }
 
-                $response = $chat->generateChat($messageHistory);
+                // Pass the channel through so any tool_call / tool_result
+                // events Claude's MCP client triggered (inside the bridge
+                // subprocess) get surfaced as SSE frames once the HTTP
+                // round-trip returns.
+                $response = $chat->generateChat($messageHistory, $channel);
                 $llmTime  = microtime(true) - $llmStartTime;
             }//end if
 

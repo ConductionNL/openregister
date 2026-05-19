@@ -90,13 +90,26 @@ class ClaudeCliChat
     /**
      * Send a message history to the bridge and return the assistant text.
      *
-     * @param LLPhantMessage[]|array $messageHistory
+     * If a $channel is supplied, any tool_call / tool_result events the
+     * bridge reports get emitted through it AFTER the HTTP round-trip
+     * returns. That's a deliberate trade-off vs Ollama's path: there,
+     * StreamingToolInstanceWrapper fires the channel inline during
+     * function invocation; here, Claude's MCP client invokes tools
+     * inside the persistent subprocess and we only see them at the end.
+     * The UI therefore renders the tool chips together with the final
+     * assistant bubble rather than progressively — still informative,
+     * just not live.
+     *
+     * @param LLPhantMessage[]|array  $messageHistory
+     * @param StreamYieldChannel|null $channel Optional streaming channel
+     *                                          for tool_call / tool_result
+     *                                          frames.
      *
      * @return string Assistant content
      *
      * @throws Exception On HTTP/bridge failure
      */
-    public function generateChat(array $messageHistory): string
+    public function generateChat(array $messageHistory, ?StreamYieldChannel $channel=null): string
     {
         $payload = [
             'model'       => $this->model,
@@ -123,7 +136,97 @@ class ClaudeCliChat
             throw new Exception('claude-bridge error: '.$json['error']);
         }
 
+        if ($channel !== null) {
+            $this->emitToolEvents(channel: $channel, body: $json);
+        }
+
         return (string) ($json['message']['content'] ?? '');
+    }
+
+    /**
+     * Translate the bridge's tool_calls / tool_results arrays into channel
+     * emissions matching the shape StreamingToolInstanceWrapper produces
+     * for Ollama, so the SSE controller + UI render them identically.
+     *
+     * Bridge wire format:
+     *   tool_calls:   [{id, name: 'mcp__openregister__<slug>', arguments}]
+     *   tool_results: [{id, name, isError, content: [{type:'text', text}]}]
+     *
+     * Channel expects:
+     *   tool_call:   {toolId, arguments}
+     *   tool_result: {toolId, result, isError}
+     */
+    private function emitToolEvents(StreamYieldChannel $channel, array $body): void
+    {
+        $resultsById = [];
+        foreach (($body['tool_results'] ?? []) as $r) {
+            $id = (string) ($r['id'] ?? '');
+            if ($id !== '') {
+                $resultsById[$id] = $r;
+            }
+        }
+
+        foreach (($body['tool_calls'] ?? []) as $call) {
+            $rawName  = (string) ($call['name'] ?? '');
+            $toolId   = self::stripMcpPrefix(name: $rawName);
+            $args     = (array) ($call['arguments'] ?? []);
+            $channel->emitToolCall(payload: [
+                'toolId'    => $toolId,
+                'arguments' => $args,
+            ]);
+
+            $callId = (string) ($call['id'] ?? '');
+            $r      = $resultsById[$callId] ?? null;
+            if ($r === null) {
+                continue;
+            }
+            $channel->emitToolResult(payload: [
+                'toolId'  => $toolId,
+                'result'  => self::extractResultPayload(content: $r['content'] ?? null),
+                'isError' => (bool) ($r['isError'] ?? false),
+            ]);
+        }
+    }
+
+    /**
+     * `mcp__openregister__decidesk_listRecentMeetings`
+     *   → `decidesk_listRecentMeetings`
+     *   → keep as-is (UI matches what Ollama emits via wrapper).
+     *
+     * Tools without the prefix pass through.
+     */
+    private static function stripMcpPrefix(string $name): string
+    {
+        $prefix = 'mcp__openregister__';
+        if (str_starts_with($name, $prefix) === true) {
+            return substr($name, strlen($prefix));
+        }
+        return $name;
+    }
+
+    /**
+     * MCP responses wrap the tool payload in a content array of
+     * `{type: 'text', text: '<json string>'}` entries. Unpack the first
+     * text block and JSON-decode it so the UI's tool-result drawer can
+     * render the structured result, not a string-of-JSON.
+     *
+     * Falls back to the raw value when the shape is unexpected.
+     *
+     * @param mixed $content
+     */
+    private static function extractResultPayload($content): array
+    {
+        if (is_array($content) === true && isset($content[0]['text']) === true) {
+            $decoded = json_decode((string) $content[0]['text'], true);
+            if (is_array($decoded) === true) {
+                return $decoded;
+            }
+            return ['value' => $content[0]['text']];
+        }
+        if (is_array($content) === true) {
+            return $content;
+        }
+        return ['value' => $content];
     }
 
     /**
