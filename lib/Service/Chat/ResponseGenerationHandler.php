@@ -168,9 +168,15 @@ class ResponseGenerationHandler
             ]
         );
 
-        // Get enabled tools for agent, filtered by selectedTools.
+        // Get enabled tools for agent, filtered by selectedTools and
+        // narrowed by the current app context so the LLM doesn't have to
+        // chew through every cross-app tool schema on each turn.
         $toolsStartTime = microtime(true);
-        $tools          = $this->toolHandler->getAgentTools(agent: $agent, selectedTools: $selectedTools);
+        $tools          = $this->toolHandler->getAgentTools(
+            agent: $agent,
+            selectedTools: $selectedTools,
+            cnAiContext: $cnAiContext
+        );
         $toolsTime      = microtime(true) - $toolsStartTime;
         if (empty($tools) === false) {
             $this->logger->info(
