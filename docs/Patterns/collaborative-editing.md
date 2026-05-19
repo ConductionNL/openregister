@@ -108,7 +108,7 @@ User A clicks Edit                │
 |---|---|---|
 | `notify_push` unreachable | Plugin falls back to polling | Subscriptions still work, latency increases |
 | Lock POST 401/403 | `useObjectLock.acquire()` rejects with `PermissionError` | Toast: "Concurrent edits are not blocked on this schema." Edit allowed without lock. |
-| Lock POST 409/423 (conflict) | rejects with `LockConflictError` | Banner: "Locked by X until <expiry>." Edit disabled. |
+| Lock POST 409/423 (conflict) | rejects with `LockConflictError` | Banner: "Locked by X until `<expiry>`." Edit disabled. |
 | Network failure on release | `beforeunload` falls back to `navigator.sendBeacon`; OR's TTL expires the lock automatically | No UX impact. |
 | Lock holder inactive | Renew skipped while document hidden | Lock TTL elapses; on next focus, `acquire()` runs again. |
 
