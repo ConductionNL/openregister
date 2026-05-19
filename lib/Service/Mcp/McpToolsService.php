@@ -117,7 +117,24 @@ class McpToolsService
                     continue;
                 }
 
-                $tools[] = $descriptor;
+                // MCP `tools/list` requires the `name` field to be a valid
+                // MCP identifier (no spaces, no dots — matches OpenAI's
+                // function-name regex `^[a-zA-Z0-9_-]{1,64}$`). Many of our
+                // providers historically used a display-style `name` like
+                // "List recent meetings". Replace `name` on the wire with a
+                // slugified form of the canonical `id` (`.` → `_`) so MCP
+                // clients see a valid identifier. The original display name
+                // moves into `title` per MCP 2025-03-26's optional title
+                // hint. callTool() below accepts both forms.
+                $canonicalId = (string) $descriptor['id'];
+                $wireName    = str_replace('.', '_', $canonicalId);
+                $tools[]     = array_merge(
+                    $descriptor,
+                    [
+                        'name'  => $wireName,
+                        'title' => $descriptor['name'] ?? $wireName,
+                    ]
+                );
             }
         }//end foreach
 
@@ -144,15 +161,24 @@ class McpToolsService
             context: ['tool' => $name, 'arguments' => $arguments]
         );
 
-        // Find a provider that owns this tool id.
+        // Find a provider that owns this tool id (accepts both wire-format
+        // slug `appId_toolName` and canonical dotted `appId.toolName`).
         $provider = $this->findProviderForTool(toolId: $name);
 
         if ($provider === null) {
             throw new InvalidArgumentException('Unknown tool: '.$name);
         }
 
+        // Providers expect the canonical dotted id when invoking. Reverse
+        // the wire-format slug if necessary so providers see what they
+        // emitted in getTools().
+        $canonicalId = $name;
+        if (str_contains($canonicalId, '.') === false && str_contains($canonicalId, '_') === true) {
+            $canonicalId = preg_replace('/_/', '.', $canonicalId, 1);
+        }
+
         try {
-            $result = $provider->invokeTool(toolId: $name, arguments: $arguments);
+            $result = $provider->invokeTool(toolId: $canonicalId, arguments: $arguments);
 
             return [
                 'content' => [
@@ -240,17 +266,29 @@ class McpToolsService
      */
     private function findProviderForTool(string $toolId): ?IMcpToolProvider
     {
+        // MCP wire format uses slugified names (`appId_toolName`). The
+        // canonical id stored on each provider's descriptor is the dotted
+        // form (`appId.toolName`). Accept either by trying both: dotted
+        // first (cheapest, matches direct MCP calls + agent-stored ids),
+        // then the slugified form (Claude-style clients).
+        $candidates = [$toolId];
+        if (str_contains($toolId, '.') === false && str_contains($toolId, '_') === true) {
+            // Only replace the FIRST underscore — provider ids may contain
+            // underscores in their tool-name half (e.g. "openregister.tool_name").
+            $candidates[] = preg_replace('/_/', '.', $toolId, 1);
+        }
+
         foreach ($this->providers as $provider) {
             $appId = $provider->getAppId();
+            foreach ($candidates as $candidate) {
+                if (str_starts_with($candidate, $appId.'.') === false) {
+                    continue;
+                }
 
-            if (str_starts_with($toolId, $appId.'.') === false) {
-                continue;
-            }
-
-            // Confirm the provider actually lists this tool.
-            foreach ($provider->getTools() as $descriptor) {
-                if (($descriptor['id'] ?? '') === $toolId) {
-                    return $provider;
+                foreach ($provider->getTools() as $descriptor) {
+                    if (($descriptor['id'] ?? '') === $candidate) {
+                        return $provider;
+                    }
                 }
             }
         }
