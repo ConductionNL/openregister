@@ -37,6 +37,12 @@ import { translate as t } from '@nextcloud/l10n'
 							<th class="name-column">
 								{{ t('openregister', 'Register / Schema') }}
 							</th>
+							<!--
+								Dynamic translation contract: action enum is the hardcoded
+								data() value ['read', 'create', 'update', 'delete', 'manage'] —
+								all five are mirrored in l10n/en.json + l10n/nl.json with
+								Dutch translations.
+							-->
 							<th v-for="action in actions" :key="action" class="action-column">
 								{{ t('openregister', action) }}
 							</th>
