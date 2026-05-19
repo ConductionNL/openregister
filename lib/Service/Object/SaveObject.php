@@ -60,6 +60,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -3549,8 +3550,12 @@ class SaveObject
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
-    private function setSelfMetadata(ObjectEntity $objectEntity, array $selfData, array $data=[]): void
-    {
+    private function setSelfMetadata(
+        ObjectEntity $objectEntity,
+        array $selfData,
+        array $data=[],
+        ?IUser $currentUser=null
+    ): void {
         // Extract and set slug property if present (check both @self and data).
         $slug = $selfData['slug'] ?? $data['slug'] ?? null;
         if (empty($slug) === false) {
@@ -3578,8 +3583,18 @@ class SaveObject
             // `FolderAccessDeniedException`. Legacy non-numeric values fall
             // through to the auto-create path unchanged.
             if (is_numeric($folderValue) === true) {
+                // Pass `$currentUser` through so the access check uses the
+                // SAME user identity that the downstream
+                // `createObjectFolderById` check uses on the lazy-init path.
+                // When `$currentUser` is null (HTTP path), both checks fall
+                // back to `IUserSession::getUser()` and agree by default.
+                // When `$currentUser` is non-null (DI / event listener path),
+                // both checks use it explicitly — no chance of one site
+                // passing while another denies because of session vs explicit
+                // user disagreement.
                 $this->folderManagementHandler->assertFolderIsAccessible(
                     folderId: $folderValue,
+                    currentUser: $currentUser,
                     objectEntity: $objectEntity
                 );
             }

@@ -843,8 +843,14 @@ class FolderManagementHandler
      * @return Folder The accessible folder, ready to be used as the existing object folder.
      *
      * @throws FolderAccessDeniedException If the folder cannot be resolved, is not a Folder, or is not readable.
+     *
+     * @internal The method is `final` to prevent subclasses from overriding
+     * (and thereby weakening) the default-deny security invariant. Direct
+     * callers from the OpenRegister codebase MUST invoke this method as-is;
+     * if a different access-check policy is needed, introduce a new method
+     * rather than overriding this one.
      */
-    public function assertFolderIsAccessible(
+    final public function assertFolderIsAccessible(
         string $folderId,
         ?IUser $currentUser=null,
         ObjectEntity|string|null $objectEntity=null
@@ -946,12 +952,24 @@ class FolderManagementHandler
             $auditTrail->setUuid(Uuid::v4()->toRfc4122());
             $auditTrail->setAction('folder_access_denied');
             $auditTrail->setUser($actorUid);
-            // Required NOT NULL columns on `oc_openregister_audit_trails`. The audit entry is
-            // about a save that was blocked, so the object id is 0 (no object persisted yet);
-            // user_name and session mirror the actor for parity with `createAuditTrail` defaults.
+            // Required NOT NULL columns on `oc_openregister_audit_trails` (per migration
+            // Version1Date20241020231700: `object` INT NOT NULL, `user_name` STR NOT NULL,
+            // `session` STR NOT NULL). The audit row is about a save that was REJECTED
+            // before persistence, so there is no object id to record. We use:
+            //   - `object = 0` as the documented sentinel for "no object persisted yet".
+            //     Auto-increment PKs on this schema start at 1, so 0 cannot collide with
+            //     a real ObjectEntity row. Audit-trail queries filtering on
+            //     `WHERE action = 'folder_access_denied'` are the canonical way to
+            //     find these rows; querying by `object = 0` is also safe.
+            //   - `user_name = $actorUid` so the audit UI has something to display in the
+            //     "user" column when the system actor is involved.
+            //   - `session = ''` (empty string) rather than $actorUid: the UID is already
+            //     recorded in the `user` column; duplicating it into the `session` field
+            //     adds no information and would mislead forensic correlation. We use
+            //     empty string (not null) because the column is NOT NULL.
             $auditTrail->setObject(0);
             $auditTrail->setUserName($actorUid);
-            $auditTrail->setSession($actorUid);
+            $auditTrail->setSession('');
             $auditTrail->setCreated(new DateTime());
             $auditTrail->setChanged(
                 [

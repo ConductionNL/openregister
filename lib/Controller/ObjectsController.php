@@ -3699,7 +3699,19 @@ class ObjectsController extends Controller
      *
      * Per the `self-folder-access-control` capability spec, every save
      * endpoint that propagates `FolderAccessDeniedException` MUST return
-     * status 403 with body `{ "error": "folder_access_denied", "folder": "<requested-id>" }`.
+     * status 403 with body `{ "error": "folder_access_denied" }`.
+     *
+     * The body does NOT echo the attempted folder ID. Doing so would add
+     * an enumeration oracle: a caller probing `@self.folder` with sequential
+     * integers could distinguish "folder exists but I can't read it" (403)
+     * from "folder does not exist" (auto-create / no-op) just by observing
+     * the response shape. Returning a uniform 403 with no folder context
+     * forces the attacker to rely on the status code alone — which is already
+     * a documented privacy property of the spec — and removes the body-level
+     * confirmation. The caller already knows which folder ID they sent.
+     *
+     * The exception's `getAttemptedFolderId()` still carries the ID for
+     * server-side logging and the audit trail.
      *
      * Centralised here so the three save endpoints (create / update / postPatch)
      * stay in sync without copy-pasting the response shape.
@@ -3710,12 +3722,21 @@ class ObjectsController extends Controller
      */
     private function folderAccessDeniedResponse(FolderAccessDeniedException $exception): JSONResponse
     {
+        // Side-effect: ensure the attempted ID is recorded server-side
+        // (visible in the audit trail via logFolderAccessDenied + the
+        // exception message) even though we do NOT echo it back to the
+        // caller. `$exception` is referenced only to make the audit
+        // intent clear; the structured body is intentionally minimal.
+        $this->logger?->info(
+            '[ObjectsController] Folder access denied — returning 403',
+            [
+                'attemptedFolderId' => $exception->getAttemptedFolderId(),
+            ]
+        );
+
         return new JSONResponse(
-            data: [
-                'error'  => 'folder_access_denied',
-                'folder' => $exception->getAttemptedFolderId(),
-            ],
-            statusCode: 403
+            data: ['error' => 'folder_access_denied'],
+            statusCode: FolderAccessDeniedException::HTTP_STATUS
         );
     }//end folderAccessDeniedResponse()
 }//end class

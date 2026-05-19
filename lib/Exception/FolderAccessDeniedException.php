@@ -54,6 +54,21 @@ class FolderAccessDeniedException extends Exception
 {
 
     /**
+     * The HTTP status code controllers MUST map this exception to.
+     *
+     * Exposed as a class constant rather than as the exception's `code`
+     * value because `Exception::getCode()` is an application-level error
+     * code, not an HTTP status — conflating the two is brittle (future
+     * callers using `getCode()` for routing decisions get an HTTP number
+     * instead of a domain error number). Controllers reading this constant
+     * remain explicit about the HTTP mapping happening at the controller
+     * layer; the exception itself stays HTTP-agnostic.
+     *
+     * @var int
+     */
+    public const HTTP_STATUS = 403;
+
+    /**
      * The folder ID the caller attempted to bind to.
      *
      * @var string
@@ -64,10 +79,12 @@ class FolderAccessDeniedException extends Exception
      * FolderAccessDeniedException constructor.
      *
      * @param string         $attemptedFolderId The folder ID the caller attempted to bind to.
-     * @param int            $code              HTTP status code (default: 403 Forbidden).
+     * @param int            $code              Application error code; 0 by default. Controllers
+     *                                          MUST use `self::HTTP_STATUS` for the HTTP mapping,
+     *                                          not this code.
      * @param Exception|null $previous          The previous exception that caused this one, if any.
      */
-    public function __construct(string $attemptedFolderId, int $code=403, ?Exception $previous=null)
+    public function __construct(string $attemptedFolderId, int $code=0, ?Exception $previous=null)
     {
         $this->attemptedFolderId = $attemptedFolderId;
 
