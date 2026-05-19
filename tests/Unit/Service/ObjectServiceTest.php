@@ -2743,25 +2743,31 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test ensureObjectFolder recreates folder when folder is a string numeric value.
-	 * Entity getFolder() returns string for numeric values, triggering recreation.
+	 * Test ensureObjectFolder DOES NOT recreate when folder is a numeric string.
+	 *
+	 * The `_folder` column is `varchar(255)` — every populated value is a
+	 * string. The earlier `is_string($folder) === true` clause was a bug:
+	 * it matched ANY non-empty string and so triggered an auto-create on
+	 * every update, overwriting valid folder bindings with freshly-
+	 * generated auto-folders. The fix restricts the string branch to
+	 * non-numeric strings (legacy path values pre-dating the integer-id
+	 * storage convention); numeric strings like '42' are valid folder ids
+	 * and MUST be kept.
 	 */
-	public function testEnsureObjectFolderRecreatesWhenFolderIsStringNumeric(): void
+	public function testEnsureObjectFolderDoesNotRecreateWhenFolderIsNumericString(): void
 	{
 		$entity = new ObjectEntity();
 		$entity->setId(1);
-		$entity->setFolder(42);
+		$entity->setFolder('42');
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
-		// Entity stores 42 as '42' (string), so isString===true triggers recreation.
-		$this->fileService->expects($this->once())
-			->method('createObjectFolderWithoutUpdate')
-			->willReturn(42);
+		$this->fileService->expects($this->never())
+			->method('createObjectFolderWithoutUpdate');
 
 		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
 
-		$this->assertSame(42, $result);
+		$this->assertNull($result);
 	}
 }
