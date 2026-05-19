@@ -134,6 +134,7 @@
 			"cweagans/composer-patches": true
 		},
 		"optimize-autoloader": true,
+		"process-timeout": 900,
 		"sort-packages": true,
 		"platform": {
 			"php": "8.1"
