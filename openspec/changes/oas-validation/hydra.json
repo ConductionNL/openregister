@@ -11,7 +11,9 @@
       "ended_at": null,
       "outcome": "in-flight",
       "outcome_reason": null,
-      "pattern_tags": [],
+      "pattern_tags": [
+        "browser-test-nc-setup-failed"
+      ],
       "stages": [
         {
           "stage": "build",
