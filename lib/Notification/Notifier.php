@@ -97,11 +97,43 @@ class Notifier implements INotifier
             case 'configuration_update_available':
                 return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
 
+            case 'annotation_notification':
+                return $this->prepareAnnotationNotification(notification: $notification);
+
             default:
                 // Unknown subject.
                 throw new InvalidArgumentException('Unknown subject');
         }//end switch
     }//end prepare()
+
+    /**
+     * Prepare an annotation-driven notification for display.
+     *
+     * @param INotification $notification The notification to prepare.
+     *
+     * @return INotification
+     *
+     * @spec openspec/changes/notificatie-engine/tasks.md#task-1
+     */
+    private function prepareAnnotationNotification(INotification $notification): INotification
+    {
+        $params  = $notification->getSubjectParameters();
+        $subject = $params['subject'] ?? $params['rule'] ?? 'Notification';
+
+        $notification->setParsedSubject(parsedSubject: $subject);
+
+        if (isset($params['objectId']) === true && $params['objectId'] !== '') {
+            $notification->setParsedMessage(
+                parsedMessage: 'Object: '.$params['objectId'].(isset($params['schemaId']) === true ? ' ('.$params['schemaId'].')' : '')
+            );
+        }
+
+        $notification->setIcon(
+            $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+        );
+
+        return $notification;
+    }//end prepareAnnotationNotification()
 
     /**
      * Prepare configuration update notification.

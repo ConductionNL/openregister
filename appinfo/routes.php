@@ -565,5 +565,13 @@ return [
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
+
+		// Notification history audit trail (read-only).
+		['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
+
+		// Notification subscriptions (per-user register/schema preferences).
+		['name' => 'notificationSubscriptions#index', 'url' => '/api/notification-subscriptions', 'verb' => 'GET'],
+		['name' => 'notificationSubscriptions#create', 'url' => '/api/notification-subscriptions', 'verb' => 'POST'],
+		['name' => 'notificationSubscriptions#destroy', 'url' => '/api/notification-subscriptions', 'verb' => 'DELETE'],
     ],
 ];

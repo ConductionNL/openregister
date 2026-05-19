@@ -197,6 +197,14 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
+use OCA\OpenRegister\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Db\NotificationSubscriptionMapper;
+use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Service\Notification\NotificationCoalescer;
+use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
+use OCA\OpenRegister\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Listener\AggregationThresholdListener;
 
 /**
  * Class Application
@@ -271,6 +279,7 @@ class Application extends App implements IBootstrap
         $this->registerSearchBackend(context: $context);
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
+        $this->registerNotificationServices(context: $context);
         $this->registerEventListeners(context: $context);
     }//end register()
 
@@ -729,6 +738,92 @@ class Application extends App implements IBootstrap
     }//end registerObjectInteractionServices()
 
     /**
+     * Register notification engine services.
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/notificatie-engine/tasks.md#task-1
+     */
+    private function registerNotificationServices(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            NotificationHistoryMapper::class,
+            function (ContainerInterface $container) {
+                return new NotificationHistoryMapper(
+                    db: $container->get('OCP\IDBConnection')
+                );
+            }
+        );
+
+        $context->registerService(
+            NotificationSubscriptionMapper::class,
+            function (ContainerInterface $container) {
+                return new NotificationSubscriptionMapper(
+                    db: $container->get('OCP\IDBConnection')
+                );
+            }
+        );
+
+        $context->registerService(
+            RateLimiter::class,
+            function (ContainerInterface $container) {
+                return new RateLimiter(
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            NotificationCoalescer::class,
+            function (ContainerInterface $container) {
+                return new NotificationCoalescer(
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            NotificationAnnotationValidator::class,
+            function (ContainerInterface $container) {
+                return new NotificationAnnotationValidator();
+            }
+        );
+
+        $context->registerService(
+            NotificationsAnnotationInstaller::class,
+            function (ContainerInterface $container) {
+                return new NotificationsAnnotationInstaller(
+                    webhookMapper: $container->get(WebhookMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            AnnotationNotificationDispatcher::class,
+            function (ContainerInterface $container) {
+                return new AnnotationNotificationDispatcher(
+                    notificationManager: $container->get('OCP\Notification\IManager'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    webhookService: $container->get(WebhookService::class),
+                    rateLimiter: $container->get(RateLimiter::class),
+                    coalescer: $container->get(NotificationCoalescer::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    config: $container->get('OCP\IConfig'),
+                    historyMapper: $container->get(NotificationHistoryMapper::class),
+                    subscriptionMapper: $container->get(NotificationSubscriptionMapper::class)
+                );
+            }
+        );
+    }//end registerNotificationServices()
+
+    /**
      * Register all event listeners for the application.
      *
      * @param IRegistrationContext $context The registration context
@@ -790,6 +885,10 @@ class Application extends App implements IBootstrap
 
         // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+
+        // AggregationThresholdListener evaluates threshold notification rules.
+        $context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, AggregationThresholdListener::class);
 
         // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
         $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
