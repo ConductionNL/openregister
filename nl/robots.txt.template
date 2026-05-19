@@ -1,0 +1,86 @@
+# Conduction default robots.txt
+#
+# Generated at build time by the @conduction/docusaurus-preset
+# ai-crawling plugin. Sites that ship their own static/robots.txt
+# get that file instead (the plugin no-ops if robots.txt already
+# exists in the build output).
+#
+# Posture: open. Conduction is an open-source company, our content is
+# meant to be read, quoted, and learned from. We allow both AI-search
+# citation crawlers and AI-training crawlers.
+#
+# Override by dropping a custom static/robots.txt in your site repo.
+# To flip the whole fleet, edit the DEFAULT_ROBOTS_TXT constant in
+# design-system/docusaurus-preset/src/plugins/ai-crawling.js.
+#
+# Bots are listed explicitly even though "User-agent: *" already permits
+# them. The explicit list documents intent and makes a future audit a
+# one-line diff.
+
+User-agent: *
+Allow: /
+
+# AI search / citation crawlers
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: DuckAssistBot
+Allow: /
+
+User-agent: MistralAI-User
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+# AI training crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-training-data-crawler
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Google-Extended
+Allow: /

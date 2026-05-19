@@ -139,6 +139,7 @@
         name:       itemEl.getAttribute('name') || '',
         meta:       itemEl.getAttribute('meta') || '',
         desc:       itemEl.getAttribute('desc') || '',
+        href:       itemEl.getAttribute('href') || '',
         brand:      itemEl.hasAttribute('brand') || itemEl.hasAttribute('brand-color'),
         brandColor: itemEl.getAttribute('brand-color') || '',
         glyph:      svg ? svg.cloneNode(true) : null,
@@ -160,7 +161,8 @@
     const positionClass = POSITION_CLASS[list.position] || list.position;
     const familyClass   = list.family ? `fam-${list.family}` : '';
     const colsClass     = list.columns > 1 ? `cols-${list.columns}` : '';
-    wrap.className = `box-wrap ${positionClass} ${familyClass} ${colsClass}`.trim();
+    const badgeClass = list.badge ? 'has-badge' : '';
+    wrap.className = `box-wrap ${positionClass} ${familyClass} ${colsClass} ${badgeClass}`.trim();
 
     if (list.badge) {
       const badge = document.createElement('span');
@@ -173,8 +175,9 @@
     box.className = 'box' + (list.columns > 1 ? ` cols-${list.columns}` : '');
 
     function makeRow(item) {
-      const row = document.createElement('div');
+      const row = document.createElement(item.href ? 'a' : 'div');
       row.className = 'row';
+      if (item.href) row.setAttribute('href', item.href);
 
       const glyph = document.createElement('span');
       glyph.className = 'glyph' + (item.brand ? ' brand' : '');
@@ -230,8 +233,9 @@
     if (!list.label || list.position === 'top') return null;
     const positionClass = POSITION_CLASS[list.position] || list.position;
     const familyClass   = list.family ? `fam-${list.family}` : '';
+    const badgeClass    = list.badge ? 'has-badge' : '';
     const hex = document.createElement('div');
-    hex.className = `workspace-corner-hex ${positionClass} ${familyClass}`.trim();
+    hex.className = `workspace-corner-hex ${positionClass} ${familyClass} ${badgeClass}`.trim();
     // Allow newline in label to render a <br>; otherwise straight text.
     if (list.label.includes('\n')) {
       list.label.split('\n').forEach((line, i) => {

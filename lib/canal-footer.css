@@ -190,6 +190,25 @@
   display: inline-block; margin-right: 6px;
   vertical-align: middle;
 }
+/* "Conduction ♥ Nextcloud" citation: a vermillion-red heart between
+   the producer chain and the Nextcloud platform link. Sized to the
+   surrounding 11px caption with a small inline lift so the heart
+   centres on the cap-height. */
+.canal-footer .brand .triad .heart {
+  width: 11px; height: 11px;
+  color: var(--c-red-vermillion);
+  display: inline-block;
+  vertical-align: -1px;
+  margin: 0 2px;
+}
+.canal-footer .brand .triad a.next-blue {
+  color: var(--c-nextcloud-blue);
+  text-decoration: none;
+  transition: color 140ms ease;
+}
+.canal-footer .brand .triad a.next-blue:hover {
+  color: var(--c-nextcloud-cyan);
+}
 .canal-footer .brand .socials {
   display: flex; gap: 10px;
   margin-top: 18px;
