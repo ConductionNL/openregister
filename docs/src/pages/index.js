@@ -228,7 +228,7 @@ const WIDGETS = [
 export default function Home() {
   return (
     <Layout
-      title="OpenRegister"
+      title="OpenRegister, schema-driven object store for Nextcloud"
       description="Schema-driven object store with audit trail. The data foundation underneath every Conduction workspace app."
     >
       <main className="marketing-page">
