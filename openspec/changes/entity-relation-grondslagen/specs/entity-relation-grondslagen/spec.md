@@ -352,6 +352,58 @@ The mapper accepts any string array; OpenRegister MUST NOT issue any cross-regis
 - **AND** no error MUST be raised
 - **AND** no cross-register query MUST be issued
 
+### Requirement: The DI anonymise path MUST substitute each entity using the stable `[<TYPE>: <entity_id>]` placeholder format
+
+`DocumentProcessingHandler::anonymizeDocument` MUST substitute each detected entity occurrence with a placeholder of the form `[<TYPE>: <entity_id>]`, where:
+
+- `<TYPE>` is the entity's `entityType` (e.g. `PERSON`, `ORGANIZATION`, `LOCATION`, `EMAIL`, `BSN`).
+- `<entity_id>` is the integer primary key of the matching row in `openregister_entities` (the canonical entity catalogue), looked up via `EntityRelationMapper::findEntityIdsByValueForFile($fileId)` for the file being anonymised.
+- Whitespace MUST be exactly one space between the colon and the id.
+
+The placeholder is stable across anonymise calls on the same source file: re-running the redaction with the same entity catalogue produces byte-identical output, which is required for the grondslagen-summary report's traceability invariant.
+
+Fallback: when an entity in the substitution map has no matching row in `openregister_entities` for the file (an edge case for DI callers that bypass the standard detection path), the implementation MAY fall back to a per-call 8-character UUID fragment as `<id>` — this is not stable across calls but preserves the placeholder shape. Implementations SHOULD log a warning when this fallback is invoked.
+
+#### Scenario: Stable placeholder uses the entity catalogue id
+
+- **GIVEN** an `openregister_entities` row with `id=7`, `value="Jan Jansen"`, `type="PERSON"`
+- **AND** an `EntityRelation` referencing that entity on a file
+- **WHEN** `DocumentProcessingHandler::anonymizeDocument` runs for that file with `{ text: "Jan Jansen", entityType: "PERSON" }`
+- **THEN** every occurrence of "Jan Jansen" in the redacted file content MUST be replaced with the literal string `[PERSON: 7]`
+
+#### Scenario: Re-anonymising the same file is byte-identical
+
+- **GIVEN** a file whose anonymised output was produced via this path at time T₁
+- **WHEN** the same file is re-anonymised at time T₂ with the same entity catalogue state
+- **THEN** the anonymised output at T₂ MUST be byte-identical to the output at T₁
+- **AND** every placeholder MUST carry the same `<entity_id>` it had at T₁
+
+#### Scenario: Missing entity row falls back to per-call UUID fragment
+
+- **GIVEN** a DI caller passes an entity `{ text: "Jane Doe", entityType: "PERSON" }` that does NOT correspond to any row in `openregister_entities` for this file
+- **WHEN** the anonymise path runs
+- **THEN** the placeholder MUST follow the shape `[PERSON: <8-char-hex>]` where the hex is a UUID v4 fragment
+- **AND** a warning MUST be logged identifying the fallback (without including the entity text per ADR-005)
+
+### Requirement: Sole canonical caller of `markAsAnonymized` for the redaction flow MUST be `DocumentProcessingHandler::anonymizeDocument`
+
+To prevent double-write conflicts where two callers both invoke `EntityRelationMapper::markAsAnonymized($fileId, ...)` on the same file (the second UPDATE overwrites the first's `anonymizedValue`), the call MUST be made by exactly ONE component in the redaction code path: `DocumentProcessingHandler::anonymizeDocument`. The HTTP controller (`FileTextController::anonymizeFile`) and any event listeners or DI orchestrators MUST NOT call `markAsAnonymized` independently — they invoke `anonymizeDocument`, and `anonymizeDocument` handles the marking.
+
+The value written to `anonymizedValue` is a generic per-file marker (`'[REDACTED]'`), not the per-entity placeholder. Per-entity placeholders are recorded by the per-row substitution that happens inside the file content; the column's purpose is binary "this file's relations have been redacted at least once" plus a generic marker for audit log readability.
+
+#### Scenario: HTTP anonymise call writes exactly one mark
+
+- **GIVEN** a `POST /api/files/:fileId/anonymize` call against a file with non-skipped entities
+- **WHEN** the controller invokes `FileService::anonymizeDocument` which delegates to `DocumentProcessingHandler::anonymizeDocument`
+- **THEN** `EntityRelationMapper::markAsAnonymized` MUST be called exactly once for this fileId
+- **AND** the controller MUST NOT issue its own `markAsAnonymized` call
+
+#### Scenario: DI/event anonymise call writes exactly one mark
+
+- **GIVEN** an event listener or DI orchestrator invokes `DocumentProcessingHandler::anonymizeDocument`
+- **WHEN** the anonymise path runs to completion
+- **THEN** `markAsAnonymized` MUST be called exactly once for this fileId, by `anonymizeDocument` itself
+
 ### Requirement: The change MUST be additive in API shape; only anonymise behaviour gains a skip filter
 
 The existing API endpoints — `FileService::anonymizeDocument(Node, entities[])` (DI) and `POST /api/files/:fileId/anonymize` (HTTP) — MUST keep their existing parameters and response shape. They MUST NOT consume any new field on entity-payload entries (e.g. erroneous `bases` on payload entries MUST be silently ignored). `EntityRelationMapper::markAsAnonymized`'s signature MUST be unchanged; only its WHERE clause gains the `AND skip_anonymization = 0` predicate.
@@ -398,6 +450,20 @@ This change adds a **decision-time** write path (the PATCH endpoint) and a **fil
 ### Per-relation granularity
 
 Each `EntityRelation` row is one detected occurrence at one offset. The PATCH endpoint operates per-row, so operators CAN express different decisions for different occurrences of the same entity within the same file — for example, set `skipAnonymization=true` at position 100 while leaving position 250 unflagged. Whether any consumer UI surfaces that fine-grained capability is a separate question. DocuDesk's review UI typically aggregates at entity level for ergonomic reasons (one decision per `(fileId, entityId)`, written to all matching relations); other consumers can use the finer granularity if they need it.
+
+### Placeholder format and cross-document correlation
+
+The `[<TYPE>: <entity_id>]` placeholder is **deliberately stable** across documents within a single OpenRegister tenant: two anonymised documents that referenced the same canonical entity (same row in `openregister_entities`) will carry the same placeholder id. This is required for the grondslagen-summary report consumers to thread an entity through multiple files in a dossier — without stable ids the reports cannot answer "where else does this anonymised entity appear?".
+
+This stability has a known privacy property: an analyst with access to multiple anonymised documents from the same tenant can correlate placeholders (i.e. determine that `[PERSON: 42]` in document A refers to the same person as `[PERSON: 42]` in document B), even without resolving 42 to a real identity. We treat this as **in-scope** behaviour, not a leak, because:
+
+1. The consumer use case (Woo dossier reports) actively depends on it.
+2. Cross-tenant correlation is impossible — `openregister_entities` lives in each tenant's database, and the primary key sequences are independent.
+3. Within-tenant correlation is also possible through legitimate channels (a single Woo dossier publishes multiple correlated documents by design).
+
+A hashed identifier (e.g. HMAC of `(entityId, salt)` with a per-tenant salt) would carry the same in-tenant stability, but also preserve correlation — so it doesn't change the privacy property. A per-document salt would defeat correlation but break the consumer use case. The choice of raw `entity_id` is the simplest implementation that meets the consumer requirement without changing the threat model.
+
+The placeholder format is captured normatively in the corresponding Requirement above. Implementations MUST emit it exactly.
 
 ### Decision-vs-state separation
 
