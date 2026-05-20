@@ -23,6 +23,9 @@ namespace OCA\OpenRegister\Controller;
 
 use OCP\AppFramework\Http;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Exception\ManualEntityException;
+use OCA\OpenRegister\Service\File\ManualEntityResult;
+use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\IndexService;
@@ -30,7 +33,9 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * FileTextController
@@ -60,6 +65,8 @@ class FileTextController extends Controller
      * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
      * @param LoggerInterface       $logger               Logger
      * @param IAppConfig            $config               Application configuration
+     * @param ManualEntityService   $manualEntityService  Orchestrator for the manual-entity write path
+     * @param IUserSession          $userSession          Session user accessor (for the manual-entity endpoint)
      */
     public function __construct(
         string $appName,
@@ -69,7 +76,9 @@ class FileTextController extends Controller
         private readonly FileService $fileService,
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly LoggerInterface $logger,
-        private readonly IAppConfig $config
+        private readonly IAppConfig $config,
+        private readonly ManualEntityService $manualEntityService,
+        private readonly IUserSession $userSession
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -589,4 +598,234 @@ class FileTextController extends Controller
             );
         }//end try
     }//end anonymizeFile()
+
+    /**
+     * Add an operator-supplied manual entity to a file.
+     *
+     * Implements `manual-entity-anonymisation`: takes an operator-typed
+     * value + type, performs chunk-aware string matching against the
+     * file's extracted text, creates (or reuses) the catalogue entry,
+     * and inserts one `EntityRelation` row per occurrence found.
+     *
+     * Idempotent: re-calling for the same value on the same file does
+     * NOT create duplicate relation rows. Zero-match responses are
+     * non-errors (HTTP 200 with a `message` field).
+     *
+     * Request body:
+     *
+     *     {
+     *         "value":         "Jan Jansen",     // required
+     *         "type":          "PERSON",          // required
+     *         "category":      "name",            // optional
+     *         "wholeWord":     true,              // optional, default true
+     *         "caseSensitive": true               // optional, default true
+     *     }
+     *
+     * @param int $fileId Nextcloud file ID the manual entity applies to.
+     *
+     * @return JSONResponse 201 on matches found, 200 on zero matches, 4xx/5xx on failure.
+     *
+     * @NoAdminRequired
+     */
+    public function addManualEntity(int $fileId): JSONResponse
+    {
+        // Content-type guard. The endpoint accepts JSON only; reject
+        // other media types with 415 so callers don't accidentally
+        // trip the body-parser heuristics.
+        $contentType = (string) $this->request->getHeader('Content-Type');
+        $mediaType   = strtolower(trim(explode(';', $contentType, 2)[0]));
+        if ($mediaType !== 'application/json' && $mediaType !== '') {
+            return new JSONResponse(
+                data: [
+                    'error'  => 'unsupported_media_type',
+                    'reason' => 'POST /api/files/{fileId}/manual-entities requires Content-Type: application/json',
+                ],
+                statusCode: Http::STATUS_UNSUPPORTED_MEDIA_TYPE
+            );
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(
+                data: ['error' => 'unauthenticated'],
+                statusCode: Http::STATUS_UNAUTHORIZED
+            );
+        }
+
+        $body = $this->request->getParams();
+        unset($body['fileId'], $body['_route']);
+
+        $value         = isset($body['value']) === true ? (string) $body['value'] : '';
+        $type          = isset($body['type']) === true ? (string) $body['type'] : '';
+        $category      = isset($body['category']) === true ? (string) $body['category'] : null;
+        $wholeWord     = isset($body['wholeWord']) === true ? (bool) $body['wholeWord'] : true;
+        $caseSensitive = isset($body['caseSensitive']) === true ? (bool) $body['caseSensitive'] : true;
+
+        if ($value === '') {
+            return new JSONResponse(
+                data: ['error' => 'invalid_request', 'field' => 'value'],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        if ($type === '') {
+            return new JSONResponse(
+                data: ['error' => 'invalid_request', 'field' => 'type'],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        // ADR-005 PII rule: log the request shape WITHOUT the value.
+        $this->logger->info(
+            message: '[FileTextController] addManualEntity request',
+            context: [
+                'file'          => __FILE__,
+                'line'          => __LINE__,
+                'fileId'        => $fileId,
+                'type'          => $type,
+                'wholeWord'     => $wholeWord,
+                'caseSensitive' => $caseSensitive,
+                'valueLength'   => strlen($value),
+                'actor'         => $user->getUID(),
+            ]
+        );
+
+        try {
+            $result = $this->manualEntityService->addManualEntity(
+                fileId: $fileId,
+                value: $value,
+                type: $type,
+                category: $category,
+                wholeWord: $wholeWord,
+                caseSensitive: $caseSensitive,
+                actor: $user
+            );
+        } catch (ManualEntityException $e) {
+            return $this->mapManualEntityException(exception: $e, fileId: $fileId);
+        } catch (Throwable $e) {
+            $this->logger->error(
+                message: '[FileTextController] addManualEntity unexpected failure',
+                context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
+                    'fileId' => $fileId,
+                    'error'  => $e->getMessage(),
+                ]
+            );
+            return new JSONResponse(
+                data: ['error' => 'internal_error'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+
+        return $this->formatManualEntityResponse(result: $result);
+
+    }//end addManualEntity()
+
+    /**
+     * Translate a `ManualEntityException` to the matching HTTP response.
+     *
+     * Per the spec:
+     *   file_not_extracted      → 422 (operator must run extraction first)
+     *   regex_compile_failure   → 400 (malformed needle)
+     *   unsupported_entity_type → 400
+     *   internal_error          → 500, OR 403 when the message carries the
+     *                             `forbidden:` sentinel from the service-side
+     *                             write-access check.
+     *
+     * @param ManualEntityException $exception Source exception.
+     * @param int                   $fileId    Target file id (used for logging).
+     *
+     * @return JSONResponse Structured error body with no PII echo.
+     */
+    private function mapManualEntityException(ManualEntityException $exception, int $fileId): JSONResponse
+    {
+        $reason = $exception->getReason();
+
+        if ($reason === ManualEntityException::REASON_INTERNAL_ERROR
+            && str_starts_with($exception->getMessage(), 'forbidden:') === true
+        ) {
+            return new JSONResponse(
+                data: [
+                    'error'  => 'forbidden',
+                    'reason' => 'write access to file required',
+                ],
+                statusCode: Http::STATUS_FORBIDDEN
+            );
+        }
+
+        $statusByReason = [
+            ManualEntityException::REASON_FILE_NOT_EXTRACTED      => Http::STATUS_UNPROCESSABLE_ENTITY,
+            ManualEntityException::REASON_REGEX_COMPILE_FAILURE   => Http::STATUS_BAD_REQUEST,
+            ManualEntityException::REASON_UNSUPPORTED_ENTITY_TYPE => Http::STATUS_BAD_REQUEST,
+            ManualEntityException::REASON_INTERNAL_ERROR          => Http::STATUS_INTERNAL_SERVER_ERROR,
+        ];
+
+        $status = ($statusByReason[$reason] ?? Http::STATUS_INTERNAL_SERVER_ERROR);
+
+        $this->logger->info(
+            message: '[FileTextController] addManualEntity translated exception',
+            context: [
+                'file'   => __FILE__,
+                'line'   => __LINE__,
+                'fileId' => $fileId,
+                'reason' => $reason,
+                'status' => $status,
+            ]
+        );
+
+        return new JSONResponse(
+            data: ['error' => $reason],
+            statusCode: $status
+        );
+
+    }//end mapManualEntityException()
+
+    /**
+     * Format the success response body per the proposal.
+     *
+     * 201 when one or more matches were found; 200 with a `message`
+     * field when zero matches were found (catalogue entry was still
+     * created or reused).
+     *
+     * @param ManualEntityResult $result Service-layer result.
+     *
+     * @return JSONResponse
+     */
+    private function formatManualEntityResponse(ManualEntityResult $result): JSONResponse
+    {
+        $entityPayload = [
+            'id'     => (int) $result->entity->getId(),
+            'uuid'   => $result->entity->getUuid(),
+            'value'  => $result->entity->getValue(),
+            'type'   => $result->entity->getType(),
+            'reused' => ($result->entityWasNew === false),
+        ];
+
+        $relationsPayload = [];
+        foreach ($result->relations as $relation) {
+            $relationsPayload[] = [
+                'id'            => (int) $relation->getId(),
+                'chunkId'       => $relation->getChunkId(),
+                'positionStart' => $relation->getPositionStart(),
+                'positionEnd'   => $relation->getPositionEnd(),
+                'context'       => $relation->getContext(),
+            ];
+        }
+
+        $body = [
+            'entity'         => $entityPayload,
+            'relations'      => $relationsPayload,
+            'matchCount'     => $result->matchCount,
+            'matchesSkipped' => $result->matchesSkipped,
+        ];
+
+        if ($result->matchCount === 0) {
+            $body['message'] = 'Text not found in file. Catalogue entry created (or reused) and is available for use on other files.';
+            return new JSONResponse(data: $body, statusCode: Http::STATUS_OK);
+        }
+
+        return new JSONResponse(data: $body, statusCode: Http::STATUS_CREATED);
+
+    }//end formatManualEntityResponse()
 }//end class

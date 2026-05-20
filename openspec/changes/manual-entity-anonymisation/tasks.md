@@ -1,23 +1,23 @@
 ## 1. Value objects and constants
 
-- [ ] 1.1 Create `lib/Service/File/ChunkTextMatcher.php` value-object-ish utility class. Public methods:
+- [x] 1.1 Create `lib/Service/File/ChunkTextMatcher.php` value-object-ish utility class. Public methods:
     - `match(array $chunks, string $needle, bool $wholeWord, bool $caseSensitive, int $chunkOverlap): array` returning `[['chunkId' => int, 'positionStart' => int, 'positionEnd' => int, 'context' => string], ...]` in document order (sorted by absolute position).
     - Algorithm: per-chunk `preg_match_all` with `u` flag + optional `\b...\b` + optional `i`. For each match compute `absoluteStart = chunk.startOffset + chunkRelativeOffset`. Dedup matches across chunks by `(absoluteStart, absoluteEnd)`, keeping the entry from the LOWEST `chunkIndex` containing each unique absolute position. Sort by absoluteStart. Extract context window of ~30 chars on each side from the canonical chunk's text.
     - Reject needles where `strlen(needle) > chunkOverlap` with a typed `ChunkMatcherException(reason: 'value_too_long')`. Message MUST NOT contain the needle.
     - MUST NOT concatenate chunk text into a single string for the regex pass (the overlap regions would produce duplicate matches that the dedup would have to undo anyway, plus much higher memory cost).
     - PII-redacted error handling: regex-compile failure (malformed Unicode in needle) throws typed `ChunkMatcherException(reason: 'regex_compile_failure')` with a message that does NOT contain the needle.
-- [ ] 1.2 Create `lib/Exception/ManualEntityException.php` extending `\Exception`. Used for orchestration-layer failures with typed `reason` codes: `file_not_extracted`, `unsupported_entity_type`, `regex_compile_failure`, `internal_error`. Messages MUST NOT contain the operator's `value`.
-- [ ] 1.3 Add `DetectionMethod` constants. Either a new `lib/Db/DetectionMethod.php` class with `const PRESIDIO = 'presidio'; const OPENANONYMISER = 'openanonymiser'; const PATTERN = 'pattern'; const MANUAL = 'manual';` OR a const block on `EntityRelationMapper`. Mention via PhpDoc on the `EntityRelation::$detectionMethod` property docblock.
+- [x] 1.2 Create `lib/Exception/ManualEntityException.php` extending `\Exception`. Used for orchestration-layer failures with typed `reason` codes: `file_not_extracted`, `unsupported_entity_type`, `regex_compile_failure`, `internal_error`. Messages MUST NOT contain the operator's `value`. **Implementation note:** also created `lib/Exception/ChunkMatcherException.php` for the matcher-layer failures (value too long, regex compile) — service translates matcher exceptions into orchestration exceptions.
+- [x] 1.3 Add `DetectionMethod` constants. Either a new `lib/Db/DetectionMethod.php` class with `const PRESIDIO = 'presidio'; const OPENANONYMISER = 'openanonymiser'; const PATTERN = 'pattern'; const MANUAL = 'manual';` OR a const block on `EntityRelationMapper`. Mention via PhpDoc on the `EntityRelation::$detectionMethod` property docblock. **Implemented as standalone class** `lib/Db/DetectionMethod.php`.
 
 ## 2. Mapper extensions
 
-- [ ] 2.1 `lib/Db/GdprEntityMapper.php` — add `findOneByValueAndType(string $value, string $type): ?GdprEntity`. SELECT WHERE value = :value AND type = :type LIMIT 2 — if 2 rows return, the dedup invariant is violated, log a warning, return the first; never throw.
-- [ ] 2.2 `lib/Db/EntityRelationMapper.php` — add `existsForFileAtPosition(int $fileId, int $entityId, int $chunkId, int $positionStart, int $positionEnd): bool`. SELECT 1 FROM oc_openregister_entity_relations WHERE all five values match. Single-row probe.
-- [ ] 2.3 `lib/Db/EntityRelationMapper.php` — add `insertBatch(array $rows): array` accepting an array of associative arrays each carrying the relation field set. Validates required fields, calls `insert` per row inside the caller's transaction (caller manages BEGIN/COMMIT). Returns the array of inserted `EntityRelation` entities with their generated ids.
+- [x] 2.1 `lib/Db/GdprEntityMapper.php` — add `findOneByValueAndType(string $value, string $type): ?GdprEntity`. SELECT WHERE value = :value AND type = :type LIMIT 2 — if 2 rows return, the dedup invariant is violated, log a warning, return the first; never throw. **Implementation note:** added a nullable `LoggerInterface` constructor param so legacy direct-construction callers stay working; the warning is silently dropped when no logger is wired.
+- [x] 2.2 `lib/Db/EntityRelationMapper.php` — add `existsForFileAtPosition(int $fileId, int $entityId, int $chunkId, int $positionStart, int $positionEnd): bool`. SELECT 1 FROM oc_openregister_entity_relations WHERE all five values match. Single-row probe.
+- [x] 2.3 `lib/Db/EntityRelationMapper.php` — add `insertBatch(array $rows): array` accepting an array of associative arrays each carrying the relation field set. Validates required fields, calls `insert` per row inside the caller's transaction (caller manages BEGIN/COMMIT). Returns the array of inserted `EntityRelation` entities with their generated ids. **Implementation note:** the `openregister_entity_relations` table has no `uuid` column (verified against the create-migration); the row payload omits `uuid` and the response excludes it.
 
 ## 3. ManualEntityService orchestrator
 
-- [ ] 3.1 Create `lib/Service/File/ManualEntityService.php`. Constructor injects:
+- [x] 3.1 Create `lib/Service/File/ManualEntityService.php`. Constructor injects:
     - `GdprEntityMapper`
     - `EntityRelationMapper`
     - `ChunkTextMatcher`
@@ -26,7 +26,7 @@
     - `LoggerInterface`
     - The handler/service that resolves chunks for a fileId (likely `TextExtractionService` or a chunk-specific reader)
     - `IDBConnection` (for explicit transaction control)
-- [ ] 3.2 Implement public `addManualEntity(int $fileId, string $value, string $type, ?string $category, bool $wholeWord, bool $caseSensitive, IUser $actor): ManualEntityResult`. Steps:
+- [x] 3.2 Implement public `addManualEntity(int $fileId, string $value, string $type, ?string $category, bool $wholeWord, bool $caseSensitive, IUser $actor): ManualEntityResult`. Steps:
     1. Resolve the file's chunks. Empty array → throw `ManualEntityException(reason: 'file_not_extracted')`.
     2. `BEGIN TRANSACTION`.
     3. `lookup-or-create` entity via `GdprEntityMapper::findOneByValueAndType` + (insert if missing).
@@ -35,13 +35,13 @@
     6. `insertBatch` the buffered rows.
     7. Write audit-trail rows (entity_create when new, entity_relations_batch_create always).
     8. `COMMIT`. On any exception during steps 3-7, `ROLLBACK` and re-throw.
-- [ ] 3.3 Implement private `writeAuditTrails(GdprEntity $entity, bool $entityWasNew, int $fileId, string $value, string $type, array $insertedRelations, int $matchesSkipped, IUser $actor): void`. Two action types per the spec.
-- [ ] 3.4 Implement private `assertFileWriteAccess(int $fileId, IUser $actor): void`. Reuses the same helper that `markAsAnonymized` and `PATCH /api/entity-relations/{id}` already use. Throws on denial; the caller translates the exception to HTTP 403.
-- [ ] 3.5 Create a `ManualEntityResult` DTO carrying `{entity: GdprEntity, entityWasNew: bool, relations: EntityRelation[], matchCount: int, matchesSkipped: int}`. Used as the service's return value; the controller maps it to the JSON response body.
+- [x] 3.3 Implement private `writeAuditTrails(GdprEntity $entity, bool $entityWasNew, int $fileId, string $value, string $type, array $insertedRelations, int $matchesSkipped, IUser $actor): void`. Two action types per the spec. **Implementation note:** signature also threads `?string $category` so the `entity_create` audit row carries it.
+- [x] 3.4 Implement private `assertFileWriteAccess(int $fileId, IUser $actor): void`. Reuses the same helper that `markAsAnonymized` and `PATCH /api/entity-relations/{id}` already use. Throws on denial; the caller translates the exception to HTTP 403. **Implementation note:** inlined the user-folder + `isUpdateable()` check (mirrors `EntityRelationsController::canWriteFile`) since there's no shared helper service today; throws `ManualEntityException` with a `forbidden:` message prefix so the controller maps it to 403.
+- [x] 3.5 Create a `ManualEntityResult` DTO carrying `{entity: GdprEntity, entityWasNew: bool, relations: EntityRelation[], matchCount: int, matchesSkipped: int}`. Used as the service's return value; the controller maps it to the JSON response body.
 
 ## 4. Controller endpoint
 
-- [ ] 4.1 In `lib/Controller/FileTextController.php`, add `public function addManualEntity(int $fileId): JSONResponse`. Steps:
+- [x] 4.1 In `lib/Controller/FileTextController.php`, add `public function addManualEntity(int $fileId): JSONResponse`. Steps:
     1. Validate content-type header is `application/json`. Otherwise 415.
     2. Parse the JSON body. Missing `value` or `type` → 400 with `{ "error": "invalid_request", "field": "value" }` (no PII in the response).
     3. Read body fields: `value`, `type`, optional `category`, optional `wholeWord` (default true), optional `caseSensitive` (default true).
@@ -49,7 +49,7 @@
     5. Wrap the service call in a try/catch on `ManualEntityException`. Per the typed reason, translate to 403 / 404 / 422 / 500 with the matching response body.
     6. On `IAccessForbiddenException` (or equivalent from `assertFileWriteAccess`) → 403 with `{ "error": "forbidden" }`.
     7. On success: format the response per the proposal. HTTP 201 when `matchCount > 0`; HTTP 200 when `matchCount == 0` (with the `message` field).
-- [ ] 4.2 Add the route entry in `appinfo/routes.php`:
+- [x] 4.2 Add the route entry in `appinfo/routes.php`:
     ```php
     [
         'name' => 'fileText#addManualEntity',
@@ -58,7 +58,7 @@
         'requirements' => ['fileId' => '\\d+'],
     ],
     ```
-- [ ] 4.3 PII-redacted request logging: at the top of `addManualEntity`, log the request with `value` replaced by `valueLength: strlen($value)`. Permitted log payload: `fileId`, `type`, `wholeWord`, `caseSensitive`, `valueLength`. No `value`, no `category` (categories don't carry PII but are also not useful in logs).
+- [x] 4.3 PII-redacted request logging: at the top of `addManualEntity`, log the request with `value` replaced by `valueLength: strlen($value)`. Permitted log payload: `fileId`, `type`, `wholeWord`, `caseSensitive`, `valueLength`. No `value`, no `category` (categories don't carry PII but are also not useful in logs). **Implementation note:** also logs the actor UID alongside (ADR-005 allows UID).
 
 ## 5. DocumentProcessingHandler — no changes required
 
