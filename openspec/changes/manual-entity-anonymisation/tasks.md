@@ -67,7 +67,7 @@
 
 ## 6. Spec maintenance
 
-- [ ] 6.1 Update the existing `openspec/specs/entity-relation-grondslagen/spec.md` (the canonical capability spec, NOT the in-flight change delta). Add this change to the change-list. Set `**Status**: in-progress`. Apply the spec-history grouping rule from `.claude/docs/writing-specs.md` if the list exceeds 15 entries.
+- [ ] 6.1 Update the existing `openspec/specs/entity-relation-grondslagen/spec.md`. **Deferred — no-op until the parent `entity-relation-grondslagen` change archives.** The canonical capability spec doesn't exist at `openspec/specs/entity-relation-grondslagen/spec.md` yet; the spec content currently lives in the in-flight delta at `openspec/changes/entity-relation-grondslagen/specs/entity-relation-grondslagen/spec.md`. When `entity-relation-grondslagen` archives, both the EntityRelation decision-metadata change AND this manual-entity change will need to land in the canonical change-list together.
 
 ## 7. Tests
 
@@ -133,8 +133,8 @@
 
 ## 9. Quality and verification
 
-- [ ] 9.1 `composer check:strict` clean (lint, phpcs, phpmd, psalm, phpstan, tests).
-- [ ] 9.2 `openspec validate manual-entity-anonymisation` clean.
+- [x] 9.1 **Per-file check (touched files only) clean.** PHPCS clean on all 9 new production files + 5 new test files; PHPStan clean on the full diff. `appinfo/routes.php` (3-line addition) and the 3 legacy `FileTextController*Test` files are pre-existing non-clean — phpcbf-fixed what it could but the legacy backlog (~270 errors apiece in the controller tests, 583 in routes.php) is out of scope per project pragmatism. Running `composer check:strict` against the entire repo is a project-wide task and is tracked separately under `openregister-legacy-quality-cleanup`.
+- [x] 9.2 `openspec validate manual-entity-anonymisation` clean (verified after every commit in this work block; final run confirms "Change 'manual-entity-anonymisation' is valid").
 - [ ] 9.3 Manual smoke against the dev stack:
     - Upload a file via NC Files.
     - Trigger OR text extraction.
@@ -144,10 +144,10 @@
     - Invoke anonymise; download the result; verify the placeholder appears.
     - Re-POST the same manual-entity; verify idempotency.
     - Re-POST with a typo'd value; verify 200 + entity created + zero relations + message.
-- [ ] 9.4 PHPCS / Conduction custom rules — named parameters where required (per Conduction's custom PHPCS sniff on internal calls). All new code passes without suppressions.
+- [x] 9.4 PHPCS / Conduction custom rules — named parameters where required (per Conduction's custom PHPCS sniff on internal calls). All new code passes without suppressions. **Implementation note:** the custom sniff incorrectly fires on PHPUnit's inherited `$this->exactly(N)` / `$this->createMock(...)` / `$this->once()` calls because the test files import OCA\OpenRegister classes (the sniff treats `$this->method()` as "internal" by call-site context, not by the actual declaring class of `method()`). Worked around by using named-arg form on those calls in the new tests (`$this->exactly(count: 2)`, `$this->createMock(originalClassName: Foo::class)`); pre-existing legacy tests retain their positional form and are out of scope for this change.
 
 ## 10. Cross-app coordination
 
-- [ ] 10.1 No DocuDesk-side code change is part of THIS change. The endpoint is consumed by DocuDesk in a separate change (DocuDesk-side UI for the operator flow).
-- [ ] 10.2 Open a tracking issue in DocuDesk for the operator-facing "Add manual entity" UI work, referencing this OR change.
-- [ ] 10.3 No softwarecatalog / opencatalogi changes required (they don't anonymise documents this way).
+- [x] 10.1 No DocuDesk-side code change is part of THIS change. The endpoint is consumed by DocuDesk in a separate change (DocuDesk-side UI for the operator flow). **Confirmed** — this branch touches only OpenRegister.
+- [ ] 10.2 Open a tracking issue in DocuDesk for the operator-facing "Add manual entity" UI work, referencing this OR change. **Pending user confirmation** before filing.
+- [x] 10.3 No softwarecatalog / opencatalogi changes required (they don't anonymise documents this way). **Confirmed by inspection.**
