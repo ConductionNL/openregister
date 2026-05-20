@@ -149,5 +149,5 @@
 ## 10. Cross-app coordination
 
 - [x] 10.1 No DocuDesk-side code change is part of THIS change. The endpoint is consumed by DocuDesk in a separate change (DocuDesk-side UI for the operator flow). **Confirmed** — this branch touches only OpenRegister.
-- [ ] 10.2 Open a tracking issue in DocuDesk for the operator-facing "Add manual entity" UI work, referencing this OR change. **Pending user confirmation** before filing.
+- [x] 10.2 Open a tracking issue in DocuDesk for the operator-facing "Add manual entity" UI work, referencing this OR change. **Filed** as [ConductionNL/docudesk#225](https://github.com/ConductionNL/docudesk/issues/225) (`[OpenSpec] [docudesk] manual-entity-anonymisation-ui (PoC)`). PoC framing: the scope is to give the frontend team a working reference (request/response shapes, error mapping, idempotency UX, audit-trail wiring) — not a production-quality feature; production polish is a follow-up the frontend team owns.
 - [x] 10.3 No softwarecatalog / opencatalogi changes required (they don't anonymise documents this way). **Confirmed by inspection.**
