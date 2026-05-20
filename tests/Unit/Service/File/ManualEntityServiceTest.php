@@ -249,7 +249,6 @@ class ManualEntityServiceTest extends TestCase
             fileId: $fileId,
             value: 'Jan Jansen',
             type: 'PERSON',
-            category: 'natural_person',
             wholeWord: true,
             caseSensitive: true,
             actor: $actor
@@ -304,7 +303,6 @@ class ManualEntityServiceTest extends TestCase
             fileId: $fileId,
             value: 'Jan Jansen',
             type: 'PERSON',
-            category: null,
             wholeWord: true,
             caseSensitive: true,
             actor: $actor
@@ -358,7 +356,6 @@ class ManualEntityServiceTest extends TestCase
             fileId: $fileId,
             value: 'Jan',
             type: 'PERSON',
-            category: null,
             wholeWord: true,
             caseSensitive: true,
             actor: $actor
@@ -409,7 +406,6 @@ class ManualEntityServiceTest extends TestCase
             fileId: $fileId,
             value: 'Jan Jansen',
             type: 'PERSON',
-            category: null,
             wholeWord: true,
             caseSensitive: true,
             actor: $actor
@@ -440,8 +436,7 @@ class ManualEntityServiceTest extends TestCase
                 fileId: $fileId,
                 value: 'X',
                 type: 'PERSON',
-                category: null,
-                wholeWord: true,
+                    wholeWord: true,
                 caseSensitive: true,
                 actor: $actor
             );
@@ -473,8 +468,7 @@ class ManualEntityServiceTest extends TestCase
                 fileId: $fileId,
                 value: 'X',
                 type: 'PERSON',
-                category: null,
-                wholeWord: true,
+                    wholeWord: true,
                 caseSensitive: true,
                 actor: $actor
             );
@@ -511,8 +505,7 @@ class ManualEntityServiceTest extends TestCase
                 fileId: 42,
                 value: 'X',
                 type: 'PERSON',
-                category: null,
-                wholeWord: true,
+                    wholeWord: true,
                 caseSensitive: true,
                 actor: $user
             );
@@ -561,8 +554,7 @@ class ManualEntityServiceTest extends TestCase
                 fileId: $fileId,
                 value: 'Jan Jansen',
                 type: 'PERSON',
-                category: null,
-                wholeWord: true,
+                    wholeWord: true,
                 caseSensitive: true,
                 actor: $actor
             );

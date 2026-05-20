@@ -660,7 +660,6 @@ class FileTextController extends Controller
 
         $value         = isset($body['value']) === true ? (string) $body['value'] : '';
         $type          = isset($body['type']) === true ? (string) $body['type'] : '';
-        $category      = isset($body['category']) === true ? (string) $body['category'] : null;
         $wholeWord     = isset($body['wholeWord']) === true ? (bool) $body['wholeWord'] : true;
         $caseSensitive = isset($body['caseSensitive']) === true ? (bool) $body['caseSensitive'] : true;
 
@@ -698,7 +697,6 @@ class FileTextController extends Controller
                 fileId: $fileId,
                 value: $value,
                 type: $type,
-                category: $category,
                 wholeWord: $wholeWord,
                 caseSensitive: $caseSensitive,
                 actor: $user

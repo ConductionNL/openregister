@@ -154,12 +154,14 @@ if ($existing !== null) {
     $entity = $existing;
     $reused = true;
 } else {
+    $now = new DateTimeImmutable();
     $entity = new GdprEntity();
     $entity->setUuid(Uuid::v4()->toRfc4122());
     $entity->setValue($value);
     $entity->setType($type);
-    if ($category !== null) { $entity->setCategory($category); }
-    $entity->setDetectedAt(new DateTimeImmutable());
+    $entity->setCategory(EntityRecognitionHandler::getCategoryForType($type));
+    $entity->setDetectedAt($now);
+    $entity->setUpdatedAt($now);
     $entity = $this->gdprEntityMapper->insert($entity);
     $reused = false;
 }
@@ -167,7 +169,7 @@ if ($existing !== null) {
 
 **Why dedup on `(value, type)`:** this is the canonical entity identity in the catalogue. Two rows with the same value + type would produce divergent placeholder IDs (`[PERSON: 17]` in one file, `[PERSON: 42]` in another), breaking the cross-document correlation property the `entity-relation-grondslagen` capability spec made normative.
 
-**Why not on `(value, type, category)`:** category is a finer-grained classification within a type. A future check that `category` matches would split entries with `category = null` (from older detection runs) from entries with `category = "name"` (from a newer detection). For dedup intent — "is this the same logical entity?" — value + type is sufficient. If the operator passes a `category` and the existing row has a different category, the existing category wins; we don't update it (the row may carry decision metadata that depended on the original category).
+**Why `category` is server-derived, not operator-supplied:** the `oc_openregister_entities.category` column is `NOT NULL` with no default — every insert path MUST set it. The detector flow (`EntityRecognitionHandler::findOrCreateEntity`) derives the value from `$type` via `getCategoryForType()`; the manual-entity flow uses the same mapping (lifted to `public static` for shared use) so manual-entity rows and detector rows have identical categories for identical types. The endpoint intentionally does NOT accept a `category` field in the request body in v1 — exposing operator-override on category is a follow-up if a concrete use case emerges. Same applies to `updated_at` (also NOT NULL, no default) — populated alongside `detected_at` at insert time.
 
 **Concurrency:** between the `findOneByValueAndType` lookup and the `insert`, a concurrent request could create a row with the same `(value, type)` — two parallel manual-entity calls for the same value race. Mitigations:
 
@@ -342,7 +344,7 @@ Not applicable. This change adds service code and an endpoint; it does NOT intro
 ## Open Questions
 
 - **Should `addManualEntity` accept a list of values in one call?** Provisional: no — one value per call. Multi-value would conflate audit semantics (one row per value? per call?) and complicate the response shape. If real workflows need it, batch endpoint can be added later.
-- **Should `category` be required or optional?** Provisional: optional. Presidio doesn't always populate `category`; the catalogue tolerates null. Adds friction if required; the operator may not know which category applies. Implementation provides the field but doesn't require it.
+- **Should `category` be required or optional?** **Resolved: not in the API at all.** Server-derives from `type` via `EntityRecognitionHandler::getCategoryForType()`. Rationale: the column is NOT NULL with no default; the detector flow already derives consistently; exposing it as operator-input adds a UX decision that operators rarely have the context to make. Follow-up if a real use case for operator-override emerges.
 - **Should the response include a `preview` of the post-anonymise rendering?** Provisional: no. The operator typed the value; rendering the placeholder back is trivial and the actual file content isn't modified until the explicit anonymise call. Preview UI is DocuDesk-side.
 - **What happens if the file's extraction is stale (relations point at old chunk_ids)?** Provisional: caller's responsibility to re-extract before adding manual entities. The endpoint validates `chunkId` references exist; relations referencing stale chunks would be detected at relation insert time (foreign-key-like check). If extraction has moved on, the endpoint refuses with 422.
 - **Should the response carry the per-relation `bases` field?** Provisional: no, manual entries don't seed bases at create time. Operator sets bases later via the existing `PATCH /api/entity-relations/{id}` decision-metadata endpoint. Default `bases = null` per the existing schema.
