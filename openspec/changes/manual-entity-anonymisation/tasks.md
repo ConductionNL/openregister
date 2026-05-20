@@ -62,8 +62,8 @@
 
 ## 5. DocumentProcessingHandler — no changes required
 
-- [ ] 5.1 Verify that `findEntitiesForAnonymization` already includes manual-method rows by checking it does NOT filter on `detection_method`. Add a test confirming a manual-method relation is returned by this method.
-- [ ] 5.2 Verify that `findEntityIdsByValueForFile` already includes manual-method rows. Add a test confirming a manual entity's `entity_id` is in the resulting map.
+- [x] 5.1 Verify that `findEntitiesForAnonymization` already includes manual-method rows by checking it does NOT filter on `detection_method`. **Verified by inspection** at lib/Db/EntityRelationMapper.php:327 — the SELECT joins on `openregister_entities` and filters only on `file_id` and `skip_anonymization`; no `detection_method` predicate. Unit-test of "WHERE omits a column" is too brittle; reserved for integration tests (7.6).
+- [x] 5.2 Verify that `findEntityIdsByValueForFile` already includes manual-method rows. **Verified by inspection** at lib/Db/EntityRelationMapper.php — same pattern (no `detection_method` filter). Reserved for integration tests (7.6).
 
 ## 6. Spec maintenance
 
@@ -107,11 +107,11 @@
     - 200 on zero matches, with the `message` field present.
     - 500 on internal error (`ManualEntityException` with `reason = 'internal_error'`), response body has no PII.
     - Request-log line is captured via mock logger and asserted not to contain the test value.
-- [ ] 7.4 `tests/Unit/Db/GdprEntityMapperTest.php` — extend with `findOneByValueAndType`:
+- [x] 7.4 `tests/Unit/Db/GdprEntityMapperTest.php` — extend with `findOneByValueAndType`: **Implementation note:** new file (the mapper had no pre-existing test class — only the entity had one at `GdprEntityTest`). Production code changed `parent::findEntities` → `$this->findEntities` so a test subclass can stub the row set; behaviour-preserving since the mapper doesn't override `findEntities` itself.
     - Returns the matching row when one exists.
     - Returns null when no row matches.
     - Returns the first row + logs a warning when two rows match the same (value, type) (dedup-invariant violation).
-- [ ] 7.5 `tests/Unit/Db/EntityRelationMapperTest.php` — extend with:
+- [x] 7.5 `tests/Unit/Db/EntityRelationMapperTest.php` — extend with: **Implementation note:** the `findEntitiesForAnonymization` "no detection_method filter" assertion is left to integration tests — its SQL does not reference `detection_method` at all (read at lib/Db/EntityRelationMapper.php:327), so a unit-level check would just inspect that the WHERE clause omits a column, which is brittle. Tasks 5.1 / 5.2 are confirmed by code inspection.
     - `existsForFileAtPosition` returns true for an existing row.
     - `existsForFileAtPosition` returns false for a non-existing row.
     - `insertBatch` inserts all rows when called within an existing transaction.

@@ -123,7 +123,7 @@ class GdprEntityMapper extends QBMapper
             )
             ->setMaxResults(2);
 
-        $matches = parent::findEntities(query: $qb);
+        $matches = $this->findEntities(query: $qb);
         if (empty($matches) === true) {
             return null;
         }
