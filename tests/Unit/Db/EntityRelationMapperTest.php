@@ -46,6 +46,7 @@ use RuntimeException;
  */
 class TestableEntityRelationMapper extends EntityRelationMapper
 {
+
     /**
      * Captured EntityRelation entities passed to insert().
      *
@@ -64,10 +65,9 @@ class TestableEntityRelationMapper extends EntityRelationMapper
     /**
      * Number of insert() calls so far (used together with the throw counter).
      *
-     * @var int
+     * @var integer
      */
     public int $insertCalls = 0;
-
 
     /**
      * Override the inherited QBMapper::insert to capture without DB I/O.
@@ -85,7 +85,10 @@ class TestableEntityRelationMapper extends EntityRelationMapper
 
         // Assign a deterministic id based on the call count.
         $entity->setId(1000 + $this->insertCalls);
-        $this->insertedEntities[] = $entity;
+        if ($entity instanceof EntityRelation) {
+            $this->insertedEntities[] = $entity;
+        }
+
         return $entity;
 
     }//end insert()
@@ -102,16 +105,41 @@ class TestableEntityRelationMapper extends EntityRelationMapper
  */
 class EntityRelationMapperTest extends TestCase
 {
+
+    /**
+     * DB connection mock.
+     *
+     * @var IDBConnection&MockObject
+     */
     private IDBConnection&MockObject $db;
 
+    /**
+     * Audit-trail mapper mock (the EntityRelationMapper constructor requires it).
+     *
+     * @var AuditTrailMapper&MockObject
+     */
     private AuditTrailMapper&MockObject $auditTrailMapper;
 
+    /**
+     * Session user mock used by the decision-metadata audit path.
+     *
+     * @var IUserSession&MockObject
+     */
     private IUserSession&MockObject $userSession;
 
+    /**
+     * Symfony event dispatcher mock.
+     *
+     * @var IEventDispatcher&MockObject
+     */
     private IEventDispatcher&MockObject $eventDispatcher;
 
+    /**
+     * Structured log sink mock.
+     *
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface&MockObject $logger;
-
 
     /**
      * Wire fresh mocks for every test.
@@ -120,14 +148,13 @@ class EntityRelationMapperTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->db               = $this->createMock(IDBConnection::class);
-        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-        $this->userSession      = $this->createMock(IUserSession::class);
-        $this->eventDispatcher  = $this->createMock(IEventDispatcher::class);
-        $this->logger           = $this->createMock(LoggerInterface::class);
+        $this->db = $this->createMock(originalClassName: IDBConnection::class);
+        $this->auditTrailMapper = $this->createMock(originalClassName: AuditTrailMapper::class);
+        $this->userSession      = $this->createMock(originalClassName: IUserSession::class);
+        $this->eventDispatcher  = $this->createMock(originalClassName: IEventDispatcher::class);
+        $this->logger           = $this->createMock(originalClassName: LoggerInterface::class);
 
     }//end setUp()
-
 
     /**
      * Build a TestableEntityRelationMapper with the standard deps wired.
@@ -146,7 +173,6 @@ class EntityRelationMapperTest extends TestCase
 
     }//end makeMapper()
 
-
     /**
      * Sanity wiring test (kept from the pre-existing test).
      *
@@ -155,25 +181,23 @@ class EntityRelationMapperTest extends TestCase
     public function testConstructsWithInjectedDependencies(): void
     {
         $mapper = new EntityRelationMapper(
-            $this->db,
-            $this->auditTrailMapper,
-            $this->userSession,
-            $this->eventDispatcher,
-            $this->logger
+            db: $this->db,
+            auditTrailMapper: $this->auditTrailMapper,
+            userSession: $this->userSession,
+            eventDispatcher: $this->eventDispatcher,
+            logger: $this->logger
         );
 
         $this->assertInstanceOf(expected: EntityRelationMapper::class, actual: $mapper);
 
     }//end testConstructsWithInjectedDependencies()
 
-
     // =====================================================================
     // insertBatch
     // =====================================================================
 
-
     /**
-     * insertBatch passes each row through `buildRelationFromRow` then
+     * InsertBatch passes each row through `buildRelationFromRow` then
      * `insert`, returning the inserted entities in input order.
      *
      * @return void
@@ -184,16 +208,16 @@ class EntityRelationMapperTest extends TestCase
 
         $rows = [
             [
-                'entityId'        => 7,
-                'fileId'          => 42,
-                'chunkId'         => 100,
-                'positionStart'   => 13,
-                'positionEnd'     => 23,
-                'context'         => '... Jan Jansen ...',
-                'detectionMethod' => DetectionMethod::MANUAL,
-                'role'            => 'anonymisable',
-                'confidence'      => 1.0,
-                'anonymized'      => false,
+                'entityId'          => 7,
+                'fileId'            => 42,
+                'chunkId'           => 100,
+                'positionStart'     => 13,
+                'positionEnd'       => 23,
+                'context'           => '... Jan Jansen ...',
+                'detectionMethod'   => DetectionMethod::MANUAL,
+                'role'              => 'anonymisable',
+                'confidence'        => 1.0,
+                'anonymized'        => false,
                 'skipAnonymization' => false,
             ],
             [
@@ -228,7 +252,6 @@ class EntityRelationMapperTest extends TestCase
 
     }//end testInsertBatchInsertsEachRowInOrder()
 
-
     /**
      * Empty input → empty output, no insert call.
      *
@@ -245,7 +268,6 @@ class EntityRelationMapperTest extends TestCase
 
     }//end testInsertBatchWithEmptyRowsReturnsEmpty()
 
-
     /**
      * If insert() throws, the exception propagates to the caller (which
      * manages the transaction). Subsequent rows MUST NOT be inserted.
@@ -254,7 +276,7 @@ class EntityRelationMapperTest extends TestCase
      */
     public function testInsertBatchPropagatesExceptions(): void
     {
-        $mapper                  = $this->makeMapper();
+        $mapper = $this->makeMapper();
         $mapper->throwOnNthInsert = new RuntimeException(message: 'unique key violation');
 
         $rows = [
@@ -274,7 +296,6 @@ class EntityRelationMapperTest extends TestCase
         $this->assertSame(expected: [], actual: $mapper->insertedEntities);
 
     }//end testInsertBatchPropagatesExceptions()
-
 
     /**
      * Without an explicit `createdAt`, the row builder fills in a
@@ -296,7 +317,6 @@ class EntityRelationMapperTest extends TestCase
         );
 
     }//end testInsertBatchDefaultsCreatedAt()
-
 
     /**
      * Explicit `createdAt` is preserved on the inserted row.
@@ -328,11 +348,9 @@ class EntityRelationMapperTest extends TestCase
 
     }//end testInsertBatchKeepsExplicitCreatedAt()
 
-
     // =====================================================================
     // existsForFileAtPosition
     // =====================================================================
-
 
     /**
      * Wire a mock IQueryBuilder + IResult chain onto $this->db so the
@@ -345,17 +363,17 @@ class EntityRelationMapperTest extends TestCase
      */
     private function setupExistsQueryReturning(mixed $fetchResult): void
     {
-        $result = $this->createMock(IResult::class);
+        $result = $this->createMock(originalClassName: IResult::class);
         $result->method('fetch')->willReturn(value: $fetchResult);
         $result->method('closeCursor');
 
-        $composite = $this->createMock(ICompositeExpression::class);
+        $composite = $this->createMock(originalClassName: ICompositeExpression::class);
 
-        $expr = $this->createMock(IExpressionBuilder::class);
+        $expr = $this->createMock(originalClassName: IExpressionBuilder::class);
         $expr->method('andX')->willReturn(value: $composite);
         $expr->method('eq')->willReturn(value: 'eq');
 
-        $qb = $this->createMock(IQueryBuilder::class);
+        $qb = $this->createMock(originalClassName: IQueryBuilder::class);
         $qb->method('select')->willReturnSelf();
         $qb->method('from')->willReturnSelf();
         $qb->method('where')->willReturnSelf();
@@ -367,7 +385,6 @@ class EntityRelationMapperTest extends TestCase
         $this->db->method('getQueryBuilder')->willReturn(value: $qb);
 
     }//end setupExistsQueryReturning()
-
 
     /**
      * Row exists → returns true.
@@ -391,7 +408,6 @@ class EntityRelationMapperTest extends TestCase
         );
 
     }//end testExistsForFileAtPositionTrue()
-
 
     /**
      * No row matches → returns false.

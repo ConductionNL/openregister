@@ -35,8 +35,12 @@ class ChunkTextMatcherTest extends TestCase
 {
     private const CHUNK_OVERLAP = 200;
 
+    /**
+     * Matcher SUT.
+     *
+     * @var ChunkTextMatcher
+     */
     private ChunkTextMatcher $matcher;
-
 
     /**
      * Boot a fresh matcher for every test.
@@ -48,7 +52,6 @@ class ChunkTextMatcherTest extends TestCase
         $this->matcher = new ChunkTextMatcher();
 
     }//end setUp()
-
 
     /**
      * Build a `Chunk` entity with the fields the matcher consults.
@@ -70,7 +73,6 @@ class ChunkTextMatcherTest extends TestCase
         return $chunk;
 
     }//end makeChunk()
-
 
     /**
      * Single-chunk single-match: the simplest case.
@@ -102,7 +104,6 @@ class ChunkTextMatcherTest extends TestCase
 
     }//end testSingleChunkMatch()
 
-
     /**
      * Three occurrences in the same chunk — all returned, in order.
      *
@@ -131,7 +132,6 @@ class ChunkTextMatcherTest extends TestCase
         $this->assertSame(expected: 28, actual: $matches[2]['positionStart']);
 
     }//end testSingleChunkMultipleMatches()
-
 
     /**
      * Overlap-region dedup: the same absolute position appears in
@@ -175,7 +175,6 @@ class ChunkTextMatcherTest extends TestCase
 
     }//end testOverlapRegionDedup()
 
-
     /**
      * Distinct matches in non-overlap regions across two chunks are
      * both kept.
@@ -210,7 +209,6 @@ class ChunkTextMatcherTest extends TestCase
         $this->assertSame(expected: 31, actual: $matches[1]['chunkId']);
 
     }//end testDistinctMatchesAcrossChunks()
-
 
     /**
      * Re-running with the same inputs returns the same canonical
@@ -254,7 +252,6 @@ class ChunkTextMatcherTest extends TestCase
 
     }//end testDeterministicOnRerun()
 
-
     /**
      * Whole-word default rejects substring matches inside larger words.
      *
@@ -280,7 +277,6 @@ class ChunkTextMatcherTest extends TestCase
         $this->assertSame(expected: [], actual: $matches);
 
     }//end testWholeWordRejectsSubstring()
-
 
     /**
      * Disabling the whole-word flag finds substring matches.
@@ -308,7 +304,6 @@ class ChunkTextMatcherTest extends TestCase
 
     }//end testWholeWordFalseFindsSubstring()
 
-
     /**
      * Case-sensitive default rejects mismatched-case matches.
      *
@@ -334,7 +329,6 @@ class ChunkTextMatcherTest extends TestCase
         $this->assertSame(expected: [], actual: $matches);
 
     }//end testCaseSensitiveRejectsMismatchedCase()
-
 
     /**
      * Disabling case sensitivity finds mismatched-case matches.
@@ -362,7 +356,6 @@ class ChunkTextMatcherTest extends TestCase
 
     }//end testCaseInsensitiveFindsMismatchedCase()
 
-
     /**
      * Zero matches returns an empty array, not an exception.
      *
@@ -389,7 +382,6 @@ class ChunkTextMatcherTest extends TestCase
 
     }//end testZeroMatches()
 
-
     /**
      * Empty chunk list returns an empty array.
      *
@@ -408,7 +400,6 @@ class ChunkTextMatcherTest extends TestCase
         $this->assertSame(expected: [], actual: $matches);
 
     }//end testEmptyChunkList()
-
 
     /**
      * Needle longer than the chunk overlap throws the typed
@@ -439,7 +430,6 @@ class ChunkTextMatcherTest extends TestCase
         }
 
     }//end testNeedleExceedingOverlapThrows()
-
 
     /**
      * Empty needle returns empty without invoking the regex compile

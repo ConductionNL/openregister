@@ -37,11 +37,13 @@ use Psr\Log\LoggerInterface;
  */
 class TestableGdprEntityMapper extends GdprEntityMapper
 {
+
     /**
+     * Rows the override returns from `findEntities`.
+     *
      * @var Entity[]
      */
     public array $stubbedFindEntities = [];
-
 
     /**
      * Override the protected parent method.
@@ -65,12 +67,27 @@ class TestableGdprEntityMapper extends GdprEntityMapper
  */
 class GdprEntityMapperTest extends TestCase
 {
+
+    /**
+     * DB connection mock — exposes a stub QueryBuilder chain.
+     *
+     * @var IDBConnection&MockObject
+     */
     private IDBConnection&MockObject $db;
 
+    /**
+     * Logger mock used to assert the dedup-invariant warning.
+     *
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface&MockObject $logger;
 
+    /**
+     * SUT under test (subclass that lets us stub `findEntities`).
+     *
+     * @var TestableGdprEntityMapper
+     */
     private TestableGdprEntityMapper $mapper;
-
 
     /**
      * Wire a minimum IDBConnection stub (the SUT calls
@@ -103,7 +120,6 @@ class GdprEntityMapperTest extends TestCase
 
     }//end setUp()
 
-
     /**
      * Returns the matching row when exactly one row is found.
      *
@@ -126,7 +142,6 @@ class GdprEntityMapperTest extends TestCase
 
     }//end testReturnsExistingRow()
 
-
     /**
      * Returns null when no row matches.
      *
@@ -143,7 +158,6 @@ class GdprEntityMapperTest extends TestCase
         $this->assertNull(actual: $result);
 
     }//end testReturnsNullWhenNoMatch()
-
 
     /**
      * Two rows for the same (value, type) → dedup-invariant violation.
@@ -189,7 +203,6 @@ class GdprEntityMapperTest extends TestCase
         $this->assertSame(expected: $first, actual: $result);
 
     }//end testTwoRowsLogsAndReturnsFirst()
-
 
     /**
      * No logger wired → still safe (warning is silently dropped).

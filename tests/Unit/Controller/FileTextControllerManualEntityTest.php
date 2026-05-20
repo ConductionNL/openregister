@@ -49,16 +49,41 @@ use RuntimeException;
  */
 class FileTextControllerManualEntityTest extends TestCase
 {
+
+    /**
+     * SUT under test.
+     *
+     * @var FileTextController
+     */
     private FileTextController $controller;
 
+    /**
+     * Request mock used for content-type + body parsing.
+     *
+     * @var IRequest&MockObject
+     */
     private IRequest&MockObject $request;
 
+    /**
+     * Logger mock used to assert PII-redacted request logging.
+     *
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface&MockObject $logger;
 
+    /**
+     * Orchestration service mock — the controller's delegate.
+     *
+     * @var ManualEntityService&MockObject
+     */
     private ManualEntityService&MockObject $manualEntityService;
 
+    /**
+     * Session-user lookup mock.
+     *
+     * @var IUserSession&MockObject
+     */
     private IUserSession&MockObject $userSession;
-
 
     /**
      * Boot the SUT with all dependencies mocked.
@@ -69,8 +94,8 @@ class FileTextControllerManualEntityTest extends TestCase
     {
         parent::setUp();
 
-        $this->request             = $this->createMock(originalClassName: IRequest::class);
-        $this->logger              = $this->createMock(originalClassName: LoggerInterface::class);
+        $this->request = $this->createMock(originalClassName: IRequest::class);
+        $this->logger  = $this->createMock(originalClassName: LoggerInterface::class);
         $this->manualEntityService = $this->createMock(originalClassName: ManualEntityService::class);
         $this->userSession         = $this->createMock(originalClassName: IUserSession::class);
 
@@ -89,7 +114,6 @@ class FileTextControllerManualEntityTest extends TestCase
 
     }//end setUp()
 
-
     /**
      * Configure the request mock to report a JSON content-type and
      * return the given parsed body.
@@ -99,7 +123,7 @@ class FileTextControllerManualEntityTest extends TestCase
      *
      * @return void
      */
-    private function setupRequest(array $body, string $contentType = 'application/json'): void
+    private function setupRequest(array $body, string $contentType='application/json'): void
     {
         $this->request->method('getHeader')
             ->with('Content-Type')
@@ -108,7 +132,6 @@ class FileTextControllerManualEntityTest extends TestCase
         $this->request->method('getParams')->willReturn(value: $body);
 
     }//end setupRequest()
-
 
     /**
      * Wire an authenticated user into the session mock.
@@ -124,7 +147,6 @@ class FileTextControllerManualEntityTest extends TestCase
         return $user;
 
     }//end setupAuthenticatedUser()
-
 
     /**
      * Non-JSON content-type → 415.
@@ -144,7 +166,6 @@ class FileTextControllerManualEntityTest extends TestCase
 
     }//end testWrongContentTypeReturns415()
 
-
     /**
      * No session user → 401.
      *
@@ -161,7 +182,6 @@ class FileTextControllerManualEntityTest extends TestCase
         $this->assertSame(expected: 'unauthenticated', actual: $response->getData()['error']);
 
     }//end testUnauthenticatedReturns401()
-
 
     /**
      * Missing `value` → 400 with `invalid_request` + field hint.
@@ -181,7 +201,6 @@ class FileTextControllerManualEntityTest extends TestCase
 
     }//end testMissingValueReturns400()
 
-
     /**
      * Missing `type` → 400 with `invalid_request` + field hint.
      *
@@ -198,7 +217,6 @@ class FileTextControllerManualEntityTest extends TestCase
         $this->assertSame(expected: 'type', actual: $response->getData()['field']);
 
     }//end testMissingTypeReturns400()
-
 
     /**
      * ADR-005: the request log MUST NOT contain the operator-supplied
@@ -240,7 +258,6 @@ class FileTextControllerManualEntityTest extends TestCase
 
     }//end testRequestLogRedactsValue()
 
-
     /**
      * Service throws `REASON_INTERNAL_ERROR` with `forbidden:` prefix → 403.
      *
@@ -265,7 +282,6 @@ class FileTextControllerManualEntityTest extends TestCase
 
     }//end testForbiddenMapsTo403()
 
-
     /**
      * REASON_FILE_NOT_EXTRACTED → 422.
      *
@@ -288,7 +304,6 @@ class FileTextControllerManualEntityTest extends TestCase
         $this->assertSame(expected: Http::STATUS_UNPROCESSABLE_ENTITY, actual: $response->getStatus());
 
     }//end testFileNotExtractedMapsTo422()
-
 
     /**
      * REASON_REGEX_COMPILE_FAILURE → 400 (catches both compile errors
@@ -314,7 +329,6 @@ class FileTextControllerManualEntityTest extends TestCase
 
     }//end testRegexCompileFailureMapsTo400()
 
-
     /**
      * Unknown `Throwable` from the service → 500 with a generic
      * `internal_error` body (never leaks the raw message).
@@ -339,7 +353,6 @@ class FileTextControllerManualEntityTest extends TestCase
         $this->assertStringNotContainsString(needle: 'unexpected database explosion', haystack: (string) $body);
 
     }//end testUnexpectedThrowableMapsTo500()
-
 
     /**
      * Happy path: service returns a result with one match → 201 with
@@ -390,7 +403,6 @@ class FileTextControllerManualEntityTest extends TestCase
         $this->assertArrayNotHasKey(key: 'uuid', array: $data['relations'][0]);
 
     }//end testSuccessReturns201WithBody()
-
 
     /**
      * Zero-match path: service returns matchCount=0 → 200 + `message`
