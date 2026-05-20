@@ -42,10 +42,15 @@ Content-Type: application/json
 {
     "value":         "Jan Jansen",
     "type":          "PERSON",
-    "category":      "name",          // optional, must be a recognised category
     "wholeWord":     true,            // optional, default true
     "caseSensitive": true             // optional, default true
 }
+
+// `category` is intentionally not accepted in v1 — it is derived
+// server-side from `type` via the same mapping the detector flow uses,
+// so manual-entity rows stay consistent with detector-produced rows.
+// Operator-override on `category` is a follow-up if a concrete use
+// case emerges.
 
 → 201 Created  (when ≥1 match found)
 {
@@ -87,7 +92,7 @@ Content-Type: application/json
     "message":        "Text not found in file. Catalogue entry created (or reused) and is available for use on other files."
 }
 
-→ 400 Bad Request  — missing required field, invalid type/category
+→ 400 Bad Request  — missing required field, regex compile failure, or value too long
 → 403 Forbidden    — caller lacks write access to fileId
 → 404 Not Found    — fileId doesn't exist or its chunks aren't extracted yet
 → 422 Unprocessable — file extraction not yet run (chunks missing); operator must extract first

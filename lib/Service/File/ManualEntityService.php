@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Exception\ChunkMatcherException;
 use OCA\OpenRegister\Exception\ManualEntityException;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\Files\File as NcFile;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
@@ -114,13 +115,12 @@ class ManualEntityService
      *   8. Write audit-trail entries.
      *   9. Commit. On any exception in steps 4-8, rollback and re-throw.
      *
-     * @param int         $fileId        Nextcloud file id the manual entity applies to.
-     * @param string      $value         Operator-supplied text to add as an anonymisable entity.
-     * @param string      $type          Entity type tag (e.g. `PERSON`, `ORGANIZATION`).
-     * @param string|null $category      Optional finer-grained classification within `$type`.
-     * @param bool        $wholeWord     Wrap the needle in `\b...\b` regex boundaries when true.
-     * @param bool        $caseSensitive Use case-sensitive matching when true.
-     * @param IUser       $actor         The acting user (already authenticated upstream).
+     * @param int    $fileId        Nextcloud file id the manual entity applies to.
+     * @param string $value         Operator-supplied text to add as an anonymisable entity.
+     * @param string $type          Entity type tag (e.g. `PERSON`, `ORGANIZATION`).
+     * @param bool   $wholeWord     Wrap the needle in `\b...\b` regex boundaries when true.
+     * @param bool   $caseSensitive Use case-sensitive matching when true.
+     * @param IUser  $actor         The acting user (already authenticated upstream).
      *
      * @return ManualEntityResult The persisted entity + relation rows + match counts.
      *
@@ -131,7 +131,6 @@ class ManualEntityService
         int $fileId,
         string $value,
         string $type,
-        ?string $category,
         bool $wholeWord,
         bool $caseSensitive,
         IUser $actor
@@ -177,8 +176,7 @@ class ManualEntityService
         try {
             [$entity, $entityWasNew] = $this->lookupOrCreateEntity(
                 value: $value,
-                type: $type,
-                category: $category
+                type: $type
             );
 
             [$insertedRelations, $matchesSkipped] = $this->createRelationsForMatches(
@@ -193,7 +191,6 @@ class ManualEntityService
                 fileId: $fileId,
                 value: $value,
                 type: $type,
-                category: $category,
                 insertedRelations: $insertedRelations,
                 matchesSkipped: $matchesSkipped,
                 actor: $actor
@@ -205,6 +202,22 @@ class ManualEntityService
             if ($error instanceof ManualEntityException) {
                 throw $error;
             }
+
+            // Log the root cause with a stack trace before we wrap. The
+            // controller's translated-exception log only carries the reason
+            // code; without this log a 500 leaves no debuggable trail.
+            $this->logger->error(
+                '[ManualEntityService] Transactional manual-entity write failed; rolled back',
+                [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'fileId'    => $fileId,
+                    'actor'     => $actor->getUID(),
+                    'errorType' => $error::class,
+                    'error'     => $error->getMessage(),
+                    'trace'     => $error->getTraceAsString(),
+                ]
+            );
 
             throw new ManualEntityException(
                 reason: ManualEntityException::REASON_INTERNAL_ERROR,
@@ -309,29 +322,39 @@ class ManualEntityService
     /**
      * Find an existing catalogue row by (value, type) or create a new one.
      *
-     * @param string      $value    Entity value.
-     * @param string      $type     Entity type tag.
-     * @param string|null $category Optional category. Only used on new inserts;
-     *                              an existing row's category is preserved.
+     * Category is always derived server-side from `$type` via
+     * `EntityRecognitionHandler::getCategoryForType()` so the catalogue
+     * stays consistent with detector-produced rows. The
+     * `oc_openregister_entities.category` column is NOT NULL with no
+     * default — every insert path MUST set it. Operator override on
+     * category is intentionally not exposed in v1 of this endpoint;
+     * future work can add a `?string $category` parameter back if a
+     * concrete use case emerges.
+     *
+     * @param string $value Entity value.
+     * @param string $type  Entity type tag.
      *
      * @return array{0: GdprEntity, 1: bool} Tuple of (entity, wasNewlyInserted).
      */
-    private function lookupOrCreateEntity(string $value, string $type, ?string $category): array
+    private function lookupOrCreateEntity(string $value, string $type): array
     {
         $existing = $this->gdprEntityMapper->findOneByValueAndType(value: $value, type: $type);
         if ($existing !== null) {
             return [$existing, false];
         }
 
+        // Mirror the detector flow's column population
+        // (see `EntityRecognitionHandler::findOrCreateEntity`) — the
+        // `category`, `detected_at`, and `updated_at` columns are all
+        // NOT NULL without defaults; every insert path must set them.
+        $now    = new DateTime();
         $entity = new GdprEntity();
         $entity->setUuid(Uuid::v4()->toRfc4122());
         $entity->setValue($value);
         $entity->setType($type);
-        if ($category !== null && $category !== '') {
-            $entity->setCategory($category);
-        }
-
-        $entity->setDetectedAt(new DateTime());
+        $entity->setCategory(EntityRecognitionHandler::getCategoryForType(type: $type));
+        $entity->setDetectedAt($now);
+        $entity->setUpdatedAt($now);
 
         $entity = $this->gdprEntityMapper->insert($entity);
         return [$entity, true];
@@ -404,7 +427,6 @@ class ManualEntityService
      * @param int              $fileId            Target file id.
      * @param string           $value             Operator-supplied value (PII, audit-only).
      * @param string           $type              Entity type tag.
-     * @param string|null      $category          Optional category.
      * @param EntityRelation[] $insertedRelations Relations created by this call.
      * @param int              $matchesSkipped    How many matches were skipped because the
      *                                            relation row already existed.
@@ -418,7 +440,6 @@ class ManualEntityService
         int $fileId,
         string $value,
         string $type,
-        ?string $category,
         array $insertedRelations,
         int $matchesSkipped,
         IUser $actor
@@ -427,6 +448,11 @@ class ManualEntityService
         $now    = new DateTime();
 
         if ($entityWasNew === true) {
+            // Category is derived server-side on the entity itself
+            // (`EntityRecognitionHandler::getCategoryForType()`); the
+            // audit row reads from the entity so the persisted value
+            // is recorded verbatim — operators and forensic auditors
+            // can see exactly which category was applied.
             $entityAudit = new AuditTrail();
             $entityAudit->setUuid(Uuid::v4()->toRfc4122());
             $entityAudit->setAction('entity_create');
@@ -440,12 +466,12 @@ class ManualEntityService
                     'fields'      => [
                         'value'    => $value,
                         'type'     => $type,
-                        'category' => $category,
+                        'category' => $entity->getCategory(),
                     ],
                 ]
             );
             $this->auditTrailMapper->insert($entityAudit);
-        }
+        }//end if
 
         $relationIds = array_map(
             static fn (EntityRelation $r): int => (int) $r->getId(),

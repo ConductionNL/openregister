@@ -12,7 +12,7 @@ Extends the existing `entity-relation-grondslagen` capability with a write path 
 
 ### Requirement: `POST /api/files/{fileId}/manual-entities` MUST atomically create or reuse a catalogue entry and create one relation per occurrence found
 
-The endpoint accepts a JSON body with required fields `value` (string) and `type` (string), optional `category` (string), and optional match-behaviour flags `wholeWord` (boolean, default true) and `caseSensitive` (boolean, default true). The implementation MUST:
+The endpoint accepts a JSON body with required fields `value` (string) and `type` (string) plus optional match-behaviour flags `wholeWord` (boolean, default true) and `caseSensitive` (boolean, default true). `category` is NOT in the request body in v1 — it is derived server-side from `type` via `EntityRecognitionHandler::getCategoryForType()` so the catalogue stays consistent with detector-produced rows. The implementation MUST:
 
 1. Validate the body. Missing `value` or `type` returns HTTP 400. `Content-Type` other than `application/json` returns HTTP 415.
 2. Verify the caller has write access to the file referenced by `{fileId}`. Failure returns HTTP 403 with structured body `{ "error": "forbidden" }`.
@@ -181,9 +181,9 @@ The implementation MUST NOT concatenate chunk text into a single string for matc
 
 ### Requirement: Catalogue lookup-or-create MUST use `(value, type)` as the dedup key
 
-When the endpoint processes a manual-entity request, the catalogue lookup MUST query `oc_openregister_entities` for `WHERE value = :value AND type = :type`. If exactly one row matches, it is reused — its `id` is referenced by all new relation rows. If no row matches, a new row is inserted with `value`, `type`, optionally `category`, `uuid`, and `detectedAt`. The response body MUST surface this distinction via an `entity.reused` boolean.
+When the endpoint processes a manual-entity request, the catalogue lookup MUST query `oc_openregister_entities` for `WHERE value = :value AND type = :type`. If exactly one row matches, it is reused — its `id` is referenced by all new relation rows. If no row matches, a new row is inserted with `value`, `type`, the server-derived `category` (from `EntityRecognitionHandler::getCategoryForType($type)`), `uuid`, `detectedAt`, and `updatedAt`. The response body MUST surface this distinction via an `entity.reused` boolean.
 
-The lookup MUST NOT include `category` in the dedup key. A new request supplying a `category` value when the existing row has a different `category` (or null) MUST NOT update the existing row's category — the persisted decision-metadata semantics depend on the original category.
+The catalogue's `category` column is NOT NULL with no default; the manual-entity insert MUST set it. The derivation matches the detector flow's mapping so manual-entity rows and detector rows share the same category for the same type.
 
 #### Scenario: Existing catalogue row is reused
 
@@ -202,12 +202,12 @@ The lookup MUST NOT include `category` in the dedup key. A new request supplying
 - **THEN** a new row is inserted into `oc_openregister_entities` with these values
 - **AND** the response's `entity.reused` is `false`
 
-#### Scenario: Category mismatch does NOT trigger an update
+#### Scenario: New catalogue row carries the server-derived category
 
-- **GIVEN** an existing row with `value = "Jan Jansen"`, `type = "PERSON"`, `category = "name"`
-- **WHEN** the caller POSTs `{ "value": "Jan Jansen", "type": "PERSON", "category": "full-name" }`
-- **THEN** the existing row is reused
-- **AND** the existing row's `category` remains `"name"` (NOT updated to `"full-name"`)
+- **GIVEN** no row in `oc_openregister_entities` with `value = "Acme Corp"` and `type = "ORGANIZATION"`
+- **WHEN** the caller POSTs `{ "value": "Acme Corp", "type": "ORGANIZATION" }`
+- **THEN** a new row is inserted with `category = "business_data"` (the value returned by `EntityRecognitionHandler::getCategoryForType("ORGANIZATION")`)
+- **AND** the response's `entity.reused` is `false`
 
 ### Requirement: Audit-trail rows MUST be written for entity-create and batch-relation-create
 

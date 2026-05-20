@@ -12,11 +12,12 @@ Content-Type: application/json
 Body: {
     "value":         string,             // operator-supplied text (REQUIRED, PII)
     "type":          string,             // entity type tag, e.g. "PERSON" (REQUIRED)
-    "category":      string|null,        // optional finer-grained classification
     "wholeWord":     boolean (default true),
     "caseSensitive": boolean (default true)
 }
 ```
+
+> **Note on `category`:** the `oc_openregister_entities.category` column is `NOT NULL` and is populated server-side from `type` via the same `EntityRecognitionHandler::getCategoryForType()` mapping the detector flow uses (PERSON / EMAIL / PHONE / ADDRESS → `personal_data`; IBAN / SSN → `sensitive_pii`; ORGANIZATION → `business_data`; LOCATION → `contextual_data`; DATE → `temporal_data`; everything else → `contextual_data`). The endpoint intentionally does NOT accept a `category` field in v1 — operator-override on category is a follow-up if a concrete use case emerges.
 
 **Response shape (201 / 200):**
 
@@ -76,7 +77,7 @@ Two action types are written by every successful call:
    created      = now (UTC)
    changed.subjectType = "openregister_entities"
    changed.subjectId   = <gdpr_entity id>
-   changed.fields = { "value": <value>, "type": <type>, "category": <category|null> }
+   changed.fields = { "value": <value>, "type": <type>, "category": <derived> }
    ```
    ADR-022 forensic exception: `value` IS allowed in the audit payload (and only here — never in HTTP logs or error responses).
 
@@ -104,7 +105,7 @@ Two action types are written by every successful call:
 Manual-method relations carry `detectionMethod = "manual"` but are otherwise identical to detector-produced rows. The downstream pass picks them up unchanged:
 
 - **`POST /api/files/{fileId}/anonymize`** — `EntityRelationMapper::findEntitiesForAnonymization` does NOT filter on `detection_method`; all relations on the file (minus `skip_anonymization = true` ones) are included. Manual-method rows are anonymised on the next run.
-- **Caveat: value-keyed substitution.** OR's `DocumentProcessingHandler::anonymizeDocument` collapses multiple distinct catalogue entries with the same `value` into one substitution token. If an operator manually adds a value that already exists in the catalogue (under a different type or category), the auto-detected and manually-added occurrences will all map to the same placeholder. This is a feature, not a bug — operators don't see two placeholders for "Jan Jansen" just because one occurrence was auto-detected and another was operator-flagged.
+- **Caveat: value-keyed substitution.** OR's `DocumentProcessingHandler::anonymizeDocument` collapses multiple distinct catalogue entries with the same `value` into one substitution token. If an operator manually adds a value that already exists in the catalogue (under a different type), the auto-detected and manually-added occurrences will all map to the same placeholder. This is a feature, not a bug — operators don't see two placeholders for "Jan Jansen" just because one occurrence was auto-detected and another was operator-flagged.
 
 ## PII redaction (ADR-005)
 
