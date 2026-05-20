@@ -643,13 +643,16 @@ When `@self.folder` is rejected, the endpoint returns **HTTP 403** with body:
 
 ```json
 {
-  "error": "folder_access_denied",
-  "folder": "99"
+  "error": "folder_access_denied"
 }
 ```
 
-`folder` echoes the attempted node ID. The check applies uniformly across
-`POST` (create), `PUT` (update), and `PATCH` (partial update) on object endpoints.
+The attempted node ID is intentionally **not** echoed in the response body —
+echoing it would turn the endpoint into a folder-ID enumeration oracle for an
+attacker. The attempted ID is recorded server-side in the audit trail
+(`AuditTrail` table, action `folder_access_denied`) for forensic review by
+operators with audit-log access. The check applies uniformly across `POST`
+(create), `PUT` (update), and `PATCH` (partial update) on object endpoints.
 
 #### Acting user resolution ("self")
 

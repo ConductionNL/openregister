@@ -1493,7 +1493,22 @@ class ObjectService
                     } catch (Exception $e) {
                         // Log error but continue - object can function without folder.
                     }
+                } else {
+                    // Defense in depth (PR #1431 review concern): the
+                    // `setSelfMetadata` access check only fires when the
+                    // write payload includes `@self.folder`. Pre-PR
+                    // cross-tenant bindings (or any subsequent save that
+                    // touches other fields) would otherwise pass through
+                    // unchecked. Re-validate the existing binding on every
+                    // save so the check applies uniformly. Throws
+                    // `FolderAccessDeniedException` → HTTP 403 at the
+                    // controller layer when the acting user cannot access
+                    // the bound folder.
+                    $this->fileService->assertObjectFolderAccessible($existingObject);
                 }
+            } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
+                // Propagate folder-access denials up to the controller.
+                throw $e;
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, will create new one with the specified UUID.
                 // Let SaveObject handle the creation with the provided UUID.

@@ -826,6 +826,45 @@ class FileService
     }//end getObjectFolder()
 
     /**
+     * Re-validate the access check on an existing object's bound folder.
+     *
+     * Used by `ObjectService::ensureObjectFolder` to close the
+     * defense-in-depth gap flagged on PR #1431: pre-PR cross-tenant
+     * bindings (rows where `_folder` references a node the current
+     * actor cannot read) would otherwise pass through subsequent
+     * saves that don't touch `@self.folder` because `setSelfMetadata`
+     * only fires when `@self.folder` is present in the write payload.
+     *
+     * Re-running `assertFolderIsAccessible` on every save through
+     * `ensureObjectFolder` makes the check apply uniformly. A
+     * denial throws `FolderAccessDeniedException` (HTTP 403) at the
+     * controller layer.
+     *
+     * No-op when the object has no folder bound or the bound value
+     * is non-numeric (legacy path-style folder, handled by the
+     * auto-create branch in ensureObjectFolder).
+     *
+     * @param ObjectEntity $object The existing object whose folder must be re-validated.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the acting user cannot access the bound folder.
+     */
+    public function assertObjectFolderAccessible(ObjectEntity $object): void
+    {
+        $folder = $object->getFolder();
+        if ($folder === null || $folder === '' || is_numeric($folder) === false) {
+            return;
+        }
+
+        $this->folderManagementHandler->assertFolderIsAccessible(
+            folderId: (string) $folder,
+            currentUser: null,
+            objectEntity: $object
+        );
+    }//end assertObjectFolderAccessible()
+
+    /**
      * Returns a share link for the given IShare object.
      *
      * @param IShare $share An IShare object we are getting the share link for

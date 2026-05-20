@@ -19,8 +19,6 @@ use PHPUnit\Framework\TestCase;
  */
 class FolderAccessDeniedExceptionTest extends TestCase
 {
-
-
     /**
      * Reflection-based parent-class assertion: must extend `\Exception` directly.
      */
@@ -33,7 +31,6 @@ class FolderAccessDeniedExceptionTest extends TestCase
         $this->assertSame(\Exception::class, $parent->getName());
     }//end testExtendsExceptionDirectly()
 
-
     /**
      * The exception must NOT be a subclass of any Nextcloud-specific exception.
      */
@@ -41,23 +38,28 @@ class FolderAccessDeniedExceptionTest extends TestCase
     {
         $this->assertFalse(
             is_subclass_of(FolderAccessDeniedException::class, NotPermittedException::class),
-            'FolderAccessDeniedException must not extend NotPermittedException — generic '
-            .'catch-blocks for NotPermittedException would otherwise absorb the denial.'
+            'FolderAccessDeniedException must not extend NotPermittedException — generic '.'catch-blocks for NotPermittedException would otherwise absorb the denial.'
         );
     }//end testNotASubclassOfNotPermittedException()
 
-
     /**
      * The attempted folder ID must be retrievable for response shaping.
+     *
+     * Exception::getCode() returns the constructor default (0) — the
+     * exception is HTTP-agnostic. Controllers MUST use the
+     * `FolderAccessDeniedException::HTTP_STATUS` constant for the HTTP
+     * status mapping. Locking both invariants here so a future reader
+     * cannot accidentally re-couple the two.
+     *
+     * @return void
      */
     public function testCarriesAttemptedFolderId(): void
     {
         $exception = new FolderAccessDeniedException(attemptedFolderId: '999');
 
-        $this->assertSame('999', $exception->getAttemptedFolderId());
-        $this->assertSame(403, $exception->getCode());
-        $this->assertStringContainsString('999', $exception->getMessage());
+        $this->assertSame(expected: '999', actual: $exception->getAttemptedFolderId());
+        $this->assertSame(expected: 0, actual: $exception->getCode());
+        $this->assertSame(expected: 403, actual: FolderAccessDeniedException::HTTP_STATUS);
+        $this->assertStringContainsString(needle: '999', haystack: $exception->getMessage());
     }//end testCarriesAttemptedFolderId()
-
-
 }//end class
