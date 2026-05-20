@@ -71,7 +71,7 @@
 
 ## 7. Tests
 
-- [ ] 7.1 `tests/Unit/Service/File/ChunkTextMatcherTest.php`. Covers:
+- [x] 7.1 `tests/Unit/Service/File/ChunkTextMatcherTest.php`. Covers:
     - Single-chunk match (one chunk, one occurrence).
     - Single-chunk multi-match (one chunk, three occurrences of the same needle).
     - **Overlap-region dedup**: needle present in chunk N's tail AND chunk N+1's overlap head at the same absolute position → exactly ONE match returned, with the canonical chunkId being the lower chunkIndex (chunk N).
@@ -87,7 +87,7 @@
     - Empty chunk list returns empty array.
     - Needle length exceeding `$chunkOverlap` throws `ChunkMatcherException(reason: 'value_too_long')` with no PII in message.
     - Malformed Unicode in needle throws typed exception with no PII in message.
-- [ ] 7.2 `tests/Unit/Service/File/ManualEntityServiceTest.php`. Covers:
+- [x] 7.2 `tests/Unit/Service/File/ManualEntityServiceTest.php`. Covers:
     - Happy path: new entity + 2 new relations.
     - Reuse path: existing entity, 2 new relations.
     - Idempotent path: existing entity + already-existing relations, 2 matches skipped, no new rows.
@@ -96,7 +96,7 @@
     - File-write denial: `assertFileWriteAccess` throws → service rethrows.
     - Audit-write failure mid-transaction: the entity + relation rows are rolled back.
     - Audit rows are written with the expected `action`, `user`, `object`, `changed` fields.
-- [ ] 7.3 `tests/Unit/Controller/FileTextControllerTest.php` — extend with cases for the new endpoint:
+- [x] 7.3 `tests/Unit/Controller/FileTextControllerTest.php` — extend with cases for the new endpoint: **Implementation note:** new tests live in sibling `tests/Unit/Controller/FileTextControllerManualEntityTest.php` (matches the existing `Coverage` / `Deep` / `Gap` naming pattern); 404 case is omitted because the controller doesn't reach a 404 branch for the new endpoint (missing-file is surfaced as 422 / 403 via the service layer per the spec's no-oracle rule). The three sibling test files (`Test`, `CoverageTest`, `DeepTest`) were updated to pass the two new constructor params + the stale `findEntitiesForFile` mocks were corrected to `findEntitiesForAnonymization` (pre-existing failure picked up by this change).
     - 415 on non-JSON content-type.
     - 400 on missing `value` / `type` (response does NOT echo the supplied value).
     - 401 on no session user.

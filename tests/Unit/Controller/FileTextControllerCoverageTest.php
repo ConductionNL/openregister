@@ -6,12 +6,14 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -29,6 +31,8 @@ class FileTextControllerCoverageTest extends TestCase
     private EntityRelationMapper&MockObject $entityRelationMapper;
     private LoggerInterface&MockObject $logger;
     private IAppConfig&MockObject $config;
+    private ManualEntityService&MockObject $manualEntityService;
+    private IUserSession&MockObject $userSession;
 
     protected function setUp(): void
     {
@@ -41,6 +45,8 @@ class FileTextControllerCoverageTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->config = $this->createMock(IAppConfig::class);
+        $this->manualEntityService = $this->createMock(ManualEntityService::class);
+        $this->userSession = $this->createMock(IUserSession::class);
 
         $this->controller = new FileTextController(
             'openregister',
@@ -50,7 +56,9 @@ class FileTextControllerCoverageTest extends TestCase
             $this->fileService,
             $this->entityRelationMapper,
             $this->logger,
-            $this->config
+            $this->config,
+            $this->manualEntityService,
+            $this->userSession
         );
     }
 
