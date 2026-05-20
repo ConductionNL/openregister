@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -13,6 +14,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -27,6 +29,8 @@ class FileTextControllerTest extends TestCase
     private EntityRelationMapper&MockObject $entityRelationMapper;
     private LoggerInterface&MockObject $logger;
     private IAppConfig&MockObject $config;
+    private ManualEntityService&MockObject $manualEntityService;
+    private IUserSession&MockObject $userSession;
 
     protected function setUp(): void
     {
@@ -39,6 +43,8 @@ class FileTextControllerTest extends TestCase
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->config = $this->createMock(IAppConfig::class);
+        $this->manualEntityService = $this->createMock(ManualEntityService::class);
+        $this->userSession = $this->createMock(IUserSession::class);
 
         $this->controller = new FileTextController(
             'openregister',
@@ -48,7 +54,9 @@ class FileTextControllerTest extends TestCase
             $this->fileService,
             $this->entityRelationMapper,
             $this->logger,
-            $this->config
+            $this->config,
+            $this->manualEntityService,
+            $this->userSession
         );
     }
 
@@ -564,7 +572,7 @@ class FileTextControllerTest extends TestCase
         $fileNode = $this->createMock(\OCP\Files\File::class);
         $fileNode->method('getName')->willReturn('test.pdf');
         $this->fileService->method('getFileById')->willReturn($fileNode);
-        $this->entityRelationMapper->method('findEntitiesForFile')->willReturn([]);
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')->willReturn([]);
 
         $result = $this->controller->anonymizeFile(1);
 
@@ -590,7 +598,7 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'SSN',
             ],
         ];
-        $this->entityRelationMapper->method('findEntitiesForFile')
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')
             ->with(10)
             ->willReturn($entityData);
 
@@ -647,7 +655,7 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'ORGANIZATION',
             ],
         ];
-        $this->entityRelationMapper->method('findEntitiesForFile')
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')
             ->willReturn($entityData);
 
         $anonymizedFileNode = $this->createMock(\OCP\Files\File::class);
@@ -701,7 +709,7 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'PERSON',
             ],
         ];
-        $this->entityRelationMapper->method('findEntitiesForFile')
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')
             ->willReturn($entityData);
 
         $this->fileService->method('anonymizeDocument')
