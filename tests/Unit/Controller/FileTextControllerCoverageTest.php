@@ -23,30 +23,40 @@ use Psr\Log\LoggerInterface;
  */
 class FileTextControllerCoverageTest extends TestCase
 {
+
     private FileTextController $controller;
+
     private IRequest&MockObject $request;
+
     private TextExtractionService&MockObject $textExtractor;
+
     private IndexService&MockObject $indexService;
+
     private FileService&MockObject $fileService;
+
     private EntityRelationMapper&MockObject $entityRelationMapper;
+
     private LoggerInterface&MockObject $logger;
+
     private IAppConfig&MockObject $config;
+
     private ManualEntityService&MockObject $manualEntityService;
+
     private IUserSession&MockObject $userSession;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
+        $this->request       = $this->createMock(IRequest::class);
         $this->textExtractor = $this->createMock(TextExtractionService::class);
-        $this->indexService = $this->createMock(IndexService::class);
-        $this->fileService = $this->createMock(FileService::class);
+        $this->indexService  = $this->createMock(IndexService::class);
+        $this->fileService   = $this->createMock(FileService::class);
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->config = $this->createMock(IAppConfig::class);
         $this->manualEntityService = $this->createMock(ManualEntityService::class);
-        $this->userSession = $this->createMock(IUserSession::class);
+        $this->userSession         = $this->createMock(IUserSession::class);
 
         $this->controller = new FileTextController(
             'openregister',
@@ -60,12 +70,11 @@ class FileTextControllerCoverageTest extends TestCase
             $this->manualEntityService,
             $this->userSession
         );
-    }
+    }//end setUp()
 
     // =========================================================================
     // extractFileText — enabled with valid scope
     // =========================================================================
-
     public function testExtractFileTextEnabledWithValidScope(): void
     {
         $this->config->method('hasKey')
@@ -85,7 +94,7 @@ class FileTextControllerCoverageTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals('Text extracted successfully', $data['message']);
-    }
+    }//end testExtractFileTextEnabledWithValidScope()
 
     public function testExtractFileTextEnabledWithNullScope(): void
     {
@@ -94,8 +103,8 @@ class FileTextControllerCoverageTest extends TestCase
             ->willReturn(true);
         $this->config->method('getValueString')
             ->with('openregister', 'fileManagement')
-            ->willReturn(json_encode([])); // no extractionScope key
-
+            ->willReturn(json_encode([]));
+        // no extractionScope key
         $this->textExtractor->expects($this->once())
             ->method('extractFile')
             ->with(42, true);
@@ -103,12 +112,11 @@ class FileTextControllerCoverageTest extends TestCase
         $result = $this->controller->extractFileText(42);
 
         $this->assertEquals(200, $result->getStatus());
-    }
+    }//end testExtractFileTextEnabledWithNullScope()
 
     // =========================================================================
     // processAndIndexExtracted — options passed through
     // =========================================================================
-
     public function testProcessAndIndexExtractedWithBothOptions(): void
     {
         $this->indexService->method('processUnindexedChunks')
@@ -117,7 +125,7 @@ class FileTextControllerCoverageTest extends TestCase
         $result = $this->controller->processAndIndexExtracted(50, 1000, 100);
 
         $this->assertEquals(200, $result->getStatus());
-    }
+    }//end testProcessAndIndexExtractedWithBothOptions()
 
     public function testProcessAndIndexExtractedWithNullLimit(): void
     {
@@ -127,12 +135,11 @@ class FileTextControllerCoverageTest extends TestCase
         $result = $this->controller->processAndIndexExtracted(null, null, null);
 
         $this->assertEquals(200, $result->getStatus());
-    }
+    }//end testProcessAndIndexExtractedWithNullLimit()
 
     // =========================================================================
     // processAndIndexFile — with chunk size
     // =========================================================================
-
     public function testProcessAndIndexFileWithOptions(): void
     {
         $this->indexService->method('processUnindexedChunks')
@@ -141,18 +148,19 @@ class FileTextControllerCoverageTest extends TestCase
         $result = $this->controller->processAndIndexFile(42, 500, 50);
 
         $this->assertEquals(200, $result->getStatus());
-    }
+    }//end testProcessAndIndexFileWithOptions()
 
     // =========================================================================
     // bulkExtract — with limit at boundary
     // =========================================================================
-
     public function testBulkExtractWithExactMaxLimit(): void
     {
         $this->request->method('getParam')
-            ->willReturnMap([
-                ['limit', 100, 500],
-            ]);
+            ->willReturnMap(
+                    [
+                        ['limit', 100, 500],
+                    ]
+                    );
         $this->textExtractor->expects($this->once())
             ->method('extractPendingFiles')
             ->with(500)
@@ -164,14 +172,16 @@ class FileTextControllerCoverageTest extends TestCase
         $data = $result->getData();
         $this->assertTrue($data['success']);
         $this->assertEquals(500, $data['processed']);
-    }
+    }//end testBulkExtractWithExactMaxLimit()
 
     public function testBulkExtractWithOverMaxLimit(): void
     {
         $this->request->method('getParam')
-            ->willReturnMap([
-                ['limit', 100, 1000],
-            ]);
+            ->willReturnMap(
+                    [
+                        ['limit', 100, 1000],
+                    ]
+                    );
         // Should be capped to 500
         $this->textExtractor->expects($this->once())
             ->method('extractPendingFiles')
@@ -181,12 +191,11 @@ class FileTextControllerCoverageTest extends TestCase
         $result = $this->controller->bulkExtract();
 
         $this->assertEquals(200, $result->getStatus());
-    }
+    }//end testBulkExtractWithOverMaxLimit()
 
     // =========================================================================
     // anonymizeFile — already anonymized in middle of name
     // =========================================================================
-
     public function testAnonymizeFileNotFoundReturns404(): void
     {
         $this->fileService->method('getFileById')
@@ -199,5 +208,5 @@ class FileTextControllerCoverageTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
         $this->assertEquals('File not found', $data['message']);
-    }
-}
+    }//end testAnonymizeFileNotFoundReturns404()
+}//end class

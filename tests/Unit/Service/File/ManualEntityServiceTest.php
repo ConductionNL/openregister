@@ -49,22 +49,62 @@ use RuntimeException;
  */
 class ManualEntityServiceTest extends TestCase
 {
+
+    /**
+     * Catalogue (value, type) lookup-or-insert mapper mock.
+     *
+     * @var GdprEntityMapper&MockObject
+     */
     private GdprEntityMapper&MockObject $gdprMapper;
 
+    /**
+     * EntityRelation persistence mock.
+     *
+     * @var EntityRelationMapper&MockObject
+     */
     private EntityRelationMapper&MockObject $relationMapper;
 
+    /**
+     * Chunk reader mock for the target file.
+     *
+     * @var ChunkMapper&MockObject
+     */
     private ChunkMapper&MockObject $chunkMapper;
 
+    /**
+     * Audit-trail mapper mock (entity_create / entity_relations_batch_create rows).
+     *
+     * @var AuditTrailMapper&MockObject
+     */
     private AuditTrailMapper&MockObject $auditMapper;
 
+    /**
+     * NC root folder mock used by the write-access check.
+     *
+     * @var IRootFolder&MockObject
+     */
     private IRootFolder&MockObject $rootFolder;
 
+    /**
+     * DB connection mock used for explicit transaction control.
+     *
+     * @var IDBConnection&MockObject
+     */
     private IDBConnection&MockObject $db;
 
+    /**
+     * Structured log sink mock.
+     *
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface&MockObject $logger;
 
+    /**
+     * SUT under test.
+     *
+     * @var ManualEntityService
+     */
     private ManualEntityService $service;
-
 
     /**
      * Boot the dependency mocks and the SUT for each test.
@@ -78,8 +118,8 @@ class ManualEntityServiceTest extends TestCase
         $this->chunkMapper    = $this->createMock(originalClassName: ChunkMapper::class);
         $this->auditMapper    = $this->createMock(originalClassName: AuditTrailMapper::class);
         $this->rootFolder     = $this->createMock(originalClassName: IRootFolder::class);
-        $this->db             = $this->createMock(originalClassName: IDBConnection::class);
-        $this->logger         = $this->createMock(originalClassName: LoggerInterface::class);
+        $this->db     = $this->createMock(originalClassName: IDBConnection::class);
+        $this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
         $this->service = new ManualEntityService(
             gdprEntityMapper: $this->gdprMapper,
@@ -94,7 +134,6 @@ class ManualEntityServiceTest extends TestCase
 
     }//end setUp()
 
-
     /**
      * Wire the user-folder / file lookup mocks so the actor is treated
      * as having write access to the file.
@@ -104,7 +143,7 @@ class ManualEntityServiceTest extends TestCase
      *
      * @return IUser&MockObject
      */
-    private function setupWritableFile(int $fileId, bool $isUpdateable = true): IUser&MockObject
+    private function setupWritableFile(int $fileId, bool $isUpdateable=true): IUser&MockObject
     {
         $user = $this->createMock(originalClassName: IUser::class);
         $user->method('getUID')->willReturn(value: 'op1');
@@ -123,7 +162,6 @@ class ManualEntityServiceTest extends TestCase
 
     }//end setupWritableFile()
 
-
     /**
      * Build a minimal `Chunk` entity with the fields the matcher reads.
      *
@@ -134,7 +172,7 @@ class ManualEntityServiceTest extends TestCase
      *
      * @return Chunk
      */
-    private function makeChunk(int $id, string $text, int $start = 0, int $index = 0): Chunk
+    private function makeChunk(int $id, string $text, int $start=0, int $index=0): Chunk
     {
         $c = new Chunk();
         $c->setId($id);
@@ -144,7 +182,6 @@ class ManualEntityServiceTest extends TestCase
         return $c;
 
     }//end makeChunk()
-
 
     /**
      * Happy path: previously-unseen value, single match.
@@ -200,7 +237,7 @@ class ManualEntityServiceTest extends TestCase
             );
 
         // Two audit trails written.
-        $this->auditMapper->expects($this->exactly(2))
+        $this->auditMapper->expects($this->exactly(count: 2))
             ->method('insert')
             ->willReturnArgument(argumentIndex: 0);
 
@@ -224,7 +261,6 @@ class ManualEntityServiceTest extends TestCase
         $this->assertSame(expected: 0, actual: $result->matchesSkipped);
 
     }//end testHappyPathNewEntity()
-
 
     /**
      * Reuse path: catalogue entry already exists for (value, type).
@@ -278,7 +314,6 @@ class ManualEntityServiceTest extends TestCase
 
     }//end testReuseExistingEntity()
 
-
     /**
      * Idempotent retry: every match position already has a relation
      * row. matchesSkipped equals matchCount; insertBatch receives zero
@@ -302,11 +337,11 @@ class ManualEntityServiceTest extends TestCase
         $this->gdprMapper->method('findOneByValueAndType')->willReturn(value: $existing);
 
         // All probes return true → every match is a skip.
-        $this->relationMapper->expects($this->exactly(3))
+        $this->relationMapper->expects($this->exactly(count: 3))
             ->method('existsForFileAtPosition')
             ->willReturn(value: true);
 
-        // insertBatch still called once with an empty rows array.
+        // InsertBatch still called once with an empty rows array.
         $this->relationMapper->expects($this->once())
             ->method('insertBatch')
             ->willReturnCallback(
@@ -334,7 +369,6 @@ class ManualEntityServiceTest extends TestCase
         $this->assertSame(expected: [], actual: $result->relations);
 
     }//end testIdempotentRetrySkipsAll()
-
 
     /**
      * Zero-match: the value is not present in any chunk. The contract
@@ -368,7 +402,7 @@ class ManualEntityServiceTest extends TestCase
                 }
             );
 
-        $this->auditMapper->expects($this->exactly(2))->method('insert');
+        $this->auditMapper->expects($this->exactly(count: 2))->method('insert');
         $this->db->expects($this->once())->method('commit');
 
         $result = $this->service->addManualEntity(
@@ -384,7 +418,6 @@ class ManualEntityServiceTest extends TestCase
         $this->assertSame(expected: 0, actual: $result->matchCount);
 
     }//end testZeroMatchStillRecords()
-
 
     /**
      * File has no extracted chunks → 422 / REASON_FILE_NOT_EXTRACTED.
@@ -422,7 +455,6 @@ class ManualEntityServiceTest extends TestCase
 
     }//end testFileNotExtractedThrows()
 
-
     /**
      * File is read-only for the actor → 403 / REASON_INTERNAL_ERROR
      * with `forbidden:` message prefix. No transaction.
@@ -456,7 +488,6 @@ class ManualEntityServiceTest extends TestCase
         }
 
     }//end testReadOnlyFileForbidden()
-
 
     /**
      * File not visible at all in the actor's user-folder →
@@ -494,7 +525,6 @@ class ManualEntityServiceTest extends TestCase
         }
 
     }//end testFileMissingForActor()
-
 
     /**
      * Audit-write failure inside the transaction → rollBack + the

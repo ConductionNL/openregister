@@ -20,30 +20,40 @@ use Psr\Log\LoggerInterface;
 
 class FileTextControllerDeepTest extends TestCase
 {
+
     private FileTextController $controller;
+
     private IRequest|MockObject $request;
+
     private TextExtractionService|MockObject $textExtractor;
+
     private IndexService|MockObject $indexService;
+
     private FileService|MockObject $fileService;
+
     private EntityRelationMapper|MockObject $entityRelationMapper;
+
     private LoggerInterface|MockObject $logger;
+
     private IAppConfig|MockObject $config;
+
     private ManualEntityService|MockObject $manualEntityService;
+
     private IUserSession|MockObject $userSession;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
+        $this->request       = $this->createMock(IRequest::class);
         $this->textExtractor = $this->createMock(TextExtractionService::class);
-        $this->indexService = $this->createMock(IndexService::class);
-        $this->fileService = $this->createMock(FileService::class);
+        $this->indexService  = $this->createMock(IndexService::class);
+        $this->fileService   = $this->createMock(FileService::class);
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->config = $this->createMock(IAppConfig::class);
         $this->manualEntityService = $this->createMock(ManualEntityService::class);
-        $this->userSession = $this->createMock(IUserSession::class);
+        $this->userSession         = $this->createMock(IUserSession::class);
 
         $this->controller = new FileTextController(
             'openregister',
@@ -57,7 +67,7 @@ class FileTextControllerDeepTest extends TestCase
             $this->manualEntityService,
             $this->userSession
         );
-    }
+    }//end setUp()
 
     public function testExtractFileTextWhenDisabled(): void
     {
@@ -69,7 +79,7 @@ class FileTextControllerDeepTest extends TestCase
         $this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $response->getStatus());
         $data = $response->getData();
         $this->assertFalse($data['success']);
-    }
+    }//end testExtractFileTextWhenDisabled()
 
     public function testExtractFileTextWhenScopeNone(): void
     {
@@ -79,7 +89,7 @@ class FileTextControllerDeepTest extends TestCase
         $response = $this->controller->extractFileText(42);
 
         $this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $response->getStatus());
-    }
+    }//end testExtractFileTextWhenScopeNone()
 
     public function testExtractFileTextSuccess(): void
     {
@@ -93,7 +103,7 @@ class FileTextControllerDeepTest extends TestCase
 
         $this->assertEquals(200, $response->getStatus());
         $this->assertTrue($response->getData()['success']);
-    }
+    }//end testExtractFileTextSuccess()
 
     public function testExtractFileTextException(): void
     {
@@ -106,7 +116,7 @@ class FileTextControllerDeepTest extends TestCase
 
         $this->assertEquals(500, $response->getStatus());
         $this->assertStringContainsString('extract error', $response->getData()['message']);
-    }
+    }//end testExtractFileTextException()
 
     public function testBulkExtractException(): void
     {
@@ -118,7 +128,7 @@ class FileTextControllerDeepTest extends TestCase
 
         $this->assertEquals(500, $response->getStatus());
         $this->assertStringContainsString('bulk fail', $response->getData()['message']);
-    }
+    }//end testBulkExtractException()
 
     public function testGetStatsException(): void
     {
@@ -128,7 +138,7 @@ class FileTextControllerDeepTest extends TestCase
         $response = $this->controller->getStats();
 
         $this->assertEquals(500, $response->getStatus());
-    }
+    }//end testGetStatsException()
 
     public function testProcessAndIndexExtractedException(): void
     {
@@ -138,7 +148,7 @@ class FileTextControllerDeepTest extends TestCase
         $response = $this->controller->processAndIndexExtracted();
 
         $this->assertEquals(500, $response->getStatus());
-    }
+    }//end testProcessAndIndexExtractedException()
 
     public function testProcessAndIndexFileException(): void
     {
@@ -148,7 +158,7 @@ class FileTextControllerDeepTest extends TestCase
         $response = $this->controller->processAndIndexFile(1);
 
         $this->assertEquals(500, $response->getStatus());
-    }
+    }//end testProcessAndIndexFileException()
 
     public function testGetChunkingStatsException(): void
     {
@@ -158,7 +168,7 @@ class FileTextControllerDeepTest extends TestCase
         $response = $this->controller->getChunkingStats();
 
         $this->assertEquals(500, $response->getStatus());
-    }
+    }//end testGetChunkingStatsException()
 
     public function testAnonymizeFileNotFound(): void
     {
@@ -167,7 +177,7 @@ class FileTextControllerDeepTest extends TestCase
         $response = $this->controller->anonymizeFile(999);
 
         $this->assertEquals(Http::STATUS_NOT_FOUND, $response->getStatus());
-    }
+    }//end testAnonymizeFileNotFound()
 
     public function testAnonymizeFileAlreadyAnonymized(): void
     {
@@ -179,7 +189,7 @@ class FileTextControllerDeepTest extends TestCase
 
         $this->assertEquals(Http::STATUS_BAD_REQUEST, $response->getStatus());
         $this->assertEquals('File is already anonymized', $response->getData()['message']);
-    }
+    }//end testAnonymizeFileAlreadyAnonymized()
 
     public function testAnonymizeFileNoEntities(): void
     {
@@ -191,7 +201,7 @@ class FileTextControllerDeepTest extends TestCase
         $response = $this->controller->anonymizeFile(1);
 
         $this->assertEquals(Http::STATUS_BAD_REQUEST, $response->getStatus());
-    }
+    }//end testAnonymizeFileNoEntities()
 
     public function testAnonymizeFileException(): void
     {
@@ -201,5 +211,5 @@ class FileTextControllerDeepTest extends TestCase
         $response = $this->controller->anonymizeFile(1);
 
         $this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
-    }
-}
+    }//end testAnonymizeFileException()
+}//end class

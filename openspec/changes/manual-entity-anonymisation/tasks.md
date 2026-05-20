@@ -128,8 +128,8 @@
 
 ## 8. Documentation
 
-- [ ] 8.1 Extend `docs/api/objects.md` (or the equivalent file documenting anonymisation endpoints) with a new section "Adding manual anonymisable entities to a file". Document: the endpoint, the request/response shape, the match-behaviour flags, the zero-match-returns-200 semantics, the audit-trail behaviour, the RBAC requirement, and the value-keyed-substitution caveat.
-- [ ] 8.2 Add CHANGELOG entry under `### Added`: "Manual anonymisable entities: new POST /api/files/{id}/manual-entities endpoint for operator-supplied text. Performs chunk-aware exact-string matching against the file's extracted chunks (whole-word + case-sensitive defaults), creates a catalogue entry (or reuses an existing one for the same value+type pair), and creates one EntityRelation per occurrence found with detectionMethod=manual. Idempotent: re-calling for the same value on the same file does not create duplicates. Atomic per call. Audit-trail entries on entity_create and entity_relations_batch_create. RBAC: caller must have write access to the file. Zero-match responses return 200 with the catalogue entry created and a message."
+- [x] 8.1 **Implementation note:** wrote a sibling feature doc at `docs/Features/manual-entity-anonymisation.md` (next to `entity-relation-decision-metadata.md`), matching the existing in-repo convention for anonymisation endpoints — `docs/api/objects.md` documents object endpoints, not file/anonymisation endpoints. Covers the endpoint contract, semantics (atomicity, idempotency, lookup-or-create), match flag defaults, audit-trail behaviour (`entity_create` + `entity_relations_batch_create`), anonymise-flow interaction (no `detection_method` filter), the value-keyed-substitution caveat, PII redaction (ADR-005 + ADR-022 forensic exception), and the RBAC contract.
+- [x] 8.2 CHANGELOG entry added under `## Unreleased → ### Added` (above the existing EML entry). Issue-link `#1593` included.
 
 ## 9. Quality and verification
 
