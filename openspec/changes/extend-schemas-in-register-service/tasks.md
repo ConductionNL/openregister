@@ -31,6 +31,8 @@
 ## 7. Cross-repo verification + docs
 
 - [x] 7.1 Grep `opencatalogi/`, `softwarecatalog/`, and `docudesk/lib/Service/RegisterDiscoveryService.php` for `RegisterService::findAll(` / `::find(` with `_extend`. Do NOT change consumers in this PR; file a follow-up issue per consumer that should swap to `findAllSerialized`/`findSerialized` (including the DocuDesk `RegisterDiscoveryService::serializeRegister()` one-line swap).
+    - DocuDesk follow-up: [ConductionNL/docudesk#120](https://github.com/ConductionNL/docudesk/issues/120).
+    - softwarecatalog follow-up: [ConductionNL/softwarecatalog#272](https://github.com/ConductionNL/softwarecatalog/issues/272) — wire-format audit for `[]Schema` decoder paths after the orphan-schema-ID retention change (filed per PR #1430 review concern).
 - [x] 7.2 Update `openregister/docs/` to document the new `lib/Service/Serializer/` namespace + `RegisterSerializer` usage (example DI consumer call). Add a `CHANGELOG.md` entry noting: (a) new `findAllSerialized` / `findSerialized` on `RegisterService`, (b) new `RegisterSerializer`, (c) the orphan-schema-ID retention behaviour change for `/api/registers?_extend=schemas`.
 
 ## 8. Quality gates
