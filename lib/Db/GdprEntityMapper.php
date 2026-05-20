@@ -21,6 +21,7 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class GdprEntityMapper
@@ -41,10 +42,19 @@ class GdprEntityMapper extends QBMapper
     /**
      * Constructor.
      *
-     * @param IDBConnection $db Database connection.
+     * @param IDBConnection        $db     Database connection.
+     * @param LoggerInterface|null $logger Optional structured log sink. Used by lookups
+     *                                     that need to surface dedup-invariant violations
+     *                                     (more than one catalogue row matching the same
+     *                                     value+type). Nullable so legacy callers that
+     *                                     constructed the mapper directly without DI
+     *                                     continue to work; the warning is silently
+     *                                     dropped in that case.
      */
-    public function __construct(IDBConnection $db)
-    {
+    public function __construct(
+        IDBConnection $db,
+        private readonly ?LoggerInterface $logger=null
+    ) {
         parent::__construct(db: $db, tableName: 'openregister_entities', entityClass: GdprEntity::class);
     }//end __construct()
 
@@ -79,4 +89,63 @@ class GdprEntityMapper extends QBMapper
 
         return $this->findEntity(query: $qb);
     }//end find()
+
+    /**
+     * Look up a catalogue entry by its (value, type) pair.
+     *
+     * Used by `ManualEntityService` to implement the lookup-or-create
+     * catalogue dedup invariant: a `(value, type)` pair that already
+     * exists is REUSED on subsequent manual-entity adds so the same
+     * placeholder ID survives across documents.
+     *
+     * The query selects up to two rows. If two are returned the dedup
+     * invariant has been violated (most likely by a parallel manual-
+     * add race per design §D4); we log a warning and return the first
+     * row. We do NOT throw — the worst case is two near-identical
+     * catalogue rows, neither destructive, and the caller has a usable
+     * entity to proceed with.
+     *
+     * @param string $value Operator-supplied entity value (case- and whitespace-sensitive).
+     * @param string $type  Entity type tag (e.g. `PERSON`, `ORGANIZATION`).
+     *
+     * @return GdprEntity|null The matching entity, or null when no row matches.
+     */
+    public function findOneByValueAndType(string $value, string $type): ?GdprEntity
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->andX(
+                    $qb->expr()->eq('value', $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)),
+                    $qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR))
+                )
+            )
+            ->setMaxResults(2);
+
+        $matches = parent::findEntities(query: $qb);
+        if (empty($matches) === true) {
+            return null;
+        }
+
+        if (count($matches) > 1 && $this->logger !== null) {
+            // Catalogue dedup invariant violated — log structurally so
+            // operators can audit it. PII-safe: we log the type + the
+            // colliding ids (not the value, per ADR-005). Value can be
+            // re-derived from the row in the catalogue audit log if a
+            // forensic step is needed.
+            $this->logger->warning(
+                '[GdprEntityMapper] findOneByValueAndType: multiple catalogue rows match the same (value, type) — dedup invariant violated.',
+                [
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
+                    'type'         => $type,
+                    'collidingIds' => array_map(static fn (GdprEntity $e): int => (int) $e->getId(), $matches),
+                ]
+            );
+        }
+
+        return $matches[0];
+
+    }//end findOneByValueAndType()
 }//end class
