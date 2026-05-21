@@ -30,8 +30,17 @@ use Exception;
  *  - the resolved folder is not readable by the acting user (`Folder::isReadable() === false`).
  *
  * Controllers MUST catch this exception specifically (not generic `\Exception`)
- * and map it to HTTP 403 with a structured body of the form
- * `{"error": "folder_access_denied", "folder": "<requested-id>"}`.
+ * and map it to HTTP 403 with the structured body `{"error": "folder_access_denied"}`.
+ *
+ * **The response body MUST NOT echo the attempted folder ID.** Including it
+ * would re-create the enumeration oracle the `self-folder-access-control`
+ * capability spec was written to close: a caller probing `@self.folder` with
+ * sequential integers could distinguish "folder exists but I can't read it"
+ * (403 + id) from "folder does not exist" (auto-create / no-op) just by
+ * inspecting the response shape. The attempted id remains available via
+ * `getAttemptedFolderId()` for server-side audit logging only — see
+ * `ObjectsController::folderAccessDeniedResponse()` for the canonical
+ * controller-side mapping.
  *
  * The class extends `\Exception` directly — NOT `OCP\Files\NotPermittedException`
  * or any other Nextcloud exception — so generic catch-blocks for those exceptions
@@ -96,8 +105,9 @@ class FolderAccessDeniedException extends Exception
     /**
      * Get the folder ID the caller attempted to bind to.
      *
-     * Used by controller error handlers to populate the `folder` field of
-     * the structured 403 response body.
+     * **Server-side use only** — for audit-trail entries and structured
+     * log lines. MUST NOT be included in the HTTP response body (see the
+     * class docblock for the enumeration-oracle rationale).
      *
      * @return string
      */

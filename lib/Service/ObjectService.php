@@ -79,6 +79,7 @@ use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Async;
+use OCP\IUser;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -1071,6 +1072,12 @@ class ObjectService
      * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true)
      * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
      * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
+     * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
+     *                                                (forwarded to `ensureObjectFolder` → `assertObjectFolderAccessible`).
+     *                                                Defaults to null → `IUserSession::getUser()` resolution.
+     *                                                Non-HTTP callers (cron, import pipelines, event listeners)
+     *                                                MUST pass an explicit user to avoid the
+     *                                                default-deny fall-through on every folder-bound save.
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -1089,7 +1096,8 @@ class ObjectService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $silent=false,
-        ?array $uploadedFiles=null
+        ?array $uploadedFiles=null,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Set register/schema context.
         $this->setContextFromParameters(
@@ -1171,7 +1179,7 @@ class ObjectService
         $this->validateObjectIfRequired(object: $object);
 
         // Ensure folder exists for the object.
-        $folderId = $this->ensureObjectFolder(uuid: $uuid);
+        $folderId = $this->ensureObjectFolder(uuid: $uuid, currentUser: $currentUser);
 
         // Clear request-scoped caches before starting a new top-level save operation.
         // This ensures cascade operations benefit from caching while avoiding stale data.
@@ -1457,11 +1465,16 @@ class ObjectService
     /**
      * Ensure object folder exists, create if needed.
      *
-     * @param string|null $uuid Object UUID
+     * @param string|null $uuid        Object UUID
+     * @param IUser|null  $currentUser Explicit acting user forwarded to the
+     *                                 defense-in-depth re-validation; falls
+     *                                 back to `IUserSession::getUser()`.
+     *                                 Non-HTTP callers (cron, import
+     *                                 pipelines) MUST pass an explicit user.
      *
      * @return int|null Folder ID if created/exists, null otherwise
      */
-    private function ensureObjectFolder(?string $uuid): ?int
+    private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): ?int
     {
         // Handle folder creation for existing objects or new objects with UUIDs.
         $folderId = null;
@@ -1504,8 +1517,11 @@ class ObjectService
                     // `FolderAccessDeniedException` → HTTP 403 at the
                     // controller layer when the acting user cannot access
                     // the bound folder.
-                    $this->fileService->assertObjectFolderAccessible($existingObject);
-                }
+                    $this->fileService->assertObjectFolderAccessible(
+                        object: $existingObject,
+                        currentUser: $currentUser
+                    );
+                }//end if
             } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
                 // Propagate folder-access denials up to the controller.
                 throw $e;

@@ -320,6 +320,25 @@ class FileService
     private FileAuditHandler $fileAuditHandler;
 
     /**
+     * Per-request memoization for the defense-in-depth folder-access
+     * re-validation done by `assertObjectFolderAccessible`.
+     *
+     * Keyed `"{uid}:{folderId}"` (or `"__no_user__:{folderId}"` when no
+     * acting user resolves). Only successful re-validations are cached;
+     * denials re-throw and re-check on retry. The cache lives for the
+     * lifetime of the FileService instance — i.e. one HTTP request — so
+     * bulk imports / cascade saves stop re-running
+     * `getUserFolder() + getById()` filesystem I/O on every iteration.
+     * PR #1431 concern.
+     *
+     * Access changes are not propagated mid-request anyway, so a cache
+     * hit here returns the same verdict the live check would.
+     *
+     * @var array<string, true>
+     */
+    private array $folderAccessRevalidationCache = [];
+
+    /**
      * Root folder name for all OpenRegister files.
      *
      * @var            string
@@ -844,24 +863,47 @@ class FileService
      * is non-numeric (legacy path-style folder, handled by the
      * auto-create branch in ensureObjectFolder).
      *
-     * @param ObjectEntity $object The existing object whose folder must be re-validated.
+     * **Acting user resolution.** `$currentUser` is forwarded verbatim
+     * to `assertFolderIsAccessible` and follows that method's
+     * documented precedence: when non-null it is used as-is, otherwise
+     * `IUserSession::getUser()` is consulted, otherwise the bind is
+     * denied. Non-HTTP callers (cron, import pipelines, event listeners)
+     * MUST pass an explicit `$currentUser` to avoid the
+     * session-user-is-null → default-deny path; HTTP callers can omit
+     * the argument and rely on session resolution.
+     *
+     * @param ObjectEntity $object      The existing object whose folder must be re-validated.
+     * @param IUser|null   $currentUser Explicit acting user; falls back to session resolution.
      *
      * @return void
      *
      * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the acting user cannot access the bound folder.
      */
-    public function assertObjectFolderAccessible(ObjectEntity $object): void
+    public function assertObjectFolderAccessible(ObjectEntity $object, ?IUser $currentUser=null): void
     {
         $folder = $object->getFolder();
         if ($folder === null || $folder === '' || is_numeric($folder) === false) {
             return;
         }
 
+        // Per-request memoization. Resolve the acting user the same way
+        // `FolderManagementHandler::assertFolderIsAccessible` will (explicit
+        // arg → session → null) so the cache key matches the access-grant
+        // tuple the inner method actually evaluates.
+        $actingUser = ($currentUser ?? $this->userSession->getUser());
+        $cacheKey   = (($actingUser?->getUID() ?? '__no_user__').':'.$folder);
+        if (isset($this->folderAccessRevalidationCache[$cacheKey]) === true) {
+            return;
+        }
+
         $this->folderManagementHandler->assertFolderIsAccessible(
             folderId: (string) $folder,
-            currentUser: null,
+            currentUser: $currentUser,
             objectEntity: $object
         );
+
+        // Only cache successes — failures re-throw and re-check on retry.
+        $this->folderAccessRevalidationCache[$cacheKey] = true;
     }//end assertObjectFolderAccessible()
 
     /**
