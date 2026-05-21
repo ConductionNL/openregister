@@ -2653,8 +2653,19 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             // Add UNIQUE constraints (required for PostgreSQL ON CONFLICT).
+            // Constraints are named explicitly so MySQL/MariaDB doesn't fall
+            // back to using the column name as the constraint/index name,
+            // which collides across tables (e.g. every dynamic table getting
+            // a constraint literally called `_uuid`) and breaks Nextcloud's
+            // ensureUniqueNamesConstraints check on the next app install.
             foreach ($uniqueConstraints as $uniqueCol) {
-                $sql .= ', UNIQUE ('.$uniqueCol.')';
+                $rawCol         = trim($uniqueCol, '`"');
+                $constraintName = $tableName.'_'.ltrim($rawCol, '_').'_uq';
+                if ($isPostgres === true) {
+                    $sql .= ', CONSTRAINT "'.$constraintName.'" UNIQUE ('.$uniqueCol.')';
+                } else {
+                    $sql .= ', CONSTRAINT `'.$constraintName.'` UNIQUE ('.$uniqueCol.')';
+                }
             }
 
             $sql .= ')';
