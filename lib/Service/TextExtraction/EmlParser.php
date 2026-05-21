@@ -171,12 +171,11 @@ class EmlParser
                 continue;
             }
 
+            $rendered = (string) $value;
             if ($key === 'date' && $value instanceof DateTimeImmutable) {
                 $rendered = $value->format(DateTimeImmutable::ATOM);
             } else if (is_array($value) === true) {
                 $rendered = implode(', ', $value);
-            } else {
-                $rendered = (string) $value;
             }
 
             $lines[] = ucfirst($key).': '.$rendered;
@@ -379,7 +378,9 @@ class EmlParser
         if (strtolower(string: $mimeType) === 'message/rfc822') {
             if ($depth < self::MAX_DEPTH) {
                 $nestedEml = $this->parseNestedEml(bytes: $bytes, depth: ($depth + 1));
-            } else {
+            }
+
+            if ($depth >= self::MAX_DEPTH) {
                 $this->logger->debug(
                     message: '[EmlParser] EML nesting depth limit reached',
                     context: [

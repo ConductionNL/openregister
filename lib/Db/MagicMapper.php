@@ -1277,6 +1277,7 @@ class MagicMapper extends AbstractObjectMapper
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable)   `$_` is the conventional ignore name in the metadata-column foreach
      */
     private function buildUnionSelectPart(
         string $tableName,
@@ -1299,12 +1300,13 @@ class MagicMapper extends AbstractObjectMapper
         // Cast to text for UNION type compatibility (some columns are jsonb, others text).
         $metadataColumns = $this->getMetadataColumns();
         $selectColumns   = [];
-        foreach ($metadataColumns as $metaCol => $metaDef) {
+        foreach ($metadataColumns as $metaCol => $_) {
             if ($this->columnExistsInTable(tableName: $tableName, columnName: $metaCol) === true) {
                 $selectColumns[] = "{$metaCol}::text AS {$metaCol}";
-            } else {
-                $selectColumns[] = "NULL::text AS {$metaCol}";
+                continue;
             }
+
+            $selectColumns[] = "NULL::text AS {$metaCol}";
         }
 
         /*

@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Reporting;
 
 use Dompdf\Dompdf;
+use RuntimeException;
 use Dompdf\Options;
 
 /**
@@ -87,7 +88,7 @@ class PdfReportWriter
         // CVEs (CVE-2022-41343, CVE-2023-23924); these flags are the
         // primary mitigation and must stay false.
         if ($options->getIsRemoteEnabled() !== false || $options->getIsPhpEnabled() !== false) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'PdfReportWriter sandbox configuration drifted; remote-fetch / PHP execution must remain disabled.'
             );
         }

@@ -818,10 +818,9 @@ class AnnotationNotificationDispatcher
             // dependency is preferred; the server container fallback
             // exists for callers that constructed the dispatcher with
             // the legacy (no-IConfig) signature.
+            $base = (string) $this->serverContainer->get(\OCP\IConfig::class)->getSystemValue('overwrite.cli.url', 'http://localhost');
             if ($this->config !== null) {
                 $base = (string) $this->config->getSystemValue('overwrite.cli.url', 'http://localhost');
-            } else {
-                $base = (string) $this->serverContainer->get(\OCP\IConfig::class)->getSystemValue('overwrite.cli.url', 'http://localhost');
             }
 
             $base = rtrim($base, '/');

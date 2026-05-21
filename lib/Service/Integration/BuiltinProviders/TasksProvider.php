@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use RuntimeException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
@@ -219,7 +220,7 @@ class TasksProvider extends AbstractIntegrationProvider
         );
 
         if ($task === null) {
-            throw new \RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
+            throw new RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
         }
 
         return $task;
@@ -242,7 +243,7 @@ class TasksProvider extends AbstractIntegrationProvider
         $updated = $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload);
 
         if ($updated === null) {
-            throw new \RuntimeException('TaskService::updateTask returned null — entity may not exist.');
+            throw new RuntimeException('TaskService::updateTask returned null — entity may not exist.');
         }
 
         return $updated;
