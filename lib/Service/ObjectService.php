@@ -73,6 +73,7 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -1114,7 +1115,7 @@ class ObjectService
         // Reject UPDATE operations on append-only schemas (INSERT is still allowed).
         if ($uuid !== null && $this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
             $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-            throw new \OCA\OpenRegister\Exception\AppendOnlyException(
+            throw new AppendOnlyException(
                 schemaIdentifier: $schemaSlug,
                 operation: 'update'
             );
@@ -1509,7 +1510,7 @@ class ObjectService
         // Reject DELETE operations on append-only schemas.
         if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
             $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-            throw new \OCA\OpenRegister\Exception\AppendOnlyException(
+            throw new AppendOnlyException(
                 schemaIdentifier: $schemaSlug,
                 operation: 'delete'
             );

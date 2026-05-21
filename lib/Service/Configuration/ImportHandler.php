@@ -2695,7 +2695,9 @@ class ImportHandler
                     'unionSchemaIds' => $unionSchemaIds,
                 ]
             );
-        } else {
+        }//end if
+
+        if ($register === null) {
             // Fresh insert: derive a new Register entity.
             $register = $this->registerMapper->createFromArray(
                 object: [

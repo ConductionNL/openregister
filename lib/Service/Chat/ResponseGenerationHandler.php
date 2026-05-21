@@ -34,6 +34,7 @@ use Exception;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Tool\StreamingToolInstanceWrapper;
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\OllamaChat;
@@ -42,6 +43,7 @@ use LLPhant\OpenAIConfig;
 use LLPhant\OllamaConfig;
 use LLPhant\Exception\MissingFeatureException;
 use Psr\Http\Message\StreamInterface;
+use ReflectionClass;
 
 /**
  * ResponseGenerationHandler
@@ -318,9 +320,10 @@ class ResponseGenerationHandler
                 foreach ($cnAiContext as $key => $value) {
                     if (is_scalar($value) === true) {
                         $systemPrompt .= "- {$key}: ".(string) $value."\n";
-                    } else {
-                        $systemPrompt .= "- {$key}: ".json_encode($value, JSON_UNESCAPED_SLASHES)."\n";
+                        continue;
                     }
+
+                    $systemPrompt .= "- {$key}: ".json_encode($value, JSON_UNESCAPED_SLASHES)."\n";
                 }
             }
 
@@ -506,7 +509,7 @@ class ResponseGenerationHandler
 
         foreach ($functionInfoObjects as $fi) {
             if (is_object($fi->instance) === true) {
-                $fi->instance = new \OCA\OpenRegister\Tool\StreamingToolInstanceWrapper(
+                $fi->instance = new StreamingToolInstanceWrapper(
                     wrapped: $fi->instance,
                     channel: $channel
                 );
@@ -583,7 +586,7 @@ class ResponseGenerationHandler
     private function chatHasTools(OpenAIChat|OllamaChat $chat): bool
     {
         try {
-            $refl = new \ReflectionClass($chat);
+            $refl = new ReflectionClass($chat);
             if ($refl->hasProperty(name: 'tools') === false) {
                 return false;
             }
