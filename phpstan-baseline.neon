@@ -3686,12 +3686,12 @@ parameters:
 			path: lib/Service/ActionService.php
 
 		-
-			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
+			message: "#^Strict comparison using \\=\\=\\= between string and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/Aggregation/AggregationRunner.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between string and null will always evaluate to false\\.$#"
+			message: "#^Strict comparison using \\=\\=\\= between int and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/Aggregation/AggregationRunner.php
 
