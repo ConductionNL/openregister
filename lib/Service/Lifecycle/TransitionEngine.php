@@ -152,14 +152,23 @@ class TransitionEngine
         // the transition on save; the guard (if any) will run there too.
         $data[$field] = $to;
 
+        // Forward the session user explicitly to the save path so the
+        // @self.folder access check in `ensureObjectFolder` resolves to a
+        // concrete IUser rather than falling through to the session
+        // lookup (and the default-deny path on event-listener-triggered
+        // saves where the session can be null). PR #1431 fourth-pass
+        // concern.
+        $actingUser = $this->userSession->getUser();
+
         $saved = $this->objectService->saveObject(
             object: $data,
             register: $object->getRegister(),
             schema: $object->getSchema(),
-            uuid: $object->getUuid()
+            uuid: $object->getUuid(),
+            currentUser: $actingUser
         );
 
-        $userId = $this->userSession->getUser()?->getUID();
+        $userId = $actingUser?->getUID();
 
         $this->eventDispatcher->dispatchTyped(
             new ObjectTransitionedEvent(
