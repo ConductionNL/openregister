@@ -304,6 +304,8 @@ class PermissionHandler
      *
      * @return bool True when at least one authorization entry carries
      *              a non-empty `match` block.
+     *
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable) `$_` is the conventional ignore name for the unused foreach key
      */
     private function schemaHasMatchRule(Schema $schema): bool
     {
@@ -312,7 +314,7 @@ class PermissionHandler
             return false;
         }
 
-        foreach ($authorization as $action => $entries) {
+        foreach ($authorization as $_ => $entries) {
             if (is_array($entries) === false) {
                 continue;
             }

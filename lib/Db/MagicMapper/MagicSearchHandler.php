@@ -497,11 +497,12 @@ class MagicSearchHandler
                 if ($isPostgres === true) {
                     // ILIKE is always case-insensitive on PostgreSQL.
                     $searchConditions[] = "{$quotedCol}::text ILIKE {$likePattern}";
-                } else {
-                    // CAST + LOWER on both sides keeps MySQL case-insensitive regardless of
-                    // collation (e.g., utf8mb4_bin), matching applyFullTextSearch().
-                    $searchConditions[] = "LOWER(CAST({$quotedCol} AS CHAR)) LIKE LOWER({$likePattern})";
-                }//end if
+                    continue;
+                }
+
+                // CAST + LOWER on both sides keeps MySQL case-insensitive regardless of
+                // collation (e.g., utf8mb4_bin), matching applyFullTextSearch().
+                $searchConditions[] = "LOWER(CAST({$quotedCol} AS CHAR)) LIKE LOWER({$likePattern})";
             }//end if
         }//end foreach
 

@@ -411,9 +411,10 @@ class ChatStreamController extends Controller
             if ($this->db->inTransaction() === true) {
                 if ($rollback === true) {
                     $this->db->rollBack();
-                } else {
-                    $this->db->commit();
+                    return;
                 }
+
+                $this->db->commit();
             }
         } catch (Throwable $e) {
             $this->logger->warning(

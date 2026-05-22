@@ -1158,13 +1158,13 @@ class ConfigurationSettingsHandler
                     ],
                     'ocrEnabled'               => false,
                     'maxFileSizeMB'            => 100,
-                // Text extraction settings (for FileConfiguration component).
+                    // Text extraction settings (for FileConfiguration component).
                     'extractionScope'          => 'objects',
-                // None, all, folders, objects.
+                    // None, all, folders, objects.
                     'textExtractor'            => 'llphant',
-                // Llphant, dolphin.
+                    // Llphant, dolphin.
                     'extractionMode'           => 'background',
-                // Background, immediate, manual.
+                    // Background, immediate, manual.
                     'maxFileSize'              => 100,
                     'batchSize'                => 10,
                     'dolphinApiEndpoint'       => '',
@@ -1228,13 +1228,13 @@ class ConfigurationSettingsHandler
                 ],
                 'ocrEnabled'               => $fileData['ocrEnabled'] ?? false,
                 'maxFileSizeMB'            => $fileData['maxFileSizeMB'] ?? 100,
-            // Text extraction settings (from FileConfiguration component).
+                // Text extraction settings (from FileConfiguration component).
                 'extractionScope'          => $fileData['extractionScope'] ?? 'objects',
-            // None, all, folders, objects.
+                // None, all, folders, objects.
                 'textExtractor'            => $fileData['textExtractor'] ?? 'llphant',
-            // Llphant, dolphin.
+                // Llphant, dolphin.
                 'extractionMode'           => $fileData['extractionMode'] ?? 'background',
-            // Background, immediate, manual.
+                // Background, immediate, manual.
                 'maxFileSize'              => $fileData['maxFileSize'] ?? 100,
                 'batchSize'                => $fileData['batchSize'] ?? 10,
                 'dolphinApiEndpoint'       => $fileData['dolphinApiEndpoint'] ?? '',

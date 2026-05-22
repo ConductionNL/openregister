@@ -157,7 +157,9 @@ class NotifyPushListener implements IEventListener
         } else if ($event instanceof ObjectDeletedEvent) {
             $action = 'delete';
             $object = $event->getObject();
-        } else {
+        }
+
+        if (isset($action) === false || isset($object) === false) {
             return;
         }
 
@@ -332,6 +334,8 @@ class NotifyPushListener implements IEventListener
      * @return void
      *
      * @spec openspec/changes/add-live-updates/tasks.md#task-4
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Permission handler retained on the signature for upcoming per-user batch routing
      */
     public static function flushBatch(object $queue, PermissionHandler $permHandler): void
     {

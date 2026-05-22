@@ -73,6 +73,7 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -1114,7 +1115,7 @@ class ObjectService
         // Reject UPDATE operations on append-only schemas (INSERT is still allowed).
         if ($uuid !== null && $this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
             $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-            throw new \OCA\OpenRegister\Exception\AppendOnlyException(
+            throw new AppendOnlyException(
                 schemaIdentifier: $schemaSlug,
                 operation: 'update'
             );
@@ -1489,38 +1490,91 @@ class ObjectService
     }//end ensureObjectFolder()
 
     /**
-     * Delete an object.
+     * Delete an object, optionally scoped to a (register, schema) magic table.
      *
-     * @param string $uuid          The UUID of the object to delete
-     * @param bool   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool   $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * When BOTH `$register` and `$schema` are supplied, the deletion is scoped to
+     * exactly one magic table (`oc_openregister_table_{registerId}_{schemaId}`):
+     * the lookup uses `MagicMapper::find($identifier, $register, $schema, includeDeleted: true)`
+     * which targets a single table and throws `DoesNotExistException` if the
+     * UUID is not present in that scope. A UUID that lives in a DIFFERENT
+     * `(register, schema)` magic table MUST NOT be touched. See #1638.
+     *
+     * When EITHER `$register` or `$schema` is null, the legacy unscoped
+     * cross-table lookup (`findAcrossAllSources`) is used — preserves backward
+     * compatibility for the dozens of callers passing only `$uuid`. The
+     * unscoped form is soft-deprecated: prefer the scoped signature for new
+     * call sites so the storage layer can refuse cross-scope deletes by
+     * construction.
+     *
+     * @param string                   $uuid          The UUID of the object to delete.
+     * @param Register|string|int|null $register      Optional register scope (object, ID, UUID, or slug).
+     *                                                When non-null AND `$schema` is non-null, the lookup
+     *                                                targets exactly that magic table.
+     * @param Schema|string|int|null   $schema        Optional schema scope (object, ID, UUID, or slug).
+     *                                                See `$register` — both must be supplied for the
+     *                                                scoped path.
+     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return bool Whether the deletion was successful
      *
-     * @throws \Exception If user does not have delete permission
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If `$register` and `$schema` are both supplied
+     *                                                    and the UUID is not present in that scope (even
+     *                                                    if it exists in another magic table).
+     * @throws \Exception If user does not have delete permission.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
-    public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
-    {
+    public function deleteObject(
+        string $uuid,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): bool {
+        // Resolve the explicit scope (if any) onto the service's currentRegister
+        // / currentSchema so downstream context (permission checks, audit-trail
+        // recording) sees the API-supplied scope, not a stale leftover from a
+        // previous call on this service instance.
+        $hasScope = ($register !== null && $schema !== null);
+        if ($register !== null) {
+            $this->setRegister(register: $register);
+        }
+
+        if ($schema !== null) {
+            $this->setSchema(schema: $schema);
+        }
+
         // Reject deletion of transferred objects (archiefstatus = overgebracht).
         $this->rejectIfTransferred(uuid: $uuid);
 
         // Reject DELETE operations on append-only schemas.
         if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
             $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-            throw new \OCA\OpenRegister\Exception\AppendOnlyException(
+            throw new AppendOnlyException(
                 schemaIdentifier: $schemaSlug,
                 operation: 'delete'
             );
         }
 
         // Find the object to get its owner for permission check (include soft-deleted objects).
+        // When the caller supplied both register + schema, the lookup is scoped
+        // to a single magic table — a UUID in a different scope raises
+        // DoesNotExistException and never reaches the delete handler.
+        $scopedRegister = null;
+        $scopedSchema   = null;
+        if ($hasScope === true) {
+            $scopedRegister = $this->currentRegister;
+            $scopedSchema   = $this->currentSchema;
+        }
+
         try {
             $objectToDelete = $this->objectMapper->find(
                 identifier: $uuid,
-                register: null,
-                schema: null,
+                register: $scopedRegister,
+                schema: $scopedSchema,
                 includeDeleted: true
             );
 
@@ -1539,7 +1593,16 @@ class ObjectService
                 object: $objectToDelete
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Object doesn't exist, no permission check needed but let deleteHandler handle.
+            // Scoped lookup is authoritative: if the caller asked for a
+            // specific (register, schema) and the UUID is not in that scope,
+            // re-throw so the failure mode is "404 not in scope" instead of
+            // "silently look at another magic table" (the #1638 bug).
+            if ($hasScope === true) {
+                throw $e;
+            }
+
+            // Unscoped path: object doesn't exist anywhere, no permission check
+            // needed but let deleteHandler raise its own consistent error path.
             if ($this->currentSchema !== null) {
                 $this->checkPermission(
                     schema: $this->currentSchema,
@@ -1557,7 +1620,8 @@ class ObjectService
             uuid: $uuid,
             originalObjectId: null,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            scoped: $hasScope
         );
     }//end deleteObject()
 
