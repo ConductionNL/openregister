@@ -74,6 +74,7 @@ use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Exception\AppendOnlyException;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -1506,15 +1507,19 @@ class ObjectService
      * call sites so the storage layer can refuse cross-scope deletes by
      * construction.
      *
-     * @param string                   $uuid          The UUID of the object to delete.
-     * @param Register|string|int|null $register      Optional register scope (object, ID, UUID, or slug).
-     *                                                When non-null AND `$schema` is non-null, the lookup
-     *                                                targets exactly that magic table.
-     * @param Schema|string|int|null   $schema        Optional schema scope (object, ID, UUID, or slug).
-     *                                                See `$register` — both must be supplied for the
-     *                                                scoped path.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param string                   $uuid            The UUID of the object to delete.
+     * @param Register|string|int|null $register        Optional register scope (object, ID, UUID, or slug).
+     *                                                  When non-null AND `$schema` is non-null, the lookup
+     *                                                  targets exactly that magic table.
+     * @param Schema|string|int|null   $schema          Optional schema scope (object, ID, UUID, or slug).
+     *                                                  See `$register` — both must be supplied for the
+     *                                                  scoped path.
+     * @param bool                     $_rbac           Whether to apply RBAC checks (default: true).
+     * @param bool                     $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $_retentionSweep Internal flag set by ArchivalRetentionTask
+     *                                                  to bypass the archival-immutability gate.
+     *                                                  Reachable only via PHP DI; no HTTP surface
+     *                                                  exposes it. Defaults to false.
      *
      * @return bool Whether the deletion was successful
      *
@@ -1526,13 +1531,16 @@ class ObjectService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
      */
     public function deleteObject(
         string $uuid,
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        bool $_retentionSweep=false
     ): bool {
         // Resolve the explicit scope (if any) onto the service's currentRegister
         // / currentSchema so downstream context (permission checks, audit-trail
@@ -1554,6 +1562,20 @@ class ObjectService
         if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
             $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
             throw new AppendOnlyException(
+                schemaIdentifier: $schemaSlug,
+                operation: 'delete'
+            );
+        }
+
+        // Reject DELETE operations on archival-annotated schemas unless this
+        // call originates from the retention sweep cron (which alone sets
+        // $_retentionSweep true). User-driven deletes get a structured 403.
+        if ($_retentionSweep === false
+            && $this->currentSchema !== null
+            && $this->schemaHasArchivalAnnotation(schema: $this->currentSchema) === true
+        ) {
+            $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
+            throw new ArchivalImmutableException(
                 schemaIdentifier: $schemaSlug,
                 operation: 'delete'
             );
@@ -1624,6 +1646,26 @@ class ObjectService
             scoped: $hasScope
         );
     }//end deleteObject()
+
+    /**
+     * Check whether a schema declares an `x-openregister-archival` annotation.
+     *
+     * Used by the deleteObject() immutability gate to short-circuit
+     * user-driven deletes before any DB work. Reads from the schema's
+     * `configuration` array; absence of the key (or a non-array value)
+     * means archival enforcement does NOT apply.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return bool True when the schema carries a valid archival annotation.
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
+     */
+    private function schemaHasArchivalAnnotation(Schema $schema): bool
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        return is_array($configuration['x-openregister-archival'] ?? null);
+    }//end schemaHasArchivalAnnotation()
 
     /**
      * Reject an operation if the object has been transferred to e-Depot.

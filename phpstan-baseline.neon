@@ -2676,6 +2676,36 @@ parameters:
 			path: lib/Controller/WorkflowExecutionController.php
 
 		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Cron/ArchivalRetentionTask.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Cron/ArchivalRetentionTask.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 2
+			path: lib/Cron/ArchivalRetentionTask.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:\\$appConfig is never read, only written\\.$#"
+			count: 1
+			path: lib/Db/SchemaMapper.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:\\$userSession is never read, only written\\.$#"
+			count: 1
+			path: lib/Db/SchemaMapper.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:\\$groupManager is never read, only written\\.$#"
+			count: 1
+			path: lib/Db/SchemaMapper.php
+
+		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Cron\\\\TransferCheckJob\\:\\:\\$objectMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Cron/TransferCheckJob.php
