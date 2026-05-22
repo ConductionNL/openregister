@@ -136,6 +136,36 @@ parameters:
 			path: lib/Command/RematerialiseCalculationsCommand.php
 
 		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Command/BackfillSystemOwnerCommand.php
+
+		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Command\\\\SolrDebugCommand\\:\\:\\$clientService is never read, only written\\.$#"
 			count: 1
 			path: lib/Command/SolrDebugCommand.php
