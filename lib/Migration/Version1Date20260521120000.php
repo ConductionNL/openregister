@@ -193,9 +193,13 @@ class Version1Date20260521120000 extends SimpleMigrationStep
 
         try {
             if ($isPostgres === true) {
+                // Mirror the LIKE pattern used in postSchemaChange so a table
+                // whose bare index ended up as `_uuid1` (Postgres' on-collision
+                // auto-suffix) is still surfaced for repair. The downstream
+                // drop step re-filters with a strict `^_uuid(\d+)?$` regex.
                 $sql = "SELECT tablename
                         FROM pg_indexes
-                        WHERE indexname = '_uuid'
+                        WHERE indexname LIKE '\\_uuid%' ESCAPE '\\'
                           AND tablename LIKE 'oc_openregister_table_%'";
                 $result = $this->connection->executeQuery($sql);
             } else {
