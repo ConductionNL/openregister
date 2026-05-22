@@ -215,4 +215,58 @@ class AggregationQuery
         return ($this->dateBucket !== null);
 
     }//end hasDateBucket()
+
+    /**
+     * Serialise the query to a stable associative array.
+     *
+     * The output is the canonical input to the ad-hoc aggregation cache
+     * key (see {@see AggregationCache::getAdhoc()}). Filter sub-arrays are
+     * recursively ksort-sorted so two structurally-equivalent queries
+     * produce identical JSON encodings — `{a: 1, b: 2}` and `{b: 2, a: 1}`
+     * hash to the same cache key.
+     *
+     * @return array{
+     *   metric: string,
+     *   field: ?string,
+     *   filter: array<string, mixed>,
+     *   groupBy: array<string, mixed>|null,
+     *   dateBucket: array<string, mixed>|null
+     * } Canonical wire shape of the query.
+     */
+    public function toArray(): array
+    {
+        return [
+            'metric'     => $this->metric,
+            'field'      => $this->field,
+            'filter'     => self::canonicaliseFilter(filter: $this->filter),
+            'groupBy'    => $this->groupBy,
+            'dateBucket' => $this->dateBucket,
+        ];
+
+    }//end toArray()
+
+    /**
+     * Recursively ksort the filter map.
+     *
+     * Operator sub-arrays (e.g. `{gt: 5, lte: 10}`) get the same treatment
+     * so the resulting JSON encoding is stable across input orderings.
+     *
+     * @param array<string, mixed> $filter Filter map to canonicalise.
+     *
+     * @return array<string, mixed> Sorted filter map.
+     */
+    private static function canonicaliseFilter(array $filter): array
+    {
+        ksort($filter);
+        foreach ($filter as $key => $value) {
+            if (is_array($value) === true) {
+                $sub = $value;
+                ksort($sub);
+                $filter[$key] = $sub;
+            }
+        }
+
+        return $filter;
+
+    }//end canonicaliseFilter()
 }//end class

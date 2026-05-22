@@ -223,13 +223,21 @@ class ObjectServiceMapperAdapter
     /**
      * Delete an object by criteria array.
      *
-     * The array must contain an 'id' key with the object ID or UUID.
+     * The array must contain an 'id' key with the object ID or UUID. The
+     * adapter's bound `(register, schema)` is forwarded to
+     * `ObjectService::deleteObject()` so the deletion is scoped to the
+     * adapter's magic table — a UUID that lives in a different
+     * `(register, schema)` magic table raises `DoesNotExistException`
+     * instead of being silently deleted (see #1638).
      *
      * @param array $criteria Must contain key 'id' with the object ID or UUID.
      *
      * @return bool
      *
      * @throws ValidationException When no 'id' key is present in $criteria.
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the adapter is
+     *         bound to a specific `(register, schema)` and the UUID is not
+     *         present in that magic table.
      */
     public function delete(array $criteria): bool
     {
@@ -238,7 +246,11 @@ class ObjectServiceMapperAdapter
             throw new ValidationException(message: 'No id given to delete');
         }
 
-        return $this->objectService->deleteObject((string) $id);
+        return $this->objectService->deleteObject(
+            uuid: (string) $id,
+            register: $this->register,
+            schema: $this->schema
+        );
     }//end delete()
 
     /**
