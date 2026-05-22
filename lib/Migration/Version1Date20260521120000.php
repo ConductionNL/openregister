@@ -61,7 +61,6 @@ class Version1Date20260521120000 extends SimpleMigrationStep
      */
     private IDBConnection $connection;
 
-
     /**
      * Constructor.
      *
@@ -72,7 +71,6 @@ class Version1Date20260521120000 extends SimpleMigrationStep
         $this->connection = $connection;
 
     }//end __construct()
-
 
     /**
      * No schema changes — repair runs in postSchemaChange where raw
@@ -92,7 +90,6 @@ class Version1Date20260521120000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Drop the bare `_uuid` index on every `oc_openregister_table_*` table.
      *
@@ -110,7 +107,7 @@ class Version1Date20260521120000 extends SimpleMigrationStep
     {
         $isPostgres = ($this->connection->getDatabaseProvider() === IDBConnection::PLATFORM_POSTGRES);
 
-        $affectedTables = $this->findAffectedTables($isPostgres);
+        $affectedTables = $this->findAffectedTables(isPostgres: $isPostgres);
 
         if (\count($affectedTables) === 0) {
             $output->info(message: 'No dynamic openregister tables have the bare `_uuid` index — nothing to repair.');
@@ -127,7 +124,7 @@ class Version1Date20260521120000 extends SimpleMigrationStep
             foreach ($affectedTables as $tableName) {
                 try {
                     // Look up indexes on this table named `_uuid` and drop each by full name.
-                    $sql = "SELECT indexname
+                    $sql  = "SELECT indexname
                             FROM pg_indexes
                             WHERE tablename = ?
                               AND indexname LIKE '\\_uuid%' ESCAPE '\\'";
@@ -144,13 +141,15 @@ class Version1Date20260521120000 extends SimpleMigrationStep
                         }
                     }
                 } catch (Throwable $e) {
-                    $output->warning(message: sprintf(
-                        'Failed to drop bare `_uuid` index on `%s`: %s',
-                        $tableName,
-                        $e->getMessage()
-                    ));
-                }
-            }
+                    $output->warning(
+                        message: sprintf(
+                            'Failed to drop bare `_uuid` index on `%s`: %s',
+                            $tableName,
+                            $e->getMessage()
+                        )
+                    );
+                }//end try
+            }//end foreach
         } else {
             $dropped = 0;
             foreach ($affectedTables as $tableName) {
@@ -160,23 +159,26 @@ class Version1Date20260521120000 extends SimpleMigrationStep
                     );
                     $dropped++;
                 } catch (Throwable $e) {
-                    $output->warning(message: sprintf(
-                        'Failed to drop bare `_uuid` index on `%s`: %s',
-                        $tableName,
-                        $e->getMessage()
-                    ));
+                    $output->warning(
+                        message: sprintf(
+                            'Failed to drop bare `_uuid` index on `%s`: %s',
+                            $tableName,
+                            $e->getMessage()
+                        )
+                    );
                 }
             }
-        }
+        }//end if
 
-        $output->info(message: sprintf(
-            'Dropped bare `_uuid` index on %d of %d dynamic openregister table(s).',
-            $dropped,
-            \count($affectedTables)
-        ));
+        $output->info(
+            message: sprintf(
+                'Dropped bare `_uuid` index on %d of %d dynamic openregister table(s).',
+                $dropped,
+                \count($affectedTables)
+            )
+        );
 
     }//end postSchemaChange()
-
 
     /**
      * Find every `oc_openregister_table_*` table that has an index literally
@@ -197,13 +199,13 @@ class Version1Date20260521120000 extends SimpleMigrationStep
                 // whose bare index ended up as `_uuid1` (Postgres' on-collision
                 // auto-suffix) is still surfaced for repair. The downstream
                 // drop step re-filters with a strict `^_uuid(\d+)?$` regex.
-                $sql = "SELECT tablename
+                $sql    = "SELECT tablename
                         FROM pg_indexes
                         WHERE indexname LIKE '\\_uuid%' ESCAPE '\\'
                           AND tablename LIKE 'oc_openregister_table_%'";
                 $result = $this->connection->executeQuery($sql);
             } else {
-                $sql = 'SELECT TABLE_NAME
+                $sql    = 'SELECT TABLE_NAME
                         FROM INFORMATION_SCHEMA.STATISTICS
                         WHERE TABLE_SCHEMA = DATABASE()
                           AND INDEX_NAME = ?
@@ -222,11 +224,9 @@ class Version1Date20260521120000 extends SimpleMigrationStep
             // If introspection fails (unsupported platform, permission issue),
             // surface no tables and let the caller log the no-op message.
             return [];
-        }
+        }//end try
 
         return $tableNames;
 
     }//end findAffectedTables()
-
-
 }//end class
