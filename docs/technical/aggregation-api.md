@@ -56,8 +56,8 @@ Bucketing by `MINUTE` or `HOUR` requires the field's JSON-Schema `format` to be 
 
 - `key`: bucket label. For `interval`-bucketed queries this is an ISO-8601-UTC string at the start of the bucket. For categorical groupBy it's the value of the groupBy field.
 - `value`: the aggregated metric (always a number; an integer for `count`, a float for other metrics).
-- `backend`: `"postgres"` (native `date_trunc` path) or `"php-fallback"` (non-Postgres environments).
-- `cached`: always `false` on the ad-hoc path. Caching is tracked in [issue #1610](https://github.com/ConductionNL/openregister/issues/1610).
+- `backend`: which engine served the query — `"postgres"` (native `date_trunc`), `"mysql"` (native `DATE_FORMAT`), `"sqlite"` (native `strftime`), or `"php-fallback"` (unrecognised engine).
+- `cached`: `true` on a read-through cache hit, `false` on miss or the first request after invalidation. See [Cache](#cache) below.
 
 ### Empty buckets
 
@@ -132,12 +132,35 @@ When the client does not request `groupBy`, the `groups` field is `null` (not an
 
 Validation problems surface as GraphQL field-errors on the `groups` field. The rest of the connection (edges, pageInfo, totalCount, facets) still resolves normally.
 
+## Backend matrix
+
+The runner picks the matching native bucketing primitive for the active database engine and falls back to PHP only on engines OpenRegister doesn't natively target.
+
+| Database | Bucketing path | `backend` field |
+|---|---|---|
+| PostgreSQL | `date_trunc($gap, "$field")::text` | `postgres` |
+| MySQL / MariaDB | `DATE_FORMAT("$field", '<format>')` (ISO-Monday week-start; `CONCAT(YEAR, ..., '-01T00:00:00Z')` for quarter) | `mysql` |
+| SQLite | `strftime('<format>', "$field")` (ISO-Monday via `weekday 0` + `-6 days`; `CASE` on `strftime('%m')` for quarter) | `sqlite` |
+| Other / unknown | RBAC-filtered hydrate + PHP `date_trunc` polyfill (`gmdate`) | `php-fallback` |
+
+All four paths emit identical wire shape: ISO-8601-UTC bucket keys (`Y-m-d\TH:i:s\Z`), the same `groups[i].value` coercion (int for `count`, float otherwise), and the same RBAC + multi-tenancy gate. The `backend` field lets a caller observe which engine served the request without changing how the response is consumed.
+
+## Cache
+
+Ad-hoc results are served via a 60-second distributed cache:
+
+- **Storage**: same `openregister_aggregations` distributed cache the named-aggregation path uses (`AggregationCache`).
+- **Read-through**: on entry to `runAdhoc()`, the runner derives the key from `(registerSlug, schemaSlug, sha1(json_encode($query->toArray())), filter, rbacScopeHash)`, prefixed with `adhoc:`. A hit returns the stored envelope with `cached: true`; a miss falls through to the native-or-fallback dispatch and the resulting envelope is written back.
+- **Key stability**: `AggregationQuery::toArray()` ksort-sorts the filter map (recursively, into operator sub-arrays), so `filter[a, b]` and `filter[b, a]` produce identical cache keys.
+- **RBAC scoping**: the key includes `sha1(uid)` (or `sha1('anonymous')`) so two callers with different list-permission verdicts on the same `(metric, field, filter)` tuple never read each other's results.
+- **Invalidation**: `AggregationCacheInvalidationListener` evicts the entire `(register, schema)` cache on every `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, and `ObjectTransitionedEvent`. The eviction is coarse (`ICache::clear()` flushes the whole `openregister_aggregations` namespace) but bounded by the 60-second TTL ceiling on missed evicts.
+- **Stampede tolerance**: no distributed lock — the 60-second TTL bounds duplicate-miss compute. Revisit if a high-traffic dashboard surfaces stampede symptoms in production.
+
 ## Performance notes
 
-- **Postgres index**: for any field commonly used as a bucketing target (`created`, `updated`, custom date columns), declare a btree index on the magic-table column. `date_trunc()` against an indexed timestamp column is sub-50ms on tens of millions of rows.
+- **Database index**: for any field commonly used as a bucketing target (`created`, `updated`, custom date columns), declare a btree index on the magic-table column. The native bucketing expression operates against an indexed column on every supported engine, so the cost stays in the database where it belongs.
 - **Row-level RBAC**: the multi-tenant predicate (`_organisation = ?`) and the schema's `PermissionHandler::canRead()` verdict both apply BEFORE bucketing. Aggregations cannot leak rows the caller could not read row-by-row.
-- **Non-Postgres fallback**: SQLite and MySQL fall through to the PHP-side bucketer (`backend: "php-fallback"`). Correct, but slow on tables > 10k rows — the row cap is 10 000 and `truncated: true` is set when exceeded. Native MySQL / SQLite bucketing is tracked in [issue #1609](https://github.com/ConductionNL/openregister/issues/1609).
-- **No cache**: ad-hoc queries hit Postgres on every request. Caching is tracked in [issue #1610](https://github.com/ConductionNL/openregister/issues/1610).
+- **PHP fallback ceiling**: the PHP-fallback path on unrecognised engines caps the hydrated row set at 10 000 and sets `truncated: true` when exceeded. Native paths (Postgres / MySQL / SQLite) operate over the full set in SQL.
 
 ## Non-goals (deferred)
 
@@ -146,5 +169,3 @@ Validation problems surface as GraphQL field-errors on the `groups` field. The r
 | Multi-field groupBy (`groupBy: [status, priority]`) | [#1606](https://github.com/ConductionNL/openregister/issues/1606) |
 | Running / cumulative series | [#1607](https://github.com/ConductionNL/openregister/issues/1607) |
 | Multi-metric in one request (`count` + `sum`) | [#1608](https://github.com/ConductionNL/openregister/issues/1608) |
-| Native MySQL / SQLite bucketing | [#1609](https://github.com/ConductionNL/openregister/issues/1609) |
-| Caching of ad-hoc queries | [#1610](https://github.com/ConductionNL/openregister/issues/1610) |
