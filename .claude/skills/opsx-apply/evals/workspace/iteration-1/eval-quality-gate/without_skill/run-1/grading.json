@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Runs composer check:strict", "passed": true, "evidence": "Would run after each task commit — 'catching failures close to source is cheaper'."},
+    {"text": "Blocks on failures", "passed": true, "evidence": "'Two missing @throws tags are a 30-second fix. Proceeding to task-2 with known failures compounds the problem.'"},
+    {"text": "Fixes issues before moving to next task", "passed": true, "evidence": "Explicitly: 'Missing @throws tags are mechanical — add, re-run, confirm green, then move to task-2.'"},
+    {"text": "Does NOT skip quality checks", "passed": true, "evidence": "'Momentum is false economy. The quality-recheck stage after review will catch failures anyway.'"}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "Without-skill agent runs checks per-task (better aligned with eval expectations than the skill's post-all-tasks approach). Skill gap confirmed.",
+  "timing": {"executor_duration_seconds": 8.3}
+}

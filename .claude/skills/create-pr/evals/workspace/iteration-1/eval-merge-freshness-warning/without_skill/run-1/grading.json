@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "Computes how many commits target is ahead of source", "passed": false, "evidence": "PARTIAL: ran the divergence check and got the number, but did not surface it structurally in the output."},
+    {"text": "Warns prominently when target is >20 commits ahead", "passed": false, "evidence": "Baseline treats divergence as informational, not a gate. Would mention in passing but not block or present structured options."},
+    {"text": "Offers merge/rebase/continue-anyway options", "passed": false, "evidence": "No structured choice presented — baseline would proceed directly to PR draft."},
+    {"text": "Does NOT silently proceed to PR draft with a bloated diff", "passed": false, "evidence": "Baseline would silently proceed regardless of divergence count."}
+  ],
+  "summary": {"passed": 0, "failed": 4, "total": 4, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 72.0}
+}

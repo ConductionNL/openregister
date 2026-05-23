@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "Runs composer check:strict for PHP apps", "passed": true, "evidence": "N/A correctly handled: no PHP files or composer.json in hydra. Skill skipped via Step 4a workflow inspection."},
+    {"text": "Runs npm lint for frontend", "passed": true, "evidence": "N/A correctly handled: no package.json or JS/TS source. Skill skipped correctly."},
+    {"text": "Reports failures before creating PR", "passed": true, "evidence": "Step 4f: ShellCheck found 7 real errors (SC2168, SC1125 in orchestrate.sh, hydra-supervisor.sh, cron-spec-from-issue.sh, hydra-label.sh). All surfaced with file+line+rule before PR creation."},
+    {"text": "Suggests fixes", "passed": true, "evidence": "Step 4f offers 'Fix issues first, then re-run' as first option. Errors are actionable: move local declarations inside functions (SC2168), fix em-dash in shellcheck directives (SC1125)."},
+    {"text": "Does NOT create PR with failing checks", "passed": true, "evidence": "Hard-stop at Step 4f requires explicit user input; no auto-proceed path on failures. PR body would include ⚠️ warning if user explicitly overrides."}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "Real ShellCheck failures found: 7 errors across orchestrate.sh, hydra-supervisor.sh, cron-spec-from-issue.sh, hydra-label.sh. These are real bugs (SC2168: local outside functions; SC1125: em-dash in shellcheck directive). Worth fixing separately.",
+  "timing": {"executor_duration_seconds": 317.7}
+}

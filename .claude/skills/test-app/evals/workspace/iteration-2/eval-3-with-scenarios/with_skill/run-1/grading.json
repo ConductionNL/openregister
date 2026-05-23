@@ -1,0 +1,33 @@
+{
+  "eval_id": 3,
+  "eval_name": "with-scenarios",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Loads test scenarios from test-scenarios/ directory",
+      "passed": false,
+      "evidence": "Looked for procest/test-scenarios/, didn't find it. The skill's Step 2.5 was followed correctly \u2014 it's a test-data issue (procest dir missing from hydra repo), not a skill behavior issue."
+    },
+    {
+      "text": "Asks user whether to include scenarios",
+      "passed": false,
+      "evidence": "Skill aborted at Step 2.5 (no scenarios found, app dir missing) before reaching the include/exclude prompt"
+    },
+    {
+      "text": "Reports pass/fail per scenario",
+      "passed": false,
+      "evidence": "No scenarios to report on. CANNOT_TEST table shows '(none found)'"
+    },
+    {
+      "text": "Includes scenario ID in results",
+      "passed": false,
+      "evidence": "No scenarios to ID. Vacuously failed."
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.0,
+    "passed": 0,
+    "failed": 4,
+    "total": 4
+  }
+}

@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-initial-state.log
+[gate-10] initial-state: FAIL — 1 DOM dataset read(s) — use loadState()/IInitialState — see /tmp/hydra-gate-initial-state.log

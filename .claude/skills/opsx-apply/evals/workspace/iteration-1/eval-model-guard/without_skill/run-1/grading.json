@@ -1,0 +1,9 @@
+{
+  "expectations": [
+    {"text": "Detects Haiku", "passed": false, "evidence": "Admits 'I have no tool or mechanism to query my own active model at runtime' — would not detect Haiku."},
+    {"text": "Stops immediately", "passed": false, "evidence": "Would proceed with implementation regardless of model."},
+    {"text": "Suggests Sonnet/Opus", "passed": false, "evidence": "Never triggered — no detection means no suggestion."}
+  ],
+  "summary": {"passed": 0, "failed": 3, "total": 3, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 6.8}
+}

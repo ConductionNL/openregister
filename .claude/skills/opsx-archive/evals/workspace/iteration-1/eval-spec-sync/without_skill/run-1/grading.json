@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "Applies ADDED requirements to main specs", "passed": true, "evidence": "Would append new requirement entries to relevant sections in main spec."},
+    {"text": "Applies MODIFIED requirements", "passed": true, "evidence": "Would find matching requirement by ID and overwrite only that entry; leave surrounding entries untouched."},
+    {"text": "Handles REMOVED requirements", "passed": true, "evidence": "Careful approach: 'only delete entries that appear verbatim in the REMOVED section' — would not infer deletions or delete whole sections."},
+    {"text": "Preserves existing content not mentioned in delta", "passed": true, "evidence": "'The delta is a change set, not a replacement. Anything in the main spec not referenced stays exactly as-is.'"}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "timing": {"executor_duration_seconds": 14.1}
+}

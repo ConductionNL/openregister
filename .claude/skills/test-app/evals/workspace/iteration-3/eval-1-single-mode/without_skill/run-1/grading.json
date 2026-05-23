@@ -1,0 +1,33 @@
+{
+  "eval_id": 1,
+  "eval_name": "single-mode",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Tests navigation and page loading",
+      "passed": false,
+      "evidence": "CANNOT_TEST \u2014 no tools available"
+    },
+    {
+      "text": "Tests core CRUD operations",
+      "passed": false,
+      "evidence": "CANNOT_TEST"
+    },
+    {
+      "text": "Produces structured pass/fail report",
+      "passed": false,
+      "evidence": "Produced only a CANNOT_TEST report with no actual test results"
+    },
+    {
+      "text": "Does NOT spawn parallel agents in single mode",
+      "passed": true,
+      "evidence": "Did not spawn parallel agents (vacuously true)"
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.25,
+    "passed": 1,
+    "failed": 3,
+    "total": 4
+  }
+}

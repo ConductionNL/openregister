@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "skill_name": "persistence-audit",
+    "executor_model": "claude-opus-4-6",
+    "timestamp": "2026-04-17T14:30:00Z",
+    "evals_run": 3,
+    "iterations": 1,
+    "note": "Baseline runs failed due to background agent tool permission constraints. With-skill results are standalone."
+  },
+  "with_skill": {
+    "overall_pass_rate": 1.0,
+    "evals": [
+      {
+        "eval_id": "hydra-pipeline",
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 2884.6,
+        "tokens": 120758,
+        "tool_uses": 73
+      },
+      {
+        "eval_id": "spec-only-audit",
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 2439.3,
+        "tokens": 74200,
+        "tool_uses": 36
+      },
+      {
+        "eval_id": "post-incident-mode",
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 1189.8,
+        "tokens": 72072,
+        "tool_uses": 28
+      }
+    ],
+    "mean_pass_rate": 1.0,
+    "mean_time_seconds": 2171.2,
+    "mean_tokens": 89010,
+    "mean_tool_uses": 45.7
+  }
+}

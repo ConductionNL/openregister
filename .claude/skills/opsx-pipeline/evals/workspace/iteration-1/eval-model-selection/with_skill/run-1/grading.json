@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Accepts per-change model selection",
+      "passed": true,
+      "evidence": "SKILL.md Step 2.5 'Choose per change' option: 'for each change show its name and the title from proposal.md. Ask per change using AskUserQuestion: Haiku / Sonnet / Opus.' Also supports 'Auto-select per change' which assigns models based on change scope. Stores results as {CHANGE_MODELS} map."
+    },
+    {
+      "text": "Spawns subagents with correct models",
+      "passed": true,
+      "evidence": "SKILL.md Step 4: 'Pass model: {CHANGE_MODELS}[change-name] when launching each agent' (per-change mode) OR 'Pass model: {PIPELINE_MODEL} (one model for all)'. The model parameter is explicitly passed when spawning each subagent, ensuring the correct model runs for each change."
+    },
+    {
+      "text": "Reports which model each change used",
+      "passed": true,
+      "evidence": "SKILL.md Step 5 progress table includes a 'Model' column. Step 8 final report table also includes 'Model' column. Both tables show per-change model assignment alongside status, tasks, quality, browser, and docs."
+    },
+    {
+      "text": "Falls back to default if not specified",
+      "passed": true,
+      "evidence": "SKILL.md Step 2.5 'One model for all' option defaults to Sonnet (marked 'recommended'). The 'Auto-select per change' option assigns Sonnet as the default for standard multi-file feature work. Step 2.5 always runs, so there is always a model assigned — no unspecified case exists."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Three model strategy options are explicitly specified: one-for-all, choose-per-change, and auto-select-per-change. Model is passed to each agent at spawn time and reported in both the progress table and final report.",
+  "timing": {
+    "executor_duration_seconds": 1380
+  }
+}

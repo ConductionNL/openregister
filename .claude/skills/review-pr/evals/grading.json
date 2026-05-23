@@ -1,0 +1,165 @@
+{
+  "skill_name": "review-pr",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-24 (simulation) and 2026-04-28 (real run on PR #4: ConductionNL/hydra — 205K additions, 1325 files, re-review). Real run: 8/8=1.0 on large-diff-handling, 4/4=1.0 on no-duplicate-comments and line-number-accuracy. Key finding: gh pr diff returns HTTP 406 for PRs >300 files — skill's paginated /pulls/{PR}/files fallback is essential. Real inline comments posted (IDs 3153942991, 3153942993), REQUEST_CHANGES submitted.",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "real run — ConductionNL/hydra PR #4 (re-review, 1325 files, 420s)",
+      "eval_id": "large-diff-handling",
+      "score": 1.0,
+      "assertions": [
+        {"id": "handles >300 file diff", "result": "pass", "note": "gh pr diff returned 406; fallback to paginated /pulls/4/files across 20 pages worked."},
+        {"id": "saves diff to /tmp/", "result": "pass", "note": "Attempted gh pr diff > /tmp/pr-4-diff.txt first per skill protocol."},
+        {"id": "re-review detection", "result": "pass", "note": "Found prior review by WilcoLouwerse (2026-04-16), entered re-review mode."},
+        {"id": "enumerates all changed files", "result": "pass", "note": "1325 files enumerated via paginated API."},
+        {"id": "analyzes at HEAD SHA", "result": "pass", "note": "All content fetched at ?ref=11194c6c424e64cac88f275faf60d0978be371af."},
+        {"id": "tracks prior comment status", "result": "pass", "note": "3 ADDRESSED ([4],[6],[7]), 1 STILL OPEN ([1] hardcoded path)."},
+        {"id": "posts on valid diff lines only", "result": "pass", "note": "Positions 230 and 105 verified against hunks; both API calls returned 200."},
+        {"id": "formal review separate from inline comments", "result": "pass", "note": "COMMENT event (id: 4188555024) then REQUEST_CHANGES (id: 4188556988) — two separate calls."}
+      ],
+      "notes": "Real run confirmed all large-diff handling behaviors. gh pr diff 406 error is a reliable edge case for PRs >300 files that the paginated fallback handles correctly."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "blocker-detection",
+      "score": 1.0,
+      "assertions": [
+        {"id": "detects the deleted testEvaluateMatchConditionsResolvedRelation test as a masked regression", "result": "pass", "note": "review-checklist.md explicitly flags 'Were integration or unit tests deleted?' as Regression Risk signal → 🔴 Blocker."},
+        {"id": "identifies that operatorIn lacks a null guard while operatorNotIn has one", "result": "pass", "note": "review-checklist.md 'Completeness of Parallel Changes' section: 'verify every member of the group is updated. Common miss: operatorIn when operatorNotIn and operatorNotEquals are patched'."},
+        {"id": "posts each blocker as a separate inline comment on the correct file and line", "result": "pass", "note": "comment-format.md line 37: 'One comment per finding — never combine two separate issues in one comment.'"},
+        {"id": "submits REQUEST_CHANGES formal review", "result": "pass", "note": "SKILL.md Step 9 verdict table: presence of 🔴 Blockers → REQUEST_CHANGES in all strictness modes."},
+        {"id": "does NOT post blockers and concerns combined in one comment", "result": "pass", "note": "comment-format.md line 37 explicitly forbids combining findings."}
+      ],
+      "notes": "Regression detection and comment isolation are core guardrails. Parallel changes completeness check is explicitly named in review-checklist.md."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "concern-only-approve",
+      "score": 1.0,
+      "assertions": [
+        {"id": "correctly identifies no merge-blocking issues", "result": "pass", "note": "SKILL.md Step 6 analysis delegates to identify severity levels per strictness mode. No regressions or claim mismatches = no blockers."},
+        {"id": "posts concerns as separate inline 🟡 comments", "result": "pass", "note": "comment-format.md 🟡 Concern template and line 37-39 rules: one comment per concern."},
+        {"id": "submits APPROVE with a one-sentence summary", "result": "pass", "note": "SKILL.md Step 9: Standard mode + only concerns → APPROVE."},
+        {"id": "summary does not claim the PR is perfect — notes what concerns were raised", "result": "pass", "note": "comment-format.md 'Overall Review Body' instructs noting any observations; concerns are the notable observations."}
+      ],
+      "notes": "Straightforward application of comment-format.md severity rules and SKILL.md verdict logic. Concerns do not block in Standard mode."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "large-diff-handling",
+      "score": 1.0,
+      "assertions": [
+        {"id": "saves diff to temp file before analysis", "result": "pass", "note": "SKILL.md Step 5: 'gh pr diff {PR_NUMBER} > /tmp/pr-{PR_NUMBER}-diff.txt' — explicit temp file staging."},
+        {"id": "analysis delegate receives file path, not raw diff content", "result": "pass", "note": "SKILL.md Step 6 (Deep Analysis): 'Path to the staged diff: /tmp/pr-{PR_NUMBER}-diff.txt' — subagent receives file path."},
+        {"id": "analysis covers all 18 changed files, not just the first few", "result": "pass", "note": "Analysis delegate receives full diff file and must analyze all hunks, not truncated inline content."},
+        {"id": "comment line numbers are verified against diff hunks", "result": "pass", "note": "SKILL.md Step 6 instructs identifying exact file:line using hunk headers (@@ -old,len +new,len @@)."}
+      ],
+      "notes": "Large diff handling via temp file is an explicit requirement in Step 5. Prevents context overflow for large PRs."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "line-number-accuracy",
+      "score": 1.0,
+      "assertions": [
+        {"id": "uses @@ hunk headers to compute new-file line numbers", "result": "pass", "note": "SKILL.md Step 6: 'identify the exact file:line in the new file using hunk headers (@@ -old,len +new,len @@)'."},
+        {"id": "does not comment on lines outside the diff", "result": "pass", "note": "Guardrails: 'Never post comments on lines outside the diff. Verify every line number against hunk ranges before posting.'"},
+        {"id": "verifies comments after posting via gh api pulls/comments", "result": "pass", "note": "post-inline-comments.md: 'Verify comments landed: gh api repos/{OWNER}/{REPO}/pulls/{PR_NUMBER}/comments'."},
+        {"id": "if a target line is not in the diff, moves comment to nearest context line with a note", "result": "pass", "note": "post-inline-comments.md line 32: 'If a target line is not in the diff, move to nearest hunk context line with a note.'"}
+      ],
+      "notes": "Line number accuracy is a core guardrail. Hunk-header protocol with fallback strategy is fully specified."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "no-duplicate-comments",
+      "score": 1.0,
+      "assertions": [
+        {"id": "checks existing comments before posting", "result": "pass", "note": "Guardrails: 'Do not repost prior comments — check {PRIOR_COMMENTS} before posting.'"},
+        {"id": "does not post the same finding twice", "result": "pass", "note": "Natural consequence of the {PRIOR_COMMENTS} check. Guardrail explicitly forbids reposting."},
+        {"id": "reports to user that comments already exist", "result": "pass", "note": "SKILL.md Step 7 presents findings via AskUserQuestion confirmation; existing duplicates flagged at prep phase."}
+      ],
+      "notes": "Duplicate prevention is enforced via the {PRIOR_COMMENTS} check built into the skill's architecture."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "rereview-nothing-new",
+      "score": 1.0,
+      "assertions": [
+        {"id": "fetches the user's prior review via gh api pulls/{n}/reviews", "result": "pass", "note": "SKILL.md Step 2 re-review detection: 'gh api repos/{OWNER}/{REPO}/pulls/{PR_NUMBER}/reviews' → stores as {LAST_REVIEW}."},
+        {"id": "fetches commits and finds none after last_review.submitted_at", "result": "pass", "note": "re-review-context.md: filter for commits after {LAST_REVIEW.submitted_at}; store as {NEW_COMMITS}."},
+        {"id": "fetches PR comments and inline replies and finds none after last_review.submitted_at", "result": "pass", "note": "re-review-context.md: 'New PR-level comments' and 'Replies since last review' filtered by created_at > last_review.submitted_at."},
+        {"id": "reports: 'No new commits or comments since your last review on {date}. Nothing to re-review.'", "result": "pass", "note": "re-review-context.md line 25-28: exact wording specified; stop here and tell the user."},
+        {"id": "does NOT proceed to ask about strictness or post any comments", "result": "pass", "note": "Early exit before Step 4 (strictness AskUserQuestion); skill returns the nothing-to-rereview message and terminates."}
+      ],
+      "notes": "re-review-context.md explicitly specifies the early-exit flow for re-reviews with no new changes."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "rereview-resolved-threads",
+      "score": 1.0,
+      "assertions": [
+        {"id": "identifies new commits pushed after last review", "result": "pass", "note": "re-review-context.md: filter commits pushed after {LAST_REVIEW.submitted_at}."},
+        {"id": "matches resolved issues to prior comment IDs", "result": "pass", "note": "SKILL.md Step 6 re-review analysis: 'For re-review: assess each prior comment: Addressed → mark for reply.' Returns {RESOLVED} list with comment IDs."},
+        {"id": "posts '✅ Resolved in {sha}:' replies via gh api pulls/comments/{id}/replies", "result": "pass", "note": "post-inline-comments.md: 'gh api .../pulls/comments/{PRIOR_COMMENT_ID}/replies ... body=\"✅ Resolved in {COMMIT_SHA[:7]}: ...\"'"},
+        {"id": "does NOT repost the original blocker as a new finding", "result": "pass", "note": "SKILL.md Step 6: 'Do NOT repost the original blocker as a new finding'. post-inline-comments.md: 'Do NOT reply to {STILL_OPEN} ones.'"},
+        {"id": "submits APPROVE since all blockers are resolved", "result": "pass", "note": "SKILL.md Step 9: for re-review, if all prior blockers resolved and no new ones → lean toward APPROVE per mode."}
+      ],
+      "notes": "Re-review resolved-thread protocol is fully specified across re-review-context.md and post-inline-comments.md."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "strictness-recommendation-security",
+      "score": 1.0,
+      "assertions": [
+        {"id": "detects security/auth/RBAC-related file changes", "result": "pass", "note": "SKILL.md Step 4a 'Classify PR Sensitivity': 'Scan the changed file list for security-sensitive signals. Check for: Auth, OAuth, session, token handling; RBAC, permission checks...'"},
+        {"id": "recommends 'Strict' in the AskUserQuestion prompt", "result": "pass", "note": "SKILL.md Step 4 verdict table: '{IS_SECURITY_SENSITIVE} is true → Strict'. Security PRs always recommend Strict."},
+        {"id": "provides a brief reason (e.g. 'security-sensitive code touched')", "result": "pass", "note": "SKILL.md Step 4: 'I recommend {RECOMMENDED_MODE} based on {brief reason}.' Reason comes from {SECURITY_SIGNALS} list."},
+        {"id": "proceeds with the user-chosen mode, not the recommended one if overridden", "result": "pass", "note": "SKILL.md Step 4: 'Use AskUserQuestion to confirm. Store strictnessMode per PR.' User can override; skill uses their choice."}
+      ],
+      "notes": "Security signal detection and Strict recommendation are hardcoded in Step 4a. User override is respected."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "strictness-quick-approve",
+      "score": 1.0,
+      "assertions": [
+        {"id": "skips 🟡 Concern and 🟢 Minor findings — does not post them", "result": "pass", "note": "strictness-modes.md Quick: 'Include: 🔴 Blockers only. Exclude: 🟡 Concerns, 🟢 Minors — skip silently.'"},
+        {"id": "submits APPROVE since no definite 🔴 blockers exist", "result": "pass", "note": "strictness-modes.md Quick: 'Verdict: APPROVE unless there is at least one definite 🔴 Blocker.'"},
+        {"id": "does not REQUEST_CHANGES due to concerns in Quick mode", "result": "pass", "note": "SKILL.md Step 9 verdict table: Quick mode + no blockers → APPROVE, not REQUEST_CHANGES."}
+      ],
+      "notes": "Quick mode semantics are clearly defined in strictness-modes.md. Concerns are explicitly skipped and not posted."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "strictness-strict-concerns-block",
+      "score": 1.0,
+      "assertions": [
+        {"id": "posts all 🟡 Concern findings as inline comments", "result": "pass", "note": "strictness-modes.md Strict: 'Include: 🔴 Blockers + 🟡 Concerns + 🟢 Minors.' All concerns posted."},
+        {"id": "submits REQUEST_CHANGES (not APPROVE) despite zero 🔴 blockers", "result": "pass", "note": "strictness-modes.md Strict: 'Verdict: REQUEST_CHANGES if any 🔴 Blockers OR any 🟡 Concerns.' Zero blockers + concerns = REQUEST_CHANGES."},
+        {"id": "verdict body notes that concerns require resolution in Strict mode", "result": "pass", "note": "comment-format.md 'Overall Review Body' and SKILL.md Step 9 instruct noting the reason for the verdict."}
+      ],
+      "notes": "Strict mode verdict logic is explicit. Concerns block in Strict but not in Standard/Quick — clear differentiation by mode."
+    }
+  ]
+}

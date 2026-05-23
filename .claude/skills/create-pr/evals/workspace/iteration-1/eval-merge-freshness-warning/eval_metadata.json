@@ -1,0 +1,12 @@
+{
+  "eval_id": "merge-freshness-warning",
+  "eval_name": "merge-freshness-warning",
+  "prompt": "Create PR from a branch that is 30+ commits behind development",
+  "setup": "Simulated — check current branch divergence; if not 30+ behind, test what the skill does with the actual divergence count",
+  "assertions": [
+    "Computes how many commits target is ahead of source",
+    "Warns prominently when target is >20 commits ahead",
+    "Offers merge/rebase/continue-anyway options",
+    "Does NOT silently proceed to PR draft with a bloated diff"
+  ]
+}

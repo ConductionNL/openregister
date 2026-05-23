@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "verifies openspec/specs/**/spec.md exists as part of Step 1 prereqs", "passed": true, "evidence": "Would check openspec/specs/ for spec.md files before starting."},
+    {"text": "stops when no spec.md files are found", "passed": true, "evidence": "Agent explicitly stops: 'stop immediately with a clear message: No spec.md files found — nothing to scan.'"},
+    {"text": "suggests running /app-explore + /app-design to seed specs", "passed": false, "evidence": "Would suggest exploration but does NOT know the specific skill names /app-explore and /app-design — would say 'document what the app does, then produce specs' generically."},
+    {"text": "does NOT write coverage-report.json or coverage-report.md", "passed": true, "evidence": "'Write no files — no empty report, no placeholder.'"},
+    {"text": "does NOT enumerate code units", "passed": true, "evidence": "'Read no source code — without specs there are no requirements to map coverage against.'"}
+  ],
+  "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8},
+  "notes": "Baseline agent is surprisingly strong here — intuitive precondition checking. Fails only on naming the specific recovery skills.",
+  "timing": {"executor_duration_seconds": 6.2}
+}

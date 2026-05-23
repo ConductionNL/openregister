@@ -1,0 +1,285 @@
+{
+  "skill_name": "report-out",
+  "schema_version": "1.0.0",
+  "notes": "Iteration-1: programmatic-grep validation against SKILL.md text. This confirms structural patterns (dynamic identity, 24h check, copy-paste finale, input gates, interaction discovery) are present. A behavioral agent run via /skill-creator is the canonical L5 method but parity has been validated programmatically on creation.",
+  "runs": [
+    {
+      "date": "2026-05-04",
+      "claude_version": "claude-opus-4-7",
+      "method": "programmatic-grep validation",
+      "eval_id": "dynamic-identity",
+      "score": 1.0,
+      "assertions": [
+        {
+          "id": "git config user.name lookup",
+          "result": "pass"
+        },
+        {
+          "id": "gh api user --jq .login lookup",
+          "result": "pass"
+        },
+        {
+          "id": "uses $HOME or HOME_DIR for paths",
+          "result": "pass"
+        },
+        {
+          "id": "no hardcoded WilcoLouwerse or /home/wilco",
+          "result": "pass"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "claude_version": "claude-opus-4-7",
+      "method": "programmatic-grep validation",
+      "eval_id": "comment-24h-check",
+      "score": 1.0,
+      "assertions": [
+        {
+          "id": "computes a 24h-ago timestamp",
+          "result": "pass"
+        },
+        {
+          "id": "filters comments by user.login + recency",
+          "result": "pass"
+        },
+        {
+          "id": "offers Edit / New / Skip via AskUserQuestion",
+          "result": "pass"
+        },
+        {
+          "id": "uses PATCH on issues/comments/{id} for edits",
+          "result": "pass"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "claude_version": "claude-opus-4-7",
+      "method": "programmatic-grep validation",
+      "eval_id": "copy-paste-finale",
+      "score": 1.0,
+      "assertions": [
+        {
+          "id": "final block contains the exact 'Report out:' heading",
+          "result": "pass"
+        },
+        {
+          "id": "heading is bare — no emoji, bold, day name, or date suffix",
+          "result": "pass"
+        },
+        {
+          "id": "status emoji legend present (✅ merged, 🟡 open)",
+          "result": "pass"
+        },
+        {
+          "id": "output is fenced markdown / copy-paste-ready",
+          "result": "pass"
+        },
+        {
+          "id": "only user-authored or merged PRs included",
+          "result": "pass"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "claude_version": "claude-opus-4-7",
+      "method": "programmatic-grep validation",
+      "eval_id": "additional-input-gates",
+      "score": 1.0,
+      "assertions": [
+        {
+          "id": "Step 1 asks for additional input at start",
+          "result": "pass"
+        },
+        {
+          "id": "Step 9 asks for additional input at end",
+          "result": "pass"
+        },
+        {
+          "id": "captured context stored as USER_CONTEXT",
+          "result": "pass"
+        },
+        {
+          "id": "user can opt out of issue/PR updates",
+          "result": "pass"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "claude_version": "claude-opus-4-7",
+      "method": "programmatic-grep validation",
+      "eval_id": "interaction-discovery",
+      "score": 1.0,
+      "assertions": [
+        {
+          "id": "calls gh search prs --author @me",
+          "result": "pass"
+        },
+        {
+          "id": "calls gh search issues --commenter @me",
+          "result": "pass"
+        },
+        {
+          "id": "deduplicates by (repo, number)",
+          "result": "pass"
+        },
+        {
+          "id": "presents as baseline / recommended",
+          "result": "pass"
+        },
+        {
+          "id": "user can override the discovered list",
+          "result": "pass"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "claude_version": "claude-opus-4-7",
+      "method": "programmatic-grep validation",
+      "eval_id": "branch-pr-suggestion",
+      "score": 1.0,
+      "assertions": [
+        {
+          "id": "iterates branches with today's commits",
+          "result": "pass"
+        },
+        {
+          "id": "skips default branches",
+          "result": "pass"
+        },
+        {
+          "id": "calls gh pr list --head $BRANCH --state open",
+          "result": "pass"
+        },
+        {
+          "id": "uses AskUserQuestion before action",
+          "result": "pass"
+        },
+        {
+          "id": "prefers delegating to /create-pr",
+          "result": "pass"
+        },
+        {
+          "id": "never pushes without authorization phrase",
+          "result": "pass"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "claude_version": "claude-opus-4-7",
+      "method": "programmatic-grep validation",
+      "eval_id": "issue-status-suggestion",
+      "score": 1.0,
+      "assertions": [
+        {
+          "id": "scans last 7 days for PR URLs",
+          "result": "pass"
+        },
+        {
+          "id": "verifies linked PRs are merged",
+          "result": "pass"
+        },
+        {
+          "id": "detects closing-trailer pattern",
+          "result": "pass"
+        },
+        {
+          "id": "offers completed vs not_planned",
+          "result": "pass"
+        },
+        {
+          "id": "PATCH only after user approval",
+          "result": "pass"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "claude_version": "claude-opus-4-7",
+      "method": "programmatic-grep validation",
+      "eval_id": "followup-issue-suggestion",
+      "score": 1.0,
+      "assertions": [
+        {
+          "id": "computes age in days",
+          "result": "pass"
+        },
+        {
+          "id": "counts comments",
+          "result": "pass"
+        },
+        {
+          "id": "applies 5-day + 10-comment thresholds",
+          "result": "pass"
+        },
+        {
+          "id": "offers follow-up draft referencing parent",
+          "result": "pass"
+        },
+        {
+          "id": "creates new issue via gh api POST after approval",
+          "result": "pass"
+        },
+        {
+          "id": "offers closing-trailer on parent pointing to follow-up",
+          "result": "pass"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-04",
+      "claude_version": "claude-opus-4-7",
+      "method": "programmatic-grep validation",
+      "eval_id": "uncommitted-changes-handling",
+      "score": 1.0,
+      "assertions": [
+        {
+          "id": "detects via git status --short in Step 4",
+          "result": "pass"
+        },
+        {
+          "id": "surfaces uncommitted in the Step 6 overview",
+          "result": "pass"
+        },
+        {
+          "id": "Step 8.4 lists modified/staged/untracked",
+          "result": "pass"
+        },
+        {
+          "id": "offers Commit / Stash / Skip via AskUserQuestion",
+          "result": "pass"
+        },
+        {
+          "id": "never auto-commits — only after explicit Yes",
+          "result": "pass"
+        },
+        {
+          "id": "offers separate push prompt after commit",
+          "result": "pass"
+        },
+        {
+          "id": "respects git-push authorization phrase",
+          "result": "pass"
+        },
+        {
+          "id": "never --no-verify without explicit auth",
+          "result": "pass"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "date": "2026-05-04",
+    "method": "programmatic-grep static spot-check",
+    "eval_count": 9,
+    "pass_threshold": 0.8,
+    "passing_evals": 9,
+    "with_skill_pass_rate": 1.0,
+    "below_threshold": []
+  }
+}

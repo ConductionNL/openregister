@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Caps this run at 5 REQs", "passed": false, "evidence": "Would draft all 8 behaviors as REQs in one run — no cap mechanism."},
+    {"text": "Picks the 5 most cohesive behaviors — does not pick randomly", "passed": false, "evidence": "Would not apply a prioritization heuristic; would either include all or pick arbitrarily."},
+    {"text": "Summary block names the remaining behaviors as 'Next: run again for {names}'", "passed": false, "evidence": "No handoff pattern — would consider the spec complete."},
+    {"text": "Does NOT create a second ghost change in the same run", "passed": true, "evidence": "Would not spontaneously create a second ghost change."},
+    {"text": "Does NOT collapse 8 behaviors into 5 by merging distinct ones", "passed": false, "evidence": "If told to limit to 5 REQs, would likely merge related ones — the explicit 'do not collapse' rule is skill-specific."}
+  ],
+  "summary": {"passed": 1, "failed": 4, "total": 5, "pass_rate": 0.2},
+  "timing": {"executor_duration_seconds": 7.9}
+}

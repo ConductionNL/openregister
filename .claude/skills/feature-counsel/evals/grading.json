@@ -1,0 +1,48 @@
+{
+  "skill_name": "feature-counsel",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-28 (simulation). 3 scenarios: multi-persona (4/4=1.0), suggestions (4/4=1.0), model-selection (2/3=0.67). Gap in model-selection: synthesis report template lacks a 'Model:' field — skill captures the choice but does not surface it in feature-counsel-report.md output.",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "multi-persona",
+      "score": 1.0,
+      "assertions": [
+        {"id": "launches 8 persona agents", "result": "pass", "note": "SKILL.md Step 2 explicitly requires launching 8 Task agents in parallel (all in a single message), one per each named persona."},
+        {"id": "each analyzes specs from their perspective", "result": "pass", "note": "Sub-agent prompt template includes '{PERSPECTIVE}' filled in per the agent assignment table with a distinct Analysis Focus per persona."},
+        {"id": "identifies missing features per persona", "result": "pass", "note": "Sub-agent output format mandates a 'Missing Features' section — a table listing feature, priority MUST/SHOULD/COULD, persona rationale, and spec section."},
+        {"id": "synthesizes into feature-counsel-report.md", "result": "pass", "note": "SKILL.md Step 3 instructs writing synthesis to '{PROJECT}/openspec/feature-counsel-report.md' with the full markdown template."}
+      ],
+      "notes": "Parallel 8-agent launch, per-persona perspective focus, required output format, and synthesis step are all explicitly specified in SKILL.md."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "suggestions",
+      "score": 1.0,
+      "assertions": [
+        {"id": "suggests features with clear user value", "result": "pass", "note": "Sub-agent output format requires 'Missing Features' table with Feature, Priority, 'Why I need this' (in persona voice), and Spec section columns."},
+        {"id": "links suggestions to personas who need them", "result": "pass", "note": "Synthesis template's 'Consensus Features' table includes a 'Suggested by' column listing persona names throughout the report."},
+        {"id": "identifies compliance gaps (GEMMA, BIO2)", "result": "pass", "note": "Each agent output format includes 'Compliance/Standards Gaps' section. Agent 4 (Noor) focuses on BIO2/ENSIA/AVG; Agent 5 (Annemarie) focuses on GEMMA/Common Ground/NLGov."},
+        {"id": "suggests OpenSpec changes for top features", "result": "pass", "note": "SKILL.md Step 3 synthesis template includes 'Potential OpenSpec Changes' section with Change Name, Description, Related Personas, and Estimated Complexity columns."}
+      ],
+      "notes": "Structured output templates ensure every suggestion is specific, persona-attributed, compliance-aware, and actionable as an OpenSpec change."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "model-selection",
+      "score": 0.67,
+      "assertions": [
+        {"id": "accepts model parameter (Haiku/Sonnet/Opus)", "result": "pass", "note": "SKILL.md Step 1.5 defines an AskUserQuestion with Haiku/Sonnet/Opus options, tradeoffs table, and stores the choice as {MODEL}."},
+        {"id": "spawns agents with specified model", "result": "pass", "note": "Step 2 instructs 'model: \"{MODEL}\" (from Step 1.5)' in the parallel launch, so Haiku choice → all 8 agents run with model: \"haiku\"."},
+        {"id": "reports which model each persona used", "result": "fail", "note": "Neither the sub-agent output template nor synthesis report template includes a 'Model:' field. Report header shows Date, Method, Personas — but not the model used. Gap in skill's output spec."}
+      ],
+      "notes": "Skill correctly accepts and propagates the model choice. Gap: feature-counsel-report.md has no 'Model:' field in its header template — add one line to the report template in SKILL.md to close this."
+    }
+  ]
+}

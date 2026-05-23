@@ -1,0 +1,76 @@
+{
+  "skill_name": "sync-docs",
+  "schema_version": "1.0.0",
+  "notes": "Populated after each eval run. One object per eval id per date. Evals for 2026-04-23 were run via read-only Explore subagents (no Edit/Write tools) — each agent simulated the skill against the eval setup and scored per assertion.",
+  "runs": [
+    {
+      "date": "2026-04-23",
+      "claude_version": "claude-opus-4-7",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "app-docs-openregister-feature-drift",
+      "score": 0.86,
+      "assertions": [
+        {"id": "reads openspec/specs/export/spec.md before editing any doc", "result": "pass"},
+        {"id": "flags README [Future] marker as stale (spec status=done)", "result": "pass"},
+        {"id": "proposes docs/features/export.md referencing the spec via link, not duplicating content", "result": "partial", "note": "Intent is clear (Reference-Don't-Duplicate cited), but no template or example in Phase 4 shows the reference-only pattern."},
+        {"id": "does NOT link to ADRs from user-facing docs (guardrail: No ADR links in app docs)", "result": "pass"},
+        {"id": "uses AskUserQuestion before writing", "result": "pass"},
+        {"id": "runs ADR-009 screenshot check on the new feature doc", "result": "fail", "note": "ADR-009 is listed as a bullet in Phase 3's ADR compliance checklist — not promoted to a dedicated substep that explicitly verifies docs/features/img/{feature}-{view}.png."}
+      ],
+      "notes": "Actionable fix: promote the ADR-009 screenshot verification to its own named substep in Phase 3 with an explicit checklist (file exists? correct naming? in the right img/ folder?). Target: 0.92+."
+    },
+    {
+      "date": "2026-04-23",
+      "claude_version": "claude-opus-4-7",
+      "method": "read-only Explore subagent simulation",
+      "eval_id": "dev-docs-branch-divergence",
+      "score": 0.92,
+      "assertions": [
+        {"id": "runs `git -C {GITHUB_REPO} fetch origin main` in Step 0 Step 3", "result": "pass"},
+        {"id": "detects and reports the 3-commit drift", "result": "pass"},
+        {"id": "offers a concrete remediation (git pull) before editing", "result": "pass"},
+        {"id": "blocks the sync from applying edits until divergence is resolved or acknowledged", "result": "partial", "note": "SKILL.md Step 3 uses soft 'offer to git pull' language without an explicit AskUserQuestion flow or blocking mechanism. An implementation could interpret 'offer' as warning-only, allowing proceed without pulling."},
+        {"id": "does not touch any .md files in {GITHUB_REPO} during this run", "result": "pass"}
+      ],
+      "notes": "Fix: turn Step 3's 'offer' into an explicit AskUserQuestion with three options — (a) pull now, (b) acknowledge and continue at your own risk, (c) cancel. Same UX-layer gap as wordpress-docker md-only-guardrail."
+    },
+    {
+      "date": "2026-04-23",
+      "claude_version": "claude-opus-4-7",
+      "method": "read-only Explore subagent simulation",
+      "eval_id": "preflight-sources-of-truth-drift",
+      "score": 1.00,
+      "assertions": [
+        {"id": "runs Step 0.5 Check B with file-exists assertions on each Sources of Truth entry", "result": "pass"},
+        {"id": "reports the dangling entry with the actual canonical path as replacement suggestion", "result": "pass"},
+        {"id": "reports ADR-017 as a candidate addition to the table", "result": "pass"},
+        {"id": "asks whether to update writing-docs.md first", "result": "pass"},
+        {"id": "applies edits only to .md files", "result": "pass"}
+      ],
+      "notes": "Clean pass. preflight-checks.md Check B's 'verify each entry against the actual project' wording is already explicit — no gap."
+    },
+    {
+      "date": "2026-04-23",
+      "claude_version": "claude-opus-4-7",
+      "method": "read-only Explore subagent simulation",
+      "eval_id": "md-only-guardrail-schema-yaml",
+      "score": 0.78,
+      "assertions": [
+        {"id": "reports the writing-specs.md vs schema.yaml drift", "result": "partial", "note": "Check C detects drift but no explicit mandate to surface it in the Phase 5 summary with a [Manual Follow-Up] marker."},
+        {"id": "refuses to write to openspec/schemas/conduction/schema.yaml (docs-only guardrail)", "result": "pass"},
+        {"id": "offers a manual follow-up note in the final report", "result": "partial", "note": "Guardrail covers 'never write' but doesn't require drift to appear in Phase 5 output."},
+        {"id": "applies any .md edits only where the user confirms", "result": "pass"}
+      ],
+      "notes": "Below 0.80 pass threshold. Guardrail is AIRTIGHT for blocking writes. Gap: no mandated reporting of YAML/config drift detected in preflight. Fix: add to Guardrails — 'YAML/config drift detected in preflight MUST appear in the Phase 5 summary as [Manual Follow-Up Required] with the drift description. Never auto-fix.'"
+    }
+  ],
+  "summary": {
+    "date": "2026-04-23",
+    "eval_count": 4,
+    "pass_threshold": 0.8,
+    "baseline_score": 0.89,
+    "passing_evals": 3,
+    "below_threshold": ["md-only-guardrail-schema-yaml"],
+    "improve_cycle_next": "Two related fixes: (1) add explicit AskUserQuestion flow to Step 3 branch-divergence (replace 'offer' with blocking prompt); (2) add a 'YAML/config drift MUST appear in Phase 5 summary as Manual Follow-Up' rule to Guardrails. The two-skill cross-cutting pattern is: SKILL.md guardrails are strong negative constraints ('never') but weak on communication protocols ('when X happens, do Y'). Strengthen the communication layer. Target: 0.92+."
+  }
+}

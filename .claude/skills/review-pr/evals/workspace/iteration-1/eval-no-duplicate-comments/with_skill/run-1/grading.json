@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Detects existing reviews from the same user before posting",
+      "passed": true,
+      "evidence": "Real run on PR #4: skill fetched /pulls/4/reviews and detected prior review by WilcoLouwerse (id: 4120192162, submitted 2026-04-16). Correctly identified as re-review and entered re-review mode — fetching prior comments and assessing each as addressed/still-open rather than posting fresh duplicates."
+    },
+    {
+      "text": "Does NOT repost findings already covered in prior comments",
+      "passed": true,
+      "evidence": "Prior comments [6] (verdict parser), [7] (conduction-architecture-rules.md), [4] (max_turns) were marked ADDRESSED based on new commits. Skill only posted new inline comments for [1] hardcoded path (still open) and [2] NC_CACHE_DIR (new finding) — not redundant re-posts of resolved issues."
+    },
+    {
+      "text": "Re-review summary correctly lists addressed vs still-open items",
+      "passed": true,
+      "evidence": "Skill generated re-review context with explicit lists: 3 ADDRESSED ([4], [6], [7]) and 1 STILL OPEN ([1] hardcoded path). New findings from 13 new commits: NC_CACHE_DIR race condition. This matches the re-review-context.md protocol."
+    },
+    {
+      "text": "Inline comment IDs are distinct (no duplicate API call for same file:line)",
+      "passed": true,
+      "evidence": "Two inline comments posted with distinct IDs: 3153942991 (cron-hydra.sh pos 230) and 3153942993 (run-quality.sh pos 105). No duplicate calls to the same file/position."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Re-review detection worked on the first attempt. Prior review was from 2026-04-16, 13 new commits since then. The skill's /pulls/{PR}/reviews fetch is the critical gate — without it, all 7 prior findings would have been reposted.",
+  "timing": {
+    "executor_duration_seconds": 420
+  }
+}

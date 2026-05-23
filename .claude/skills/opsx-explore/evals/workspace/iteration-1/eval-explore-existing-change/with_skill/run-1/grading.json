@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "reads existing change artifacts for context", "passed": true, "evidence": "SKILL.md lines 144-149: reads proposal.md, design.md, tasks.md for the named change before exploring."},
+    {"text": "thinks through design decisions and tradeoffs", "passed": true, "evidence": "SKILL.md lines 60-72 define comparing options as a core explore-mode behavior; example shows Options A/B/C comparison."},
+    {"text": "surfaces open questions and alternatives", "passed": true, "evidence": "SKILL.md lines 97-100 explicitly include 'Surface risks and unknowns' in the explore stance."},
+    {"text": "does NOT write code or advance the workflow", "passed": true, "evidence": "SKILL.md line 212: 'Never write code or implement features.' Only OpenSpec artifact creation is allowed."},
+    {"text": "can create OpenSpec artifacts (proposals, specs) if user asks", "passed": true, "evidence": "SKILL.md lines 156-168: explicitly permits capturing decisions as design.md, specs, etc. when user asks."}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. All expectations directly supported by SKILL.md.",
+  "timing": {"executor_duration_seconds": 11.3}
+}

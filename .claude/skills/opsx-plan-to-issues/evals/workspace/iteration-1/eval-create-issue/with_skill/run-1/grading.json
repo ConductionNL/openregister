@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Parses tasks.md into plan.json",
+      "passed": true,
+      "evidence": "plan.json written to openspec/changes/task-comments/plan.json with 12 tasks parsed from tasks.md (4 CommentController tasks, 1 routes task, 5 TaskComments.vue tasks, 1 tab-wiring task, 3 store/card tasks → 12 total). Each task has id, title, description, status, spec_ref, acceptance_criteria, files_likely_affected as required by the schema."
+    },
+    {
+      "text": "Creates GitHub issue with task checkboxes",
+      "passed": true,
+      "evidence": "Issue #183 created at https://github.com/ConductionNL/planix/issues/183. Title: '[OpenSpec] [planix] task-comments'. Body contains 13 task checkboxes in - [ ] format grouped under 6 section headers (### 1. Backend — CommentController, etc.), each with nested acceptance criteria sub-checkboxes."
+    },
+    {
+      "text": "Derives labels from specs touched",
+      "passed": true,
+      "evidence": "Labels derived from openspec/changes/task-comments/specs/ subdirectories: task-comments and tasks. Combined with mandatory openspec and planix labels. All 4 labels created (task-comments and tasks were new, openspec and planix already existed) and applied to the issue."
+    },
+    {
+      "text": "Links plan.json to tracking_issue field",
+      "passed": true,
+      "evidence": "plan.json saved with tracking_issue: 183 matching the created issue number. Repo field correctly set to ConductionNL/planix from git remote. Created field set to 2026-04-28."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Real run 2026-04-28. planix task-comments change. Issue created and immediately closed (eval cleanup per user instruction — not adding ready-to-build label). Skill correctly detected single active change, derived 4 labels from 2 spec directories, created structured plan.json with 12 tasks.",
+  "timing": {
+    "executor_duration_seconds": 95
+  }
+}

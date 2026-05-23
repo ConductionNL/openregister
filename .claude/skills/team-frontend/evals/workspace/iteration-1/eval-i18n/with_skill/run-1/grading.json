@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Uses t() for all user-facing strings",
+      "passed": true,
+      "evidence": "SKILL.md Step 2 Translations: 'All user-visible strings MUST use t()'. Rule is explicit and unconditional. Code example shows t('openregister', 'Objects') and t('openregister', 'Add new item') in the template."
+    },
+    {
+      "text": "Adds translation keys properly",
+      "passed": true,
+      "evidence": "SKILL.md Step 2: 'First argument is always the app name (e.g., openregister)'. The t() function signature and app name convention are specified. Code examples consistently show t(appName, translationKey) pattern."
+    },
+    {
+      "text": "Defaults to English",
+      "passed": false,
+      "evidence": "SKILL.md does not explicitly state 'default to English'. The Dutch Government Frontend Standards reference (references/dutch-gov-frontend-standards.md) covers multi-language support but is a reference file, not inlined. SKILL.md only says 'all strings via t()' — the English-default rule is not explicitly in the main SKILL.md instructions."
+    },
+    {
+      "text": "Follows NL Design System CSS variables",
+      "passed": true,
+      "evidence": "SKILL.md CSS & Styling Rules: 'Support NL Design System tokens (nldesign app)', 'Use Nextcloud CSS variables: var(--color-main-text), var(--color-primary), etc.', 'never hardcode colors'. Standards Quick Reference: 'Accessibility: WCAG AA required'."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "notes": "t() usage, app-name first argument, and NL Design System CSS variables are explicitly specified. Gap: 'defaults to English' is in the reference file (dutch-gov-frontend-standards.md) but not in the SKILL.md main instructions. Adding 'English is the base language — translation files use English keys and English values' to the Translations section would close this.",
+  "timing": {
+    "executor_duration_seconds": 375
+  }
+}

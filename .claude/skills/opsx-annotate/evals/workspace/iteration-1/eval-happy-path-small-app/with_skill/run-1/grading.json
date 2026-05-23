@@ -1,0 +1,17 @@
+{
+  "expectations": [
+    {"text": "checks coverage-report.json exists AND is < 24h old BEFORE any other action", "passed": true, "evidence": "Step 1 first sub-bullet: reads generated_at from JSON (explicitly not filesystem mtime) and checks < 24h."},
+    {"text": "checks git status --porcelain is empty and refuses on dirty tree", "passed": true, "evidence": "Step 1 second sub-bullet: runs git status --porcelain, refuses on non-empty."},
+    {"text": "creates feature branch retrofit/annotate-procest-{today}", "passed": true, "evidence": "Step 1 fourth sub-bullet: git checkout -b retrofit/annotate-procest-2026-04-24."},
+    {"text": "creates ghost change named retrofit-annotate-procest-{today} with empty specs/ and one task per REQ", "passed": true, "evidence": "Step 5: /opsx-new retrofit-annotate-procest-2026-04-24 with empty specs/ and one task per REQ."},
+    {"text": "task IDs follow format 'task-N: {capability}#{REQ-NNN} — {title} (retroactive annotation)'", "passed": true, "evidence": "Step 5 tasks.md format: '- [x] task-N: {capability}#{REQ-NNN} — {title} (retroactive annotation)'."},
+    {"text": "uses AskUserQuestion before any file edits", "passed": true, "evidence": "Step 3: AskUserQuestion with Proceed/Review first/Cancel before any file edits."},
+    {"text": "uses Edit tool (or Write for full-file rewrite) — never sed/awk/python", "passed": true, "evidence": "Step 6: 'file-by-file using Edit tool only (never sed/awk/python)'."},
+    {"text": "runs composer phpcs and /hydra-gates after annotation", "passed": true, "evidence": "Step 7: composer phpcs + invokes /hydra-gates skill."},
+    {"text": "appends annotation commit SHA to .git-blame-ignore-revs", "passed": true, "evidence": "Step 9: appends SHA with header comment, then git add + separate commit."},
+    {"text": "archives the ghost change via /opsx-archive at the end", "passed": true, "evidence": "Step 10: /opsx-archive retrofit-annotate-procest-2026-04-24."},
+    {"text": "PR labels include both retrofit and annotation-only", "passed": true, "evidence": "Step 12: /create-pr with labels retrofit and annotation-only."}
+  ],
+  "summary": {"passed": 11, "failed": 0, "total": 11, "pass_rate": 1.0},
+  "timing": {"executor_duration_seconds": 35.1}
+}

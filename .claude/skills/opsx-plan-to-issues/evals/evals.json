@@ -1,0 +1,83 @@
+{
+  "skill_name": "opsx-plan-to-issues",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-24",
+  "evals": [
+    {
+      "id": "create-issue",
+      "description": "Create GitHub issue from tasks",
+      "prompt": "Run /opsx-plan-to-issues for register-export",
+      "setup": "Change has tasks.md",
+      "expected_output": "Should parse tasks and create GitHub issue",
+      "expectations": [
+        "Parses tasks.md into plan.json",
+        "Creates GitHub issue with task checkboxes",
+        "Derives labels from specs touched",
+        "Links plan.json to tracking_issue field"
+      ]
+    },
+    {
+      "id": "existing-issue",
+      "description": "Issue already exists",
+      "prompt": "Run when GitHub issue already exists",
+      "setup": "plan.json already has tracking_issue",
+      "expected_output": "Should update existing issue",
+      "expectations": [
+        "Detects existing tracking issue",
+        "Updates checkboxes to match current state",
+        "Does NOT create duplicate issue",
+        "Reports sync status"
+      ]
+    },
+    {
+      "id": "task-format",
+      "description": "Correct checkbox format",
+      "prompt": "Check issue format",
+      "setup": "Tasks with mixed completion",
+      "expected_output": "Should use proper markdown checkboxes",
+      "expectations": [
+        "Uses - [ ] for pending tasks",
+        "Uses - [x] for completed tasks",
+        "Preserves task descriptions",
+        "Groups tasks logically"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "create issues from tasks",
+      "plan to issues",
+      "opsx plan to issues",
+      "create GitHub issue for change",
+      "track change on GitHub",
+      "/opsx-plan-to-issues",
+      "convert tasks to GitHub issues",
+      "push tasks to GitHub",
+      "make an issue for register-export",
+      "generate a tracking issue",
+      "create the plan and issue",
+      "push the plan to GitHub",
+      "turn tasks into an issue",
+      "plan to issues for add-auth",
+      "set up GitHub tracking for the change"
+    ],
+    "should_not_trigger": [
+      "apply the change",
+      "create a PR",
+      "archive change",
+      "sync specs",
+      "verify change",
+      "opsx-apply",
+      "opsx-archive",
+      "opsx-sync",
+      "show existing issues",
+      "list tasks",
+      "what issues exist?",
+      "create a GitHub PR",
+      "explain plan to issues",
+      "view the plan.json",
+      "update the tasks.md"
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "skill_name": "test-counsel",
+  "schema_version": "1.0.0",
+  "notes": "All three scenarios score 1.0 with_skill / 0.0 without_skill. The skill is entirely Conduction-specific: 8 Dutch gov persona profiles, browser assignment table, synthesis-report-template.md, COUNSEL_TEST_RESULT output format, and OpenSpec gap-creation offer are all absent from naive Claude. The clean 0.0 without_skill sweep confirms high signal value for the skill — none of these behaviors are general QA knowledge.",
+  "runs": [
+    {
+      "eval_id": "eval-multi-persona",
+      "description": "Spawn all 8 Conduction personas as parallel Task agents, each assigned a dedicated browser instance, all launched in a single message",
+      "with_skill": {
+        "run_id": "run-1",
+        "pass_rate": 1.0,
+        "passed": 4,
+        "total": 4
+      },
+      "without_skill": {
+        "run_id": "run-1",
+        "pass_rate": 0.0,
+        "passed": 0,
+        "total": 4
+      }
+    },
+    {
+      "eval_id": "eval-synthesize",
+      "description": "Aggregate 8 persona result sets: cross-persona patterns, unique findings, severity×breadth ranking, structured synthesis-report.md output",
+      "with_skill": {
+        "run_id": "run-1",
+        "pass_rate": 1.0,
+        "passed": 4,
+        "total": 4
+      },
+      "without_skill": {
+        "run_id": "run-1",
+        "pass_rate": 0.0,
+        "passed": 0,
+        "total": 4
+      }
+    },
+    {
+      "eval_id": "eval-report-format",
+      "description": "Final report has per-persona sections, cross-persona patterns, COUNSEL_TEST_RESULT structured output line, and OpenSpec change creation offer for gaps",
+      "with_skill": {
+        "run_id": "run-1",
+        "pass_rate": 1.0,
+        "passed": 4,
+        "total": 4
+      },
+      "without_skill": {
+        "run_id": "run-1",
+        "pass_rate": 0.0,
+        "passed": 0,
+        "total": 4
+      }
+    }
+  ]
+}

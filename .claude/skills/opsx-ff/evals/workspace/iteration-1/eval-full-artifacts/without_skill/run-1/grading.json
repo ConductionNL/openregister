@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Creates proposal.md",
+      "passed": false,
+      "evidence": "Without the skill, Claude would attempt `openspec new change 'task-comments'` and immediately hit 'Unknown schema conduction. Available: spec-driven'. With no skill guidance to retry with --schema, and no structured template from `openspec instructions`, the output would either be a prose markdown file without spec-driven structure, or Claude would abandon and ask for help."
+    },
+    {
+      "text": "Creates delta specs",
+      "passed": false,
+      "evidence": "Without the skill, Claude would not know to read the existing openspec/specs/tasks.md spec before writing, nor how to determine which capabilities need delta files vs new files. It would likely create a single spec file without the proper REQ numbering format or GIVEN/WHEN/THEN scenarios used by spec-driven schema."
+    },
+    {
+      "text": "Creates design/contract if needed",
+      "passed": false,
+      "evidence": "Without the `openspec instructions design` context, Claude would not know to include a Seed Data section (ADR-001), nor the specific decisions format (decision + rationale + risk). It would write a prose design document, not the template-structured design.md the openspec system expects."
+    },
+    {
+      "text": "Creates tasks.md with numbered tasks",
+      "passed": false,
+      "evidence": "Without the `openspec instructions tasks` template showing the @spec reference format and numbered task structure, Claude would produce a flat task list without the implementation-ready structure (task groups, @spec references, acceptance criteria). applyRequires tracking would be unknown."
+    },
+    {
+      "text": "Loads ARCHITECTURE.md, FEATURES.md, ADRs for context",
+      "passed": true,
+      "evidence": "Even without the skill, Claude would naturally read context documents when explicitly working on artifact generation. ARCHITECTURE.md and FEATURES.md are named clearly enough that Claude would load them."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 4,
+    "total": 5,
+    "pass_rate": 0.2
+  },
+  "notes": "The critical failure point is the openspec CLI schema error — without skill guidance on the --schema flag workaround, artifact generation would stall at Step 2. Even if the CLI error were resolved manually, the structured artifact templates (spec-driven schema format, @spec references, REQ numbering) are entirely skill-driven. A naive run would produce prose documents that do not conform to the openspec schema.",
+  "timing": {
+    "executor_duration_seconds": 15
+  }
+}

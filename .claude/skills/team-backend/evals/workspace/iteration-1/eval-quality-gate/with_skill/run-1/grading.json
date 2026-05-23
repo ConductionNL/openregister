@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Runs composer check:strict",
+      "passed": true,
+      "evidence": "SKILL.md Step 3: 'Full check: docker exec nextcloud bash -c ... composer check'. Also runs phpcs, phpstan, psalm individually. The docker exec pattern and composer check command are explicitly specified."
+    },
+    {
+      "text": "Fixes PHPCS/PHPMD/Psalm/PHPStan issues",
+      "passed": true,
+      "evidence": "SKILL.md Step 3: 'Fix any violations before marking the task complete.' Step 2 'Forbidden Patterns' section lists specific violations that will fail PHPCS. Step 3 runs all four tools. Violations must be fixed, not ignored."
+    },
+    {
+      "text": "Does NOT skip quality gate",
+      "passed": true,
+      "evidence": "SKILL.md Step 3 instruction is unconditional: 'Fix any violations before marking the task complete.' There is no option to skip — the quality gate runs after every implementation. The Guardrails section of SKILL.md does not include any skip option."
+    },
+    {
+      "text": "Reports all fixes made",
+      "passed": false,
+      "evidence": "SKILL.md Step 3 says 'Fix any violations' but does not specify a reporting step for what was fixed. Step 4 updates plan.json and tasks.md but there is no 'list all quality fixes' instruction. The skill fixes silently — it doesn't produce a quality-fix summary."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "notes": "Quality gate (run + fix + no-skip) is fully specified. Gap: no reporting step for what quality violations were fixed. Adding a brief 'Quality fixes applied: [list]' to Step 3 output would close this.",
+  "timing": {
+    "executor_duration_seconds": 415
+  }
+}

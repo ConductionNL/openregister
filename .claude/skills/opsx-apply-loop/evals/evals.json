@@ -1,0 +1,83 @@
+{
+  "skill_name": "opsx-apply-loop",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "loop-until-pass",
+      "description": "Apply-verify loop until clean",
+      "prompt": "Run /opsx-apply-loop for register-export",
+      "setup": "Change with tasks, Docker environment ready",
+      "expected_output": "Should iterate apply\u2192verify until pass",
+      "expectations": [
+        "Runs apply inside Docker container",
+        "Runs verify after apply",
+        "Loops on failure (max 5 iterations)",
+        "Auto-archives on successful verify"
+      ]
+    },
+    {
+      "id": "max-iterations",
+      "description": "Stop after max retries",
+      "prompt": "Run on a change that keeps failing verify",
+      "setup": "Change with persistent verification failures",
+      "expected_output": "Should stop after max iterations",
+      "expectations": [
+        "Stops after 5 Docker iterations",
+        "Reports remaining failures",
+        "Does NOT loop infinitely",
+        "Suggests manual intervention"
+      ]
+    },
+    {
+      "id": "auto-archive",
+      "description": "Archive on success",
+      "prompt": "Apply-loop succeeds on first try",
+      "setup": "Simple change that passes immediately",
+      "expected_output": "Should auto-archive",
+      "expectations": [
+        "Detects verify pass",
+        "Auto-commits changes",
+        "Auto-archives the change",
+        "Reports success"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "run apply loop",
+      "apply and verify in a loop",
+      "opsx apply loop",
+      "auto-apply until verified",
+      "iterate apply verify",
+      "/opsx-apply-loop",
+      "keep applying until it passes",
+      "run apply in a loop and auto-archive",
+      "apply loop on register-export",
+      "apply then verify and repeat",
+      "loop through apply and verify",
+      "let it run until verify passes",
+      "repeatedly apply until clean",
+      "run the apply loop for me",
+      "auto iterate apply verify"
+    ],
+    "should_not_trigger": [
+      "apply the change",
+      "verify the change",
+      "archive the change",
+      "run tests",
+      "create a PR",
+      "what is apply loop?",
+      "opsx-apply",
+      "opsx-verify",
+      "opsx-archive",
+      "run the pipeline",
+      "bulk archive",
+      "show verify results",
+      "explain apply loop",
+      "apply once and stop",
+      "check if verify passes"
+    ]
+  }
+}

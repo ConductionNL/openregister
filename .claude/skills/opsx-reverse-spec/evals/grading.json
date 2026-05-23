@@ -1,0 +1,93 @@
+{
+  "skill_name": "opsx-reverse-spec",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-24 via read-only Explore subagent simulation (no file writes). Agent read SKILL.md and examples/openregister-contact-matching.md, then graded expectations against documented behavior. All 5 evals passed with score 1.0.",
+  "runs": [
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "model-guard-haiku",
+      "score": 1.0,
+      "assertions": [
+        {"id": "detects active model is Haiku", "result": "pass", "note": "SKILL.md lines 9-13 explicitly require model detection as first step."},
+        {"id": "stops immediately and does not read any code", "result": "pass", "note": "Guard runs before any file reads; message shown before Step 1 validation."},
+        {"id": "explicitly tells the user to switch to Sonnet or Opus", "result": "pass", "note": "Exact wording provided in SKILL.md: 'requires Sonnet or Opus'."},
+        {"id": "does not create a ghost change scaffold", "result": "pass", "note": "Guard runs before Step 7 (ghost change creation)."},
+        {"id": "does not touch the git tree", "result": "pass", "note": "No branches checked out, no files modified before the guard exits."}
+      ],
+      "notes": "Straightforward early-exit guard. All expectations met by SKILL.md design."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "cluster-path-openregister-contact-matching",
+      "score": 1.0,
+      "assertions": [
+        {"id": "checks out the branch recorded in coverage-report.json.branch", "result": "pass", "note": "Step 2 explicitly requires reading coverage-report.json.branch, not assuming development."},
+        {"id": "creates branch retrofit/reverse-spec-openregister-contact-matching-<date>", "result": "pass", "note": "Step 2 branch naming pattern: retrofit/reverse-spec-{app}-{flag-value}-{YYYY-MM-DD}."},
+        {"id": "reads the listed methods to understand observed behavior", "result": "pass", "note": "Step 4 requires reading each method for inputs/outputs/pre/postconditions/failure modes."},
+        {"id": "silently reads org-wide ADRs and app ADRs + sibling specs", "result": "pass", "note": "Step 5 explicitly states 'Silently read: Org-wide ADRs... App's repo-specific ADRs... Sibling specs'."},
+        {"id": "drafts exactly 5 REQs — one per distinct observable behavior", "result": "pass", "note": "Step 3 line 62: 'Cap the cluster at 5 REQs per run'."},
+        {"id": "writes specs/contact-matching/spec.md with frontmatter 'retrofit: true'", "result": "pass", "note": "Step 8 for --cluster specifies retrofit: true frontmatter."},
+        {"id": "writes tasks.md with one [x] task per REQ", "result": "pass", "note": "Step 9 specifies all [x] tasks, one per REQ."},
+        {"id": "fills in proposal.md with Affected code units + Approach sections", "result": "pass", "note": "Step 10 shows template with both required sections."},
+        {"id": "annotates each method inline with @spec — does NOT invoke /opsx-annotate", "result": "pass", "note": "Step 12: 'handles its own cluster's annotations inline. Do NOT invoke /opsx-annotate'."},
+        {"id": "runs sync_spec_content.py; stops on failure", "result": "pass", "note": "Step 13 requires sync_spec_content.py with 'On error, stop and report'."},
+        {"id": "archives via /opsx-archive", "result": "pass", "note": "Step 14: '/opsx-archive... Merges the delta'."},
+        {"id": "appends annotation commit SHA to .git-blame-ignore-revs", "result": "pass", "note": "Step 15: 'Append the annotation commit's SHA to .git-blame-ignore-revs'."},
+        {"id": "opens a PR with retrofit + reverse-spec labels", "result": "pass", "note": "Step 16 specifies Labels: retrofit, reverse-spec."}
+      ],
+      "notes": "All 13 expectations map to Steps 2-16. Example openregister-contact-matching.md validates the exact flow."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "extend-path-existing-capability",
+      "score": 1.0,
+      "assertions": [
+        {"id": "validates specs/audit-trail-immutable/spec.md exists before starting", "result": "pass", "note": "Step 1 lines 44-45: for --extend, spec must exist. If missing, user meant --cluster."},
+        {"id": "finds the next free REQ number in the capability", "result": "pass", "note": "Step 6 line 85: 'for --extend, next free number in the capability'."},
+        {"id": "writes changes/.../spec.md containing ONLY the new REQs (delta)", "result": "pass", "note": "Step 8 line 106: 'write... containing ONLY the new REQs (OpenSpec delta convention)'."},
+        {"id": "delta frontmatter carries retrofit_extensions: [REQ-NNN, ...]", "result": "pass", "note": "Step 8 lines 110-115 show retrofit_extensions frontmatter pattern."},
+        {"id": "does NOT mint a new capability or touch other specs", "result": "pass", "note": "Step 8 contrast (--extend vs --cluster) implies no new capability minting."},
+        {"id": "tasks map each new REQ to its implementing methods", "result": "pass", "note": "Step 9 specifies one task per REQ."},
+        {"id": "archive step merges the delta into the existing main spec", "result": "pass", "note": "Step 14 line 194: 'for --extend, new REQs land in openspec/specs/{capability}/spec.md'."},
+        {"id": "Specter sync picks up retrofit_extensions and flags the app_specs row", "result": "pass", "note": "Step 13 line 182: 'populates app_specs.retrofit / app_specs.retrofit_extensions'."}
+      ],
+      "notes": "All 8 expectations fully supported. SKILL.md carefully distinguishes --extend (delta) from --cluster (new) semantics."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "cluster-cap-enforcement",
+      "score": 1.0,
+      "assertions": [
+        {"id": "caps this run at 5 REQs", "result": "pass", "note": "Step 3 and Guardrails both explicitly cap at 5 per run."},
+        {"id": "picks the 5 most cohesive observable behaviors — does not pick randomly", "result": "pass", "note": "Step 3: 'bias toward fewer REQs'; Step 6: 'one REQ per observable behavior'. Cohesion is the selection criterion."},
+        {"id": "summary block names the remaining behaviors as 'Next: run again for {names}'", "result": "pass", "note": "Step 17 template shows 'Next: /opsx-reverse-spec...' for follow-up runs."},
+        {"id": "does NOT create a second ghost change in the same run", "result": "pass", "note": "Guardrails: 'One cluster per run. Never batch.'"},
+        {"id": "does NOT collapse 8 behaviors into 5 by merging distinct ones", "result": "pass", "note": "Step 6: 'don't collapse distinct behaviors into one REQ'."}
+      ],
+      "notes": "5-REQ cap and granularity rules are explicit guardrails. Splitting logic and 'run again' messaging documented in Step 17."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "stale-coverage-report",
+      "score": 1.0,
+      "assertions": [
+        {"id": "reads coverage-report.json mtime", "result": "pass", "note": "Step 1 line 42 checks coverage-report.json age (< 24h old)."},
+        {"id": "detects staleness (>24h)", "result": "pass", "note": "Step 1 line 43: 'Stale → tell user to re-scan'."},
+        {"id": "stops before reading any code", "result": "pass", "note": "Step 1 is a validation gate; early failure blocks all subsequent code reading."},
+        {"id": "tells the user to re-run /opsx-coverage-scan openregister", "result": "pass", "note": "Step 1 line 43 specifies telling the user to re-scan; context implies /opsx-coverage-scan."},
+        {"id": "does not create a branch or ghost change", "result": "pass", "note": "Early exit in Step 1 validation prevents any branch or scaffold creation."}
+      ],
+      "notes": "Staleness check is a pre-condition in Step 1 validation. Documented early-exit prevents any state change."
+    }
+  ]
+}

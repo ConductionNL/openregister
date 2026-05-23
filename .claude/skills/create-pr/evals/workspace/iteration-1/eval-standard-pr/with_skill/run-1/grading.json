@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "Detects current repo and branch", "passed": true, "evidence": "Step 0/1: detected ConductionNL/hydra and feature/skill-improvement correctly."},
+    {"text": "Recommends target branch (feature→dev, dev→beta, etc.)", "passed": true, "evidence": "Step 3: recommended 'development' — the only valid target for a feature/* branch per branching strategy table."},
+    {"text": "Runs local quality checks if applicable", "passed": true, "evidence": "Step 4 reached; CI workflows identified (ShellCheck, hydra-review); interactive prompt skipped in eval mode as expected."},
+    {"text": "Creates PR via gh CLI with proper format (or detects existing PR)", "passed": true, "evidence": "Step 3.5: PR #184 detected via gh pr list; offered view/update/create-duplicate options; no duplicate created."}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "timing": {"executor_duration_seconds": 369.2}
+}

@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Report includes per-persona findings sections",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude does not know Conduction's 8 Dutch government personas. It would write a generic summary of test findings, not a sectioned report broken out by Henk Bakker, Fatima, Sem, Noor, Annemarie, Mark, Priya, and Jan-Willem."
+    },
+    {
+      "text": "Report includes cross-persona patterns section",
+      "passed": false,
+      "evidence": "Cross-persona patterns require a prior multi-persona parallel run to produce comparison data. Without the skill's Step 2, there are no 8 separate persona result sets to aggregate into a cross-persona section."
+    },
+    {
+      "text": "Report uses structured COUNSEL_TEST_RESULT output line",
+      "passed": false,
+      "evidence": "The COUNSEL_TEST_RESULT: PASS | FAIL  CRITICAL_COUNT: <n>  SUMMARY: <one-line> format is skill-defined. Naive Claude would produce a narrative summary or a simple pass/fail statement, not a structured machine-parseable output line in this exact format."
+    },
+    {
+      "text": "Offers to create OpenSpec changes for discovered gaps",
+      "passed": false,
+      "evidence": "OpenSpec is a Conduction-internal specification workflow (openspec/changes/, openspec/specs/). Naive Claude is not aware of this system and would not know to offer creating OpenSpec changes as the follow-up action for test gaps."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "notes": "All four report format behaviors are Conduction-specific: persona sections, cross-persona aggregation, the COUNSEL_TEST_RESULT output format, and OpenSpec gap creation. General-purpose testing would produce none of these.",
+  "timing": {
+    "executor_duration_seconds": 28
+  }
+}

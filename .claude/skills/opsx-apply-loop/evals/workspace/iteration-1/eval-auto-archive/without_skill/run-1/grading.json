@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Detects verify pass",
+      "passed": true,
+      "evidence": "If naive Claude runs opsx-verify and it reports success, Claude would recognize the pass state from the verify output text. This is straightforward output interpretation that does not require the skill."
+    },
+    {
+      "text": "Auto-commits changes",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not automatically commit changes after verify passes. General Claude behavior is to wait for explicit instruction before git operations. The skill's Step 12 auto-commit is a workflow-defined automatic action that naive Claude would not perform unprompted."
+    },
+    {
+      "text": "Auto-archives the change",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know to invoke opsx-archive after a successful verify. The archive step requires specific knowledge of the opsx-archive skill, the archive directory structure, and the chain of steps (delta spec sync, spec link updates, CHANGELOG.md). Naive Claude would stop at 'verify passed' and report to the user."
+    },
+    {
+      "text": "Reports success",
+      "passed": true,
+      "evidence": "Naive Claude would report the verify pass result to the user. This is basic assistant behavior — surfacing the output of a completed step. However, the report format would be ad-hoc, not using loop-report-template.md or showing iteration count, test results, and what's-next options."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "Detecting a pass and reporting success are basic assistant behaviors. The skill's value in this scenario is the automatic commit + archive chain that follows the pass — naive Claude would stop at 'verify passed, what next?' rather than proceeding to commit, archive, and GitHub sync without user prompting.",
+  "timing": {
+    "executor_duration_seconds": 11
+  }
+}

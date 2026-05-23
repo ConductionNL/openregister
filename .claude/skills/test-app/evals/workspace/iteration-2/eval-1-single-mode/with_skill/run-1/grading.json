@@ -1,0 +1,33 @@
+{
+  "eval_id": 1,
+  "eval_name": "single-mode",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Tests navigation and page loading",
+      "passed": true,
+      "evidence": "Step 5: Launch Agent \u2014 verified app loads at /index.php/apps/openregister; checked admin settings URL; status.php and authentication probes all PASS"
+    },
+    {
+      "text": "Tests core CRUD operations",
+      "passed": true,
+      "evidence": "Full CRUD lifecycle on registers and schemas: List/Get/Create/Update/Delete all exercised. Create returned 201, Update returned 200 with version increment, Delete returned 200."
+    },
+    {
+      "text": "Produces structured pass/fail report",
+      "passed": true,
+      "evidence": "Report contains explicit Summary table (PASS:11, PARTIAL:2, FAIL:3, CANNOT_TEST:5), per-feature tables, Steps Completed table, and final APP_TEST_RESULT line \u2014 exactly the structure the skill describes"
+    },
+    {
+      "text": "Does NOT spawn parallel agents in single mode",
+      "passed": true,
+      "evidence": "Single comprehensive run by one agent. No Agent/Task tool invocations to spawn perspective agents (Agent tool was unavailable, but the skill correctly stayed in single mode)"
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

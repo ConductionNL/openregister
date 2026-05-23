@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "Suggests features with clear user value",
+      "passed": false,
+      "evidence": "Naive Claude would produce generic suggestions from a developer or project-owner frame rather than grounding them in specific user needs. Without the persona prompts enforcing 'Why I need this' from an in-character perspective, suggestions would lack clear, attributed user value."
+    },
+    {
+      "text": "Links suggestions to personas who need them",
+      "passed": false,
+      "evidence": "Naive Claude has no awareness of the 8 hydra personas (Henk Bakker, Fatima, etc.) and their files. It might mention 'end users' generically but would not link suggestions to named, profiled personas with specific backgrounds and needs."
+    },
+    {
+      "text": "Identifies compliance gaps (GEMMA, BIO2)",
+      "passed": false,
+      "evidence": "Without Agent 4 (Noor Yilmaz — CISO) and Agent 5 (Annemarie de Vries — VNG architect) persona prompts, naive Claude is unlikely to surface BIO2, ENSIA, GEMMA, or Common Ground compliance gaps unless the spec happens to mention them explicitly. Domain-specific Dutch government compliance knowledge would be incidental, not systematic."
+    },
+    {
+      "text": "Suggests OpenSpec changes for top features",
+      "passed": false,
+      "evidence": "Naive Claude has no knowledge of the '/opsx-new' workflow or the OpenSpec change format. It would not produce a 'Potential OpenSpec Changes' table with Change Name, Complexity estimates, and an offer to create changes via the opsx toolchain."
+    }
+  ],
+  "summary": {"passed": 0, "failed": 4, "total": 4, "pass_rate": 0.0},
+  "notes": "Without the skill, suggestion quality degrades significantly: no persona grounding, no Dutch-government compliance frame, no OpenSpec change pipeline integration. All four quality expectations fail.",
+  "timing": {"executor_duration_seconds": 28}
+}

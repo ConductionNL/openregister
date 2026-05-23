@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "checks active model, blocks on Haiku", "passed": false, "evidence": "No model check — would proceed on any model."},
+    {"text": "asks user which model to use for exploration", "passed": false, "evidence": "Would not ask; would launch into exploration immediately on whatever model is active."},
+    {"text": "enters a stance of curious thinking partner", "passed": false, "evidence": "Without the stance defined, would default to task-completion mode — likely jump to solutions rather than exploring options."},
+    {"text": "does NOT implement any code", "passed": false, "evidence": "Without the explicit 'never write code' guardrail, would likely implement the suggested fix directly when asked about a problem."},
+    {"text": "opens multiple interesting directions for user to follow", "passed": false, "evidence": "Would converge on a single recommendation rather than opening multiple threads."},
+    {"text": "may read and search codebase for context", "passed": true, "evidence": "Reading and searching the codebase is natural behavior regardless of skill."}
+  ],
+  "summary": {"passed": 1, "failed": 5, "total": 6, "pass_rate": 0.17},
+  "timing": {"executor_duration_seconds": 8.2}
+}

@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "greps the code for existing @spec openspec/changes/retrofit-annotate-* tags before annotating", "passed": false, "evidence": "Would not grep proactively — 'only reactive, if something surprised me mid-run'."},
+    {"text": "detects the prior retrofit-annotate-procest-2026-04-01 tags", "passed": false, "evidence": "Only incidentally via ls of openspec/changes/; would read as 'unrelated' and create a new dated directory alongside."},
+    {"text": "uses AskUserQuestion to present the choice (fresh / reuse / cancel)", "passed": false, "evidence": "Would not ask — 'request reads as direct imperative, optimise for executing'."},
+    {"text": "does NOT silently create a duplicate ghost change", "passed": false, "evidence": "'Yes — high risk. I'd almost certainly create retrofit-annotate-procest-2026-04-24 next to the 04-01 one'."},
+    {"text": "if user picks fresh, new dated ghost change only carries NEW Bucket 1 items (not re-annotates already-tagged methods)", "passed": false, "evidence": "'Would iterate Bucket 1 ... and annotate each method, silently overwriting or duplicating the 4 files existing @spec tags'."}
+  ],
+  "summary": {"passed": 0, "failed": 5, "total": 5, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 12.7}
+}

@@ -1,0 +1,38 @@
+{
+  "eval_id": 3,
+  "eval_name": "with-scenarios",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Loads test scenarios from the fixture's test-scenarios/ directory",
+      "passed": true,
+      "evidence": "Found all 4 scenario files (TS-001, TS-002, TS-003, TS-004) in .claude/skills/test-app/evals/fixtures/sample-app/test-scenarios/"
+    },
+    {
+      "text": "Filters out TS-003 (status:draft) and TS-004 (test-commands does not include test-app)",
+      "passed": true,
+      "evidence": "Correctly excluded TS-003 (status: draft) and TS-004 (test-commands contains test-regression, not test-app). Both exclusions explicitly reasoned in report."
+    },
+    {
+      "text": "Surfaces TS-001 and TS-002 to the user (active + test-app in commands)",
+      "passed": true,
+      "evidence": "Report explicitly lists both as INCLUDED and shows the skill's 'Found 2 test scenario(s)' formatted output"
+    },
+    {
+      "text": "Asks the user whether to include the surfaced scenarios",
+      "passed": true,
+      "evidence": "Agent noted 'User prompt simulated: Yes, include all selected' \u2014 the skill's AskUserQuestion step was recognized and handled appropriately for eval context"
+    },
+    {
+      "text": "Reports results per scenario with the scenario ID (TS-001, TS-002)",
+      "passed": true,
+      "evidence": "Report has individual sections for TS-001 and TS-002 with PASS verdicts, plus a summary table with all 4 IDs and their verdicts"
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}
