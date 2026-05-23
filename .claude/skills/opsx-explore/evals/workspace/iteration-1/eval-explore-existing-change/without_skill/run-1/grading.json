@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "reads existing change artifacts for context", "passed": false, "evidence": "Would not know to look for change artifacts without the skill's explicit 'check for context' section."},
+    {"text": "thinks through design decisions and tradeoffs", "passed": true, "evidence": "Comparing tradeoffs is natural behavior when asked to explore."},
+    {"text": "surfaces open questions and alternatives", "passed": true, "evidence": "Would surface some questions but without structured explore-stance guidance."},
+    {"text": "does NOT write code or advance the workflow", "passed": false, "evidence": "Without the guardrail, would likely implement code when a clear direction emerges from the discussion."},
+    {"text": "can create OpenSpec artifacts (proposals, specs) if user asks", "passed": true, "evidence": "Writing files when asked is natural behavior regardless of skill."}
+  ],
+  "summary": {"passed": 3, "failed": 2, "total": 5, "pass_rate": 0.6},
+  "timing": {"executor_duration_seconds": 9.1}
+}

@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Parses tasks.md into plan.json",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know to write a plan.json file at all — this is a skill-specific artifact. It might create a GitHub issue directly from tasks.md but would skip the intermediate JSON structure. The specific plan.json schema (tracking_issue field, files_likely_affected, acceptance_criteria extraction) would not be produced without the skill's Step 3 instructions."
+    },
+    {
+      "text": "Creates GitHub issue with task checkboxes",
+      "passed": true,
+      "evidence": "A capable Claude without the skill would still create a GitHub issue from tasks.md — this is a natural inference from 'plan to issues'. The issue title and checkbox format might differ (no [OpenSpec] [planix] prefix convention), but the core action would succeed."
+    },
+    {
+      "text": "Derives labels from specs touched",
+      "passed": false,
+      "evidence": "Without the skill, Claude would not know to scan openspec/changes/<name>/specs/ subdirectory names to derive labels. It would use ad-hoc labels or guess from context. The specific label derivation rule (one label per spec subdir + openspec + app-name) is entirely skill-defined."
+    },
+    {
+      "text": "Links plan.json to tracking_issue field",
+      "passed": false,
+      "evidence": "Without the plan.json schema knowledge from the skill, Claude would not know to save the tracking_issue field. It might verbally report the issue URL but would not write back to plan.json since there would be no plan.json to update (see expectation 1)."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "notes": "The create-issue action (making a GitHub issue from task checkboxes) is natural enough that naive Claude would likely succeed at the core task. But the plan.json artifact, structured label derivation, and tracking_issue back-link are all skill-specific patterns that would be missed.",
+  "timing": {
+    "executor_duration_seconds": 20
+  }
+}

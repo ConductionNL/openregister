@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "runs `git -C {GITHUB_REPO} fetch origin main` in Step 0 Step 3", "passed": true, "evidence": "SKILL.md Step 0 Check 3: 'Run git fetch to detect divergence before editing.'"},
+    {"text": "detects and reports the 3-commit drift", "passed": true, "evidence": "Step 0 Check 3 compares local HEAD vs origin/main and reports the delta."},
+    {"text": "offers a concrete remediation (git pull) before editing", "passed": true, "evidence": "Step 0 Check 3 suggests 'git pull' as the fix."},
+    {"text": "blocks the sync from applying edits until divergence is resolved or acknowledged", "passed": true, "evidence": "Step 0 Check 3 uses AskUserQuestion with pull/acknowledge/cancel options — blocks until user responds."},
+    {"text": "does not touch any .md files in {GITHUB_REPO} during this run", "passed": true, "evidence": "No file writes occur until after the AskUserQuestion gate in Step 0."}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. Consistent with prior 0.92 run (one assertion was partial on 2026-04-23). AskUserQuestion blocking pattern now confirmed in SKILL.md.",
+  "timing": {"executor_duration_seconds": 9.4}
+}

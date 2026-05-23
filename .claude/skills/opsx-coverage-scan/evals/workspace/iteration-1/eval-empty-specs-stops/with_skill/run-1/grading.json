@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "verifies openspec/specs/**/spec.md exists as part of Step 1 prereqs", "passed": true, "evidence": "Step 1: 'App exists at <workspace>/{app}/ and has openspec/specs/**/spec.md.'"},
+    {"text": "stops when no spec.md files are found", "passed": true, "evidence": "Step 1: 'If specs are empty, stop and suggest /app-explore + /app-design first.'"},
+    {"text": "suggests running /app-explore + /app-design to seed specs", "passed": true, "evidence": "Exact quote: 'stop and suggest /app-explore + /app-design first.'"},
+    {"text": "does NOT write coverage-report.json or coverage-report.md", "passed": true, "evidence": "Stop at Step 1 precedes Step 9 (writes). Reports never written."},
+    {"text": "does NOT enumerate code units", "passed": true, "evidence": "Code enumeration is Step 4 — unreachable after Step 1 halt."}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "timing": {"executor_duration_seconds": 12.6}
+}

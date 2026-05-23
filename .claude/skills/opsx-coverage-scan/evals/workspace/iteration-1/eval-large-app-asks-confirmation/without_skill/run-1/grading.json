@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "reports the enumeration count (650 PHP files) to the user", "passed": false, "evidence": "Would not report count proactively — would just start scanning."},
+    {"text": "compares against the > 500 threshold and triggers the Large app warning guardrail", "passed": false, "evidence": "No threshold check — 'Option 4 is the failure mode and the honest answer is that a naive agent would do exactly that.'"},
+    {"text": "uses AskUserQuestion to ask for confirmation before Pass A", "passed": false, "evidence": "Would start reading files immediately, burn through context, return partial result with no indication of truncation."},
+    {"text": "does NOT start classification silently", "passed": false, "evidence": "Silent truncation is the explicit failure mode identified."},
+    {"text": "if user confirms, proceeds; if user cancels, stops cleanly without writing reports", "passed": false, "evidence": "No confirmation gate — would proceed regardless, producing incomplete output."}
+  ],
+  "summary": {"passed": 0, "failed": 5, "total": 5, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 8.1}
+}

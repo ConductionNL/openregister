@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "detects Haiku model from system context", "passed": true, "evidence": "SKILL.md: 'Check the active model from your system context (it appears as You are powered by the model named…)'. Unambiguous."},
+    {"text": "stops before entering explore mode", "passed": true, "evidence": "SKILL.md line 11: 'stop immediately' on Haiku — no exploration begins."},
+    {"text": "suggests switching to Sonnet or Opus", "passed": true, "evidence": "SKILL.md lines 11-20: exact message template provided with Sonnet/Opus recommendation table."},
+    {"text": "provides the /model command to switch", "passed": true, "evidence": "SKILL.md includes '/model sonnet' and '/model opus' examples in the stop message."}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. Guardrail is explicit and unambiguous in SKILL.md.",
+  "timing": {"executor_duration_seconds": 7.8}
+}

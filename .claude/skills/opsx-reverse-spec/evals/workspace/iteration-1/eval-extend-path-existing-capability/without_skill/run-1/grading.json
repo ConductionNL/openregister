@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "Validates specs/{capability}/spec.md exists before starting", "passed": false, "evidence": "Would not perform this pre-check; might create a duplicate capability."},
+    {"text": "Finds the next free REQ number and starts numbering from there", "passed": false, "evidence": "Would start from REQ-001 rather than continuing the sequence."},
+    {"text": "Writes delta spec containing ONLY the new REQs", "passed": false, "evidence": "Would likely copy the full existing spec and append new REQs — violating Reference-Don't-Duplicate."},
+    {"text": "Delta frontmatter carries retrofit_extensions: [...]", "passed": false, "evidence": "No knowledge of retrofit_extensions convention."},
+    {"text": "Does NOT mint a new capability", "passed": true, "evidence": "Would likely write to the existing capability path since it's given."},
+    {"text": "Tasks map each new REQ to its implementing methods", "passed": false, "evidence": "Would not know the [x] convention for pre-existing implementations."},
+    {"text": "Archive step merges the delta into the existing main spec", "passed": false, "evidence": "Would not know to call /opsx-archive with merge semantics."},
+    {"text": "Specter sync picks up retrofit_extensions", "passed": false, "evidence": "No knowledge of Specter integration or retrofit_extensions signal."}
+  ],
+  "summary": {"passed": 1, "failed": 7, "total": 8, "pass_rate": 0.13},
+  "timing": {"executor_duration_seconds": 8.7}
+}

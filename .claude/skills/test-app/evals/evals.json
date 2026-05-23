@@ -1,0 +1,86 @@
+{
+  "skill_name": "test-app",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-13",
+  "baseline_score": 0.50,
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run /test-app on openregister in single mode",
+      "expected_output": "Single agent completes browser testing of openregister, checking navigation and CRUD operations, produces structured pass/fail report, does NOT spawn parallel agents",
+      "files": [],
+      "expectations": [
+        "Tests navigation and page loading",
+        "Tests core CRUD operations",
+        "Produces structured pass/fail report",
+        "Does NOT spawn parallel agents in single mode"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Run /test-app on openregister with all perspectives",
+      "expected_output": "Spawns 6 parallel agents (functional, UX, performance, accessibility, security, API), each testing openregister from their perspective, then synthesizes into unified report",
+      "files": [],
+      "expectations": [
+        "Spawns functional, UX, performance, accessibility, security, API agents",
+        "Agents run in parallel (not sequential)",
+        "Each agent produces independent findings",
+        "Synthesizes results into unified report"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Run /test-app on the sample-app fixture at .claude/skills/test-app/evals/fixtures/sample-app/ — it has test scenarios in its test-scenarios/ subfolder. Use the fixture path as {APP} when looking for scenarios.",
+      "expected_output": "Discovers 4 test scenarios in the fixture's test-scenarios/ directory, filters to the 2 that match status:active AND test-commands contains test-app (TS-001 and TS-002), asks user whether to include them, then reports pass/fail per scenario with scenario ID",
+      "files": [
+        ".claude/skills/test-app/evals/fixtures/sample-app/test-scenarios/TS-001-list-objects.md",
+        ".claude/skills/test-app/evals/fixtures/sample-app/test-scenarios/TS-002-unauth-blocked.md",
+        ".claude/skills/test-app/evals/fixtures/sample-app/test-scenarios/TS-003-export-draft.md",
+        ".claude/skills/test-app/evals/fixtures/sample-app/test-scenarios/TS-004-other-command.md"
+      ],
+      "expectations": [
+        "Loads test scenarios from the fixture's test-scenarios/ directory",
+        "Filters out TS-003 (status:draft) and TS-004 (test-commands does not include test-app)",
+        "Surfaces TS-001 and TS-002 to the user (active + test-app in commands)",
+        "Asks the user whether to include the surfaced scenarios",
+        "Reports results per scenario with the scenario ID (TS-001, TS-002)"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "test the app",
+      "run browser tests on openregister",
+      "test all perspectives",
+      "run app tests",
+      "check if the app works",
+      "run /test-app",
+      "test process from all perspectives",
+      "I need the app tested",
+      "can you run a full app test",
+      "test pipeline with browser automation",
+      "run automated browser tests",
+      "test the whole application",
+      "verify the app works end to end",
+      "run multi-perspective tests on opencatalogi",
+      "check if the app is working"
+    ],
+    "should_not_trigger": [
+      "test the API only",
+      "run unit tests",
+      "test the counsel personas",
+      "create a test scenario",
+      "verify app config",
+      "test security only",
+      "run accessibility checks",
+      "what is test-app",
+      "explain how app testing works",
+      "run all tests",
+      "check the docs",
+      "sync documentation",
+      "run regression tests",
+      "create a PR"
+    ]
+  }
+}

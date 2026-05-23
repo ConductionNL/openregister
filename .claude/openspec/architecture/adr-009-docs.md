@@ -1,0 +1,2 @@
+- Every user-facing feature → docs in `docs/` with screenshots from running app.
+- English primary, Dutch recommended. Update docs when behavior changes.

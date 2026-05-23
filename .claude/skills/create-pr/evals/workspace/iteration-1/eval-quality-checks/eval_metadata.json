@@ -1,0 +1,13 @@
+{
+  "eval_id": "quality-checks",
+  "eval_name": "quality-checks",
+  "prompt": "Create PR with failing checks",
+  "setup": "Simulated — no real failing checks present in hydra repo (bash/markdown only, no PHP/JS)",
+  "assertions": [
+    "Runs composer check:strict for PHP apps",
+    "Runs npm lint for frontend",
+    "Reports failures before creating PR",
+    "Suggests fixes",
+    "Does NOT create PR with failing checks"
+  ]
+}

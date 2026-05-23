@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Runs composer check:strict", "passed": true, "evidence": "Step 9: 'After all tasks are complete, run the full quality suite: composer check:strict'."},
+    {"text": "Blocks on failures", "passed": false, "evidence": "SKILL GAP: quality checks run AFTER ALL TASKS (Step 9), not between tasks. A @throws error from task-1 would not block task-2 — it surfaces at Step 9 only. The eval assumes per-task blocking; the skill blocks post-all-tasks."},
+    {"text": "Fixes issues before moving to next task", "passed": false, "evidence": "Fixes happen at Step 9 after the full implementation loop completes. 'Before moving to next task' is not how the skill is structured."},
+    {"text": "Does NOT skip quality checks", "passed": true, "evidence": "Headless Mode Contract marks quality checks as MANDATORY in all modes."}
+  ],
+  "summary": {"passed": 2, "failed": 2, "total": 4, "pass_rate": 0.5},
+  "notes": "Real skill gap: quality gate runs post-all-tasks, not mid-loop. Eval expectations assume per-task blocking. Consider adding an optional 'quick lint after each task' step for complex multi-file changes.",
+  "timing": {"executor_duration_seconds": 16.1}
+}

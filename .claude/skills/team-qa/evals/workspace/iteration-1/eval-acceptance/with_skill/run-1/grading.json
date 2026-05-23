@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Loads acceptance criteria from specs",
+      "passed": true,
+      "evidence": "SKILL.md Step 1: 'Read plan.json from the active change, Identify which tasks are marked completed, Read the acceptance_criteria for each completed task.' The acceptance_criteria field in plan.json is the explicit source — not free-form specs."
+    },
+    {
+      "text": "Tests each criterion",
+      "passed": true,
+      "evidence": "SKILL.md Step 5 Browser-based acceptance verification: 'For each acceptance criterion (GIVEN/WHEN/THEN): (1) Set up the GIVEN, (2) Execute the WHEN, (3) Verify the THEN.' The GIVEN/WHEN/THEN protocol is the testing framework."
+    },
+    {
+      "text": "Reports pass/fail per criterion",
+      "passed": true,
+      "evidence": "SKILL.md Step 7: 'Read the template at templates/qa-report-template.md and write the completed report to {change-name}-qa-report.md.' The QA report template structures pass/fail per criterion."
+    },
+    {
+      "text": "Documents defects found",
+      "passed": true,
+      "evidence": "SKILL.md Step 9: 'If tests fail → list the specific failures and suggest fixes.' The QA report template covers defect documentation. Step 5 also instructs taking screenshots as evidence: 'mcp__browser-1__browser_take_screenshot for evidence.'"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Acceptance testing is fully specified: plan.json acceptance_criteria source, GIVEN/WHEN/THEN browser protocol, QA report template, and defect documentation with screenshot evidence.",
+  "timing": {
+    "executor_duration_seconds": 460
+  }
+}

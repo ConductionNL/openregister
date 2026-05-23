@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Detects incomplete tasks", "passed": true, "evidence": "Would read tasks.md and detect unchecked task-2 and task-4 before proceeding."},
+    {"text": "Reports which tasks remain", "passed": true, "evidence": "Would report: 'tasks.md has 2 incomplete tasks: task-2 and task-4. Archive blocked.'"},
+    {"text": "Suggests running /opsx-apply first", "passed": true, "evidence": "Explicitly: 'Suggest the path forward — either complete the tasks via /opsx-apply, or explicitly confirm they should be skipped'."},
+    {"text": "Does NOT archive incomplete changes", "passed": true, "evidence": "'Archiving is a terminal action... The user not mentioning incomplete tasks is not permission to ignore them.'"}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "First-principles agent is stronger here than the skill — it names /opsx-apply as the recovery path, which the skill does not.",
+  "timing": {"executor_duration_seconds": 7.7}
+}

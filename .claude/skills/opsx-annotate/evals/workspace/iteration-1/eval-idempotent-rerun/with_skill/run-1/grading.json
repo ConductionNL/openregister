@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "greps the code for existing @spec openspec/changes/retrofit-annotate-* tags before annotating", "passed": true, "evidence": "Step 1.5 'Idempotent-rerun guard' exists: 'Grep lib/**/*.php and src/**/*.js for @spec openspec/changes/retrofit-annotate-'. Runs after Step 1 prereqs, before Step 2."},
+    {"text": "detects the prior retrofit-annotate-procest-2026-04-01 tags", "passed": true, "evidence": "Prefix match pattern '@spec openspec/changes/retrofit-annotate-' catches retrofit-annotate-procest-2026-04-01 in all 4 files."},
+    {"text": "uses AskUserQuestion to present the choice (fresh / reuse / cancel)", "passed": true, "evidence": "Step 1.5 AskUserQuestion with Resume/Fresh run/Cancel options — three-way choice matches fresh/reuse/cancel functionally."},
+    {"text": "does NOT silently create a duplicate ghost change", "passed": true, "evidence": "Step 1.5 explicitly: 'Do not proceed silently — a second ghost change mints duplicate tasks and produces a confusing PR.'"},
+    {"text": "if user picks fresh, new dated ghost change only carries NEW Bucket 1 items (not re-annotates already-tagged methods)", "passed": false, "evidence": "PARTIAL — intent stated ('existing tags stay, new ones added for missed files') but the per-file defensive re-check in Step 6 is 'mentioned but not operationalized as a concrete sub-step'. Relies on coverage-report.json's annotated bucket being current."}
+  ],
+  "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8},
+  "notes": "Step 1.5 Idempotent-rerun guard is now wired into the step sequence (resolved the hard 0.00 fail from 2026-04-23). Remaining gap: Step 6's 'defensive' per-file skip-if-already-tagged is prose, not a concrete sub-step.",
+  "timing": {"executor_duration_seconds": 25.1}
+}

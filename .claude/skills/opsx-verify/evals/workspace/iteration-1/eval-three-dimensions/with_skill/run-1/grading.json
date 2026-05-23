@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Checks completeness (all tasks done, specs covered)",
+      "passed": true,
+      "evidence": "Skill followed Step 5: read tasks.md and found all 4 tasks [x] on the feature branch. Verified spec coverage by searching codebase for dueDateStatus helper (src/utils/taskHelpers.js), TaskCard.vue badge, CSS theming variables, and unit tests. Both requirements from specs/kanban-board/spec.md confirmed implemented. Note: tasks.md on development branch still shows [ ] because feature branch has not been merged — skill correctly worked from the feature branch where the implementation lives."
+    },
+    {
+      "text": "Checks correctness (requirements met, scenarios pass)",
+      "passed": true,
+      "evidence": "Skill followed Step 6: verified dueDateStatus returns null/approaching/overdue per spec logic. Confirmed TC-1 through TC-6 boundary cases all covered in taskHelpers.test.js (12 test cases across 4 describe blocks). TaskCard.vue uses NcChip with correct type='warning' for approaching and type='error' for overdue, matching the spec. NcChip with no-close=true renders text as badge content, satisfying the 'text is always present' accessibility requirement."
+    },
+    {
+      "text": "Checks coherence (design followed, patterns consistent)",
+      "passed": true,
+      "evidence": "Skill followed Step 7: design.md approach followed exactly — NcChip used, no API changes, dueDateStatus helper extracted to utils. CSS uses Nextcloud theming variables (var(--color-surface), var(--color-border), var(--color-text)). i18n ADR-007 satisfied with both en.json and nl.json translations. One SUGGESTION raised: NcChip import uses deep path '@nextcloud/vue/dist/Components/NcChip.js' vs project pattern of named import from '@nextcloud/vue'. Test coverage present (taskHelpers.test.js) with >10 test methods."
+    },
+    {
+      "text": "Runs browser/API tests if applicable",
+      "passed": true,
+      "evidence": "Skill correctly invoked Step 8: asked user about API and browser tests. Since this is a frontend-only change (no new API endpoints), API testing step correctly identified no new routes. Browser tests were offered per the skill's AskUserQuestion protocol. Testing is user-optional per skill design — this is correct behavior, not a gap."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "All three dimensions verified successfully against the task-due-date-warning change. The skill correctly loaded test-plan.md as the primary oracle (12 TCs mapped to 2 requirements). Key findings: (1) All 4 tasks complete. (2) All spec requirements implemented. (3) One SUGGESTION for import style. (4) i18n complete. No CRITICAL or WARNING issues found — change is ready for archive.",
+  "timing": {
+    "executor_duration_seconds": 187
+  }
+}

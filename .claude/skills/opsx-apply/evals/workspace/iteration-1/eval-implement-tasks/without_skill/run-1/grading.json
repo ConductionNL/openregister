@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "Reads tasks.md and identifies pending tasks", "passed": true, "evidence": "Would read openspec/changes/register-export/tasks.md and identify unchecked tasks before writing code."},
+    {"text": "Implements tasks sequentially", "passed": true, "evidence": "Would implement in dependency order: ExportService → ExportController → tests → route."},
+    {"text": "Writes tests for PHP services", "passed": true, "evidence": "task-3 is an explicit unchecked task; would implement tests/Unit/Service/ExportServiceTest.php covering happy path + error path."},
+    {"text": "Runs composer check:strict after changes", "passed": true, "evidence": "Would run quality suite after all four tasks; admits catching failures close to source is cheaper."},
+    {"text": "Updates GitHub issue checkboxes", "passed": true, "evidence": "Would update via 'gh issue edit' after each task commit."}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "Happy path is strong without the skill — the value of the skill shows in the specific mechanism (openspec CLI, plan.json tracking, headless contract) not the outcome assertions.",
+  "timing": {"executor_duration_seconds": 9.9}
+}

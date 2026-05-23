@@ -1,0 +1,43 @@
+{
+  "eval_id": "hydra-pipeline",
+  "eval_name": "hydra-pipeline",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Loads references/hydra-persistence-vectors.md",
+      "passed": true,
+      "evidence": "Report methodology section confirms 'Hydra-specific reference: references/hydra-persistence-vectors.md loaded and all 7 Hydra-specific categories (H1-H7) fully evaluated.' Sections H1-H7 are present in the report."
+    },
+    {
+      "text": "Checks per-persona PAT scoping (builder vs reviewer vs security)",
+      "passed": true,
+      "evidence": "Section H1 contains 7 checklist items verifying per-persona PAT scopes. Builder scope documented as contents:write + pull-requests:write (secrets/.env.example:28-29), reviewer as pull-requests:write only (secrets/.env.example:32-33), security as pull-requests:write only (secrets/.env.example:36-37). Includes finding that local dev collapses isolation."
+    },
+    {
+      "text": "Audits yolo auto-merge trust chain",
+      "passed": true,
+      "evidence": "Section H4 contains 7 checklist items covering yolo auto-merge. Finds that all phases must pass (orchestrate.sh:938-966), but identifies critical gaps: yolo label settable by anyone with write access, no race condition protection between label check and merge, no commit signature verification."
+    },
+    {
+      "text": "Checks label state machine integrity and reconciliation window",
+      "passed": true,
+      "evidence": "Section H5 contains 8 checklist items. Identifies that swap_label_atomic is not truly atomic (read-modify-write pattern), reconciler runs every 10 minutes providing a window for exploitation, and an attacker with push scope could bypass reviews by setting pass labels directly."
+    },
+    {
+      "text": "Checks log integrity and token masking in pipeline logs",
+      "passed": true,
+      "evidence": "Section H6 contains 9 checklist items. Identifies critical gap: no token masking exists anywhere (credentials.sh:327 contains actual token values), logs are in .gitignore (plain files writable by pipeline user), no tamper detection mechanism. Remediation #1 is CRITICAL: implement token masking."
+    },
+    {
+      "text": "Reports on container isolation boundaries",
+      "passed": true,
+      "evidence": "Section H3 contains 9 checklist items. Verifies --cap-drop ALL, tool restrictions per container, fresh claude_tmp per run, no shared volumes. Identifies gap: --read-only not enforced in local/supervisor mode (only in GitHub Actions), and iptables egress silently skips when NET_ADMIN unavailable."
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 6,
+    "failed": 0,
+    "total": 6
+  }
+}

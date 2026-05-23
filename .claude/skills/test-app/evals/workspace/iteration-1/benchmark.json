@@ -1,0 +1,139 @@
+{
+  "metadata": {
+    "skill_name": "test-app",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-10T12:11:40Z",
+    "evals_run": [
+      1
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 200.4,
+        "tokens": 0,
+        "tool_calls": 14,
+        "errors": 7
+      },
+      "expectations": [
+        {
+          "text": "Tests navigation and page loading",
+          "passed": false,
+          "evidence": "Nextcloud at localhost:8080 not running. No browser MCP tools available in eval sandbox. Agent reached Step 5 (launch agent) but could not execute browser testing. The skill correctly set up the attempt but environment was missing."
+        },
+        {
+          "text": "Tests core CRUD operations",
+          "passed": false,
+          "evidence": "Same blocker \u2014 no browser connection possible. Agent documented the failure clearly but could not perform CRUD testing."
+        },
+        {
+          "text": "Produces structured pass/fail report",
+          "passed": false,
+          "evidence": "Agent produced structured text analysis including a step-by-step table of what succeeded/failed, but Write tools were denied in the eval sandbox. No report.md was written to disk by the agent itself. Report was reconstructed from agent output."
+        },
+        {
+          "text": "Does NOT spawn parallel agents in single mode",
+          "passed": true,
+          "evidence": "Agent correctly identified mode=single from the prompt and followed the SKILL.md single-mode path ('launch 1 Task agent'). Never attempted to spawn 6 parallel agents. Only 1 agent execution was planned before environment blockers halted progress."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 227.6,
+        "tokens": 3800,
+        "tool_calls": 20,
+        "errors": 3
+      },
+      "expectations": [
+        {
+          "text": "Tests navigation and page loading",
+          "passed": false,
+          "evidence": "Nextcloud at localhost:8080 not running. curl returned connection refused. No browser MCP tools available. No navigation performed."
+        },
+        {
+          "text": "Tests core CRUD operations",
+          "passed": false,
+          "evidence": "Same blocker \u2014 no connection to Nextcloud. No CRUD testing possible."
+        },
+        {
+          "text": "Produces structured pass/fail report",
+          "passed": false,
+          "evidence": "Agent produced a detailed report.md documenting blockers and analysis, but it does not contain PASS/FAIL entries for app features \u2014 it describes the inability to test. Does not meet the intent of this assertion."
+        },
+        {
+          "text": "Does NOT spawn parallel agents in single mode",
+          "passed": true,
+          "evidence": "No parallel agents were spawned. Agent identified single mode from the prompt and acknowledged it requires 1 agent. Environment blockers prevented any agent spawning."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.25,
+        "stddev": 0.0,
+        "min": 0.25,
+        "max": 0.25
+      },
+      "time_seconds": {
+        "mean": 200.4,
+        "stddev": 0.0,
+        "min": 200.4,
+        "max": 200.4
+      },
+      "tokens": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.25,
+        "stddev": 0.0,
+        "min": 0.25,
+        "max": 0.25
+      },
+      "time_seconds": {
+        "mean": 227.6,
+        "stddev": 0.0,
+        "min": 227.6,
+        "max": 227.6
+      },
+      "tokens": {
+        "mean": 3800.0,
+        "stddev": 0.0,
+        "min": 3800,
+        "max": 3800
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "-27.2",
+      "tokens": "-3800"
+    }
+  },
+  "notes": []
+}

@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Creates feature branch per change",
+      "passed": true,
+      "evidence": "SKILL.md Step 3: 'Determine branch name: feature/<issue-number>/<change-name>... Create git worktree: git worktree add /tmp/worktrees/<app>-<change-name> -b feature/<issue-number>/<change-name> origin/development'. Guardrails: 'Branch naming: Always feature/<issue-number>/<change-name> based off origin/development'."
+    },
+    {
+      "text": "Pushes to remote",
+      "passed": true,
+      "evidence": "SKILL.md Step 6: 'first push the feature branch to origin (the worktree may not have pushed yet): git -C /tmp/worktrees/<app>-<change-name> push -u origin feature/<issue-number>/<change-name>'. Explicit pre-PR push step with -u flag."
+    },
+    {
+      "text": "Creates PR via gh CLI",
+      "passed": true,
+      "evidence": "SKILL.md Step 6: 'gh pr create --repo <owner/repo> --base development --head feature/<issue-number>/<change-name> --title \"feat(<app>): <Change Title>\" --body $(cat templates/pr-body-template.md)'. PR body from template. Step 6 also updates the original issue with the PR link."
+    },
+    {
+      "text": "Reports PR URLs",
+      "passed": true,
+      "evidence": "SKILL.md Step 8 Final Report table includes a 'PR' column. Each completed change row shows the PR number (e.g., #105). Step 6 output includes the PR URL returned by gh pr create."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Branch creation (Step 3), push to remote (Step 6 pre-step), gh pr create with template body (Step 6), and PR URL reporting (Step 8) are all explicitly specified. Worktree cleanup (Step 7) follows PR creation.",
+  "timing": {
+    "executor_duration_seconds": 1420
+  }
+}

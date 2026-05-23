@@ -1,0 +1,8 @@
+- schema.org types/properties as primary vocabulary (`schema:Person`, `schema:Organization`, `schema:Event`).
+- Contact schemas: align with vCard properties (`fn`, `email`, `tel`, `adr`).
+- Dutch government fields: mapping layer translating between international standards and Dutch APIs (VNG, ZGW).
+- NO custom property names when schema.org equivalent exists.
+- Relations: OpenRegister relation mechanism (register + schema + objectId). NO foreign keys or embedded objects.
+- Versioning: removing/renaming properties = BREAKING → migration via repair step. Adding optional = non-breaking.
+- Specs MUST define data models using schema.org vocabulary; design docs MUST include schema definitions with types, required flags, relations.
+- Exception: app-specific workflow states (pipeline stages, process statuses) MAY use custom vocabularies.

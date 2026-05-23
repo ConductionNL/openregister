@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies real issues (TODOs, missing tests, type issues)",
+      "passed": true,
+      "evidence": "SKILL.md Phase 2 Codebase Analysis explicitly enumerates these categories: 'TODO/FIXME comments', 'Functions without tests — Cross-reference src/ with test directories', 'Type issues — any types in TypeScript files'. Guardrails: 'Use real codebase tasks—don't simulate or use fake examples.' The skill mandates scanning real files."
+    },
+    {
+      "text": "Creates actual change artifacts",
+      "passed": true,
+      "evidence": "Phases 4–8 create real files: Phase 4 runs `openspec new change`, Phase 5 writes `openspec/changes/<name>/proposal.md`, Phase 6 writes `openspec/changes/<name>/specs/<capability>/spec.md`, Phase 7 writes `design.md`, Phase 8 writes `tasks.md`. These are actual file writes to the user's codebase, not demonstrations."
+    },
+    {
+      "text": "Implements actual code changes",
+      "passed": true,
+      "evidence": "SKILL.md Phase 9: 'For each task: (1) Announce, (2) Implement the change in the codebase, (3) Reference specs/design naturally, (4) Mark complete in tasks.md'. The skill makes real code changes during the tutorial — Guardrails: 'Use real codebase tasks—don't simulate or use fake examples.'"
+    },
+    {
+      "text": "Runs quality checks on changes",
+      "passed": false,
+      "evidence": "SKILL.md Phase 9 (Implementation) covers implement→mark-complete but does not include a quality check step. Phase 10 (Archive) runs `openspec archive` but not quality tools. There is no explicit step instructing the skill to run PHPCS, PHPStan, ESLint, or other quality gates. This is a gap compared to the opsx-apply skill which does run quality checks."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "notes": "The skill correctly identifies real issues, creates real artifacts, and implements real code changes. Gap: no quality check step between Phase 9 (implement) and Phase 10 (archive). The onboarding would benefit from a brief quality gate step to teach that pattern alongside the workflow.",
+  "timing": {
+    "executor_duration_seconds": 720
+  }
+}

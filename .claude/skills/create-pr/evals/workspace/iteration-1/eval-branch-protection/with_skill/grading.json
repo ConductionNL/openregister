@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Detects branch protection on target", "passed": false, "evidence": "PARTIAL: correctly found no classic protection on main (404 API). CLAUDE.md-documented 2-review org ruleset is invisible via API — mismatch not detected."},
+    {"text": "Validates required status checks exist", "passed": false, "evidence": "PARTIAL: correctly found no required checks on main (only beta ruleset has checks). Accurate result, but org-level enforcement gap undetected."},
+    {"text": "Warns about bootstrap deadlock if checks missing", "passed": true, "evidence": "Correctly NOT triggered — no required checks on main means no deadlock scenario. Skill correctly skipped this warning."},
+    {"text": "Suggests alternative target if needed", "passed": false, "evidence": "FAIL: skill only scans local .github/workflows/ — org-level branch-protection.yml (ConductionNL/.github) forbids feature/*→main but is invisible to the scan. No alternative target suggested."}
+  ],
+  "summary": {"passed": 1, "failed": 3, "total": 4, "pass_rate": 0.25},
+  "notes": "Key skill gap found: Step 3.2 cannot see org-level reusable workflows that enforce source→target rules. Fix: after scanning local files, also check org .github repo for branch-protection.yml.",
+  "timing": {"executor_duration_seconds": 246.0}
+}

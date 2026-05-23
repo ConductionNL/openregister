@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Loads acceptance criteria from specs",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude does not know about plan.json's acceptance_criteria field. It might read spec files directly but would not know the structured plan.json→acceptance_criteria→task relationship."
+    },
+    {
+      "text": "Tests each criterion",
+      "passed": true,
+      "evidence": "Naive Claude can test against stated criteria using browser tools. If given acceptance criteria, it would attempt to verify them. However, without the GIVEN/WHEN/THEN protocol, the testing approach would be ad-hoc."
+    },
+    {
+      "text": "Reports pass/fail per criterion",
+      "passed": true,
+      "evidence": "Reporting test results (pass/fail) per criterion is general QA behavior. Naive Claude would summarize what it tested and the outcomes."
+    },
+    {
+      "text": "Documents defects found",
+      "passed": true,
+      "evidence": "Documenting failures is general assistant behavior. Naive Claude would describe issues found during testing. However, without the QA report template, the format would be unstructured."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "notes": "Testing criteria, reporting, and defect documentation are general capabilities. Loading structured acceptance_criteria from plan.json requires skill knowledge of the plan.json schema.",
+  "timing": {
+    "executor_duration_seconds": 22
+  }
+}

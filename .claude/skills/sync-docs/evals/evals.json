@@ -1,0 +1,123 @@
+{
+  "skill_name": "sync-docs",
+  "version": "1.1.0",
+  "created": "2026-04-07",
+  "last_updated": "2026-04-23",
+  "last_validated": "2026-04-23",
+  "baseline_score": 0.89,
+  "grading_rubric": {
+    "pass_threshold": 0.8,
+    "criteria": [
+      {"id": "targets", "weight": 0.12, "description": "Asks for or infers the correct target (app/dev) and resolves {APP_DIR} / {GITHUB_REPO} / {APPS_EXTRA} before touching files"},
+      {"id": "github_repo", "weight": 0.13, "description": "When dev mode is selected, verifies .github repo presence, active branch, and local-vs-remote state before editing"},
+      {"id": "sources", "weight": 0.18, "description": "Loads Sources of Truth from {GITHUB_REPO}/docs/claude/writing-docs.md before the gap analysis"},
+      {"id": "principles", "weight": 0.12, "description": "Applies Reference-Don't-Duplicate, Audience, and Writing Anti-Patterns from writing-docs.md during gap analysis"},
+      {"id": "adr_compliance", "weight": 0.10, "description": "App mode cross-checks docs against ADRs (NL Design, i18n, Security, Screenshots) without inserting ADR links into user-facing docs"},
+      {"id": "md_only", "weight": 0.15, "description": "Only modifies .md files — never edits schema.yaml/config.yaml/settings.json even when drift is detected there"},
+      {"id": "confirm", "weight": 0.12, "description": "Presents a summary table and asks for confirmation before writing anything (never auto-saves)"},
+      {"id": "capture", "weight": 0.08, "description": "Routes observations through candidates → learnings per the two-stage buffer described in SKILL.md"}
+    ]
+  },
+  "evals": [
+    {
+      "id": "app-docs-openregister-feature-drift",
+      "description": "App-mode sync when an implemented feature (per specs) is undocumented in the app's feature docs",
+      "prompt": "/sync-docs openregister",
+      "setup": "{APPS_EXTRA}/openregister/openspec/specs/export/spec.md has status=done. {APPS_EXTRA}/openregister/docs/features/ has no export.md. {APPS_EXTRA}/openregister/README.md lists export as [Future].",
+      "baseline": "Without the skill, Claude tends to open the README, rewrite marketing prose, and either miss the spec entirely or duplicate spec content into the feature doc rather than linking.",
+      "expected_output": "Flags the missing feature doc and stale [Future] marker; proposes a new docs/features/export.md that references the spec (not copies it); updates README feature list; asks for confirmation before writing.",
+      "assertions": [
+        "reads openspec/specs/export/spec.md before editing any doc",
+        "flags README [Future] marker as stale (spec status=done)",
+        "proposes docs/features/export.md referencing the spec via link, not duplicating content",
+        "does NOT link to ADRs from user-facing docs (guardrail: No ADR links in app docs)",
+        "uses AskUserQuestion before writing",
+        "runs ADR-009 screenshot check on the new feature doc"
+      ]
+    },
+    {
+      "id": "dev-docs-branch-divergence",
+      "description": "Dev-mode sync when the local .github repo is behind origin — skill must warn before editing",
+      "prompt": "/sync-docs dev",
+      "setup": "~/.github exists, on branch main, but local HEAD is 3 commits behind origin/main.",
+      "baseline": "Without the skill, Claude edits writing-docs.md on the stale branch, producing a diff that will conflict with upstream work already merged.",
+      "expected_output": "Step 0 Step 3 reports 'local is behind remote'; offers git pull; does NOT apply any edits until the user acknowledges or pulls.",
+      "assertions": [
+        "runs `git -C {GITHUB_REPO} fetch origin main` in Step 0 Step 3",
+        "detects and reports the 3-commit drift",
+        "offers a concrete remediation (git pull) before editing",
+        "blocks the sync from applying edits until divergence is resolved or acknowledged",
+        "does not touch any .md files in {GITHUB_REPO} during this run"
+      ]
+    },
+    {
+      "id": "preflight-sources-of-truth-drift",
+      "description": "Pre-flight Check B catches a Sources of Truth entry that points to a renamed file",
+      "prompt": "/sync-docs dev",
+      "setup": "Writing-docs.md Sources of Truth table lists `.claude/openspec/config.yaml` (old path), but the active path is `.claude/openspec/config.yaml` renamed from an earlier draft. ADR-017 exists on disk but is not in the table.",
+      "baseline": "Without the skill, Claude treats writing-docs.md as authoritative and follows the broken path without verifying file existence.",
+      "expected_output": "Step 0.5 Check B reports the dangling path and the missing ADR-017 entry. Asks to update writing-docs.md before continuing.",
+      "assertions": [
+        "runs Step 0.5 Check B with file-exists assertions on each Sources of Truth entry",
+        "reports the dangling entry with the actual canonical path as replacement suggestion",
+        "reports ADR-017 as a candidate addition to the table",
+        "asks whether to update writing-docs.md first",
+        "applies edits only to .md files"
+      ]
+    },
+    {
+      "id": "md-only-guardrail-schema-yaml",
+      "description": "Guardrail test: skill must refuse to edit schema.yaml even when Check E / C shows it drifted from writing-specs.md",
+      "prompt": "/sync-docs dev — pre-flight checks: yes",
+      "setup": "writing-specs.md uses GIVEN/WHEN/THEN explicitly; openspec/schemas/conduction/schema.yaml still references an older `- When / - Then` shorthand on line 178.",
+      "baseline": "Without the skill, Claude edits schema.yaml directly since it's clear drift.",
+      "expected_output": "Check C reports the drift. Does NOT edit schema.yaml. Logs the drift for manual follow-up and updates writing-specs.md if needed (or leaves it as the canonical source).",
+      "assertions": [
+        "reports the writing-specs.md vs schema.yaml drift",
+        "refuses to write to openspec/schemas/conduction/schema.yaml (docs-only guardrail)",
+        "offers a manual follow-up note in the final report",
+        "applies any .md edits only where the user confirms"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "sync the docs",
+      "update documentation",
+      "sync-docs",
+      "check if docs are current",
+      "refresh documentation",
+      "run /sync-docs",
+      "I need to sync the docs",
+      "can you update the app docs",
+      "sync developer documentation",
+      "check if the docs are up to date for openregister",
+      "sync app feature docs",
+      "update the docs to match the current state",
+      "refresh the Claude developer guides",
+      "sync docs for opencatalogi",
+      "check docs drift",
+      "audit the app docs for drift",
+      "reconcile docs with specs"
+    ],
+    "should_not_trigger": [
+      "write new docs",
+      "create a spec",
+      "sync specs",
+      "sync GitHub",
+      "update intelligence",
+      "create a PR",
+      "clean the environment",
+      "test the app",
+      "run regression tests",
+      "what docs exist",
+      "read the docs",
+      "explain the workflow",
+      "run all tests",
+      "update the README",
+      "commit the docs",
+      "push the doc changes",
+      "rename writing-docs.md"
+    ]
+  }
+}

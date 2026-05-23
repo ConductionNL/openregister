@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-forbidden-patterns.log
+[gate-2] forbidden-patterns: FAIL — 3 forbidden calls

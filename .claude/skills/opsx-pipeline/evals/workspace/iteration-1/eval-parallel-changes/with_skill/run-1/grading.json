@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Spawns subagent per change",
+      "passed": true,
+      "evidence": "SKILL.md Step 4: 'Launch one subagent per change. Maximum 5 concurrent agents — if more changes exist, queue them and launch new agents as earlier ones complete.' Agents run with run_in_background: true. The queue-and-refill pattern ensures all N changes are processed."
+    },
+    {
+      "text": "Uses isolated git worktrees",
+      "passed": true,
+      "evidence": "SKILL.md Step 3: 'Create git worktree: git worktree add /tmp/worktrees/<app>-<change-name> -b feature/<issue-number>/<change-name> origin/development'. Guardrails: 'Worktree isolation: Each change works in /tmp/worktrees/<app>-<change-name> — NEVER modify the main working directory from a subagent.'"
+    },
+    {
+      "text": "Each subagent runs full lifecycle (apply→verify→archive)",
+      "passed": true,
+      "evidence": "SKILL.md Overview: 'proposal → ff (specs/design/tasks) → apply (implement) → verify → browser verify (optional) → archive + feature docs → PR'. Step 4 passes each agent the sub-agent prompt from templates/sub-agent-prompt-template.md which covers the full lifecycle."
+    },
+    {
+      "text": "Reports per-change status",
+      "passed": true,
+      "evidence": "Step 5 displays a live progress table with columns: App, Change, Model, Status, Tasks, Quality, Browser, Docs. Step 8 delivers the Final Report with the same table plus a Summary section. Each row shows the per-change outcome."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Parallel subagent spawning, git worktree isolation, full lifecycle delegation, and per-change status reporting are all explicitly specified. The max-5 concurrency cap and queue-and-refill pattern handle large batches.",
+  "timing": {
+    "executor_duration_seconds": 1440
+  }
+}

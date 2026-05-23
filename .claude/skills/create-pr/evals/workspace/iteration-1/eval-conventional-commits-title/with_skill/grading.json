@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "Runs gh pr list --state merged to detect title convention", "passed": true, "evidence": "Skill's Step 6 explicitly requires this command; ran it and found 10 merged PRs all following type(scope): description pattern."},
+    {"text": "Drafts title with Conventional Commits prefix (feat:, fix:, docs:, chore:)", "passed": true, "evidence": "Drafted 'docs(skills): add review-pr skill + promote learnings across skill library' — correct type(scope): format matching detected convention."},
+    {"text": "Does NOT draft a title with no prefix", "passed": true, "evidence": "Step 6 pre-draft checklist + learnings.md + two 'Mistakes to Avoid' entries all enforce prefix requirement."},
+    {"text": "Test plan uses plain bullets, never - [ ] checkboxes", "passed": true, "evidence": "SKILL.md Step 6 template uses plain '- ' bullets. Learnings.md reinforces this in three separate places."}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "timing": {"executor_duration_seconds": 118.1}
+}

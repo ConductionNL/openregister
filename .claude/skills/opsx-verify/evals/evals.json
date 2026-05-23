@@ -1,0 +1,83 @@
+{
+  "skill_name": "opsx-verify",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "three-dimensions",
+      "description": "Verify completeness, correctness, coherence",
+      "prompt": "Run /opsx-verify on register-export",
+      "setup": "Change fully implemented",
+      "expected_output": "Should verify across 3 dimensions",
+      "expectations": [
+        "Checks completeness (all tasks done, specs covered)",
+        "Checks correctness (requirements met, scenarios pass)",
+        "Checks coherence (design followed, patterns consistent)",
+        "Runs browser/API tests if applicable"
+      ]
+    },
+    {
+      "id": "sync-github",
+      "description": "Sync to GitHub",
+      "prompt": "Verify and sync status",
+      "setup": "GitHub issue exists for change",
+      "expected_output": "Should update GitHub issue",
+      "expectations": [
+        "Syncs completed task checkboxes to GitHub issue",
+        "Reports verification result",
+        "Suggests /opsx-archive if verified",
+        "Offers in-place Fix Loop or blocks archive with actionable incomplete-task message"
+      ]
+    },
+    {
+      "id": "fail-gracefully",
+      "description": "Handle verification failures",
+      "prompt": "Verify with missing implementation",
+      "setup": "Some tasks not yet implemented",
+      "expected_output": "Should report gaps clearly",
+      "expectations": [
+        "Identifies which tasks/specs are incomplete",
+        "Does NOT mark change as verified",
+        "Offers in-place Fix Loop or blocks archive with specific incomplete-task list",
+        "Reports specific failures with evidence"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "verify the change",
+      "check if implementation matches specs",
+      "opsx verify register-export",
+      "validate the change",
+      "is the change complete",
+      "/opsx-verify",
+      "run verify on register-export",
+      "does the implementation match the specs?",
+      "check the change is done",
+      "confirm implementation is correct",
+      "verify register-export is ready to archive",
+      "run the verification",
+      "validate that tasks are complete",
+      "check correctness of the change",
+      "verify before archiving"
+    ],
+    "should_not_trigger": [
+      "apply the change",
+      "archive the change",
+      "verify app config",
+      "run tests",
+      "create a PR",
+      "opsx-apply",
+      "opsx-archive",
+      "opsx-new",
+      "what does opsx-verify do?",
+      "show verification results",
+      "explain the verify step",
+      "verify a file",
+      "run unit tests",
+      "verify git history",
+      "check the logs"
+    ]
+  }
+}

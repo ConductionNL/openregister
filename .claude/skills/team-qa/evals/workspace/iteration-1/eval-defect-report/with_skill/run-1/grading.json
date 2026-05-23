@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Describes defect with reproduction steps",
+      "passed": true,
+      "evidence": "SKILL.md Step 5 browser verification: steps include 'Set up the GIVEN — navigate to the right page, ensure preconditions', 'Execute the WHEN — perform the action', 'Verify the THEN'. This GIVEN/WHEN/THEN structure translates directly into reproduction steps in the QA report."
+    },
+    {
+      "text": "Includes expected vs actual behavior",
+      "passed": true,
+      "evidence": "SKILL.md Step 5 'Verify the THEN — check the result matches expectations.' QA report template (templates/qa-report-template.md) captures the expected THEN vs the actual observed behavior. Step 5 instructs using browser snapshots and screenshots as evidence of actual behavior."
+    },
+    {
+      "text": "Assigns severity",
+      "passed": true,
+      "evidence": "SKILL.md Step 8 Dutch Government Compliance Testing references dutch-gov-compliance.md which covers severity levels. Step 6 quality composite score formula provides severity context. Step 9: 'If tests fail → list the specific failures and suggest fixes' — failures from coverage gate (blocking) vs browser (functional) have different severities."
+    },
+    {
+      "text": "Links to relevant spec/task",
+      "passed": true,
+      "evidence": "SKILL.md Step 1: 'Read acceptance_criteria for each completed task' — the task is already in context when a defect is found. The QA report template links findings to the task numbers from plan.json."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Defect documentation is fully covered: GIVEN/WHEN/THEN reproduction steps, expected-vs-actual from browser verification, severity context from coverage/compliance, and task linkage from plan.json.",
+  "timing": {
+    "executor_duration_seconds": 445
+  }
+}

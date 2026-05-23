@@ -1,0 +1,17 @@
+{
+  "expectations": [
+    {"text": "checks coverage-report.json exists AND is < 24h old BEFORE any other action", "passed": false, "evidence": "Would use filesystem mtime (wrong source) and default to '>7d warn' — no explicit 24h threshold, no generated_at parsing."},
+    {"text": "checks git status --porcelain is empty and refuses on dirty tree", "passed": true, "evidence": "Would run git status --porcelain and abort on non-empty."},
+    {"text": "creates feature branch retrofit/annotate-procest-{today}", "passed": false, "evidence": "Invented branch name 'chore/retrofit-spec-annotations-bucket-1'. Wrong prefix, no date, no app name."},
+    {"text": "creates ghost change named retrofit-annotate-procest-{today} with empty specs/ and one task per REQ", "passed": false, "evidence": "Invented slug 'retrofit-spec-annotations-bucket-1'. Would include design.md (wrong). Unsure if specs/ would be empty."},
+    {"text": "task IDs follow format 'task-N: {capability}#{REQ-NNN} — {title} (retroactive annotation)'", "passed": false, "evidence": "Task-ID format not specified; would be a generic checklist."},
+    {"text": "uses AskUserQuestion before any file edits", "passed": true, "evidence": "Stated would ask once up front about branch/slug/commit granularity."},
+    {"text": "uses Edit tool (or Write for full-file rewrite) — never sed/awk/python", "passed": true, "evidence": "Would use Edit per method; would consider Python only if generating a diff first."},
+    {"text": "runs composer phpcs and /hydra-gates after annotation", "passed": false, "evidence": "Would run composer phpcs (uncertain of entry) but does not know /hydra-gates exists — would run 'any hydra-gates script at repo root'."},
+    {"text": "appends annotation commit SHA to .git-blame-ignore-revs", "passed": true, "evidence": "Yes — would append SHA after pushing, follow-up commit."},
+    {"text": "archives the ghost change via /opsx-archive at the end", "passed": false, "evidence": "Guessed 'openspec archive' CLI — does not know /opsx-archive skill exists."},
+    {"text": "PR labels include both retrofit and annotation-only", "passed": false, "evidence": "Would use 'retrofit, annotation-only, no-behaviour-change' — extra label beyond spec, and admits uncertainty whether they exist."}
+  ],
+  "summary": {"passed": 4, "failed": 7, "total": 11, "pass_rate": 0.36},
+  "timing": {"executor_duration_seconds": 20.6}
+}

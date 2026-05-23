@@ -1,0 +1,11 @@
+skill-creator
+Copyright (c) Anthropic, PBC
+
+This product includes software developed by Anthropic, PBC
+(https://www.anthropic.com/).
+
+Vendored from https://github.com/anthropics/skills under the Apache
+License, Version 2.0. See LICENSE.txt for the full license text. The
+upstream commit is recorded in .upstream-version; local modifications
+relative to that commit are tracked in local-mods.patch and re-applied
+by update.sh.

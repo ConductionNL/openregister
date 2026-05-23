@@ -1,0 +1,450 @@
+{
+  "metadata": {
+    "skill_name": "<skill-name>",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-28T10:40:55Z",
+    "evals_run": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 29299,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "verifies openspec/specs/**/spec.md exists as part of Step 1 prereqs",
+          "passed": true,
+          "evidence": "Step 1: 'App exists at <workspace>/{app}/ and has openspec/specs/**/spec.md.'"
+        },
+        {
+          "text": "stops when no spec.md files are found",
+          "passed": true,
+          "evidence": "Step 1: 'If specs are empty, stop and suggest /app-explore + /app-design first.'"
+        },
+        {
+          "text": "suggests running /app-explore + /app-design to seed specs",
+          "passed": true,
+          "evidence": "Exact quote: 'stop and suggest /app-explore + /app-design first.'"
+        },
+        {
+          "text": "does NOT write coverage-report.json or coverage-report.md",
+          "passed": true,
+          "evidence": "Stop at Step 1 precedes Step 9 (writes). Reports never written."
+        },
+        {
+          "text": "does NOT enumerate code units",
+          "passed": true,
+          "evidence": "Code enumeration is Step 4 \u2014 unreachable after Step 1 halt."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.89,
+        "passed": 8,
+        "failed": 1,
+        "total": 9,
+        "time_seconds": 0.0,
+        "tokens": 38000,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "reports which branch the app is on (Step 1)",
+          "passed": true,
+          "evidence": "Ran git -C $APP branch --show-current at Step 1 \u2014 reported retrofit/reverse-spec-openregister-tenant-lifecycle-2026-04-28."
+        },
+        {
+          "text": "reads every openspec/specs/*/spec.md and records {capability, req_id, req_title, scenarios, keywords}",
+          "passed": true,
+          "evidence": "Extracted 384 REQs from 31 capabilities using the Requirement: heading pattern."
+        },
+        {
+          "text": "enumerates PHP via Glob, skipping lib/Migration/ and lib/Db/ entity boilerplate",
+          "passed": true,
+          "evidence": "find lib -name '*.php' with explicit dirs[:] exclusion of Migration and Db \u2014 437 files after skipping (vs 631 total)."
+        },
+        {
+          "text": "classifies methods into annotated / plumbing / Bucket 1 / 2a / 2b",
+          "passed": true,
+          "evidence": "annotated=333, plumbing=335, bucket_1=400, bucket_2a=491/7caps, bucket_2b=2158/23clusters."
+        },
+        {
+          "text": "Pass B resolves private helpers by walking callers",
+          "passed": true,
+          "evidence": "Pass B promoted 150 private helpers from bucket_2a into bucket_1 by inheriting dominant REQ from same-file public callers."
+        },
+        {
+          "text": "reverse pass splits unimplemented REQs into 3a (git log -S match) vs 3b",
+          "passed": false,
+          "evidence": "DEVIATION: used grep of current codebase instead of 'git log -S' for 3a/3b split (git log timed out on 384 REQs). Semantically similar but 3a means 'keyword in code, not matched in Pass A' rather than 'code removed from git history'."
+        },
+        {
+          "text": "writes openspec/coverage-report.json matching the schema in SKILL.md Step 9",
+          "passed": true,
+          "evidence": "Wrote {generated_at, app, branch, scanner_version, buckets:{annotated, plumbing, bucket_1, bucket_2a, bucket_2b, bucket_3a, bucket_3b, bucket_4}, ignored, notes}."
+        },
+        {
+          "text": "writes openspec/coverage-report.md with Summary table, all buckets, Notes section",
+          "passed": true,
+          "evidence": "Wrote full markdown with Summary table, Bucket 1 by capability, Bucket 2a/2b clusters, Bucket 3, Bucket 4, Notes."
+        },
+        {
+          "text": "never modifies any file other than the two report files",
+          "passed": true,
+          "evidence": "All analysis via Python scripts writing only to openregister/openspec/coverage-report.{json,md}."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 29258,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "reports the enumeration count (650 PHP files) to the user",
+          "passed": false,
+          "evidence": "PARTIAL: Step 4.5 counts and checks threshold but does not explicitly instruct printing the count to the user before the AskUserQuestion. Count is implied by the guard message, not a separate report step."
+        },
+        {
+          "text": "compares against the > 500 threshold and triggers the Large app warning guardrail",
+          "passed": true,
+          "evidence": "Step 4.5: 'Count the total PHP files enumerated in Step 4. If > 500, stop and ask via AskUserQuestion before proceeding.'"
+        },
+        {
+          "text": "uses AskUserQuestion to ask for confirmation before Pass A",
+          "passed": true,
+          "evidence": "Step 4.5 lists exact options: Proceed inline / Chunk by directory / Cancel."
+        },
+        {
+          "text": "does NOT start classification silently",
+          "passed": true,
+          "evidence": "Step 4.5 explicitly: 'Do not skip this check \u2014 silently attempting a 700-file classification in one context window is the failure mode that produced the large-app-asks-confirmation eval zero.'"
+        },
+        {
+          "text": "if user confirms, proceeds; if user cancels, stops cleanly without writing reports",
+          "passed": true,
+          "evidence": "Cancel halts before Step 9 (writes). Reports only written after Pass A completes."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 29278,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "detects only Python files during enumeration (Step 4)",
+          "passed": true,
+          "evidence": "Step 4 Glob patterns: PHP, Vue/JS/TS, then 'Python (ExApp wrappers only): stop \u2014 Python variant deferred.'"
+        },
+        {
+          "text": "stops with the explicit Python variant deferred message",
+          "passed": true,
+          "evidence": "Exact Step 4 line: 'stop \u2014 Python variant deferred.' Guardrails reinforce: 'Stop with a clear message; don't half-scan.'"
+        },
+        {
+          "text": "does NOT attempt classification against Python code",
+          "passed": true,
+          "evidence": "Stop in Step 4 precedes Steps 5\u20138 (classification, reverse pass). No classification runs."
+        },
+        {
+          "text": "does NOT write coverage-report.json or coverage-report.md",
+          "passed": true,
+          "evidence": "Step 9 (writes) is never reached after Step 4 stop."
+        },
+        {
+          "text": "makes the message clear (not silent stop)",
+          "passed": true,
+          "evidence": "Guardrails explicitly: 'Stop with a clear message; don't half-scan.'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 21025,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "verifies openspec/specs/**/spec.md exists as part of Step 1 prereqs",
+          "passed": true,
+          "evidence": "Would check openspec/specs/ for spec.md files before starting."
+        },
+        {
+          "text": "stops when no spec.md files are found",
+          "passed": true,
+          "evidence": "Agent explicitly stops: 'stop immediately with a clear message: No spec.md files found \u2014 nothing to scan.'"
+        },
+        {
+          "text": "suggests running /app-explore + /app-design to seed specs",
+          "passed": false,
+          "evidence": "Would suggest exploration but does NOT know the specific skill names /app-explore and /app-design \u2014 would say 'document what the app does, then produce specs' generically."
+        },
+        {
+          "text": "does NOT write coverage-report.json or coverage-report.md",
+          "passed": true,
+          "evidence": "'Write no files \u2014 no empty report, no placeholder.'"
+        },
+        {
+          "text": "does NOT enumerate code units",
+          "passed": true,
+          "evidence": "'Read no source code \u2014 without specs there are no requirements to map coverage against.'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.33,
+        "passed": 3,
+        "failed": 6,
+        "total": 9,
+        "time_seconds": 0.0,
+        "tokens": 21809,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "reports which branch the app is on (Step 1)",
+          "passed": true,
+          "evidence": "Would run git branch --show-current to orient and populate report header."
+        },
+        {
+          "text": "reads every openspec/specs/*/spec.md and records {capability, req_id, req_title, scenarios, keywords}",
+          "passed": true,
+          "evidence": "Would read every spec.md and extract REQ IDs + keywords \u2014 acknowledged explicitly."
+        },
+        {
+          "text": "enumerates PHP via Glob, skipping lib/Migration/ and lib/Db/ entity boilerplate",
+          "passed": false,
+          "evidence": "PARTIAL: would skip Migration/ but would 'double-check whether mappers also live in Db/' \u2014 uncertain whether full Db/ exclusion applies. Scored as fail for ambiguity."
+        },
+        {
+          "text": "classifies methods into annotated / plumbing / Bucket 1 / 2a / 2b",
+          "passed": false,
+          "evidence": "Would produce crude 'matched/unmatched' split \u2014 would NOT spontaneously produce the Bucket-1/2a/2b naming or confidence thresholds without being told."
+        },
+        {
+          "text": "Pass B resolves private helpers by walking callers",
+          "passed": false,
+          "evidence": "Explicit admission: 'A private-method caller-inheritance pass (Pass B) would not occur to me from first principles.'"
+        },
+        {
+          "text": "reverse pass splits unimplemented REQs into 3a (git log -S match) vs 3b",
+          "passed": false,
+          "evidence": "Would report unimplemented REQs as a flat list \u2014 would not split by git history without explicit instruction."
+        },
+        {
+          "text": "writes openspec/coverage-report.json matching the schema in SKILL.md Step 9",
+          "passed": false,
+          "evidence": "Would produce 'some JSON' but field names would differ \u2014 exact schema (scanner_version, bucket_3a, nested buckets key) not produced from first principles."
+        },
+        {
+          "text": "writes openspec/coverage-report.md with Summary table, all buckets, Notes section",
+          "passed": false,
+          "evidence": "Would produce markdown summary but reflecting crude bucket model, not the 8-bucket schema with all required sections."
+        },
+        {
+          "text": "never modifies any file other than the two report files",
+          "passed": true,
+          "evidence": "Would write only net-new output files, never modify existing code."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 5,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 21060,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "reports the enumeration count (650 PHP files) to the user",
+          "passed": false,
+          "evidence": "Would not report count proactively \u2014 would just start scanning."
+        },
+        {
+          "text": "compares against the > 500 threshold and triggers the Large app warning guardrail",
+          "passed": false,
+          "evidence": "No threshold check \u2014 'Option 4 is the failure mode and the honest answer is that a naive agent would do exactly that.'"
+        },
+        {
+          "text": "uses AskUserQuestion to ask for confirmation before Pass A",
+          "passed": false,
+          "evidence": "Would start reading files immediately, burn through context, return partial result with no indication of truncation."
+        },
+        {
+          "text": "does NOT start classification silently",
+          "passed": false,
+          "evidence": "Silent truncation is the explicit failure mode identified."
+        },
+        {
+          "text": "if user confirms, proceeds; if user cancels, stops cleanly without writing reports",
+          "passed": false,
+          "evidence": "No confirmation gate \u2014 would proceed regardless, producing incomplete output."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.2,
+        "passed": 1,
+        "failed": 4,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 21140,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "detects only Python files during enumeration (Step 4)",
+          "passed": true,
+          "evidence": "Would detect Python files via find \u2014 language detection is intuitive."
+        },
+        {
+          "text": "stops with the explicit Python variant deferred message",
+          "passed": false,
+          "evidence": "Would attempt PHP-spec matching against Python files \u2014 'Option 4 is the failure mode' \u2014 producing nonsense confidence scores."
+        },
+        {
+          "text": "does NOT attempt classification against Python code",
+          "passed": false,
+          "evidence": "Would match .py files against PHP/Nextcloud-oriented ADR criteria, producing meaningless output."
+        },
+        {
+          "text": "does NOT write coverage-report.json or coverage-report.md",
+          "passed": false,
+          "evidence": "Would write a broken report summarising nonsense findings \u2014 'natural conclusion of a scan task'."
+        },
+        {
+          "text": "makes the message clear (not silent stop)",
+          "passed": false,
+          "evidence": "Would produce output but it would be meaningless noise, not a clear deferral message."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.9225,
+        "stddev": 0.0967,
+        "min": 0.8,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 31458.75,
+        "stddev": 4360.8655,
+        "min": 29258,
+        "max": 38000
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.3325,
+        "stddev": 0.3399,
+        "min": 0.0,
+        "max": 0.8
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 21258.5,
+        "stddev": 370.1428,
+        "min": 21025,
+        "max": 21809
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.59",
+      "time_seconds": "+0.0",
+      "tokens": "+10200"
+    }
+  },
+  "notes": []
+}

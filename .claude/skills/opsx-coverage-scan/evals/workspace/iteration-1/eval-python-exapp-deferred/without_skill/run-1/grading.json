@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "detects only Python files during enumeration (Step 4)", "passed": true, "evidence": "Would detect Python files via find — language detection is intuitive."},
+    {"text": "stops with the explicit Python variant deferred message", "passed": false, "evidence": "Would attempt PHP-spec matching against Python files — 'Option 4 is the failure mode' — producing nonsense confidence scores."},
+    {"text": "does NOT attempt classification against Python code", "passed": false, "evidence": "Would match .py files against PHP/Nextcloud-oriented ADR criteria, producing meaningless output."},
+    {"text": "does NOT write coverage-report.json or coverage-report.md", "passed": false, "evidence": "Would write a broken report summarising nonsense findings — 'natural conclusion of a scan task'."},
+    {"text": "makes the message clear (not silent stop)", "passed": false, "evidence": "Would produce output but it would be meaningless noise, not a clear deferral message."}
+  ],
+  "summary": {"passed": 1, "failed": 4, "total": 5, "pass_rate": 0.2},
+  "timing": {"executor_duration_seconds": 10.7}
+}

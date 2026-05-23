@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Runs available test suites",
+      "passed": true,
+      "evidence": "SKILL.md Steps 2-4: PHPUnit (unit/integration/db/service suites via phpunit.xml), Jest frontend tests (npm run test), Newman/Postman API tests. Step 2 provides docker exec commands for each PHPUnit suite. Multiple test suite types are explicitly enumerated and run."
+    },
+    {
+      "text": "Reports coverage for changed code",
+      "passed": true,
+      "evidence": "SKILL.md Step 6 coverage gate: 'Line coverage: 75% minimum, Method coverage: 75% minimum'. Step 2 includes composer test-coverage command. Step 3 includes npm run test-coverage. Coverage output tracked in coverage-frontend/."
+    },
+    {
+      "text": "Identifies untested code paths",
+      "passed": true,
+      "evidence": "SKILL.md Step 9: 'If coverage is below gate → identify untested code paths and suggest test additions.' Step 6 quality composite score formula explicitly surfaces where coverage falls short."
+    },
+    {
+      "text": "Suggests specific tests to add",
+      "passed": true,
+      "evidence": "SKILL.md Step 9: 'If coverage is below gate → identify untested code paths and suggest test additions.' This is an explicit instruction with a specific trigger condition (below gate)."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "All four coverage-related expectations are fully specified. The 75% line/method gate, multi-suite test execution, and specific suggestion behavior are all explicitly defined.",
+  "timing": {
+    "executor_duration_seconds": 450
+  }
+}

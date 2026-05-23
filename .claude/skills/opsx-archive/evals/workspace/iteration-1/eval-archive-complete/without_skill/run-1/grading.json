@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Validates all artifacts complete", "passed": true, "evidence": "Would check tasks.md for all [x], verify delta specs exist, confirm PR is passing."},
+    {"text": "Syncs delta specs to main specs", "passed": true, "evidence": "Would merge delta specs into openspec/specs/ — acknowledges not knowing the exact merge convention without reading the skill."},
+    {"text": "Converts test cases to reusable scenarios", "passed": false, "evidence": "Would only check if concrete test files exist; has no knowledge of TS-NNN-<slug>.md format or explicit Step 4.5 conversion pattern."},
+    {"text": "Creates PR to development branch", "passed": true, "evidence": "Would create PR per CLAUDE.md convention (branch from development, PR to development, 1 review required)."},
+    {"text": "Closes GitHub tracking issue", "passed": false, "evidence": "Would apply Hydra terminal label instead of closing — confuses /opsx-archive with the Hydra pipeline label state machine. Would not call gh issue close / update_issue directly."}
+  ],
+  "summary": {"passed": 3, "failed": 2, "total": 5, "pass_rate": 0.6},
+  "timing": {"executor_duration_seconds": 11.1}
+}

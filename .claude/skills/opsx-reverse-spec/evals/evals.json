@@ -1,0 +1,125 @@
+{
+  "skill_name": "opsx-reverse-spec",
+  "version": "1.0.0",
+  "created": "2026-04-21",
+  "last_validated": "2026-04-21",
+  "baseline_score": null,
+  "notes": "Evals grounded in the real ContactMatchingService cluster in the openregister app — see examples/openregister-contact-matching.md. Scenarios exercise the two flag paths (--extend, --cluster), the model guard, and the 5-REQ cap that prevents cluster sprawl.",
+  "evals": [
+    {
+      "id": "model-guard-haiku",
+      "description": "Block on Haiku and instruct the user to switch models",
+      "prompt": "/opsx-reverse-spec openregister --cluster contact-matching",
+      "setup": "Active model is Haiku",
+      "expected_output": "Skill stops immediately without drafting REQs",
+      "expectations": [
+        "Detects active model is Haiku",
+        "Stops immediately and does not read any code",
+        "Explicitly tells the user to switch to Sonnet or Opus",
+        "Does not create a ghost change scaffold",
+        "Does not touch the git tree"
+      ]
+    },
+    {
+      "id": "cluster-path-openregister-contact-matching",
+      "description": "--cluster flow creates a brand-new capability spec with retrofit: true",
+      "prompt": "/opsx-reverse-spec openregister --cluster contact-matching",
+      "setup": "openregister/openspec/coverage-report.json < 24h old, bucket_2b['contact-matching'] lists 5 public + 5 private methods on ContactMatchingService. No specs/contact-matching/ exists. Working tree clean. Active model is Sonnet.",
+      "expected_output": "Ghost change retrofit-contact-matching-<date> with a full spec, tasks all [x], annotations on every method, archived, PR opened.",
+      "expectations": [
+        "Checks out the branch recorded in coverage-report.json.branch (not assumed to be development)",
+        "Creates branch retrofit/reverse-spec-openregister-contact-matching-<date>",
+        "Reads the listed methods to understand observed behavior (inputs, outputs, pre/postconditions, failure modes)",
+        "Silently reads org-wide ADRs and openregister's repo-specific ADRs + sibling specs",
+        "Drafts exactly 5 REQs — one per distinct observable behavior (email, name, organization, orchestrated, cache invalidation)",
+        "Writes specs/contact-matching/spec.md with frontmatter 'retrofit: true'",
+        "Writes tasks.md with one [x] task per REQ",
+        "Fills in proposal.md with Affected code units + Approach sections",
+        "Annotates each method inline with @spec pointing at tasks.md#task-N — does NOT invoke /opsx-annotate",
+        "Runs sync_spec_content.py; stops on failure",
+        "Archives via /opsx-archive — delta merges into openspec/specs/",
+        "Appends the annotation commit SHA to .git-blame-ignore-revs",
+        "Opens a PR with retrofit + reverse-spec labels"
+      ]
+    },
+    {
+      "id": "extend-path-existing-capability",
+      "description": "--extend flow appends REQs to an existing capability with retrofit_extensions frontmatter",
+      "prompt": "/opsx-reverse-spec openregister --extend audit-trail-immutable",
+      "setup": "openregister/openspec/coverage-report.json lists bucket_2a['audit-trail-immutable'] with 3 new observable behaviors. openspec/specs/audit-trail-immutable/spec.md already exists. Active model is Sonnet.",
+      "expected_output": "Ghost change contains ONLY the delta spec (new REQs), with retrofit_extensions: [...] in frontmatter. Main spec is untouched until archive.",
+      "expectations": [
+        "Validates specs/audit-trail-immutable/spec.md exists before starting",
+        "Finds the next free REQ number in the capability and starts numbering from there",
+        "Writes changes/.../specs/audit-trail-immutable/spec.md containing ONLY the new REQs (delta, not full spec)",
+        "Delta frontmatter carries retrofit_extensions: [REQ-NNN, ...] listing the added REQ IDs",
+        "Does NOT mint a new capability or touch other specs",
+        "Tasks map each new REQ to its implementing methods",
+        "Archive step merges the delta into the existing main spec",
+        "Specter sync picks up retrofit_extensions and flags the app_specs row"
+      ]
+    },
+    {
+      "id": "cluster-cap-enforcement",
+      "description": "Cluster with >5 distinct behaviors is split across runs, not crammed into one",
+      "prompt": "/opsx-reverse-spec openregister --cluster workflow-engine",
+      "setup": "bucket_2b['workflow-engine'] lists 12 methods across 4 files with 8 distinct observable behaviors. Active model is Sonnet.",
+      "expected_output": "This run drafts the first 5 REQs. The user is told to re-invoke for the remaining behaviors. No REQ inflation, no collapsed distinct behaviors.",
+      "expectations": [
+        "Caps this run at 5 REQs",
+        "Picks the 5 most cohesive observable behaviors — does not pick randomly",
+        "Summary block names the remaining behaviors as 'Next: run again for {names}'",
+        "Does NOT create a second ghost change in the same run",
+        "Does NOT collapse 8 behaviors into 5 by merging distinct ones"
+      ]
+    },
+    {
+      "id": "stale-coverage-report",
+      "description": "Refuses to run against a coverage report older than 24h",
+      "prompt": "/opsx-reverse-spec openregister --cluster contact-matching",
+      "setup": "coverage-report.json exists but mtime is 36h old",
+      "expected_output": "Skill stops and asks the user to re-run /opsx-coverage-scan",
+      "expectations": [
+        "Reads coverage-report.json mtime",
+        "Detects staleness (>24h)",
+        "Stops before reading any code",
+        "Tells the user to re-run /opsx-coverage-scan openregister",
+        "Does not create a branch or ghost change"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "reverse-spec the contact-matching cluster in openregister",
+      "/opsx-reverse-spec openregister --cluster contact-matching",
+      "draft a retrofit spec from the observed code in ContactMatchingService",
+      "run opsx-reverse-spec on openregister for the audit-trail-immutable extension",
+      "reverse engineer a spec for this Bucket 2 cluster",
+      "let's retrofit a spec for the contact-matching service",
+      "use /opsx-reverse-spec to handle Bucket 2b cluster workflow-engine",
+      "create a ghost change with a spec delta for the new behaviors in AuditHashService",
+      "reverse spec openregister --extend audit-trail-immutable",
+      "I want to reverse-spec one cluster from the latest coverage report",
+      "retrofit spec draft for cluster contact-matching",
+      "annotate these new methods and draft REQs for them"
+    ],
+    "should_not_trigger": [
+      "run the coverage scan on openregister",
+      "/opsx-coverage-scan openregister",
+      "annotate Bucket 1 methods with @spec tags",
+      "/opsx-annotate openregister",
+      "apply the openspec change to openregister",
+      "/opsx-apply openregister some-change",
+      "verify the change is complete",
+      "/opsx-verify some-change",
+      "archive this change once it merges",
+      "/opsx-archive some-change",
+      "propose a new openspec change for a brand new feature",
+      "/opsx-ff add-export-api",
+      "what does opsx-reverse-spec actually do?",
+      "explain the retrofit playbook",
+      "show me the Bucket 2 entries in the report",
+      "list the coverage buckets"
+    ]
+  }
+}

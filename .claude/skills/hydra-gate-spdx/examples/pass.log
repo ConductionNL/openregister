@@ -1,0 +1,2 @@
+# Sample output when this gate passes (gate-N is replaced with the actual gate index by run-hydra-gates.sh)
+[gate-1] spdx-headers: PASS

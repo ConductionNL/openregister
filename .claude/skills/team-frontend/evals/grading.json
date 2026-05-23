@@ -1,0 +1,49 @@
+{
+  "skill_name": "team-frontend",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-28 (simulation). 3 scenarios: implement-vue (4/4=1.0), i18n (3/4=0.75), webpack (2/4=0.5). Gaps: (1) i18n: 'defaults to English' rule is in reference file only, not SKILL.md; (2) webpack: plugins.push() and DefinePlugin preservation are not in SKILL.md webpack section. The @conduction/nextcloud-vue conditional alias IS specified. Core Conduction conventions (useObjectStore, CnDataTable, scoped styles, t() with app-name) are fully specified.",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "implement-vue",
+      "score": 1.0,
+      "assertions": [
+        {"id": "uses @conduction/nextcloud-vue components (CnDataTable, CnDetailPage)", "result": "pass", "note": "Step 2: 'All Conduction apps MUST use the shared @conduction/nextcloud-vue library.' CnDataTable and CnDetailViewLayout listed."},
+        {"id": "uses Pinia stores with useObjectStore", "result": "pass", "note": "Step 2: 'Pinia stores extend useObjectStore from the library.' Tech stack: 'Pinia (NOT Vuex)'."},
+        {"id": "uses Vue Router for navigation", "result": "pass", "note": "Step 2 Router Pattern: history mode, base path /index.php/apps/{appname}/, catch-all redirect."},
+        {"id": "follows scoped styles rule", "result": "pass", "note": "Step 2: 'Use <style scoped> — never unscoped styles.' Enforced in code example and CSS rules section."}
+      ],
+      "notes": "@conduction/nextcloud-vue and useObjectStore are the primary Conduction-specific value."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "i18n",
+      "score": 0.75,
+      "assertions": [
+        {"id": "uses t() for all user-facing strings", "result": "pass", "note": "Step 2: 'All user-visible strings MUST use t()'. Code example shows t(appName, key) in template."},
+        {"id": "adds translation keys properly", "result": "pass", "note": "Step 2: 'First argument is always the app name (e.g., openregister)'."},
+        {"id": "defaults to English", "result": "fail", "note": "Not in SKILL.md main instructions — only in dutch-gov-frontend-standards.md reference file."},
+        {"id": "follows NL Design System CSS variables", "result": "pass", "note": "CSS Rules: 'Support NL Design System tokens', 'Use Nextcloud CSS variables: var(--color-main-text), etc.', 'never hardcode colors'."}
+      ],
+      "notes": "Gap: add 'English is the base language for all t() keys and values' to Translations section."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "webpack",
+      "score": 0.5,
+      "assertions": [
+        {"id": "uses plugins.push(), NOT plugins = []", "result": "fail", "note": "Not in SKILL.md webpack section — only the conditional alias pattern is shown."},
+        {"id": "preserves existing DefinePlugin", "result": "fail", "note": "Not mentioned in SKILL.md — @nextcloud/webpack-vue-config's built-in plugins are not documented here."},
+        {"id": "handles conditional alias for nextcloud-vue", "result": "pass", "note": "Step 2 webpack config: fs.existsSync conditional alias, dedup aliases for vue$, pinia$, @nextcloud/vue$."},
+        {"id": "runs npm lint after changes", "result": "pass", "note": "Step 3: npm run lint (+ lint-fix, stylelint, test, build) — unconditional after every implementation."}
+      ],
+      "notes": "Conditional alias is specified; plugins mutation pattern is not. Two webpack-specific guardrails are missing from SKILL.md."
+    }
+  ]
+}

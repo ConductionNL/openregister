@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "Runs gh pr list --state merged to detect title convention", "passed": false, "evidence": "Did not run this command. Inferred convention from branch commit messages instead — different data source, less reliable."},
+    {"text": "Drafts title with Conventional Commits prefix (feat:, fix:, docs:, chore:)", "passed": true, "evidence": "Drafted 'docs(skills): improve skill library with review-pr, learnings promotion, and eval updates' — correct prefix inferred from commit history."},
+    {"text": "Does NOT draft a title with no prefix", "passed": true, "evidence": "Prefix present in drafted title."},
+    {"text": "Test plan uses plain bullets, never - [ ] checkboxes", "passed": true, "evidence": "N/A for this title-only task; no test plan drafted."}
+  ],
+  "summary": {"passed": 3, "failed": 1, "total": 4, "pass_rate": 0.75},
+  "timing": {"executor_duration_seconds": 57.9}
+}
