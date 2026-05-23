@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Applies ADDED requirements to main specs", "passed": true, "evidence": "Step 4 detects ADDED changes in delta, shows combined diff, then delegates to /opsx-sync which inserts new requirements."},
+    {"text": "Applies MODIFIED requirements", "passed": true, "evidence": "Step 4 identifies modifications in the combined diff; /opsx-sync updates existing entries."},
+    {"text": "Handles REMOVED requirements", "passed": true, "evidence": "Step 4 lists removals in combined diff summary; /opsx-sync handles deletion."},
+    {"text": "Preserves existing content not mentioned in delta", "passed": true, "evidence": "Implied by scope-limited sync: only listed changes applied; content not in delta untouched."}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "All sync behaviors delegated to /opsx-sync. Archive skill is a thin wrapper (discovery + prompt + handoff). Quality depends on /opsx-sync implementation.",
+  "timing": {"executor_duration_seconds": 15.4}
+}

@@ -1,0 +1,13 @@
+{
+  "expectations": [
+    {"text": "checks active model, blocks on Haiku", "passed": true, "evidence": "Skill opens with model check; on Haiku stops immediately with message including '/model sonnet' / '/model opus'."},
+    {"text": "asks user which model to use for exploration", "passed": true, "evidence": "On Sonnet/Opus: AskUserQuestion — 'You're on [model]. Which model should I use?' with Sonnet/Opus options."},
+    {"text": "enters a stance of curious thinking partner", "passed": true, "evidence": "REAL session 2026-04-28: explored git log -S timeout problem — measured actual timings, surfaced tradeoffs, did not rush to a solution. Grounded in data before recommending."},
+    {"text": "does NOT implement any code", "passed": true, "evidence": "REAL session: explored and then waited for explicit user instruction ('Update the skill') before writing anything. Updated SKILL.md (OpenSpec artifact), not application code."},
+    {"text": "opens multiple interesting directions for user to follow", "passed": true, "evidence": "REAL session: surfaced per-REQ vs single-pass, --diff-filter=D vs full history, caching, threshold for 3a, fallback semantics — all as distinct options with measured tradeoffs."},
+    {"text": "may read and search codebase for context", "passed": true, "evidence": "REAL session: ran git log timing tests directly on openregister (7,672 commits) to produce concrete numbers (2.8s/call vs 7s one-time)."}
+  ],
+  "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0},
+  "notes": "Real session 2026-04-28 on git log -S timeout problem in opsx-coverage-scan. All expectations met. Skill correctly entered explore mode, gathered data before recommending, and waited for explicit user instruction before modifying anything.",
+  "timing": {"executor_duration_seconds": 420.0}
+}

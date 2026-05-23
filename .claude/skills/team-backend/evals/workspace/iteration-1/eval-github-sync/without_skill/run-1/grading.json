@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Marks implemented task as done in GitHub",
+      "passed": true,
+      "evidence": "Naive Claude can use `gh issue close` — it's a known CLI tool. If a GitHub issue number is provided, closing it is a general capability."
+    },
+    {
+      "text": "Updates plan.json status",
+      "passed": false,
+      "evidence": "Without knowing plan.json's structure and the 'status: completed' field, naive Claude would not update this file. It might update tasks.md checkboxes but not the JSON tracking file."
+    },
+    {
+      "text": "Reports what was implemented",
+      "passed": true,
+      "evidence": "Naive Claude would summarize what it implemented — general assistant behavior."
+    },
+    {
+      "text": "Suggests next task or /opsx-verify",
+      "passed": false,
+      "evidence": "Without knowing the OpenSpec workflow, naive Claude would not know to suggest /opsx-verify or point to the next pending task in plan.json."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "GitHub issue closing and implementation summary are general capabilities. Plan.json tracking and /opsx-verify suggestion require skill knowledge.",
+  "timing": {
+    "executor_duration_seconds": 16
+  }
+}

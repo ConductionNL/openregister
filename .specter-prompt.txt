@@ -1,0 +1,49 @@
+You are generating OpenSpec change artifacts for a Nextcloud app.
+
+You are running HEADLESS. Do NOT use AskUserQuestion, interactive prompts, or skills.
+Write files directly using the Write tool.
+
+## Inputs
+- Change: dso-omgevingsloket (title: DSO Omgevingsloket Integration)
+- Context brief: openspec/changes/dso-omgevingsloket/context-brief.md
+- Data model ADR: openspec/architecture/adr-000-data-model.md
+
+## Step 1: Read context
+Read these files COMPLETELY before writing anything:
+- openspec/changes/dso-omgevingsloket/context-brief.md (features, stories, stakeholders, journeys)
+- openspec/architecture/adr-000-data-model.md (entity definitions)
+- All files in openspec/architecture/ (app ADRs)
+- All files in .claude/openspec/architecture/ (company ADRs, if present)
+
+## Step 2: Get artifact templates
+Run: `openspec instructions proposal --change dso-omgevingsloket --json`
+This returns the template and rules for the proposal artifact.
+Then do the same for: design, specs, tasks (in that order).
+
+## Step 3: Write artifacts
+For each artifact (proposal → design → specs → tasks):
+1. Read the template from openspec instructions
+2. Fill it using the REAL data from context-brief.md:
+   - Features with their demand scores and descriptions
+   - User stories with acceptance criteria (GIVEN/WHEN/THEN)
+   - Customer journeys with triggers and pain points
+   - Stakeholder profiles with responsibilities and goals
+   - Entity schemas from ADR-000 (do NOT invent new entities)
+3. Write the artifact file using the Write tool
+4. Verify it exists
+
+## Step 4: Commit
+After all 4 artifacts are written:
+```bash
+git add openspec/changes/dso-omgevingsloket/
+git commit -m 'feat: Add OpenSpec change dso-omgevingsloket from Specter'
+```
+Do NOT push — the caller handles pushing.
+Do NOT create branches — stay on the current branch.
+
+## Rules
+- Use REAL data from context-brief.md — NEVER invent features, stories, or entities
+- Entities MUST match ADR-000 exactly
+- Include seed data in design.md (3-5 example objects per entity, Dutch values)
+- Requirements in specs use REQ-XXX-NNN format with GIVEN/WHEN/THEN scenarios
+- Tasks in tasks.md are checkboxes [ ] with clear implementation steps

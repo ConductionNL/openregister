@@ -1,0 +1,22 @@
+{
+  "expectations": [
+    {
+      "text": "Accepts model parameter (Haiku/Sonnet/Opus)",
+      "passed": true,
+      "evidence": "SKILL.md Step 1.5 explicitly defines an AskUserQuestion step: 'Which model should the persona agents use?' with a table listing Haiku/Sonnet/Opus options, their speed/quota tradeoffs, and a recommended default (Sonnet). The step stores the choice as {MODEL}."
+    },
+    {
+      "text": "Spawns agents with specified model",
+      "passed": true,
+      "evidence": "Step 2 instructs: 'Use subagent_type: \"general-purpose\" and model: \"{MODEL}\" (from Step 1.5)' in the parallel Task agent launch. The {MODEL} variable is interpolated from the user's selection, so Haiku choice → all 8 agents run with model: \"haiku\"."
+    },
+    {
+      "text": "Reports which model each persona used",
+      "passed": false,
+      "evidence": "Neither the sub-agent output template nor the synthesis report template includes a field for recording which model each persona agent ran with. The skill captures the model choice at launch time but the final feature-counsel-report.md header only shows Date, Method, and Personas — not the model used. This is a gap in the skill's output spec."
+    }
+  ],
+  "summary": {"passed": 2, "failed": 1, "total": 3, "pass_rate": 0.67},
+  "notes": "The skill correctly accepts the model choice and propagates it to agent spawning. However, the synthesis report template does not include a 'Model used' field in the report header or per-persona sections, so the third expectation (reporting which model each persona used) fails. A simple fix would be adding a 'Model:' line to the report header template.",
+  "timing": {"executor_duration_seconds": 178}
+}

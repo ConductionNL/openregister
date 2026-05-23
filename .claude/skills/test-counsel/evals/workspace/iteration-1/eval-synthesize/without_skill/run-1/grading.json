@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies issues found by multiple personas (cross-persona patterns)",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude has no concept of 'cross-persona' aggregation because it never ran 8 distinct persona agents. It might summarize test findings generically but would not produce a structured list of issues grouped by how many personas encountered them."
+    },
+    {
+      "text": "Highlights persona-specific findings not shared by other personas",
+      "passed": false,
+      "evidence": "Persona-specific unique findings assume 8 persona runs to compare against. Without the skill's parallel execution, there is no multi-persona result set to diff. Naive Claude would produce a flat list of issues, not a segmented per-persona breakdown."
+    },
+    {
+      "text": "Ranks findings by severity and cross-persona agreement count",
+      "passed": false,
+      "evidence": "The severity×breadth ranking formula (SKILL.md Step 3 Top 5 section) is skill-specific. Without the persona agreement counts (since no multi-persona run occurred), naive Claude cannot compute this composite score. It might rank by severity alone."
+    },
+    {
+      "text": "Produces structured synthesis-report.md using skill template",
+      "passed": false,
+      "evidence": "synthesis-report-template.md is a Conduction-specific artifact in the test-counsel skill directory. Without the skill, naive Claude would not know this template exists and would write an unstructured markdown summary instead."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "notes": "All synthesis behaviors depend on having run the multi-persona parallel test step first. Without the skill's Step 2, there is no multi-persona result set, making Steps 3 and 4 structurally impossible to perform correctly.",
+  "timing": {
+    "executor_duration_seconds": 32
+  }
+}

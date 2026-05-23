@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "Launches 8 persona agents",
+      "passed": true,
+      "evidence": "SKILL.md Step 2 explicitly requires launching 8 Task agents in parallel (all in a single message), one per persona: Henk Bakker, Fatima El-Amrani, Sem de Jong, Noor Yilmaz, Annemarie de Vries, Mark Visser, Priya Ganpat, Jan-Willem van der Berg."
+    },
+    {
+      "text": "Each analyzes specs from their perspective",
+      "passed": true,
+      "evidence": "SKILL.md provides a per-agent sub-agent prompt template with '{PERSPECTIVE}' filled in per the agent assignment table. Each agent reads the same spec files but with a distinct Analysis Focus guiding what they look for."
+    },
+    {
+      "text": "Identifies missing features per persona",
+      "passed": true,
+      "evidence": "The sub-agent output format mandates a 'Missing Features' section (a table listing feature, priority MUST/SHOULD/COULD, persona rationale, and spec section affected) — every agent returns this section."
+    },
+    {
+      "text": "Synthesizes into feature-counsel-report.md",
+      "passed": true,
+      "evidence": "SKILL.md Step 3 instructs: 'Write the synthesis to: {PROJECT}/openspec/feature-counsel-report.md' and provides the full markdown template with Executive Summary, Consensus Features, Per-Persona Highlights, Feature Categories, Recommended Actions, and Potential OpenSpec Changes."
+    }
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "The skill fully specifies the 8-agent parallel launch, per-persona perspective focus, required output format, and synthesis step. All four expectations are explicitly and unambiguously covered by SKILL.md.",
+  "timing": {"executor_duration_seconds": 185}
+}

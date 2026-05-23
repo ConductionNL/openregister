@@ -1,0 +1,38 @@
+{
+  "eval_id": "post-incident-mode",
+  "eval_name": "post-incident-mode",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Uses heightened severity: PARTIAL items appear in critical gaps list",
+      "passed": true,
+      "evidence": "Report header states 'Mode: Post-incident (PARTIAL treated as effectively MISSING in severity scoring)'. Summary critical gaps list includes PARTIAL items: '--read-only filesystem claimed in docs but not enforced', 'logs are application-writable and lack tamper evidence', 'cron jobs run as the same user with full credential access'. 10 PARTIAL items are all treated as actionable gaps."
+    },
+    {
+      "text": "Checks whether credential rotation actually revoked all trust paths",
+      "passed": true,
+      "evidence": "Multiple findings address residual trust paths: section 1 shows Claude OAuth tokens have no revocation mechanism, section 2 shows no machine identity inventory (can't verify all were rotated), section 3 shows builder container could create deploy keys that survive rotation, section 6 shows credentials.json persists on host with no integrity checking. Remediation #2 specifically addresses 'Create a machine identity inventory with alerting -- primary way an attacker persists after credential rotation'."
+    },
+    {
+      "text": "Verifies audit trail integrity (could evidence have been tampered with?)",
+      "passed": true,
+      "evidence": "Section 5 check 5 (Logs tamper-evident): MISSING — 'No log signing, no append-only storage, no forwarding to immutable storage. An attacker with pipeline access could modify or delete logs. logs/ is gitignored so log tampering leaves no trace in version control.' Remediation #4 is CRITICAL: 'Make logs tamper-evident.'"
+    },
+    {
+      "text": "Recommends re-audit after remediation",
+      "passed": true,
+      "evidence": "Follow-up Actions item 3: 'Re-audit after remediations — the 10 PARTIAL and 10 MISSING vectors represent significant persistence surface. In post-incident context, an attacker who had access to credentials.json or any PAT could maintain access through multiple independent paths.'"
+    },
+    {
+      "text": "Suggests verifying COVERED items are enforced, not just documented",
+      "passed": true,
+      "evidence": "Follow-up Actions item 1: 'Verify COVERED items are actually enforced, not just documented. In post-incident mode, documentation is insufficient evidence.' Lists 4 specific verification steps: check actual PAT permissions via gh api, verify --cap-drop ALL in production crontab, compare crontab -l against CLAUDE.md, check git history for committed secrets."
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "reads coverage-report.json and parses the generated_at timestamp", "passed": true, "evidence": "Step 1 line 38 explicitly names the field: 'its generated_at field is < 24h old (use generated_at, not filesystem mtime)'. Field name is unambiguous."},
+    {"text": "compares against current time and detects > 24h staleness", "passed": true, "evidence": "Threshold '< 24h old' stated in Step 1. 48h simulated age fails the check."},
+    {"text": "refuses to proceed", "passed": true, "evidence": "Step 1 line 38: 'Missing/stale → stop, run /opsx-coverage-scan {app} first.'"},
+    {"text": "recommends running /opsx-coverage-scan procest to refresh", "passed": true, "evidence": "Same line 38 names /opsx-coverage-scan as the remediation."},
+    {"text": "does NOT proceed with annotation", "passed": true, "evidence": "'stop' directive halts execution before Step 2 (load plan). No Step 2+ action."}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "generated_at field is now named explicitly — the ambiguity flagged in 2026-04-23 grading (score 0.87) has been resolved in SKILL.md.",
+  "timing": {"executor_duration_seconds": 15.7}
+}

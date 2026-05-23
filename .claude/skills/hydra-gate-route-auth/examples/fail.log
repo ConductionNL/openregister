@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-route-auth.log
+[gate-5] route-auth: FAIL — 1 routed method(s) missing auth attribute — see /tmp/hydra-gate-route-auth.log

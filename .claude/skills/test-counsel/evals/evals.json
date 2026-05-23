@@ -1,0 +1,83 @@
+{
+  "skill_name": "test-counsel",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "multi-persona",
+      "description": "Spawn 8 persona agents",
+      "prompt": "Run /test-counsel on openregister",
+      "setup": "App running, specs defined in openspec/",
+      "expected_output": "Should spawn 8 persona agents in parallel",
+      "expectations": [
+        "Spawns all 8 personas (Henk, Fatima, Sem, Noor, Annemarie, Mark, Priya, Jan-Willem)",
+        "Each persona tests from their specific perspective",
+        "Personas run in parallel",
+        "Each produces independent findings"
+      ]
+    },
+    {
+      "id": "synthesize",
+      "description": "Synthesize cross-persona results",
+      "prompt": "Run /test-counsel and check the synthesis",
+      "setup": "All 8 personas have completed testing",
+      "expected_output": "Should produce consensus findings",
+      "expectations": [
+        "Identifies issues found by multiple personas",
+        "Highlights persona-specific unique findings",
+        "Ranks issues by severity and cross-persona agreement",
+        "Produces structured test-counsel-report.md"
+      ]
+    },
+    {
+      "id": "report-format",
+      "description": "Report includes per-persona and cross-persona sections",
+      "prompt": "Check the test-counsel report format",
+      "setup": "Testing complete",
+      "expected_output": "Should have structured report",
+      "expectations": [
+        "Has per-persona findings sections",
+        "Has cross-persona patterns section",
+        "Has overall pass/fail rates",
+        "Offers to create OpenSpec changes for gaps"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "test from all personas",
+      "run counsel tests",
+      "test with personas",
+      "run test counsel on openregister",
+      "multi-persona testing",
+      "run /test-counsel",
+      "test opencatalogi from all 8 personas",
+      "I need counsel testing done",
+      "can you run test-counsel",
+      "test through the eyes of all personas",
+      "run the persona-based tests",
+      "test from Henk and Fatima and all other personas",
+      "multi-perspective persona test",
+      "run all persona tests on pipelinq",
+      "do a full counsel test"
+    ],
+    "should_not_trigger": [
+      "test the app",
+      "run functional tests",
+      "test as Henk specifically",
+      "create test scenarios",
+      "run the API tests",
+      "feature counsel",
+      "run feature analysis",
+      "test security",
+      "run /test-persona-henk",
+      "what are the personas",
+      "explain test counsel",
+      "test accessibility",
+      "check if the app works",
+      "run regression tests",
+      "analyze features from personas"
+    ]
+  }
+}

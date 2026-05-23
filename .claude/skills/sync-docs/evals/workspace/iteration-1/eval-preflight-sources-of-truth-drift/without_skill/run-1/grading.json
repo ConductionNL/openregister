@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "runs Step 0.5 Check B with file-exists assertions", "passed": false, "evidence": "Would treat writing-docs.md as authoritative without verifying file paths."},
+    {"text": "reports the dangling entry with actual canonical path", "passed": false, "evidence": "Would follow the broken path and likely fail silently or use the wrong file."},
+    {"text": "reports ADR-017 as a candidate addition", "passed": false, "evidence": "No ADR discovery step without the skill."},
+    {"text": "asks whether to update writing-docs.md first", "passed": false, "evidence": "Would proceed editing other files without fixing the source of truth first."},
+    {"text": "applies edits only to .md files", "passed": true, "evidence": "Would naturally focus on .md files if asked to sync docs."}
+  ],
+  "summary": {"passed": 1, "failed": 4, "total": 5, "pass_rate": 0.2},
+  "timing": {"executor_duration_seconds": 7.3}
+}

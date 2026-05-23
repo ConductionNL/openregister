@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Explains purpose of each artifact type",
+      "passed": true,
+      "evidence": "SKILL.md 'OpenSpec Philosophy' section lists four named principles: spec-first development, delta specs as reviewable diffs, artifacts as a contract chain (proposal→specs→design→tasks→implementation→verification→archive), one change at a time per branch. These are explicitly stated in the Welcome message (Phase 1). Each artifact type's purpose is surfaced as part of the EXPLAIN step before creating it."
+    },
+    {
+      "text": "Describes workflow philosophy",
+      "passed": true,
+      "evidence": "SKILL.md states: 'state these named principles up front so the user understands the framework before walking through it.' The four OpenSpec philosophy principles are delivered in Phase 1 via phase-messages.md. This is a structural requirement — philosophy precedes workflow, not a sidebar."
+    },
+    {
+      "text": "Points out guardrails and why they exist",
+      "passed": true,
+      "evidence": "SKILL.md 'Guardrails (each with rationale)' provides explicit Why: rationale for each guardrail, e.g. 'EXPLAIN → DO → SHOW → PAUSE pattern... Why: learning sticks when each step is named and surfaced.' The skill is designed to teach these rationales during the walkthrough as part of narration."
+    },
+    {
+      "text": "Suggests resources for deeper learning",
+      "passed": true,
+      "evidence": "SKILL.md 'Learn more' section lists 5 specific resources to share after Phase 11: RULES.md, adr-*.md, CLAUDE.md, writing-skills/specs/docs.md, and openspec --help. The skill explicitly instructs: 'list these resources in the chat summary' and 'Frame these as next steps for going deeper rather than required reading.'"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "The educational dimension is fully specified: named philosophy principles, guardrail rationales, and specific 'learn more' resources are all explicit requirements in SKILL.md. The EXPLAIN→DO→SHOW→PAUSE pattern structurally enforces the educational intent throughout.",
+  "timing": {
+    "executor_duration_seconds": 660
+  }
+}

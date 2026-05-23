@@ -1,0 +1,114 @@
+{
+  "skill_name": "persistence-audit",
+  "version": "1.0.0",
+  "created": "2026-04-17",
+  "last_validated": "2026-04-17",
+  "baseline_score": 1.0,
+  "evals": [
+    {
+      "id": "generic-oauth-repo",
+      "description": "Audit a repo with OAuth/token auth code",
+      "prompt": "Run /persistence-audit on this repository",
+      "setup": "Repository with OAuth refresh token implementation and API key usage",
+      "expected_output": "Should produce a full 6-category report with COVERED/PARTIAL/MISSING per vector",
+      "expectations": [
+        "Searches for OAuth-related code patterns (refresh tokens, grants, state parameter)",
+        "Checks token invalidation on account disable/password change",
+        "Reports token logging exposure risk",
+        "Classifies each item with evidence (file:line citations for COVERED)",
+        "Generates remediation list ordered by severity"
+      ]
+    },
+    {
+      "id": "hydra-pipeline",
+      "description": "Audit Hydra CI/CD pipeline with hydra argument",
+      "prompt": "Run /persistence-audit hydra",
+      "setup": "Hydra repository with pipeline scripts and persona containers",
+      "expected_output": "Should load Hydra-specific reference and check all H1-H7 vectors in addition to generic checklist",
+      "expectations": [
+        "Loads references/hydra-persistence-vectors.md",
+        "Checks per-persona PAT scoping (builder vs reviewer vs security)",
+        "Audits yolo auto-merge trust chain",
+        "Checks label state machine integrity and reconciliation window",
+        "Checks log integrity and token masking in pipeline logs",
+        "Reports on container isolation boundaries"
+      ]
+    },
+    {
+      "id": "post-incident-mode",
+      "description": "Post-incident audit with heightened sensitivity",
+      "prompt": "Run /persistence-audit post-incident",
+      "setup": "Repository where credentials were recently rotated after a suspected breach",
+      "expected_output": "Should treat PARTIAL as effectively MISSING in severity scoring",
+      "expectations": [
+        "Uses heightened severity: PARTIAL items appear in critical gaps list",
+        "Checks whether credential rotation actually revoked all trust paths",
+        "Verifies audit trail integrity (could evidence have been tampered with?)",
+        "Recommends re-audit after remediation",
+        "Suggests verifying COVERED items are enforced, not just documented"
+      ]
+    },
+    {
+      "id": "spec-only-audit",
+      "description": "Audit OpenSpec design documents instead of code",
+      "prompt": "Run /persistence-audit spec",
+      "setup": "Repository with openspec/ directory containing architecture specs and design docs",
+      "expected_output": "Should audit spec documents for persistence coverage and flag gaps in the design",
+      "expectations": [
+        "Reads openspec/ specs and architecture documents",
+        "Identifies which persistence vectors are addressed in the design",
+        "Flags vectors not mentioned in specs as MISSING",
+        "Recommends code-level follow-up audit"
+      ]
+    },
+    {
+      "id": "minimal-static-site",
+      "description": "Audit a system with minimal attack surface",
+      "prompt": "Run /persistence-audit on this static site repo",
+      "setup": "Simple static site with no auth, no CI/CD secrets, no service accounts",
+      "expected_output": "Should correctly mark most categories N/A with justification",
+      "expectations": [
+        "Does not fabricate findings for non-existent attack surfaces",
+        "Marks OAuth, service accounts, IdP as N/A with clear reasoning",
+        "Still checks CI/CD (GitHub Actions may have secrets) and endpoint persistence",
+        "Completes all 6 categories — does not skip any"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "persistence audit",
+      "audit for persistence vectors",
+      "check post-compromise persistence",
+      "can an attacker maintain access after key rotation",
+      "persistence-audit",
+      "/persistence-audit",
+      "audit this repo for persistence risks",
+      "check if credential rotation is sufficient",
+      "run a persistence audit on hydra",
+      "post-incident persistence check",
+      "audit OAuth token persistence",
+      "check for persistence attack vectors",
+      "did we eradicate or just contain",
+      "audit CI/CD pipeline for secret persistence",
+      "check if an attacker could survive credential rotation"
+    ],
+    "should_not_trigger": [
+      "run security tests",
+      "test for XSS vulnerabilities",
+      "code review this PR",
+      "check code quality",
+      "run the test suite",
+      "deploy the application",
+      "scan for SQL injection",
+      "review architecture",
+      "run SAST scan",
+      "check OWASP top 10",
+      "set up authentication",
+      "implement OAuth flow",
+      "rotate credentials",
+      "write a security policy",
+      "penetration test the API"
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "Launches 8 persona agents",
+      "passed": false,
+      "evidence": "Naive Claude has no instruction to launch parallel sub-agents. Without the skill, Claude would read the specs and write a single summary response inline — no Task agents spawned, no parallelism."
+    },
+    {
+      "text": "Each analyzes specs from their perspective",
+      "passed": false,
+      "evidence": "Without the skill's persona cards (hydra/personas/*.md) and per-agent prompt template, Claude has no mechanism to analyse the specs through 8 distinct persona lenses. It would produce a single generic summary at best."
+    },
+    {
+      "text": "Identifies missing features per persona",
+      "passed": false,
+      "evidence": "Naive Claude might note some missing features in general but would not attribute them to specific personas with in-character rationale or the structured table format the skill requires."
+    },
+    {
+      "text": "Synthesizes into feature-counsel-report.md",
+      "passed": false,
+      "evidence": "Naive Claude would not know to write output to '{PROJECT}/openspec/feature-counsel-report.md'. It would print findings to chat rather than persisting a structured markdown file at the canonical path."
+    }
+  ],
+  "summary": {"passed": 0, "failed": 4, "total": 4, "pass_rate": 0.0},
+  "notes": "Without the skill, Claude defaults to a single-agent inline text response. No sub-agents are launched, no persona cards are consulted, no report file is written. All four expectations fail.",
+  "timing": {"executor_duration_seconds": 22}
+}

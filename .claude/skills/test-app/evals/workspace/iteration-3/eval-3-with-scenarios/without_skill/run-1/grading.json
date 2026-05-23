@@ -1,0 +1,38 @@
+{
+  "eval_id": 3,
+  "eval_name": "with-scenarios",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Loads test scenarios from the fixture's test-scenarios/ directory",
+      "passed": true,
+      "evidence": "Baseline agent manually read each of the 4 scenario files and listed them in a table"
+    },
+    {
+      "text": "Filters out TS-003 (status:draft) and TS-004 (test-commands does not include test-app)",
+      "passed": true,
+      "evidence": "Baseline reasoned independently: excluded TS-003 (draft) and TS-004 (wrong test-command). Arrived at same correct filter without the skill."
+    },
+    {
+      "text": "Surfaces TS-001 and TS-002 to the user (active + test-app in commands)",
+      "passed": true,
+      "evidence": "Table shows both as 'Included? Yes' with correct reasoning"
+    },
+    {
+      "text": "Asks the user whether to include the surfaced scenarios",
+      "passed": false,
+      "evidence": "Baseline skipped the user-consent step entirely \u2014 went straight from filter to execution attempt. This is where the skill's structured workflow adds value."
+    },
+    {
+      "text": "Reports results per scenario with the scenario ID (TS-001, TS-002)",
+      "passed": true,
+      "evidence": "Per-scenario sections use TS-001 and TS-002 IDs, with NOT EXECUTED status (environment unreachable per subagent's view)"
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.8,
+    "passed": 4,
+    "failed": 1,
+    "total": 5
+  }
+}

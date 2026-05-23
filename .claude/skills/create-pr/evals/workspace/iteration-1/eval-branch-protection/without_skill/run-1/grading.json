@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "Detects branch protection on target", "passed": false, "evidence": "PARTIAL: called the API endpoint, got 404 (correct result), but no systematic fallback to check rulesets or org-level rules without skill guidance."},
+    {"text": "Validates required status checks exist", "passed": false, "evidence": "No cross-referencing of required checks against actual CI workflows in .github/workflows/."},
+    {"text": "Warns about bootstrap deadlock if checks missing", "passed": false, "evidence": "No awareness of the deadlock scenario — not attempted without skill."},
+    {"text": "Suggests alternative target if needed", "passed": false, "evidence": "No logic to surface the development convention from CLAUDE.md or warn that feature/*→main bypasses standard flow."}
+  ],
+  "summary": {"passed": 0, "failed": 4, "total": 4, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 92.4}
+}

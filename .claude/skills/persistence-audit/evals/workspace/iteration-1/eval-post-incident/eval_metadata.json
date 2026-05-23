@@ -1,0 +1,12 @@
+{
+  "eval_id": "post-incident-mode",
+  "eval_name": "post-incident-mode",
+  "prompt": "Run /persistence-audit post-incident",
+  "assertions": [
+    "Uses heightened severity: PARTIAL items appear in critical gaps list",
+    "Checks whether credential rotation actually revoked all trust paths",
+    "Verifies audit trail integrity (could evidence have been tampered with?)",
+    "Recommends re-audit after remediation",
+    "Suggests verifying COVERED items are enforced, not just documented"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "eval_id": 1,
+  "eval_name": "eval-single-browser-test",
+  "prompt": "Run /test-app on openregister in single mode",
+  "assertions": [
+    "Tests navigation and page loading",
+    "Tests core CRUD operations",
+    "Produces structured pass/fail report",
+    "Does NOT spawn parallel agents in single mode"
+  ]
+}

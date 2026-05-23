@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "skill_name": "test-app",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-13T12:27:32Z",
+    "evals_run": [
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 738.0,
+        "tokens": 66477,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Tests navigation and page loading",
+          "passed": true,
+          "evidence": "Step 5: Launch Agent \u2014 verified app loads at /index.php/apps/openregister; checked admin settings URL; status.php and authentication probes all PASS"
+        },
+        {
+          "text": "Tests core CRUD operations",
+          "passed": true,
+          "evidence": "Full CRUD lifecycle on registers and schemas: List/Get/Create/Update/Delete all exercised. Create returned 201, Update returned 200 with version increment, Delete returned 200."
+        },
+        {
+          "text": "Produces structured pass/fail report",
+          "passed": true,
+          "evidence": "Report contains explicit Summary table (PASS:11, PARTIAL:2, FAIL:3, CANNOT_TEST:5), per-feature tables, Steps Completed table, and final APP_TEST_RESULT line \u2014 exactly the structure the skill describes"
+        },
+        {
+          "text": "Does NOT spawn parallel agents in single mode",
+          "passed": true,
+          "evidence": "Single comprehensive run by one agent. No Agent/Task tool invocations to spawn perspective agents (Agent tool was unavailable, but the skill correctly stayed in single mode)"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 85.4,
+        "tokens": 26121,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Spawns functional, UX, performance, accessibility, security, API agents",
+          "passed": false,
+          "evidence": "CANNOT_TEST \u2014 Agent/Task tool was not available, so no perspective agents were spawned. The skill correctly identified this and aborted rather than fabricating results."
+        },
+        {
+          "text": "Agents run in parallel (not sequential)",
+          "passed": false,
+          "evidence": "No agents were spawned; this expectation cannot be evaluated"
+        },
+        {
+          "text": "Each agent produces independent findings",
+          "passed": false,
+          "evidence": "No agents spawned, no findings produced"
+        },
+        {
+          "text": "Synthesizes results into unified report",
+          "passed": false,
+          "evidence": "Produced a CANNOT_TEST table covering all 6 perspectives with the same blocker \u2014 no actual findings to synthesize"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 78.0,
+        "tokens": 20189,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Loads test scenarios from test-scenarios/ directory",
+          "passed": false,
+          "evidence": "Looked for procest/test-scenarios/, didn't find it. The skill's Step 2.5 was followed correctly \u2014 it's a test-data issue (procest dir missing from hydra repo), not a skill behavior issue."
+        },
+        {
+          "text": "Asks user whether to include scenarios",
+          "passed": false,
+          "evidence": "Skill aborted at Step 2.5 (no scenarios found, app dir missing) before reaching the include/exclude prompt"
+        },
+        {
+          "text": "Reports pass/fail per scenario",
+          "passed": false,
+          "evidence": "No scenarios to report on. CANNOT_TEST table shows '(none found)'"
+        },
+        {
+          "text": "Includes scenario ID in results",
+          "passed": false,
+          "evidence": "No scenarios to ID. Vacuously failed."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 43.5,
+        "tokens": 16055,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Tests navigation and page loading",
+          "passed": false,
+          "evidence": "CANNOT_TEST \u2014 agent had no Bash, WebFetch, or browser MCP tools. No navigation or page-load testing performed."
+        },
+        {
+          "text": "Tests core CRUD operations",
+          "passed": false,
+          "evidence": "CANNOT_TEST \u2014 no tools available to exercise any CRUD"
+        },
+        {
+          "text": "Produces structured pass/fail report",
+          "passed": false,
+          "evidence": "Produced a CANNOT_TEST report only; no actual test results to structure"
+        },
+        {
+          "text": "Does NOT spawn parallel agents in single mode",
+          "passed": true,
+          "evidence": "Did not spawn parallel agents (vacuously true \u2014 couldn't do anything)"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "time_seconds": 520.0,
+        "tokens": 72245,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Spawns functional, UX, performance, accessibility, security, API agents",
+          "passed": false,
+          "evidence": "Agent did not spawn parallel sub-agents; performed all 6 perspective tests sequentially using curl"
+        },
+        {
+          "text": "Agents run in parallel (not sequential)",
+          "passed": false,
+          "evidence": "Sequential execution"
+        },
+        {
+          "text": "Each agent produces independent findings",
+          "passed": true,
+          "evidence": "Single agent did produce 6 distinct sets of findings (Functional, API, Security, Performance, Accessibility, UX) covering each perspective independently"
+        },
+        {
+          "text": "Synthesizes results into unified report",
+          "passed": true,
+          "evidence": "361-line report with sections per perspective, severity-graded findings (3 P0, 3 P1, 10 medium/low), unified summary"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 733.4,
+        "tokens": 107506,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Loads test scenarios from test-scenarios/ directory",
+          "passed": false,
+          "evidence": "test-scenarios/ dir doesn't exist. Agent designed tests ad-hoc from API exploration instead."
+        },
+        {
+          "text": "Asks user whether to include scenarios",
+          "passed": false,
+          "evidence": "Did not ask \u2014 went straight to ad-hoc testing"
+        },
+        {
+          "text": "Reports pass/fail per scenario",
+          "passed": false,
+          "evidence": "No scenarios to report on. The 13 ad-hoc tests are not labeled as scenarios."
+        },
+        {
+          "text": "Includes scenario ID in results",
+          "passed": false,
+          "evidence": "Tests labeled T1-T13, not with scenario IDs (TS-001 etc.)"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.3333,
+        "stddev": 0.5774,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 300.4667,
+        "stddev": 378.933,
+        "min": 78.0,
+        "max": 738.0
+      },
+      "tokens": {
+        "mean": 37595.6667,
+        "stddev": 25187.2134,
+        "min": 20189,
+        "max": 66477
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.25,
+        "stddev": 0.25,
+        "min": 0.0,
+        "max": 0.5
+      },
+      "time_seconds": {
+        "mean": 432.3,
+        "stddev": 353.2124,
+        "min": 43.5,
+        "max": 733.4
+      },
+      "tokens": {
+        "mean": 65268.6667,
+        "stddev": 46122.9148,
+        "min": 16055,
+        "max": 107506
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.08",
+      "time_seconds": "-131.8",
+      "tokens": "-27673"
+    }
+  },
+  "notes": []
+}

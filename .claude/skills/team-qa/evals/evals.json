@@ -1,0 +1,84 @@
+{
+  "skill_name": "team-qa",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "test-coverage",
+      "description": "Run test suites and report coverage",
+      "prompt": "Run /team-qa on the implementation",
+      "setup": "Code changes from team-backend/frontend",
+      "expected_output": "Should run tests and report gaps",
+      "expectations": [
+        "Runs available test suites",
+        "Reports coverage for changed code",
+        "Identifies untested code paths",
+        "Suggests specific tests to add"
+      ]
+    },
+    {
+      "id": "acceptance",
+      "description": "Test against acceptance criteria",
+      "prompt": "QA the implementation against specs",
+      "setup": "Specs with acceptance criteria",
+      "expected_output": "Should validate each criterion",
+      "expectations": [
+        "Loads acceptance criteria from specs",
+        "Tests each criterion",
+        "Reports pass/fail per criterion",
+        "Documents defects found"
+      ]
+    },
+    {
+      "id": "defect-report",
+      "description": "Document defects",
+      "prompt": "QA finds issues",
+      "setup": "Implementation with bugs",
+      "expected_output": "Should document clearly",
+      "expectations": [
+        "Describes defect with reproduction steps",
+        "Includes expected vs actual behavior",
+        "Assigns severity",
+        "Links to relevant spec/task"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "run QA",
+      "test the implementation",
+      "QA the changes",
+      "team QA",
+      "quality assurance check",
+      "/team-qa",
+      "act as QA tester",
+      "take the QA role and test this",
+      "verify the implementation against specs",
+      "run quality assurance on this feature",
+      "test all acceptance criteria",
+      "QA, check the implementation",
+      "find defects in this code",
+      "run team-qa on the changes",
+      "validate the feature from a QA perspective"
+    ],
+    "should_not_trigger": [
+      "implement code",
+      "review code",
+      "design architecture",
+      "run browser tests",
+      "create test scenarios",
+      "team-backend",
+      "team-frontend",
+      "team-reviewer",
+      "team-architect",
+      "team-sm",
+      "team-po",
+      "what does the QA tester do",
+      "write PHP code",
+      "create a PR",
+      "deploy the app",
+      "write Vue components"
+    ]
+  }
+}

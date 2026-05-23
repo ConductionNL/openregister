@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Runs apply inside Docker container",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude has no knowledge of the Docker container isolation pattern, container-setup-guide.md, or the host/container responsibility split. It would attempt to run apply directly in the current shell — without any Docker isolation, volume mounts, or container credentials."
+    },
+    {
+      "text": "Runs verify after apply",
+      "passed": true,
+      "evidence": "Naive Claude might know to run opsx-verify after opsx-apply if it has general knowledge of the OpenSpec workflow. However, it would run both on the host without the container boundary, missing the isolation purpose."
+    },
+    {
+      "text": "Loops on failure (max 5 iterations)",
+      "passed": false,
+      "evidence": "Without the skill's loop protocol, naive Claude would attempt apply→verify once and report the result. There is no reason it would independently decide to loop up to 5 times or know about the iteration cap or the WARNING-vs-CRITICAL distinction that determines whether to continue."
+    },
+    {
+      "text": "Auto-archives on successful verify",
+      "passed": false,
+      "evidence": "Without the auto-archive step in the skill, naive Claude would report the verify result and stop. It would not automatically invoke opsx-archive, commit changes, or sync GitHub — it would require explicit user instruction for each subsequent step."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "notes": "Without the skill, the Docker container isolation pattern, loop iteration logic, and auto-archive chain are completely absent. Naive Claude might sequentially run apply then verify once, but the orchestration value of the skill (isolation, loop, auto-archive) requires the skill's explicit protocol files.",
+  "timing": {
+    "executor_duration_seconds": 12
+  }
+}

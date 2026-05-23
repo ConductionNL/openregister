@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Detects incomplete tasks", "passed": true, "evidence": "Step 3 Case B: reads tasks.md, counts unchecked '- [ ]' items."},
+    {"text": "Reports which tasks remain", "passed": true, "evidence": "Displays '⛔ Cannot archive: N task(s) still incomplete: - Task X: <title>' listing task-2 and task-4 by name."},
+    {"text": "Suggests running /opsx-apply first", "passed": false, "evidence": "MISMATCH: skill offers 'Go back and complete tasks' or 'Archive anyway (override)' via AskUserQuestion — does NOT name /opsx-apply as the next step."},
+    {"text": "Does NOT archive incomplete changes", "passed": true, "evidence": "Blocks and only proceeds if user explicitly picks the override option."}
+  ],
+  "summary": {"passed": 3, "failed": 1, "total": 4, "pass_rate": 0.75},
+  "notes": "Eval expects explicit /opsx-apply suggestion; skill says 'go back and complete tasks' without naming the skill. Low-priority fix: add /opsx-apply to the refusal message.",
+  "timing": {"executor_duration_seconds": 13.5}
+}

@@ -1,0 +1,33 @@
+{
+  "eval_id": 1,
+  "eval_name": "single-mode",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Tests navigation and page loading",
+      "passed": false,
+      "evidence": "CANNOT_TEST \u2014 agent had no Bash, WebFetch, or browser MCP tools. No navigation or page-load testing performed."
+    },
+    {
+      "text": "Tests core CRUD operations",
+      "passed": false,
+      "evidence": "CANNOT_TEST \u2014 no tools available to exercise any CRUD"
+    },
+    {
+      "text": "Produces structured pass/fail report",
+      "passed": false,
+      "evidence": "Produced a CANNOT_TEST report only; no actual test results to structure"
+    },
+    {
+      "text": "Does NOT spawn parallel agents in single mode",
+      "passed": true,
+      "evidence": "Did not spawn parallel agents (vacuously true \u2014 couldn't do anything)"
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.25,
+    "passed": 1,
+    "failed": 3,
+    "total": 4
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "reports the writing-specs.md vs schema.yaml drift", "passed": false, "evidence": "Would not detect or report drift between docs and schema files — no Check C concept."},
+    {"text": "refuses to write to schema.yaml", "passed": false, "evidence": "Would likely edit schema.yaml directly since the drift is clear."},
+    {"text": "offers a manual follow-up note in the final report", "passed": false, "evidence": "No Phase 5 report format — would just proceed with edits."},
+    {"text": "applies .md edits only where the user confirms", "passed": false, "evidence": "Would auto-apply edits without a confirmation gate."}
+  ],
+  "summary": {"passed": 0, "failed": 4, "total": 4, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 7.4}
+}

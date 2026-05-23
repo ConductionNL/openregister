@@ -1,0 +1,33 @@
+{
+  "eval_id": 1,
+  "eval_name": "single-mode",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Tests navigation and page loading",
+      "passed": false,
+      "evidence": "CANNOT_TEST \u2014 no browser MCP, Bash, or WebFetch tools were available to subagent. Skill correctly aborted per its own instructions."
+    },
+    {
+      "text": "Tests core CRUD operations",
+      "passed": false,
+      "evidence": "CANNOT_TEST \u2014 no HTTP tools available"
+    },
+    {
+      "text": "Produces structured pass/fail report",
+      "passed": true,
+      "evidence": "Despite CANNOT_TEST outcome, agent produced a fully structured report with Summary table, Steps Completed table, per-feature status table, and final APP_TEST_RESULT line"
+    },
+    {
+      "text": "Does NOT spawn parallel agents in single mode",
+      "passed": true,
+      "evidence": "Single agent; no parallel perspective agents spawned (Agent tool not available, but the skill correctly stayed in single mode)"
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.5,
+    "passed": 2,
+    "failed": 2,
+    "total": 4
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "eval_id": 3,
+  "eval_name": "with-scenarios",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Loads test scenarios from test-scenarios/ directory",
+      "passed": false,
+      "evidence": "test-scenarios/ dir doesn't exist. Agent designed tests ad-hoc from API exploration instead."
+    },
+    {
+      "text": "Asks user whether to include scenarios",
+      "passed": false,
+      "evidence": "Did not ask \u2014 went straight to ad-hoc testing"
+    },
+    {
+      "text": "Reports pass/fail per scenario",
+      "passed": false,
+      "evidence": "No scenarios to report on. The 13 ad-hoc tests are not labeled as scenarios."
+    },
+    {
+      "text": "Includes scenario ID in results",
+      "passed": false,
+      "evidence": "Tests labeled T1-T13, not with scenario IDs (TS-001 etc.)"
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.0,
+    "passed": 0,
+    "failed": 4,
+    "total": 4
+  }
+}

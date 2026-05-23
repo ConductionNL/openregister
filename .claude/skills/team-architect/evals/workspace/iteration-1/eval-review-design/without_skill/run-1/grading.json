@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Loads existing ADRs",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know which ADR files to load (openspec/architecture/ directory, dutch-gov-architecture-standards.md, nlgov-api-design-rules.md, bio2-security-checklist.md). It might read whatever files it finds but without a systematic loading protocol."
+    },
+    {
+      "text": "Evaluates design against architectural constraints",
+      "passed": true,
+      "evidence": "Naive Claude can perform a general architectural review (thin controller, service layer, DI). It has general knowledge of good architecture patterns. However, Conduction-specific constraints (OpenRegister integration, @conduction/nextcloud-vue library, Dutch gov NORA/GEMMA compliance) would be missed."
+    },
+    {
+      "text": "Checks OpenSpec rules compliance",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude does not know the OpenSpec rules or which spec files to check (nextcloud-app/spec.md, api-patterns/spec.md). It would not check delta spec compliance, review the artifact chain, or assess design against shared specs."
+    },
+    {
+      "text": "Suggests improvements with reasoning",
+      "passed": true,
+      "evidence": "General architectural review by Claude would suggest improvements. However, suggestions would be based on general software engineering knowledge, not Conduction-specific patterns, Dutch gov standards, or the established ADR decisions."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "General architecture review is a Claude capability; Conduction-specific ADR loading, OpenSpec compliance, and Dutch government standards are skill-specific. Without the skill, the review would miss the Conduction/Dutch-gov-specific architectural constraints.",
+  "timing": {
+    "executor_duration_seconds": 20
+  }
+}

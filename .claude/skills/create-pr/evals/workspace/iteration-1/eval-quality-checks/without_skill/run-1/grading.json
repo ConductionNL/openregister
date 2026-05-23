@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Runs composer check:strict for PHP apps", "passed": true, "evidence": "N/A: no PHP. Baseline correctly skipped."},
+    {"text": "Runs npm lint for frontend", "passed": true, "evidence": "N/A: no package.json. Baseline correctly skipped."},
+    {"text": "Reports failures before creating PR", "passed": true, "evidence": "Surfaced manifests/network-policy.yaml multi-document YAML issue before any PR action."},
+    {"text": "Suggests fixes", "passed": false, "evidence": "PARTIAL: explained the YAML issue but gave no concrete fix command. Weak compared to skill's Step 4f which provides actionable remediation."},
+    {"text": "Does NOT create PR with failing checks", "passed": true, "evidence": "No PR created; would ask user to confirm before proceeding."}
+  ],
+  "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8},
+  "timing": {"executor_duration_seconds": 164.3}
+}

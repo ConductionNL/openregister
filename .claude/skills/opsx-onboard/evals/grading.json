@@ -1,0 +1,49 @@
+{
+  "skill_name": "opsx-onboard",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-28 (simulation). 3 scenarios: guided-tour (4/4=1.0), real-work (3/4=0.75), educational (4/4=1.0). Gap in real-work: no quality check step between Phase 9 (implement) and Phase 10 (archive). The onboarding teaches the workflow but misses introducing quality gates as part of the normal cycle.",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "guided-tour",
+      "score": 1.0,
+      "assertions": [
+        {"id": "scans codebase for improvement opportunities", "result": "pass", "note": "Phase 2 enumerates 6 specific scan categories + git log context check. Guardrails: 'Use real codebase tasks'."},
+        {"id": "presents 3-4 starter tasks", "result": "pass", "note": "Phase 2 Task Suggestions message from phase-messages.md, filled with real scan findings. Scope guardrail (Phase 2b) steers toward small tasks."},
+        {"id": "guides through proposal→specs→design→tasks→apply→archive", "result": "pass", "note": "Phases 4–10 explicitly cover the full artifact chain with real openspec CLI commands."},
+        {"id": "narrates each step with explanations", "result": "pass", "note": "EXPLAIN→DO→SHOW→PAUSE pattern mandated in Guardrails. Phase messages deliver teaching content before each step."}
+      ],
+      "notes": "The 11-phase structure covers the complete workflow with structured narration. All four tour expectations are explicitly specified."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "real-work",
+      "score": 0.75,
+      "assertions": [
+        {"id": "identifies real issues (TODOs, missing tests, type issues)", "result": "pass", "note": "Phase 2 explicitly scans for TODO/FIXME, untested functions, and TypeScript 'any' types in real files."},
+        {"id": "creates actual change artifacts", "result": "pass", "note": "Phases 4–8 write real files using openspec CLI and templates. Guardrails forbid fake examples."},
+        {"id": "implements actual code changes", "result": "pass", "note": "Phase 9 implements each task in the codebase and marks complete in tasks.md. Real changes, not demonstrations."},
+        {"id": "runs quality checks on changes", "result": "fail", "note": "No quality check step in SKILL.md between Phase 9 (implement) and Phase 10 (archive). PHPCS/PHPStan/ESLint are not mentioned. Gap: onboarding doesn't teach quality gates."}
+      ],
+      "notes": "Three of four real-work behaviors are fully specified. Gap: missing quality gate step after implementation. Suggested fix: add a Phase 9.5 quality check step to teach this part of the workflow."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "educational",
+      "score": 1.0,
+      "assertions": [
+        {"id": "explains purpose of each artifact type", "result": "pass", "note": "SKILL.md 'OpenSpec Philosophy' section names 4 principles including 'artifacts as a contract chain'. Delivered in Phase 1 Welcome."},
+        {"id": "describes workflow philosophy", "result": "pass", "note": "Phase 1 explicitly states the 4 named principles before walking through the workflow. This is a structural requirement, not a sidebar."},
+        {"id": "points out guardrails and why they exist", "result": "pass", "note": "SKILL.md 'Guardrails (each with rationale)' provides Why: for each guardrail; skill teaches these as part of narration."},
+        {"id": "suggests resources for deeper learning", "result": "pass", "note": "SKILL.md 'Learn more' section lists 5 specific resources (RULES.md, adr-*.md, CLAUDE.md, writing-*.md, openspec --help). Delivered in Phase 11."}
+      ],
+      "notes": "Educational content is fully specified: named OpenSpec philosophy, guardrail rationale, and 5 specific learn-more resources. All delivered through phase-messages.md templates."
+    }
+  ]
+}

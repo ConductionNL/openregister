@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Checks completeness (all tasks done, specs covered)",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would read tasks.md from the development branch (not the feature branch) and see all 4 tasks as [ ] (unchecked), concluding implementation is incomplete. It would not know to look at the feature branch or check the git log for the merged commit. It would likely report 'no TaskCard.vue found in src/components/' and mark all tasks as incomplete."
+    },
+    {
+      "text": "Checks correctness (requirements met, scenarios pass)",
+      "passed": false,
+      "evidence": "Without structured skill steps, naive Claude might read the spec.md but would use ad-hoc grep patterns without systematic coverage. It would likely miss the test-plan.md oracle and not map TCs to requirements. Correctness check would be surface-level: 'found dueDateStatus in git history' without verifying boundary logic or scenario mapping."
+    },
+    {
+      "text": "Checks coherence (design followed, patterns consistent)",
+      "passed": false,
+      "evidence": "Without the skill, coherence check would likely be skipped or limited to a summary comment like 'implementation appears consistent with design.' The skill-prescribed checks (unit test coverage count, import style comparison against existing components, i18n ADR-007 verification) would not be performed systematically. The NcChip import path deviation would likely be missed."
+    },
+    {
+      "text": "Runs browser/API tests if applicable",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know to ask about API/browser tests via AskUserQuestion. It might skip testing entirely or mention 'you could run npm test' without actually running or coordinating test execution against spec scenarios."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "notes": "Without the skill, the three-dimension framework would not be applied. The key failure mode is branch context: naive Claude reads the development branch where the feature is not yet merged, sees [ ] tasks, and incorrectly reports the change as incomplete. This is a real-world failure case — the skill's structured approach of checking the feature branch and git log prevents this false-negative.",
+  "timing": {
+    "executor_duration_seconds": 45
+  }
+}

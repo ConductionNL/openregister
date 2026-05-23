@@ -1,0 +1,47 @@
+{
+  "skill_name": "opsx-apply",
+  "schema_version": "1.0.0",
+  "notes": "Evals re-run 2026-04-24 via skill-creator simulation (read-only general-purpose subagents). 6 subagent runs (3 evals × with_skill + without_skill). Benchmark: with_skill 83% vs without_skill 67% (+0.17 delta). Key finding: quality-gate eval reveals the skill runs composer check:strict post-all-tasks (not mid-task per the eval expectation). Model-guard is the strong differentiator (+100% vs 0%). See evals/workspace/iteration-1/benchmark.md for full stats.",
+  "runs": [
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation (read-only general-purpose subagent, no Edit/Write)",
+      "eval_id": "implement-tasks",
+      "score": 1.0,
+      "assertions": [
+        {"id": "Reads tasks.md and identifies pending tasks", "result": "pass", "note": "Via 'openspec instructions apply --change register-export --json' CLI output, not direct file read."},
+        {"id": "Implements tasks sequentially", "result": "pass", "note": "Step 7 'For each pending task' loop with numbered progress output."},
+        {"id": "Writes tests for PHP services", "result": "pass", "note": "Step 7 mandates PHPUnit tests for every new service/controller (at least 3 test methods)."},
+        {"id": "Runs composer check:strict after changes", "result": "pass", "note": "Step 9 post all tasks."},
+        {"id": "Updates GitHub issue checkboxes", "result": "pass", "note": "Immediately after each task via plan.json tracking_issue lookup."}
+      ]
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation",
+      "eval_id": "quality-gate",
+      "score": 0.5,
+      "assertions": [
+        {"id": "Runs composer check:strict", "result": "pass"},
+        {"id": "Blocks on failures", "result": "fail", "note": "SKILL GAP: quality gate runs post-all-tasks (Step 9), not between tasks. A task-1 lint failure does not block task-2 — it surfaces only at Step 9."},
+        {"id": "Fixes issues before moving to next task", "result": "fail", "note": "Fixes happen at Step 9 after the full implementation loop. Per-task blocking is not how the skill is structured."},
+        {"id": "Does NOT skip quality checks", "result": "pass"}
+      ],
+      "notes": "Eval expectations assume per-task quality blocking. Skill consolidates checks post-loop. Either update eval expectations to match (post-loop is valid) or add lightweight lint-after-each-task sub-step."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation",
+      "eval_id": "model-guard",
+      "score": 1.0,
+      "assertions": [
+        {"id": "Detects Haiku", "result": "pass", "note": "Step 0 — first instruction before any other action."},
+        {"id": "Stops immediately", "result": "pass"},
+        {"id": "Suggests Sonnet/Opus", "result": "pass", "note": "Names both with exact /model commands. Guard bypassed for HYDRA_HEADLESS=1 (Haiku builder intentionally opts out)."}
+      ]
+    }
+  ]
+}

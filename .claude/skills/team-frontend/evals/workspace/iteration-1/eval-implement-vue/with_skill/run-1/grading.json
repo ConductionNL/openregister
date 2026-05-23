@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Uses @conduction/nextcloud-vue components (CnDataTable, CnDetailPage)",
+      "passed": true,
+      "evidence": "SKILL.md Step 2 @conduction/nextcloud-vue section: 'All Conduction apps MUST use the shared @conduction/nextcloud-vue library.' CnDataTable and CnDetailViewLayout (analogous to CnDetailPage) are listed. Admin settings MUST use CnSettingsSection. The requirement is explicit and unconditional."
+    },
+    {
+      "text": "Uses Pinia stores with useObjectStore",
+      "passed": true,
+      "evidence": "SKILL.md Step 2: 'Pinia stores extend useObjectStore from the library (with appropriate plugins).' Pinia Store Pattern references pinia-store-pattern.md. The tech stack section confirms 'Pinia for state management (NOT Vuex)'."
+    },
+    {
+      "text": "Uses Vue Router for navigation",
+      "passed": true,
+      "evidence": "SKILL.md Step 2 Router Pattern shows `new Router({ mode: 'history', ... })` with base path, routes, and catch-all redirect. Rules: 'History mode (not hash). Base path includes /index.php/apps/{appname}/'. Vue Router v3 is in the tech stack."
+    },
+    {
+      "text": "Follows scoped styles rule",
+      "passed": true,
+      "evidence": "SKILL.md Step 2: 'Use <style scoped> — never unscoped styles.' CSS & Styling Rules section: '<style scoped> on all components.' The code example shows a component with `<style scoped>` block."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "All four Vue implementation expectations are explicitly specified: @conduction/nextcloud-vue requirement, useObjectStore for Pinia, Vue Router history mode, and scoped styles. These are core Conduction frontend conventions that naive Claude would not know.",
+  "timing": {
+    "executor_duration_seconds": 380
+  }
+}

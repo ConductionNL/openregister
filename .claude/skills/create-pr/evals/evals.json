@@ -1,0 +1,110 @@
+{
+  "skill_name": "create-pr",
+  "version": "1.1.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-24",
+  "evals": [
+    {
+      "id": "standard-pr",
+      "description": "Create PR from feature branch",
+      "prompt": "Run /create-pr",
+      "setup": "On feature branch with commits",
+      "expected_output": "Should detect repo, pick target, create PR",
+      "expectations": [
+        "Detects current repo and branch",
+        "Recommends target branch (feature→dev, dev→beta, etc.)",
+        "Runs local quality checks if applicable",
+        "Creates PR via gh CLI with proper format"
+      ]
+    },
+    {
+      "id": "branch-protection",
+      "description": "Respect branch protection",
+      "prompt": "Create PR targeting main",
+      "setup": "main has branch protection",
+      "expected_output": "Should validate protection rules",
+      "expectations": [
+        "Detects branch protection on target",
+        "Validates required status checks exist",
+        "Warns about bootstrap deadlock if checks missing",
+        "Suggests alternative target if needed"
+      ]
+    },
+    {
+      "id": "quality-checks",
+      "description": "Run local checks before PR",
+      "prompt": "Create PR with failing checks",
+      "setup": "Code has quality issues",
+      "expected_output": "Should block PR on failures",
+      "expectations": [
+        "Runs composer check:strict for PHP apps",
+        "Runs npm lint for frontend",
+        "Reports failures before creating PR",
+        "Suggests fixes",
+        "Does NOT create PR with failing checks"
+      ]
+    },
+    {
+      "id": "conventional-commits-title",
+      "description": "PR title uses Conventional Commits prefix",
+      "prompt": "Create PR from feature/add-search branch",
+      "setup": "Repo has merged PRs with feat:/fix:/docs: prefixes",
+      "expected_output": "Should detect convention and apply prefix to title",
+      "expectations": [
+        "Runs gh pr list --state merged to detect title convention",
+        "Drafts title with Conventional Commits prefix (feat:, fix:, docs:, chore:)",
+        "Does NOT draft a title with no prefix",
+        "Test plan uses plain bullets, never - [ ] checkboxes"
+      ]
+    },
+    {
+      "id": "merge-freshness-warning",
+      "description": "Warn when target branch is far ahead",
+      "prompt": "Create PR from a branch that is 30+ commits behind development",
+      "setup": "Source branch diverged significantly from target; git log shows 30+ commits ahead on target",
+      "expected_output": "Should warn and offer merge/rebase before drafting",
+      "expectations": [
+        "Computes how many commits target is ahead of source",
+        "Warns prominently when target is >20 commits ahead",
+        "Offers merge/rebase/continue-anyway options",
+        "Does NOT silently proceed to PR draft with a bloated diff"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "create a PR",
+      "make a pull request",
+      "create-pr",
+      "push and create PR",
+      "open a pull request",
+      "run /create-pr",
+      "I need to create a PR",
+      "can you open a PR for this branch",
+      "submit my changes as a pull request",
+      "create a PR from this feature branch",
+      "make a PR targeting development",
+      "push and open a PR",
+      "create pull request for the current changes",
+      "open PR on GitHub",
+      "I'm done with the feature, create a PR"
+    ],
+    "should_not_trigger": [
+      "review a PR",
+      "merge a PR",
+      "close a PR",
+      "push to remote",
+      "check PR comments",
+      "list open PRs",
+      "assign a reviewer to the PR",
+      "approve the PR",
+      "check CI status on the PR",
+      "what is branch protection",
+      "explain the branching strategy",
+      "sync docs",
+      "clean the environment",
+      "run tests before PR",
+      "update the CHANGELOG"
+    ]
+  }
+}
