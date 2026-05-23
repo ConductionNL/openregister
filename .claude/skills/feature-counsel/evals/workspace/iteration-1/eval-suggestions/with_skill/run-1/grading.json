@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "Suggests features with clear user value",
+      "passed": true,
+      "evidence": "The sub-agent output format requires a 'Missing Features' table with columns: Feature, Priority (MUST/SHOULD/COULD), 'Why I need this' (in persona voice), and Spec section. The synthesis report then groups these into Recommended Actions (MUST/SHOULD/COULD) with rationale. SKILL.md enforces structured, value-linked suggestions by design."
+    },
+    {
+      "text": "Links suggestions to personas who need them",
+      "passed": true,
+      "evidence": "The synthesis template's 'Consensus Features' table includes a 'Suggested by' column listing persona names. The 'Feature Suggestions by Category' tables also include a 'Personas' column. Every suggestion carries persona attribution throughout the report."
+    },
+    {
+      "text": "Identifies compliance gaps (GEMMA, BIO2)",
+      "passed": true,
+      "evidence": "Each agent's output format includes a 'Compliance/Standards Gaps' section with columns for Gap, Standard/Requirement (explicitly mentioning GEMMA, BIO2, NLGov, etc.), Impact level, and Recommendation. Agent 4 (Noor Yilmaz) focuses on BIO2/ENSIA/AVG; Agent 5 (Annemarie de Vries) focuses on GEMMA/Common Ground/NLGov."
+    },
+    {
+      "text": "Suggests OpenSpec changes for top features",
+      "passed": true,
+      "evidence": "SKILL.md Step 3 synthesis template includes a 'Potential OpenSpec Changes' section — a table of Change Name, Description, Related Personas, and Estimated Complexity — explicitly tied to '/opsx-new'. Step 4 also instructs: 'Offer to create OpenSpec changes for any of the suggested features'."
+    }
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "The skill's structured output templates ensure every suggestion is specific, persona-attributed, compliance-aware, and actionable as an OpenSpec change. All four quality expectations are met by the skill's prescribed output format.",
+  "timing": {"executor_duration_seconds": 190}
+}

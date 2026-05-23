@@ -1,0 +1,83 @@
+{
+  "skill_name": "opsx-apply",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-24",
+  "evals": [
+    {
+      "id": "implement-tasks",
+      "description": "Implement tasks from change",
+      "prompt": "Run /opsx-apply on register-export",
+      "setup": "Change has tasks.md with pending tasks",
+      "expected_output": "Should implement tasks in order",
+      "expectations": [
+        "Reads tasks.md and identifies pending tasks",
+        "Implements tasks sequentially",
+        "Writes tests for PHP services",
+        "Runs composer check:strict after changes",
+        "Updates GitHub issue checkboxes"
+      ]
+    },
+    {
+      "id": "quality-gate",
+      "description": "Block on quality failures",
+      "prompt": "Apply when code fails quality checks",
+      "setup": "Implementation has lint errors",
+      "expected_output": "Should fix before continuing",
+      "expectations": [
+        "Runs composer check:strict",
+        "Blocks on failures",
+        "Fixes issues before moving to next task",
+        "Does NOT skip quality checks"
+      ]
+    },
+    {
+      "id": "model-guard",
+      "description": "Requires Sonnet/Opus",
+      "prompt": "Run on Haiku",
+      "setup": "Haiku model",
+      "expected_output": "Should block",
+      "expectations": [
+        "Detects Haiku",
+        "Stops immediately",
+        "Suggests Sonnet/Opus"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "apply the change",
+      "implement the tasks",
+      "opsx apply register-export",
+      "start implementing",
+      "build the change",
+      "/opsx-apply",
+      "can you apply the opsx change?",
+      "let's start coding the change",
+      "work through the tasks.md",
+      "go ahead and implement",
+      "run apply on register-export",
+      "execute the pending tasks",
+      "apply the open tasks",
+      "code up the change",
+      "put the change into code"
+    ],
+    "should_not_trigger": [
+      "verify the change",
+      "archive the change",
+      "explore the change",
+      "apply app config",
+      "create a PR",
+      "what does opsx-apply do?",
+      "show me the tasks",
+      "explain the opsx workflow",
+      "apply CSS styles",
+      "apply a git patch",
+      "opsx-verify",
+      "opsx-archive",
+      "opsx-new",
+      "list pending changes",
+      "propose a new change"
+    ]
+  }
+}

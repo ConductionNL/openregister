@@ -1,0 +1,84 @@
+{
+  "skill_name": "opsx-archive",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-24",
+  "evals": [
+    {
+      "id": "archive-complete",
+      "description": "Archive verified change",
+      "prompt": "Run /opsx-archive on register-export",
+      "setup": "Change verified, all tasks done",
+      "expected_output": "Should archive and sync",
+      "expectations": [
+        "Validates all artifacts complete",
+        "Syncs delta specs to main specs",
+        "Converts test cases to reusable scenarios",
+        "Creates PR to development branch",
+        "Closes GitHub tracking issue"
+      ]
+    },
+    {
+      "id": "block-incomplete",
+      "description": "Block on incomplete change",
+      "prompt": "Archive a change with pending tasks",
+      "setup": "Tasks not all complete",
+      "expected_output": "Should refuse to archive",
+      "expectations": [
+        "Detects incomplete tasks",
+        "Reports which tasks remain",
+        "Suggests running /opsx-apply first",
+        "Does NOT archive incomplete changes"
+      ]
+    },
+    {
+      "id": "spec-sync",
+      "description": "Sync delta specs correctly",
+      "prompt": "Archive change with delta specs",
+      "setup": "Change has ADDED and MODIFIED spec sections",
+      "expected_output": "Should merge deltas into main specs",
+      "expectations": [
+        "Applies ADDED requirements to main specs",
+        "Applies MODIFIED requirements",
+        "Handles REMOVED requirements",
+        "Preserves existing content not mentioned in delta"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "archive the change",
+      "complete the change",
+      "opsx archive register-export",
+      "finalize the change",
+      "close the change",
+      "/opsx-archive",
+      "mark the change as done",
+      "wrap up the change",
+      "finish and archive",
+      "the change is done, archive it",
+      "let's archive register-export",
+      "close out this change",
+      "ship and archive the change",
+      "archive when verified",
+      "seal the change"
+    ],
+    "should_not_trigger": [
+      "verify the change",
+      "apply the change",
+      "start new change",
+      "create a PR",
+      "sync specs",
+      "what does opsx-archive do?",
+      "opsx-verify",
+      "opsx-apply",
+      "opsx-bulk-archive",
+      "bulk archive all changes",
+      "show archived changes",
+      "list completed changes",
+      "explain the archive step",
+      "archive a file",
+      "archive the repository"
+    ]
+  }
+}

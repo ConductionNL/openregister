@@ -1,0 +1,12 @@
+{
+  "eval_id": "conventional-commits-title",
+  "eval_name": "conventional-commits-title",
+  "prompt": "Create PR from feature/skill-improvement branch",
+  "setup": "Run on current branch; check merged PR history in ConductionNL/hydra for title convention",
+  "assertions": [
+    "Runs gh pr list --state merged to detect title convention",
+    "Drafts title with Conventional Commits prefix (feat:, fix:, docs:, chore:)",
+    "Does NOT draft a title with no prefix",
+    "Test plan uses plain bullets, never - [ ] checkboxes"
+  ]
+}

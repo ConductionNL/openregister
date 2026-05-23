@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Runs available test suites",
+      "passed": true,
+      "evidence": "Running PHPUnit and Jest is general knowledge if the user asks for it. Naive Claude would run tests if instructed. However, it would not know the specific docker exec workflow, phpunit.xml suites, or composer test-all command."
+    },
+    {
+      "text": "Reports coverage for changed code",
+      "passed": false,
+      "evidence": "Without the skill's coverage gate (75% line/method), coverage reporting is not systematic. Naive Claude might report general coverage numbers if the coverage tool outputs them, but would not know which files to focus on for changed code coverage."
+    },
+    {
+      "text": "Identifies untested code paths",
+      "passed": true,
+      "evidence": "Identifying untested code paths is a general QA capability. If coverage output shows uncovered lines, naive Claude would identify them."
+    },
+    {
+      "text": "Suggests specific tests to add",
+      "passed": true,
+      "evidence": "Suggesting tests for uncovered code is general Claude behavior when analyzing coverage output."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "notes": "Running tests, identifying untested paths, and suggesting additions are general capabilities. The structured 75% gate and multi-suite protocol are skill-specific. Without the skill, coverage reporting lacks systematic thresholds.",
+  "timing": {
+    "executor_duration_seconds": 20
+  }
+}

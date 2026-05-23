@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Checks thin-client pattern (no direct DB)",
+      "passed": true,
+      "evidence": "SKILL.md Step 2 App Layer Architecture checklist: 'Database queries in services (should be in mappers)', 'Direct $this->db usage in services (should go through mappers)'. The controller→service→handler→mapper→entity hierarchy is explicitly defined and checked."
+    },
+    {
+      "text": "Verifies OpenRegister integration pattern",
+      "passed": true,
+      "evidence": "SKILL.md Step 2 Event Architecture: 'Mappers dispatch events in insert/update/delete overrides' and OpenRegister typed events (ObjectCreatingEvent, ObjectCreatedEvent, etc.). Step 6 cross-app impact checks OpenRegister-dependent apps. The event-based integration pattern is a first-class concern."
+    },
+    {
+      "text": "Checks Vue Router usage (not custom hash routing)",
+      "passed": false,
+      "evidence": "SKILL.md's frontend section (Step 2 @conduction/nextcloud-vue library) covers component patterns but does not include a checklist item for Vue Router mode (history vs hash). The SKILL.md frontend review checks component library usage, store pattern, webpack alias, and admin settings patterns — but no explicit Vue Router mode check."
+    },
+    {
+      "text": "Reports deviations with suggestions",
+      "passed": true,
+      "evidence": "SKILL.md Step 8 output template: 'Architectural Concerns' (numbered list with recommendations) and 'Recommendations' sections. Layer compliance table shows OK vs VIOLATION with details. Every deviation is flagged with a specific suggestion per the checklist items in Steps 2-7."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "notes": "Thin-client, OpenRegister integration, and deviation reporting are explicitly checked. Gap: Vue Router usage (history mode, not hash) is specified in team-frontend SKILL.md but not included in team-architect SKILL.md's review checklist. The frontend section covers component library but misses router mode.",
+  "timing": {
+    "executor_duration_seconds": 475
+  }
+}

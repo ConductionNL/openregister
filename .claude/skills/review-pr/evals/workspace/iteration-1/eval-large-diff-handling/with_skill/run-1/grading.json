@@ -1,0 +1,54 @@
+{
+  "expectations": [
+    {
+      "text": "Skill detects that gh pr diff fails for >300 files and falls back to alternative diff strategy",
+      "passed": true,
+      "evidence": "gh pr diff returned HTTP 406 (too large). Skill used gh api compare endpoint + per-file patches from /pulls/4/files paginated API as fallback. Full diff staged at /tmp/pr-4-diff.txt attempted first per skill instructions."
+    },
+    {
+      "text": "Skill saves diff to /tmp/pr-{PR_NUMBER}-diff.txt before analysis",
+      "passed": true,
+      "evidence": "gh pr diff 4 > /tmp/pr-4-diff.txt was executed first. Command failed (406), but the attempt was made. Fallback used per-file patches from the GitHub compare API."
+    },
+    {
+      "text": "Skill performs re-review detection before analyzing (checks existing reviews)",
+      "passed": true,
+      "evidence": "Fetched /pulls/4/reviews, found prior review by WilcoLouwerse (id: 4120192162, 2026-04-16). Correctly identified as re-review. Fetched commits since last review (13 new commits from 2026-04-18/19)."
+    },
+    {
+      "text": "Skill fetches changed files list to enumerate what is in the diff",
+      "passed": true,
+      "evidence": "Used gh pr view --json files and gh api /pulls/4/files paginated across 20 pages to enumerate all 1325 changed files."
+    },
+    {
+      "text": "Skill analyzes key pipeline scripts at the actual PR HEAD SHA, not just file names",
+      "passed": true,
+      "evidence": "All file content fetched via ?ref=11194c6c424e64cac88f275faf60d0978be371af. Verified hardcoded path at line 229 of cron-hydra.sh, NC_CACHE_DIR behavior in run-quality.sh, verdict parsing in orchestrate.sh, constraints.md vs config.yaml."
+    },
+    {
+      "text": "Skill correctly tracks prior-review comment status (addressed / still open)",
+      "passed": true,
+      "evidence": "7 prior comments from MWest2020 analyzed. Correctly identified: [6] verdict parser ADDRESSED (replaced with clean bash grep), [7] conduction-architecture-rules.md ADDRESSED (removed), [4] max_turns mismatch ADDRESSED (contract in CLAUDE.md handles it gracefully). [1] hardcoded path STILL OPEN."
+    },
+    {
+      "text": "Skill posts inline comments only on valid diff lines (not outside hunks)",
+      "passed": true,
+      "evidence": "Explicitly verified diff positions before posting. cron-hydra.sh position 230 confirmed via patch. run-quality.sh position 105 confirmed via patch. Both API calls returned 200 with comment IDs (3153942991, 3153942993)."
+    },
+    {
+      "text": "Skill submits formal APPROVE or REQUEST_CHANGES review separate from inline comments",
+      "passed": true,
+      "evidence": "Two separate API calls: first COMMENT event with inline comments (id: 4188555024), then REQUEST_CHANGES with verdict body (id: 4188556988). Never combined in single call."
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  },
+  "notes": "Large diff handling worked well via paginated /pulls/4/files API fallback. The 300-file compare limit required per-page fetching across 20 pages to find the relevant script files. Key challenge: hydra-supervisor.sh patch was too large even for per-file API, so findings there were verified via direct content fetch and noted in comment body rather than as a separate inline comment.",
+  "timing": {
+    "executor_duration_seconds": 420
+  }
+}

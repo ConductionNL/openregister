@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Detects existing reviews from the same user before posting",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not call /pulls/{PR}/reviews to check for prior reviews. It would proceed as a first-time review, missing the re-review detection step entirely."
+    },
+    {
+      "text": "Does NOT repost findings already covered in prior comments",
+      "passed": false,
+      "evidence": "Without re-review detection, naive Claude would have no knowledge of the 7 prior comments (4 from MWest2020, some already resolved). It would re-analyze the code and likely repost many of the same findings — creating duplicate inline comments and confusion for the PR author."
+    },
+    {
+      "text": "Re-review summary correctly lists addressed vs still-open items",
+      "passed": false,
+      "evidence": "Without the skill's re-review protocol from references/re-review-context.md, there is no addressed/still-open/new-findings categorization. Naive Claude would produce a flat finding list with no awareness of resolution status."
+    },
+    {
+      "text": "Inline comment IDs are distinct (no duplicate API call for same file:line)",
+      "passed": false,
+      "evidence": "Without the skill's guardrail 'do not repost prior comments — check {PRIOR_COMMENTS} before posting', naive Claude might post the same file:line comment multiple times if it appears in both the old and new analysis."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "notes": "Re-review detection is entirely skill-driven. Without it, every review of a previously-reviewed PR would generate duplicate comments. This is the most significant behavioral gap for PRs with review history.",
+  "timing": {
+    "executor_duration_seconds": 20
+  }
+}

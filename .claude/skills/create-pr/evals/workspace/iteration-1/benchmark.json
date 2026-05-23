@@ -1,0 +1,457 @@
+{
+  "metadata": {
+    "skill_name": "create-pr",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-24T14:35:25Z",
+    "evals_run": [
+      "branch-protection",
+      "conventional-commits-title",
+      "merge-freshness-warning",
+      "quality-checks",
+      "standard-pr"
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": "branch-protection",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.25,
+        "passed": 1,
+        "failed": 3,
+        "total": 4,
+        "time_seconds": 246.0,
+        "tokens": 41230,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Detects branch protection on target",
+          "passed": false,
+          "evidence": "PARTIAL: correctly found no classic protection on main (404 API). CLAUDE.md-documented 2-review org ruleset is invisible via API \u2014 mismatch not detected."
+        },
+        {
+          "text": "Validates required status checks exist",
+          "passed": false,
+          "evidence": "PARTIAL: correctly found no required checks on main (only beta ruleset has checks). Accurate result, but org-level enforcement gap undetected."
+        },
+        {
+          "text": "Warns about bootstrap deadlock if checks missing",
+          "passed": true,
+          "evidence": "Correctly NOT triggered \u2014 no required checks on main means no deadlock scenario. Skill correctly skipped this warning."
+        },
+        {
+          "text": "Suggests alternative target if needed",
+          "passed": false,
+          "evidence": "FAIL: skill only scans local .github/workflows/ \u2014 org-level branch-protection.yml (ConductionNL/.github) forbids feature/*\u2192main but is invisible to the scan. No alternative target suggested."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "conventional-commits-title",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 118.1,
+        "tokens": 41798,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Runs gh pr list --state merged to detect title convention",
+          "passed": true,
+          "evidence": "Skill's Step 6 explicitly requires this command; ran it and found 10 merged PRs all following type(scope): description pattern."
+        },
+        {
+          "text": "Drafts title with Conventional Commits prefix (feat:, fix:, docs:, chore:)",
+          "passed": true,
+          "evidence": "Drafted 'docs(skills): add review-pr skill + promote learnings across skill library' \u2014 correct type(scope): format matching detected convention."
+        },
+        {
+          "text": "Does NOT draft a title with no prefix",
+          "passed": true,
+          "evidence": "Step 6 pre-draft checklist + learnings.md + two 'Mistakes to Avoid' entries all enforce prefix requirement."
+        },
+        {
+          "text": "Test plan uses plain bullets, never - [ ] checkboxes",
+          "passed": true,
+          "evidence": "SKILL.md Step 6 template uses plain '- ' bullets. Learnings.md reinforces this in three separate places."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "merge-freshness-warning",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 207.9,
+        "tokens": 32539,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Computes how many commits target is ahead of source",
+          "passed": true,
+          "evidence": "Used git rev-list HEAD..origin/{TARGET_BRANCH} --count; found AHEAD=8 (development 8 commits ahead of source)."
+        },
+        {
+          "text": "Warns prominently when target is >20 commits ahead",
+          "passed": true,
+          "evidence": "Threshold correctly defined at >20. AHEAD=8 so warning not triggered this run \u2014 but threshold verified to exist and would fire at 21+."
+        },
+        {
+          "text": "Offers merge/rebase/continue-anyway options",
+          "passed": true,
+          "evidence": "Three options hardcoded in skill; would be offered when threshold breached. Not triggered this run (AHEAD=8 < 20)."
+        },
+        {
+          "text": "Does NOT silently proceed to PR draft with a bloated diff",
+          "passed": true,
+          "evidence": "Explicit stop-and-ask guard exists before continuing when threshold breached. Correctly not triggered at AHEAD=8."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "quality-checks",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 317.7,
+        "tokens": 43118,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Runs composer check:strict for PHP apps",
+          "passed": true,
+          "evidence": "N/A correctly handled: no PHP files or composer.json in hydra. Skill skipped via Step 4a workflow inspection."
+        },
+        {
+          "text": "Runs npm lint for frontend",
+          "passed": true,
+          "evidence": "N/A correctly handled: no package.json or JS/TS source. Skill skipped correctly."
+        },
+        {
+          "text": "Reports failures before creating PR",
+          "passed": true,
+          "evidence": "Step 4f: ShellCheck found 7 real errors (SC2168, SC1125 in orchestrate.sh, hydra-supervisor.sh, cron-spec-from-issue.sh, hydra-label.sh). All surfaced with file+line+rule before PR creation."
+        },
+        {
+          "text": "Suggests fixes",
+          "passed": true,
+          "evidence": "Step 4f offers 'Fix issues first, then re-run' as first option. Errors are actionable: move local declarations inside functions (SC2168), fix em-dash in shellcheck directives (SC1125)."
+        },
+        {
+          "text": "Does NOT create PR with failing checks",
+          "passed": true,
+          "evidence": "Hard-stop at Step 4f requires explicit user input; no auto-proceed path on failures. PR body would include \u26a0\ufe0f warning if user explicitly overrides."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "standard-pr",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 369.2,
+        "tokens": 50297,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Detects current repo and branch",
+          "passed": true,
+          "evidence": "Step 0/1: detected ConductionNL/hydra and feature/skill-improvement correctly."
+        },
+        {
+          "text": "Recommends target branch (feature\u2192dev, dev\u2192beta, etc.)",
+          "passed": true,
+          "evidence": "Step 3: recommended 'development' \u2014 the only valid target for a feature/* branch per branching strategy table."
+        },
+        {
+          "text": "Runs local quality checks if applicable",
+          "passed": true,
+          "evidence": "Step 4 reached; CI workflows identified (ShellCheck, hydra-review); interactive prompt skipped in eval mode as expected."
+        },
+        {
+          "text": "Creates PR via gh CLI with proper format (or detects existing PR)",
+          "passed": true,
+          "evidence": "Step 3.5: PR #184 detected via gh pr list; offered view/update/create-duplicate options; no duplicate created."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "branch-protection",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 92.4,
+        "tokens": 30209,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Detects branch protection on target",
+          "passed": false,
+          "evidence": "PARTIAL: called the API endpoint, got 404 (correct result), but no systematic fallback to check rulesets or org-level rules without skill guidance."
+        },
+        {
+          "text": "Validates required status checks exist",
+          "passed": false,
+          "evidence": "No cross-referencing of required checks against actual CI workflows in .github/workflows/."
+        },
+        {
+          "text": "Warns about bootstrap deadlock if checks missing",
+          "passed": false,
+          "evidence": "No awareness of the deadlock scenario \u2014 not attempted without skill."
+        },
+        {
+          "text": "Suggests alternative target if needed",
+          "passed": false,
+          "evidence": "No logic to surface the development convention from CLAUDE.md or warn that feature/*\u2192main bypasses standard flow."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "conventional-commits-title",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 57.9,
+        "tokens": 27697,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Runs gh pr list --state merged to detect title convention",
+          "passed": false,
+          "evidence": "Did not run this command. Inferred convention from branch commit messages instead \u2014 different data source, less reliable."
+        },
+        {
+          "text": "Drafts title with Conventional Commits prefix (feat:, fix:, docs:, chore:)",
+          "passed": true,
+          "evidence": "Drafted 'docs(skills): improve skill library with review-pr, learnings promotion, and eval updates' \u2014 correct prefix inferred from commit history."
+        },
+        {
+          "text": "Does NOT draft a title with no prefix",
+          "passed": true,
+          "evidence": "Prefix present in drafted title."
+        },
+        {
+          "text": "Test plan uses plain bullets, never - [ ] checkboxes",
+          "passed": true,
+          "evidence": "N/A for this title-only task; no test plan drafted."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "merge-freshness-warning",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 72.0,
+        "tokens": 27597,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Computes how many commits target is ahead of source",
+          "passed": false,
+          "evidence": "PARTIAL: ran the divergence check and got the number, but did not surface it structurally in the output."
+        },
+        {
+          "text": "Warns prominently when target is >20 commits ahead",
+          "passed": false,
+          "evidence": "Baseline treats divergence as informational, not a gate. Would mention in passing but not block or present structured options."
+        },
+        {
+          "text": "Offers merge/rebase/continue-anyway options",
+          "passed": false,
+          "evidence": "No structured choice presented \u2014 baseline would proceed directly to PR draft."
+        },
+        {
+          "text": "Does NOT silently proceed to PR draft with a bloated diff",
+          "passed": false,
+          "evidence": "Baseline would silently proceed regardless of divergence count."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "quality-checks",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 164.3,
+        "tokens": 42804,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Runs composer check:strict for PHP apps",
+          "passed": true,
+          "evidence": "N/A: no PHP. Baseline correctly skipped."
+        },
+        {
+          "text": "Runs npm lint for frontend",
+          "passed": true,
+          "evidence": "N/A: no package.json. Baseline correctly skipped."
+        },
+        {
+          "text": "Reports failures before creating PR",
+          "passed": true,
+          "evidence": "Surfaced manifests/network-policy.yaml multi-document YAML issue before any PR action."
+        },
+        {
+          "text": "Suggests fixes",
+          "passed": false,
+          "evidence": "PARTIAL: explained the YAML issue but gave no concrete fix command. Weak compared to skill's Step 4f which provides actionable remediation."
+        },
+        {
+          "text": "Does NOT create PR with failing checks",
+          "passed": true,
+          "evidence": "No PR created; would ask user to confirm before proceeding."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": "standard-pr",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 231.7,
+        "tokens": 28123,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Detects current repo and branch",
+          "passed": true,
+          "evidence": "Ran git branch + gh repo view; identified ConductionNL/hydra and feature/skill-improvement."
+        },
+        {
+          "text": "Recommends target branch (feature\u2192dev, dev\u2192beta, etc.)",
+          "passed": false,
+          "evidence": "PARTIAL: detected existing PR targets development (correct) but did not independently derive the recommendation \u2014 relied on the existing PR's base."
+        },
+        {
+          "text": "Runs local quality checks if applicable",
+          "passed": true,
+          "evidence": "N/A for docs-only changes; baseline correctly skipped checks."
+        },
+        {
+          "text": "Creates PR via gh CLI with proper format (or detects existing PR)",
+          "passed": true,
+          "evidence": "PR #184 detected via gh pr list --head; no duplicate created."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.85,
+        "stddev": 0.3354,
+        "min": 0.25,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 251.78,
+        "stddev": 97.4193,
+        "min": 118.1,
+        "max": 369.2
+      },
+      "tokens": {
+        "mean": 41796.4,
+        "stddev": 6325.0908,
+        "min": 32539,
+        "max": 50297
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.46,
+        "stddev": 0.4204,
+        "min": 0.0,
+        "max": 0.8
+      },
+      "time_seconds": {
+        "mean": 123.66,
+        "stddev": 72.9633,
+        "min": 57.9,
+        "max": 231.7
+      },
+      "tokens": {
+        "mean": 31286.0,
+        "stddev": 6525.3058,
+        "min": 27597,
+        "max": 42804
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.39",
+      "time_seconds": "+128.1",
+      "tokens": "+10510"
+    }
+  },
+  "notes": []
+}

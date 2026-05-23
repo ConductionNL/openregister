@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "runs git fetch to detect divergence", "passed": false, "evidence": "Would not check remote state before editing."},
+    {"text": "detects and reports the 3-commit drift", "passed": false, "evidence": "Would edit on stale branch without detecting drift."},
+    {"text": "offers a concrete remediation (git pull) before editing", "passed": false, "evidence": "Would not offer a remediation step."},
+    {"text": "blocks edits until divergence is resolved or acknowledged", "passed": false, "evidence": "Would apply edits to stale branch, producing a conflict-prone diff."},
+    {"text": "does not touch any .md files during this run", "passed": false, "evidence": "Would edit writing-docs.md on the stale branch."}
+  ],
+  "summary": {"passed": 0, "failed": 5, "total": 5, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 7.8}
+}

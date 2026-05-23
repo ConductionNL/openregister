@@ -1,0 +1,33 @@
+{
+  "eval_id": 2,
+  "eval_name": "all-perspectives",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Spawns functional, UX, performance, accessibility, security, API agents",
+      "passed": false,
+      "evidence": "No parallel agents spawned"
+    },
+    {
+      "text": "Agents run in parallel (not sequential)",
+      "passed": false,
+      "evidence": "Sequential/no agents"
+    },
+    {
+      "text": "Each agent produces independent findings",
+      "passed": false,
+      "evidence": "No findings produced \u2014 server was considered unreachable by the subagent (Bash artifact, not real state)"
+    },
+    {
+      "text": "Synthesizes results into unified report",
+      "passed": true,
+      "evidence": "Produced a structured multi-perspective report with per-perspective sections (even though all BLOCKED). References iteration-2 known issues for continuity."
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.25,
+    "passed": 1,
+    "failed": 3,
+    "total": 4
+  }
+}

@@ -1,0 +1,8 @@
+- ALL UI: CSS custom properties from NL Design System tokens. NO hardcoded colors, fonts, spacing.
+- Theme switching: support `nldesign` app's token sets (Rijkshuisstijl, Utrecht, municipality-specific).
+- Components: `@nextcloud/vue` primary. Custom components styled via NL Design tokens only.
+- Scoped styles: ALL `<style>` blocks MUST use `scoped` attribute.
+- WCAG AA mandatory: keyboard-navigable, labelled forms, color not sole conveyor, alt text on images.
+- Responsive: work from 320px to 1920px. Critical features accessible at 768px.
+- Specs: reference token names ("primary action color") NOT hex values. Include a11y verification in ACs.
+- Exception: PDF generation (docudesk) may use fixed dimensions. Admin screens MAY simplify but MUST meet WCAG AA.

@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-nc-input-labels.log
+[gate-12] nc-input-labels: FAIL — 1 NcSelect without inputLabel/ariaLabelCombobox — see /tmp/hydra-gate-nc-input-labels.log

@@ -1,0 +1,49 @@
+{
+  "skill_name": "team-architect",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-28 (simulation). 3 scenarios: review-design (4/4=1.0), adr-assessment (4/4=1.0), pattern-check (3/4=0.75). Gap in pattern-check: Vue Router mode (history, not hash) is not in team-architect's checklist — it's in team-frontend SKILL.md but not cross-referenced here. Without_skill scores: review-design 0.5, adr-assessment 0.5, pattern-check 0.5 — general architecture review is a Claude capability but Conduction/Dutch-gov specifics require the skill.",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "review-design",
+      "score": 1.0,
+      "assertions": [
+        {"id": "loads existing ADRs", "result": "pass", "note": "Step 1 reads 4 shared specs; Steps 3-7 load 3 reference files (dutch-gov-architecture-standards.md, nlgov-api-design-rules.md, bio2-security-checklist.md)."},
+        {"id": "evaluates design against architectural constraints", "result": "pass", "note": "Steps 2-7: 8 constraint categories with explicit checklists (layer, DI, events, frontend library, Dutch gov, NLGov API, data model, cross-app, security)."},
+        {"id": "checks OpenSpec rules compliance", "result": "pass", "note": "Step 1 reads change artifacts; Step 3 covers GEMMA/Common Ground/NLGov; Step 8 includes Dutch Government Standards table."},
+        {"id": "suggests improvements with reasoning", "result": "pass", "note": "Step 8 template: 'Architectural Concerns' + 'Recommendations' sections + 'Approved Deviations' with justification."}
+      ],
+      "notes": "Deep Dutch government standards coverage is the primary value: NORA/GEMMA, NLGov API 2.0, BIO2/NIS2, WCAG, AVG/GDPR — all with structured checklists."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "adr-assessment",
+      "score": 1.0,
+      "assertions": [
+        {"id": "identifies affected components", "result": "pass", "note": "Step 6: explicit dependency graph + per-component checklists (opencatalogi, softwarecatalog, openconnector, docudesk)."},
+        {"id": "evaluates trade-offs", "result": "pass", "note": "Step 8 'Architectural Concerns' + Step 5 migration vs schema trade-offs + 3 reference files for compliance trade-offs."},
+        {"id": "checks consistency with existing ADRs", "result": "pass", "note": "Step 1 reads 4 shared specs; Steps 3-4 check against Dutch gov + NLGov API standards."},
+        {"id": "recommends accept/revise/reject", "result": "pass", "note": "Step 8: 'APPROVE / REQUEST CHANGES / NEEDS DISCUSSION' three-option verdict at the top of the output template."}
+      ],
+      "notes": "ADR assessment maps directly to the skill's Steps 1-8 flow. Cross-app impact table is a first-class output."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "pattern-check",
+      "score": 0.75,
+      "assertions": [
+        {"id": "checks thin-client pattern (no direct DB)", "result": "pass", "note": "Step 2: 'Database queries in services (should be in mappers)', 'Direct $this->db usage in services'. Explicit checklist items."},
+        {"id": "verifies OpenRegister integration pattern", "result": "pass", "note": "Step 2 Event Architecture: typed events in mappers, ObjectCreatingEvent/ObjectCreatedEvent, cross-app event listeners."},
+        {"id": "checks Vue Router usage (not custom hash routing)", "result": "fail", "note": "SKILL.md frontend section covers @conduction/nextcloud-vue components and store patterns but does not include Vue Router mode (history vs hash) as a checklist item."},
+        {"id": "reports deviations with suggestions", "result": "pass", "note": "Step 8: Layer Compliance table (OK/VIOLATION per layer), Architectural Concerns, and Recommendations."}
+      ],
+      "notes": "Gap: Vue Router mode check is in team-frontend SKILL.md but not in team-architect's review checklist. Fix: add a Vue Router mode item to the frontend section of Step 2."
+    }
+  ]
+}

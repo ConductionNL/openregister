@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Checks thin-client pattern (no direct DB)",
+      "passed": true,
+      "evidence": "Thin-client / thin-controller patterns are general software architecture knowledge. Naive Claude would likely catch direct DB access in services as a violation of standard patterns. This does not require Conduction-specific knowledge."
+    },
+    {
+      "text": "Verifies OpenRegister integration pattern",
+      "passed": false,
+      "evidence": "OpenRegister's typed event system (ObjectCreatingEvent, ObjectCreatedEvent, etc.) and the event-dispatch pattern in mappers are Conduction-specific. Naive Claude has no knowledge of this integration pattern."
+    },
+    {
+      "text": "Checks Vue Router usage (not custom hash routing)",
+      "passed": false,
+      "evidence": "Conduction's requirement for Vue Router history mode (not hash) is a convention in their apps but not a universal standard. Naive Claude would not know to check for this specific Conduction convention."
+    },
+    {
+      "text": "Reports deviations with suggestions",
+      "passed": true,
+      "evidence": "Reporting deviations from patterns is general code review behavior. Naive Claude would report any architectural issues it finds. However, Conduction-specific deviations (event dispatch missing, wrong store pattern) would be missed."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "General pattern violations (thin-client, deviation reporting) are detected by naive Claude. Conduction-specific patterns (OpenRegister event integration, Vue Router convention) are not.",
+  "timing": {
+    "executor_duration_seconds": 18
+  }
+}

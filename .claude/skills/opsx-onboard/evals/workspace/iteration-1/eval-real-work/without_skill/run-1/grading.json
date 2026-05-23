@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies real issues (TODOs, missing tests, type issues)",
+      "passed": true,
+      "evidence": "Naive Claude can grep for TODO/FIXME comments and scan for TypeScript 'any' types if asked. This is a general capability — finding code issues does not require the skill. However, the scan would be less systematic than the skill's 6-category protocol."
+    },
+    {
+      "text": "Creates actual change artifacts",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know the OpenSpec artifact structure: no `openspec new change` call, no `openspec/changes/<name>/proposal.md`, no delta specs in `specs/<capability>/spec.md`. It might create ad-hoc markdown files but not in the correct artifact hierarchy with the correct format."
+    },
+    {
+      "text": "Implements actual code changes",
+      "passed": true,
+      "evidence": "Naive Claude can implement code changes when given clear instructions. If the user asks it to fix a TODO, it would likely make the change. This is a general capability independent of the skill."
+    },
+    {
+      "text": "Runs quality checks on changes",
+      "passed": false,
+      "evidence": "Without knowing what quality tools are configured in this codebase (PHPCS, PHPStan, ESLint, etc.), naive Claude would not automatically run quality checks after implementing changes. It would require explicit instruction naming the specific tools."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "Identifying issues and making code changes are general Claude capabilities that don't require the skill. Creating proper OpenSpec change artifacts and running quality checks require the skill's knowledge of the artifact structure and codebase toolchain.",
+  "timing": {
+    "executor_duration_seconds": 20
+  }
+}

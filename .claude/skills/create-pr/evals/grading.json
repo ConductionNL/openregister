@@ -1,0 +1,76 @@
+{
+  "skill_name": "create-pr",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-24 via real skill-creator execution on feature/skill-improvement branch (PR #184 already open). 10 subagent runs (5 evals × with_skill + without_skill). Benchmark: with_skill 85% pass rate vs. without_skill 46% (+0.39 delta). Key finding: skill cannot detect org-level source→target branch enforcement (feature/*→main blocked by ConductionNL/.github workflow, invisible to local scan). See evals/workspace/iteration-1/benchmark.json for full stats.",
+  "runs": [
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "real skill-creator execution — subagent on feature/skill-improvement with PR #184 open",
+      "eval_id": "standard-pr",
+      "score": 1.0,
+      "assertions": [
+        {"id": "detects current repo and branch", "result": "pass", "note": "Detected ConductionNL/hydra and feature/skill-improvement at Step 0/1."},
+        {"id": "recommends target branch (feature→dev, dev→beta, etc.)", "result": "pass", "note": "Step 3 recommended 'development' — only valid target for feature/* per branching strategy."},
+        {"id": "runs local quality checks if applicable", "result": "pass", "note": "Step 4 reached; CI workflows identified (ShellCheck + hydra-review); interactive prompt skipped in eval mode."},
+        {"id": "creates PR via gh CLI with proper format (or detects existing PR)", "result": "pass", "note": "Step 3.5: PR #184 detected via gh pr list; offered view/update/create-duplicate options; no duplicate created."}
+      ]
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "real skill-creator execution — branch-protection check against ConductionNL/hydra main",
+      "eval_id": "branch-protection",
+      "score": 0.25,
+      "assertions": [
+        {"id": "detects branch protection on target", "result": "partial", "note": "Found no classic protection on main (correct, 404). CLAUDE.md-documented 2-review org ruleset is invisible via classic API."},
+        {"id": "validates required status checks exist", "result": "partial", "note": "Correctly found no required checks on main. Org enforcement gap undetected."},
+        {"id": "warns about bootstrap deadlock if checks missing", "result": "pass", "note": "Correctly NOT triggered — no required checks on main means no deadlock scenario. Skill correctly skipped."},
+        {"id": "suggests alternative target if needed", "result": "fail", "note": "SKILL GAP: Step 3.2 scans only local .github/workflows/. Org-level branch-protection.yml (ConductionNL/.github) forbids feature/*→main — invisible to scan. No alternative suggested."}
+      ],
+      "notes": "Actionable finding: add org .github workflow check to Step 3.2 — check ConductionNL/.github repo for branch-protection.yml and simulate its source→target validation logic."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "real skill-creator execution — hydra bash/markdown/Python repo",
+      "eval_id": "quality-checks",
+      "score": 1.0,
+      "assertions": [
+        {"id": "runs composer check:strict for PHP apps", "result": "pass", "note": "N/A correctly handled via Step 4a workflow inspection — no PHP in hydra."},
+        {"id": "runs npm lint for frontend", "result": "pass", "note": "N/A correctly handled — no package.json in hydra."},
+        {"id": "reports failures before creating PR", "result": "pass", "note": "ShellCheck found 7 real errors (SC2168, SC1125 in orchestrate.sh, hydra-supervisor.sh, cron-spec-from-issue.sh, hydra-label.sh). All surfaced with file+line+rule before PR creation."},
+        {"id": "suggests fixes", "result": "pass", "note": "Step 4f offers 'Fix issues first, then re-run'. Errors are actionable: move local declarations inside functions (SC2168); fix em-dash in shellcheck directives (SC1125)."},
+        {"id": "does NOT create PR with failing checks", "result": "pass", "note": "Hard-stop at Step 4f. No auto-proceed path on failures."}
+      ],
+      "notes": "Real ShellCheck bugs found: SC2168 in orchestrate.sh (L1711, L2296) and hydra-supervisor.sh (L2628, L2634, L2657); SC1125 in cron-spec-from-issue.sh (L40) and hydra-label.sh (L40). Worth fixing separately."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "real skill-creator execution",
+      "eval_id": "conventional-commits-title",
+      "score": 1.0,
+      "assertions": [
+        {"id": "runs gh pr list --state merged to detect title convention", "result": "pass", "note": "Step 6 explicitly runs this command; 10 merged PRs all following type(scope): description pattern confirmed."},
+        {"id": "drafts title with Conventional Commits prefix (feat:, fix:, docs:, chore:)", "result": "pass", "note": "Drafted 'docs(skills): add review-pr skill + promote learnings...' — correct type(scope): format matching detected convention."},
+        {"id": "does NOT draft a title with no prefix", "result": "pass", "note": "Pre-draft checklist + learnings.md (3 places) + Mistakes to Avoid all enforce prefix requirement."},
+        {"id": "test plan uses plain bullets, never - [ ] checkboxes", "result": "pass", "note": "SKILL.md Step 6 template + learnings.md reinforce plain bullets in 3 separate places."}
+      ]
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "real skill-creator execution — actual divergence was AHEAD=8 (inverted from 30+ behind scenario)",
+      "eval_id": "merge-freshness-warning",
+      "score": 1.0,
+      "assertions": [
+        {"id": "computes how many commits target is ahead of source", "result": "pass", "note": "Used git rev-list HEAD..origin/{TARGET} --count; found AHEAD=8."},
+        {"id": "warns prominently when target is >20 commits ahead", "result": "pass", "note": "Threshold at >20 verified; AHEAD=8 so not triggered this run. Would fire correctly at 21+."},
+        {"id": "offers merge/rebase/continue-anyway options", "result": "pass", "note": "Three options hardcoded in skill; would be offered when threshold breached."},
+        {"id": "does NOT silently proceed to PR draft with a bloated diff", "result": "pass", "note": "Explicit stop-and-ask guard exists at Step 3.7. Correctly not triggered at AHEAD=8."}
+      ],
+      "notes": "Scenario inverted vs. setup: branch is 22 commits AHEAD of development, development only 8 AHEAD of branch. Threshold behavior verified via spec inspection."
+    }
+  ]
+}

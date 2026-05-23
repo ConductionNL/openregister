@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-modal-isolation.log
+[gate-13] modal-isolation: FAIL — 1 file(s) with inline modal/dialog — see /tmp/hydra-gate-modal-isolation.log

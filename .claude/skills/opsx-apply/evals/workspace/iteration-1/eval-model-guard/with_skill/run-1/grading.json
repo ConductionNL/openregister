@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "Detects Haiku", "passed": true, "evidence": "Step 0 (first instruction): 'Check the active model — On Haiku: stop immediately'. Model-guard is the very first step."},
+    {"text": "Stops immediately", "passed": true, "evidence": "Exact quote: 'stop immediately: This command requires Sonnet or Opus...'"},
+    {"text": "Suggests Sonnet/Opus", "passed": true, "evidence": "Stop message names both models with exact switch commands: /model sonnet or /model opus."}
+  ],
+  "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0},
+  "notes": "Guard is bypassed for headless/HYDRA_HEADLESS=1 (intentional — Haiku builder container opts out).",
+  "timing": {"executor_duration_seconds": 12.3}
+}

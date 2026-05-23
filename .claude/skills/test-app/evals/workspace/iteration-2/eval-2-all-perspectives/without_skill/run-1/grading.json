@@ -1,0 +1,33 @@
+{
+  "eval_id": 2,
+  "eval_name": "all-perspectives",
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "Spawns functional, UX, performance, accessibility, security, API agents",
+      "passed": false,
+      "evidence": "Agent did not spawn parallel sub-agents; performed all 6 perspective tests sequentially using curl"
+    },
+    {
+      "text": "Agents run in parallel (not sequential)",
+      "passed": false,
+      "evidence": "Sequential execution"
+    },
+    {
+      "text": "Each agent produces independent findings",
+      "passed": true,
+      "evidence": "Single agent did produce 6 distinct sets of findings (Functional, API, Security, Performance, Accessibility, UX) covering each perspective independently"
+    },
+    {
+      "text": "Synthesizes results into unified report",
+      "passed": true,
+      "evidence": "361-line report with sections per perspective, severity-graded findings (3 P0, 3 P1, 10 medium/low), unified summary"
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.5,
+    "passed": 2,
+    "failed": 2,
+    "total": 4
+  }
+}

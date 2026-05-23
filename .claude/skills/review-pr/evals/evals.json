@@ -1,0 +1,172 @@
+{
+  "skill_name": "review",
+  "version": "1.1.0",
+  "created": "2026-04-24",
+  "last_validated": "2026-04-24",
+  "baseline_score": "Without this skill, Claude posts a top-level summary comment with no inline placement, combines all findings into one block, and does not submit a formal review event (approve/request-changes).",
+  "evals": [
+    {
+      "id": "blocker-detection",
+      "description": "PR with regression and incomplete fix — should detect blockers and REQUEST_CHANGES",
+      "prompt": "Review this PR: https://github.com/ConductionNL/openregister/pull/1341",
+      "setup": "PR unifies RBAC condition matching. Has: deleted integration test masking regression, $in null guard missing while $nin/$ne are patched, claims in CHANGELOG that don't match code.",
+      "expected_output": "Posts inline 🔴 Blocker comments for the regression and the claim mismatch. Submits REQUEST_CHANGES. Does not APPROVE.",
+      "expectations": [
+        "Detects the deleted testEvaluateMatchConditionsResolvedRelation test as a masked regression",
+        "Identifies that operatorIn lacks a null guard while operatorNotIn has one",
+        "Posts each blocker as a separate inline comment on the correct file and line",
+        "Submits REQUEST_CHANGES formal review",
+        "Does NOT post blockers and concerns combined in one comment"
+      ]
+    },
+    {
+      "id": "concern-only-approve",
+      "description": "PR with concerns but no blockers — should APPROVE with concern comments",
+      "prompt": "Review PR #999 (hypothetical clean PR with minor issues)",
+      "setup": "PR has no regressions, no claim mismatches. Has: one missing @deprecated tag, one DocBlock that overstates the consolidation.",
+      "expected_output": "Posts 🟡 Concern inline comments. Submits APPROVE. Does not REQUEST_CHANGES.",
+      "expectations": [
+        "Correctly identifies no merge-blocking issues",
+        "Posts concerns as separate inline 🟡 comments",
+        "Submits APPROVE with a one-sentence summary",
+        "Summary does not claim the PR is perfect — notes what concerns were raised"
+      ]
+    },
+    {
+      "id": "large-diff-handling",
+      "description": "PR with 150KB+ diff — should use isolated analysis delegate and not exceed context",
+      "prompt": "Review a PR with 18 changed files and 2500 additions",
+      "setup": "Diff is ~156KB. Context window would overflow if diff is embedded inline.",
+      "expected_output": "Saves diff to /tmp/, passes the file path to an isolated analysis context, does not paste full diff into chat.",
+      "expectations": [
+        "Saves diff to temp file before analysis",
+        "Analysis delegate receives file path, not raw diff content",
+        "Analysis covers all 18 changed files, not just the first few",
+        "Comment line numbers are verified against diff hunks"
+      ]
+    },
+    {
+      "id": "line-number-accuracy",
+      "description": "Inline comments land on valid diff lines",
+      "prompt": "Review PR and post inline comments",
+      "setup": "PR has multiple hunks. Some target lines are in context; others are added lines.",
+      "expected_output": "All inline comments land on real diff lines. GitHub API does not return 422.",
+      "expectations": [
+        "Uses @@ hunk headers to compute new-file line numbers",
+        "Does not comment on lines outside the diff",
+        "Verifies comments after posting via gh api pulls/comments",
+        "If a target line is not in the diff, moves comment to nearest context line with a note"
+      ]
+    },
+    {
+      "id": "no-duplicate-comments",
+      "description": "Re-running review on same PR does not duplicate comments",
+      "prompt": "Review a PR that already has review comments from a previous run",
+      "setup": "PR already has 3 inline comments posted by a prior review run.",
+      "expected_output": "Does not post duplicate comments. Either skips or asks the user.",
+      "expectations": [
+        "Checks existing comments before posting",
+        "Does not post the same finding twice",
+        "Reports to user that comments already exist"
+      ]
+    },
+    {
+      "id": "rereview-nothing-new",
+      "description": "Re-review with no new commits or comments — should stop early",
+      "prompt": "Review a PR that was already reviewed and has had no changes since",
+      "setup": "PR has a prior review from the current user. No commits, no PR comments, no thread replies since that review.",
+      "expected_output": "Stops early and tells the user there is nothing to re-review.",
+      "expectations": [
+        "Fetches the user's prior review via gh api pulls/{n}/reviews",
+        "Fetches commits and finds none after last_review.submitted_at",
+        "Fetches PR comments and inline replies and finds none after last_review.submitted_at",
+        "Reports: 'No new commits or comments since your last review on {date}. Nothing to re-review.'",
+        "Does NOT proceed to ask about strictness or post any comments"
+      ]
+    },
+    {
+      "id": "rereview-resolved-threads",
+      "description": "Re-review where prior comments were addressed — replies to resolved threads",
+      "prompt": "Re-review a PR where the author addressed the blockers from the first review",
+      "setup": "PR has prior review with 2 blocker comments. New commits fix both issues. No new blockers.",
+      "expected_output": "Replies to each resolved comment with '✅ Resolved in {sha}: explanation'. Submits APPROVE.",
+      "expectations": [
+        "Identifies new commits pushed after last review",
+        "Matches resolved issues to prior comment IDs",
+        "Posts '✅ Resolved in {sha}:' replies via gh api pulls/comments/{id}/replies",
+        "Does NOT repost the original blocker as a new finding",
+        "Submits APPROVE since all blockers are resolved"
+      ]
+    },
+    {
+      "id": "strictness-recommendation-security",
+      "description": "Auth or RBAC code → recommends Strict mode",
+      "prompt": "Review a PR touching authentication middleware",
+      "setup": "PR modifies auth middleware, permission checks, and session handling.",
+      "expected_output": "Asks the user about strictness and recommends Strict based on security-sensitive code.",
+      "expectations": [
+        "Detects security/auth/RBAC-related file changes",
+        "Recommends 'Strict' in the AskUserQuestion prompt",
+        "Provides a brief reason (e.g. 'security-sensitive code touched')",
+        "Proceeds with the user-chosen mode, not the recommended one if overridden"
+      ]
+    },
+    {
+      "id": "strictness-quick-approve",
+      "description": "Quick mode — approve with concerns, don't REQUEST_CHANGES",
+      "prompt": "Do a quick review of this small config PR",
+      "setup": "User selects Quick mode. PR has 2 concerns and 0 blockers.",
+      "expected_output": "Posts 0 concern comments (concerns skipped in Quick mode). Submits APPROVE.",
+      "expectations": [
+        "Skips 🟡 Concern and 🟢 Minor findings — does not post them",
+        "Submits APPROVE since no definite 🔴 blockers exist",
+        "Does not REQUEST_CHANGES due to concerns in Quick mode"
+      ]
+    },
+    {
+      "id": "strictness-strict-concerns-block",
+      "description": "Strict mode — concerns cause REQUEST_CHANGES",
+      "prompt": "Do a strict review of this RBAC PR",
+      "setup": "User selects Strict mode. PR has 0 blockers, 2 concerns.",
+      "expected_output": "Posts all concerns as inline comments. Submits REQUEST_CHANGES because concerns exist in Strict mode.",
+      "expectations": [
+        "Posts all 🟡 Concern findings as inline comments",
+        "Submits REQUEST_CHANGES (not APPROVE) despite zero 🔴 blockers",
+        "Verdict body notes that concerns require resolution in Strict mode"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "review this PR: https://github.com/ConductionNL/openregister/pull/1341",
+      "help me review PR #456",
+      "run /review on pull request 123",
+      "review https://github.com/org/repo/pull/99",
+      "can you review pull request 789",
+      "please do a code review on this PR",
+      "review the changes in this pull request",
+      "do a PR review for me",
+      "check this PR and post comments: https://github.com/foo/bar/pull/42",
+      "I need a review of pull request 234",
+      "give me feedback on this PR",
+      "review PR #1340 and submit request changes if needed"
+    ],
+    "should_not_trigger": [
+      "create a PR",
+      "merge this PR",
+      "close the PR",
+      "review the code in my editor",
+      "review my architecture design",
+      "list open pull requests",
+      "approve the PR",
+      "check CI status on the PR",
+      "assign a reviewer to the PR",
+      "update the PR description",
+      "what is branch protection",
+      "how different is this PR from the previous one",
+      "push to remote",
+      "sync docs",
+      "clean the environment"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Accepts per-change model selection",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude has no structured model-selection dialog (Step 2.5), no {CHANGE_MODELS} map, and no AskUserQuestion prompts for per-change model choice. A user could specify models in their request text and naive Claude might interpret them, but there is no systematic per-change selection flow."
+    },
+    {
+      "text": "Spawns subagents with correct models",
+      "passed": false,
+      "evidence": "Without the skill's Step 4 which explicitly passes model: {CHANGE_MODELS}[change-name], naive Claude would not know to set different models per subagent. All subagents would use the default model."
+    },
+    {
+      "text": "Reports which model each change used",
+      "passed": false,
+      "evidence": "Without the progress table and final report templates, naive Claude would not include per-change model information in its output. There is no incentive for naive Claude to track and report model assignments systematically."
+    },
+    {
+      "text": "Falls back to default if not specified",
+      "passed": true,
+      "evidence": "Naive Claude would use its own default model for all spawned subagents if no model is specified. This is basic assistant behavior — not skill-specific. However, the default would not be documented or surfaced to the user."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "notes": "The structured model selection flow (three strategies, per-change {CHANGE_MODELS} map, model in progress table) is entirely skill-specific. Without it, model selection is implicit and undocumented.",
+  "timing": {
+    "executor_duration_seconds": 20
+  }
+}

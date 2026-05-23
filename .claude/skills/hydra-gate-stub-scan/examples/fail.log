@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-stub-scan.log
+[gate-3] stub-scan: FAIL — 2 finding(s) — see /tmp/hydra-gate-stub-scan.log

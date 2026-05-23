@@ -1,0 +1,85 @@
+{
+  "skill_name": "team-backend",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "implement-task",
+      "description": "Implement PHP task from plan",
+      "prompt": "Run /team-backend to implement a task",
+      "setup": "plan.json with pending PHP task",
+      "expected_output": "Should implement following Conduction patterns",
+      "expectations": [
+        "Reads plan.json and identifies PHP tasks",
+        "Uses PSR-4 structure with strict types",
+        "Uses dependency injection",
+        "Writes PHPUnit tests",
+        "Runs composer check:strict"
+      ]
+    },
+    {
+      "id": "github-sync",
+      "description": "Update GitHub checkboxes",
+      "prompt": "After implementing task",
+      "setup": "GitHub issue with task checkboxes",
+      "expected_output": "Should sync completion",
+      "expectations": [
+        "Marks implemented task as done in GitHub",
+        "Updates plan.json status",
+        "Reports what was implemented",
+        "Suggests next task or /opsx-verify"
+      ]
+    },
+    {
+      "id": "quality-gate",
+      "description": "Block on quality failures",
+      "prompt": "Implement with lint errors",
+      "setup": "Code changes introduce issues",
+      "expected_output": "Should fix before proceeding",
+      "expectations": [
+        "Runs composer check:strict",
+        "Fixes PHPCS/PHPMD/Psalm/PHPStan issues",
+        "Does NOT skip quality gate",
+        "Reports all fixes made"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "implement the backend",
+      "write PHP code",
+      "backend development",
+      "team backend task",
+      "implement the PHP service",
+      "/team-backend",
+      "act as team backend developer",
+      "take the backend role and implement this",
+      "write the PHP for this feature",
+      "implement this as a backend developer",
+      "build the backend service",
+      "code this PHP class",
+      "implement the API endpoint in PHP",
+      "backend, implement the repository",
+      "run team-backend on this task"
+    ],
+    "should_not_trigger": [
+      "implement frontend",
+      "review code",
+      "test the app",
+      "create architecture",
+      "write tests only",
+      "team-frontend",
+      "team-qa",
+      "team-reviewer",
+      "team-architect",
+      "team-sm",
+      "team-po",
+      "what does the backend developer do",
+      "review the backend code",
+      "test the backend",
+      "deploy the backend",
+      "write frontend CSS"
+    ]
+  }
+}

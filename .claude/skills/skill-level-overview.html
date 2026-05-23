@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Skill Level Overview — Hydra</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 2rem; background: #1e1e1e; color: #d4d4d4; }
+  h1 { color: #e0e0e0; }
+  h2 { color: #c0c0c0; margin-top: 2rem; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 2rem; }
+  th, td { border: 1px solid #444; padding: 8px 12px; text-align: left; }
+  th { background: #2d2d2d; cursor: pointer; user-select: none; position: relative; color: #e0e0e0; }
+  th:hover { background: #3a3a3a; }
+  th::after { content: ' \25B4\25BE'; font-size: 0.7em; color: #888; }
+  th.asc::after { content: ' \25B4'; color: #fff; }
+  th.desc::after { content: ' \25BE'; color: #fff; }
+  tr:nth-child(even) { background: #252525; }
+  tr:nth-child(odd) { background: #1e1e1e; }
+  tr:hover { background: #333; }
+
+  td a { color: #70a8f0; text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+
+  /* Line count colours */
+  td.lines { text-align: right; font-size: 0.9em; }
+  .lines-perfect    { background: #0a2040; color: #60a8f0; }  /* ≤200 */
+  .lines-very-few { background: #0a3a1a; color: #60e070; }  /* 201–300 */
+  .lines-few      { background: #1c4a2a; color: #80d090; }  /* 301–400 */
+  .lines-medium      { background: #4a4400; color: #e0d850; }  /* 401–450 */
+  .lines-many        { background: #4a2800; color: #f09040; }  /* 451–500 */
+  .lines-very-many   { background: #5c0000; color: #ff8080; }  /* 501+ */
+
+  /* Level dots */
+  .level-dots { display: flex; gap: 3px; align-items: center; }
+  .level-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    display: inline-block; flex-shrink: 0;
+    cursor: default;
+    position: relative;
+  }
+  .level-dot.achieved   { background: #1c7a2c; box-shadow: 0 0 4px #1c7a2c88; }
+  .level-dot.gap-struct { background: transparent; border: 2px solid #c87800; box-shadow: 0 0 4px #c8780044; }
+  .level-dot.empty      { background: #3a3a3a; }
+  .level-dot.target-zone { background: #2a5090; box-shadow: 0 0 4px #2a509044; }
+  .level-dot.target-zone.gap-struct { background: #2a5090; border: 2px solid #c87800; box-shadow: 0 0 4px #c8780044; }
+
+  .level-dot[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: -28px; left: 50%; transform: translateX(-50%);
+    background: #444; color: #eee;
+    font-size: 0.7em; padding: 2px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10;
+  }
+
+  /* Target level badges */
+  td.target-cell { text-align: center; white-space: nowrap; }
+  .target-badge {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 10px;
+    font-weight: bold; font-size: 0.85em;
+  }
+  .tl1 { background: #2a2a2a; color: #888; }
+  .tl2 { background: #0a2050; color: #70a8f0; }
+  .tl3 { background: #073a3a; color: #50d0c0; }
+  .tl4 { background: #2a3a08; color: #a8cc40; }
+  .tl5 { background: #3a2800; color: #f0b840; }
+  .tl6 { background: #4a1800; color: #f07030; }
+  .tl7 { background: #3a0855; color: #cc60f0; }
+
+  /* Legend */
+  .legend { display: flex; gap: 3rem; flex-wrap: wrap; }
+  .legend-group { min-width: 320px; }
+  .legend-group table { width: auto; }
+  .legend-group td:first-child { min-width: 120px; text-align: center; font-weight: bold; }
+  .legend-group td { vertical-align: top; padding: 5px 10px; }
+  .legend-group td small { display: block; color: #888; font-weight: normal; margin-top: 2px; }
+
+  .legend-dot-row { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; flex-shrink: 0; margin-top: 2px; }
+  .legend-dot.achieved   { background: #1c7a2c; }
+  .legend-dot.gap-struct { background: transparent; border: 2px solid #c87800; }
+  .legend-dot.empty      { background: #3a3a3a; }
+  .legend-dot.target-zone { background: #2a5090; }
+  .legend-dot-label small { display: block; color: #888; font-size: 0.85em; margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<h1>Skill Level Overview — Hydra</h1>
+<p style="margin-top: -0.5rem; color: #888;">Based on the <a href="https://github.com/ConductionNL/.github/blob/main/docs/claude/writing-skills.md" style="color: #70a8f0;">7-level skill maturity framework</a></p>
+
+<table id="skills">
+<thead>
+<tr>
+  <th data-col="0">Skill</th>
+  <th data-col="1">Description</th>
+  <th data-col="2">Current Level</th>
+  <th data-col="3">Target Level</th>
+  <th data-col="4">Lines</th>
+</tr>
+</thead>
+<tbody>
+<!--
+  data-maturity   = highest level where ALL criteria are fully met (1-7)
+  data-structural = highest level pattern structurally present (equals maturity if no gap)
+  data-target     = desired maximum level to reach (1-7)
+-->
+<tr data-maturity="3" data-structural="2" data-target="3">
+  <td><a href="clean-env/SKILL.md">clean-env</a></td><td>Reset the OpenRegister development environment (stop, remove volumes, restart, install apps)</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">48</td>
+</tr>
+<tr data-maturity="6" data-structural="5" data-target="6" data-l5struct="1" data-l6infra="1">
+  <td><a href="create-pr/SKILL.md">create-pr</a></td><td>Create a Pull Request from the current branch — runs local checks, picks target branch, and opens the PR on GitHub</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-few">399</td>
+</tr>
+<tr data-maturity="5" data-structural="7" data-target="7" data-l5struct="1" data-l6infra="1" data-l7struct="1">
+  <td><a href="feature-counsel/SKILL.md">feature-counsel</a></td><td>Analyze a projects OpenSpec from 8 persona perspectives and suggest additional features</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl7">L7</span></td>
+  <td class="lines lines-very-few">288</td>
+</tr>
+<tr data-maturity="6" data-structural="6" data-target="6" data-l6infra="1" data-l5struct="1">
+  <td><a href="opsx-apply/SKILL.md">opsx-apply</a></td><td>Implement tasks from an OpenSpec change (Experimental)</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-few">347</td>
+</tr>
+<tr data-maturity="5" data-structural="7" data-target="7" data-l5struct="1" data-l6infra="1" data-l7struct="1">
+  <td><a href="opsx-apply-loop/SKILL.md">opsx-apply-loop</a></td><td>Iteratively run apply→verify in a loop until verify passes, then auto-archive — runs per-app in Docker context</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl7">L7</span></td>
+  <td class="lines lines-few">394</td>
+</tr>
+<tr data-maturity="6" data-structural="5" data-target="5" data-l5struct="1" data-l6infra="1">
+  <td><a href="opsx-archive/SKILL.md">opsx-archive</a></td><td>Archive a completed change in the experimental workflow</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl5">L5</span></td>
+  <td class="lines lines-few">349</td>
+</tr>
+<tr data-maturity="4" data-structural="2" data-target="4">
+  <td><a href="opsx-bulk-archive/SKILL.md">opsx-bulk-archive</a></td><td>Archive multiple completed changes at once</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">300</td>
+</tr>
+<tr data-maturity="4" data-structural="2" data-target="4">
+  <td><a href="opsx-continue/SKILL.md">opsx-continue</a></td><td>Continue working on a change - create the next artifact (Experimental)</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">152</td>
+</tr>
+<tr data-maturity="5" data-structural="2" data-target="5" data-l5struct="1">
+  <td><a href="opsx-explore/SKILL.md">opsx-explore</a></td><td>Enter explore mode - think through ideas, investigate problems, clarify requirements</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl5">L5</span></td>
+  <td class="lines lines-very-few">221</td>
+</tr>
+<tr data-maturity="5" data-structural="7" data-target="5" data-l5struct="1" data-l7struct="1">
+  <td><a href="opsx-ff/SKILL.md">opsx-ff</a></td><td>Create a change and generate all artifacts needed for implementation in one go (Blocks Haiku)</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl5">L5</span></td>
+  <td class="lines lines-very-few">214</td>
+</tr>
+<tr data-maturity="4" data-structural="2" data-target="4">
+  <td><a href="opsx-new/SKILL.md">opsx-new</a></td><td>Start a new change using the experimental artifact workflow (OPSX)</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">95</td>
+</tr>
+<tr data-maturity="5" data-structural="5" data-target="5" data-l5struct="1">
+  <td><a href="opsx-onboard/SKILL.md">opsx-onboard</a></td><td>Guided onboarding - walk through a complete OpenSpec workflow cycle with narration</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl5">L5</span></td>
+  <td class="lines lines-very-few">238</td>
+</tr>
+<tr data-maturity="5" data-structural="7" data-target="7" data-l5struct="1" data-l6infra="1" data-l7struct="1">
+  <td><a href="opsx-pipeline/SKILL.md">opsx-pipeline</a></td><td>Process multiple OpenSpec changes in parallel using subagents — full lifecycle from proposal to merged PR</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl7">L7</span></td>
+  <td class="lines lines-few">326</td>
+</tr>
+<tr data-maturity="6" data-structural="5" data-target="6" data-l5struct="1" data-l6infra="1">
+  <td><a href="opsx-plan-to-issues/SKILL.md">opsx-plan-to-issues</a></td><td>Convert an OpenSpec changes tasks.md into a plan.json and create a GitHub Issue for progress tracking</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-very-few">245</td>
+</tr>
+<tr data-maturity="4" data-structural="2" data-target="4">
+  <td><a href="opsx-sync/SKILL.md">opsx-sync</a></td><td>Sync delta specs from a change to main specs</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">139</td>
+</tr>
+<tr data-maturity="5" data-structural="7" data-target="5" data-l5struct="1">
+  <td><a href="opsx-verify/SKILL.md">opsx-verify</a></td><td>Verify implementation matches change artifacts before archiving</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl5">L5</span></td>
+  <td class="lines lines-medium">401</td>
+</tr>
+<tr data-maturity="6" data-structural="5" data-target="6" data-l5struct="1" data-l6infra="1">
+  <td><a href="sync-docs/SKILL.md">sync-docs</a></td><td>Check and sync documentation to reflect current project state — app feature docs (docs/) for a specific Nextcloud app, or developer/Claude docs in th…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-few">387</td>
+</tr>
+<tr data-maturity="5" data-structural="4" data-target="6" data-l5struct="1" data-l6infra="1">
+  <td><a href="team-architect/SKILL.md">team-architect</a></td><td>Architect — Scrum Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-few">325</td>
+</tr>
+<tr data-maturity="5" data-structural="4" data-target="6" data-l5struct="1" data-l6infra="1">
+  <td><a href="team-backend/SKILL.md">team-backend</a></td><td>Backend Developer — Scrum Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-few">345</td>
+</tr>
+<tr data-maturity="5" data-structural="4" data-target="6" data-l5struct="1" data-l6infra="1">
+  <td><a href="team-frontend/SKILL.md">team-frontend</a></td><td>Frontend Developer — Scrum Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-few">334</td>
+</tr>
+<tr data-maturity="4" data-structural="2" data-target="4">
+  <td><a href="team-po/SKILL.md">team-po</a></td><td>Product Owner — Scrum Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">172</td>
+</tr>
+<tr data-maturity="5" data-structural="5" data-target="6" data-l5struct="1" data-l6infra="1">
+  <td><a href="team-qa/SKILL.md">team-qa</a></td><td>QA Tester — Scrum Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-very-few">219</td>
+</tr>
+<tr data-maturity="4" data-structural="2" data-target="4">
+  <td><a href="team-reviewer/SKILL.md">team-reviewer</a></td><td>Code Reviewer — Scrum Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">300</td>
+</tr>
+<tr data-maturity="4" data-structural="2" data-target="4">
+  <td><a href="team-sm/SKILL.md">team-sm</a></td><td>Scrum Master — Scrum Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">228</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4" data-l7struct="1">
+  <td><a href="test-accessibility/SKILL.md">test-accessibility</a></td><td>Accessibility Tester — Testing Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">229</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4" data-l7struct="1">
+  <td><a href="test-api/SKILL.md">test-api</a></td><td>API Tester — Testing Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">276</td>
+</tr>
+<tr data-maturity="7" data-structural="7" data-target="7" data-l6infra="1" data-l7struct="1" data-l5struct="1">
+  <td><a href="test-app/SKILL.md">test-app</a></td><td>Run automated browser tests for a Nextcloud app — single agent or multi-perspective parallel testing</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl7">L7</span></td>
+  <td class="lines lines-very-few">215</td>
+</tr>
+<tr data-maturity="5" data-structural="7" data-target="7" data-l6infra="1" data-l5struct="1" data-l7struct="1">
+  <td><a href="test-counsel/SKILL.md">test-counsel</a></td><td>Test a projects features from 8 persona perspectives using browser, API, and documentation testing</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl7">L7</span></td>
+  <td class="lines lines-very-few">207</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4" data-l7struct="1">
+  <td><a href="test-functional/SKILL.md">test-functional</a></td><td>Functional Tester — Testing Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">163</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4" data-l7struct="1">
+  <td><a href="test-performance/SKILL.md">test-performance</a></td><td>Performance Tester — Testing Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">231</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4">
+  <td><a href="test-persona-annemarie/SKILL.md">test-persona-annemarie</a></td><td>Persona Tester: Annemarie de Vries — VNG Standards Architect</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">214</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4">
+  <td><a href="test-persona-fatima/SKILL.md">test-persona-fatima</a></td><td>Persona Tester: Fatima El-Amrani — Low-Literate Migrant Citizen</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">165</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4">
+  <td><a href="test-persona-henk/SKILL.md">test-persona-henk</a></td><td>Persona Tester: Henk Bakker — Elderly Citizen</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">172</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4">
+  <td><a href="test-persona-janwillem/SKILL.md">test-persona-janwillem</a></td><td>Persona Tester: Jan-Willem van der Berg — Small Business Owner</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">176</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4">
+  <td><a href="test-persona-mark/SKILL.md">test-persona-mark</a></td><td>Persona Tester: Mark Visser — MKB Software Vendor</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">175</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4">
+  <td><a href="test-persona-noor/SKILL.md">test-persona-noor</a></td><td>Persona Tester: Noor Yilmaz — Municipal CISO / Functional Admin</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">194</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4">
+  <td><a href="test-persona-priya/SKILL.md">test-persona-priya</a></td><td>Persona Tester: Priya Ganpat — ZZP Developer / Integrator</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">202</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4">
+  <td><a href="test-persona-sem/SKILL.md">test-persona-sem</a></td><td>Persona Tester: Sem de Jong — Young Digital Native</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-perfect">175</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4" data-l7struct="1">
+  <td><a href="test-regression/SKILL.md">test-regression</a></td><td>Regression Tester — Testing Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">224</td>
+</tr>
+<tr data-maturity="4" data-structural="2" data-target="4">
+  <td><a href="test-scenario-create/SKILL.md">test-scenario-create</a></td><td>Create a reusable test scenario for a Nextcloud app — structured Gherkin-style, linked to personas and test commands</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-few">323</td>
+</tr>
+<tr data-maturity="3" data-structural="2" data-target="3">
+  <td><a href="test-scenario-edit/SKILL.md">test-scenario-edit</a></td><td>Edit an existing test scenario — update title, steps, personas, tags, priority, status, or any other field</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-very-few">229</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4" data-l7struct="1">
+  <td><a href="test-scenario-run/SKILL.md">test-scenario-run</a></td><td>Execute a specific test scenario against a live Nextcloud app using a browser agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">252</td>
+</tr>
+<tr data-maturity="4" data-structural="7" data-target="4" data-l7struct="1">
+  <td><a href="test-security/SKILL.md">test-security</a></td><td>Security Tester — Testing Team Agent</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">275</td>
+</tr>
+<tr data-maturity="3" data-structural="2" data-target="3">
+  <td><a href="verify-global-settings-version/SKILL.md">verify-global-settings-version</a></td><td>Check whether global-settings/VERSION has been correctly bumped after any changes to files in the global-settings/ directory</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">136</td>
+</tr>
+<tr data-maturity="4" data-structural="1" data-target="4" data-l7struct="1">
+  <td><a href="skill-creator/SKILL.md">skill-creator</a></td><td>Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or op…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl4">L4</span></td>
+  <td class="lines lines-very-few">293</td>
+</tr>
+<tr data-maturity="5" data-structural="5" data-target="5" data-l5struct="1">
+  <td><a href="persistence-audit/SKILL.md">persistence-audit</a></td><td>Audit a codebase or architecture for post-compromise persistence vectors — OAuth grants, service accounts, CI/CD secrets, IdP trust, audit trails, an…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl5">L5</span></td>
+  <td class="lines lines-very-few">242</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-composer-audit/SKILL.md">hydra-gate-composer-audit</a></td><td>Run `composer audit` to check composer.lock dependencies for known CVEs. Invoked by the builder before push and the reviewers mandatory block. Mirror…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">46</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-forbidden-patterns/SKILL.md">hydra-gate-forbidden-patterns</a></td><td>Scan lib/ for forbidden debug helpers (var_dump / die / error_log / print_r / dd / dump) that should not ship. Invoked by the builder before push, by…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">55</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-spdx/SKILL.md">hydra-gate-spdx</a></td><td>Enforce @license + @copyright PHPDoc tags on every PHP file under lib/. Invoked by the builder before push, by the reviewer as the first Mandatory St…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">94</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-stub-scan/SKILL.md">hydra-gate-stub-scan</a></td><td>Detect stub code — "In a complete implementation" comments, empty `run()` bodies in BackgroundJob files, unused injected dependencies, hardcoded fetc…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">79</td>
+</tr>
+<tr data-maturity="2" data-structural="1" data-target="3">
+  <td><a href="hydra-gates/SKILL.md">hydra-gates</a></td><td>Run all thirteen Hydra mechanical quality gates (SPDX, forbidden-patterns, stub-scan, composer-audit, route-auth, orphan-auth, no-admin-idor, unsafe-…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">62</td>
+</tr>
+<tr data-maturity="2" data-structural="1" data-target="3">
+  <td><a href="local-run/SKILL.md">local-run</a></td><td>Run the full Hydra pipeline locally (builder → reviewer → security)</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">61</td>
+</tr>
+<tr data-maturity="6" data-structural="1" data-target="6" data-l6infra="1" data-l5struct="1">
+  <td><a href="opsx-annotate/SKILL.md">opsx-annotate</a></td><td>Apply Bucket 1 `@spec` tags from a coverage report — creates a ghost change and opens an annotation-only PR (Experimental)</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-few">315</td>
+</tr>
+<tr data-maturity="6" data-structural="1" data-target="6" data-l6infra="1" data-l5struct="1">
+  <td><a href="opsx-coverage-scan/SKILL.md">opsx-coverage-scan</a></td><td>Audit a legacy app for spec ↔ code coverage — produces a 6-bucket report before retrofit annotation (Experimental)</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-very-few">288</td>
+</tr>
+<tr data-maturity="6" data-structural="1" data-target="6" data-l6infra="1" data-l5struct="1">
+  <td><a href="opsx-reverse-spec/SKILL.md">opsx-reverse-spec</a></td><td>Reverse-engineer a spec from observed code — one Bucket 2 cluster per run, creates a ghost change with spec delta + tasks + annotations (Experimental)</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-very-few">287</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-no-admin-idor/SKILL.md">hydra-gate-no-admin-idor</a></td><td>Detect controller methods with `#[NoAdminRequired]` / `@NoAdminRequired` that lack a per-object or admin authorization guard in the method body. With…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">119</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-orphan-auth/SKILL.md">hydra-gate-orphan-auth</a></td><td>Detect authorization/validation service methods that are defined but never called. Observed 2026-04-21 on decidesk#60 — `isTransitionAllowed()`, `req…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">87</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-route-auth/SKILL.md">hydra-gate-route-auth</a></td><td>Verify every controller method registered in appinfo/routes.php declares its auth posture via a Nextcloud attribute or docblock tag. Missing `#[Publi…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">103</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-semantic-auth/SKILL.md">hydra-gate-semantic-auth</a></td><td>Detect controller methods where the Nextcloud auth annotation does not match the methods actual authorization requirement. Observed 2026-04-23 on dec…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">116</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-unsafe-auth-resolver/SKILL.md">hydra-gate-unsafe-auth-resolver</a></td><td>Detect `catch (\Throwable) { return null; }` patterns in service methods that resolve auth/authorization/permission/role services. The nullable retur…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">103</td>
+</tr>
+<tr data-maturity="7" data-structural="1" data-target="7" data-l5struct="1" data-l6infra="1" data-l7struct="1">
+  <td><a href="review-pr/SKILL.md">review-pr</a></td><td>Review one or more GitHub Pull Requests — detects re-reviews, asks strictness level (Quick/Standard/Thorough/Strict), posts 🔴/🟡/🟢 inline comments per…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl7">L7</span></td>
+  <td class="lines lines-many">480</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-admin-router/SKILL.md">hydra-gate-admin-router</a></td><td>Detect admin settings Vue components registered in the vue-router. Admin settings are rendered by Nextclouds settings framework via `AdminSettings.ph…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">49</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-initial-state/SKILL.md">hydra-gate-initial-state</a></td><td>Detect DOM data-attribute reads in `.vue`/`.js`/`.ts` files (e.g. `document.getElementById(x).dataset.version`) used to pull server-side data into th…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">57</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-modal-isolation/SKILL.md">hydra-gate-modal-isolation</a></td><td>Detect `<NcModal>` or `<NcDialog>` markup written inline inside parent components. Every modal/dialog MUST live in its own `.vue` file under `src/mod…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">53</td>
+</tr>
+<tr data-maturity="3" data-structural="1" data-target="3">
+  <td><a href="hydra-gate-nc-input-labels/SKILL.md">hydra-gate-nc-input-labels</a></td><td>Detect `<NcSelect>` usages without an `inputLabel` (or `ariaLabelCombobox`) prop. Manual `<label>` elements paired with NcSelect break the components…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl3">L3</span></td>
+  <td class="lines lines-perfect">56</td>
+</tr>
+<tr data-maturity="6" data-structural="6" data-target="6" data-l5struct="1" data-l6infra="1">
+  <td><a href="report-out/SKILL.md">report-out</a></td><td>Daily end-of-day report — scans local repos and the users GitHub activity today, suggests committing/pushing uncommitted changes, creating PRs for or…</td>
+  <td class="level-cell"></td>
+  <td class="target-cell"><span class="target-badge tl6">L6</span></td>
+  <td class="lines lines-medium">419</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Legend</h2>
+<div class="legend">
+  <div class="legend-group">
+    <h3>Current Level (maturity dots)</h3>
+    <div class="legend-dot-row">
+      <span class="legend-dot achieved"></span>
+      <div class="legend-dot-label">
+        <strong>Level achieved (maturity)</strong>
+        <small>All criteria for this level are fully met, including all lower levels.</small>
+      </div>
+    </div>
+    <div class="legend-dot-row">
+      <span class="legend-dot gap-struct"></span>
+      <div class="legend-dot-label">
+        <strong>Structurally present — gap exists</strong>
+        <small>Can appear at three levels: <strong>L5</strong> — <code>evals/</code> folder with 3+ scenarios exists, but full L5 maturity isn't reached yet: L3/L4 criteria may not be met, trigger tests may have fewer than 10 entries each, or evals haven't been run yet (<code>last_validated</code> is null in evals.json) (auto-detected). <strong>L6</strong> — <code>learnings.md</code> and a "Capture Learnings" step exist, but no dated entries yet (auto-detected). <strong>L7</strong> — agent-spawning or workflow-chain patterns are present, but lower levels aren't fully met (auto-detected). Multiple orange rings can appear on the same row.</small>
+      </div>
+    </div>
+    <div class="legend-dot-row">
+      <span class="legend-dot target-zone"></span>
+      <div class="legend-dot-label">
+        <strong>Target zone — not yet reached</strong>
+        <small>This level falls within the skill's target but is not yet achieved. Shows the remaining levels the skill is working towards.</small>
+      </div>
+    </div>
+    <div class="legend-dot-row">
+      <span class="legend-dot empty"></span>
+      <div class="legend-dot-label">
+        <strong>Not reached — beyond target</strong>
+        <small>Beyond the skill's target level. Not planned for this skill.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-group">
+    <h3>Maturity Levels</h3>
+    <table>
+      <tr>
+        <td><span class="target-badge tl1">L1</span></td>
+        <td>
+          <strong>Anatomy</strong>
+          <small>The skill has a valid SKILL.md with frontmatter (name, description, metadata), numbered self-contained steps, and explicit guardrails defining what it must never do.</small>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="target-badge tl2">L2</span></td>
+        <td>
+          <strong>Triggering</strong>
+          <small>Auto-detected: SKILL.md is under 500 lines and the description field is present. Full criteria: description written in third person, front-loads key use case in 250 chars, uses specific trigger terms, and large blocks extracted to subfolders via progressive disclosure.</small>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="target-badge tl3">L3</span></td>
+        <td>
+          <strong>Patterns</strong>
+          <small>Auto-detected: at least one common pattern (model guard, AskUserQuestion, quality gates, or subfolder references in SKILL.md) AND at least one supporting subfolder (examples/, references/, or templates/). Full criteria: built on proven foundations with consistent patterns and standards references.</small>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="target-badge tl4">L4</span></td>
+        <td>
+          <strong>Domain</strong>
+          <small>Contains business-specific knowledge unique to this project — Dutch government standards (BIO2, GEMMA, NLGov API rules), Nextcloud app patterns, OpenSpec workflow integration, and project architecture. Could not be dropped into a different project and work as-is.</small>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="target-badge tl5">L5</span></td>
+        <td>
+          <strong>Measurement</strong>
+          <small>Auto-detected: 3+ eval scenarios, 10+/10+ trigger tests, <code>last_validated</code> is non-null in evals.json, and both <code>grading.json</code> and <code>timing.json</code> present under the <code>evals/</code> folder (<code>timing.json</code> proves evals were actually executed, not just simulated). Full criteria also requires: baseline measured without the skill and at least one improve cycle completed.</small>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="target-badge tl6">L6</span></td>
+        <td>
+          <strong>Self-improvement</strong>
+          <small>Captures learnings during execution in a <code>learnings.md</code> file with dated, atomic entries. The skill includes a "capture learnings" step and consolidates insights back into SKILL.md guardrails and rules after ~80–100 entries.</small>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="target-badge tl7">L7</span></td>
+        <td>
+          <strong>Orchestration</strong>
+          <small>Spawns and coordinates multiple sub-agents, or is part of a defined workflow chain with explicit handoff points. Uses isolated execution contexts where needed, supports parallel execution, and has autonomous operation capability for a defined scope.</small>
+        </td>
+      </tr>
+    </table>
+    <p style="margin-top: 0.5rem;"><a href="https://github.com/ConductionNL/.github/blob/main/docs/claude/writing-skills.md" style="color: #70a8f0; font-size: 0.85em;">Full level criteria in writing-skills.md</a></p>
+  </div>
+
+  <div class="legend-group">
+    <h3>Lines</h3>
+    <table>
+      <tr><td class="lines lines-perfect">≤ 200</td><td>Ideal — concise, well-extracted</td></tr>
+      <tr><td class="lines lines-very-few">201–300</td><td>Very lean</td></tr>
+      <tr><td class="lines lines-few">301–400</td><td>Lean</td></tr>
+      <tr><td class="lines lines-medium">401–450</td><td>Medium — consider extracting</td></tr>
+      <tr><td class="lines lines-many">451–500</td><td>Large — at the L2 limit</td></tr>
+      <tr><td class="lines lines-very-many">501+</td><td>Over limit — extraction needed</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+const LEVEL_NAMES = ['', 'Anatomy', 'Triggering', 'Patterns', 'Domain', 'Measurement', 'Self-improvement', 'Orchestration'];
+
+// Render level dots for each row
+document.querySelectorAll('tr[data-maturity]').forEach(row => {
+  const maturity   = parseInt(row.dataset.maturity);
+  const target     = parseInt(row.dataset.target);
+  const l5struct   = row.dataset.l5struct === '1';
+  const l6infra    = row.dataset.l6infra === '1';
+  const l7struct   = row.dataset.l7struct === '1';
+  const cell = row.querySelector('.level-cell');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'level-dots';
+
+  for (let i = 1; i <= 7; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'level-dot';
+    dot.title = `L${i}: ${LEVEL_NAMES[i]}`;
+
+    if (i <= maturity) {
+      dot.classList.add('achieved');
+    } else {
+      dot.classList.add(i <= target ? 'target-zone' : 'empty');
+      if (i === 5 && l5struct && 5 > maturity) dot.classList.add('gap-struct');
+      if (i === 6 && l6infra  && 6 > maturity) dot.classList.add('gap-struct');
+      if (i === 7 && l7struct && 7 > maturity) dot.classList.add('gap-struct');
+    }
+    wrapper.appendChild(dot);
+  }
+  cell.appendChild(wrapper);
+});
+
+// Sortable columns
+const table = document.getElementById('skills');
+const headers = table.querySelectorAll('th');
+const tbody   = table.querySelector('tbody');
+let currentSort = { col: -1, asc: true };
+
+headers.forEach(th => {
+  th.addEventListener('click', () => {
+    const col = parseInt(th.dataset.col);
+    const asc = currentSort.col === col ? !currentSort.asc : true;
+    currentSort = { col, asc };
+
+    headers.forEach(h => h.classList.remove('asc', 'desc'));
+    th.classList.add(asc ? 'asc' : 'desc');
+
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+      let va, vb;
+
+      if (col === 2) {
+        // Green > blue > orange > lines (all descending when high-to-low)
+        const orangeCount = r => {
+          const m = parseInt(r.dataset.maturity);
+          let n = 0;
+          if (r.dataset.l5struct === '1' && 5 > m) n++;
+          if (r.dataset.l6infra  === '1' && 6 > m) n++;
+          if (r.dataset.l7struct === '1' && 7 > m) n++;
+          return n;
+        };
+        const lvl = r => {
+          const m = parseInt(r.dataset.maturity);
+          const t = parseInt(r.dataset.target);
+          const blue = Math.max(0, t - m);
+          const orange = orangeCount(r);
+          const lines = parseInt(r.cells[4].textContent.trim()) || 0;
+          return m * 100000000 + blue * 1000000 + orange * 10000 + lines;
+        };
+        va = lvl(a);
+        vb = lvl(b);
+      } else if (col === 3) {
+        va = parseInt(a.dataset.target);
+        vb = parseInt(b.dataset.target);
+      } else if (col === 4) {
+        va = parseInt(a.cells[col].textContent.trim()) || 0;
+        vb = parseInt(b.cells[col].textContent.trim()) || 0;
+      } else {
+        va = a.cells[col].textContent.trim();
+        vb = b.cells[col].textContent.trim();
+      }
+
+      if (typeof va === 'number' && typeof vb === 'number') {
+        return asc ? va - vb : vb - va;
+      }
+      return asc ? va.toString().localeCompare(vb.toString(), 'en') : vb.toString().localeCompare(va.toString(), 'en');
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+  });
+});
+
+// Default sort: Current Level, high to low
+headers[2].click();
+headers[2].click();
+</script>
+
+<h2>Updating</h2>
+<p>Run <code>bash <a href="update-skill-overview.sh" style="color: #70a8f0;">update-skill-overview.sh</a></code> to auto-update:</p>
+<ul style="color: #b0b0b0;">
+  <li>Maturity levels (L1, L2, L3, L5, L6, L7 auto-detected from SKILL.md)</li>
+  <li>Line counts and color classes</li>
+  <li>L5/L6/L7 struct flags (orange ring detection)</li>
+  <li>Skill descriptions (synced from SKILL.md frontmatter, truncated at 150 chars)</li>
+  <li>Skill name links (new rows link to SKILL.md)</li>
+  <li>New skill rows (auto-added when a new skill directory is detected)</li>
+  <li>Orphan detection (warns when a row's skill directory no longer exists)</li>
+</ul>
+<p style="color: #888;"><strong>Requires human judgment</strong> (the script flags mismatches, but can't verify quality):</p>
+<ul style="color: #888;">
+  <li><strong>L4 (Domain Knowledge)</strong> — never auto-set or auto-removed. The script prominently asks for your input when L4 blocks higher maturity. Requires verifying that business-specific references, templates, and architecture knowledge are present.</li>
+  <li><strong>L3 quality</strong> — the script detects examples/ and references/ folders + common patterns, but can't verify the quality of examples or whether patterns are applied correctly.</li>
+  <li><strong>L5 baseline</strong> — the script checks for 3+ eval scenarios, 10+/10+ trigger tests, and <code>last_validated</code> non-null in evals.json. It cannot verify if evals were actually executed against a true baseline.</li>
+  <li><strong>Target level</strong> — a product decision about where the skill should be headed.</li>
+</ul>
+
+</body>
+</html>

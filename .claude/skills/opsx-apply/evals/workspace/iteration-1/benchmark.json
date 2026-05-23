@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "skill_name": "<skill-name>",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-28T09:40:17Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 29531,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Reads tasks.md and identifies pending tasks",
+          "passed": true,
+          "evidence": "Step 3 calls 'openspec instructions apply --change register-export --json' which returns task list with status; pending tasks are derived from that output."
+        },
+        {
+          "text": "Implements tasks sequentially",
+          "passed": true,
+          "evidence": "Step 7 'For each pending task' loop with progress output 'Working on task 3/7...' confirms sequential execution."
+        },
+        {
+          "text": "Writes tests for PHP services",
+          "passed": true,
+          "evidence": "Step 7 mandates 'Write tests for every new PHP service/controller \u2014 PHPUnit test in tests/Unit/ with at least 3 test methods'."
+        },
+        {
+          "text": "Runs composer check:strict after changes",
+          "passed": true,
+          "evidence": "Step 9: 'After all tasks are complete, run the full quality suite: composer check:strict 2>&1'."
+        },
+        {
+          "text": "Updates GitHub issue checkboxes",
+          "passed": true,
+          "evidence": "Step 7 updates checkbox immediately after each task: reads plan.json for tracking_issue, matches task title, flips [ ] to [x], calls update_issue."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 0.0,
+        "tokens": 29040,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Detects Haiku",
+          "passed": true,
+          "evidence": "Step 0 (first instruction): 'Check the active model \u2014 On Haiku: stop immediately'. Model-guard is the very first step."
+        },
+        {
+          "text": "Stops immediately",
+          "passed": true,
+          "evidence": "Exact quote: 'stop immediately: This command requires Sonnet or Opus...'"
+        },
+        {
+          "text": "Suggests Sonnet/Opus",
+          "passed": true,
+          "evidence": "Stop message names both models with exact switch commands: /model sonnet or /model opus."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": 29300,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Runs composer check:strict",
+          "passed": true,
+          "evidence": "Step 9: 'After all tasks are complete, run the full quality suite: composer check:strict'."
+        },
+        {
+          "text": "Blocks on failures",
+          "passed": false,
+          "evidence": "SKILL GAP: quality checks run AFTER ALL TASKS (Step 9), not between tasks. A @throws error from task-1 would not block task-2 \u2014 it surfaces at Step 9 only. The eval assumes per-task blocking; the skill blocks post-all-tasks."
+        },
+        {
+          "text": "Fixes issues before moving to next task",
+          "passed": false,
+          "evidence": "Fixes happen at Step 9 after the full implementation loop completes. 'Before moving to next task' is not how the skill is structured."
+        },
+        {
+          "text": "Does NOT skip quality checks",
+          "passed": true,
+          "evidence": "Headless Mode Contract marks quality checks as MANDATORY in all modes."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 21375,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Reads tasks.md and identifies pending tasks",
+          "passed": true,
+          "evidence": "Would read openspec/changes/register-export/tasks.md and identify unchecked tasks before writing code."
+        },
+        {
+          "text": "Implements tasks sequentially",
+          "passed": true,
+          "evidence": "Would implement in dependency order: ExportService \u2192 ExportController \u2192 tests \u2192 route."
+        },
+        {
+          "text": "Writes tests for PHP services",
+          "passed": true,
+          "evidence": "task-3 is an explicit unchecked task; would implement tests/Unit/Service/ExportServiceTest.php covering happy path + error path."
+        },
+        {
+          "text": "Runs composer check:strict after changes",
+          "passed": true,
+          "evidence": "Would run quality suite after all four tasks; admits catching failures close to source is cheaper."
+        },
+        {
+          "text": "Updates GitHub issue checkboxes",
+          "passed": true,
+          "evidence": "Would update via 'gh issue edit' after each task commit."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 3,
+        "total": 3,
+        "time_seconds": 0.0,
+        "tokens": 20953,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Detects Haiku",
+          "passed": false,
+          "evidence": "Admits 'I have no tool or mechanism to query my own active model at runtime' \u2014 would not detect Haiku."
+        },
+        {
+          "text": "Stops immediately",
+          "passed": false,
+          "evidence": "Would proceed with implementation regardless of model."
+        },
+        {
+          "text": "Suggests Sonnet/Opus",
+          "passed": false,
+          "evidence": "Never triggered \u2014 no detection means no suggestion."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": 21060,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Runs composer check:strict",
+          "passed": true,
+          "evidence": "Would run after each task commit \u2014 'catching failures close to source is cheaper'."
+        },
+        {
+          "text": "Blocks on failures",
+          "passed": true,
+          "evidence": "'Two missing @throws tags are a 30-second fix. Proceeding to task-2 with known failures compounds the problem.'"
+        },
+        {
+          "text": "Fixes issues before moving to next task",
+          "passed": true,
+          "evidence": "Explicitly: 'Missing @throws tags are mechanical \u2014 add, re-run, confirm green, then move to task-2.'"
+        },
+        {
+          "text": "Does NOT skip quality checks",
+          "passed": true,
+          "evidence": "'Momentum is false economy. The quality-recheck stage after review will catch failures anyway.'"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.8333,
+        "stddev": 0.2887,
+        "min": 0.5,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 29290.3333,
+        "stddev": 245.6427,
+        "min": 29040,
+        "max": 29531
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.6667,
+        "stddev": 0.5774,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 21129.3333,
+        "stddev": 219.3771,
+        "min": 20953,
+        "max": 21375
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.17",
+      "time_seconds": "+0.0",
+      "tokens": "+8161"
+    }
+  },
+  "notes": []
+}

@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Explains purpose of each artifact type",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude has no knowledge of OpenSpec artifact types (proposal.md, delta specs, design.md, tasks.md) or their specific purposes in the workflow. It might explain generic software development artifacts (requirements, design docs), but not the OpenSpec-specific contract chain or delta specs as reviewable diffs."
+    },
+    {
+      "text": "Describes workflow philosophy",
+      "passed": false,
+      "evidence": "The four named OpenSpec philosophy principles (spec-first development, delta specs as reviewable diffs, artifacts as a contract chain, one change at a time) are not general software development concepts — they are OpenSpec-specific. Naive Claude would not surface these without the skill's Phase 1 Welcome content."
+    },
+    {
+      "text": "Points out guardrails and why they exist",
+      "passed": false,
+      "evidence": "OpenSpec guardrails (EXPLAIN→DO→SHOW→PAUSE, don't skip phases, handle exits gracefully, adjust scope gently) are skill-specific behaviors with explicit rationale. Naive Claude would not know these guardrails exist or be able to explain why they are structured the way they are."
+    },
+    {
+      "text": "Suggests resources for deeper learning",
+      "passed": false,
+      "evidence": "Without the skill's 'Learn more' section, naive Claude would not know to point users to openspec/architecture/RULES.md, adr-*.md files, or writing-skills.md/writing-specs.md. It might suggest generic documentation, but not the specific, relevant resources listed in SKILL.md."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "notes": "The educational content (OpenSpec philosophy, guardrail rationale, resource pointers) is entirely specific to the skill. Without it, naive Claude would provide generic software development education rather than OpenSpec-specific onboarding.",
+  "timing": {
+    "executor_duration_seconds": 16
+  }
+}
