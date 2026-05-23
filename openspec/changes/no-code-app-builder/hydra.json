@@ -1,0 +1,8 @@
+{
+  "spec_slug": "no-code-app-builder",
+  "title": "No-Code App Builder",
+  "app": "openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "depends_on": [],
+  "issue": null
+}
