@@ -143,7 +143,7 @@
 		"composer-exit-on-patch-failure": true,
 		"patches": {
 			"theodo-group/llphant": {
-				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) — drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch"
+				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) \u2014 drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch"
 			}
 		}
 	}
