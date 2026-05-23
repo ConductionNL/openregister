@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Scans codebase for improvement opportunities",
+      "passed": true,
+      "evidence": "SKILL.md Phase 2 'Codebase Analysis' enumerates exactly 6 categories to scan: TODO/FIXME comments, missing error handling, functions without tests, type issues (TS 'any'), debug artifacts (console.log/debugger), and missing validation. Also checks `git log --oneline -10` for recent activity context. This is an explicit, structured scan — not ad-hoc."
+    },
+    {
+      "text": "Presents 3-4 starter tasks",
+      "passed": true,
+      "evidence": "SKILL.md Phase 2 'Present Suggestions' instructs delivering the Phase 2 Task Suggestions message from phase-messages.md, filling in real findings from the scan. The scope guardrail (Phase 2b) steers users toward small tasks. The suggestion list is derived from actual scan results."
+    },
+    {
+      "text": "Guides through proposal→specs→design→tasks→apply→archive",
+      "passed": true,
+      "evidence": "SKILL.md Phases 4–10 cover the complete artifact chain: Phase 4 (change creation), Phase 5 (proposal), Phase 6 (specs), Phase 7 (design), Phase 8 (tasks), Phase 9 (apply/implementation), Phase 10 (archive). Each phase has explicit DO instructions with real openspec CLI commands."
+    },
+    {
+      "text": "Narrates each step with explanations",
+      "passed": true,
+      "evidence": "SKILL.md Guardrails: 'Follow the EXPLAIN → DO → SHOW → PAUSE pattern at key transitions.' Each phase delivers the corresponding message from phase-messages.md before executing. The skill explicitly teaches why each step exists alongside doing it."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "The guided-tour is fully specified: 6-category codebase scan, real-finding-based suggestions, 11 phases covering the complete workflow, and the EXPLAIN→DO→SHOW→PAUSE pattern for narration. All four expectations are explicitly and unambiguously covered.",
+  "timing": {
+    "executor_duration_seconds": 680
+  }
+}

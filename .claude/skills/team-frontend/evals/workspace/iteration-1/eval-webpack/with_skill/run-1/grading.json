@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Uses plugins.push(), NOT plugins = []",
+      "passed": false,
+      "evidence": "SKILL.md's webpack configuration section shows the conditional alias setup for @conduction/nextcloud-vue but does not include a 'plugins.push() vs plugins = []' rule. The webpack config example only shows resolve.alias configuration. This specific webpack mutation pattern is not in SKILL.md."
+    },
+    {
+      "text": "Preserves existing DefinePlugin",
+      "passed": false,
+      "evidence": "SKILL.md does not mention DefinePlugin preservation. The webpack section focuses on the conditional @conduction/nextcloud-vue alias and dedup aliases. No instruction about preserving or merging existing plugins."
+    },
+    {
+      "text": "Handles conditional alias for nextcloud-vue",
+      "passed": true,
+      "evidence": "SKILL.md Step 2 webpack config: 'const useLocalLib = fs.existsSync(localLib)... ...(useLocalLib ? { @conduction/nextcloud-vue: localLib } : {})'. The conditional alias pattern with fs.existsSync check is explicitly shown and required."
+    },
+    {
+      "text": "Runs npm lint after changes",
+      "passed": true,
+      "evidence": "SKILL.md Step 3: 'cd {app-dir} && npm run lint' (followed by npm run lint-fix, stylelint, tests, and build). Step 3 is unconditional — runs after every implementation including webpack changes."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "Conditional alias for @conduction/nextcloud-vue and npm lint are specified. Gaps: plugins.push() pattern and DefinePlugin preservation are not in SKILL.md. These are webpack-specific conventions that belong in the webpack config section.",
+  "timing": {
+    "executor_duration_seconds": 370
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "skill_name": "test-app",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-24 via read-only Explore subagent simulation (no file writes). Agent read SKILL.md and graded all 3 eval scenarios against documented behavior. All 3 evals scored 1.0 — the skill specification fully covers all tested flows.",
+  "runs": [
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "single-mode",
+      "score": 1.0,
+      "assertions": [
+        {"id": "navigates to the target app and feature area", "result": "pass", "note": "SKILL.md Step 2 requires navigating to the app and identifying the feature area before any testing begins."},
+        {"id": "performs CRUD operations and verifies each step", "result": "pass", "note": "SKILL.md Step 3 requires exercising CRUD paths with verification at each step — create, read, update, delete."},
+        {"id": "produces a structured test report with pass/fail per scenario", "result": "pass", "note": "SKILL.md Step 5 defines the structured report format with pass/fail status per tested scenario."},
+        {"id": "does NOT spawn parallel agents in single mode", "result": "pass", "note": "SKILL.md explicitly states single-mode runs sequentially — parallel agent spawning is reserved for multi-perspective mode."}
+      ],
+      "notes": "Single-mode flow is the baseline path. All 4 expectations are directly mapped to SKILL.md steps."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "multi-perspective",
+      "score": 1.0,
+      "assertions": [
+        {"id": "spawns 6 persona agents in parallel", "result": "pass", "note": "SKILL.md multi-perspective mode: spawns one agent per persona (6 Dutch government user archetypes) concurrently."},
+        {"id": "launches agents in parallel rather than sequentially", "result": "pass", "note": "SKILL.md explicitly requires parallel launch for multi-perspective mode — sequential would defeat the purpose of perspective coverage."},
+        {"id": "each agent produces independent findings from its persona's viewpoint", "result": "pass", "note": "Each persona agent operates independently; findings reflect that persona's use context and expectations."},
+        {"id": "synthesizes a combined report across all persona findings", "result": "pass", "note": "SKILL.md Step 5 in multi-perspective mode requires synthesizing all persona reports into a unified report with cross-persona patterns noted."}
+      ],
+      "notes": "Multi-perspective mode is the differentiated path. All 4 expectations map to SKILL.md multi-perspective steps."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "scenario-filtering",
+      "score": 1.0,
+      "assertions": [
+        {"id": "loads scenario definitions from the scenarios file", "result": "pass", "note": "SKILL.md Step 1 requires loading the scenarios file and parsing scenario IDs and their definitions."},
+        {"id": "filters to only TS-003 and TS-004 when those IDs are requested", "result": "pass", "note": "SKILL.md scenario-filter logic: when specific IDs are passed, only those scenarios are run — others are skipped entirely."},
+        {"id": "surfaces TS-001 and TS-002 as skipped, not as failures", "result": "pass", "note": "Skipped scenarios are reported as 'not run' in the output, not as failures — SKILL.md report format distinguishes skip from fail."},
+        {"id": "asks user before running if scenario list is ambiguous", "result": "pass", "note": "SKILL.md uses AskUserQuestion when the requested scenario IDs do not clearly resolve — confirms before proceeding."},
+        {"id": "reports results per scenario ID in the output", "result": "pass", "note": "SKILL.md Step 5 report format groups results by scenario ID so each scenario's outcome is individually traceable."}
+      ],
+      "notes": "Scenario-filtering is the precision path. All 5 expectations are fully specified in SKILL.md's scenario-handling steps."
+    }
+  ]
+}

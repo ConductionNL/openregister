@@ -1,0 +1,13 @@
+{
+  "eval_id": "hydra-pipeline",
+  "eval_name": "hydra-pipeline",
+  "prompt": "Run /persistence-audit hydra",
+  "assertions": [
+    "Loads references/hydra-persistence-vectors.md",
+    "Checks per-persona PAT scoping (builder vs reviewer vs security)",
+    "Audits yolo auto-merge trust chain",
+    "Checks label state machine integrity and reconciliation window",
+    "Checks log integrity and token masking in pipeline logs",
+    "Reports on container isolation boundaries"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies affected components",
+      "passed": false,
+      "evidence": "Without the skill's cross-app dependency graph (openregister → opencatalogi → softwarecatalog, etc.), naive Claude would not know which Conduction apps depend on each other or which downstream apps to check. It might identify generic affected components from code analysis but not the org-specific dependency chain."
+    },
+    {
+      "text": "Evaluates trade-offs",
+      "passed": true,
+      "evidence": "General architectural trade-off analysis is a Claude capability. Naive Claude can evaluate performance vs. correctness, simplicity vs. extensibility, etc. However, trade-offs against Dutch gov standards (NORA/GEMMA, NLGov API Rules, BIO2) would be absent."
+    },
+    {
+      "text": "Checks consistency with existing ADRs",
+      "passed": false,
+      "evidence": "Without knowing the ADR locations (openspec/architecture/, shared specs in openspec/specs/) or their content, naive Claude cannot systematically check ADR consistency. It might check general patterns but would miss Conduction-specific ADR decisions."
+    },
+    {
+      "text": "Recommends accept/revise/reject",
+      "passed": true,
+      "evidence": "Naive Claude can make architectural recommendations. However, the three-option APPROVE/REQUEST CHANGES/NEEDS DISCUSSION verdict with Conduction-specific rationale would not be produced — it would be a general accept/reject recommendation without the structured format."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "Trade-off evaluation and recommendations are general Claude capabilities. The Conduction-specific cross-app dependency graph and ADR consistency check require the skill's knowledge of the org's architecture.",
+  "timing": {
+    "executor_duration_seconds": 22
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Stops after 5 Docker iterations",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude has no Docker container setup and no iteration counter. It might attempt apply→verify once or twice before giving up, but there is no defined cap of 5 and no Docker-based isolation to track iteration state across runs."
+    },
+    {
+      "text": "Reports remaining failures",
+      "passed": true,
+      "evidence": "Even without the skill, naive Claude would likely report the verify output after a failed attempt. General Claude knows to surface error output. However, the report format would be ad-hoc, not structured per the loop-report-template.md."
+    },
+    {
+      "text": "Does NOT loop infinitely",
+      "passed": true,
+      "evidence": "Naive Claude's default behavior is to attempt a task and report the result — it would not naturally create an infinite loop. However, this is vacuously true because naive Claude wouldn't loop at all, not because it has a meaningful cap."
+    },
+    {
+      "text": "Suggests manual intervention",
+      "passed": true,
+      "evidence": "General Claude behavior when a task fails is to suggest the user investigate manually. This is generic assistant behavior, not skill-specific. However, it would lack the specific context (iteration count, CRITICAL vs WARNING distinction, link to specific failing tasks) that the skill provides."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "notes": "Without the skill, the '5 Docker iterations' expectation fails because there is no Docker and no defined iteration cap. The other three pass vacuously — naive Claude would not loop infinitely because it would not loop at all, and would report failures and suggest intervention as general assistant behavior. The skill value here is the structured loop + container isolation, not the stopping criteria.",
+  "timing": {
+    "executor_duration_seconds": 14
+  }
+}

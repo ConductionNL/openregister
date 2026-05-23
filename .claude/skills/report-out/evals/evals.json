@@ -1,0 +1,167 @@
+{
+  "skill_name": "report-out",
+  "version": "1.2.0",
+  "created": "2026-05-04",
+  "last_validated": "2026-05-04",
+  "baseline_score": 0.0,
+  "evals": [
+    {
+      "id": "dynamic-identity",
+      "description": "Resolve git author and GitHub login dynamically — no hardcoded usernames",
+      "prompt": "Run /report-out on a fresh machine where the user is configured but not as 'WilcoLouwerse'.",
+      "setup": "git config user.name returns 'Jane Doe'; gh api user returns {login: 'janedoe123'}.",
+      "expected_output": "Skill uses Jane Doe / janedoe123 throughout — no references to WilcoLouwerse.",
+      "expectations": [
+        "Skill calls 'git config user.name' to obtain the author",
+        "Skill calls 'gh api user' to obtain the GitHub login",
+        "Skill uses $HOME (not /home/<name>) for repo discovery",
+        "Skill does NOT contain hardcoded 'WilcoLouwerse' or '/home/wilco' references in SKILL.md or references/"
+      ]
+    },
+    {
+      "id": "comment-24h-check",
+      "description": "Before posting a tracking-issue comment, check for an existing comment within the last 24 hours and offer to edit",
+      "prompt": "Run /report-out for today; tracking issue #20 has a comment from the user posted 4 hours ago.",
+      "setup": "gh api repos/.../issues/20/comments returns a comment by the user with created_at = 4 hours ago.",
+      "expected_output": "Skill detects the recent comment and asks the user whether to edit it instead of posting a new one.",
+      "expectations": [
+        "Skill computes a 24h-ago timestamp",
+        "Skill queries existing comments and filters to (user.login == GH_LOGIN, created_at > 24h-ago)",
+        "Skill presents an AskUserQuestion offering Edit / New / Skip when a recent comment exists",
+        "Skill uses gh api repos/.../issues/comments/{id} -X PATCH (not new POST) when user chooses Edit"
+      ]
+    },
+    {
+      "id": "copy-paste-finale",
+      "description": "Skill always ends with a copy-paste Dutch report-out message containing PRs the user authored or merged today",
+      "prompt": "Run /report-out at end-of-day. User authored PR #1394 (open) and merged PR #1364 today.",
+      "setup": "gh search prs returns 1394 (open) and 1364 (merged) as user-authored.",
+      "expected_output": "Skill ends with a fenced markdown block: bare 'Report out:' heading (plain text, trailing colon, no emoji or date — Slack already shows the timestamp), summary bullets, PR list with bare URLs and status emoji, copy-paste-ready.",
+      "expectations": [
+        "Final output contains the exact 'Report out:' heading on its own line (plain text, trailing colon)",
+        "Heading is bare — no emoji (🗓️/spiral_calendar_pad), no bold, no day name, no date suffix",
+        "PR list uses bare URLs (https://github.com/...) — no 'org/repo #N' shorthand (Slack does not auto-link that form)",
+        "Final output lists user-authored PRs with status emoji (✅ for merged, 🟡 for open)",
+        "Final output is wrapped in a fenced markdown block for easy copy-paste",
+        "Final output does NOT include PRs the user did not author or merge"
+      ]
+    },
+    {
+      "id": "additional-input-gates",
+      "description": "Skill asks for additional user input both at the start (before drafting) and at the end (before final report-out)",
+      "prompt": "Run /report-out and provide context 'today was mostly review work' at the start.",
+      "setup": "User has commits + 2 open PRs; tracking issues exist.",
+      "expected_output": "Skill asks for additional input at Step 1 (start) and Step 9 (end). Captured context shapes the report.",
+      "expectations": [
+        "Skill asks for additional input at the start, before any drafting",
+        "Skill asks for additional input at the end, before producing the final report-out",
+        "Captured user context is incorporated into issue-comment drafts and the final message",
+        "User can opt out of issue/PR updates and skip directly to the report-out"
+      ]
+    },
+    {
+      "id": "interaction-discovery",
+      "description": "Skill auto-discovers issues and PRs the user has interacted with today via gh search, presented as recommended baseline",
+      "prompt": "Run /report-out without specifying issues or PRs.",
+      "setup": "User has 3 PRs and 2 issue comments today across 2 repos.",
+      "expected_output": "Skill discovers all 5 items via gh search and presents them as defaults; user can override.",
+      "expectations": [
+        "Skill calls 'gh search prs --author @me --updated >=$DATE'",
+        "Skill calls 'gh search issues --commenter @me --updated >=$DATE'",
+        "Skill deduplicates by (repo, number)",
+        "Skill presents discovered items in the overview before asking for direction",
+        "Skill allows the user to add or remove items from the discovered list"
+      ]
+    },
+    {
+      "id": "branch-pr-suggestion",
+      "description": "Detect branches with today's commits but no open PR and suggest creating one",
+      "prompt": "Run /report-out — feature/foo has 3 commits today, no open PR, branch is pushed to origin.",
+      "setup": "git log shows today's commits on feature/foo; gh pr list --head feature/foo --state open returns empty.",
+      "expected_output": "Skill flags the branch and asks the user whether to create a PR; defaults to /create-pr delegation.",
+      "expectations": [
+        "Skill iterates branches with today's commits",
+        "Skill skips default branches (main/master/development/beta/staging)",
+        "Skill calls 'gh pr list --head $BRANCH --state open' to check existence",
+        "Skill surfaces the suggestion via AskUserQuestion before any action",
+        "Skill prefers delegating to /create-pr over direct gh api POST",
+        "Skill never pushes the branch without explicit authorization phrase"
+      ]
+    },
+    {
+      "id": "issue-status-suggestion",
+      "description": "Detect issues whose work appears done and suggest closing them with state_reason",
+      "prompt": "Run /report-out — issue #20 has all linked PRs merged in last 7 days and a fresh user comment today.",
+      "setup": "gh api ...issues/20/comments shows merged-PR URLs; user posted today.",
+      "expected_output": "Skill tags issue with 'close-suggested' and asks the user whether to close.",
+      "expectations": [
+        "Skill scans last-7-days comments for PR URLs",
+        "Skill verifies each linked PR is merged",
+        "Skill detects the closing-trailer pattern in recent user comments",
+        "Skill asks Yes/No with completed vs not_planned options",
+        "Skill calls 'gh api repos/.../issues/N -X PATCH -f state=closed' only after user approval"
+      ]
+    },
+    {
+      "id": "followup-issue-suggestion",
+      "description": "Suggest creating a follow-up issue when an issue is older than 5 days, has many comments, and remains open",
+      "prompt": "Run /report-out — issue #14 is 8 days old with 15 comments, still open, no closing-trailer.",
+      "setup": "Issue created 8 days before TARGET_DATE; comment count = 15; state = open.",
+      "expected_output": "Skill tags 'stale-and-busy' and offers to draft a follow-up issue referencing the parent.",
+      "expectations": [
+        "Skill computes age in days and counts comments",
+        "Skill applies 5-day + 10-comment thresholds",
+        "Skill offers a follow-up draft that references the parent (Volgt op #N)",
+        "Skill draft body summarizes done work + open work",
+        "Skill creates new issue via 'gh api repos/.../issues -X POST' only after approval",
+        "Skill offers to post a closing-trailer on the parent pointing to the new follow-up"
+      ]
+    },
+    {
+      "id": "uncommitted-changes-handling",
+      "description": "Detect uncommitted changes per repo and offer commit / stash / push / skip with explicit confirmations",
+      "prompt": "Run /report-out — repo X on feature/foo has 3 modified files and 1 untracked file.",
+      "setup": "git status --short returns 4 entries; user has commits today on the same branch.",
+      "expected_output": "Skill surfaces the file list, asks Commit / Stash / Skip, and only commits/pushes after explicit Yes.",
+      "expectations": [
+        "Skill detects uncommitted changes via 'git status --short' in Step 4",
+        "Skill surfaces them in the Step 6 overview as a separate section",
+        "Step 8.4 lists the exact files (modified, staged, untracked) before asking",
+        "Skill offers Commit (drafted message) / Commit (user-provided) / Stash WIP / Skip via AskUserQuestion",
+        "Skill never auto-commits — runs 'git commit' only after explicit Yes",
+        "Skill offers a separate push prompt after a successful commit; respects the git-push authorization phrase",
+        "Skill never uses 'git commit --no-verify' without explicit user authorization"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "report out",
+      "/report-out",
+      "end of day report",
+      "daily report",
+      "give me a report-out for today",
+      "what did I commit today",
+      "summarize my git activity for today",
+      "generate my Slack report-out message",
+      "update my tracking issue with today's progress",
+      "what PRs did I open today and what's their status",
+      "draft a Dutch end-of-day summary",
+      "post my daily progress to the tracking issue"
+    ],
+    "should_not_trigger": [
+      "create PR",
+      "review PR",
+      "merge PR",
+      "explore openspec",
+      "run tests",
+      "fix a bug in the cart",
+      "add a new product to the seed data",
+      "verify global settings version",
+      "deploy the shop",
+      "lint the theme",
+      "run /create-pr for this branch",
+      "write a commit message for this change"
+    ]
+  }
+}

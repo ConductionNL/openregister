@@ -1,0 +1,65 @@
+{
+  "skill_name": "opsx-ff",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-24 (simulation) and 2026-04-28 (real run on planix task-comments). Real run score 1.0 on full-artifacts. Notable finding: SKILL.md has no model-guard — the eval for model-guard fails completely. Real run finding: openspec CLI schema error ('conduction' unknown, 'spec-driven' available) handled by retrying with --schema flag.",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "real run — planix task-comments change, all 4 artifacts generated",
+      "eval_id": "full-artifacts",
+      "score": 1.0,
+      "assertions": [
+        {"id": "creates proposal.md", "result": "pass", "note": "proposal.md written. Why + two capabilities (task-comments new, tasks delta)."},
+        {"id": "creates delta specs", "result": "pass", "note": "specs/task-comments/spec.md (5 REQs) + specs/tasks/spec.md (delta for comment count badge)."},
+        {"id": "creates design/contract if needed", "result": "pass", "note": "design.md written with 4 decisions incl. ICommentsManager choice, N+1 mitigation, delete-auth risk."},
+        {"id": "creates tasks.md with numbered tasks", "result": "pass", "note": "13 tasks across 6 groups with @spec references. openspec status shows isComplete: true."},
+        {"id": "loads ARCHITECTURE.md, FEATURES.md, ADRs for context", "result": "pass", "note": "ARCHITECTURE.md confirmed ICommentsManager pattern; FEATURES.md confirmed MVP #38 tier before subagent invocation."}
+      ],
+      "notes": "All 5 expectations pass. openspec CLI required --schema spec-driven (planix uses spec-driven, not conduction schema). Subagent (Sonnet) produced 13 tasks, 5 new REQs, and 1 delta REQ in 219s."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "full-artifacts",
+      "score": 1.0,
+      "assertions": [
+        {"id": "creates proposal.md", "result": "pass", "note": "SKILL.md Step 4a requires artifact creation in sequence; example shows proposal.md created."},
+        {"id": "creates delta specs", "result": "pass", "note": "Step 4a requires artifact creation in dependency order; example shows spec.md created."},
+        {"id": "creates design/contract if needed", "result": "pass", "note": "Step 4a and Artifact Guidelines require design.md with Seed Data section; example confirms creation."},
+        {"id": "creates tasks.md with numbered tasks", "result": "pass", "note": "Step 4a and Step 4.5 require tasks.md with numbered implementation tasks; example shows 6 tasks."},
+        {"id": "loads ARCHITECTURE.md, FEATURES.md, ADRs for context", "result": "pass", "note": "Step 1.6 explicitly requires loading these files before artifact generation; example output confirms all three loaded."}
+      ],
+      "notes": "Full eval passes all expectations. Skill correctly implements multi-artifact creation with context loading and dependency ordering."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "model-guard",
+      "score": 0.0,
+      "assertions": [
+        {"id": "detects Haiku model", "result": "fail", "note": "SKILL.md contains no instruction to detect or validate model type before execution."},
+        {"id": "stops immediately", "result": "fail", "note": "SKILL.md contains no guard or validation step that stops execution based on model."},
+        {"id": "suggests switching to Sonnet or Opus", "result": "fail", "note": "Step 1.55 presents Sonnet/Opus as user selection options, not as a rejection/guard. No model validation documented."},
+        {"id": "does NOT attempt artifact generation", "result": "fail", "note": "Without a model guard in SKILL.md, the skill would proceed to artifact generation regardless of model."}
+      ],
+      "notes": "This eval tests a requirement that does not exist in SKILL.md. The skill asks users to choose a model (Step 1.55) but never validates against Haiku. Actionable fix: add a model guard at the start of SKILL.md, matching the pattern used in opsx-apply, opsx-explore, and opsx-reverse-spec."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "handoff",
+      "score": 1.0,
+      "assertions": [
+        {"id": "suggests /opsx-apply for implementation", "result": "pass", "note": "SKILL.md 'What's Next' section explicitly recommends '/opsx-apply — start implementing the tasks'."},
+        {"id": "suggests /opsx-plan-to-issues for tracking", "result": "pass", "note": "SKILL.md 'What's Next' section offers '/opsx-plan-to-issues — create GitHub Issues for progress tracking'."},
+        {"id": "shows artifact completion status", "result": "pass", "note": "Step 5 requires 'Show final status' with openspec status output; example demonstrates complete status table."},
+        {"id": "does NOT auto-proceed to implementation", "result": "pass", "note": "SKILL.md presents next actions as discrete recommendations; skill never invokes /opsx-apply or performs implementation itself."}
+      ],
+      "notes": "Full eval passes. Skill correctly delegates to subagent, returns with final status, and provides clear next-step recommendations without auto-proceeding."
+    }
+  ]
+}

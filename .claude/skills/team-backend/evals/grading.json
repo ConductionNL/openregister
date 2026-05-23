@@ -1,0 +1,50 @@
+{
+  "skill_name": "team-backend",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-28 (simulation). 3 scenarios: implement-task (4/5=0.8), github-sync (3/4=0.75), quality-gate (3/4=0.75). Gaps: (1) no PHPUnit test-writing step — team-backend implements, team-qa tests; (2) no 'suggest next task or /opsx-verify' step at completion; (3) no 'report all quality fixes' output. These are three distinct one-line additions to the skill.",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "implement-task",
+      "score": 0.8,
+      "assertions": [
+        {"id": "reads plan.json and identifies PHP tasks", "result": "pass", "note": "Step 1: reads plan.json, finds target task, reads spec_ref, acceptance_criteria, files_likely_affected."},
+        {"id": "uses PSR-4 structure with strict types", "result": "pass", "note": "Step 2: declare(strict_types=1) MUST, lib/ PSR-4 structure, Quick Reference table confirms PSR-12."},
+        {"id": "uses dependency injection", "result": "pass", "note": "Step 2: PHP 8.1 promoted properties, private readonly, named arguments MANDATORY."},
+        {"id": "writes PHPUnit tests", "result": "fail", "note": "No test-writing step in SKILL.md. team-backend implements code; test writing is team-qa's domain."},
+        {"id": "runs composer check:strict", "result": "pass", "note": "Step 3: docker exec nextcloud... composer check. Fix violations before marking complete."}
+      ],
+      "notes": "Gap: no test writing. This may be intentional (division of labor with team-qa) but the eval expects it."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "github-sync",
+      "score": 0.75,
+      "assertions": [
+        {"id": "marks implemented task as done in GitHub", "result": "pass", "note": "Step 4: gh issue close <number> --repo <repo> --comment 'Completed: <summary>'."},
+        {"id": "updates plan.json status", "result": "pass", "note": "Step 4: 'Update plan.json: set task status to completed'."},
+        {"id": "reports what was implemented", "result": "pass", "note": "Step 4 --comment 'Completed: <summary>' + tasks.md checkbox update."},
+        {"id": "suggests next task or /opsx-verify", "result": "fail", "note": "SKILL.md ends at Step 4 with no 'what's next?' guidance step."}
+      ],
+      "notes": "Gap: no next-step suggestion. Fix: add Step 5 'Suggest: run /opsx-verify or pick next pending task from plan.json.'"
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "quality-gate",
+      "score": 0.75,
+      "assertions": [
+        {"id": "runs composer check:strict", "result": "pass", "note": "Step 3: docker exec nextcloud... composer check (full check)."},
+        {"id": "fixes PHPCS/PHPMD/Psalm/PHPStan issues", "result": "pass", "note": "Step 3: 'Fix any violations before marking the task complete.' Forbidden patterns listed explicitly."},
+        {"id": "does NOT skip quality gate", "result": "pass", "note": "Step 3 is unconditional. No skip option in SKILL.md."},
+        {"id": "reports all fixes made", "result": "fail", "note": "Step 3 says 'Fix violations' but no 'report what was fixed' instruction."}
+      ],
+      "notes": "Gap: no quality-fix report. Fix: add 'After fixing, output: Quality fixes applied: [list of violations fixed]' to Step 3."
+    }
+  ]
+}

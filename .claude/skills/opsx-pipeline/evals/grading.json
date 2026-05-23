@@ -1,0 +1,49 @@
+{
+  "skill_name": "opsx-pipeline",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-28 (simulation). 3 scenarios: parallel-changes (4/4=1.0), model-selection (4/4=1.0), pr-creation (4/4=1.0). All core pipeline behaviors — worktree isolation, per-change model assignment, PR creation with template body — are explicitly specified. Note: pr-creation without_skill scores 0.75 because push/gh pr create/URL reporting are general capabilities; the naming convention is skill-specific.",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "parallel-changes",
+      "score": 1.0,
+      "assertions": [
+        {"id": "spawns subagent per change", "result": "pass", "note": "Step 4: one agent per change, run_in_background: true, max 5 concurrent with queue-and-refill."},
+        {"id": "uses isolated git worktrees", "result": "pass", "note": "Step 3: git worktree add /tmp/worktrees/<app>-<change-name>. Guardrails forbid modifying main directory from subagents."},
+        {"id": "each subagent runs full lifecycle (apply→verify→archive)", "result": "pass", "note": "Sub-agent prompt template (templates/sub-agent-prompt-template.md) covers proposal→ff→apply→verify→browser→archive→PR."},
+        {"id": "reports per-change status", "result": "pass", "note": "Step 5 live progress table + Step 8 final report, both with per-change rows (App, Change, Model, Status, Tasks, Quality, Browser, Docs)."}
+      ],
+      "notes": "Parallel orchestration is the core value of this skill. All four parallel-changes expectations are fully specified."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "model-selection",
+      "score": 1.0,
+      "assertions": [
+        {"id": "accepts per-change model selection", "result": "pass", "note": "Step 2.5 'Choose per change' option: AskUserQuestion per change, stores as {CHANGE_MODELS} map."},
+        {"id": "spawns subagents with correct models", "result": "pass", "note": "Step 4: 'Pass model: {CHANGE_MODELS}[change-name] when launching each agent'."},
+        {"id": "reports which model each change used", "result": "pass", "note": "Step 5 progress table and Step 8 final report both include a 'Model' column."},
+        {"id": "falls back to default if not specified", "result": "pass", "note": "Step 2.5 always runs; 'One model for all' defaults to Sonnet (recommended). Auto-select assigns Sonnet for standard feature work."}
+      ],
+      "notes": "Three model strategy options explicitly specified. Model tracked per change and reported in both tables."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "pr-creation",
+      "score": 1.0,
+      "assertions": [
+        {"id": "creates feature branch per change", "result": "pass", "note": "Step 3: git worktree add with feature/<issue-number>/<change-name> naming. Guardrails enforce naming convention."},
+        {"id": "pushes to remote", "result": "pass", "note": "Step 6: explicit pre-PR push with git push -u origin <branch>."},
+        {"id": "creates PR via gh CLI", "result": "pass", "note": "Step 6: gh pr create with --base development, --title, and PR body from templates/pr-body-template.md."},
+        {"id": "reports PR URLs", "result": "pass", "note": "Step 8 final report includes 'PR' column per change. Step 6 also updates original issue with PR link."}
+      ],
+      "notes": "Branch naming, pre-PR push, gh pr create with template body, and URL reporting are all explicitly specified."
+    }
+  ]
+}

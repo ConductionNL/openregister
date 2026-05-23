@@ -1,0 +1,11 @@
+{
+  "eval_id": "spec-only-audit",
+  "eval_name": "spec-only-audit",
+  "prompt": "Run /persistence-audit spec",
+  "assertions": [
+    "Reads openspec/ specs and architecture documents",
+    "Identifies which persistence vectors are addressed in the design",
+    "Flags vectors not mentioned in specs as MISSING",
+    "Recommends code-level follow-up audit"
+  ]
+}

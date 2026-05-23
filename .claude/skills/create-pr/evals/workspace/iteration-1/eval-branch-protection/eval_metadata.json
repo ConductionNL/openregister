@@ -1,0 +1,12 @@
+{
+  "eval_id": "branch-protection",
+  "eval_name": "branch-protection",
+  "prompt": "Create PR targeting main",
+  "setup": "hydra repo has branch protection on main requiring 2 reviews",
+  "assertions": [
+    "Detects branch protection on target",
+    "Validates required status checks exist",
+    "Warns about bootstrap deadlock if checks missing",
+    "Suggests alternative target if needed"
+  ]
+}

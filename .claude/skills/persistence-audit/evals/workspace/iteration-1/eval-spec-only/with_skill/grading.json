@@ -1,0 +1,33 @@
+{
+  "eval_id": "spec-only-audit",
+  "eval_name": "spec-only-audit",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Reads openspec/ specs and architecture documents",
+      "passed": true,
+      "evidence": "Methodology section confirms: 'manual inspection of all files in openspec/ directory tree (architecture/, specs/, changes/, schemas/, config.yaml, project.md, AGENTS.md)'. Report cites 42 OpenSpec documents across architecture ADRs, platform specs, change proposals, change designs, and change specs."
+    },
+    {
+      "text": "Identifies which persistence vectors are addressed in the design",
+      "passed": true,
+      "evidence": "Report identifies 4 COVERED vectors with specific spec citations: per-agent PAT scoping (project.md:66-72), minimal workload scoping (project.md:66-72, hydra-platform-mvp/specs/platform/spec.md:35-40), ephemeral containers (project.md:52, spec.md:14-25), and documented cron jobs (pipeline-label-state-machine/proposal.md:335-343)."
+    },
+    {
+      "text": "Flags vectors not mentioned in specs as MISSING",
+      "passed": true,
+      "evidence": "11 vectors classified as MISSING with explanations: no token invalidation on user disable, no admin visibility of active grants, no credential expiry dates, no deploy key inventory, no monitoring for new key creation, no API request logging with identity, no tamper-evident logs, no endpoint credential protection, no admin action logging. Each includes a 'No spec addresses...' justification."
+    },
+    {
+      "text": "Recommends code-level follow-up audit",
+      "passed": true,
+      "evidence": "Follow-up Actions section item 1: 'Code-level audit recommended. This spec-only audit identified design gaps. A code-level audit (/persistence-audit without the spec argument) should verify that the security controls documented in specs are actually implemented.' Also item 2 recommends hydra-specific deep dive."
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

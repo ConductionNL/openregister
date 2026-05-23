@@ -1,0 +1,54 @@
+{
+  "expectations": [
+    {
+      "text": "Skill detects that gh pr diff fails for >300 files and falls back to alternative diff strategy",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know about the GitHub 300-file diff limit or the paginated /pulls/{PR}/files API fallback. It would attempt gh pr diff, receive a 406 error, and either stop or attempt to paste the raw diff inline — neither produces a complete analysis."
+    },
+    {
+      "text": "Skill saves diff to /tmp/pr-{PR_NUMBER}-diff.txt before analysis",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not save the diff to /tmp/. It would either paste the diff inline into the conversation (overflowing context) or skip saving entirely. For a 205K line PR this would cause context exhaustion or incomplete analysis."
+    },
+    {
+      "text": "Skill performs re-review detection before analyzing (checks existing reviews)",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know to call /pulls/{PR}/reviews before analyzing. It would proceed as a fresh first review even if it already reviewed the PR, missing the re-review frame entirely and potentially reposting already-resolved findings."
+    },
+    {
+      "text": "Skill fetches changed files list to enumerate what is in the diff",
+      "passed": false,
+      "evidence": "Without the skill's paginated /pulls/4/files API call, naive Claude would not enumerate 1325 files across 20 pages. It would either use the first page only (30 files) or attempt gh pr view --json files which also truncates for large PRs."
+    },
+    {
+      "text": "Skill analyzes key pipeline scripts at the actual PR HEAD SHA, not just file names",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would likely read files from the default branch rather than ?ref={HEAD_SHA}. This is semantically wrong for PR review — the analysis should be against the PR head, not whatever is on main."
+    },
+    {
+      "text": "Skill correctly tracks prior-review comment status (addressed / still open)",
+      "passed": false,
+      "evidence": "Without the skill's re-review protocol, naive Claude would not fetch prior review comments and categorize them as addressed/still-open/new-findings. It would treat all findings as new, creating confusion and redundancy."
+    },
+    {
+      "text": "Skill posts inline comments only on valid diff lines (not outside hunks)",
+      "passed": false,
+      "evidence": "Without the skill's explicit hunk-range verification before posting, naive Claude would likely attempt to post comments on arbitrary line numbers. This would produce 422 API errors ('pull_request_review_thread.position is not part of the diff') and no inline comments."
+    },
+    {
+      "text": "Skill submits formal APPROVE or REQUEST_CHANGES review separate from inline comments",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know to make two separate API calls (COMMENT event for inline comments, then APPROVE/REQUEST_CHANGES for the formal verdict). It would likely post a top-level comment summary and not submit a formal review event at all."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 8,
+    "total": 8,
+    "pass_rate": 0.0
+  },
+  "notes": "Without the skill, a 205K-line PR is essentially unreviable: context overflow, missing re-review detection, invalid line numbers, and no formal review submission. The skill's paginated file enumeration and /tmp/ staging are critical for this PR size.",
+  "timing": {
+    "executor_duration_seconds": 30
+  }
+}

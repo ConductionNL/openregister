@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Describes defect with reproduction steps",
+      "passed": true,
+      "evidence": "Describing defects with reproduction steps is general QA practice. Naive Claude would describe what actions led to the defect."
+    },
+    {
+      "text": "Includes expected vs actual behavior",
+      "passed": true,
+      "evidence": "Expected vs actual is a standard defect report format. Naive Claude would include this naturally when documenting a test failure."
+    },
+    {
+      "text": "Assigns severity",
+      "passed": false,
+      "evidence": "Without the skill's severity framework (coverage gate failures vs browser functional failures, Dutch gov compliance levels), naive Claude would assign ad-hoc severity labels (high/medium/low) without a defined scale tied to Conduction's quality requirements."
+    },
+    {
+      "text": "Links to relevant spec/task",
+      "passed": false,
+      "evidence": "Without knowing plan.json's task structure, naive Claude would not know which task number to link a defect to. It might reference the feature area but not the specific task ID from plan.json."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "Reproduction steps and expected/actual are general QA practice. Structured severity (tied to coverage gates and compliance levels) and plan.json task linkage require skill knowledge.",
+  "timing": {
+    "executor_duration_seconds": 20
+  }
+}

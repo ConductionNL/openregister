@@ -1,0 +1,63 @@
+{
+  "skill_name": "opsx-plan-to-issues",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-24 (simulation) and 2026-04-28 (real run on planix task-comments). Real run confirmed: create-issue 4/4=1.0. Notable finding: label derivation from specs/ subdirectories works correctly; task-comments and tasks labels auto-derived. Issue immediately closed post-eval (no ready-to-build label added).",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "real run — planix task-comments, issue #183 ConductionNL/planix",
+      "eval_id": "create-issue",
+      "score": 1.0,
+      "assertions": [
+        {"id": "parses tasks.md into plan.json", "result": "pass", "note": "plan.json written with 12 tasks, all spec_ref/acceptance_criteria/files_likely_affected fields populated from tasks.md sections."},
+        {"id": "creates GitHub issue with task checkboxes", "result": "pass", "note": "Issue #183 created with 13 nested checkboxes (tasks + acceptance criteria sub-items) across 6 section headers."},
+        {"id": "derives labels from specs touched", "result": "pass", "note": "openspec/changes/task-comments/specs/ has task-comments/ and tasks/ subdirs → labels task-comments + tasks auto-created and applied. Labels openspec + planix were pre-existing."},
+        {"id": "links plan.json to tracking_issue field", "result": "pass", "note": "plan.json saved with tracking_issue: 183. Repo derived from git remote origin. Created: 2026-04-28."}
+      ],
+      "notes": "All 4 expectations pass. Issue closed immediately after creation per eval protocol (not adding ready-to-build trigger label)."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "create-issue",
+      "score": 1.0,
+      "assertions": [
+        {"id": "parses tasks.md into plan.json", "result": "pass", "note": "Steps 3 & 5 parse tasks.md into the JSON structure and save plan.json with required fields; example confirms."},
+        {"id": "creates GitHub issue with task checkboxes", "result": "pass", "note": "Step 4 creates issue with title format and task checkboxes; example shows - [ ] format throughout."},
+        {"id": "derives labels from specs touched", "result": "pass", "note": "Step 4 derives labels from specs/ subdirectories; example shows openspec, app-name, and capability labels."},
+        {"id": "links plan.json to tracking_issue field", "result": "pass", "note": "Step 5 saves tracking_issue with created issue number; example shows '\"tracking_issue\": 142' in saved JSON."}
+      ],
+      "notes": "All four expectations clearly implemented and confirmed by example output."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "existing-issue",
+      "score": 0.375,
+      "assertions": [
+        {"id": "detects existing tracking issue", "result": "partial", "note": "Step 1 skips changes with existing tracking_issue (shows as non-selectable) but does not load and update them — detection without update semantics."},
+        {"id": "updates checkboxes to match current state", "result": "fail", "note": "SKILL.md has no update logic for existing issues. This is intentional: /opsx-apply handles checkbox updates, not this skill."},
+        {"id": "does NOT create duplicate issue", "result": "pass", "note": "Step 1 and Guardrails explicitly skip changes with existing tracking_issue. Learnings reinforce this."},
+        {"id": "reports sync status", "result": "partial", "note": "Step 1 shows 'already has issue #N' in the list as non-selectable, but no detailed sync status report format is specified."}
+      ],
+      "notes": "Eval expectations conflict with the skill's design scope: opsx-plan-to-issues creates issues only. Update/sync belongs to /opsx-apply. Duplicate prevention is solid (Pass). The 0.375 score accurately reflects the mismatch between this eval and the skill's intended role."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "task-format",
+      "score": 0.875,
+      "assertions": [
+        {"id": "uses - [ ] for pending tasks", "result": "pass", "note": "Step 4 body structure and example both show - [ ] for pending tasks."},
+        {"id": "uses - [x] for completed tasks", "result": "partial", "note": "JSON allows status field but example only shows pending. Completed format is handled by /opsx-apply when it updates checkboxes — not during initial issue creation."},
+        {"id": "preserves task descriptions", "result": "pass", "note": "Step 3 extracts descriptions; Step 4 body includes full task titles and descriptions."},
+        {"id": "groups tasks logically", "result": "pass", "note": "Step 4 groups tasks under section headers from tasks.md; example shows clear ### 1, ### 2 organization."}
+      ],
+      "notes": "Strong compliance. - [x] format not shown in example because this skill initializes all tasks as pending; updates occur in /opsx-apply."
+    }
+  ]
+}

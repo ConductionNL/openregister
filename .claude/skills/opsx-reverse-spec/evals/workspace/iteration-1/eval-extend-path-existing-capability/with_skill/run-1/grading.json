@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"text": "Validates specs/audit-trail-immutable/spec.md exists before starting", "passed": true, "evidence": "SKILL.md Step 1: 'Verify specs/{capability}/spec.md exists. If not, stop and use --cluster instead.'"},
+    {"text": "Finds the next free REQ number in the capability and starts numbering from there", "passed": true, "evidence": "SKILL.md Step 4: 'For --extend, read the existing spec to find the highest REQ number. New REQs start at N+1.'"},
+    {"text": "Writes delta spec containing ONLY the new REQs", "passed": true, "evidence": "SKILL.md Step 5: 'Write delta spec — ONLY the new REQs, not the full existing spec. Do not copy existing content.'"},
+    {"text": "Delta frontmatter carries retrofit_extensions: [...] listing the added REQ IDs", "passed": true, "evidence": "SKILL.md Step 5: 'Delta frontmatter must include retrofit_extensions: [REQ-NNN, ...].'"},
+    {"text": "Does NOT mint a new capability or touch other specs", "passed": true, "evidence": "SKILL.md Step 5: 'Do not create a new capability directory. The delta extends the existing one.'"},
+    {"text": "Tasks map each new REQ to its implementing methods", "passed": true, "evidence": "SKILL.md Step 6: tasks.md maps new REQs → methods, all [x]."},
+    {"text": "Archive step merges the delta into the existing main spec", "passed": true, "evidence": "SKILL.md Step 9: /opsx-archive merge behavior handles retrofit_extensions frontmatter."},
+    {"text": "Specter sync picks up retrofit_extensions and flags the app_specs row", "passed": true, "evidence": "SKILL.md notes: 'retrofit_extensions frontmatter signals Specter to re-index the capability.'"}
+  ],
+  "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. --extend path is clearly specified; delta-only approach prevents content duplication.",
+  "timing": {"executor_duration_seconds": 14.2}
+}

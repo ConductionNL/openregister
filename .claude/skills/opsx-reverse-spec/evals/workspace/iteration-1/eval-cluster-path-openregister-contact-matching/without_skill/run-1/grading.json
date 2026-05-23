@@ -1,0 +1,19 @@
+{
+  "expectations": [
+    {"text": "Checks out the branch recorded in coverage-report.json.branch", "passed": false, "evidence": "Would assume development branch without reading coverage-report.json.branch."},
+    {"text": "Creates branch retrofit/reverse-spec-openregister-contact-matching-<date>", "passed": false, "evidence": "Would likely create a feature/ branch or work on current branch."},
+    {"text": "Reads the listed methods to understand observed behavior", "passed": true, "evidence": "Reading methods to understand behavior is natural."},
+    {"text": "Silently reads org-wide ADRs and repo-specific ADRs + sibling specs", "passed": false, "evidence": "Would not know to load ADRs and sibling specs silently as context."},
+    {"text": "Drafts exactly 5 REQs — one per distinct observable behavior", "passed": false, "evidence": "Would not cap at 5 REQs — might draft 3 or 10 depending on analysis."},
+    {"text": "Writes specs/contact-matching/spec.md with frontmatter 'retrofit: true'", "passed": false, "evidence": "Would not know the retrofit: true frontmatter convention."},
+    {"text": "Writes tasks.md with one [x] task per REQ", "passed": false, "evidence": "Would not know all tasks should be [x] for existing implementations."},
+    {"text": "Fills in proposal.md with Affected code units + Approach sections", "passed": false, "evidence": "proposal.md structure is skill-specific."},
+    {"text": "Annotates each method inline with @spec pointing at tasks.md#task-N", "passed": false, "evidence": "Would not know the @spec annotation convention or point to the correct task."},
+    {"text": "Runs sync_spec_content.py; stops on failure", "passed": false, "evidence": "Would not know sync_spec_content.py exists."},
+    {"text": "Archives via /opsx-archive", "passed": false, "evidence": "Would not know to call /opsx-archive."},
+    {"text": "Appends the annotation commit SHA to .git-blame-ignore-revs", "passed": false, "evidence": "Would not know to update .git-blame-ignore-revs."},
+    {"text": "Opens a PR with retrofit + reverse-spec labels", "passed": false, "evidence": "Would open a PR but without the retrofit/reverse-spec labels."}
+  ],
+  "summary": {"passed": 1, "failed": 12, "total": 13, "pass_rate": 0.08},
+  "timing": {"executor_duration_seconds": 9.1}
+}

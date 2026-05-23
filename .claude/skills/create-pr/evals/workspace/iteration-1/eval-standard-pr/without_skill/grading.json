@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "Detects current repo and branch", "passed": true, "evidence": "Ran git branch + gh repo view; identified ConductionNL/hydra and feature/skill-improvement."},
+    {"text": "Recommends target branch (feature→dev, dev→beta, etc.)", "passed": false, "evidence": "PARTIAL: detected existing PR targets development (correct) but did not independently derive the recommendation — relied on the existing PR's base."},
+    {"text": "Runs local quality checks if applicable", "passed": true, "evidence": "N/A for docs-only changes; baseline correctly skipped checks."},
+    {"text": "Creates PR via gh CLI with proper format (or detects existing PR)", "passed": true, "evidence": "PR #184 detected via gh pr list --head; no duplicate created."}
+  ],
+  "summary": {"passed": 3, "failed": 1, "total": 4, "pass_rate": 0.75},
+  "timing": {"executor_duration_seconds": 231.7}
+}

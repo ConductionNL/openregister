@@ -1,0 +1,12 @@
+{
+  "eval_id": "standard-pr",
+  "eval_name": "standard-pr",
+  "prompt": "Run /create-pr",
+  "setup": "On feature/skill-improvement branch; PR #184 already exists",
+  "assertions": [
+    "Detects current repo and branch",
+    "Recommends target branch (feature→dev, dev→beta, etc.)",
+    "Runs local quality checks if applicable",
+    "Creates PR via gh CLI with proper format (or detects existing PR)"
+  ]
+}

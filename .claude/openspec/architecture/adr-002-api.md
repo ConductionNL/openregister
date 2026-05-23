@@ -1,0 +1,6 @@
+- URL pattern: `/index.php/apps/{app}/api/{resource}` — lowercase plural, hyphens.
+- Methods: GET=read, POST=create, PUT=update, DELETE=remove. No custom methods.
+- Pagination: support `_page` + `_limit`. Response includes `total`, `page`, `pages`.
+- Errors: appropriate HTTP status + `message` field. NO stack traces in responses.
+- Auth: Nextcloud built-in only. NO custom login/session/token flows.
+- Public endpoints: annotate `#[PublicPage]` + `#[NoCSRFRequired]`. Register CORS OPTIONS route.

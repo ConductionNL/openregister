@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Reads plan.json and identifies PHP tasks",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know plan.json exists or its structure (spec_ref, acceptance_criteria, files_likely_affected fields). It might read tasks.md or other files but plan.json's specific schema is skill-specific."
+    },
+    {
+      "text": "Uses PSR-4 structure with strict types",
+      "passed": true,
+      "evidence": "PSR-4 and declare(strict_types=1) are widely known PHP conventions. Naive Claude with PHP knowledge would follow these standards. However, the specific lib/ directory structure and named arguments requirement are Conduction-specific."
+    },
+    {
+      "text": "Uses dependency injection",
+      "passed": true,
+      "evidence": "Constructor DI is a well-known pattern. Naive Claude with PHP/Symfony knowledge would use constructor injection. PHP 8.1 readonly promoted properties are common. However, the Nextcloud-specific parent::__construct with named arguments, optional nullable deps, would not be known."
+    },
+    {
+      "text": "Writes PHPUnit tests",
+      "passed": false,
+      "evidence": "Without being explicitly asked to write tests, naive Claude implements code without tests by default. Tests are not a default behavior for code generation tasks."
+    },
+    {
+      "text": "Runs composer check:strict",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude does not know this codebase uses 'composer check' as the quality command. It might run 'phpcs' or 'phpstan' directly if it guesses, but the specific docker exec + composer check:strict workflow is skill-specific."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 3,
+    "total": 5,
+    "pass_rate": 0.4
+  },
+  "notes": "General PHP patterns (PSR-4, DI) are Claude capabilities. Plan.json schema, named arguments requirement, and composer check workflow are Conduction-specific. Without the skill, code quality gates and plan tracking are absent.",
+  "timing": {
+    "executor_duration_seconds": 18
+  }
+}

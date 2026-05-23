@@ -1,0 +1,81 @@
+{
+  "skill_name": "persistence-audit",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-24 via read-only Explore subagent simulation (no file writes). Agent read SKILL.md and references/ then graded all 5 eval scenarios against documented behavior. Scores reflect SKILL.md coverage, not existing benchmark claims.",
+  "runs": [
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "generic-oauth-repo",
+      "score": 0.9,
+      "assertions": [
+        {"id": "searches for OAuth-related code patterns (refresh tokens, grants, state parameter)", "result": "pass", "note": "SKILL.md Category 1 (Account Authentication Persistence) explicitly covers OAuth refresh tokens, grants, and state parameters."},
+        {"id": "checks token invalidation on account disable/password change", "result": "pass", "note": "Category 1 vector includes token invalidation on account disable/password change as a required check."},
+        {"id": "reports token logging exposure risk", "result": "pass", "note": "Category 2 (Credential Persistence) covers token logging exposure; skill requires classifying per vector."},
+        {"id": "classifies each item with evidence (file:line citations for COVERED)", "result": "pass", "note": "SKILL.md output format requires COVERED/PARTIAL/MISSING with file:line citations for all COVERED items."},
+        {"id": "generates remediation list ordered by severity", "result": "partial", "note": "SKILL.md requires remediation list but severity-ordering is implied by the CRITICAL/HIGH/MEDIUM structure, not explicitly mandated for the ordering of the remediation items."}
+      ],
+      "notes": "Strong coverage for generic OAuth repo audit. All 6 categories covered per SKILL.md. Minor gap: severity-ordered remediation is implied by the output format but not explicitly stated as a sort requirement."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "hydra-pipeline",
+      "score": 0.92,
+      "assertions": [
+        {"id": "loads references/hydra-persistence-vectors.md", "result": "pass", "note": "SKILL.md explicitly instructs loading references/hydra-persistence-vectors.md when 'hydra' argument is passed."},
+        {"id": "checks per-persona PAT scoping (builder vs reviewer vs security)", "result": "pass", "note": "H1 vector requires checking per-persona PAT isolation and scope boundaries with file:line citations."},
+        {"id": "audits yolo auto-merge trust chain", "result": "pass", "note": "H4 vector covers yolo auto-merge trust chain with full checklist: label authorization, merge race, signature verification."},
+        {"id": "checks label state machine integrity and reconciliation window", "result": "pass", "note": "H5 vector covers label integrity including atomic swap verification and 10-min reconciler window."},
+        {"id": "checks log integrity and token masking in pipeline logs", "result": "pass", "note": "H6 vector explicitly covers log integrity and token masking in pipeline logs."},
+        {"id": "reports on container isolation boundaries", "result": "partial", "note": "H3 covers most container isolation items but USER directive enforcement in Dockerfiles requires explicit grep verification that may not always be done."}
+      ],
+      "notes": "Hydra-specific audit is comprehensive via the references/hydra-persistence-vectors.md reference. Container isolation is mostly covered; USER directive verification is a known gap."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "post-incident-mode",
+      "score": 0.9,
+      "assertions": [
+        {"id": "uses heightened severity: PARTIAL items appear in critical gaps list", "result": "pass", "note": "SKILL.md 'post-incident' argument triggers heightened mode where PARTIAL is treated as MISSING in severity scoring."},
+        {"id": "checks whether credential rotation actually revoked all trust paths", "result": "pass", "note": "Post-incident checklist includes verifying rotation revoked all trust paths (OAuth tokens, deploy keys, machine identities)."},
+        {"id": "verifies audit trail integrity (could evidence have been tampered with?)", "result": "pass", "note": "Post-incident mode adds audit trail integrity check: log signing, append-only storage, evidence tampering."},
+        {"id": "recommends re-audit after remediation", "result": "pass", "note": "Post-incident output format includes 're-audit after remediations' as a required follow-up action."},
+        {"id": "suggests verifying COVERED items are enforced, not just documented", "result": "partial", "note": "Follow-up Actions include verification steps, but skill cannot perform these itself without external API calls — appropriately deferred to human with specific guidance."}
+      ],
+      "notes": "Post-incident mode heightened sensitivity is well-defined. The COVERED-vs-enforced verification is correctly deferred to human follow-up with specific instructions."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "spec-only-audit",
+      "score": 0.88,
+      "assertions": [
+        {"id": "reads openspec/ specs and architecture documents", "result": "pass", "note": "SKILL.md 'spec' argument mode directs the audit to openspec/ directory including architecture/ and specs/."},
+        {"id": "identifies which persistence vectors are addressed in the design", "result": "pass", "note": "Spec audit classifies vectors as COVERED when design documents explicitly address them with spec file:section citations."},
+        {"id": "flags vectors not mentioned in specs as MISSING", "result": "pass", "note": "Vectors not found in design documents are correctly classified as MISSING with justification."},
+        {"id": "recommends code-level follow-up audit", "result": "partial", "note": "Follow-up Actions recommend code-level audit, but skill could be more explicit that spec-COVERED ≠ implementation-verified."}
+      ],
+      "notes": "Spec-only audit handles the constraint correctly. Minor gap: skill could more clearly distinguish 'spec addresses it' from 'implementation verified' in COVERED classifications."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "minimal-static-site",
+      "score": 0.88,
+      "assertions": [
+        {"id": "does not fabricate findings for non-existent attack surfaces", "result": "pass", "note": "SKILL.md output format requires N/A classification with clear reasoning when a category has no applicable attack surface."},
+        {"id": "marks OAuth, service accounts, IdP as N/A with clear reasoning", "result": "pass", "note": "SKILL.md instructs N/A with explicit justification (e.g., 'No authentication implemented') rather than empty/skipped entries."},
+        {"id": "still checks CI/CD (GitHub Actions may have secrets) and endpoint persistence", "result": "pass", "note": "SKILL.md requires all 6 categories to be checked. CI/CD (Category 5) and endpoint persistence (Category 6) are checked even when other categories are N/A."},
+        {"id": "completes all 6 categories — does not skip any", "result": "partial", "note": "SKILL.md requires all 6 categories but the N/A classification itself depends on the skill recognizing which categories apply. Without explicit N/A guardrails, a minimal surface could tempt the skill to skip silent categories."}
+      ],
+      "notes": "N/A handling is defined in SKILL.md output format. The completeness requirement (all 6 categories) is a guardrail. Minor gap: N/A guardrails could be more explicit for minimal-surface repos."
+    }
+  ]
+}

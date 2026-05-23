@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Marks implemented task as done in GitHub",
+      "passed": true,
+      "evidence": "SKILL.md Step 4: 'Close the GitHub issue: gh issue close <number> --repo <repo> --comment \"Completed: <summary>\"'. This closes the issue (marking it done in GitHub) after task completion."
+    },
+    {
+      "text": "Updates plan.json status",
+      "passed": true,
+      "evidence": "SKILL.md Step 4: 'Update plan.json: set task status to completed'. Explicit field update with the 'completed' status value."
+    },
+    {
+      "text": "Reports what was implemented",
+      "passed": true,
+      "evidence": "SKILL.md Step 4: 'gh issue close ... --comment \"Completed: <summary>\"'. The summary describes what was implemented. Step 4 also updates tasks.md checkboxes which serves as a summary record."
+    },
+    {
+      "text": "Suggests next task or /opsx-verify",
+      "passed": false,
+      "evidence": "SKILL.md Step 4 ends with closing the issue and updating tasks.md. There is no explicit 'suggest next task' or 'suggest /opsx-verify' step. The skill ends at Step 4 without a 'what's next?' guidance step."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "notes": "GitHub sync (close issue, update plan.json, report) is fully specified. Gap: no 'suggest next task or /opsx-verify' step at the end. Adding a Step 5 with a next-step suggestion would close this.",
+  "timing": {
+    "executor_duration_seconds": 410
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "skill_name": "opsx-pipeline",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "parallel-changes",
+      "description": "Process multiple changes in parallel",
+      "prompt": "Run /opsx-pipeline for 3 changes",
+      "setup": "3 changes with complete artifacts",
+      "expected_output": "Should process all in parallel via subagents",
+      "expectations": [
+        "Spawns subagent per change",
+        "Uses isolated git worktrees",
+        "Each subagent runs full lifecycle (apply\u2192verify\u2192archive)",
+        "Reports per-change status"
+      ]
+    },
+    {
+      "id": "model-selection",
+      "description": "Per-change model selection",
+      "prompt": "Run pipeline with different models per change",
+      "setup": "User specifies Sonnet for one, Opus for another",
+      "expected_output": "Should use specified models",
+      "expectations": [
+        "Accepts per-change model selection",
+        "Spawns subagents with correct models",
+        "Reports which model each change used",
+        "Falls back to default if not specified"
+      ]
+    },
+    {
+      "id": "pr-creation",
+      "description": "Create PRs for completed changes",
+      "prompt": "Pipeline completes successfully",
+      "setup": "All changes archived",
+      "expected_output": "Should create PRs",
+      "expectations": [
+        "Creates feature branch per change",
+        "Pushes to remote",
+        "Creates PR via gh CLI",
+        "Reports PR URLs"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "run the pipeline",
+      "process changes in parallel",
+      "opsx pipeline",
+      "pipeline all changes",
+      "batch process changes",
+      "/opsx-pipeline",
+      "run all changes through the pipeline",
+      "pipeline register-export and add-auth",
+      "kick off the full pipeline",
+      "launch pipeline for pending changes",
+      "process everything in parallel",
+      "run pipeline on all changes",
+      "full lifecycle pipeline",
+      "auto-pipeline all ready changes",
+      "start the opsx pipeline"
+    ],
+    "should_not_trigger": [
+      "apply one change",
+      "archive one change",
+      "create a PR",
+      "run apply loop",
+      "bulk archive",
+      "opsx-apply",
+      "opsx-archive",
+      "opsx-bulk-archive",
+      "what is the pipeline?",
+      "show pipeline status",
+      "how does pipeline work?",
+      "run CI pipeline",
+      "check GitHub Actions",
+      "describe the pipeline",
+      "run tests in parallel"
+    ]
+  }
+}

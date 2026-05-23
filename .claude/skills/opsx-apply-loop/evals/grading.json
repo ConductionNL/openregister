@@ -1,0 +1,49 @@
+{
+  "skill_name": "opsx-apply-loop",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-28 (simulation). 3 scenarios: loop-until-pass (4/4=1.0), max-iterations (4/4=1.0), auto-archive (4/4=1.0). All core orchestration behaviors — Docker container isolation, 5-iteration cap, auto-archive chain — are explicitly specified in SKILL.md and referenced protocol files. Max-iterations without_skill scores 0.75 (three pass vacuously: no-infinite-loop, report-failures, suggest-intervention are all basic assistant behaviors; only the Docker/5-iteration cap fails).",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "loop-until-pass",
+      "score": 1.0,
+      "assertions": [
+        {"id": "runs apply inside Docker container", "result": "pass", "note": "Step 6 sets up Docker container via container-setup-guide.md; host never runs apply directly."},
+        {"id": "runs verify after apply", "result": "pass", "note": "apply-verify-loop-protocol.md (referenced in Step 6) defines the apply→verify sequence inside the container."},
+        {"id": "loops on failure (max 5 iterations)", "result": "pass", "note": "Guardrails: 'Max 5 apply→verify iterations'. Container tracks iterations and exits with STATUS=EXHAUSTED."},
+        {"id": "auto-archives on successful verify", "result": "pass", "note": "Step 11 explicitly runs opsx-archive after STATUS=PASS. Guardrails: 'Archive runs exactly once'."}
+      ],
+      "notes": "Docker isolation, loop protocol, and auto-archive are all explicitly specified in SKILL.md and protocol reference files."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "max-iterations",
+      "score": 1.0,
+      "assertions": [
+        {"id": "stops after 5 Docker iterations", "result": "pass", "note": "Guardrails hard limit: 5 iterations. Container exits STATUS=EXHAUSTED; Step 6.7 Scenario B handles the exhausted path."},
+        {"id": "reports remaining failures", "result": "pass", "note": "Step 15 reads all log files and uses loop-report-template.md which includes a 'Remaining Issues' section from verify output."},
+        {"id": "does NOT loop infinitely", "result": "pass", "note": "5-iteration cap enforced in both container protocol and host monitoring loop — two independent guards."},
+        {"id": "suggests manual intervention", "result": "pass", "note": "Step 15 AskUserQuestion 'What would you like to do next?' surfaces the exhausted state; Step 6.7 Scenario B logs a message directing human intervention."}
+      ],
+      "notes": "The structured exhaustion path (container exit → result files → Step 15 report) is fully specified. Both container and host layers enforce the cap."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "auto-archive",
+      "score": 1.0,
+      "assertions": [
+        {"id": "detects verify pass", "result": "pass", "note": "Step 6.7 Scenario A: container exits with STATUS=PASS; host monitoring loop reads status file on exit."},
+        {"id": "auto-commits changes", "result": "pass", "note": "Step 12: single git commit of all changes, automatic (no AskUserQuestion before commit). Guardrails: 'Single git commit'."},
+        {"id": "auto-archives the change", "result": "pass", "note": "Step 11 runs opsx-archive automatically after verify clean. Not conditional. Guardrails: 'Archive runs exactly once'."},
+        {"id": "reports success", "result": "pass", "note": "Step 15 final report via loop-report-template.md, then AskUserQuestion 'What would you like to do next?'"}
+      ],
+      "notes": "Happy path (STATUS=PASS → Step 11 → Step 12 → Step 13 → Step 15) is fully specified and automatic. No user confirmation required between verify-pass and archive."
+    }
+  ]
+}
