@@ -116,13 +116,19 @@ class MagicTableHandler
                         return true;
                     }
 
-                    // Sanity check: verify all schema columns exist in the table.
-                    // The version hash can be stale if it was stored without a full sync.
+                    // Sanity check: verify all schema columns exist in the table AND that
+                    // object-typed columns aren't still on the legacy JSONB storage type
+                    // (which silently re-orders keys — issue #1720). The version hash can
+                    // be stale if it was stored without a full sync.
                     $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
                     $currentColumns  = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
                     $missingColumns  = array_diff_key($requiredColumns, $currentColumns);
+                    $retypeColumns   = $this->magicMapper->findJsonbColumnsNeedingRetype(
+                        currentColumns: $currentColumns,
+                        requiredColumns: $requiredColumns
+                    );
 
-                    if (empty($missingColumns) === true) {
+                    if (empty($missingColumns) === true && empty($retypeColumns) === true) {
                         MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);
                         $this->logger->debug(
                             message: '[MagicTableHandler] Table exists and schema unchanged, skipping',
@@ -136,13 +142,16 @@ class MagicTableHandler
                         return true;
                     }
 
+                    $warnMsg  = '[MagicTableHandler] Schema version unchanged';
+                    $warnMsg .= ' but columns missing or need retype, forcing sync';
                     $this->logger->warning(
-                        message: '[MagicTableHandler] Schema version unchanged but columns missing, forcing sync',
+                        message: $warnMsg,
                         context: [
                             'file'           => __FILE__,
                             'line'           => __LINE__,
                             'tableName'      => $tableName,
                             'missingColumns' => array_keys($missingColumns),
+                            'retypeColumns'  => $retypeColumns,
                         ]
                     );
                 }//end if
