@@ -1,0 +1,8 @@
+{
+  "spec_slug": "built-in-dashboards",
+  "title": "Built-in Dashboards",
+  "app": "openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "depends_on": [],
+  "issue": null
+}
