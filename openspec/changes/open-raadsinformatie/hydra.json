@@ -1,0 +1,8 @@
+{
+  "spec_slug": "open-raadsinformatie",
+  "title": "Open Raadsinformatie (ORI)",
+  "app": "openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "depends_on": [],
+  "issue": null
+}
