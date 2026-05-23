@@ -154,6 +154,7 @@ use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
@@ -1323,10 +1324,11 @@ class Application extends App implements IBootstrap
         // FilesSidebarListener injects the sidebar tab script into the Files app.
         $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
 
-        // MailAppScriptListener injects the mail sidebar when schemas have linkedTypes: ["mail"].
+        // MailAppScriptListener injects the mail sidebar script into the Mail app
+        // (gated to the Mail app via TemplateResponse->getApp() === 'mail').
         $context->registerEventListener(
             \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
-            \OCA\OpenRegister\Listener\MailAppScriptListener::class
+            MailAppScriptListener::class
         );
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
