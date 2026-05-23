@@ -9,11 +9,10 @@
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-51
  */
 
-console.info('[OpenRegister] mail-sidebar.js loaded')
-
 import Vue from 'vue'
 import MailSidebar from './mail-sidebar/MailSidebar.vue'
 
+console.info('[OpenRegister] mail-sidebar.js loaded')
 console.info('[OpenRegister] Vue and MailSidebar imported successfully')
 
 const MOUNT_RETRY_INTERVAL = 1000

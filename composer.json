@@ -103,7 +103,7 @@
 		"react/promise": "^3.2",
 		"smalot/pdfparser": "^2.9",
 		"symfony/uid": "^6.4",
-		"symfony/yaml": "^6.4",
+		"symfony/yaml": "^6.4 || ^7.0",
 		"theodo-group/llphant": "^0.9.3",
 		"twig/twig": "^3.18",
 		"web-token/jwt-framework": "^3",
