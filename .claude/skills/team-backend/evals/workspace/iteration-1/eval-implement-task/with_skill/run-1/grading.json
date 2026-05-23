@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "text": "Reads plan.json and identifies PHP tasks",
+      "passed": true,
+      "evidence": "SKILL.md Step 1: 'Read plan.json from the active change, Find the target task (next pending, or specified), Read ONLY the referenced spec section (spec_ref), Read the acceptance_criteria, Read the files_likely_affected.' Plan.json is the primary task source."
+    },
+    {
+      "text": "Uses PSR-4 structure with strict types",
+      "passed": true,
+      "evidence": "SKILL.md Step 2: 'Every PHP file MUST start with: <?php declare(strict_types=1); namespace OCA\\{AppName}\\{SubNamespace};'. File structure under lib/ with PSR-4 autoloading is shown explicitly. Coding Standards Quick Reference table confirms PHP 8.1+, PSR-12 style."
+    },
+    {
+      "text": "Uses dependency injection",
+      "passed": true,
+      "evidence": "SKILL.md Step 2 Constructor DI: 'Use PHP 8.1+ promoted properties with readonly'. Rules: 'ALL injected dependencies use private readonly'. Named arguments: 'MANDATORY (custom sniff)'. The DI pattern with explicit code examples is a primary constraint."
+    },
+    {
+      "text": "Writes PHPUnit tests",
+      "passed": false,
+      "evidence": "SKILL.md has no step for writing tests. Step 3 runs quality checks (phpcs, phpstan, psalm) and Step 4 verifies acceptance criteria, but there is no 'write tests' step. PHPUnit test patterns are not specified in team-backend's SKILL.md — test writing is the domain of team-qa."
+    },
+    {
+      "text": "Runs composer check:strict",
+      "passed": true,
+      "evidence": "SKILL.md Step 3: 'Full check: docker exec nextcloud bash -c ... composer check'. Also runs phpcs, phpstan, psalm individually. Step 3 instruction: 'Fix any violations before marking the task complete.'"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5,
+    "pass_rate": 0.8
+  },
+  "notes": "Plan.json loading, PSR-4 structure, DI pattern, and quality checks are all specified. Gap: no test-writing step — team-backend implements code, team-qa writes tests. The eval expectation 'Writes PHPUnit tests' may reflect a design intent not yet implemented in the skill.",
+  "timing": {
+    "executor_duration_seconds": 420
+  }
+}

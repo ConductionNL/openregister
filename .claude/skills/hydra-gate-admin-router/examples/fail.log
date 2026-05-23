@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-admin-router.log
+[gate-11] admin-router: FAIL — 2 admin route/import — register via AdminSettings.php instead — see /tmp/hydra-gate-admin-router.log

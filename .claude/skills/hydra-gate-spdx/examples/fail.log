@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-spdx.log
+[gate-1] spdx-headers: FAIL — 2 missing @license, 1 missing @copyright

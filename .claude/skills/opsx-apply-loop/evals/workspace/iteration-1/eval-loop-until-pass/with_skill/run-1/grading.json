@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Runs apply inside Docker container",
+      "passed": true,
+      "evidence": "SKILL.md Step 6 sets up an isolated Docker container (container-setup-guide.md Step 6.5), mounts the app directory, and starts a Claude CLI session. The container's startup prompt directs it to read apply-verify-loop-protocol.md and run opsx-apply inside the container. The host orchestrator never runs apply directly — it delegates to the container."
+    },
+    {
+      "text": "Runs verify after apply",
+      "passed": true,
+      "evidence": "The container reads apply-verify-loop-protocol.md (referenced in SKILL.md Step 6), which defines the apply→verify sequence. After each apply pass the container runs opsx-verify and checks the result. The host waits for the container to exit (Step 6.6 monitoring loop) before continuing."
+    },
+    {
+      "text": "Loops on failure (max 5 iterations)",
+      "passed": true,
+      "evidence": "SKILL.md Guardrails: 'Max 5 apply→verify iterations — CRITICAL issues stop the loop after all iterations are exhausted; warnings-only always proceeds.' The apply-verify-loop-protocol.md inside the container implements the loop counter and exit criteria. The host-side loop report (Step 15) reads iteration count from container result files."
+    },
+    {
+      "text": "Auto-archives on successful verify",
+      "passed": true,
+      "evidence": "SKILL.md Step 11: 'Use the Agent tool (NOT the Skill tool) to run opsx-archive.' After verify is clean (container exits with STATUS=PASS per Step 6.7 Scenario A), the host proceeds automatically to Step 11 archive. Guardrails: 'Archive runs exactly once'. Step 12 then commits all changes."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "The Docker container isolation, apply→verify loop protocol, 5-iteration cap, and auto-archive are all explicitly specified in SKILL.md and its referenced protocol files. The container boundary (host vs container responsibilities) is clearly delineated in the Guardrails section.",
+  "timing": {
+    "executor_duration_seconds": 580
+  }
+}

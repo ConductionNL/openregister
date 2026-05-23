@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Spawns subagent per change",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude has no mechanism for discovering changes (the `openspec/changes/*/proposal.md` scan), no sub-agent prompt template, no max-5 cap, and no queue-and-refill pattern. It would not know to spawn one agent per change with the correct worktree path, branch name, and lifecycle instructions."
+    },
+    {
+      "text": "Uses isolated git worktrees",
+      "passed": false,
+      "evidence": "Git worktrees are not general assistant knowledge — they are a specific isolation pattern chosen by this skill. Without the skill, naive Claude would attempt changes in the main working directory, risking cross-change interference and branch conflicts."
+    },
+    {
+      "text": "Each subagent runs full lifecycle (apply→verify→archive)",
+      "passed": false,
+      "evidence": "Without the sub-agent prompt template (templates/sub-agent-prompt-template.md), agents would not know to run the full lifecycle. Naive Claude would likely apply changes but skip verify, archive, and feature doc steps — it would not know the lifecycle sequence."
+    },
+    {
+      "text": "Reports per-change status",
+      "passed": true,
+      "evidence": "Naive Claude would report some kind of status after attempting each change. General assistant behavior includes summarizing completed work. However, the report would lack the structured table format (Tasks, Quality, Browser, Docs columns) and the Step 8 final report structure."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "notes": "Without the skill, the parallel pipeline orchestration (worktree isolation, sub-agent templates, max-5 cap, queue-and-refill) is entirely absent. Naive Claude might report status of attempted work but would not execute the parallel lifecycle correctly.",
+  "timing": {
+    "executor_duration_seconds": 22
+  }
+}

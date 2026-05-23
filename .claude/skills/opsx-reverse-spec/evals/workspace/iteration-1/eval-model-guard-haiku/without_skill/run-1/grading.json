@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Detects active model is Haiku", "passed": false, "evidence": "No model check — would proceed on Haiku."},
+    {"text": "Stops immediately and does not read any code", "passed": false, "evidence": "Would start reading code files immediately."},
+    {"text": "Explicitly tells the user to switch to Sonnet or Opus", "passed": false, "evidence": "No model guidance provided."},
+    {"text": "Does not create a ghost change scaffold", "passed": false, "evidence": "Would attempt to create ghost change scaffold."},
+    {"text": "Does not touch the git tree", "passed": false, "evidence": "Would make git branch and commits."}
+  ],
+  "summary": {"passed": 0, "failed": 5, "total": 5, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 6.2}
+}

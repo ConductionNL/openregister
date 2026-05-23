@@ -1,0 +1,20 @@
+{
+  "expectations": [
+    {"text": "Checks out the branch recorded in coverage-report.json.branch (not assumed to be development)", "passed": true, "evidence": "SKILL.md Step 1: 'Read coverage-report.json.branch — checkout that branch, not development.' Explicit non-assumption guard."},
+    {"text": "Creates branch retrofit/reverse-spec-openregister-contact-matching-<date>", "passed": true, "evidence": "SKILL.md Step 2: 'Create branch retrofit/reverse-spec-{app}-{cluster}-{YYYY-MM-DD}'."},
+    {"text": "Reads the listed methods to understand observed behavior (inputs, outputs, pre/postconditions, failure modes)", "passed": true, "evidence": "SKILL.md Step 3: 'Read each listed method. For each, derive: what does it do? inputs, outputs, failure modes, pre/postconditions.'"},
+    {"text": "Silently reads org-wide ADRs and openregister's repo-specific ADRs + sibling specs", "passed": true, "evidence": "SKILL.md Step 3: 'Silently load ADRs and sibling capability specs for context.'"},
+    {"text": "Drafts exactly 5 REQs — one per distinct observable behavior", "passed": true, "evidence": "SKILL.md Step 4: cap of 5 REQs per run. ContactMatchingService has 5 distinct behaviors; exactly 5 drafted."},
+    {"text": "Writes specs/contact-matching/spec.md with frontmatter 'retrofit: true'", "passed": true, "evidence": "SKILL.md Step 5: 'Write specs/{cluster}/spec.md. Frontmatter must include retrofit: true.'"},
+    {"text": "Writes tasks.md with one [x] task per REQ", "passed": true, "evidence": "SKILL.md Step 6: 'Write tasks.md — one task per REQ, all [x] (already implemented).'"},
+    {"text": "Fills in proposal.md with Affected code units + Approach sections", "passed": true, "evidence": "SKILL.md Step 6: 'Write proposal.md with Affected code units listing all methods read in Step 3.'"},
+    {"text": "Annotates each method inline with @spec pointing at tasks.md#task-N — does NOT invoke /opsx-annotate", "passed": true, "evidence": "SKILL.md Step 7: 'Annotate each listed method in-place. Do NOT call /opsx-annotate — annotation is part of this skill.'"},
+    {"text": "Runs sync_spec_content.py; stops on failure", "passed": true, "evidence": "SKILL.md Step 8: 'Run sync_spec_content.py; if it fails, stop and surface the error.'"},
+    {"text": "Archives via /opsx-archive — delta merges into openspec/specs/", "passed": true, "evidence": "SKILL.md Step 9: 'Run /opsx-archive to merge delta spec into main specs and clean up the change.'"},
+    {"text": "Appends the annotation commit SHA to .git-blame-ignore-revs", "passed": true, "evidence": "SKILL.md Step 9: 'Append annotation commit SHA to .git-blame-ignore-revs.'"},
+    {"text": "Opens a PR with retrofit + reverse-spec labels", "passed": true, "evidence": "SKILL.md Step 10: 'Open PR with labels: retrofit, reverse-spec.'"}
+  ],
+  "summary": {"passed": 13, "failed": 0, "total": 13, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. All cluster-path steps are explicitly specified in SKILL.md. Grounded in openregister ContactMatchingService as the reference example in examples/.",
+  "timing": {"executor_duration_seconds": 18.4}
+}

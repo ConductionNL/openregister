@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Loads existing ADRs",
+      "passed": true,
+      "evidence": "SKILL.md Step 1: reads shared specs (openspec/specs/nextcloud-app/spec.md, api-patterns/spec.md, nl-design/spec.md, docker/spec.md). Steps 3-7 load three reference files: dutch-gov-architecture-standards.md (Step 3), nlgov-api-design-rules.md (Step 4), bio2-security-checklist.md (Step 7). These are the canonical ADRs and standards for Conduction apps."
+    },
+    {
+      "text": "Evaluates design against architectural constraints",
+      "passed": true,
+      "evidence": "SKILL.md Steps 2-7 cover 8 constraint categories: app layer architecture, dependency injection, event architecture, frontend shared library (@conduction/nextcloud-vue), Dutch gov architecture standards, NLGov API design rules, data model review, cross-app impact, and BIO2 security. Each has explicit checklist items."
+    },
+    {
+      "text": "Checks OpenSpec rules compliance",
+      "passed": true,
+      "evidence": "SKILL.md Step 1 reads change artifacts (proposal.md, specs/, design.md, tasks.md) to understand scope. Step 3 reads dutch-gov-architecture-standards.md which covers GEMMA/Common Ground/NLGov compliance. The architectural review section includes a 'Dutch Government Standards' table in Step 8's output template."
+    },
+    {
+      "text": "Suggests improvements with reasoning",
+      "passed": true,
+      "evidence": "SKILL.md Step 8 output template includes 'Architectural Concerns' (numbered list with recommendations) and 'Recommendations' (actionable numbered list). The verdict can be 'NEEDS DISCUSSION' which surfaces concerns. 'Approved Deviations' section documents intentional deviations with justification."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "The review-design pattern is fully specified: 8 constraint categories, 3 reference files loaded, OpenSpec artifact chain read, structured output template with concerns and recommendations. Deep Dutch government standards coverage is the primary value over generic code review.",
+  "timing": {
+    "executor_duration_seconds": 480
+  }
+}

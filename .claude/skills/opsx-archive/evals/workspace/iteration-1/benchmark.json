@@ -1,0 +1,303 @@
+{
+  "metadata": {
+    "skill_name": "<skill-name>",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-28T09:51:41Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 30055,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Validates all artifacts complete",
+          "passed": true,
+          "evidence": "Step 2 runs 'openspec status --change register-export --json' to check required vs optional artifacts; Step 3 checks task completion in tasks.md and GitHub issue."
+        },
+        {
+          "text": "Syncs delta specs to main specs",
+          "passed": true,
+          "evidence": "Step 4 compares delta specs, shows combined diff summary, prompts 'Sync now (recommended)', then executes /opsx-sync logic."
+        },
+        {
+          "text": "Converts test cases to reusable scenarios",
+          "passed": true,
+          "evidence": "Step 4.5: if test-plan.md exists, parses TC-N headers and offers to convert to TS-NNN-<slug>.md scenario files."
+        },
+        {
+          "text": "Creates PR to development branch",
+          "passed": false,
+          "evidence": "SKILL GAP: no automatic PR creation. /create-pr is listed in Step 8 as a 'What's next' option but is not executed by the skill. User must invoke it separately."
+        },
+        {
+          "text": "Closes GitHub tracking issue",
+          "passed": true,
+          "evidence": "Step 7 reads plan.json for tracking_issue, then asks via AskUserQuestion 'Close GitHub issue #42?' \u2014 closes via update_issue if user confirms."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": 29788,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Detects incomplete tasks",
+          "passed": true,
+          "evidence": "Step 3 Case B: reads tasks.md, counts unchecked '- [ ]' items."
+        },
+        {
+          "text": "Reports which tasks remain",
+          "passed": true,
+          "evidence": "Displays '\u26d4 Cannot archive: N task(s) still incomplete: - Task X: <title>' listing task-2 and task-4 by name."
+        },
+        {
+          "text": "Suggests running /opsx-apply first",
+          "passed": false,
+          "evidence": "MISMATCH: skill offers 'Go back and complete tasks' or 'Archive anyway (override)' via AskUserQuestion \u2014 does NOT name /opsx-apply as the next step."
+        },
+        {
+          "text": "Does NOT archive incomplete changes",
+          "passed": true,
+          "evidence": "Blocks and only proceeds if user explicitly picks the override option."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": 29984,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Applies ADDED requirements to main specs",
+          "passed": true,
+          "evidence": "Step 4 detects ADDED changes in delta, shows combined diff, then delegates to /opsx-sync which inserts new requirements."
+        },
+        {
+          "text": "Applies MODIFIED requirements",
+          "passed": true,
+          "evidence": "Step 4 identifies modifications in the combined diff; /opsx-sync updates existing entries."
+        },
+        {
+          "text": "Handles REMOVED requirements",
+          "passed": true,
+          "evidence": "Step 4 lists removals in combined diff summary; /opsx-sync handles deletion."
+        },
+        {
+          "text": "Preserves existing content not mentioned in delta",
+          "passed": true,
+          "evidence": "Implied by scope-limited sync: only listed changes applied; content not in delta untouched."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 21292,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Validates all artifacts complete",
+          "passed": true,
+          "evidence": "Would check tasks.md for all [x], verify delta specs exist, confirm PR is passing."
+        },
+        {
+          "text": "Syncs delta specs to main specs",
+          "passed": true,
+          "evidence": "Would merge delta specs into openspec/specs/ \u2014 acknowledges not knowing the exact merge convention without reading the skill."
+        },
+        {
+          "text": "Converts test cases to reusable scenarios",
+          "passed": false,
+          "evidence": "Would only check if concrete test files exist; has no knowledge of TS-NNN-<slug>.md format or explicit Step 4.5 conversion pattern."
+        },
+        {
+          "text": "Creates PR to development branch",
+          "passed": true,
+          "evidence": "Would create PR per CLAUDE.md convention (branch from development, PR to development, 1 review required)."
+        },
+        {
+          "text": "Closes GitHub tracking issue",
+          "passed": false,
+          "evidence": "Would apply Hydra terminal label instead of closing \u2014 confuses /opsx-archive with the Hydra pipeline label state machine. Would not call gh issue close / update_issue directly."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": 21063,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Detects incomplete tasks",
+          "passed": true,
+          "evidence": "Would read tasks.md and detect unchecked task-2 and task-4 before proceeding."
+        },
+        {
+          "text": "Reports which tasks remain",
+          "passed": true,
+          "evidence": "Would report: 'tasks.md has 2 incomplete tasks: task-2 and task-4. Archive blocked.'"
+        },
+        {
+          "text": "Suggests running /opsx-apply first",
+          "passed": true,
+          "evidence": "Explicitly: 'Suggest the path forward \u2014 either complete the tasks via /opsx-apply, or explicitly confirm they should be skipped'."
+        },
+        {
+          "text": "Does NOT archive incomplete changes",
+          "passed": true,
+          "evidence": "'Archiving is a terminal action... The user not mentioning incomplete tasks is not permission to ignore them.'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0.0,
+        "tokens": 21124,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Applies ADDED requirements to main specs",
+          "passed": true,
+          "evidence": "Would append new requirement entries to relevant sections in main spec."
+        },
+        {
+          "text": "Applies MODIFIED requirements",
+          "passed": true,
+          "evidence": "Would find matching requirement by ID and overwrite only that entry; leave surrounding entries untouched."
+        },
+        {
+          "text": "Handles REMOVED requirements",
+          "passed": true,
+          "evidence": "Careful approach: 'only delete entries that appear verbatim in the REMOVED section' \u2014 would not infer deletions or delete whole sections."
+        },
+        {
+          "text": "Preserves existing content not mentioned in delta",
+          "passed": true,
+          "evidence": "'The delta is a change set, not a replacement. Anything in the main spec not referenced stays exactly as-is.'"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.85,
+        "stddev": 0.1323,
+        "min": 0.75,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 29942.3333,
+        "stddev": 138.2908,
+        "min": 29788,
+        "max": 30055
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.8667,
+        "stddev": 0.2309,
+        "min": 0.6,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 21159.6667,
+        "stddev": 118.5931,
+        "min": 21063,
+        "max": 21292
+      }
+    },
+    "delta": {
+      "pass_rate": "-0.02",
+      "time_seconds": "+0.0",
+      "tokens": "+8783"
+    }
+  },
+  "notes": []
+}

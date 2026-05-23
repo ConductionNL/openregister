@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "runs git status --porcelain as part of Step 1 prereq check", "passed": false, "evidence": "Admits would not proactively run git status first — not a natural step for an annotation task."},
+    {"text": "refuses to proceed when porcelain output is non-empty", "passed": false, "evidence": "Would proceed anyway, rationalize as 'user's unstaged change is unrelated, I'll just add on top'."},
+    {"text": "cites the Refuse dirty trees guardrail in the refusal message", "passed": false, "evidence": "No named guardrail available — would invoke vague principles like 'don't clobber user work'."},
+    {"text": "does NOT create the retrofit branch", "passed": false, "evidence": "Would create 'retrofit/bucket-1-annotations' or similar branch, carrying the dirty file."},
+    {"text": "does NOT create any ghost-change directory", "passed": false, "evidence": "Would proceed with ghost-change creation as part of the annotation flow."},
+    {"text": "does NOT modify any file", "passed": false, "evidence": "Would start editing files — admits 'the dirty file would travel with the branch silently'."}
+  ],
+  "summary": {"passed": 0, "failed": 6, "total": 6, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 14.6}
+}

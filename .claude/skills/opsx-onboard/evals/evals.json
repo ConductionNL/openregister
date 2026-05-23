@@ -1,0 +1,83 @@
+{
+  "skill_name": "opsx-onboard",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "guided-tour",
+      "description": "Walk through full workflow",
+      "prompt": "Run /opsx-onboard",
+      "setup": "App with codebase, no prior OpenSpec usage",
+      "expected_output": "Should guide through complete cycle with narration",
+      "expectations": [
+        "Scans codebase for improvement opportunities",
+        "Presents 3-4 starter tasks",
+        "Guides through proposal\u2192specs\u2192design\u2192tasks\u2192apply\u2192archive",
+        "Narrates each step with explanations"
+      ]
+    },
+    {
+      "id": "real-work",
+      "description": "Does real work in codebase",
+      "prompt": "Follow onboarding to implement a small fix",
+      "setup": "Codebase with TODOs or missing tests",
+      "expected_output": "Should make real changes, not just demonstrate",
+      "expectations": [
+        "Identifies real issues (TODOs, missing tests, type issues)",
+        "Creates actual change artifacts",
+        "Implements actual code changes",
+        "Runs quality checks on changes"
+      ]
+    },
+    {
+      "id": "educational",
+      "description": "Explains as it goes",
+      "prompt": "Check narration quality during onboarding",
+      "setup": "Mid-onboarding",
+      "expected_output": "Should explain WHY at each step",
+      "expectations": [
+        "Explains purpose of each artifact type",
+        "Describes workflow philosophy",
+        "Points out guardrails and why they exist",
+        "Suggests resources for deeper learning"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "onboard me to OpenSpec",
+      "walk me through the workflow",
+      "opsx onboard",
+      "teach me OpenSpec",
+      "guided tour of the workflow",
+      "/opsx-onboard",
+      "I'm new to opsx, guide me",
+      "show me how the workflow works",
+      "run the onboarding",
+      "help me learn the opsx process",
+      "walk through a full cycle with me",
+      "onboard me to this workflow",
+      "introduce me to OpenSpec",
+      "demonstrate the opsx workflow",
+      "get me started with opsx"
+    ],
+    "should_not_trigger": [
+      "start a new change",
+      "apply a change",
+      "explore the app",
+      "create a PR",
+      "run tests",
+      "opsx-new",
+      "opsx-explore",
+      "opsx-apply",
+      "what is OpenSpec?",
+      "explain the workflow steps",
+      "show me existing changes",
+      "onboard a new developer",
+      "onboard the team",
+      "how do I use git?",
+      "what does onboarding do?"
+    ]
+  }
+}

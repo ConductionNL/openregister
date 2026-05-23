@@ -1,0 +1,54 @@
+{
+  "expectations": [
+    {
+      "text": "Tests navigation and page loading",
+      "passed": false,
+      "evidence": "Nextcloud at localhost:8080 not running. curl returned connection refused. No browser MCP tools available. No navigation performed."
+    },
+    {
+      "text": "Tests core CRUD operations",
+      "passed": false,
+      "evidence": "Same blocker — no connection to Nextcloud. No CRUD testing possible."
+    },
+    {
+      "text": "Produces structured pass/fail report",
+      "passed": false,
+      "evidence": "Agent produced a detailed report.md documenting blockers and analysis, but it does not contain PASS/FAIL entries for app features — it describes the inability to test. Does not meet the intent of this assertion."
+    },
+    {
+      "text": "Does NOT spawn parallel agents in single mode",
+      "passed": true,
+      "evidence": "No parallel agents were spawned. Agent identified single mode from the prompt and acknowledged it requires 1 agent. Environment blockers prevented any agent spawning."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "execution_metrics": {
+    "tool_calls": {"Read": 10, "Write": 2, "Bash": 8},
+    "total_tool_calls": 20,
+    "total_steps": 5,
+    "files_created": ["report.md", "metrics.json"],
+    "errors_encountered": 3,
+    "output_chars": 3800,
+    "transcript_chars": 4500
+  },
+  "timing": {
+    "total_tokens": 52376,
+    "duration_ms": 227576,
+    "total_duration_seconds": 227.6
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "Produces structured pass/fail report",
+        "reason": "Same issue as with-skill — assertion requires live environment."
+      }
+    ],
+    "overall": "CONTAMINATION NOTE: Baseline agent proactively read test-app SKILL.md 'to understand the expected workflow'. This means the baseline is not truly isolated from the skill's guidance. Future baseline runs should be given explicit instruction to NOT read skill files. Despite this, the agent still could not perform actual testing due to missing environment.",
+    "overall_pass_rate_note": "0.25 pass rate matches with-skill. In isolation this looks like no skill improvement, but the comparison is invalid due to: (1) environment unavailability affecting all assertions requiring live testing, and (2) baseline contamination from reading SKILL.md."
+  }
+}

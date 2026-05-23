@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "reads openspec/specs/export/spec.md before editing any doc", "passed": false, "evidence": "Would open README and rewrite prose without loading specs first."},
+    {"text": "flags README [Future] marker as stale (spec status=done)", "passed": false, "evidence": "Would not check spec status vs README — would treat README as authoritative."},
+    {"text": "proposes docs/features/export.md referencing the spec via link, not duplicating content", "passed": false, "evidence": "Would likely duplicate spec content into the feature doc rather than linking."},
+    {"text": "does NOT link to ADRs from user-facing docs", "passed": true, "evidence": "Would not spontaneously link to ADRs in feature docs."},
+    {"text": "uses AskUserQuestion before writing", "passed": false, "evidence": "Would auto-save edits without a confirmation gate."},
+    {"text": "runs ADR-009 screenshot check on the new feature doc", "passed": false, "evidence": "No knowledge of ADR-009 screenshot requirements."}
+  ],
+  "summary": {"passed": 1, "failed": 5, "total": 6, "pass_rate": 0.17},
+  "timing": {"executor_duration_seconds": 8.1}
+}

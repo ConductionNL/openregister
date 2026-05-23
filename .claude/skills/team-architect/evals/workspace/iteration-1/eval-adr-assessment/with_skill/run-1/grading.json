@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies affected components",
+      "passed": true,
+      "evidence": "SKILL.md Step 6 Cross-App Impact Analysis: explicit dependency graph (openregister → opencatalogi → softwarecatalog, openregister → openconnector, openregister → docudesk) with checklist items per component. Step 2 layer checklist identifies which architectural layers are affected."
+    },
+    {
+      "text": "Evaluates trade-offs",
+      "passed": true,
+      "evidence": "SKILL.md Step 8 output template includes 'Architectural Concerns' section with numbered concerns + recommendations. Step 5 data model review evaluates migration vs. schema change trade-offs. Steps 3-7 reference files (dutch-gov-architecture-standards.md, nlgov-api-design-rules.md, bio2-security-checklist.md) provide the framework for evaluating compliance trade-offs."
+    },
+    {
+      "text": "Checks consistency with existing ADRs",
+      "passed": true,
+      "evidence": "SKILL.md Step 1 reads shared specs from openspec/specs/ (nextcloud-app, api-patterns, nl-design, docker). Step 3 reads dutch-gov-architecture-standards.md. Step 4 checks against NLGov API Design Rules 2.0. These are the canonical ADRs — consistency is checked systematically."
+    },
+    {
+      "text": "Recommends accept/revise/reject",
+      "passed": true,
+      "evidence": "SKILL.md Step 8 output template: '### Verdict: APPROVE / REQUEST CHANGES / NEEDS DISCUSSION'. Three-option verdict is the top-level outcome. Also includes 'Approved Deviations' for intentional deviations, and 'Recommendations' for required changes."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "ADR assessment is fully specified: cross-app impact table, trade-off analysis via reference files, consistency checks against shared specs + ADR references, and a three-option verdict. The skill is specifically designed for this use case.",
+  "timing": {
+    "executor_duration_seconds": 460
+  }
+}

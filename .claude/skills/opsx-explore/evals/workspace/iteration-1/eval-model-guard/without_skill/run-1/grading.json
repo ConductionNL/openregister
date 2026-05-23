@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "detects Haiku model from system context", "passed": false, "evidence": "No model check — would proceed regardless of active model."},
+    {"text": "stops before entering explore mode", "passed": false, "evidence": "Would enter exploration immediately on Haiku."},
+    {"text": "suggests switching to Sonnet or Opus", "passed": false, "evidence": "No model switch suggestion without the skill's guardrail."},
+    {"text": "provides the /model command to switch", "passed": false, "evidence": "Would not surface the /model command."}
+  ],
+  "summary": {"passed": 0, "failed": 4, "total": 4, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 6.4}
+}

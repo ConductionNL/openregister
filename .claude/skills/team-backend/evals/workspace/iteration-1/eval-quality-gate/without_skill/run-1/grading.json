@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Runs composer check:strict",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude does not know this codebase uses 'composer check' (or 'composer check:strict') as the quality command, or that it runs via docker exec inside the nextcloud container. It might run phpcs directly but would miss the containerized quality workflow."
+    },
+    {
+      "text": "Fixes PHPCS/PHPMD/Psalm/PHPStan issues",
+      "passed": false,
+      "evidence": "Without the specific Forbidden Patterns list (var_dump, die, error_log, sizeof, is_null, etc.) and the PHPCS rules, naive Claude would not know which violations to fix. It might fix obvious ones but would miss Conduction-specific custom sniff violations (named arguments, line length)."
+    },
+    {
+      "text": "Does NOT skip quality gate",
+      "passed": false,
+      "evidence": "Without the unconditional Step 3 quality gate, naive Claude might implement code and mark the task complete without running any quality checks. Quality gates are optional behavior for general Claude."
+    },
+    {
+      "text": "Reports all fixes made",
+      "passed": true,
+      "evidence": "If naive Claude does fix quality issues, it would likely report what it changed. Reporting changes is general assistant behavior."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "notes": "Quality gate enforcement (run → fix → no-skip) is entirely skill-specific. The containerized workflow, specific forbidden patterns, and mandatory gate are not general Claude behavior.",
+  "timing": {
+    "executor_duration_seconds": 15
+  }
+}

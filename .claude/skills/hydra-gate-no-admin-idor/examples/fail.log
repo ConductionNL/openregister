@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-no-admin-idor.log
+[gate-7] no-admin-idor: FAIL — 1 method(s) with NoAdminRequired + no guard — see /tmp/hydra-gate-no-admin-idor.log

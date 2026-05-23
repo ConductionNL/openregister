@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-unsafe-auth-resolver.log
+[gate-8] unsafe-auth-resolver: FAIL — 1 fail-open pattern(s) — see /tmp/hydra-gate-unsafe-auth-resolver.log

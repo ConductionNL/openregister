@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Uses t() for all user-facing strings",
+      "passed": true,
+      "evidence": "The t() function for translations is widely known in Vue/Nextcloud apps. Naive Claude with Vue knowledge would typically use a translation function. However, it might use vue-i18n's t() rather than the @nextcloud/l10n t() which has a different signature."
+    },
+    {
+      "text": "Adds translation keys properly",
+      "passed": false,
+      "evidence": "The Nextcloud l10n t() signature requires the app name as the first argument: t('appname', 'key'). Naive Claude might use t('key') (single argument) or $t('key') (Vuex/vue-i18n style), which are wrong for Nextcloud. The Nextcloud-specific signature is not general knowledge."
+    },
+    {
+      "text": "Defaults to English",
+      "passed": true,
+      "evidence": "Defaulting to English is a general software convention. Naive Claude would write English strings by default."
+    },
+    {
+      "text": "Follows NL Design System CSS variables",
+      "passed": false,
+      "evidence": "NL Design System CSS variables (Dutch municipal theming tokens) are Conduction/Dutch-gov-specific. Naive Claude would not know to use var(--color-*) NL Design System tokens — it might use @nextcloud/vue CSS variables but not the NL Design System layer."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "Using t() and English defaults are general conventions. The Nextcloud-specific t() signature (app name first) and NL Design System CSS variables are Conduction/Dutch-gov-specific.",
+  "timing": {
+    "executor_duration_seconds": 16
+  }
+}

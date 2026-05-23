@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Detects verify pass",
+      "passed": true,
+      "evidence": "Step 6.7 Scenario A handles the container exit with STATUS=PASS. The container writes a result file with STATUS=PASS (per apply-verify-loop-protocol.md) and the host's monitoring loop (Step 6.6) reads this on container exit. The skill explicitly defines STATUS=PASS as the trigger for proceeding to the host post-steps (Steps 9–15)."
+    },
+    {
+      "text": "Auto-commits changes",
+      "passed": true,
+      "evidence": "SKILL.md Step 12: 'Commit all changes — implementation, test fixes, and archive artifacts — in one commit.' The Guardrails state: 'Single git commit — all changes from all apply→verify cycles, all test fixes, and the archive are committed together in Step 12.' This is automatic (no AskUserQuestion before commit)."
+    },
+    {
+      "text": "Auto-archives the change",
+      "passed": true,
+      "evidence": "SKILL.md Step 11 runs opsx-archive via Agent tool automatically after verify passes. The Guardrails state: 'Archive runs exactly once.' Step 11 is not conditional (only Steps 9 and 10 are conditional on TESTS_ENABLED/deferred tests). On first-try success, the skill proceeds: verify clean → Step 11 archive → Step 12 commit → Step 13 GitHub sync."
+    },
+    {
+      "text": "Reports success",
+      "passed": true,
+      "evidence": "Step 15 reads all log files and delivers the final report using loop-report-template.md. The template includes a summary table with pass/fail counts and the loop log. Step 15 also uses AskUserQuestion to ask 'What would you like to do next?' — implicitly confirming the successful completion state."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "The auto-archive path (STATUS=PASS → Step 11 → Step 12 → Step 13 → Step 15) is the happy path and is fully specified. No user confirmation is required between verify-pass and archive. The single-commit guarantee and archive-once guarantee are both explicit in the Guardrails.",
+  "timing": {
+    "executor_duration_seconds": 295
+  }
+}

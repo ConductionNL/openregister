@@ -1,0 +1,120 @@
+{
+  "skill_name": "opsx-annotate",
+  "version": "1.0.0",
+  "created": "2026-04-23",
+  "last_updated": "2026-04-23",
+  "last_validated": "2026-04-23",
+  "baseline_score": 0.68,
+  "grading_rubric": {
+    "pass_threshold": 0.8,
+    "criteria": [
+      {"id": "prereqs", "weight": 0.15, "description": "Verifies coverage-report.json < 24h old, clean working tree, correct branch — refuses when any fails"},
+      {"id": "ghost_change", "weight": 0.15, "description": "Creates ghost change named retrofit-annotate-{app}-{YYYY-MM-DD} with correct proposal.md + tasks.md + empty specs/"},
+      {"id": "annotation_format", "weight": 0.18, "description": "Applies @spec tags per ADR-003 format — after @link, one per distinct task, file docblock first then method docblock"},
+      {"id": "confirm", "weight": 0.12, "description": "Presents the annotation plan via AskUserQuestion before editing any file"},
+      {"id": "edit_discipline", "weight": 0.12, "description": "Uses Edit tool one file at a time — never sed/awk/python. Falls back to Write for full rewrite if linter reverts"},
+      {"id": "pr_hygiene", "weight": 0.10, "description": "PR is annotation-only: labels (retrofit, annotation-only), body mentions zero logic changes, blame-ignore-revs updated"},
+      {"id": "idempotent", "weight": 0.10, "description": "Re-running detects existing retrofit tags and asks whether to reuse dated ghost change or create fresh one"},
+      {"id": "capture", "weight": 0.08, "description": "Runs Capture Learnings step at end and routes observations through the two-stage buffer"}
+    ]
+  },
+  "evals": [
+    {
+      "id": "happy-path-small-app",
+      "description": "Small app, fresh coverage report, clean tree — full happy path",
+      "prompt": "/opsx-annotate procest",
+      "setup": "procest/openspec/coverage-report.json exists, generated 2h ago, branch=development. Bucket 1 has 10 methods across 3 capabilities (meeting-management, motion-and-voting, document-intake). Working tree clean. No prior retrofit annotations.",
+      "baseline": "Without the skill, Claude edits random docblocks, may invent the ghost change name, typically forgets to archive, and does not update .git-blame-ignore-revs.",
+      "expected_output": "Creates retrofit-annotate-procest-{today} ghost change with 3 tasks, applies 10 @spec tags across the affected files plus file-docblock tags, runs composer phpcs + /hydra-gates, commits, pushes, opens PR with retrofit + annotation-only labels, archives the ghost change.",
+      "assertions": [
+        "checks coverage-report.json exists AND is < 24h old BEFORE any other action",
+        "checks git status --porcelain is empty and refuses on dirty tree",
+        "creates feature branch retrofit/annotate-procest-{today}",
+        "creates ghost change named retrofit-annotate-procest-{today} with empty specs/ and one task per REQ",
+        "task IDs follow format 'task-N: {capability}#{REQ-NNN} — {title} (retroactive annotation)'",
+        "uses AskUserQuestion before any file edits",
+        "uses Edit tool (or Write for full-file rewrite) — never sed/awk/python",
+        "runs composer phpcs and /hydra-gates after annotation",
+        "appends annotation commit SHA to .git-blame-ignore-revs",
+        "archives the ghost change via /opsx-archive at the end",
+        "PR labels include both retrofit and annotation-only"
+      ]
+    },
+    {
+      "id": "dirty-tree-refuses",
+      "description": "Working tree has uncommitted changes — skill must refuse",
+      "prompt": "/opsx-annotate procest",
+      "setup": "procest/openspec/coverage-report.json exists and is fresh. git status --porcelain returns non-empty (unstaged changes to lib/Service/FooService.php).",
+      "baseline": "Without the skill, Claude may happily commit on top of the dirty tree, polluting the annotation-only PR with unrelated changes.",
+      "expected_output": "Stops immediately with a clear message citing the Refuse dirty trees guardrail. No branch created, no ghost change, no edits.",
+      "assertions": [
+        "runs git status --porcelain as part of Step 1 prereq check",
+        "refuses to proceed when porcelain output is non-empty",
+        "cites the Refuse dirty trees guardrail in the refusal message",
+        "does NOT create the retrofit branch",
+        "does NOT create any ghost-change directory",
+        "does NOT modify any file"
+      ]
+    },
+    {
+      "id": "stale-coverage-report",
+      "description": "Coverage report is > 24h old — skill must refuse and redirect",
+      "prompt": "/opsx-annotate procest",
+      "setup": "procest/openspec/coverage-report.json exists, generated_at is 48h ago. Working tree clean.",
+      "baseline": "Without the skill, Claude uses the stale report, producing annotations that may not reflect the current code.",
+      "expected_output": "Stops with a message pointing to /opsx-coverage-scan procest to refresh the report. No further action.",
+      "assertions": [
+        "reads coverage-report.json and parses the generated_at timestamp",
+        "compares against current time and detects > 24h staleness",
+        "refuses to proceed",
+        "recommends running /opsx-coverage-scan procest to refresh",
+        "does NOT proceed with annotation"
+      ]
+    },
+    {
+      "id": "idempotent-rerun",
+      "description": "App already has retrofit annotations from a previous run — skill must detect and ask",
+      "prompt": "/opsx-annotate procest",
+      "setup": "procest has existing @spec openspec/changes/retrofit-annotate-procest-2026-04-01/tasks.md#task-3 tags across 4 files from a prior retrofit run. Coverage report is fresh. Working tree clean.",
+      "baseline": "Without the skill, Claude creates a second ghost change and double-annotates, or fails to detect the prior annotations.",
+      "expected_output": "Detects existing retrofit-annotate-* tags during prereq check, asks via AskUserQuestion whether to (a) create a fresh dated ghost change for new Bucket 1 items only, (b) reuse the existing ghost change, or (c) cancel.",
+      "assertions": [
+        "greps the code for existing @spec openspec/changes/retrofit-annotate-* tags before annotating",
+        "detects the prior retrofit-annotate-procest-2026-04-01 tags",
+        "uses AskUserQuestion to present the choice (fresh / reuse / cancel)",
+        "does NOT silently create a duplicate ghost change",
+        "if user picks fresh, new dated ghost change only carries NEW Bucket 1 items (not re-annotates already-tagged methods)"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "annotate bucket 1",
+      "apply retrofit annotations",
+      "tag methods from the coverage report",
+      "/opsx-annotate procest",
+      "run the annotation pass on procest",
+      "retrofit-annotate this app",
+      "add @spec tags from the scan",
+      "bucket 1 annotation PR",
+      "apply the ghost change annotations",
+      "tag the legacy code per ADR-003",
+      "do the retrofit annotation step",
+      "annotation-only PR from the coverage report"
+    ],
+    "should_not_trigger": [
+      "annotate this PR",
+      "add comments to this function",
+      "review my docblocks",
+      "write new specs",
+      "/opsx-coverage-scan procest",
+      "reverse-spec the bucket 2 items",
+      "create a ghost change manually",
+      "fix the PHPCS errors",
+      "run hydra-gates",
+      "update the blame-ignore-revs file",
+      "squash the retrofit commits",
+      "merge the annotation PR"
+    ]
+  }
+}

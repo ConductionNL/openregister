@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "Validates all artifacts complete", "passed": true, "evidence": "Step 2 runs 'openspec status --change register-export --json' to check required vs optional artifacts; Step 3 checks task completion in tasks.md and GitHub issue."},
+    {"text": "Syncs delta specs to main specs", "passed": true, "evidence": "Step 4 compares delta specs, shows combined diff summary, prompts 'Sync now (recommended)', then executes /opsx-sync logic."},
+    {"text": "Converts test cases to reusable scenarios", "passed": true, "evidence": "Step 4.5: if test-plan.md exists, parses TC-N headers and offers to convert to TS-NNN-<slug>.md scenario files."},
+    {"text": "Creates PR to development branch", "passed": false, "evidence": "SKILL GAP: no automatic PR creation. /create-pr is listed in Step 8 as a 'What's next' option but is not executed by the skill. User must invoke it separately."},
+    {"text": "Closes GitHub tracking issue", "passed": true, "evidence": "Step 7 reads plan.json for tracking_issue, then asks via AskUserQuestion 'Close GitHub issue #42?' — closes via update_issue if user confirms."}
+  ],
+  "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8},
+  "notes": "Skill gap: eval expects automatic PR creation but the skill treats it as a post-archive manual step. Either the eval should be updated or the skill should invoke /create-pr at the end.",
+  "timing": {"executor_duration_seconds": 19.4}
+}

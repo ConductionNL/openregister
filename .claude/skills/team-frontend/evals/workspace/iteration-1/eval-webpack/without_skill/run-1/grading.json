@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Uses plugins.push(), NOT plugins = []",
+      "passed": false,
+      "evidence": "Naive Claude might know the general webpack pattern of extending configurations but would not know the specific Conduction convention of using plugins.push() rather than replacing the plugins array. This is a project-specific convention."
+    },
+    {
+      "text": "Preserves existing DefinePlugin",
+      "passed": false,
+      "evidence": "Without specific knowledge of the @nextcloud/webpack-vue-config base configuration and which plugins it defines, naive Claude would not know to preserve the existing DefinePlugin. It might overwrite it."
+    },
+    {
+      "text": "Handles conditional alias for nextcloud-vue",
+      "passed": false,
+      "evidence": "The conditional fs.existsSync check for ../nextcloud-vue/src is Conduction-specific (handles monorepo local dev vs npm package). Naive Claude would not know this pattern or that @conduction/nextcloud-vue needs special handling."
+    },
+    {
+      "text": "Runs npm lint after changes",
+      "passed": true,
+      "evidence": "Running lint after making changes is general good practice. Naive Claude might run npm run lint if asked or as a natural next step after code changes."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "notes": "Only lint running is general knowledge. The specific webpack mutation patterns (plugins.push(), DefinePlugin preservation, @conduction/nextcloud-vue conditional alias) are all Conduction-specific conventions.",
+  "timing": {
+    "executor_duration_seconds": 16
+  }
+}

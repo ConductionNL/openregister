@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "reads coverage-report.json and parses the generated_at timestamp", "passed": false, "evidence": "Would not check age by default — 'treat the file as authoritative input'. Might parse generated_at only if needed for annotation itself."},
+    {"text": "compares against current time and detects > 24h staleness", "passed": false, "evidence": "Explicit statement: 'no threshold in my prior context that defines stale' — would not detect staleness."},
+    {"text": "refuses to proceed", "passed": false, "evidence": "Would proceed — 'inventing a 24h refusal rule would be overreach'."},
+    {"text": "recommends running /opsx-coverage-scan procest to refresh", "passed": false, "evidence": "Only 'possibly, as a soft note at the end' — not proactively; and does not know /opsx-coverage-scan exists."},
+    {"text": "does NOT proceed with annotation", "passed": false, "evidence": "Would annotate using the stale report as-is."}
+  ],
+  "summary": {"passed": 0, "failed": 5, "total": 5, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 10.2}
+}

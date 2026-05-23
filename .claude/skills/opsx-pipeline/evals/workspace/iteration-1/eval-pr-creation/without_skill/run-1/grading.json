@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Creates feature branch per change",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know the `feature/<issue-number>/<change-name>` naming convention or the git worktree approach. It might create a branch but without the correct naming convention, the branch would not integrate with the pipeline's issue-tracking system."
+    },
+    {
+      "text": "Pushes to remote",
+      "passed": true,
+      "evidence": "Naive Claude can push branches to remote — this is a general git capability. It would likely push before creating a PR if it knows PRs require a remote branch."
+    },
+    {
+      "text": "Creates PR via gh CLI",
+      "passed": true,
+      "evidence": "Naive Claude knows how to use `gh pr create`. It would likely create a PR with a basic title and description. However, without the PR body template (templates/pr-body-template.md), the PR description would be unstructured and missing the OpenSpec-specific fields."
+    },
+    {
+      "text": "Reports PR URLs",
+      "passed": true,
+      "evidence": "After creating a PR with `gh pr create`, the URL is returned in the command output. Naive Claude would report this URL to the user. This is basic CLI output forwarding."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "notes": "Push, PR creation, and URL reporting are general git/gh capabilities. The skill adds value in branch naming convention, structured PR body template, and worktree-based branch creation. Without the naming convention, pipeline automation tools that look for feature/<issue-number>/<name> branches would not find the PRs.",
+  "timing": {
+    "executor_duration_seconds": 22
+  }
+}

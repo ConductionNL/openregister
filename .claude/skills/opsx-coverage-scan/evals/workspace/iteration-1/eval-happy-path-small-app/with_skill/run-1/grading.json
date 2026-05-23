@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "reports which branch the app is on (Step 1)", "passed": true, "evidence": "Ran git -C $APP branch --show-current at Step 1 — reported retrofit/reverse-spec-openregister-tenant-lifecycle-2026-04-28."},
+    {"text": "reads every openspec/specs/*/spec.md and records {capability, req_id, req_title, scenarios, keywords}", "passed": true, "evidence": "Extracted 384 REQs from 31 capabilities using the Requirement: heading pattern."},
+    {"text": "enumerates PHP via Glob, skipping lib/Migration/ and lib/Db/ entity boilerplate", "passed": true, "evidence": "find lib -name '*.php' with explicit dirs[:] exclusion of Migration and Db — 437 files after skipping (vs 631 total)."},
+    {"text": "classifies methods into annotated / plumbing / Bucket 1 / 2a / 2b", "passed": true, "evidence": "annotated=333, plumbing=335, bucket_1=400, bucket_2a=491/7caps, bucket_2b=2158/23clusters."},
+    {"text": "Pass B resolves private helpers by walking callers", "passed": true, "evidence": "Pass B promoted 150 private helpers from bucket_2a into bucket_1 by inheriting dominant REQ from same-file public callers."},
+    {"text": "reverse pass splits unimplemented REQs into 3a (git log -S match) vs 3b", "passed": false, "evidence": "DEVIATION: used grep of current codebase instead of 'git log -S' for 3a/3b split (git log timed out on 384 REQs). Semantically similar but 3a means 'keyword in code, not matched in Pass A' rather than 'code removed from git history'."},
+    {"text": "writes openspec/coverage-report.json matching the schema in SKILL.md Step 9", "passed": true, "evidence": "Wrote {generated_at, app, branch, scanner_version, buckets:{annotated, plumbing, bucket_1, bucket_2a, bucket_2b, bucket_3a, bucket_3b, bucket_4}, ignored, notes}."},
+    {"text": "writes openspec/coverage-report.md with Summary table, all buckets, Notes section", "passed": true, "evidence": "Wrote full markdown with Summary table, Bucket 1 by capability, Bucket 2a/2b clusters, Bucket 3, Bucket 4, Notes."},
+    {"text": "never modifies any file other than the two report files", "passed": true, "evidence": "All analysis via Python scripts writing only to openregister/openspec/coverage-report.{json,md}."}
+  ],
+  "summary": {"passed": 8, "failed": 1, "total": 9, "pass_rate": 0.89},
+  "notes": "Real execution on openregister (437 PHP + 268 Vue files, 384 REQs). git log -S approach timed out — fast grep fallback used for 3a/3b. All other assertions met. 333 methods already annotated.",
+  "timing": {"executor_duration_seconds": 780.0}
+}

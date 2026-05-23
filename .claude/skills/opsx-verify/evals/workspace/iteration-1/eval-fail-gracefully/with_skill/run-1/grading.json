@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies which tasks/specs are incomplete",
+      "passed": true,
+      "evidence": "Simulated scenario: tasks 2 and 3 (TaskCard.vue badge and CSS styling) are not implemented — TaskCard.vue does not exist and NcChip is not referenced anywhere. Skill Step 5 would find tasks 2 and 3 still [ ] in tasks.md and add CRITICAL issues: 'Incomplete task: Add due date badge to TaskCard.vue' and 'Incomplete task: Add CSS styling for badge states'. Step 5 Spec Coverage would also flag 'Requirement not found: Due Date Badge on Task Card' since no NcChip import or dueDateBadgeStatus computed exists. Skill correctly identifies both task-level and spec-level gaps."
+    },
+    {
+      "text": "Does NOT mark change as verified",
+      "passed": true,
+      "evidence": "Skill Step 11 explicitly states: 'If ANY tasks are still [ ]: do NOT offer archive. Show: N task(s) still incomplete — archive is blocked until all tasks are done.' For this scenario with 2 incomplete tasks, the skill would display the blocked-archive message and 'End the session without offering archive.' The archive prompt is never shown."
+    },
+    {
+      "text": "Offers in-place Fix Loop or blocks archive with specific incomplete-task list",
+      "passed": true,
+      "evidence": "SKILL.md Step 10 Fix Loop asks 'Would you like me to fix them?' for CRITICAL/WARNING issues. Step 11 blocked-archive message shows the exact incomplete task titles and their criteria — an actionable, specific list. Both are correct implementations of the corrected expectation (updated from '/opsx-apply' on 2026-04-28)."
+    },
+    {
+      "text": "Reports specific failures with evidence",
+      "passed": true,
+      "evidence": "Skill Step 9 generates a Verification Report with CRITICAL issues grouped by priority. For the simulated failure: CRITICAL (1) 'Incomplete task: Add due date badge to TaskCard.vue — criteria: Yellow chip, Red chip, No chip' with recommendation 'Complete task 2 or mark as done if already implemented'; CRITICAL (2) 'Incomplete task: Add CSS styling'; CRITICAL (3) 'Requirement not found: Due Date Badge on Task Card — no TaskCard.vue found in src/components/'. Each issue includes file reference and specific actionable recommendation per skill's output format requirements."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Graceful degradation works correctly. Blocks archive, identifies specific incomplete tasks/specs with CRITICAL severity, reports actionable recommendations. Score: 1.0 after correcting the /opsx-apply expectation on 2026-04-28 to match actual SKILL.md behavior (in-place Fix Loop).",
+  "timing": {
+    "executor_duration_seconds": 140
+  }
+}

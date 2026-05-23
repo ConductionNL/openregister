@@ -1,0 +1,86 @@
+{
+  "skill_name": "opsx-explore",
+  "version": "1.0.0",
+  "created": "2026-04-10",
+  "last_validated": "2026-04-24",
+  "evals": [
+    {
+      "id": "open-ended-exploration",
+      "description": "Enter explore mode for a vague idea",
+      "prompt": "Run /opsx-explore real-time collaboration",
+      "setup": "User wants to think through an idea before committing to a change",
+      "expected_output": "Should enter explore mode and think through the idea collaboratively",
+      "expectations": [
+        "Checks active model, blocks on Haiku",
+        "Asks user which model to use for exploration",
+        "Enters a stance of curious thinking partner",
+        "Does NOT implement any code",
+        "Opens multiple interesting directions for user to follow",
+        "May read and search codebase for context"
+      ]
+    },
+    {
+      "id": "explore-existing-change",
+      "description": "Explore in context of an existing change",
+      "prompt": "Run /opsx-explore add-dark-mode",
+      "setup": "Change add-dark-mode exists with some artifacts",
+      "expected_output": "Should explore in context of that change",
+      "expectations": [
+        "Reads existing change artifacts for context",
+        "Thinks through design decisions and tradeoffs",
+        "Surfaces open questions and alternatives",
+        "Does NOT write code or advance the workflow",
+        "Can create OpenSpec artifacts (proposals, specs) if user asks"
+      ]
+    },
+    {
+      "id": "model-guard",
+      "description": "Blocks on Haiku",
+      "prompt": "Run /opsx-explore on Haiku model",
+      "setup": "Active model is Haiku",
+      "expected_output": "Should stop immediately with a helpful message",
+      "expectations": [
+        "Detects Haiku model from system context",
+        "Stops before entering explore mode",
+        "Suggests switching to Sonnet or Opus",
+        "Provides the /model command to switch"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "/opsx-explore",
+      "enter explore mode",
+      "opsx explore real-time collaboration",
+      "let's think through this",
+      "help me think about the auth system",
+      "explore the architecture options",
+      "I want to explore ideas before building",
+      "think through postgres vs sqlite for this",
+      "opsx explore add-dark-mode",
+      "let's brainstorm this change",
+      "explore mode please",
+      "help me investigate this problem",
+      "think with me about this feature",
+      "I want to investigate the codebase structure",
+      "explore before we start"
+    ],
+    "should_not_trigger": [
+      "start a new change",
+      "apply the change",
+      "archive the change",
+      "implement the feature",
+      "opsx-new",
+      "opsx-apply",
+      "opsx-ff",
+      "opsx-archive",
+      "show me the code",
+      "run the tests",
+      "what does opsx-explore do?",
+      "explore the file system",
+      "explore git history",
+      "list all changes",
+      "create a PR"
+    ]
+  }
+}

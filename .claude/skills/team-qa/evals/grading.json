@@ -1,0 +1,49 @@
+{
+  "skill_name": "team-qa",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-28 (simulation). 3 scenarios: test-coverage (4/4=1.0), acceptance (4/4=1.0), defect-report (4/4=1.0). All core QA behaviors — multi-suite test execution, GIVEN/WHEN/THEN browser protocol, 75% coverage gate, QA report template, and defect documentation — are fully specified. Without_skill scores reflect that running tests and documenting defects are general Claude capabilities; plan.json integration and structured gates are skill-specific.",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "test-coverage",
+      "score": 1.0,
+      "assertions": [
+        {"id": "runs available test suites", "result": "pass", "note": "Steps 2-4: PHPUnit (unit/integration/db/service), Jest, Newman — all with explicit docker exec commands."},
+        {"id": "reports coverage for changed code", "result": "pass", "note": "Step 6: 75% line/method gate. Step 2 composer test-coverage. Step 3 npm run test-coverage."},
+        {"id": "identifies untested code paths", "result": "pass", "note": "Step 9: 'If coverage below gate → identify untested code paths and suggest test additions.'"},
+        {"id": "suggests specific tests to add", "result": "pass", "note": "Step 9 explicit instruction with specific trigger condition (below gate)."}
+      ],
+      "notes": "Multi-suite test execution and 75% coverage gate are the skill's primary value over naive test running."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "acceptance",
+      "score": 1.0,
+      "assertions": [
+        {"id": "loads acceptance criteria from specs", "result": "pass", "note": "Step 1: 'Read acceptance_criteria for each completed task' from plan.json."},
+        {"id": "tests each criterion", "result": "pass", "note": "Step 5: GIVEN/WHEN/THEN browser protocol using mcp__browser-1__* tools."},
+        {"id": "reports pass/fail per criterion", "result": "pass", "note": "Step 7: QA report template written to {change-name}-qa-report.md."},
+        {"id": "documents defects found", "result": "pass", "note": "Step 9 lists failures; Step 5 screenshots provide evidence."}
+      ],
+      "notes": "GIVEN/WHEN/THEN browser protocol and plan.json acceptance_criteria loading are the skill's primary value."
+    },
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "defect-report",
+      "score": 1.0,
+      "assertions": [
+        {"id": "describes defect with reproduction steps", "result": "pass", "note": "Step 5 GIVEN/WHEN/THEN translates directly into reproduction steps in QA report."},
+        {"id": "includes expected vs actual behavior", "result": "pass", "note": "Step 5 'Verify the THEN'. QA report template captures expected vs actual. Browser snapshot = evidence of actual."},
+        {"id": "assigns severity", "result": "pass", "note": "Step 6 quality composite score formula + dutch-gov-compliance.md severity levels."},
+        {"id": "links to relevant spec/task", "result": "pass", "note": "Step 1 reads plan.json tasks. QA report links findings to task IDs."}
+      ],
+      "notes": "Defect documentation is fully specified via GIVEN/WHEN/THEN, QA report template, and plan.json task linkage."
+    }
+  ]
+}

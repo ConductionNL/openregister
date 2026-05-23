@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Spawns all 8 personas as parallel Task agents",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude has no knowledge of Conduction's 8 Dutch government personas (Henk, Fatima, Sem, Noor, Annemarie, Mark, Priya, Jan-Willem). It might test from a generic user perspective but would not know to spawn persona-specific agents in parallel."
+    },
+    {
+      "text": "Each persona tests from their specific accessibility/user perspective",
+      "passed": false,
+      "evidence": "The persona profiles (elderly Dutch user with low tech literacy, expat with language barrier, CISO with security focus, etc.) are defined in hydra/personas/. Without the skill, naive Claude does not load these profiles and cannot adopt each perspective accurately."
+    },
+    {
+      "text": "Each agent assigned a dedicated browser instance",
+      "passed": false,
+      "evidence": "Browser instance assignment (browser-1 through browser-7) is a Playwright MCP convention specific to this skill's test setup. Without the skill, naive Claude would not know about the browser assignment table or the need to isolate sessions per persona."
+    },
+    {
+      "text": "All 8 agents launched in a single message for true parallelism",
+      "passed": false,
+      "evidence": "Without the skill's explicit 'all in a single message' instruction, naive Claude would run tests sequentially — spawning one agent, waiting for results, then spawning the next. It would not know that single-message dispatch is required for parallelism."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "notes": "All four behaviors require skill knowledge: Conduction persona profiles, browser assignment conventions, and the single-message parallelism pattern. None are derivable from general Claude knowledge.",
+  "timing": {
+    "executor_duration_seconds": 38
+  }
+}

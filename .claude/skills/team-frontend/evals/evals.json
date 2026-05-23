@@ -1,0 +1,84 @@
+{
+  "skill_name": "team-frontend",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "implement-vue",
+      "description": "Implement Vue component",
+      "prompt": "Run /team-frontend for a UI task",
+      "setup": "plan.json with pending Vue task",
+      "expected_output": "Should use Conduction Vue patterns",
+      "expectations": [
+        "Uses @conduction/nextcloud-vue components (CnDataTable, CnDetailPage)",
+        "Uses Pinia stores with useObjectStore",
+        "Uses Vue Router for navigation",
+        "Follows scoped styles rule"
+      ]
+    },
+    {
+      "id": "i18n",
+      "description": "Handle internationalization",
+      "prompt": "Implement with translations",
+      "setup": "UI task requiring text display",
+      "expected_output": "Should use i18n correctly",
+      "expectations": [
+        "Uses t() for all user-facing strings",
+        "Adds translation keys properly",
+        "Defaults to English",
+        "Follows NL Design System CSS variables"
+      ]
+    },
+    {
+      "id": "webpack",
+      "description": "Webpack configuration",
+      "prompt": "Add new component requiring webpack change",
+      "setup": "New Vue component needs webpack config",
+      "expected_output": "Should modify webpack correctly",
+      "expectations": [
+        "Uses plugins.push(), NOT plugins = []",
+        "Preserves existing DefinePlugin",
+        "Handles conditional alias for nextcloud-vue",
+        "Runs npm lint after changes"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "implement the frontend",
+      "write Vue component",
+      "frontend development",
+      "team frontend task",
+      "implement the UI",
+      "/team-frontend",
+      "act as team frontend developer",
+      "take the frontend role and implement this",
+      "write the Vue component for this feature",
+      "implement this as a frontend developer",
+      "build the UI component",
+      "code this Pinia store",
+      "implement the view in Vue",
+      "frontend, implement the modal",
+      "run team-frontend on this task"
+    ],
+    "should_not_trigger": [
+      "implement backend",
+      "review code",
+      "test accessibility",
+      "write PHP",
+      "design the app",
+      "team-backend",
+      "team-qa",
+      "team-reviewer",
+      "team-architect",
+      "team-sm",
+      "team-po",
+      "what does the frontend developer do",
+      "review the frontend code",
+      "test the UI",
+      "deploy the frontend",
+      "write PHP for this"
+    ]
+  }
+}

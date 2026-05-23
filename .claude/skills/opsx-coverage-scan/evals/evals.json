@@ -1,0 +1,118 @@
+{
+  "skill_name": "opsx-coverage-scan",
+  "version": "1.0.0",
+  "created": "2026-04-23",
+  "last_updated": "2026-04-23",
+  "last_validated": "2026-04-23",
+  "baseline_score": 0.66,
+  "grading_rubric": {
+    "pass_threshold": 0.8,
+    "criteria": [
+      {"id": "prereqs", "weight": 0.12, "description": "Verifies app exists, openspec/specs/ is populated, and reports branch. Stops with guidance when specs are missing."},
+      {"id": "inventory", "weight": 0.15, "description": "Builds a complete REQ inventory: capability + REQ-NNN + scenarios + keywords, including ####-level headings and compound REQ IDs"},
+      {"id": "enumeration", "weight": 0.10, "description": "Enumerates PHP + Vue/JS/TS correctly, skipping Migration/, Db/ entity boilerplate, test files, bootstrap files"},
+      {"id": "classification", "weight": 0.20, "description": "Correctly buckets: annotated/plumbing detection works, Bucket 1 uses confidence thresholds (≥0.85 or 0.70–0.85 with NEEDS-REVIEW), Bucket 2a vs 2b via capability ownership, private-helper Pass B inheritance"},
+      {"id": "reverse_pass", "weight": 0.10, "description": "Reverse pass finds unimplemented REQs and splits into 3a (git log -S match) vs 3b (no history reference)"},
+      {"id": "report_schema", "weight": 0.12, "description": "Writes both openspec/coverage-report.json (parseable, valid schema) AND openspec/coverage-report.md (human-readable)"},
+      {"id": "read_only", "weight": 0.10, "description": "Writes exactly two files (coverage-report.json + coverage-report.md). Never modifies code, never commits"},
+      {"id": "large_app_guardrail", "weight": 0.05, "description": "Pauses and asks for confirmation when > 500 PHP files enumerated, or surfaces chunking guidance when Bucket 1 > 150 methods"},
+      {"id": "capture", "weight": 0.06, "description": "Runs Capture Learnings step at end and routes observations through the two-stage buffer"}
+    ]
+  },
+  "evals": [
+    {
+      "id": "happy-path-small-app",
+      "description": "Small app with populated specs — full 6-bucket report",
+      "prompt": "/opsx-coverage-scan pipelinq",
+      "setup": "pipelinq has 50 PHP files across lib/Controller/, lib/Service/, lib/Listener/. openspec/specs/ has 3 capabilities with 10 REQs total. No existing coverage-report.json. Working tree may be dirty (scan is read-only so that's fine).",
+      "baseline": "Without the skill, Claude scans inconsistently — may produce a single markdown blob with no JSON sidecar, or omit plumbing/Bucket 4 entirely.",
+      "expected_output": "Writes both coverage-report.json and coverage-report.md to pipelinq/openspec/. JSON has all 8 bucket keys. MD has Summary table, Bucket 1 grouped by capability, Bucket 2a/2b with clusters, Bucket 3a/3b, Bucket 4, Notes.",
+      "assertions": [
+        "reports which branch the app is on (Step 1)",
+        "reads every openspec/specs/*/spec.md and records {capability, req_id, req_title, scenarios, keywords}",
+        "enumerates PHP via Glob, skipping lib/Migration/ and lib/Db/ entity boilerplate",
+        "classifies methods into annotated / plumbing / Bucket 1 / 2a / 2b",
+        "Pass B resolves private helpers by walking callers",
+        "reverse pass splits unimplemented REQs into 3a (git log -S match) vs 3b",
+        "writes openspec/coverage-report.json matching the schema in SKILL.md Step 9",
+        "writes openspec/coverage-report.md with Summary table, all buckets, Notes section",
+        "never modifies any file other than the two report files"
+      ]
+    },
+    {
+      "id": "empty-specs-stops",
+      "description": "App has no populated openspec/specs/ — skill must stop with guidance",
+      "prompt": "/opsx-coverage-scan unseeded-app",
+      "setup": "unseeded-app exists at workspace root but openspec/specs/ is empty (no spec.md files anywhere under it).",
+      "baseline": "Without the skill, Claude runs the scan anyway and produces a report with 0 REQs and everything in Bucket 2 — useless output.",
+      "expected_output": "Stops with a message suggesting /app-explore and /app-design to seed specs before retrofit.",
+      "assertions": [
+        "verifies openspec/specs/**/spec.md exists as part of Step 1 prereqs",
+        "stops when no spec.md files are found",
+        "suggests running /app-explore + /app-design to seed specs",
+        "does NOT write coverage-report.json or coverage-report.md",
+        "does NOT enumerate code units"
+      ]
+    },
+    {
+      "id": "python-exapp-deferred",
+      "description": "Target is a Python ExApp — skill must stop cleanly",
+      "prompt": "/opsx-coverage-scan tender-scrape",
+      "setup": "tender-scrape is a Python ExApp wrapper: no lib/**/*.php, no src/**/*.{vue,ts,js}, only *.py files. openspec/specs/ has 2 capabilities with 4 REQs.",
+      "baseline": "Without the skill, Claude tries to pattern-match REQ keywords against Python AST, produces nonsense confidence scores.",
+      "expected_output": "Stops with Python variant deferred message after enumeration step detects only .py files.",
+      "assertions": [
+        "detects only Python files during enumeration (Step 4)",
+        "stops with the explicit Python variant deferred message",
+        "does NOT attempt classification against Python code",
+        "does NOT write coverage-report.json or coverage-report.md",
+        "makes the message clear (not silent stop)"
+      ]
+    },
+    {
+      "id": "large-app-asks-confirmation",
+      "description": "App has > 500 PHP files — skill must pause and ask before Pass A",
+      "prompt": "/opsx-coverage-scan bigapp",
+      "setup": "bigapp/lib/ contains 650 PHP files across many directories. openspec/specs/ has 15 capabilities and 180 REQs.",
+      "baseline": "Without the skill, Claude runs the full classification against 650 files, which is context-starved, or silently scopes down without telling the user.",
+      "expected_output": "Enumerates in Step 4, counts > 500 files, uses AskUserQuestion to confirm before Pass A classification. Offers to proceed, chunk by directory, or cancel.",
+      "assertions": [
+        "reports the enumeration count (650 PHP files) to the user",
+        "compares against the > 500 threshold and triggers the Large app warning guardrail",
+        "uses AskUserQuestion to ask for confirmation before Pass A",
+        "does NOT start classification silently",
+        "if user confirms, proceeds; if user cancels, stops cleanly without writing reports"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "scan coverage",
+      "run the coverage audit",
+      "audit spec to code coverage",
+      "/opsx-coverage-scan procest",
+      "find bucket 1 methods",
+      "retrofit audit",
+      "what code is missing spec tags",
+      "classify methods against REQs",
+      "scan procest for unannotated methods",
+      "check which REQs have no implementation",
+      "produce the 6-bucket coverage report",
+      "run the retrofit scanner on this app"
+    ],
+    "should_not_trigger": [
+      "scan for security issues",
+      "run test coverage",
+      "phpunit coverage report",
+      "/opsx-annotate procest",
+      "reverse-spec the bucket 2 items",
+      "create a new spec",
+      "write the coverage-report.md by hand",
+      "list the files in lib/",
+      "run /hydra-gates",
+      "find all @spec tags",
+      "update the OpenAPI spec",
+      "generate a PHPStan report"
+    ]
+  }
+}

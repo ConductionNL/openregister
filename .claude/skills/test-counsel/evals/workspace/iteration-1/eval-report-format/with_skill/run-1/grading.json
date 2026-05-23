@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Report includes per-persona findings sections",
+      "passed": true,
+      "evidence": "SKILL.md Step 3 synthesis template includes one section per persona (e.g. '### Henk Bakker (Elderly)', '### Fatima (Language barrier)') summarising each agent's individual findings before the cross-persona aggregation."
+    },
+    {
+      "text": "Report includes cross-persona patterns section",
+      "passed": true,
+      "evidence": "SKILL.md Step 3 synthesis template has a '## Cross-Persona Patterns' section listing issues confirmed by 2+ personas with the agreement count and which personas were affected."
+    },
+    {
+      "text": "Report uses structured COUNSEL_TEST_RESULT output line",
+      "passed": true,
+      "evidence": "SKILL.md Step 4 specifies the exact output format: 'COUNSEL_TEST_RESULT: PASS | FAIL  CRITICAL_COUNT: <n>  SUMMARY: <one-line>'. This structured line is machine-parseable for the pipeline and would not be produced by naive Claude."
+    },
+    {
+      "text": "Offers to create OpenSpec changes for discovered gaps",
+      "passed": true,
+      "evidence": "SKILL.md Step 4 explicitly: 'If gaps identified → offer to create OpenSpec changes for them.' This connects test findings back into the OpenSpec workflow — a Conduction-specific integration absent from general-purpose testing."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "All four report format requirements are explicitly specified in SKILL.md Steps 3–4. The COUNSEL_TEST_RESULT structured output line and OpenSpec gap-creation offer are the most uniquely skill-specific elements.",
+  "timing": {
+    "executor_duration_seconds": 1350
+  }
+}
