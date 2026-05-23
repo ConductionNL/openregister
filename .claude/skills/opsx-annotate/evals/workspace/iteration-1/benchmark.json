@@ -1,0 +1,480 @@
+{
+  "metadata": {
+    "skill_name": "<skill-name>",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-24T14:54:45Z",
+    "evals_run": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 0.0,
+        "tokens": 42848,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "runs git status --porcelain as part of Step 1 prereq check",
+          "passed": true,
+          "evidence": "Step 1 line 39: 'Working tree is clean (git status --porcelain empty). Refuse dirty trees.'"
+        },
+        {
+          "text": "refuses to proceed when porcelain output is non-empty",
+          "passed": true,
+          "evidence": "Same Step 1 line establishes refusal posture; halts before branch/ghost-change creation."
+        },
+        {
+          "text": "cites the Refuse dirty trees guardrail in the refusal message",
+          "passed": true,
+          "evidence": "Skill quotes 'Refuse dirty trees.' verbatim as the named guardrail."
+        },
+        {
+          "text": "does NOT create the retrofit branch",
+          "passed": true,
+          "evidence": "Branch creation is the fourth sub-bullet of Step 1; gated behind clean-tree check \u2014 unreachable when refusal fires."
+        },
+        {
+          "text": "does NOT create any ghost-change directory",
+          "passed": true,
+          "evidence": "Ghost-change scaffolding is in Step 5 and unreachable after Step 1 halt."
+        },
+        {
+          "text": "does NOT modify any file",
+          "passed": true,
+          "evidence": "All file mutations (Step 6 edits, Step 8 commits, Step 9 blame-ignore-revs) sit after Step 1 halt."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 0.0,
+        "tokens": 44166,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "checks coverage-report.json exists AND is < 24h old BEFORE any other action",
+          "passed": true,
+          "evidence": "Step 1 first sub-bullet: reads generated_at from JSON (explicitly not filesystem mtime) and checks < 24h."
+        },
+        {
+          "text": "checks git status --porcelain is empty and refuses on dirty tree",
+          "passed": true,
+          "evidence": "Step 1 second sub-bullet: runs git status --porcelain, refuses on non-empty."
+        },
+        {
+          "text": "creates feature branch retrofit/annotate-procest-{today}",
+          "passed": true,
+          "evidence": "Step 1 fourth sub-bullet: git checkout -b retrofit/annotate-procest-2026-04-24."
+        },
+        {
+          "text": "creates ghost change named retrofit-annotate-procest-{today} with empty specs/ and one task per REQ",
+          "passed": true,
+          "evidence": "Step 5: /opsx-new retrofit-annotate-procest-2026-04-24 with empty specs/ and one task per REQ."
+        },
+        {
+          "text": "task IDs follow format 'task-N: {capability}#{REQ-NNN} \u2014 {title} (retroactive annotation)'",
+          "passed": true,
+          "evidence": "Step 5 tasks.md format: '- [x] task-N: {capability}#{REQ-NNN} \u2014 {title} (retroactive annotation)'."
+        },
+        {
+          "text": "uses AskUserQuestion before any file edits",
+          "passed": true,
+          "evidence": "Step 3: AskUserQuestion with Proceed/Review first/Cancel before any file edits."
+        },
+        {
+          "text": "uses Edit tool (or Write for full-file rewrite) \u2014 never sed/awk/python",
+          "passed": true,
+          "evidence": "Step 6: 'file-by-file using Edit tool only (never sed/awk/python)'."
+        },
+        {
+          "text": "runs composer phpcs and /hydra-gates after annotation",
+          "passed": true,
+          "evidence": "Step 7: composer phpcs + invokes /hydra-gates skill."
+        },
+        {
+          "text": "appends annotation commit SHA to .git-blame-ignore-revs",
+          "passed": true,
+          "evidence": "Step 9: appends SHA with header comment, then git add + separate commit."
+        },
+        {
+          "text": "archives the ghost change via /opsx-archive at the end",
+          "passed": true,
+          "evidence": "Step 10: /opsx-archive retrofit-annotate-procest-2026-04-24."
+        },
+        {
+          "text": "PR labels include both retrofit and annotation-only",
+          "passed": true,
+          "evidence": "Step 12: /create-pr with labels retrofit and annotation-only."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 43097,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "greps the code for existing @spec openspec/changes/retrofit-annotate-* tags before annotating",
+          "passed": true,
+          "evidence": "Step 1.5 'Idempotent-rerun guard' exists: 'Grep lib/**/*.php and src/**/*.js for @spec openspec/changes/retrofit-annotate-'. Runs after Step 1 prereqs, before Step 2."
+        },
+        {
+          "text": "detects the prior retrofit-annotate-procest-2026-04-01 tags",
+          "passed": true,
+          "evidence": "Prefix match pattern '@spec openspec/changes/retrofit-annotate-' catches retrofit-annotate-procest-2026-04-01 in all 4 files."
+        },
+        {
+          "text": "uses AskUserQuestion to present the choice (fresh / reuse / cancel)",
+          "passed": true,
+          "evidence": "Step 1.5 AskUserQuestion with Resume/Fresh run/Cancel options \u2014 three-way choice matches fresh/reuse/cancel functionally."
+        },
+        {
+          "text": "does NOT silently create a duplicate ghost change",
+          "passed": true,
+          "evidence": "Step 1.5 explicitly: 'Do not proceed silently \u2014 a second ghost change mints duplicate tasks and produces a confusing PR.'"
+        },
+        {
+          "text": "if user picks fresh, new dated ghost change only carries NEW Bucket 1 items (not re-annotates already-tagged methods)",
+          "passed": false,
+          "evidence": "PARTIAL \u2014 intent stated ('existing tags stay, new ones added for missed files') but the per-file defensive re-check in Step 6 is 'mentioned but not operationalized as a concrete sub-step'. Relies on coverage-report.json's annotated bucket being current."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 42517,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "reads coverage-report.json and parses the generated_at timestamp",
+          "passed": true,
+          "evidence": "Step 1 line 38 explicitly names the field: 'its generated_at field is < 24h old (use generated_at, not filesystem mtime)'. Field name is unambiguous."
+        },
+        {
+          "text": "compares against current time and detects > 24h staleness",
+          "passed": true,
+          "evidence": "Threshold '< 24h old' stated in Step 1. 48h simulated age fails the check."
+        },
+        {
+          "text": "refuses to proceed",
+          "passed": true,
+          "evidence": "Step 1 line 38: 'Missing/stale \u2192 stop, run /opsx-coverage-scan {app} first.'"
+        },
+        {
+          "text": "recommends running /opsx-coverage-scan procest to refresh",
+          "passed": true,
+          "evidence": "Same line 38 names /opsx-coverage-scan as the remediation."
+        },
+        {
+          "text": "does NOT proceed with annotation",
+          "passed": true,
+          "evidence": "'stop' directive halts execution before Step 2 (load plan). No Step 2+ action."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 6,
+        "total": 6,
+        "time_seconds": 0.0,
+        "tokens": 30254,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "runs git status --porcelain as part of Step 1 prereq check",
+          "passed": false,
+          "evidence": "Admits would not proactively run git status first \u2014 not a natural step for an annotation task."
+        },
+        {
+          "text": "refuses to proceed when porcelain output is non-empty",
+          "passed": false,
+          "evidence": "Would proceed anyway, rationalize as 'user's unstaged change is unrelated, I'll just add on top'."
+        },
+        {
+          "text": "cites the Refuse dirty trees guardrail in the refusal message",
+          "passed": false,
+          "evidence": "No named guardrail available \u2014 would invoke vague principles like 'don't clobber user work'."
+        },
+        {
+          "text": "does NOT create the retrofit branch",
+          "passed": false,
+          "evidence": "Would create 'retrofit/bucket-1-annotations' or similar branch, carrying the dirty file."
+        },
+        {
+          "text": "does NOT create any ghost-change directory",
+          "passed": false,
+          "evidence": "Would proceed with ghost-change creation as part of the annotation flow."
+        },
+        {
+          "text": "does NOT modify any file",
+          "passed": false,
+          "evidence": "Would start editing files \u2014 admits 'the dirty file would travel with the branch silently'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.36,
+        "passed": 4,
+        "failed": 7,
+        "total": 11,
+        "time_seconds": 0.0,
+        "tokens": 30916,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "checks coverage-report.json exists AND is < 24h old BEFORE any other action",
+          "passed": false,
+          "evidence": "Would use filesystem mtime (wrong source) and default to '>7d warn' \u2014 no explicit 24h threshold, no generated_at parsing."
+        },
+        {
+          "text": "checks git status --porcelain is empty and refuses on dirty tree",
+          "passed": true,
+          "evidence": "Would run git status --porcelain and abort on non-empty."
+        },
+        {
+          "text": "creates feature branch retrofit/annotate-procest-{today}",
+          "passed": false,
+          "evidence": "Invented branch name 'chore/retrofit-spec-annotations-bucket-1'. Wrong prefix, no date, no app name."
+        },
+        {
+          "text": "creates ghost change named retrofit-annotate-procest-{today} with empty specs/ and one task per REQ",
+          "passed": false,
+          "evidence": "Invented slug 'retrofit-spec-annotations-bucket-1'. Would include design.md (wrong). Unsure if specs/ would be empty."
+        },
+        {
+          "text": "task IDs follow format 'task-N: {capability}#{REQ-NNN} \u2014 {title} (retroactive annotation)'",
+          "passed": false,
+          "evidence": "Task-ID format not specified; would be a generic checklist."
+        },
+        {
+          "text": "uses AskUserQuestion before any file edits",
+          "passed": true,
+          "evidence": "Stated would ask once up front about branch/slug/commit granularity."
+        },
+        {
+          "text": "uses Edit tool (or Write for full-file rewrite) \u2014 never sed/awk/python",
+          "passed": true,
+          "evidence": "Would use Edit per method; would consider Python only if generating a diff first."
+        },
+        {
+          "text": "runs composer phpcs and /hydra-gates after annotation",
+          "passed": false,
+          "evidence": "Would run composer phpcs (uncertain of entry) but does not know /hydra-gates exists \u2014 would run 'any hydra-gates script at repo root'."
+        },
+        {
+          "text": "appends annotation commit SHA to .git-blame-ignore-revs",
+          "passed": true,
+          "evidence": "Yes \u2014 would append SHA after pushing, follow-up commit."
+        },
+        {
+          "text": "archives the ghost change via /opsx-archive at the end",
+          "passed": false,
+          "evidence": "Guessed 'openspec archive' CLI \u2014 does not know /opsx-archive skill exists."
+        },
+        {
+          "text": "PR labels include both retrofit and annotation-only",
+          "passed": false,
+          "evidence": "Would use 'retrofit, annotation-only, no-behaviour-change' \u2014 extra label beyond spec, and admits uncertainty whether they exist."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 5,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 30333,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "greps the code for existing @spec openspec/changes/retrofit-annotate-* tags before annotating",
+          "passed": false,
+          "evidence": "Would not grep proactively \u2014 'only reactive, if something surprised me mid-run'."
+        },
+        {
+          "text": "detects the prior retrofit-annotate-procest-2026-04-01 tags",
+          "passed": false,
+          "evidence": "Only incidentally via ls of openspec/changes/; would read as 'unrelated' and create a new dated directory alongside."
+        },
+        {
+          "text": "uses AskUserQuestion to present the choice (fresh / reuse / cancel)",
+          "passed": false,
+          "evidence": "Would not ask \u2014 'request reads as direct imperative, optimise for executing'."
+        },
+        {
+          "text": "does NOT silently create a duplicate ghost change",
+          "passed": false,
+          "evidence": "'Yes \u2014 high risk. I'd almost certainly create retrofit-annotate-procest-2026-04-24 next to the 04-01 one'."
+        },
+        {
+          "text": "if user picks fresh, new dated ghost change only carries NEW Bucket 1 items (not re-annotates already-tagged methods)",
+          "passed": false,
+          "evidence": "'Would iterate Bucket 1 ... and annotate each method, silently overwriting or duplicating the 4 files existing @spec tags'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 5,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 29974,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "reads coverage-report.json and parses the generated_at timestamp",
+          "passed": false,
+          "evidence": "Would not check age by default \u2014 'treat the file as authoritative input'. Might parse generated_at only if needed for annotation itself."
+        },
+        {
+          "text": "compares against current time and detects > 24h staleness",
+          "passed": false,
+          "evidence": "Explicit statement: 'no threshold in my prior context that defines stale' \u2014 would not detect staleness."
+        },
+        {
+          "text": "refuses to proceed",
+          "passed": false,
+          "evidence": "Would proceed \u2014 'inventing a 24h refusal rule would be overreach'."
+        },
+        {
+          "text": "recommends running /opsx-coverage-scan procest to refresh",
+          "passed": false,
+          "evidence": "Only 'possibly, as a soft note at the end' \u2014 not proactively; and does not know /opsx-coverage-scan exists."
+        },
+        {
+          "text": "does NOT proceed with annotation",
+          "passed": false,
+          "evidence": "Would annotate using the stale report as-is."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.95,
+        "stddev": 0.1,
+        "min": 0.8,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 43157.0,
+        "stddev": 713.3868,
+        "min": 42517,
+        "max": 44166
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.09,
+        "stddev": 0.18,
+        "min": 0.0,
+        "max": 0.36
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 30369.25,
+        "stddev": 395.7081,
+        "min": 29974,
+        "max": 30916
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.86",
+      "time_seconds": "+0.0",
+      "tokens": "+12788"
+    }
+  },
+  "notes": []
+}

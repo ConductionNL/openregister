@@ -1,0 +1,63 @@
+{
+  "skill_name": "opsx-verify",
+  "schema_version": "1.0.0",
+  "notes": "Evals run 2026-04-24 (simulation) and 2026-04-28 (real run on planix task-due-date-warning). Real run confirmed: three-dimensions 4/4=1.0, sync-github 3/4=0.75, fail-gracefully 3/4=0.75. Persistent expectation mismatch: 'suggests /opsx-apply for remaining work' does not match SKILL.md — skill uses in-place Fix Loop (Step 10). This expectation should be updated to: 'Offers in-place Fix Loop or blocks archive with specific incomplete-task list.'",
+  "runs": [
+    {
+      "date": "2026-04-28",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "real run — planix task-due-date-warning feature branch (commit 739c622)",
+      "eval_id": "three-dimensions",
+      "score": 1.0,
+      "assertions": [
+        {"id": "checks completeness (all tasks done, specs covered)", "result": "pass", "note": "All 4 tasks [x] on feature branch (development branch still shows [ ] — skill correctly read feature branch). dueDateStatus helper, TaskCard badge, tests, CSS all confirmed present."},
+        {"id": "checks correctness (requirements met, scenarios pass)", "result": "pass", "note": "TC-1 through TC-6 boundary cases verified in taskHelpers.test.js. NcChip type='warning'/'error' matches spec. i18n ADR-007 satisfied."},
+        {"id": "checks coherence (design followed, patterns consistent)", "result": "pass", "note": "Design.md approach followed exactly. 1 SUGGESTION: NcChip import uses deep dist path vs project named-import pattern."},
+        {"id": "runs browser/API tests if applicable", "result": "pass", "note": "Step 8 correctly identified no new API endpoints (frontend-only change), offered browser tests via AskUserQuestion per skill protocol."}
+      ],
+      "notes": "First real run. branch-context finding confirmed as real-world failure prevention: skill reads feature branch, not development, preventing false-negative on 4 [ ] task checkboxes."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "three-dimensions",
+      "score": 0.875,
+      "assertions": [
+        {"id": "checks completeness (all tasks done, specs covered)", "result": "pass", "note": "SKILL.md Step 5 requires verifying task completion and spec coverage."},
+        {"id": "checks correctness (requirements met, scenarios pass)", "result": "pass", "note": "Step 6 requires verifying requirement implementation and scenario coverage."},
+        {"id": "checks coherence (design followed, patterns consistent)", "result": "pass", "note": "Step 7 requires verifying design adherence, pattern consistency, test coverage, and documentation."},
+        {"id": "runs browser/API tests if applicable", "result": "partial", "note": "Step 8 asks user about running API and/or browser tests via AskUserQuestion — conditional on user opt-in, not automatic."}
+      ],
+      "notes": "Covers all three verification dimensions. Minor gap: API/browser testing is user-optional per Step 8, not mandated automatically."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "sync-github",
+      "score": 0.75,
+      "assertions": [
+        {"id": "syncs completed task checkboxes to GitHub issue", "result": "pass", "note": "Step 5 explicitly requires syncing completed task checkboxes to GitHub issue via MCP or CLI."},
+        {"id": "reports verification result", "result": "pass", "note": "Steps 9-11 generate verification report with summary scorecard and issues."},
+        {"id": "suggests /opsx-archive if verified", "result": "partial", "note": "Step 11 offers archive prompts, but only when all tasks are [x] AND no critical/warning issues — conditional, not always offered."},
+        {"id": "suggests /opsx-apply for remaining work", "result": "fail", "note": "Step 11 does not suggest /opsx-apply. Instead Step 10 (Fix Loop) asks if user wants to fix issues in-place. The skill's design is Fix Loop → archive, not redirect to /opsx-apply."}
+      ],
+      "notes": "GitHub sync and reporting are correct. The /opsx-apply suggestion doesn't match the skill's documented flow — it uses an in-place Fix Loop (Step 10) instead of redirecting."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-sonnet-4-6",
+      "method": "read-only Explore subagent simulation (no file writes)",
+      "eval_id": "fail-gracefully",
+      "score": 0.75,
+      "assertions": [
+        {"id": "identifies which tasks/specs are incomplete", "result": "pass", "note": "Step 11 requires re-checking task completion and displaying incomplete tasks with incomplete criteria."},
+        {"id": "does NOT mark change as verified", "result": "pass", "note": "Step 11 explicitly states 'do NOT offer archive' if any tasks are incomplete."},
+        {"id": "suggests running /opsx-apply for remaining work", "result": "partial", "note": "SKILL.md Step 11 blocks archive and shows incomplete tasks, but does not explicitly name /opsx-apply as the next step. Implied but not stated."},
+        {"id": "reports specific failures with evidence", "result": "pass", "note": "Steps 9-11 report issues grouped by priority (CRITICAL/WARNING/SUGGESTION) with actionable recommendations and file references."}
+      ],
+      "notes": "Graceful degradation is correct — blocks archive, reports gaps with evidence. Missing explicit /opsx-apply suggestion is a documentation gap (easy fix: add 'Run /opsx-apply to implement remaining tasks' to the blocked-archive message in Step 11)."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "Caps this run at 5 REQs", "passed": true, "evidence": "SKILL.md Step 4: 'Draft REQs — one per distinct observable behavior. Cap at 5 per run.'"},
+    {"text": "Picks the 5 most cohesive observable behaviors — does not pick randomly", "passed": true, "evidence": "SKILL.md Step 4: 'If more than 5 behaviors: pick the 5 most cohesive (core business behaviors first, edge cases last).'"},
+    {"text": "Summary block names the remaining behaviors as 'Next: run again for {names}'", "passed": true, "evidence": "SKILL.md Step 10 output format: lists remaining behaviors for the next run."},
+    {"text": "Does NOT create a second ghost change in the same run", "passed": true, "evidence": "SKILL.md: one ghost change per run, capped at 5 REQs."},
+    {"text": "Does NOT collapse 8 behaviors into 5 by merging distinct ones", "passed": true, "evidence": "SKILL.md Step 4: 'Do not collapse distinct behaviors — if two behaviors are genuinely distinct, they need separate REQs.'"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. The 5-REQ cap is the key differentiator — prevents monolithic specs that are hard to verify.",
+  "timing": {"executor_duration_seconds": 11.8}
+}

@@ -1,0 +1,82 @@
+{
+  "skill_name": "feature-counsel",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "multi-persona",
+      "description": "Analyze from 8 perspectives",
+      "prompt": "Run /feature-counsel on openregister",
+      "setup": "App with specs defined",
+      "expected_output": "Should spawn 8 persona agents in parallel",
+      "expectations": [
+        "Launches 8 persona agents",
+        "Each analyzes specs from their perspective",
+        "Identifies missing features per persona",
+        "Synthesizes into feature-counsel-report.md"
+      ]
+    },
+    {
+      "id": "suggestions",
+      "description": "Suggest concrete features",
+      "prompt": "Check feature suggestions quality",
+      "setup": "Analysis complete",
+      "expected_output": "Should suggest specific, actionable features",
+      "expectations": [
+        "Suggests features with clear user value",
+        "Links suggestions to personas who need them",
+        "Identifies compliance gaps (GEMMA, BIO2)",
+        "Suggests OpenSpec changes for top features"
+      ]
+    },
+    {
+      "id": "model-selection",
+      "description": "Supports model selection",
+      "prompt": "Run with Haiku agents",
+      "setup": "User selects model per agent",
+      "expected_output": "Should respect model choice",
+      "expectations": [
+        "Accepts model parameter (Haiku/Sonnet/Opus)",
+        "Spawns agents with specified model",
+        "Reports which model each persona used"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "analyze features from personas",
+      "feature counsel",
+      "suggest features for openregister",
+      "what features are missing",
+      "persona feature analysis",
+      "run /feature-counsel",
+      "I need a feature analysis",
+      "can you suggest missing features",
+      "analyze opencatalogi from all persona perspectives",
+      "what would Henk want as a feature",
+      "run a multi-persona feature review",
+      "identify feature gaps in the specs",
+      "what features should we add",
+      "suggest improvements based on personas",
+      "do a feature counsel on pipelinq"
+    ],
+    "should_not_trigger": [
+      "test the app",
+      "test counsel",
+      "implement features",
+      "explore the app",
+      "design the app",
+      "run /test-counsel",
+      "test from all personas",
+      "run regression tests",
+      "create a spec",
+      "what are the personas",
+      "list features already built",
+      "check if features work",
+      "test accessibility",
+      "run functional tests",
+      "sync documentation"
+    ]
+  }
+}

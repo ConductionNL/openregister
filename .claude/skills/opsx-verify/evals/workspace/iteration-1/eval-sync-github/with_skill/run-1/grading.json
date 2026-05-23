@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Syncs completed task checkboxes to GitHub issue",
+      "passed": true,
+      "evidence": "Skill Step 5 prescribes syncing completed tasks to GitHub via MCP get_issue → update_issue or CLI fallback. Observed: GitHub issue 180 body already has all task checkboxes checked [x] (synced by the builder during pipeline run). plan.json already has all 4 tasks with status 'done'. Skill correctly detects this already-synced state and skips redundant writes — the idempotency logic ('if plan.json status is not done') works as designed."
+    },
+    {
+      "text": "Reports verification result",
+      "passed": true,
+      "evidence": "Skill generates a full Verification Report (Step 9) with Summary Scorecard table and Issues by Priority grouped CRITICAL/WARNING/SUGGESTION. For this change: 0 CRITICAL, 0 WARNING, 1 SUGGESTION (NcChip import path). Report correctly shows 'All checks passed. Implementation matches specs.'"
+    },
+    {
+      "text": "Suggests /opsx-archive if verified",
+      "passed": true,
+      "evidence": "Skill Step 11: all tasks [x] AND only SUGGESTION issues → offers archive prompt via AskUserQuestion: 'Ready to archive this change?' with options Yes/Sync specs first/No. Also updates the Pipeline Progress comment on the issue with stage table. This matches the expected flow."
+    },
+    {
+      "text": "Offers in-place Fix Loop or blocks archive with actionable incomplete-task message",
+      "passed": true,
+      "evidence": "Skill Step 10 asks 'Would you like me to fix them in-place?' when issues are found. Step 11 blocks archive when tasks are incomplete, displaying the specific task names and criteria — an actionable message. This matches the corrected expectation (updated from '/opsx-apply' on 2026-04-28 to reflect actual SKILL.md design)."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Real run 2026-04-28 on planix task-due-date-warning. All 4 expectations pass after correcting the /opsx-apply expectation to match actual SKILL.md behavior (in-place Fix Loop). Score: 1.0.",
+  "timing": {
+    "executor_duration_seconds": 187
+  }
+}

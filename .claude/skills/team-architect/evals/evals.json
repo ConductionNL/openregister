@@ -1,0 +1,84 @@
+{
+  "skill_name": "team-architect",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-28",
+  "evals": [
+    {
+      "id": "review-design",
+      "description": "Review architecture decisions",
+      "prompt": "Run /team-architect to review the design",
+      "setup": "Change with design artifacts",
+      "expected_output": "Should evaluate against ADRs and patterns",
+      "expectations": [
+        "Loads existing ADRs",
+        "Evaluates design against architectural constraints",
+        "Checks OpenSpec rules compliance",
+        "Suggests improvements with reasoning"
+      ]
+    },
+    {
+      "id": "adr-assessment",
+      "description": "Assess ADR implications",
+      "prompt": "Evaluate a proposed ADR",
+      "setup": "New ADR draft",
+      "expected_output": "Should assess impact and trade-offs",
+      "expectations": [
+        "Identifies affected components",
+        "Evaluates trade-offs",
+        "Checks consistency with existing ADRs",
+        "Recommends accept/revise/reject"
+      ]
+    },
+    {
+      "id": "pattern-check",
+      "description": "Check pattern compliance",
+      "prompt": "Review implementation for pattern adherence",
+      "setup": "Code changes",
+      "expected_output": "Should verify Conduction patterns",
+      "expectations": [
+        "Checks thin-client pattern (no direct DB)",
+        "Verifies OpenRegister integration pattern",
+        "Checks Vue Router usage (not custom hash routing)",
+        "Reports deviations with suggestions"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "review the architecture",
+      "architect review",
+      "evaluate the design",
+      "check architectural compliance",
+      "team architect",
+      "/team-architect",
+      "act as team architect",
+      "take the architect role and review this design",
+      "evaluate this from an architecture perspective",
+      "assess the architectural impact of this change",
+      "check if this follows our ADRs",
+      "review design for pattern violations",
+      "architect, look at this proposal",
+      "run team-architect on this",
+      "does this design violate any architectural constraints"
+    ],
+    "should_not_trigger": [
+      "implement code",
+      "test the app",
+      "create a PR",
+      "review code style",
+      "design the app from scratch",
+      "team-backend",
+      "team-frontend",
+      "team-qa",
+      "team-reviewer",
+      "team-po",
+      "team-sm",
+      "what does the architect do",
+      "write the PHP for this",
+      "run unit tests",
+      "check test coverage",
+      "review the backend code"
+    ]
+  }
+}

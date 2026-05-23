@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "Reads coverage-report.json mtime", "passed": true, "evidence": "SKILL.md Step 1: 'Check coverage-report.json mtime. If > 24h old, stop.'"},
+    {"text": "Detects staleness (>24h)", "passed": true, "evidence": "Step 1 explicitly checks for >24h staleness."},
+    {"text": "Stops before reading any code", "passed": true, "evidence": "Staleness check is Step 1 — no code reads before this."},
+    {"text": "Tells the user to re-run /opsx-coverage-scan openregister", "passed": true, "evidence": "SKILL.md stop message: 'Coverage report is N hours old. Re-run /opsx-coverage-scan {app} first.'"},
+    {"text": "Does not create a branch or ghost change", "passed": true, "evidence": "Branch creation is Step 2, never reached after Step 1 stop."}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. Staleness guard is explicit and ordered before all destructive operations.",
+  "timing": {"executor_duration_seconds": 8.3}
+}

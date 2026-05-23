@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-composer-audit.log
+[gate-4] composer-audit: FAIL — CVEs or advisories — see /tmp/hydra-gate-composer-audit.log

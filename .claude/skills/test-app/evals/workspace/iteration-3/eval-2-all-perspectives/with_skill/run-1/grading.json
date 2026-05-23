@@ -1,0 +1,33 @@
+{
+  "eval_id": 2,
+  "eval_name": "all-perspectives",
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "Spawns functional, UX, performance, accessibility, security, API agents",
+      "passed": false,
+      "evidence": "CANNOT_TEST \u2014 Agent/Task tool not available to subagent, so no perspective agents were spawned. Skill correctly identified this and aborted."
+    },
+    {
+      "text": "Agents run in parallel (not sequential)",
+      "passed": false,
+      "evidence": "No agents were spawned"
+    },
+    {
+      "text": "Each agent produces independent findings",
+      "passed": false,
+      "evidence": "No agents spawned, no findings produced"
+    },
+    {
+      "text": "Synthesizes results into unified report",
+      "passed": false,
+      "evidence": "CANNOT_TEST report covering all 6 perspectives with the same blocker"
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.0,
+    "passed": 0,
+    "failed": 4,
+    "total": 4
+  }
+}

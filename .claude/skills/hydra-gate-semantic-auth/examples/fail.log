@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-semantic-auth.log
+[gate-9] semantic-auth: FAIL — 1 attribute-vs-body mismatch(es) — see /tmp/hydra-gate-semantic-auth.log

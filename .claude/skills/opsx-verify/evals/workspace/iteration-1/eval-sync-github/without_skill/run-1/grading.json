@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Syncs completed task checkboxes to GitHub issue",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know the exact batching requirement (fetch body once, apply all changes, write back once). It might try to update the issue but would use ad-hoc `gh issue edit` calls without the structured MCP-preferred / CLI-fallback pattern. More likely it would skip the sync entirely, not knowing the plan.json status-to-checkbox mapping."
+    },
+    {
+      "text": "Reports verification result",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would produce an unstructured prose summary rather than the standardized Summary Scorecard table with Completeness/Correctness/Coherence/API Tests/Browser Tests dimensions. It would not group issues as CRITICAL/WARNING/SUGGESTION with actionable recommendations."
+    },
+    {
+      "text": "Suggests /opsx-archive if verified",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know to offer the archive prompt via AskUserQuestion after verification passes. It might say 'looks good!' but not invoke /opsx-archive or produce the Pipeline Progress comment on the GitHub issue."
+    },
+    {
+      "text": "Offers in-place Fix Loop or blocks archive with actionable incomplete-task message",
+      "passed": false,
+      "evidence": "Without the skill, naive Claude would not know to offer an in-place Fix Loop (Step 10 AskUserQuestion) or produce the blocked-archive message format from Step 11. It would produce unstructured prose about remaining work without the specific task list and criteria."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "notes": "Without the skill, GitHub sync is the most likely casualty — naive Claude does not know the plan.json status field or the batched MCP update pattern. The structured report format and archive prompt are entirely skill-driven. Expectation updated 2026-04-28 from '/opsx-apply' to 'in-place Fix Loop' to match actual SKILL.md design.",
+  "timing": {
+    "executor_duration_seconds": 30
+  }
+}

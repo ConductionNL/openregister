@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Uses @conduction/nextcloud-vue components (CnDataTable, CnDetailPage)",
+      "passed": false,
+      "evidence": "@conduction/nextcloud-vue is a Conduction-internal npm package. Naive Claude has no knowledge of CnDataTable, CnDetailViewLayout, useObjectStore, or any other Cn* component. It would use @nextcloud/vue (NcButton, etc.) or build custom components."
+    },
+    {
+      "text": "Uses Pinia stores with useObjectStore",
+      "passed": false,
+      "evidence": "useObjectStore is a Conduction-specific abstraction from the @conduction/nextcloud-vue library. Naive Claude would use a standard Pinia defineStore pattern without the useObjectStore base, missing the auditTrailsPlugin, filesPlugin, relationsPlugin, and lifecyclePlugin integrations."
+    },
+    {
+      "text": "Uses Vue Router for navigation",
+      "passed": true,
+      "evidence": "Vue Router is general Vue.js knowledge. Naive Claude would use Vue Router. However, the specific history mode configuration with Nextcloud base path (/index.php/apps/{appname}/) requires Conduction-specific knowledge."
+    },
+    {
+      "text": "Follows scoped styles rule",
+      "passed": true,
+      "evidence": "<style scoped> is a well-known Vue best practice. Naive Claude would likely use scoped styles by default."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "notes": "@conduction/nextcloud-vue and useObjectStore are the skill's primary value — they are Conduction-specific and unknown to naive Claude. Vue Router and scoped styles are general Vue knowledge.",
+  "timing": {
+    "executor_duration_seconds": 18
+  }
+}

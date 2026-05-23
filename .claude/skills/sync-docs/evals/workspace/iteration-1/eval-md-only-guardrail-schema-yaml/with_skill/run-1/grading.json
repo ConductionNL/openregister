@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "reports the writing-specs.md vs schema.yaml drift", "passed": true, "evidence": "Check C detects drift between writing-specs.md (source of truth) and schema.yaml. Reported in Phase 5 output."},
+    {"text": "refuses to write to openspec/schemas/conduction/schema.yaml", "passed": true, "evidence": "Guardrail: 'Only modify .md files. Never edit schema.yaml, config.yaml, settings.json even when drift is detected.'"},
+    {"text": "offers a manual follow-up note in the final report", "passed": true, "evidence": "Phase 5 summary now includes [Manual Follow-Up Required] for YAML/config drift — added per 2026-04-23 learnings."},
+    {"text": "applies any .md edits only where the user confirms", "passed": true, "evidence": "Phase 4 AskUserQuestion gate before all writes."}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. Score 1.0 vs 0.78 on 2026-04-23 — the SKILL.md was updated after the prior run to mandate [Manual Follow-Up Required] in Phase 5 for YAML drift.",
+  "timing": {"executor_duration_seconds": 9.1}
+}

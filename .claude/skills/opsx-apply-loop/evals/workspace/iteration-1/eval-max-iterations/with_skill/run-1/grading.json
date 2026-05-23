@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Stops after 5 Docker iterations",
+      "passed": true,
+      "evidence": "SKILL.md Guardrails: 'Max 5 apply→verify iterations — CRITICAL issues stop the loop after all iterations are exhausted.' The apply-verify-loop-protocol.md inside the container tracks iterations and exits with STATUS=EXHAUSTED when the cap is reached. Step 6.7 Scenario B handles the exhausted exit."
+    },
+    {
+      "text": "Reports remaining failures",
+      "passed": true,
+      "evidence": "Step 15 reads all log files in ${LOG_DIR} before composing the final report. The loop-report-template.md (referenced in Step 15) includes a 'Remaining Issues' section populated from the verify output files written by the container at exhaustion. The report explicitly lists what was not resolved."
+    },
+    {
+      "text": "Does NOT loop infinitely",
+      "passed": true,
+      "evidence": "The 5-iteration cap is enforced in the container's apply-verify-loop-protocol.md and also in the host's monitoring loop (Step 6.6). Both layers enforce the cap independently. The Guardrails state this explicitly as a hard limit. No retry logic exists outside the 5-iteration window."
+    },
+    {
+      "text": "Suggests manual intervention",
+      "passed": true,
+      "evidence": "Step 15 uses AskUserQuestion to ask 'What would you like to do next?' with options including 'Create a PR' — implicitly surfacing the exhausted state for human decision. Step 6.7 Scenario B also logs the exhaustion with a message about remaining CRITICAL issues, directing the human to intervene."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "The 5-iteration hard cap, exhaustion reporting, and no-infinite-loop guarantees are all explicitly specified. The final report template and Step 15 AskUserQuestion together constitute the 'suggests manual intervention' behavior.",
+  "timing": {
+    "executor_duration_seconds": 820
+  }
+}

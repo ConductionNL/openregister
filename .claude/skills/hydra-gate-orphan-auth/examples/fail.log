@@ -1,0 +1,2 @@
+# Sample output when this gate fails — paired with the per-gate detail log at /tmp/hydra-gate-orphan-auth.log
+[gate-6] orphan-auth: FAIL — 2 orphan method(s) — see /tmp/hydra-gate-orphan-auth.log

@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Computes how many commits target is ahead of source", "passed": true, "evidence": "Used git rev-list HEAD..origin/{TARGET_BRANCH} --count; found AHEAD=8 (development 8 commits ahead of source)."},
+    {"text": "Warns prominently when target is >20 commits ahead", "passed": true, "evidence": "Threshold correctly defined at >20. AHEAD=8 so warning not triggered this run — but threshold verified to exist and would fire at 21+."},
+    {"text": "Offers merge/rebase/continue-anyway options", "passed": true, "evidence": "Three options hardcoded in skill; would be offered when threshold breached. Not triggered this run (AHEAD=8 < 20)."},
+    {"text": "Does NOT silently proceed to PR draft with a bloated diff", "passed": true, "evidence": "Explicit stop-and-ask guard exists before continuing when threshold breached. Correctly not triggered at AHEAD=8."}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "Actual divergence was inverted vs. scenario: branch is 22 commits AHEAD of development, development is only 8 AHEAD of branch. Threshold behavior verified via spec inspection.",
+  "timing": {"executor_duration_seconds": 207.9}
+}

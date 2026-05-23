@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "detects only Python files during enumeration (Step 4)", "passed": true, "evidence": "Step 4 Glob patterns: PHP, Vue/JS/TS, then 'Python (ExApp wrappers only): stop — Python variant deferred.'"},
+    {"text": "stops with the explicit Python variant deferred message", "passed": true, "evidence": "Exact Step 4 line: 'stop — Python variant deferred.' Guardrails reinforce: 'Stop with a clear message; don't half-scan.'"},
+    {"text": "does NOT attempt classification against Python code", "passed": true, "evidence": "Stop in Step 4 precedes Steps 5–8 (classification, reverse pass). No classification runs."},
+    {"text": "does NOT write coverage-report.json or coverage-report.md", "passed": true, "evidence": "Step 9 (writes) is never reached after Step 4 stop."},
+    {"text": "makes the message clear (not silent stop)", "passed": true, "evidence": "Guardrails explicitly: 'Stop with a clear message; don't half-scan.'"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "timing": {"executor_duration_seconds": 12.4}
+}

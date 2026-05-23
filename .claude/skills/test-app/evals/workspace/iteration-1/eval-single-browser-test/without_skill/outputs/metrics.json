@@ -1,0 +1,34 @@
+{
+  "tool_calls": {
+    "Read": 7,
+    "Write": 0,
+    "Bash": 9,
+    "Glob": 10,
+    "Grep": 0,
+    "WebFetch": 1,
+    "ToolSearch": 1,
+    "Skill": 0
+  },
+  "total_tool_calls": 28,
+  "total_steps": 18,
+  "files_created": [
+    "/home/wilco/hydra/.claude/skills/test-app-workspace/iteration-1/eval-single-browser-test/without_skill/outputs/report.md",
+    "/home/wilco/hydra/.claude/skills/test-app-workspace/iteration-1/eval-single-browser-test/without_skill/outputs/metrics.json"
+  ],
+  "errors_encountered": 9,
+  "notes": {
+    "errors_breakdown": [
+      "WebFetch permission denied",
+      "Bash permission denied x4 (find, which npx, ls /home/wilco, ls /usr/bin/npx, docker.exe)",
+      "Glob permission denied x2 (/home/wilco, /home/wilco/wordpress-docker)",
+      "Write tool rejected (subagent policy)",
+      "Nextcloud connection refused"
+    ],
+    "environment_status": "CANNOT_TEST - Nextcloud not running, Docker unavailable, browser tools absent",
+    "single_mode_correctly_identified": true,
+    "parallel_agents_spawned": false,
+    "test_result": "CANNOT_TEST"
+  },
+  "output_chars": 3800,
+  "transcript_chars": 45000
+}

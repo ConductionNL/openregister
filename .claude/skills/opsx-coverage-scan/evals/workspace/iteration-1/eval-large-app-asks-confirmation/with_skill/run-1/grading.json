@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "reports the enumeration count (650 PHP files) to the user", "passed": false, "evidence": "PARTIAL: Step 4.5 counts and checks threshold but does not explicitly instruct printing the count to the user before the AskUserQuestion. Count is implied by the guard message, not a separate report step."},
+    {"text": "compares against the > 500 threshold and triggers the Large app warning guardrail", "passed": true, "evidence": "Step 4.5: 'Count the total PHP files enumerated in Step 4. If > 500, stop and ask via AskUserQuestion before proceeding.'"},
+    {"text": "uses AskUserQuestion to ask for confirmation before Pass A", "passed": true, "evidence": "Step 4.5 lists exact options: Proceed inline / Chunk by directory / Cancel."},
+    {"text": "does NOT start classification silently", "passed": true, "evidence": "Step 4.5 explicitly: 'Do not skip this check — silently attempting a 700-file classification in one context window is the failure mode that produced the large-app-asks-confirmation eval zero.'"},
+    {"text": "if user confirms, proceeds; if user cancels, stops cleanly without writing reports", "passed": true, "evidence": "Cancel halts before Step 9 (writes). Reports only written after Pass A completes."}
+  ],
+  "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8},
+  "notes": "Minor gap: skill asks via AskUserQuestion but doesn't explicitly print the file count as a separate statement. Low-priority fix.",
+  "timing": {"executor_duration_seconds": 12.5}
+}

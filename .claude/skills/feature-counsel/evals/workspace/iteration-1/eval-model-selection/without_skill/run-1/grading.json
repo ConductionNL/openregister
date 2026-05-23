@@ -1,0 +1,22 @@
+{
+  "expectations": [
+    {
+      "text": "Accepts model parameter (Haiku/Sonnet/Opus)",
+      "passed": false,
+      "evidence": "Naive Claude does not ask the user about model selection before proceeding. Without the skill's AskUserQuestion step (Step 1.5), it would either ignore a 'run with Haiku agents' instruction entirely or interpret it ambiguously — there is no structured model-selection dialogue."
+    },
+    {
+      "text": "Spawns agents with specified model",
+      "passed": false,
+      "evidence": "Naive Claude does not spawn Task sub-agents at all, so there is no mechanism to pass a model parameter to them. Even if the user explicitly says 'use Haiku', naive Claude would not translate that into model: \"haiku\" in parallel Task agent configs."
+    },
+    {
+      "text": "Reports which model each persona used",
+      "passed": false,
+      "evidence": "With no agents launched and no model selection step, there is nothing to report. Naive Claude would produce a single inline response with no model provenance information."
+    }
+  ],
+  "summary": {"passed": 0, "failed": 3, "total": 3, "pass_rate": 0.0},
+  "notes": "Without the skill, model selection is entirely absent. Naive Claude does not solicit a model choice, does not spawn model-parameterised agents, and produces no output that records which model analysed which persona. All three expectations fail.",
+  "timing": {"executor_duration_seconds": 20}
+}

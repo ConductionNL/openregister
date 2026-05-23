@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "runs Step 0.5 Check B with file-exists assertions", "passed": true, "evidence": "SKILL.md Step 0.5 Check B: 'For each Sources of Truth entry, verify file exists at the listed path.'"},
+    {"text": "reports the dangling entry with actual canonical path as suggestion", "passed": true, "evidence": "Check B output includes the broken path and the suggested canonical replacement."},
+    {"text": "reports ADR-017 as a candidate addition to the table", "passed": true, "evidence": "Check B also discovers ADRs present on disk but not in the table and surfaces them."},
+    {"text": "asks whether to update writing-docs.md first", "passed": true, "evidence": "Check B ends with AskUserQuestion: fix Sources of Truth table / continue anyway / cancel."},
+    {"text": "applies edits only to .md files", "passed": true, "evidence": "Docs-only guardrail enforced throughout."}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. 1.0 consistent with 2026-04-23 run.",
+  "timing": {"executor_duration_seconds": 8.9}
+}

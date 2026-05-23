@@ -1,0 +1,48 @@
+{
+  "skill_name": "opsx-archive",
+  "schema_version": "1.0.0",
+  "notes": "Evals re-run 2026-04-24 via skill-creator simulation (read-only general-purpose subagents). 6 subagent runs (3 evals × with_skill + without_skill). Benchmark: with_skill 85% vs without_skill 87% (delta -0.02). Finding: two eval expectation mismatches — (1) archive-complete expects auto-PR but skill treats PR as a manual next step; (2) block-incomplete expects /opsx-apply suggestion but skill says 'go back and complete tasks'. Both are low-priority fixes. See evals/workspace/iteration-1/benchmark.md.",
+  "runs": [
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation (read-only general-purpose subagent, no Edit/Write)",
+      "eval_id": "archive-complete",
+      "score": 0.8,
+      "assertions": [
+        {"id": "validates all artifacts complete", "result": "pass", "note": "Step 2 runs openspec status --json to check required vs optional artifacts; Step 3 checks task completion."},
+        {"id": "syncs delta specs to main specs", "result": "pass", "note": "Step 4 shows combined diff, prompts, then executes /opsx-sync logic."},
+        {"id": "converts test cases to reusable scenarios", "result": "pass", "note": "Step 4.5 parses TC-N headers from test-plan.md, offers multi-select, converts to TS-NNN-<slug>.md files."},
+        {"id": "creates PR to development branch", "result": "fail", "note": "SKILL GAP: no automatic PR creation. /create-pr listed as Step 8 'What's next' option only — not executed by skill."},
+        {"id": "closes GitHub tracking issue", "result": "pass", "note": "Step 7 reads plan.json for tracking_issue, asks via AskUserQuestion, closes via update_issue if confirmed."}
+      ]
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation",
+      "eval_id": "block-incomplete",
+      "score": 0.75,
+      "assertions": [
+        {"id": "detects incomplete tasks", "result": "pass", "note": "Step 3 Case B reads tasks.md, detects unchecked '- [ ]' items."},
+        {"id": "reports which tasks remain", "result": "pass", "note": "'⛔ Cannot archive: N task(s) still incomplete: - Task X: <title>' lists by name."},
+        {"id": "suggests running /opsx-apply first", "result": "fail", "note": "MISMATCH: skill offers 'Go back and complete tasks' or 'Archive anyway (override)' — does NOT name /opsx-apply. Fix: add 'run /opsx-apply to complete remaining tasks' to Case B message."},
+        {"id": "does NOT archive incomplete changes", "result": "pass", "note": "Blocks; only proceeds on explicit user override."}
+      ]
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation",
+      "eval_id": "spec-sync",
+      "score": 1.0,
+      "assertions": [
+        {"id": "applies ADDED requirements to main specs", "result": "pass", "note": "Detected and shown in combined diff; /opsx-sync inserts new requirements."},
+        {"id": "applies MODIFIED requirements", "result": "pass", "note": "Listed in combined diff; /opsx-sync updates existing entries."},
+        {"id": "handles REMOVED requirements", "result": "pass", "note": "Listed in combined diff; /opsx-sync handles deletion."},
+        {"id": "preserves existing content not mentioned in delta", "result": "pass", "note": "Implied by scope-limited sync — only listed changes applied."}
+      ],
+      "notes": "All sync behaviors delegated to /opsx-sync. Archive skill is a discovery + prompt + handoff wrapper."
+    }
+  ]
+}

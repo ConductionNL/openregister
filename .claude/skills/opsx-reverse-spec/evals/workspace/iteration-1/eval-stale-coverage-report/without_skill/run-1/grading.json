@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "Reads coverage-report.json mtime", "passed": false, "evidence": "Would not check file age — would proceed with whatever report exists."},
+    {"text": "Detects staleness (>24h)", "passed": false, "evidence": "No staleness concept without the skill's guard."},
+    {"text": "Stops before reading any code", "passed": false, "evidence": "Would proceed to read methods from the stale report."},
+    {"text": "Tells the user to re-run /opsx-coverage-scan", "passed": false, "evidence": "Would not suggest re-running the scan."},
+    {"text": "Does not create a branch or ghost change", "passed": false, "evidence": "Would create a branch and ghost change using stale cluster data."}
+  ],
+  "summary": {"passed": 0, "failed": 5, "total": 5, "pass_rate": 0.0},
+  "timing": {"executor_duration_seconds": 7.1}
+}

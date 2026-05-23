@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"text": "reports which branch the app is on (Step 1)", "passed": true, "evidence": "Would run git branch --show-current to orient and populate report header."},
+    {"text": "reads every openspec/specs/*/spec.md and records {capability, req_id, req_title, scenarios, keywords}", "passed": true, "evidence": "Would read every spec.md and extract REQ IDs + keywords — acknowledged explicitly."},
+    {"text": "enumerates PHP via Glob, skipping lib/Migration/ and lib/Db/ entity boilerplate", "passed": false, "evidence": "PARTIAL: would skip Migration/ but would 'double-check whether mappers also live in Db/' — uncertain whether full Db/ exclusion applies. Scored as fail for ambiguity."},
+    {"text": "classifies methods into annotated / plumbing / Bucket 1 / 2a / 2b", "passed": false, "evidence": "Would produce crude 'matched/unmatched' split — would NOT spontaneously produce the Bucket-1/2a/2b naming or confidence thresholds without being told."},
+    {"text": "Pass B resolves private helpers by walking callers", "passed": false, "evidence": "Explicit admission: 'A private-method caller-inheritance pass (Pass B) would not occur to me from first principles.'"},
+    {"text": "reverse pass splits unimplemented REQs into 3a (git log -S match) vs 3b", "passed": false, "evidence": "Would report unimplemented REQs as a flat list — would not split by git history without explicit instruction."},
+    {"text": "writes openspec/coverage-report.json matching the schema in SKILL.md Step 9", "passed": false, "evidence": "Would produce 'some JSON' but field names would differ — exact schema (scanner_version, bucket_3a, nested buckets key) not produced from first principles."},
+    {"text": "writes openspec/coverage-report.md with Summary table, all buckets, Notes section", "passed": false, "evidence": "Would produce markdown summary but reflecting crude bucket model, not the 8-bucket schema with all required sections."},
+    {"text": "never modifies any file other than the two report files", "passed": true, "evidence": "Would write only net-new output files, never modify existing code."}
+  ],
+  "summary": {"passed": 3, "failed": 6, "total": 9, "pass_rate": 0.33},
+  "timing": {"executor_duration_seconds": 15.2}
+}

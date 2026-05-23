@@ -1,0 +1,84 @@
+{
+  "skill_name": "opsx-ff",
+  "version": "1.0.0",
+  "created": "2026-04-07",
+  "last_validated": "2026-04-24",
+  "evals": [
+    {
+      "id": "full-artifacts",
+      "description": "Generate all artifacts",
+      "prompt": "Run /opsx-ff for register-export",
+      "setup": "Change directory exists from opsx-new",
+      "expected_output": "Should create proposal, specs, design, tasks in one session",
+      "expectations": [
+        "Creates proposal.md",
+        "Creates delta specs",
+        "Creates design/contract if needed",
+        "Creates tasks.md with numbered tasks",
+        "Loads ARCHITECTURE.md, FEATURES.md, ADRs for context"
+      ]
+    },
+    {
+      "id": "model-guard",
+      "description": "Blocks on Haiku",
+      "prompt": "Run /opsx-ff on Haiku model",
+      "setup": "Model is Haiku",
+      "expected_output": "Should block and suggest Sonnet/Opus",
+      "expectations": [
+        "Detects Haiku model",
+        "Stops immediately",
+        "Suggests switching to Sonnet or Opus",
+        "Does NOT attempt artifact generation"
+      ]
+    },
+    {
+      "id": "handoff",
+      "description": "Suggests next steps",
+      "prompt": "After artifacts are generated",
+      "setup": "All artifacts created",
+      "expected_output": "Should suggest apply or plan-to-issues",
+      "expectations": [
+        "Suggests /opsx-apply for implementation",
+        "Suggests /opsx-plan-to-issues for tracking",
+        "Shows artifact completion status",
+        "Does NOT auto-proceed to implementation"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": [
+      "fast forward the change",
+      "generate all artifacts",
+      "opsx ff register-export",
+      "create all change artifacts",
+      "ff the change",
+      "/opsx-ff",
+      "fast-forward to implementation ready",
+      "generate everything in one go",
+      "do ff on add-dark-mode",
+      "run opsx-ff",
+      "one-shot generate all artifacts",
+      "create the full artifact set",
+      "ff for register-export",
+      "generate proposal specs and tasks",
+      "fast forward artifact generation"
+    ],
+    "should_not_trigger": [
+      "start a new change",
+      "apply the change",
+      "continue one artifact",
+      "archive the change",
+      "explore the change",
+      "opsx-new",
+      "opsx-continue",
+      "opsx-apply",
+      "what is fast forward?",
+      "show existing artifacts",
+      "generate one artifact",
+      "create the proposal only",
+      "explain ff",
+      "fast forward git",
+      "rebase fast-forward"
+    ]
+  }
+}

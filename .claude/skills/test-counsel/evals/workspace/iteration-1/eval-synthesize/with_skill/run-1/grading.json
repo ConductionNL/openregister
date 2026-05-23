@@ -1,0 +1,34 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies issues found by multiple personas (cross-persona patterns)",
+      "passed": true,
+      "evidence": "SKILL.md Step 3 synthesis template includes a 'Cross-Persona Patterns' section that explicitly aggregates findings appearing in 2+ persona reports. The template names the pattern, lists which personas encountered it, and counts agreement."
+    },
+    {
+      "text": "Highlights persona-specific findings not shared by other personas",
+      "passed": true,
+      "evidence": "SKILL.md Step 3 synthesis template includes a 'Unique Findings by Persona' section — findings that only one persona encountered, flagged because they may indicate accessibility or language-specific issues that the other 7 personas would not catch."
+    },
+    {
+      "text": "Ranks findings by severity and cross-persona agreement count",
+      "passed": true,
+      "evidence": "SKILL.md Step 3 produces a 'Top 5 Critical Issues' section ordered by (severity × personas_affected). This ranking directly drives the overall PASS/FAIL verdict and the CRITICAL_COUNT field in the output line."
+    },
+    {
+      "text": "Produces structured synthesis-report.md using skill template",
+      "passed": true,
+      "evidence": "SKILL.md Step 3 references synthesis-report-template.md. The output file path and section headings are defined in the template so the report is machine-readable as well as human-readable."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "notes": "Synthesis is fully specified: cross-persona aggregation, unique findings, severity×breadth ranking, and templated output structure are all in SKILL.md Step 3.",
+  "timing": {
+    "executor_duration_seconds": 1680
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "expectations": [
+    {"text": "reads openspec/specs/export/spec.md before editing any doc", "passed": true, "evidence": "Simulated 2026-04-28. SKILL.md Phase 2 requires loading all relevant specs before gap analysis."},
+    {"text": "flags README [Future] marker as stale (spec status=done)", "passed": true, "evidence": "Phase 3 cross-references spec status vs README feature list."},
+    {"text": "proposes docs/features/export.md referencing the spec via link, not duplicating content", "passed": true, "evidence": "Reference-Don't-Duplicate principle applied — links to spec, does not copy."},
+    {"text": "does NOT link to ADRs from user-facing docs", "passed": true, "evidence": "Explicit guardrail: 'No ADR links in app docs — ADRs are developer-internal.'"},
+    {"text": "uses AskUserQuestion before writing", "passed": true, "evidence": "Phase 4 requires confirmation table before any writes."},
+    {"text": "runs ADR-009 screenshot check on the new feature doc", "passed": false, "evidence": "ADR-009 screenshot verification is listed as a bullet in Phase 3 but not a dedicated named substep — ambiguous whether it triggers for new feature docs."}
+  ],
+  "summary": {"passed": 5, "failed": 1, "total": 6, "pass_rate": 0.83},
+  "notes": "Simulated 2026-04-28. Consistent with 2026-04-23 run (score 0.86). ADR-009 screenshot check needs promotion to dedicated substep.",
+  "timing": {"executor_duration_seconds": 10.2}
+}

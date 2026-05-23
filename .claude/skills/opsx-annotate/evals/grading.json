@@ -1,0 +1,85 @@
+{
+  "skill_name": "opsx-annotate",
+  "schema_version": "1.0.0",
+  "notes": "Evals re-run 2026-04-24 via skill-creator simulation (read-only subagent execution — no files modified). 8 subagent runs (4 evals × with_skill + without_skill). Benchmark: with_skill 95% pass rate vs. without_skill 9% (+0.86 delta). Idempotent-rerun improved from 0.00 (2026-04-23) to 0.80 — Step 1.5 guard is now wired in. See evals/workspace/iteration-1/benchmark.md for full stats.",
+  "runs": [
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation (read-only general-purpose subagent, no Edit/Write)",
+      "eval_id": "happy-path-small-app",
+      "score": 1.0,
+      "assertions": [
+        {"id": "checks coverage-report.json exists AND is < 24h old BEFORE any other action", "result": "pass", "note": "Step 1 first sub-bullet parses generated_at (explicitly not filesystem mtime) and checks < 24h."},
+        {"id": "checks git status --porcelain is empty and refuses on dirty tree", "result": "pass"},
+        {"id": "creates feature branch retrofit/annotate-procest-{today}", "result": "pass"},
+        {"id": "creates ghost change named retrofit-annotate-procest-{today} with empty specs/ and one task per REQ", "result": "pass"},
+        {"id": "task IDs follow format 'task-N: {capability}#{REQ-NNN} — {title} (retroactive annotation)'", "result": "pass"},
+        {"id": "uses AskUserQuestion before any file edits", "result": "pass"},
+        {"id": "uses Edit tool (or Write for full-file rewrite) — never sed/awk/python", "result": "pass"},
+        {"id": "runs composer phpcs and /hydra-gates after annotation", "result": "pass"},
+        {"id": "appends annotation commit SHA to .git-blame-ignore-revs", "result": "pass"},
+        {"id": "archives the ghost change via /opsx-archive at the end", "result": "pass"},
+        {"id": "PR labels include both retrofit and annotation-only", "result": "pass"}
+      ],
+      "notes": "All 11 assertions now pass. The 2026-04-23 run's ordering nit (Step 0 model-guard before prereqs) is no longer a blocker — the model-guard is now treated as a precondition, not an action."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation (read-only subagent)",
+      "eval_id": "dirty-tree-refuses",
+      "score": 1.0,
+      "assertions": [
+        {"id": "runs git status --porcelain as part of Step 1 prereq check", "result": "pass", "note": "Step 1 line 39: 'Working tree is clean (git status --porcelain empty). Refuse dirty trees.'"},
+        {"id": "refuses to proceed when porcelain output is non-empty", "result": "pass"},
+        {"id": "cites the Refuse dirty trees guardrail in the refusal message", "result": "pass", "note": "Guardrail named verbatim."},
+        {"id": "does NOT create the retrofit branch", "result": "pass"},
+        {"id": "does NOT create any ghost-change directory", "result": "pass"},
+        {"id": "does NOT modify any file", "result": "pass"}
+      ]
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation (read-only subagent)",
+      "eval_id": "stale-coverage-report",
+      "score": 1.0,
+      "assertions": [
+        {"id": "reads coverage-report.json and parses the generated_at timestamp", "result": "pass", "note": "Ambiguity from 2026-04-23 fixed — SKILL.md now names generated_at explicitly with 'use generated_at, not filesystem mtime' parenthetical."},
+        {"id": "compares against current time and detects > 24h staleness", "result": "pass"},
+        {"id": "refuses to proceed", "result": "pass"},
+        {"id": "recommends running /opsx-coverage-scan procest to refresh", "result": "pass"},
+        {"id": "does NOT proceed with annotation", "result": "pass"}
+      ],
+      "notes": "Improved from 0.87 (2026-04-23) to 1.00 — field name is now unambiguous."
+    },
+    {
+      "date": "2026-04-24",
+      "claude_version": "claude-opus-4-7",
+      "method": "skill-creator simulation (read-only subagent)",
+      "eval_id": "idempotent-rerun",
+      "score": 0.80,
+      "assertions": [
+        {"id": "greps the code for existing @spec openspec/changes/retrofit-annotate-* tags before annotating", "result": "pass", "note": "Step 1.5 'Idempotent-rerun guard' now exists and runs between Step 1 prereqs and Step 2."},
+        {"id": "detects the prior retrofit-annotate-procest-2026-04-01 tags", "result": "pass", "note": "Prefix match catches dated retrofit-annotate-* tags across all 4 simulated files."},
+        {"id": "uses AskUserQuestion to present the choice (fresh / reuse / cancel)", "result": "pass", "note": "Step 1.5 offers Resume/Fresh run/Cancel — three-way choice functionally matches fresh/reuse/cancel."},
+        {"id": "does NOT silently create a duplicate ghost change", "result": "pass", "note": "Step 1.5 explicitly: 'Do not proceed silently — a second ghost change mints duplicate tasks and produces a confusing PR.'"},
+        {"id": "if user picks fresh, new dated ghost change only carries NEW Bucket 1 items (not re-annotates already-tagged methods)", "result": "partial", "note": "Intent stated ('existing tags stay, new ones added for missed files') but the per-file defensive re-check in Step 6 is prose, not a concrete sub-step. Relies on coverage-report.json's annotated bucket being current at scan time."}
+      ],
+      "notes": "Improved from hard 0.00 fail (2026-04-23) to 0.80 — Step 1.5 Idempotent-rerun guard was the missing wiring. Remaining 0.20 gap: Step 6 should have a concrete 'grep-before-edit' sub-step for the fresh-run filtering, not just mention 'defensive' skip."
+    }
+  ],
+  "summary": {
+    "date": "2026-04-24",
+    "eval_count": 4,
+    "pass_threshold": 0.8,
+    "baseline_score": 0.68,
+    "with_skill_pass_rate": 0.95,
+    "without_skill_pass_rate": 0.09,
+    "delta": 0.86,
+    "passing_evals": 4,
+    "below_threshold": ["idempotent-rerun (marginal — 0.80 at threshold)"],
+    "improve_cycle_next": "Operationalize the fresh-run filter in Step 6: add a sub-step that re-greps each target file for existing @spec openspec/changes/retrofit-annotate-* tags before the Edit pass and skips already-tagged methods. This would close the last partial on idempotent-rerun and bring the score to 1.00."
+  }
+}

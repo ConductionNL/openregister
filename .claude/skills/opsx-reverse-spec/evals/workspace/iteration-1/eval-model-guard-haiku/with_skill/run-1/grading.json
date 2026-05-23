@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "Detects active model is Haiku", "passed": true, "evidence": "SKILL.md opens with explicit model check: 'Check the active model from your system context'."},
+    {"text": "Stops immediately and does not read any code", "passed": true, "evidence": "Stop on Haiku precedes all read steps — no code reads occur before the check."},
+    {"text": "Explicitly tells the user to switch to Sonnet or Opus", "passed": true, "evidence": "SKILL.md stop message: 'This command requires Sonnet or Opus — reverse-speccing observed code needs stronger reasoning than Haiku can reliably provide.'"},
+    {"text": "Does not create a ghost change scaffold", "passed": true, "evidence": "Ghost change creation is in later steps; Haiku stop is pre-step-1."},
+    {"text": "Does not touch the git tree", "passed": true, "evidence": "No git commands run before the model check."}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "Simulated 2026-04-28. Haiku guard is explicit and unambiguous.",
+  "timing": {"executor_duration_seconds": 7.5}
+}
