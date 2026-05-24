@@ -124,6 +124,8 @@ class TmloService
      * @param RegisterMapper  $registerMapper Register mapper for fetching registers
      * @param SchemaMapper    $schemaMapper   Schema mapper for fetching schemas
      * @param LoggerInterface $logger         Logger interface
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
@@ -138,6 +140,8 @@ class TmloService
      * @param Register $register The register to check
      *
      * @return bool True if TMLO is enabled
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-2
      */
     public function isTmloEnabled(Register $register): bool
     {
@@ -176,6 +180,8 @@ class TmloService
      * @return ObjectEntity The object with populated TMLO metadata
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-2
      */
     public function populateDefaults(ObjectEntity $object, Register $register, Schema $schema): ObjectEntity
     {
@@ -249,6 +255,8 @@ class TmloService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-3
      */
     public function validateFieldValues(array $tmlo): array
     {
@@ -311,6 +319,8 @@ class TmloService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-4
      */
     public function validateStatusTransition(array $tmlo, string $oldStatus): array
     {

@@ -57,6 +57,8 @@ class TmloController extends Controller
      * @param RegisterMapper  $registerMapper Register mapper
      * @param SchemaMapper    $schemaMapper   Schema mapper
      * @param LoggerInterface $logger         Logger interface
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
      */
     public function __construct(
         string $appName,
@@ -81,6 +83,8 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -125,6 +129,8 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -177,6 +183,8 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
