@@ -131,8 +131,39 @@ An agent is a named AI entity with a prompt persona, model configuration, tool a
 - **WHEN** `sendFeedback` checks conversation ownership
 - **THEN** HTTP 403 MUST be returned without persisting any feedback
 
+### REQ-006: The system MUST convert tool definitions to LLPhant FunctionInfo objects for LLM function calling
+
+When an agent has tools configured (via the agent's `tools` field listing tool IDs the agent may invoke), the system MUST translate each tool's array-shaped function definition into a `LLPhant\Chat\FunctionInfo\FunctionInfo` instance that LLPhant accepts via `setTools()`. `ToolManagementHandler::convertFunctionsToFunctionInfo($functions, $tools)` performs this translation, MUST preserve `name` / `description` / parameters / required fields, MUST resolve each function's source `ToolInterface` instance by scanning the supplied tools (so LLPhant can invoke `$toolInstance->{$func['name']}(...)`), and MUST handle nested `object` and `array` parameter types by carrying their `properties` / `items` schemas through to the `Parameter` constructor's `itemsOrProperties` argument.
+
+#### Scenario: Scalar parameter is converted to a Parameter
+
+- **GIVEN** a function definition `{ name: 'searchObjects', description: 'Search', parameters: { properties: { query: { type: 'string', description: 'q' } }, required: ['query'] } }`
+- **AND** a tool instance whose `getFunctions()` returns a function with `name === 'searchObjects'`
+- **WHEN** `convertFunctionsToFunctionInfo($functions, $tools)` is called
+- **THEN** the returned `FunctionInfo` MUST have `name === 'searchObjects'`, `description === 'Search'`, exactly one `Parameter` (`name: 'query'`, `type: 'string'`, `description: 'q'`, `enum: []`, `format: null`), `required === ['query']`
+- **AND** the `FunctionInfo`'s instance target MUST be the supplied tool, so LLPhant can call `$tool->searchObjects(...)` directly
+
+#### Scenario: Object and array parameter types carry their nested schemas
+
+- **GIVEN** a function definition whose `parameters.properties` includes `filters: { type: 'object', properties: { tag: { type: 'string' } } }` and `ids: { type: 'array', items: { type: 'integer' } }`
+- **WHEN** `convertFunctionsToFunctionInfo` is called
+- **THEN** the `filters` `Parameter` MUST be constructed with `itemsOrProperties` equal to the `properties` map `{ tag: { type: 'string' } }`
+- **AND** the `ids` `Parameter` MUST be constructed with `itemsOrProperties` equal to the `items` schema `{ type: 'integer' }`
+- **AND** when an `object` parameter omits `properties`, or an `array` parameter omits `items`, `itemsOrProperties` MUST default to `[]` rather than `null`
+
+#### Scenario: Tool instance bound by name match across all supplied tools
+
+- **GIVEN** three tools are supplied, and only tool B's `getFunctions()` contains a function named `runReport`
+- **WHEN** `convertFunctionsToFunctionInfo` converts a function definition with `name === 'runReport'`
+- **THEN** the produced `FunctionInfo`'s instance target MUST be tool B
+- **AND** if no supplied tool exposes a function with that name, the `FunctionInfo` MUST still be created with a `null` tool instance (LLPhant will surface the resulting invocation failure at call time rather than at conversion time)
+
 ## Notes
 
 - `ChatController::getChatStats` queries all rows globally (no user/org filter). This may expose aggregate counts across organisations in a multi-tenant deployment. Worth reviewing against ADR-022 (OpenRegister RBAC on data).
 - `ChatService::testChat` is a stub returning a static success message. The real implementation was preserved in `ChatService_ORIGINAL_2156.php` backup. This method is not covered by these REQs until the stub is replaced.
 - `ConversationController::destroyPermanent` does not delete feedback (only messages + conversation), while the two-stage `destroy` path does delete feedback on the second call. This asymmetry may be unintentional.
+- REQ-006: the optional `format` field on a function-parameter definition is passed through verbatim to the `Parameter` constructor (e.g. OpenAI's `format: 'date-time'`); default `null`. `enum` is passed through verbatim; default `[]`. `required` defaults to `[]` when absent. The method is annotated `@SuppressWarnings(PHPMD.CyclomaticComplexity)` / `(NPathComplexity)` because the parameter-type fan-out is irreducible without restructuring LLPhant's `Parameter` API.
+- `ChatController::page` returns a `TemplateResponse` for the chat SPA but is NOT registered in `appinfo/routes.php` and is unreachable. Surfaced by a 2026-05-24 Bucket 2a scan; should be deleted in a cleanup change rather than retrofit-specced.
+- The following methods were surfaced by the 2026-05-24 Bucket 2a scan but are covered by class-level `@spec` annotations pointing to the in-flight `ai-chat-companion-orchestrator` (`health-probe-endpoint`, `sse-streaming-endpoint`) and `ai-chat-companion-streaming` (token, tool-call, heartbeat events) changes: `ChatHealthController::health`; all `ChatStreamController` helpers (`clearOutputBuffers`, `emitSseHeaders`, `emitAndExit`, `safeShutdown`, `emitSseEvent`, `now`, `forwardWithHeartbeat`, `pickFallbackAgentForUser`); all `StreamYieldChannel::on*` and `emit*` methods. Their REQs land in this spec when those changes archive.
+- Vue UI helpers (`ChatSideBar::isActive`, `ChatIndex::showAgentSelector`) are out of scope for backend spec retrofit — they are presentational logic (CSS class binding, dialog open-toggle) with no server-observable behaviour.
