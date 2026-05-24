@@ -138,6 +138,21 @@ class LeafProvidersMetadataTest extends TestCase
             );
         }
 
+        // FormsProvider — Tier-2 link-table backed (extra FormLinkMapper dep).
+        if ($class === FormsProvider::class) {
+            $formLinkMapper = $this->getMockBuilder(\OCA\OpenRegister\Db\FormLinkMapper::class)
+                ->disableOriginalConstructor()
+                ->onlyMethods(['findByObjectUuid'])
+                ->getMock();
+            $formLinkMapper->method('findByObjectUuid')->willReturn([]);
+            return new $class(
+                db: $this->createMock(IDBConnection::class),
+                appManager: $appManager,
+                l10n: $l10n,
+                formLinkMapper: $formLinkMapper,
+            );
+        }
+
         // Default: db-backed providers.
         return new $class(
             db: $this->createMock(IDBConnection::class),
@@ -173,6 +188,17 @@ class LeafProvidersMetadataTest extends TestCase
                 appManager: $appManager,
                 userSession: $this->createMock(IUserSession::class),
                 l10n: $l10n,
+            );
+        }
+
+        if ($class === FormsProvider::class) {
+            return new $class(
+                db: $this->createMock(IDBConnection::class),
+                appManager: $appManager,
+                l10n: $l10n,
+                formLinkMapper: $this->getMockBuilder(\OCA\OpenRegister\Db\FormLinkMapper::class)
+                    ->disableOriginalConstructor()
+                    ->getMock(),
             );
         }
 
