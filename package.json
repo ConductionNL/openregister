@@ -19,7 +19,11 @@
 		"download-oas": "scripts/download-oas.sh",
 		"test:e2e": "playwright test",
 		"test:e2e:docs": "playwright test --project docs-capture",
-		"test:e2e:install": "playwright install chromium"
+		"test:e2e:install": "playwright install chromium",
+		"check:json-strict": "node tests/validate-json-strict.js",
+		"check:manifest": "node tests/validate-manifest.js",
+		"check:register": "node tests/validate-register.js",
+		"check:specs": "npm run check:json-strict && npm run check:manifest && npm run check:register"
 	},
 	"browserslist": [
 		"extends @nextcloud/browserslist-config"

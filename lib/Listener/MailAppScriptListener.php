@@ -105,9 +105,12 @@ class MailAppScriptListener implements IEventListener
             return;
         }
 
-        // Inject the sidebar script.
-        Util::addScript('openregister', 'openregister-mail-sidebar');
-        Util::addStyle('openregister', 'mail-sidebar');
+        // Inject the sidebar script (only if compiled JS exists).
+        $jsPath = __DIR__ . '/../../js/openregister-mail-sidebar.js';
+        if (file_exists($jsPath) === true) {
+            Util::addScript('openregister', 'openregister-mail-sidebar');
+            Util::addStyle('openregister', 'mail-sidebar');
+        }
 
         $this->logger->debug(
                 'Mail sidebar script injected for user {user}',
