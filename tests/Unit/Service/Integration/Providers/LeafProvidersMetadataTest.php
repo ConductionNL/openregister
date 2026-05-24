@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\EmailService;
@@ -219,6 +220,7 @@ class LeafProvidersMetadataTest extends TestCase
     {
         $provider = new CalendarProvider(
             calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarLinkService: $this->createMock(CalendarLinkService::class),
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
         );
@@ -234,28 +236,32 @@ class LeafProvidersMetadataTest extends TestCase
 
     public function testCalendarProviderListDelegatesToService(): void
     {
-        $service = $this->createMock(CalendarEventService::class);
-        $service->expects($this->once())
-            ->method('getEventsForObject')
+        // Tier-2: list() now goes through CalendarLinkService::getLinkedEvents
+        // (UNION over the link table + the legacy X-OR-* scan).
+        $link = $this->createMock(CalendarLinkService::class);
+        $link->expects($this->once())
+            ->method('getLinkedEvents')
             ->with('obj-uuid')
-            ->willReturn([['id' => 'cal1/event.ics']]);
+            ->willReturn([['id' => 'cal1/event.ics', 'source' => 'both']]);
 
         $provider = new CalendarProvider(
-            calendarEventService: $service,
+            calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarLinkService: $link,
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
         );
 
-        $this->assertSame([['id' => 'cal1/event.ics']], $provider->list('reg', 'sch', 'obj-uuid'));
+        $this->assertSame([['id' => 'cal1/event.ics', 'source' => 'both']], $provider->list('reg', 'sch', 'obj-uuid'));
     }//end testCalendarProviderListDelegatesToService()
 
     public function testCalendarProviderListSurfacesEmptyOnFailure(): void
     {
-        $service = $this->createMock(CalendarEventService::class);
-        $service->method('getEventsForObject')->willThrowException(new \RuntimeException('no calendar'));
+        $link = $this->createMock(CalendarLinkService::class);
+        $link->method('getLinkedEvents')->willThrowException(new \RuntimeException('no calendar'));
 
         $provider = new CalendarProvider(
-            calendarEventService: $service,
+            calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarLinkService: $link,
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
         );
@@ -263,21 +269,31 @@ class LeafProvidersMetadataTest extends TestCase
         $this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
     }//end testCalendarProviderListSurfacesEmptyOnFailure()
 
-    public function testCalendarProviderDeleteRejectsMalformedEntityId(): void
+    public function testCalendarProviderDeleteHandlesLegacyAndBareUidShapes(): void
     {
+        $eventSvc = $this->createMock(CalendarEventService::class);
+        $eventSvc->expects($this->once())->method('unlinkEvent')->with('7', 'event.ics');
+        $linkSvc  = $this->createMock(CalendarLinkService::class);
+        $linkSvc->expects($this->once())->method('unlinkEvent')->with('o', 'ev-uid');
+
         $provider = new CalendarProvider(
-            calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarEventService: $eventSvc,
+            calendarLinkService: $linkSvc,
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
         );
-        $this->expectException(\InvalidArgumentException::class);
-        $provider->delete('r', 's', 'o', 'not-a-composite');
-    }//end testCalendarProviderDeleteRejectsMalformedEntityId()
+
+        // Legacy composite shape — strips X-OR-* via CalendarEventService.
+        $provider->delete('r', 's', 'o', '7/event.ics');
+        // Bare uid shape — Tier-2 link-only removal.
+        $provider->delete('r', 's', 'o', 'ev-uid');
+    }//end testCalendarProviderDeleteHandlesLegacyAndBareUidShapes()
 
     public function testCalendarProviderHealthReportsUnavailableWhenAppMissing(): void
     {
         $provider = new CalendarProvider(
             calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarLinkService: $this->createMock(CalendarLinkService::class),
             appManager: $this->buildAppManager([]),
             l10n: $this->buildL10n(),
         );

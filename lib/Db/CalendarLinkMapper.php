@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Mapper for contact link entities.
+ * Mapper for CalendarLink entities.
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
@@ -17,16 +17,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
- * Class ContactLinkMapper
+ * Class CalendarLinkMapper
  *
- * @template-extends QBMapper<ContactLink>
+ * @template-extends QBMapper<CalendarLink>
  */
-class ContactLinkMapper extends QBMapper
+class CalendarLinkMapper extends QBMapper
 {
     /**
      * Constructor.
@@ -35,15 +36,15 @@ class ContactLinkMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct(db: $db, tableName: 'openregister_contact_links', entityClass: ContactLink::class);
+        parent::__construct(db: $db, tableName: 'openregister_calendar_links', entityClass: CalendarLink::class);
     }//end __construct()
 
     /**
-     * Find contact links by object UUID.
+     * Find calendar links by object UUID.
      *
      * @param string $objectUuid The object UUID.
      *
-     * @return ContactLink[] Array of contact links.
+     * @return CalendarLink[] Array of calendar links.
      */
     public function findByObjectUuid(string $objectUuid): array
     {
@@ -51,35 +52,38 @@ class ContactLinkMapper extends QBMapper
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->orderBy('linked_at', 'DESC');
+            ->orderBy('dtstart', 'ASC');
 
         return $this->findEntities(query: $qb);
     }//end findByObjectUuid()
 
     /**
-     * Find contact links by contact UID.
+     * Find a single calendar link by object UUID + event UID.
      *
-     * @param string $contactUid The contact UID from the vCard.
+     * @param string $objectUuid The object UUID.
+     * @param string $eventUid   The event UID.
      *
-     * @return ContactLink[] Array of contact links.
+     * @return CalendarLink The link entity.
+     *
+     * @throws DoesNotExistException When no row matches.
      */
-    public function findByContactUid(string $contactUid): array
+    public function findByObjectAndEvent(string $objectUuid, string $eventUid): CalendarLink
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
-            ->orderBy('linked_at', 'DESC');
+            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+            ->andWhere($qb->expr()->eq('event_uid', $qb->createNamedParameter($eventUid)));
 
-        return $this->findEntities(query: $qb);
-    }//end findByContactUid()
+        return $this->findEntity(query: $qb);
+    }//end findByObjectAndEvent()
 
     /**
-     * Count contact links for an object.
+     * Count calendar links for an object.
      *
      * @param string $objectUuid The object UUID.
      *
-     * @return int Count of links.
+     * @return int Count.
      */
     public function countByObjectUuid(string $objectUuid): int
     {
@@ -96,7 +100,7 @@ class ContactLinkMapper extends QBMapper
     }//end countByObjectUuid()
 
     /**
-     * Delete all contact links for an object UUID.
+     * Delete all calendar links for an object UUID.
      *
      * @param string $objectUuid The object UUID.
      *
@@ -112,32 +116,20 @@ class ContactLinkMapper extends QBMapper
     }//end deleteByObjectUuid()
 
     /**
-     * Find the single link for an (objectUuid, contactUid) pair.
-     *
-     * Backs the upsert path in `ContactService::linkContact()` — the DB
-     * already enforces uniqueness via the Tier-2 composite index
-     * `idx_contact_object_uid_uniq`, but reading first lets the service
-     * update the cached vCard fields (phone/org/avatar) and role
-     * in-place instead of failing on the duplicate-key.
+     * Delete a single calendar link by object UUID + event UID.
      *
      * @param string $objectUuid The object UUID.
-     * @param string $contactUid The vCard UID.
+     * @param string $eventUid   The event UID.
      *
-     * @return ContactLink|null The link, or null when no row exists.
+     * @return int Number of deleted rows (0 or 1).
      */
-    public function findByObjectAndContact(string $objectUuid, string $contactUid): ?ContactLink
+    public function deleteByObjectAndEvent(string $objectUuid, string $eventUid): int
     {
         $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
+        $qb->delete($this->getTableName())
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
-            ->setMaxResults(1);
+            ->andWhere($qb->expr()->eq('event_uid', $qb->createNamedParameter($eventUid)));
 
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return null;
-        }
-    }//end findByObjectAndContact()
+        return $qb->executeStatement();
+    }//end deleteByObjectAndEvent()
 }//end class
