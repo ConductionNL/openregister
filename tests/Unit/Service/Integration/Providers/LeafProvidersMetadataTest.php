@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ContactService;
-use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
@@ -306,11 +306,11 @@ class LeafProvidersMetadataTest extends TestCase
 
     public function testDeckProviderMetadataAndEnableGate(): void
     {
-        $service = $this->createMock(DeckCardService::class);
+        $service = $this->createMock(DeckLinkService::class);
         $service->method('isDeckAvailable')->willReturn(true);
 
         $provider = new DeckProvider(
-            deckCardService: $service,
+            deckLinkService: $service,
             appManager: $this->buildAppManager(['deck']),
             l10n: $this->buildL10n(),
         );

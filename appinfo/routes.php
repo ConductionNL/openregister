@@ -326,11 +326,17 @@ return [
         ['name' => 'calendarEvents#link',    'url' => '/api/objects/{register}/{schema}/{id}/events/link',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'calendarEvents#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/events/{eventId}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'eventId' => '[^/]+']],
 
-        // Deck — object↔Deck card links + reverse lookup.
-        ['name' => 'deck#index',   'url' => '/api/objects/{register}/{schema}/{id}/deck',                  'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'deck#create',  'url' => '/api/objects/{register}/{schema}/{id}/deck',                  'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckRef}',        'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckRef' => '[^/]+']],
-        ['name' => 'deck#objects', 'url' => '/api/deck/boards/{boardId}/objects',                          'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
+        // Deck — Tier-2 link table + picker UX. Replaces the Tier-1
+        // single-endpoint `deck#create` with explicit link/create
+        // verbs so the picker can drive a multi-step modal.
+        ['name' => 'deckLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/deck',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deckLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/deck',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deckLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/deck/new',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deckLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/deck/{cardId}',     'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'cardId' => '[0-9]+']],
+        ['name' => 'deckLinks#boards',    'url' => '/api/integrations/deck/boards',                           'verb' => 'GET'],
+        ['name' => 'deckLinks#stacks',    'url' => '/api/integrations/deck/boards/{boardId}/stacks',          'verb' => 'GET',    'requirements' => ['boardId' => '[0-9]+']],
+        // Reverse lookup — keep on Tier-1 controller (not in Tier-2 scope).
+        ['name' => 'deck#objects',        'url' => '/api/deck/boards/{boardId}/objects',                      'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
 
         // Unified relations endpoint — aggregates emails/contacts/calendar/deck for an object.
         ['name' => 'relations#index', 'url' => '/api/objects/{register}/{schema}/{id}/relations',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],

@@ -1109,7 +1109,7 @@ class Application extends App implements IBootstrap
             DeckProvider::class,
             function (ContainerInterface $container) {
                 return new DeckProvider(
-                    deckCardService: $container->get(\OCA\OpenRegister\Service\DeckCardService::class),
+                    deckLinkService: $container->get(\OCA\OpenRegister\Service\DeckLinkService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                 );
