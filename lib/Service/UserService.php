@@ -1026,6 +1026,8 @@ class UserService
      * Assembles profile data, organisation memberships, and audit trail entries
      * into a downloadable JSON structure. Rate limited to once per hour.
      *
+     * @spec retrofit-2026-05-24-data-import-export#task-2
+     *
      * @param IUser $user The user requesting data export
      *
      * @return array The export data structure

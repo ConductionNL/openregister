@@ -36,6 +36,9 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec retrofit-2026-05-24-data-import-export#task-2
+		 */
 		async exportData() {
 			this.loading = true
 			this.message = ''

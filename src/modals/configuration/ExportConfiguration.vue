@@ -97,6 +97,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec retrofit-2026-05-24-data-import-export#task-5
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false

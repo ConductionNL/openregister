@@ -503,6 +503,7 @@ export default {
 	methods: {
 		/**
 		 * Get the file extension from a filename
+		 * @spec retrofit-2026-05-24-data-import-export#task-3
 		 * @param {string} filename - The name of the file to get extension from
 		 * @return {string}
 		 */
@@ -552,6 +553,7 @@ export default {
 		},
 		/**
 		 * Close the import modal and reset state
+		 * @spec retrofit-2026-05-24-data-import-export#task-5
 		 */
 		closeModal() {
 			navigationStore.setModal(false)

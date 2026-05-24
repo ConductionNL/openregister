@@ -262,6 +262,8 @@ class ExportService
      * schema's properties (the same headers `exportToExcel` would emit), with no
      * data rows. The returned spreadsheet can be written to either XLSX or CSV.
      *
+     * @spec retrofit-2026-05-24-data-import-export#task-1
+     *
      * @param Register|null $register    Optional register context (used for translation column expansion)
      * @param Schema        $schema      Schema whose property keys become the header row
      * @param IUser|null    $currentUser Current user (drives admin metadata column inclusion)
@@ -296,6 +298,8 @@ class ExportService
      * Emits a UTF-8 BOM-prefixed CSV string containing only the header row
      * derived from the schema's properties. Mirrors the BOM convention used
      * by the export pipeline so Excel opens the file with the correct encoding.
+     *
+     * @spec retrofit-2026-05-24-data-import-export#task-1
      *
      * @param Register|null $register    Optional register context
      * @param Schema        $schema      Schema whose property keys become the header row

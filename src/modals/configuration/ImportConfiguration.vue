@@ -437,6 +437,7 @@ export default {
 	methods: {
 		/**
 		 * Check if API tokens are configured
+		 * @spec retrofit-2026-05-24-data-import-export#task-4
 		 */
 		async checkTokenAvailability() {
 			try {
@@ -485,6 +486,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec retrofit-2026-05-24-data-import-export#task-5
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.resetForm()

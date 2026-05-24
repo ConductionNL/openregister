@@ -1631,6 +1631,8 @@ class ImportService
     /**
      * Clear all internal caches to prevent issues between imports
      *
+     * @spec retrofit-2026-05-24-data-import-export#task-5
+     *
      * @return void
      */
     public function clearCaches(): void

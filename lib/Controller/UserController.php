@@ -518,6 +518,8 @@ class UserController extends Controller
     /**
      * Export personal data for the current user (GDPR)
      *
+     * @spec retrofit-2026-05-24-data-import-export#task-2
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
