@@ -79,6 +79,8 @@ class RealtimeEventRetentionJob extends TimedJob
      * @param RealtimeEventMapper $eventMapper Mapper exposing
      *                                         `deleteOlderThan()`.
      * @param LoggerInterface     $logger      Logger for telemetry.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-2
      */
     public function __construct(
         ITimeFactory $time,
@@ -99,6 +101,8 @@ class RealtimeEventRetentionJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-2
      */
     protected function run($argument): void
     {
