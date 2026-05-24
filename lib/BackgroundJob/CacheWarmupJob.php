@@ -102,6 +102,8 @@ class CacheWarmupJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-1
      */
     protected function run($argument): void
     {

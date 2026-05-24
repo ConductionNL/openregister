@@ -98,6 +98,8 @@ class SolrWarmupJob extends QueuedJob
      * @throws \Exception If warmup fails critically (job will be marked as failed)
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-4
      */
     protected function run($argument): void
     {
@@ -246,6 +248,8 @@ class SolrWarmupJob extends QueuedJob
      * @param LoggerInterface $logger      Logger instance for debug messages
      *
      * @return bool True if SOLR is available and ready, false otherwise
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-4
      */
     private function isSolrAvailable(IndexService $solrService, LoggerInterface $logger): bool
     {
@@ -271,6 +275,8 @@ class SolrWarmupJob extends QueuedJob
      * @param float                $executionTime Total execution time in seconds
      *
      * @return float Objects indexed per second (rounded to 2 decimal places), or 0.0 if calculation not possible
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-4
      */
     private function calculateObjectsPerSecond(array $result, float $executionTime): float
     {

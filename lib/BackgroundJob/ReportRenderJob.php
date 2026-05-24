@@ -88,6 +88,8 @@ class ReportRenderJob extends TimedJob
      * @param MagicMapper         $objectMapper   Object loader.
      * @param IRootFolder         $rootFolder     Files root.
      * @param LoggerInterface     $logger         Logger.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-3
      */
     public function __construct(
         ITimeFactory $time,
@@ -111,6 +113,8 @@ class ReportRenderJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-3
      */
     protected function run($argument): void
     {
@@ -187,6 +191,8 @@ class ReportRenderJob extends TimedJob
      * @param DateTime                  $now      Reference time.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-3
      */
     private function shouldRender(array $payload, $schedule, DateTime $now): bool
     {
@@ -228,6 +234,8 @@ class ReportRenderJob extends TimedJob
      * @param array<string, mixed> $payload   Dashboard data.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-3
      */
     private function renderAndDeliver(ObjectEntity $dashboard, array $payload): void
     {
@@ -268,6 +276,8 @@ class ReportRenderJob extends TimedJob
      * @param array<string, mixed> $delivery  Delivery descriptor.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-3
      */
     private function writeToFiles(ObjectEntity $dashboard, array $payload, array $rendered, array $delivery): void
     {
@@ -337,6 +347,8 @@ class ReportRenderJob extends TimedJob
      * Resolve the `reports` register.
      *
      * @return Register
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-3
      */
     private function loadReportsRegister(): Register
     {
@@ -354,6 +366,8 @@ class ReportRenderJob extends TimedJob
      * @param Register $register Reports register.
      *
      * @return ObjectEntity[]
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-3
      */
     private function loadDashboards(Register $register): array
     {
@@ -384,6 +398,8 @@ class ReportRenderJob extends TimedJob
      * @param string $value Title.
      *
      * @return string Slug.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-backgroundjob/tasks.md#task-3
      */
     private function slugify(string $value): string
     {
