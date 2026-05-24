@@ -58,6 +58,8 @@ final class GuardResult
      * Allow the transition.
      *
      * @return self Allow verdict instance.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-4
      */
     public static function allow(): self
     {
@@ -70,6 +72,8 @@ final class GuardResult
      * @param string $message Human-readable reason. Surfaced to the caller in the 403 response.
      *
      * @return self Deny verdict instance.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-4
      */
     public static function deny(string $message): self
     {
@@ -80,6 +84,8 @@ final class GuardResult
      * Read whether the verdict allows the transition.
      *
      * @return bool True when allowed, false when denied.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-4
      */
     public function isAllowed(): bool
     {
