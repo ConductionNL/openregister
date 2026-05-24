@@ -39,3 +39,12 @@
 - [x] Reference-property test — `CnXwikiCard.spec.js` `single-entity` surface renders a chip from `value` and falls back to a minimal chip on lookup failure; `referenceType: 'xwiki'` wiring is covered by the umbrella's `CnFormDialog` / `CnDetailGrid` referenceType tests
 - [x] Security: macros NOT executed in preview — `CnXwikiCard.spec.js` asserts the detail-page preview strips all HTML tags + the `<script>` body + treats macro markup (`{{velocity}}…`) as inert text; the source returns already-rendered HTML and the widget only ever reads its text content, never injects it into the DOM
 - [ ] Live E2E (configure an OpenConnector xwiki source against a running XWiki, link a page, verify the breadcrumb in the tab + the text preview on the detail page; auth-expired/hide behaviour) — deferred until the umbrella + leaf PRs merge and land in a deployed Nextcloud + a reachable XWiki instance
+
+## Wave-5 frontend (strict layout) — [ConductionNL/nextcloud-vue feature/integration-xwiki-wave5]
+
+- [x] Components under `src/integrations/builtin/xwiki/` — `CnXwikiTab.vue` (page-tree + breadcrumb, auth-status banners) + `CnXwikiCard.vue` (4-surface widget with auth-state badge) + `__tests__/CnXwikiCard.spec.js` (8 tests) + `__tests__/CnXwikiTab.spec.js` (7 tests)
+- [x] Descriptor at `src/integrations/builtin/xwiki.js` — `xwikiIntegration` with `storageStrategy: 'external'`, `requiredApp: 'openconnector'`, `referenceType: 'xwiki'`, `group: 'external'`, `order: 32`
+- [x] No touches to `builtin/index.js` or `leaves.js` — descriptor is a standalone leaf module that consumers/coordinators wire in explicitly
+- [x] External-integration UX considerations — banner branches on 503 `details.cause` (AD-23 contract): `openconnector-down` / `openconnector-source-missing` → "Configure XWiki connection" CTA pointing at OpenConnector's source admin page; `provider-auth` → "Reconnect" CTA + "XWiki returned 401" message; `upstream-service-down` → "XWiki is currently unavailable" + Retry; dashboard surface collapses banner to a compact auth-status badge (configured / not configured / unhealthy)
+- [x] Quality gates — `npx eslint src/integrations/builtin/xwiki src/integrations/builtin/xwiki.js` clean; `npx jest src/integrations/builtin/xwiki` → 15/15 green; `node scripts/check-integration-parity.js` exit 0
+- [x] `jest.config.js` `testMatch` extended with `<rootDir>/src/**/__tests__/*.spec.js` (already done by wave-4.3 polls; reused here)
