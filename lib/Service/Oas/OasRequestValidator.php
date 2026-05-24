@@ -43,6 +43,8 @@ class OasRequestValidator
      * @param array $schema The JSON-Schema to validate against (decoded).
      *
      * @return array<int, array{path: string, message: string}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-4
      */
     public function validate(mixed $body, array $schema): array
     {
@@ -78,6 +80,8 @@ class OasRequestValidator
      * @param array $schema The JSON-Schema.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-4
      */
     public function isValid(mixed $body, array $schema): bool
     {
@@ -99,6 +103,8 @@ class OasRequestValidator
      *                                               across versions; each method_exists
      *                                               branch is one independent fallback.
      * @SuppressWarnings(PHPMD.NPathComplexity)      Same: each fallback is one branch.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-4
      */
     private function collectErrors(mixed $error, array &$errors): void
     {

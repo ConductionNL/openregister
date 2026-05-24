@@ -53,6 +53,8 @@ class OasETagComputer
      * @param array $spec The OAS payload.
      *
      * @return string The hex-encoded SHA-256 hash.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-1
      */
     public function hash(array $spec): string
     {
@@ -72,6 +74,8 @@ class OasETagComputer
      * @param string $currentETag The currently computed ETag (quoted).
      *
      * @return bool True when a 304 response can be returned.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-1
      */
     public function matches(string $ifNoneMatch, string $currentETag): bool
     {
@@ -106,6 +110,8 @@ class OasETagComputer
      * @param mixed $value The value to canonicalise.
      *
      * @return mixed Canonical-shape value.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-1
      */
     private function canonicalise(mixed $value): mixed
     {

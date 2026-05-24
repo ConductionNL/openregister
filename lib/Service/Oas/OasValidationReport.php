@@ -80,6 +80,8 @@ final class OasValidationReport
      * @param string $code    Stable machine code (one of the CODE_* constants).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-3
      */
     public function addError(string $path, string $message, string $code): void
     {
@@ -100,6 +102,8 @@ final class OasValidationReport
      * @param string $code    Stable machine code (one of the CODE_* constants).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-3
      */
     public function addWarning(string $path, string $message, string $code): void
     {
@@ -120,6 +124,8 @@ final class OasValidationReport
      * @param string $code    Stable machine code (one of the CODE_* constants).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-3
      */
     public function addAutoCorrection(string $path, string $message, string $code): void
     {

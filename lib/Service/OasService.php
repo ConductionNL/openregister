@@ -666,6 +666,8 @@ class OasService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many OpenAPI schema keywords require individual validation
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for schema keyword processing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive OpenAPI schema validation logic
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-5
      */
     private function sanitizePropertyDefinition($propertyDefinition): array
     {
@@ -1842,6 +1844,8 @@ class OasService
      * meta-schema. Closes oas-validation issue #1378.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-5
      */
     private function validateAgainstMetaSchema(): void
     {
@@ -2043,6 +2047,8 @@ class OasService
      * - API-03: only standard HTTP status codes on responses.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-5
      */
     private function validateNlGovRules(): void
     {

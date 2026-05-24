@@ -101,6 +101,8 @@ class ProblemDetailsBuilder
      * @param string $instance Instance URI, '' = omit.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-2
      */
     public function validationFailed(array $errors, string $detail='', string $instance=''): array
     {
@@ -122,6 +124,8 @@ class ProblemDetailsBuilder
      * @param string $instance Instance URI, '' = omit.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-2
      */
     public function notFound(string $detail='', string $instance=''): array
     {
@@ -141,6 +145,8 @@ class ProblemDetailsBuilder
      * @param string $instance Instance URI, '' = omit.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-2
      */
     public function conflict(string $detail='', string $instance=''): array
     {

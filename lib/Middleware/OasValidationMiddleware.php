@@ -70,6 +70,8 @@ class OasValidationMiddleware extends Middleware
      * @return void
      *
      * @throws OasValidationFailureException When the body fails validation.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-4
      */
     public function beforeController(mixed $controller, string $methodName): void
     {
@@ -113,6 +115,8 @@ class OasValidationMiddleware extends Middleware
      * @throws \Throwable When the exception is not ours; rethrown for upstream handling.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware interface requires $controller + $methodName.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-4
      */
     public function afterException(
         mixed $controller,

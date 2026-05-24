@@ -177,6 +177,8 @@ class OasController extends Controller
      * @param string $name Query parameter name.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-oas-generation/tasks.md#task-5
      */
     private function boolQueryParam(string $name): bool
     {
