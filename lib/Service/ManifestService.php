@@ -115,6 +115,9 @@ class ManifestService
      * @return array<string, mixed> Enriched manifest (original if no `currentUserSchema`).
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-013
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-014
      */
     public function getEnrichedManifest(array $manifest): array
     {
@@ -181,6 +184,8 @@ class ManifestService
      * @param string $userId     Nextcloud user ID.
      *
      * @return ObjectEntity|null The profile object, or null if not found.
+     *
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-015
      */
     private function resolveUserProfile(string $schemaSlug, string $userId): ?ObjectEntity
     {
@@ -244,6 +249,8 @@ class ManifestService
      * @return array<string, mixed> The `runtime.user` data block.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-016
      */
     private function buildUserContext(string $userId, ObjectEntity $profile, string $schemaSlug): array
     {
@@ -328,6 +335,8 @@ class ManifestService
      * @param string $schemaSlug The schema slug.
      *
      * @return array<string, mixed>|null The calculations map, or null when absent.
+     *
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-016
      */
     private function getCalculations(string $schemaSlug): ?array
     {
@@ -364,6 +373,8 @@ class ManifestService
      * @param array<string, mixed>|null $calcs      Calculation map for the schema.
      *
      * @return list<string> Distinct field names allowed in runtime.user.
+     *
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-016
      */
     private function resolveAllowedFieldNames(string $schemaSlug, ?array $calcs): array
     {
@@ -396,6 +407,8 @@ class ManifestService
      *
      * @return list<string>|null List of allowed field names, or null when
      *                           the schema declares no allowlist.
+     *
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-016
      */
     private function loadFieldAllowlist(string $schemaSlug): ?array
     {
@@ -432,6 +445,8 @@ class ManifestService
      * @param mixed $value Raw evaluator output.
      *
      * @return mixed JSON-safe representation.
+     *
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-016
      */
     private function serialise(mixed $value): mixed
     {

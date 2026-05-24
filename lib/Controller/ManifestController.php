@@ -83,6 +83,8 @@ class ManifestController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
+     *
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-012
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -123,6 +125,8 @@ class ManifestController extends Controller
      * @return array<string, mixed>|null Decoded manifest, or null if not readable.
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-012
      */
     private function loadBundledManifest(string $appId): ?array
     {
