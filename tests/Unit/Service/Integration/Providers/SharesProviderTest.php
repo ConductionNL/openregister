@@ -193,6 +193,10 @@ class SharesProviderTest extends TestCase
     /**
      * Build a mock FolderManagementHandler returning the given folder.
      *
+     * Accepts `ObjectEntity|string` to mirror the production signature —
+     * the resolveObjectFolder() fix passes the ObjectEntity instance
+     * when ObjectEntityMapper::find() succeeds.
+     *
      * @param Folder|null $folder Folder to return from getObjectFolder.
      *
      * @return object
@@ -201,19 +205,57 @@ class SharesProviderTest extends TestCase
     {
         return new class($folder) {
 
+            /**
+             * Last argument observed by getObjectFolder — tests can read
+             * this to assert that the entity (not the raw uuid string)
+             * was passed.
+             *
+             * @var mixed
+             */
+            public mixed $lastArg = null;
+
+
             public function __construct(private ?Folder $folder)
             {
             }//end __construct()
 
 
-            public function getObjectFolder(string $objectId): ?Folder
+            public function getObjectFolder(mixed $objectEntityOrId): ?Folder
             {
+                $this->lastArg = $objectEntityOrId;
                 return $this->folder;
             }//end getObjectFolder()
 
 
         };
     }//end buildFolderHandler()
+
+
+    /**
+     * Build a mock ObjectEntityMapper whose `find()` returns the given
+     * entity stand-in for the requested uuid.
+     *
+     * @param object|null $entity Object stand-in to return.
+     *
+     * @return object
+     */
+    private function buildObjectMapper(?object $entity): object
+    {
+        return new class($entity) {
+
+            public function __construct(private ?object $entity)
+            {
+            }//end __construct()
+
+
+            public function find(string $objectId): ?object
+            {
+                return $this->entity;
+            }//end find()
+
+
+        };
+    }//end buildObjectMapper()
 
 
     /**
@@ -314,11 +356,14 @@ class SharesProviderTest extends TestCase
         $folder        = $this->buildFolder([$node]);
         $folderHandler = $this->buildFolderHandler($folder);
         $userSession   = $this->buildUserSession('bob');
+        $entity        = new \stdClass();
+        $objectMapper  = $this->buildObjectMapper($entity);
 
         $container = $this->buildContainer([
             'OCP\\Share\\IManager'                                       => $shareManager,
             'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler'  => $folderHandler,
             'OCP\\IUserSession'                                          => $userSession,
+            'OCA\\OpenRegister\\Db\\ObjectEntityMapper'                  => $objectMapper,
         ]);
 
         $provider = new SharesProvider(
@@ -503,6 +548,110 @@ class SharesProviderTest extends TestCase
         $this->expectException(NotImplementedException::class);
         $provider->delete('reg', 'sch', 'obj-uuid', 's-1');
     }//end testDeleteThrowsNotImplementedWhenShareManagerUnreachable()
+
+
+    /**
+     * Regression: resolveObjectFolder() must look up the ObjectEntity
+     * via ObjectEntityMapper::find() first and pass the entity (not
+     * the raw uuid) to FolderManagementHandler::getObjectFolder().
+     *
+     * Before the fix, the provider passed the uuid string directly,
+     * which routed to the handler's string-input branch and threw
+     * "Failed to create file because no objectEntity or registerId
+     * given". The Throwable was swallowed in resolveObjectFolder and
+     * list() returned [] regardless of real shares.
+     *
+     * @return void
+     */
+    public function testListPassesObjectEntityToFolderHandler(): void
+    {
+        $node = $this->buildNode(42, 'doc.pdf');
+
+        $share = $this->buildShare(
+            id: 's-real',
+            type: IShare::TYPE_USER,
+            with: 'alice',
+            displayName: 'Alice',
+            perms: 17,
+            owner: 'bob',
+            node: $node
+        );
+
+        $shareManager = $this->createMock(IManager::class);
+        $shareManager->method('getSharesBy')->willReturnCallback(
+            static function ($userId, int $type, $path) use ($share) {
+                if ($type === IShare::TYPE_USER) {
+                    return [$share];
+                }
+
+                return [];
+            }
+        );
+
+        $folder        = $this->buildFolder([$node]);
+        $folderHandler = $this->buildFolderHandler($folder);
+        $entity        = new \stdClass();
+        $objectMapper  = $this->buildObjectMapper($entity);
+        $userSession   = $this->buildUserSession('bob');
+
+        $container = $this->buildContainer([
+            'OCP\\Share\\IManager'                                       => $shareManager,
+            'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler'  => $folderHandler,
+            'OCP\\IUserSession'                                          => $userSession,
+            'OCA\\OpenRegister\\Db\\ObjectEntityMapper'                  => $objectMapper,
+        ]);
+
+        $provider = new SharesProvider(
+            db: $this->createMock(IDBConnection::class),
+            appManager: $this->buildAppManager(),
+            l10n: $this->buildL10n(),
+            container: $container,
+        );
+
+        $rows = $provider->list('reg', 'sch', 'obj-uuid');
+
+        $this->assertCount(1, $rows, 'real share row expected when entity resolves');
+        $this->assertSame('s-real', $rows[0]['id']);
+
+        // The handler must have been invoked with the entity instance,
+        // not the raw uuid string — that's the load-bearing assertion
+        // for this fix.
+        $this->assertSame($entity, $folderHandler->lastArg);
+    }//end testListPassesObjectEntityToFolderHandler()
+
+
+    /**
+     * When the ObjectEntityMapper can't resolve the uuid (entity
+     * deleted etc.), the provider must still fall back to the uuid
+     * string — preserving the pre-fix degraded path so behaviour is
+     * forwards-compatible with the existing graceful-degrade contract.
+     *
+     * @return void
+     */
+    public function testListFallsBackToUuidWhenEntityMissing(): void
+    {
+        $folderHandler = $this->buildFolderHandler(null);
+        // mapper returns null → entity not resolved
+        $objectMapper  = $this->buildObjectMapper(null);
+        $userSession   = $this->buildUserSession('bob');
+
+        $container = $this->buildContainer([
+            'OCP\\Share\\IManager'                                       => $this->createMock(IManager::class),
+            'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler'  => $folderHandler,
+            'OCP\\IUserSession'                                          => $userSession,
+            'OCA\\OpenRegister\\Db\\ObjectEntityMapper'                  => $objectMapper,
+        ]);
+
+        $provider = new SharesProvider(
+            db: $this->createMock(IDBConnection::class),
+            appManager: $this->buildAppManager(),
+            l10n: $this->buildL10n(),
+            container: $container,
+        );
+
+        $this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+        $this->assertSame('obj-uuid', $folderHandler->lastArg, 'falls back to uuid string when entity null');
+    }//end testListFallsBackToUuidWhenEntityMissing()
 
 
 }//end class

@@ -347,6 +347,16 @@ class SharesProvider extends AbstractIntegrationProvider
     /**
      * Resolve the object's NC folder via the FolderManagementHandler.
      *
+     * Looks up the ObjectEntity via ObjectEntityMapper::find() first so
+     * `FolderManagementHandler::getObjectFolder()` is invoked on its
+     * entity-input branch (which knows how to resolve the register from
+     * the entity itself). The string-input branch in the handler routes
+     * to `createObjectFolderById(string, registerId: null)` which throws
+     * `"Failed to create file because no objectEntity or registerId
+     * given"` — that throw used to be swallowed by the Throwable catch
+     * below, so the leaf returned `[]` for every object regardless of
+     * how many real shares existed.
+     *
      * @param string $objectId Owning object uuid.
      *
      * @return Folder|null
@@ -361,12 +371,44 @@ class SharesProvider extends AbstractIntegrationProvider
                 return null;
             }
 
-            $folder = $handler->getObjectFolder($objectId);
+            $entity = $this->resolveObjectEntity(objectId: $objectId);
+            $folder = $handler->getObjectFolder($entity ?? $objectId);
             return ($folder instanceof Folder) === true ? $folder : null;
         } catch (Throwable $e) {
             return null;
         }
     }//end resolveObjectFolder()
+
+
+    /**
+     * Look up an ObjectEntity by uuid via the lazy container so the
+     * handler can resolve the register from the entity.
+     *
+     * Returns null on any failure — the calling site falls back to the
+     * raw UUID string which preserves prior behaviour (folder won't
+     * resolve, leaf reports `[]`), letting the integration degrade
+     * gracefully per AD-23.
+     *
+     * @param string $objectId Object uuid.
+     *
+     * @return object|null ObjectEntity instance or null.
+     */
+    private function resolveObjectEntity(string $objectId): ?object
+    {
+        try {
+            $mapper = $this->lookup(
+                serviceName: 'OCA\\OpenRegister\\Db\\ObjectEntityMapper'
+            );
+            if ($mapper === null) {
+                return null;
+            }
+
+            $entity = $mapper->find($objectId);
+            return is_object($entity) === true ? $entity : null;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }//end resolveObjectEntity()
 
 
     /**
