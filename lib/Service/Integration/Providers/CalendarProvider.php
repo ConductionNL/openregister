@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
@@ -168,7 +169,7 @@ class CalendarProvider extends AbstractIntegrationProvider
     {
         $parts = explode('/', $entityId, 2);
         if (count($parts) !== 2) {
-            throw new \InvalidArgumentException('Calendar entityId must be "calendarId/eventUri"');
+            throw new InvalidArgumentException('Calendar entityId must be "calendarId/eventUri"');
         }
 
         [$calendarId, $eventUri] = $parts;

@@ -35,10 +35,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use LogicException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Routes external integrations' CRUD calls through OpenConnector.
@@ -207,7 +209,7 @@ class ExternalIntegrationRouter
     private function assertProviderIsExternal(IntegrationProvider $provider): void
     {
         if ($provider->getStorageStrategy() !== 'external') {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf(
                     'ExternalIntegrationRouter::call() invoked with non-external provider %s (storage=%s)',
                     $provider->getId(),
@@ -293,7 +295,7 @@ class ExternalIntegrationRouter
             }
 
             if ($source === null) {
-                throw new \RuntimeException(sprintf('OpenConnector source "%s" not found', $sourceId));
+                throw new RuntimeException(sprintf('OpenConnector source "%s" not found', $sourceId));
             }
 
             return $source;
@@ -343,7 +345,7 @@ class ExternalIntegrationRouter
             return $this->decodeResponse(response: $response);
         }
 
-        throw new \RuntimeException(
+        throw new RuntimeException(
             'OpenConnector\\Service\\CallService does not expose a known call/request method.'
         );
     }//end invoke()
@@ -371,10 +373,9 @@ class ExternalIntegrationRouter
             return;
         }
 
+        $cause = ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN;
         if ($status === 401 || $status === 403) {
             $cause = ProviderUnavailableException::CAUSE_PROVIDER_AUTH;
-        } else {
-            $cause = ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN;
         }
 
         throw new ProviderUnavailableException(

@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\Bookmarks\QueryParameters;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -142,7 +143,7 @@ class BookmarksProvider extends AbstractIntegrationProvider
 
         try {
             $mapper          = $this->container->get('OCA\\Bookmarks\\Db\\BookmarkMapper');
-            $queryParameters = new \OCA\Bookmarks\QueryParameters();
+            $queryParameters = new QueryParameters();
             $queryParameters->setTags([$tag]);
             $bookmarks = $mapper->findAll($userId, $queryParameters);
         } catch (Throwable $e) {

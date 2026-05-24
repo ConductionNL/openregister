@@ -1,0 +1,40 @@
+name: Spec Validation
+
+# Validates the OpenRegister register seed (lib/Settings/*_register.json) and the
+# CnAppRoot manifest (src/manifest.json) on every push and PR:
+#   - check:json-strict — strict JSON parse, rejects duplicate keys + appendOnly
+#     nested in x-openregister (the silent-data-loss class of bug a bad JSON merge
+#     produces — see the scholiq Wave-2 incident)
+#   - check:manifest     — Ajv validation against @conduction/nextcloud-vue's
+#     app-manifest.schema.json (catches invented page/widget/action shapes)
+#   - check:register     — structural checks: schema shape, slug uniqueness,
+#     lifecycle `requires:` → PHP class exists, "schema looks clobbered" heuristic
+#
+# To make these BLOCK a merge, add the "Spec Validation / validate" check to the
+# branch-protection ruleset's required-status-checks list (org settings).
+
+on:
+  push:
+    branches: [main, master, development, beta, 'feature/**', 'bugfix/**', 'hotfix/**', 'chore/**', 'fix/**', 'spec/**']
+  pull_request:
+    branches: [main, master, development, beta]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate specs (json-strict + manifest + register)
+        run: npm run check:specs

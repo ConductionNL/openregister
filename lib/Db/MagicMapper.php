@@ -1277,6 +1277,7 @@ class MagicMapper extends AbstractObjectMapper
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable)   `$_` is the conventional ignore name in the metadata-column foreach
      */
     private function buildUnionSelectPart(
         string $tableName,
@@ -1299,12 +1300,13 @@ class MagicMapper extends AbstractObjectMapper
         // Cast to text for UNION type compatibility (some columns are jsonb, others text).
         $metadataColumns = $this->getMetadataColumns();
         $selectColumns   = [];
-        foreach ($metadataColumns as $metaCol => $metaDef) {
+        foreach (array_keys($metadataColumns) as $metaCol) {
             if ($this->columnExistsInTable(tableName: $tableName, columnName: $metaCol) === true) {
                 $selectColumns[] = "{$metaCol}::text AS {$metaCol}";
-            } else {
-                $selectColumns[] = "NULL::text AS {$metaCol}";
+                continue;
             }
+
+            $selectColumns[] = "NULL::text AS {$metaCol}";
         }
 
         /*
@@ -2325,6 +2327,24 @@ class MagicMapper extends AbstractObjectMapper
                         'comment'  => 'Object reference (UUID)',
                     ];
                 }//end if
+
+                // For object-typed properties, use an order-preserving JSON column type.
+                // PostgreSQL JSONB hashes keys and loses client-supplied insertion order, which
+                // breaks object-keyed schemas where order is semantically meaningful (e.g. the
+                // openconnector mapping rules, where drag-to-reorder must round-trip via the
+                // PUT API). See issue #1720. Plain JSON stores the document verbatim and
+                // preserves PHP/JSON-encoder insertion order. Arrays continue to use JSONB
+                // because (a) JSON arrays preserve element order regardless of column type
+                // and (b) MagicSearchHandler/MagicFacetHandler rely on jsonb containment
+                // operators (`@>`, `jsonb_array_elements_text`) for array filtering.
+                if ($type === 'object') {
+                    return [
+                        'name'     => $columnName,
+                        'type'     => 'json_ordered',
+                        'nullable' => $isRequired === false,
+                        'comment'  => 'Order-preserving JSON (object-typed schema property)',
+                    ];
+                }
                 return [
                     'name'     => $columnName,
                     'type'     => 'json',
@@ -2653,8 +2673,19 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             // Add UNIQUE constraints (required for PostgreSQL ON CONFLICT).
+            // Constraints are named explicitly so MySQL/MariaDB doesn't fall
+            // back to using the column name as the constraint/index name,
+            // which collides across tables (e.g. every dynamic table getting
+            // a constraint literally called `_uuid`) and breaks Nextcloud's
+            // ensureUniqueNamesConstraints check on the next app install.
             foreach ($uniqueConstraints as $uniqueCol) {
-                $sql .= ', UNIQUE ('.$uniqueCol.')';
+                $rawCol         = trim($uniqueCol, '`"');
+                $constraintName = $tableName.'_'.ltrim($rawCol, '_').'_uq';
+                if ($isPostgres === true) {
+                    $sql .= ', CONSTRAINT "'.$constraintName.'" UNIQUE ('.$uniqueCol.')';
+                } else {
+                    $sql .= ', CONSTRAINT `'.$constraintName.'` UNIQUE ('.$uniqueCol.')';
+                }
             }
 
             $sql .= ')';
@@ -2729,6 +2760,13 @@ class MagicMapper extends AbstractObjectMapper
                 if ($isPostgres === true) {
                     return 'JSONB';
                 }
+                return 'JSON';
+            case 'json_ordered':
+                // Order-preserving JSON storage for object-typed schema properties.
+                // PostgreSQL JSONB hashes keys and loses insertion order; the JSON type
+                // stores the document verbatim. MySQL/MariaDB JSON also stores in document
+                // order (LONGTEXT-backed), so the same type label maps to JSON on both
+                // platforms. See issue #1720.
                 return 'JSON';
             default:
                 return 'TEXT';
@@ -3661,6 +3699,17 @@ class MagicMapper extends AbstractObjectMapper
 
         $columnsDeRequired = array_merge($columnsDeRequired, $obsoleteDeRequired);
 
+        // 7. Migrate object-typed columns from JSONB to JSON to preserve insertion order.
+        // PostgreSQL JSONB normalises key order; for schema properties of `type: object`
+        // (which use object-keyed semantics like openconnector mapping rules) clients
+        // require the order they sent on PUT to round-trip on GET. See issue #1720.
+        $columnsRetyped = $this->migrateJsonbToJsonForOrderedColumns(
+            tableNameQuoted: $tableNameQuoted,
+            currentColumns: $currentColumns,
+            requiredColumns: $requiredColumns,
+            isPostgres: $isPostgres
+        );
+
         $this->logger->info(
             message: '[MagicMapper] Successfully updated table structure',
             context: [
@@ -3671,6 +3720,7 @@ class MagicMapper extends AbstractObjectMapper
                 'columnsDeRequired' => $columnsDeRequired,
                 'columnsReRequired' => $columnsReRequired,
                 'columnsDropped'    => $columnsDropped,
+                'columnsRetyped'    => $columnsRetyped,
             ]
         );
 
@@ -3680,8 +3730,144 @@ class MagicMapper extends AbstractObjectMapper
             'columnsDeRequired' => $columnsDeRequired,
             'columnsReRequired' => $columnsReRequired,
             'columnsDropped'    => $columnsDropped,
+            'columnsRetyped'    => $columnsRetyped,
         ];
     }//end updateTableStructure()
+
+    /**
+     * Identify object-typed columns still backed by PostgreSQL JSONB that need retyping
+     * to JSON for key-order preservation (issue #1720).
+     *
+     * Returns the list of column names where:
+     *   - the schema column definition is type `json_ordered` (object-typed schema property), and
+     *   - the live database column is `jsonb` (the legacy storage type).
+     *
+     * MySQL/MariaDB JSON already preserves document order; this helper short-circuits to
+     * an empty list on any non-PostgreSQL platform, so the fast-path check stays cheap.
+     *
+     * @param array $currentColumns  Live column definitions from information_schema (see
+     *                               getExistingTableColumns()).
+     * @param array $requiredColumns Required column definitions from the schema (see
+     *                               buildTableColumnsFromSchema()).
+     *
+     * @return string[] Column names whose storage type needs to change from JSONB to JSON.
+     */
+    public function findJsonbColumnsNeedingRetype(array $currentColumns, array $requiredColumns): array
+    {
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
+        if ($isPostgres === false) {
+            return [];
+        }
+
+        $needsRetype = [];
+
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            if (($columnDef['type'] ?? null) !== 'json_ordered') {
+                continue;
+            }
+
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
+            if (isset($currentColumns[$columnName]) === false) {
+                continue;
+            }
+
+            $currentType = strtolower((string) ($currentColumns[$columnName]['type'] ?? ''));
+            if ($currentType === 'jsonb') {
+                $needsRetype[] = $columnName;
+            }
+        }
+
+        return $needsRetype;
+    }//end findJsonbColumnsNeedingRetype()
+
+    /**
+     * Migrate object-typed JSONB columns to JSON to preserve client-supplied key order.
+     *
+     * PostgreSQL JSONB stores keys in hashed/normalised order, which silently drops
+     * client-supplied ordering for object-keyed schema properties (e.g. openconnector
+     * mapping/cast rules where insertion order is semantically meaningful — issue #1720).
+     * The plain JSON type stores the document verbatim and round-trips insertion order.
+     *
+     * On MySQL/MariaDB the JSON type already preserves document order, so this method
+     * is a no-op there. On other platforms (e.g. SQLite) JSON is stored as TEXT and
+     * order is preserved by definition, so nothing to do.
+     *
+     * Idempotent: re-running on an already-JSON column issues no SQL.
+     *
+     * @param string $tableNameQuoted The quoted full table name.
+     * @param array  $currentColumns  Current column definitions from information_schema.
+     * @param array  $requiredColumns Required column definitions from the schema.
+     * @param bool   $isPostgres      Whether the platform is PostgreSQL.
+     *
+     * @return string[] Names of columns whose type was migrated.
+     */
+    private function migrateJsonbToJsonForOrderedColumns(
+        string $tableNameQuoted,
+        array $currentColumns,
+        array $requiredColumns,
+        bool $isPostgres
+    ): array {
+        // Only PostgreSQL distinguishes JSONB from JSON. MySQL/MariaDB JSON already
+        // preserves document order; no migration is required there.
+        if ($isPostgres === false) {
+            return [];
+        }
+
+        $columnsRetyped = [];
+
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            if (($columnDef['type'] ?? null) !== 'json_ordered') {
+                continue;
+            }
+
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
+            if (isset($currentColumns[$columnName]) === false) {
+                continue;
+            }
+
+            $currentType = strtolower((string) ($currentColumns[$columnName]['type'] ?? ''));
+            if ($currentType !== 'jsonb') {
+                // Already JSON (or some other type added by an out-of-band migration); skip.
+                continue;
+            }
+
+            $colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: true);
+
+            // Cast JSONB to text first to retain a stable serialisation, then parse as JSON.
+            // JSONB → text gives PostgreSQL's normalised key order; that's the same order the
+            // column has held until now, so this migration does not retroactively reorder
+            // existing rows — only NEW writes will preserve client-supplied order.
+            $sql  = 'ALTER TABLE '.$tableNameQuoted;
+            $sql .= ' ALTER COLUMN '.$colNameQuoted;
+            $sql .= ' TYPE JSON USING '.$colNameQuoted.'::text::json';
+
+            try {
+                $this->db->executeStatement($sql);
+                $columnsRetyped[] = $columnName;
+                $this->logger->info(
+                    message: '[MagicMapper] Migrated object-typed column from JSONB to JSON for key-order preservation',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'columnName' => $columnName,
+                    ]
+                );
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to migrate column from JSONB to JSON',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'columnName' => $columnName,
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        return $columnsRetyped;
+    }//end migrateJsonbToJsonForOrderedColumns()
 
     /**
      * Quote a column or identifier name for the current database platform.

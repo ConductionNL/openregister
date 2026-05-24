@@ -1239,7 +1239,7 @@ class UserService
         if ($expiresIn !== null && $expiresIn !== '') {
             $expires = $this->parseExpiration(expiresIn: $expiresIn);
             if ($expires === null) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     'Invalid expiresIn value "'.$expiresIn.'" — expected a number followed by d (days), h (hours), or m (minutes), e.g. "90d".'
                 );
             }

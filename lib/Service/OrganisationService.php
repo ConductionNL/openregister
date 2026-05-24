@@ -83,6 +83,29 @@ class OrganisationService
     private const CACHE_TIMEOUT = 900;
 
     /**
+     * Configuration key for the system identifier used as `_owner` when a write
+     * happens with no active user session (cron jobs, background workers, etc.).
+     *
+     * @see self::getSystemUserId()
+     */
+    public const CONFIG_SYSTEM_USER_ID = 'systemUserId';
+
+    /**
+     * Configuration key for the comma-separated list of Nextcloud groups that
+     * are allowed to read system-owned rows in addition to the `admin` group.
+     *
+     * @see self::getSystemReaderGroups()
+     */
+    public const CONFIG_SYSTEM_READER_GROUPS = 'systemReaderGroups';
+
+    /**
+     * Default system identifier persisted as `_owner` when no user session is
+     * active. The double-underscore prefix is rejected by Nextcloud's user-ID
+     * validator, guaranteeing this identifier cannot collide with a real user.
+     */
+    public const SYSTEM_USER_ID_DEFAULT = '__system__';
+
+    /**
      * Static cache for default organisation (shared across all instances)
      *
      * @var Organisation|null
@@ -1418,6 +1441,72 @@ class OrganisationService
 
         return null;
     }//end getDefaultOrganisationId()
+
+    /**
+     * Get the system identifier used as `_owner` for writes without an active
+     * user session (cron jobs, background workers, internal service calls).
+     *
+     * Reads `openregister.systemUserId` from app-config; falls back to
+     * {@see self::SYSTEM_USER_ID_DEFAULT} when the key is unset or empty.
+     *
+     * The default identifier (`__system__`) cannot collide with a real user
+     * because Nextcloud's user-ID validator rejects identifiers starting with
+     * a double-underscore.
+     *
+     * @return string The system identifier (never empty).
+     *
+     * @spec openspec/changes/system-context-owner-attribution/tasks.md#task-1
+     */
+    public function getSystemUserId(): string
+    {
+        $configured = $this->appConfig->getValueString(
+            self::APP_NAME,
+            self::CONFIG_SYSTEM_USER_ID,
+            ''
+        );
+
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        return self::SYSTEM_USER_ID_DEFAULT;
+    }//end getSystemUserId()
+
+    /**
+     * Get the Nextcloud groups (beyond `admin`) that are allowed to read
+     * system-owned rows.
+     *
+     * Reads `openregister.systemReaderGroups` from app-config as a
+     * comma-separated string, trims each entry, and drops empties. Returns
+     * an empty array when the key is unset.
+     *
+     * @return string[] Normalised list of group IDs (may be empty).
+     *
+     * @spec openspec/changes/system-context-owner-attribution/tasks.md#task-1
+     */
+    public function getSystemReaderGroups(): array
+    {
+        $configured = $this->appConfig->getValueString(
+            self::APP_NAME,
+            self::CONFIG_SYSTEM_READER_GROUPS,
+            ''
+        );
+
+        if ($configured === '') {
+            return [];
+        }
+
+        $parts  = explode(',', $configured);
+        $groups = [];
+        foreach ($parts as $part) {
+            $trimmed = trim($part);
+            if ($trimmed !== '') {
+                $groups[] = $trimmed;
+            }
+        }
+
+        return $groups;
+    }//end getSystemReaderGroups()
 
     /**
      * Format created date for JSON serialization

@@ -678,7 +678,8 @@ class SettingsService
      *
      * @return never Warmup result
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for error collection behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Public facade signature kept while the deprecated delegate is refactored — see lib/Service/SettingsService.php TODO comment
      */
     public function warmupSolrIndex(
         array $schemas=[],

@@ -153,6 +153,74 @@ class AggregationCache
     }//end set()
 
     /**
+     * Look up a cached ad-hoc aggregation result.
+     *
+     * Mirrors {@see get()} but derives the name slot from the query value
+     * object. The literal `adhoc:` prefix keeps ad-hoc entries visually
+     * distinct from named-aggregation entries in cache dumps.
+     *
+     * @param string           $registerSlug Register slug component of the cache key.
+     * @param string           $schemaSlug   Schema slug component of the cache key.
+     * @param AggregationQuery $query        Query value object hashed into the cache key.
+     *
+     * @return array<string, mixed>|null Cached envelope or null on miss.
+     */
+    public function getAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query): ?array
+    {
+        return $this->get(
+            registerSlug: $registerSlug,
+            schemaSlug: $schemaSlug,
+            name: $this->adhocName(query: $query),
+            filter: $query->filter
+        );
+
+    }//end getAdhoc()
+
+    /**
+     * Store an ad-hoc aggregation result.
+     *
+     * Mirrors {@see set()} for the ad-hoc path. The stored envelope is
+     * rewritten on read (`cached: true`) by callers — see
+     * {@see \OCA\OpenRegister\Service\Aggregation\AggregationRunner::runAdhoc()}.
+     *
+     * @param string               $registerSlug Register slug component of the cache key.
+     * @param string               $schemaSlug   Schema slug component of the cache key.
+     * @param AggregationQuery     $query        Query value object hashed into the cache key.
+     * @param array<string, mixed> $result       Result envelope to store.
+     *
+     * @return void
+     */
+    public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void
+    {
+        $this->set(
+            registerSlug: $registerSlug,
+            schemaSlug: $schemaSlug,
+            name: $this->adhocName(query: $query),
+            filter: $query->filter,
+            result: $result
+        );
+
+    }//end setAdhoc()
+
+    /**
+     * Derive the cache name slot for an ad-hoc query.
+     *
+     * Computes `'adhoc:'.sha1(json_encode($query->toArray()))`. The
+     * `AggregationQuery::toArray()` output is ksort-stable so two
+     * structurally-equivalent queries produce identical hashes.
+     *
+     * @param AggregationQuery $query The ad-hoc query value object.
+     *
+     * @return string The cache name slot, prefixed with `adhoc:`.
+     */
+    private function adhocName(AggregationQuery $query): string
+    {
+        $encoded = json_encode($query->toArray());
+        return 'adhoc:'.sha1($encoded === false ? '' : $encoded);
+
+    }//end adhocName()
+
+    /**
      * Evict every cached aggregation for a (register, schema). Called by
      * the object-write listeners.
      *

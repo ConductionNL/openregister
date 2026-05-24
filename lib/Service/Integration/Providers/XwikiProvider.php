@@ -381,6 +381,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param bool $withBody Whether the request carries a JSON body.
      *
      * @return array<string,string>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Body-vs-no-body is the natural toggle for HTTP request headers; a two-method split would duplicate the static Accept header
      */
     private function requestHeaders(bool $withBody=false): array
     {

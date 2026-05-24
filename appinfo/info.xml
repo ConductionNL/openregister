@@ -62,7 +62,7 @@ Vrij en open source onder de EUPL-licentie.
     </documentation>
 
     <dependencies>
-        <php min-version="8.0" min-int-size="64"/>
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
@@ -102,6 +102,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BatchNotificationJob</job>
+		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
 	</background-jobs>
 
     <navigations>
@@ -129,6 +130,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- <command>OCA\OpenRegister\Command\MigrateStorageCommand</command> -->
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
+		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
 	</commands>
 
 	<notification>

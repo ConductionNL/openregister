@@ -1696,17 +1696,18 @@ class Schema extends Entity implements JsonSerializable
             if (str_starts_with((string) $key, 'x-openregister-') === true) {
                 if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
                     $validatedConfig[$key] = $value;
-                } else {
-                    // R07: track unknown `x-openregister-*` keys (almost
-                    // always typos like `x-openregister-lifecycl`) so
-                    // SchemaMapper can log them via its structured
-                    // logger after save. The entity has no DI surface
-                    // for a logger and the ADR added in F06 bans the
-                    // `\OC::$server` static accessor — collecting on
-                    // the entity and bridging through the mapper is
-                    // the cleanest path that still surfaces a signal.
-                    $this->droppedAnnotationKeys[] = (string) $key;
-                }//end if
+                    continue;
+                }
+
+                // R07: track unknown `x-openregister-*` keys (almost
+                // always typos like `x-openregister-lifecycl`) so
+                // SchemaMapper can log them via its structured
+                // logger after save. The entity has no DI surface
+                // for a logger and the ADR added in F06 bans the
+                // `\OC::$server` static accessor — collecting on
+                // the entity and bridging through the mapper is
+                // the cleanest path that still surfaces a signal.
+                $this->droppedAnnotationKeys[] = (string) $key;
             }//end if
         }//end foreach
 
@@ -1858,6 +1859,8 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-widgets',
         'x-openregister-relations',
         'x-openregister-processing-activity',
+        'x-openregister-archival',
+        'x-openregister-seed',
     ];
 
     /**

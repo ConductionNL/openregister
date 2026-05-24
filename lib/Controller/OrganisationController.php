@@ -1169,10 +1169,10 @@ class OrganisationController extends Controller
             if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
                 $userId = \OC::$server->get(\OCP\IUserSession::class)->getUser()?->getUID() ?? 'admin';
                 $result = $this->tenantLifecycleService->provision($organisation, $userId);
-            } else {
-                $result = $this->tenantLifecycleService->reactivate($organisation);
+                return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
             }
 
+            $result = $this->tenantLifecycleService->reactivate($organisation);
             return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
