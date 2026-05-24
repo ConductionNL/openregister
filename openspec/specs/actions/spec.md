@@ -1,5 +1,11 @@
 ---
 retrofit: true
+retrofit_extensions:
+  - REQ-006
+  - REQ-007
+  - REQ-008
+  - REQ-009
+  - REQ-010
 ---
 # Actions Specification
 
@@ -7,6 +13,7 @@ retrofit: true
 **Scope**: openregister
 **OpenSpec changes**:
 - [retrofit-2026-05-01-actions](../../changes/retrofit-2026-05-01-actions/) _(archived 2026-05-01)_
+- [retrofit-2026-05-24-actions](../../changes/retrofit-2026-05-24-actions/) _(pending archive)_
 
 ## Purpose
 

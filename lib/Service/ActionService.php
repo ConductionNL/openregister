@@ -209,6 +209,8 @@ class ActionService
      * @return array Test result with match info and payload
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-2
      */
     public function testAction(int $id, array $samplePayload): array
     {
@@ -274,6 +276,8 @@ class ActionService
      * @return array Migration report
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-3
      */
     public function migrateFromHooks(int $schemaId): array
     {
