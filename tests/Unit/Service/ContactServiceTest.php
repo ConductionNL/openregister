@@ -260,6 +260,72 @@ class ContactServiceTest extends TestCase
         $this->service->unlinkContact(999);
     }
 
+    /**
+     * Idempotency: unlinkContact must drop the link row even when the
+     * underlying vCard has been removed (CardDavBackend::getCard returns
+     * false). Phase D-2 found that the registry-path delete was
+     * returning HTTP 500 on this case, leaving orphan link rows that
+     * could only be cleaned via direct DB DELETE.
+     *
+     * @return void
+     */
+    public function testUnlinkContactToleratesMissingVcard(): void
+    {
+        $link = new ContactLink();
+        $link->setId(123);
+        $link->setObjectUuid('abc-123');
+        $link->setAddressbookId(1);
+        $link->setContactUri('gone.vcf');
+
+        $this->contactLinkMapper->method('find')->with(123)->willReturn($link);
+
+        // CardDAV reports the vCard is gone.
+        $this->cardDavBackend->method('getCard')
+            ->with(1, 'gone.vcf')
+            ->willReturn(false);
+        // Must NOT attempt updateCard on a missing vCard.
+        $this->cardDavBackend->expects($this->never())->method('updateCard');
+
+        // Link row deletion MUST still happen.
+        $this->contactLinkMapper->expects($this->once())
+            ->method('delete')
+            ->with($link);
+
+        $this->service->unlinkContact(123);
+    }
+
+    /**
+     * Idempotency: a Throwable from the CardDAV cleanup path (corrupt
+     * vCard, deserialisation failure, etc.) must NOT prevent the link
+     * row deletion. The previous catch was \Exception only; PHP 8.x
+     * Errors (TypeError etc.) bypassed it and bubbled as HTTP 500.
+     *
+     * @return void
+     */
+    public function testUnlinkContactToleratesThrowableDuringCleanup(): void
+    {
+        $link = new ContactLink();
+        $link->setId(456);
+        $link->setObjectUuid('abc-123');
+        $link->setAddressbookId(2);
+        $link->setContactUri('corrupt.vcf');
+
+        $this->contactLinkMapper->method('find')->with(456)->willReturn($link);
+
+        // CardDAV throws a Throwable that the prior \Exception catch
+        // would have missed (Error vs Exception hierarchy).
+        $this->cardDavBackend->method('getCard')
+            ->with(2, 'corrupt.vcf')
+            ->willThrowException(new \Error('vCard storage corrupted'));
+
+        // Link row deletion MUST still happen.
+        $this->contactLinkMapper->expects($this->once())
+            ->method('delete')
+            ->with($link);
+
+        $this->service->unlinkContact(456);
+    }
+
     public function testGetObjectsForContactReturnsLinks(): void
     {
         $link = new ContactLink();

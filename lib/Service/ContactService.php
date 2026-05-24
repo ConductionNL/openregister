@@ -453,11 +453,20 @@ class ContactService
     /**
      * Remove a contact link.
      *
+     * Idempotent: tolerates a missing or corrupt vCard so the link row
+     * can always be cleaned. If the underlying vCard has been removed
+     * from the addressbook (e.g. user deleted the contact via NC
+     * Contacts), the CardDAV custom-property cleanup is skipped and the
+     * link row is still dropped. Any Throwable from the cleanup path is
+     * caught and logged at warning level — the link row deletion
+     * proceeds regardless so orphan rows are recoverable through this
+     * path rather than only via direct DB DELETE.
+     *
      * @param int $linkId The link ID.
      *
      * @return void
      *
-     * @throws Exception If link not found.
+     * @throws Exception If the link row itself isn't found (404).
      */
     public function unlinkContact(int $linkId): void
     {
@@ -467,7 +476,10 @@ class ContactService
             throw new Exception('Contact link not found', 404);
         }
 
-        // Remove X-OPENREGISTER-* from vCard.
+        // Best-effort: remove X-OPENREGISTER-* from the vCard. If the
+        // vCard is gone or unreadable, skip the cleanup and proceed with
+        // the link-row delete — orphan link rows would otherwise only
+        // be cleanable via direct DB DELETE.
         try {
             $card = $this->cardDavBackend->getCard($link->getAddressbookId(), $link->getContactUri());
             if ($card !== false) {
@@ -476,8 +488,15 @@ class ContactService
                 unset($vcard->{'X-OPENREGISTER-ROLE'});
                 $this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
             }
-        } catch (Exception $e) {
-            $this->logger->warning('Failed to clean vCard properties: '.$e->getMessage());
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                'Failed to clean vCard properties (link row will still be removed): '.$e->getMessage(),
+                [
+                    'linkId'        => $linkId,
+                    'addressbookId' => $link->getAddressbookId(),
+                    'contactUri'    => $link->getContactUri(),
+                ]
+            );
         }
 
         $this->contactLinkMapper->delete($link);

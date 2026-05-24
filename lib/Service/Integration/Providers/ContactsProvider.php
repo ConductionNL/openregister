@@ -149,9 +149,15 @@ class ContactsProvider extends AbstractIntegrationProvider
     }//end update()
 
     /**
-     * Unlink a contact from an OR object. The vCard remains in the
-     * user's addressbook — only the link row + X-OPENREGISTER-*
-     * properties are removed.
+     * Unlink a contact from an OR object.
+     *
+     * The vCard normally remains in the user's addressbook — only the
+     * link row + X-OPENREGISTER-* properties are removed. The
+     * underlying `ContactService::unlinkContact()` is idempotent and
+     * tolerates a missing vCard, so this path can also be used to
+     * recover orphan link rows (vCard already deleted via NC Contacts).
+     * Any non-404 Throwable from the cleanup is swallowed at provider
+     * level so the registry tab degrades gracefully per AD-23.
      *
      * @param string $register Register slug or numeric id (unused).
      * @param string $schema   Schema slug or numeric id (unused).
