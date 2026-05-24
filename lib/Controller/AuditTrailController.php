@@ -494,6 +494,7 @@ class AuditTrailController extends Controller
      * @return JSONResponse JSON response confirming clear or error
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-2
      */
     public function clearAll(): JSONResponse
     {
