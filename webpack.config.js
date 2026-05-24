@@ -91,6 +91,13 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'mail-sidebar.js'),
 		filename: appId + '-mail-sidebar.js',
 	},
+	// ADR-019 Phase E (Option B): umbrella widget for NC user-dashboard.
+	// Loaded by `OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::load()`
+	// which calls `Util::addScript('openregister', 'openregister-user-dashboard')`.
+	userDashboard: {
+		import: path.join(__dirname, 'src', 'user-dashboard.js'),
+		filename: appId + '-user-dashboard.js',
+	},
 }
 
 // Replace VueLoaderPlugin (don't push — duplicates break templates when using local package)
