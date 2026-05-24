@@ -135,7 +135,9 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\Security\IContentSecurityPolicyManager;
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
@@ -1499,7 +1501,42 @@ class Application extends App implements IBootstrap
         // registry never touches a provider's wrapped service unless a
         // caller actually invokes that provider's CRUD path.
         $this->bootBuiltinIntegrationProviders(server: $server);
+
+        // Allow GitHub-hosted avatars in img-src so the CnRoadmapItem
+        // component can render submitter faces alongside the issues
+        // surfaced by the github-issue-proxy. The browser refuses
+        // `<img src="https://avatars.githubusercontent.com/...">` under
+        // Nextcloud's default img-src ('self' data: blob:), leaving a
+        // broken-image glyph next to every roadmap card. Allowlisting
+        // the host here lifts the block instance-wide for any app that
+        // proxies GitHub issues through OpenRegister.
+        $this->relaxCspForGithubAvatars(server: $server);
     }//end boot()
+
+    /**
+     * Push an `img-src https://avatars.githubusercontent.com` allowlist
+     * onto Nextcloud's default Content-Security-Policy via
+     * `IContentSecurityPolicyManager::addDefaultPolicy()`. Idempotent —
+     * NC merges policies additively, never narrowing.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/specs/features-roadmap-component/spec.md#requirement-roadmap-item-avatar
+     */
+    private function relaxCspForGithubAvatars($server): void
+    {
+        try {
+            $cspManager = $server->get(IContentSecurityPolicyManager::class);
+            $policy     = new ContentSecurityPolicy();
+            $policy->addAllowedImageDomain('https://avatars.githubusercontent.com');
+            $cspManager->addDefaultPolicy($policy);
+        } catch (\Throwable $e) {
+            // CSP manager unavailable (rare — would break far more than
+            // avatars). Stay silent rather than fail the boot.
+        }
+    }//end relaxCspForGithubAvatars()
 
     /**
      * Resolve every BuiltinProviders/* class and register it with the
