@@ -89,6 +89,8 @@ class ArchivalService
      * @throws InvalidArgumentException If retention data is invalid
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-archival-destruction-workflow/tasks.md#task-1
      */
     public function setRetentionMetadata(ObjectEntity $object, array $retention): ObjectEntity
     {
@@ -419,6 +421,8 @@ class ArchivalService
      * @param string $uuid The object UUID
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-archival-destruction-workflow/tasks.md#task-2
      */
     private function extendRetentionForObject(string $uuid): void
     {
