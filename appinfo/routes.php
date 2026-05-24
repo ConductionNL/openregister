@@ -346,6 +346,15 @@ return [
         // Reverse lookup — keep on Tier-1 controller (not in Tier-2 scope).
         ['name' => 'deck#objects',        'url' => '/api/deck/boards/{boardId}/objects',                      'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
 
+        // Polls — Tier-2 link table + picker UX. Specific routes (`/new`)
+        // MUST precede the wildcard `{pollId}` route so they aren't grabbed
+        // as pollId='new'. Available-polls picker is app-global.
+        ['name' => 'pollLinks#available', 'url' => '/api/integrations/polls/available',                       'verb' => 'GET'],
+        ['name' => 'pollLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/polls',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'pollLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/polls',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'pollLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/polls/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'pollLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/polls/{pollId}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pollId' => '[0-9]+']],
+
         // Forms — Tier-2 link-table API. Specific routes (`/new`, `/submissions/{id}`)
         // MUST precede the wildcard `{formId}` route so they aren't grabbed as
         // formId='new' / formId='submissions'. Available-forms picker is app-global.
