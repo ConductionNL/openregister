@@ -21,6 +21,8 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/changes/integration-activity/tasks.md
  */
 
 declare(strict_types=1);
