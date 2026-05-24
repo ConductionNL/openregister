@@ -107,6 +107,8 @@ class RelationsController extends Controller
      * @param DeckCardService      $deckCardService      Deck card service
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
      */
     public function __construct(
         string $appName,
@@ -144,6 +146,8 @@ class RelationsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -186,6 +190,8 @@ class RelationsController extends Controller
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-2
      */
     private function gatherRelations(string $objectUuid, ?array $typesFilter): array
     {
@@ -261,6 +267,8 @@ class RelationsController extends Controller
      * @param array $relations Grouped relations.
      *
      * @return array Flat sorted timeline items.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-3
      */
     private function buildTimeline(array $relations): array
     {
@@ -307,6 +315,8 @@ class RelationsController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
      */
     private function validateObject(
         string $register,
