@@ -314,7 +314,14 @@ class DeckCardService
 
                 $userUid = $this->userSession->getUser()->getUID();
                 $card    = $cardService->create($title, $stackId, 'plain', 0, $userUid);
-                $cardService->update($card->getId(), $title, $stackId, 'plain', 0, $fullDescription, $userUid);
+                // Deck CardService::update signature is:
+                //   update($id, $title, $stackId, $type, $owner, $description = '', $order = 0, ...)
+                // The owner argument is required and must be a string user UID;
+                // a previous version of this call passed 0 (zero) for owner and
+                // mis-aligned every subsequent arg by one slot. Restore the
+                // correct positional order so updating a freshly-created card
+                // doesn't throw.
+                $cardService->update($card->getId(), $title, $stackId, 'plain', $userUid, $fullDescription, 0);
 
                 return $card->getId();
             }
