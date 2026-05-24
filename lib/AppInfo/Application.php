@@ -1088,6 +1088,7 @@ class Application extends App implements IBootstrap
                     calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get(\Psr\Log\LoggerInterface::class),
                 );
             }
         );
