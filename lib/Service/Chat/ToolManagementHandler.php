@@ -87,24 +87,16 @@ class ToolManagementHandler
      * Get enabled tools for agent
      *
      * Loads and initializes tools enabled for the given agent.
-     * Filters by selectedTools then narrows by CnAiContext.app|appId so
-     * the LLM only sees tools relevant to the surface the user is on —
-     * each tool schema costs prompt-processing time at the LLM.
+     * Filters by selectedTools if provided.
      *
      * @param Agent|null $agent         Agent entity (optional).
      * @param array      $selectedTools Tool UUIDs to use (empty = all agent tools).
-     * @param array      $cnAiContext   AI context snapshot; if it contains
-     *                                  an `appId` (widget wire format) or
-     *                                  `app` (curl/test shape) key, only
-     *                                  tools whose appId prefix matches
-     *                                  that value — plus `openregister.*`
-     *                                  built-ins — are kept.
      *
      * @return array Array of ToolInterface instances
      *
      * @psalm-return list<ToolInterface>
      */
-    public function getAgentTools(?Agent $agent, array $selectedTools=[], array $cnAiContext=[]): array
+    public function getAgentTools(?Agent $agent, array $selectedTools=[]): array
     {
         if ($agent === null) {
             return [];
@@ -126,41 +118,6 @@ class ToolManagementHandler
                     'agentTools'    => count($agent->getTools()),
                     'selectedTools' => count($selectedTools),
                     'filteredTools' => count($enabledToolIds),
-                ]
-            );
-        }
-
-        // Narrow by the current app context. Accept `appId` (widget canonical
-        // key) and `app` (curl/test shape) for the same value.
-        $contextApp = null;
-        foreach (['appId', 'app'] as $key) {
-            if (is_string($cnAiContext[$key] ?? null) && ($cnAiContext[$key] ?? '') !== '') {
-                $contextApp = $cnAiContext[$key];
-                break;
-            }
-        }
-        if ($contextApp !== null) {
-            $unfilteredCount = count($enabledToolIds);
-            $enabledToolIds  = array_values(array_filter(
-                $enabledToolIds,
-                static function ($toolId) use ($contextApp): bool {
-                    if (is_string($toolId) === false) {
-                        return false;
-                    }
-                    $prefix = strpos($toolId, '.') === false
-                        ? $toolId
-                        : substr($toolId, 0, strpos($toolId, '.'));
-                    return $prefix === $contextApp || $prefix === 'openregister';
-                }
-            ));
-            $this->logger->info(
-                message: '[ToolManagementHandler] Narrowing tools by context app',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'contextApp'  => $contextApp,
-                    'beforeCount' => $unfilteredCount,
-                    'afterCount'  => count($enabledToolIds),
                 ]
             );
         }

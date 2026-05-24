@@ -4,14 +4,17 @@
 
 OpenRegister can already link CalDAV VEVENT entries to objects via `CalendarEventService` and `CalendarEventsController` (253 LOC, shipped in `nextcloud-entity-relations`). The backend stores RFC 9253 LINK properties on the VEVENT and offers full CRUD over `/api/objects/{register}/{schema}/{id}/calendar`.
 
-**The UI is missing entirely.** Users cannot see, add, or manage meetings linked to objects. Consuming apps (Procest, Pipelinq, Decidesk, ZaakAfhandelApp) have no path to surface meetings on case detail pages or dashboards.
+**The UI is missing entirely.** Users cannot see, add, or manage meetings linked to objects. Consuming apps (Procest, Pipelinq, Decidesk, ZaakAfhandelApp) have no path to surface meetings on case detail pages or dashboards. Today this leaf is **partial** per the 2026-05-24 registry audit — the backend `CalendarEventService` delegate works and returns real linked items, but the frontend leaf in `nextcloud-vue/src/integrations/builtin/leaves.js` uses the generic `leaf()` factory with no bespoke `CnCalendarTab` / `CnCalendarCard` (timeline view). This blocks ADR-022 enforcement: while this leaf is incomplete, consuming apps like Procest and Decidesk have no working integration UI path and reinvent meeting surfaces locally.
 
 ## Context
 
-- **Backend already shipped:** [lib/Service/CalendarEventService.php](openregister/lib/Service/CalendarEventService.php), [lib/Controller/CalendarEventsController.php](openregister/lib/Controller/CalendarEventsController.php) — link/create/unlink VEVENT, attendee handling, calendar selection
-- **Required NC app:** `calendar` (and CalDAV backend, always present in NC core)
-- **Storage strategy:** `link-table` augmented by CalDAV custom properties (X-OPENREGISTER-*) for reverse discovery
-- **Depends on:** `pluggable-integration-registry` (umbrella) — the registry contract, parity gate, surface model
+- **Audit bucket**: partial (2026-05-24)
+- **Current backend**: Uses OR's `CalendarEventService` delegate — returns real linked VEVENTs with date/time/attendees
+- **Current frontend**: generic `leaf()` shell in `nextcloud-vue/src/integrations/builtin/leaves.js` — no bespoke tab/widget (timeline view)
+- **Target NC class(es)**: existing `OCA\OpenRegister\Service\CalendarEventService` (CalDAV-backed) — no new NC class import required
+- **Storage strategy**: `link-table` augmented by CalDAV custom properties (X-OPENREGISTER-*) for reverse discovery
+- **Depends on**: `pluggable-integration-registry` (umbrella mechanism — registry code is done; umbrella issue #1307 stays open until OCS capability + useRegistry default flip land; this leaf does not need to wait for those)
+- **Related ADRs**: ADR-019 (mechanism), ADR-022 (consumption principle)
 - **Cross-app demand:** Procest (case meetings), Pipelinq (kanban deadlines), Decidesk (council meetings), ZaakAfhandelApp (zaak afspraken), MyDash (personal agenda overview)
 
 ## Proposed Solution
@@ -29,6 +32,8 @@ Ship the calendar integration's full vertical slice through the umbrella's contr
 5. **Backend registration** — `CalendarProvider` is DI-tagged in `Application::register()`.
 6. **Spec delta** — new requirement under `generic-integrations` capability or new `integration-calendar` capability spec.
 7. **Tests** — provider unit test, component tests across surfaces, integration test asserting end-to-end flow (register → schema accepts `calendar` in linkedTypes → UI renders).
+
+Provider wraps the existing `CalendarEventService` (which already imports CalDAV plumbing) and falls back to `IntegrationHealth::missingApp('calendar')` when NC Calendar is not installed.
 
 ## Scope
 
@@ -59,8 +64,14 @@ Ship the calendar integration's full vertical slice through the umbrella's contr
 - [ ] User can create a new meeting from the tab (creates the VEVENT in their calendar + the link)
 - [ ] User can unlink a meeting (removes the link, leaves the VEVENT in the calendar)
 - [ ] `CnCalendarCard` renders correctly on all four surfaces — verified by component tests
-- [ ] Registry parity gate passes — `calendar` integration has both `tab` and `widget` registered
 - [ ] OCS capabilities response includes `calendar` in the `integrations` block when the NC Calendar app is installed
 - [ ] When the NC Calendar app is uninstalled, the integration is hidden everywhere (sidebar, dashboards, capabilities)
 - [ ] A schema property with `referenceType: 'calendar'` renders the `single-entity` widget surface for the referenced VEVENT id
-- [ ] All new strings translated to nl + en
+- [ ] Provider has zero references to MarkerLookupTrait UNLESS storage strategy is `query-time` AND the marker column is verified to exist in the target NC app
+- [ ] Real `CalendarEventService` delegation for the backing NC app (skip for `query-time` providers that genuinely should DB-query only)
+- [ ] `health()` returns `IntegrationHealth::missingApp('calendar')` when NC Calendar absent; never throws
+- [ ] PHPUnit tests cover: happy-path (app installed + linked), absent-app (graceful empty), empty-result (app installed, no links)
+- [ ] Frontend leaf in `nextcloud-vue/src/integrations/builtin/leaves.js` wires the new bespoke `CnCalendarTab` + `CnCalendarCard` components
+- [ ] `nextcloud-vue/scripts/check-integration-parity.js` exit 0
+- [ ] SPDX-License-Identifier + SPDX-FileCopyrightText inside the file docblock (ADR-014)
+- [ ] nl + en translations complete (ADR-007)

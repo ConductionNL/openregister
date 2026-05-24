@@ -93,7 +93,7 @@ class DeckController extends Controller
         }
 
         try {
-            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+            $object = $this->validateObject($register, $schema, $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -130,7 +130,7 @@ class DeckController extends Controller
         }
 
         try {
-            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+            $object = $this->validateObject($register, $schema, $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -183,7 +183,7 @@ class DeckController extends Controller
         }
 
         try {
-            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+            $object = $this->validateObject($register, $schema, $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }

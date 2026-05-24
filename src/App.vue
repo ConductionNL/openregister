@@ -3,8 +3,19 @@
 		<MainMenu />
 		<Views />
 		<SideBars />
+		<!--
+			use-registry=true switches CnObjectSidebar off the legacy
+			hardcoded-5-tabs branch onto the registry-driven path: it
+			reads OCA.OpenRegister.integrations and renders one inner
+			tab per provider (built-ins + xwiki + the 11 bespoke leaves
+			from feature/integration-leaves-consolidated). Without this
+			flag the 18 leaf descriptors are filtered out at line ~480
+			of CnObjectSidebar.vue and never reach the template.
+			See ADR-019.
+		-->
 		<CnObjectSidebar
 			v-if="objectSidebarState.active"
+			:use-registry="true"
 			:title="objectSidebarState.title"
 			:subtitle="objectSidebarState.subtitle"
 			:object-type="objectSidebarState.objectType"

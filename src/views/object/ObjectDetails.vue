@@ -1,8 +1,3 @@
-<script setup>
-import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
-</script>
-
 <template>
 	<div class="detailContainer">
 		<div id="app-content">
@@ -257,11 +252,22 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									:key="provider.id"
 									:title="provider.label || provider.id"
 									:title-attr="`${provider.id} (${provider.group || 'integration'})`">
-									<CnIntegrationTab
+									<!--
+										Dispatch to a provider-supplied bespoke Vue component
+										(provider.tab) when one is registered (e.g. CnTalkTab,
+										CnCalendarTab, CnDeckTab from the integration-leaves work).
+										Falls back to the generic CnIntegrationTab when the
+										provider only advertised metadata. Without this dispatch,
+										the 11 bespoke Cn<X>Tab components shipped in nc-vue
+										would be unreachable at runtime — see ADR-019.
+									-->
+									<component :is="provider.tab || CnIntegrationTab"
+										:provider="provider"
 										:integration-id="provider.id"
 										:register="String(relationContext.register)"
 										:schema="String(relationContext.schema)"
-										:object-id="String(relationContext.id)" />
+										:object-id="String(relationContext.id)"
+										v-bind="provider.tabProps || {}" />
 								</BTab>
 							</BTabs>
 						</BTab>
@@ -338,6 +344,8 @@ import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { computed } from 'vue'
 import { CnIntegrationTab, useIntegrationRegistry } from '@conduction/nextcloud-vue'
+import { translate as t } from '@nextcloud/l10n'
+import { objectStore, navigationStore } from '../../store/store.js'
 
 export default {
 	name: 'ObjectDetails',
@@ -374,9 +382,28 @@ export default {
 		// registerBuiltinIntegrations() + registerLeafIntegrations(). Used
 		// by the "Integrations" BTab below to render one inner sub-tab per
 		// advertised provider.
+		//
+		// IMPORTANT: This setup() block lives in the Options-API <script>
+		// block. A previous version of this file also had a leading
+		// <script setup> block — Vue's SFC compiler silently drops the
+		// Options-API setup() when both co-exist, so useIntegrationRegistry()
+		// never ran and integrationProviders stayed empty. The duplicate
+		// block has been removed; the template-level helpers (t / objectStore
+		// / navigationStore) that previously lived in <script setup> are now
+		// re-exposed here so the template keeps working.
 		const { integrations } = useIntegrationRegistry()
 		const integrationProviders = computed(() => integrations.value || [])
-		return { integrationProviders }
+		return {
+			integrationProviders,
+			// Re-export the fallback tab component so the template's
+			// <component :is="provider.tab || CnIntegrationTab" /> dispatch
+			// can resolve it as a JS identifier (Options API templates can't
+			// reference module-scope imports directly).
+			CnIntegrationTab,
+			t,
+			objectStore,
+			navigationStore,
+		}
 	},
 	data() {
 		return {

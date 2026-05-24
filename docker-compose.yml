@@ -612,6 +612,7 @@ services:
       - ./custom_apps:/var/www/html/custom_apps
       - .:/var/www/html/custom_apps/openregister
       - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
+      - ../openconnector:/var/www/html/custom_apps/openconnector
       - ../softwarecatalog:/var/www/html/custom_apps/softwarecatalog
       - ../nldesign:/var/www/html/custom_apps/nldesign
       - ../mydash:/var/www/html/custom_apps/mydash
@@ -625,6 +626,7 @@ services:
       - ../decidesk:/var/www/html/custom_apps/decidesk
       - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
       - ../larpingapp:/var/www/html/custom_apps/larpingapp
+      - ../doriath:/var/www/html/custom_apps/doriath
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud

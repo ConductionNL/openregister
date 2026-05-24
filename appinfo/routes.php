@@ -295,7 +295,10 @@ return [
         ['name' => 'transition#transition', 'url' => '/api/objects/{id}/transition', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'transition#availableActions', 'url' => '/api/objects/{id}/available-actions', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
-        // Aggregations sugar endpoint.
+        // Aggregations — ad-hoc time-bucket primitive (must be ordered
+        // BEFORE the {name} wildcard so /timeseries literal matches first).
+        ['name' => 'aggregation#timeseries', 'url' => '/api/objects/aggregations/{register}/{schema}/timeseries', 'verb' => 'GET'],
+        // Aggregations sugar endpoint — named annotation surface.
         ['name' => 'aggregation#aggregate', 'url' => '/api/objects/aggregations/{register}/{schema}/{name}', 'verb' => 'GET'],
 
         // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.

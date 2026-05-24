@@ -186,18 +186,6 @@ class McpProtocolService
             return null;
         }
 
-        // Sliding TTL: any active use refreshes the expiry. Long-lived MCP
-        // clients (Claude's persistent subprocess, the dev bridge) would
-        // otherwise hit the fixed 1-hour cliff even during an active chat
-        // session — `Mcp-Session-Id` is meant to track the live connection,
-        // not act as a short-lived auth token. Idle clients still age out
-        // after SESSION_TTL of true inactivity.
-        $this->sessionCache->set(
-            key: $sessionId,
-            value: $userId,
-            ttl: self::SESSION_TTL
-        );
-
         return (string) $userId;
     }//end validateSession()
 
