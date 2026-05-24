@@ -99,6 +99,8 @@ class GeoFilterApplier
      * @param ?string $property Property name; null = first GeoJSON-shaped value.
      *
      * @return ?array The GeoJSON geometry, or null when none found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-geo-metadata-kaart/tasks.md#task-1
      */
     public function extractGeometry(array $row, ?string $property): ?array
     {
