@@ -14,6 +14,8 @@ import { defineStore } from 'pinia'
  * @copyright 2024
  * @license AGPL-3.0-or-later
  * @version 1.0.0
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-2b-store/tasks.md#task-15
  */
 export const useViewsStore = defineStore('views', {
 	state: () => ({

@@ -9,6 +9,8 @@
  * - Retention policies
  * - Cache management
  * - System statistics
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-2b-store/tasks.md#task-2
  */
 
 import { defineStore } from 'pinia'

@@ -2,6 +2,8 @@
  * Object store using @conduction/nextcloud-vue with an adapter for the existing app API.
  * Delegates to the package's createObjectStore; maps register/schema context to type slug
  * and exposes getCollection, objectItem, refreshObjectList, etc. via the package store API.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-2b-store/tasks.md#task-9
  */
 
 import { getActivePinia } from 'pinia'

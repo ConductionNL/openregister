@@ -1,3 +1,6 @@
+/**
+ * @spec openspec/changes/retrofit-2026-05-24-2b-store/tasks.md#task-11
+ */
 /* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { Source } from '../../entities/index.js'

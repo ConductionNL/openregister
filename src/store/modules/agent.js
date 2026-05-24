@@ -6,6 +6,8 @@
  * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2
  * @version  1.0.0
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-2b-store/tasks.md#task-3
  */
 
 /* eslint-disable no-console */

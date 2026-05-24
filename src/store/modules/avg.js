@@ -18,6 +18,8 @@
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-2b-store/tasks.md#task-5
  */
 
 /* eslint-disable no-console */

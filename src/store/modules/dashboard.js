@@ -1,3 +1,6 @@
+/**
+ * @spec openspec/changes/retrofit-2026-05-24-2b-store/tasks.md#task-7
+ */
 import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
