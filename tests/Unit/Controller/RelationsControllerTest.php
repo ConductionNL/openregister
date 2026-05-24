@@ -16,6 +16,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 class RelationsControllerTest extends TestCase
 {
@@ -27,6 +29,7 @@ class RelationsControllerTest extends TestCase
     private CalendarEventService&MockObject $calendarEventService;
     private ContactService&MockObject $contactService;
     private DeckCardService&MockObject $deckCardService;
+    private LoggerInterface&MockObject $logger;
     private RelationsController $controller;
 
     protected function setUp(): void
@@ -39,6 +42,7 @@ class RelationsControllerTest extends TestCase
         $this->calendarEventService = $this->createMock(CalendarEventService::class);
         $this->contactService = $this->createMock(ContactService::class);
         $this->deckCardService = $this->createMock(DeckCardService::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->controller = new RelationsController(
             'openregister',
@@ -49,7 +53,8 @@ class RelationsControllerTest extends TestCase
             $this->emailService,
             $this->calendarEventService,
             $this->contactService,
-            $this->deckCardService
+            $this->deckCardService,
+            $this->logger
         );
     }
 
@@ -133,5 +138,76 @@ class RelationsControllerTest extends TestCase
         $response = $this->controller->index('1', '2', 'nonexistent');
 
         $this->assertSame(404, $response->getStatus());
+    }
+
+    /**
+     * A per-type failure must be logged via the injected logger AND surfaced
+     * in the response under the `_errors` metadata key — the previous
+     * behavior was to silently swallow the exception (no log, no error key).
+     */
+    public function testPerTypeFailureIsLoggedAndSurfacedInErrorsKey(): void
+    {
+        $this->setupObject();
+        $this->request->method('getParams')->willReturn([]);
+
+        $boom = new RuntimeException('notes backend exploded');
+        $this->noteService->method('getNotesForObject')->willThrowException($boom);
+        $this->taskService->method('getTasksForObject')->willReturn([]);
+        $this->emailService->method('isMailAvailable')->willReturn(false);
+        $this->calendarEventService->method('getEventsForObject')->willReturn([]);
+        $this->contactService->method('getContactsForObject')->willReturn(['results' => [], 'total' => 0]);
+        $this->deckCardService->method('isDeckAvailable')->willReturn(false);
+
+        $this->logger->expects($this->once())
+            ->method('error')
+            ->with(
+                $this->stringContains('gatherRelations'),
+                $this->callback(function (array $context) use ($boom): bool {
+                    return ($context['type'] ?? null) === 'notes'
+                        && ($context['uuid'] ?? null) === 'abc-123'
+                        && ($context['error'] ?? null) === 'notes backend exploded'
+                        && ($context['exception'] ?? null) === $boom;
+                })
+            );
+
+        $response = $this->controller->index('1', '2', 'abc-123');
+        $data = $response->getData();
+
+        $this->assertArrayNotHasKey('notes', $data, 'failed type must be omitted from the success envelope');
+        $this->assertArrayHasKey('_errors', $data, 'partial-failure indicator must be present');
+        $this->assertArrayHasKey('notes', $data['_errors']);
+        $this->assertSame('notes backend exploded', $data['_errors']['notes']['message']);
+        $this->assertSame(RuntimeException::class, $data['_errors']['notes']['exception']);
+        // Other successful types must still aggregate.
+        $this->assertArrayHasKey('tasks', $data);
+        $this->assertArrayHasKey('events', $data);
+        $this->assertArrayHasKey('contacts', $data);
+    }
+
+    /**
+     * When all per-type lookups succeed the response must NOT include an
+     * `_errors` key — backwards compatibility with consumers that walk
+     * the envelope's top-level keys.
+     */
+    public function testSuccessfulAggregationOmitsErrorsKey(): void
+    {
+        $this->setupObject();
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->noteService->method('getNotesForObject')->willReturn([]);
+        $this->taskService->method('getTasksForObject')->willReturn([]);
+        $this->emailService->method('isMailAvailable')->willReturn(true);
+        $this->emailService->method('getEmailsForObject')->willReturn(['results' => [], 'total' => 0]);
+        $this->calendarEventService->method('getEventsForObject')->willReturn([]);
+        $this->contactService->method('getContactsForObject')->willReturn(['results' => [], 'total' => 0]);
+        $this->deckCardService->method('isDeckAvailable')->willReturn(true);
+        $this->deckCardService->method('getCardsForObject')->willReturn(['results' => [], 'total' => 0]);
+
+        $this->logger->expects($this->never())->method('error');
+
+        $response = $this->controller->index('1', '2', 'abc-123');
+        $data = $response->getData();
+
+        $this->assertArrayNotHasKey('_errors', $data);
     }
 }

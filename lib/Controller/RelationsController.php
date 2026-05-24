@@ -31,6 +31,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * RelationsController provides a unified endpoint for all object relations.
@@ -94,6 +95,13 @@ class RelationsController extends Controller
     private readonly DeckCardService $deckCardService;
 
     /**
+     * Logger for surfacing per-type aggregation failures.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
+    /**
      * Constructor.
      *
      * @param string               $appName              Application name
@@ -105,6 +113,7 @@ class RelationsController extends Controller
      * @param CalendarEventService $calendarEventService Calendar event service
      * @param ContactService       $contactService       Contact service
      * @param DeckCardService      $deckCardService      Deck card service
+     * @param LoggerInterface      $logger               PSR-3 logger
      *
      * @return void
      */
@@ -117,7 +126,8 @@ class RelationsController extends Controller
         EmailService $emailService,
         CalendarEventService $calendarEventService,
         ContactService $contactService,
-        DeckCardService $deckCardService
+        DeckCardService $deckCardService,
+        LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -128,6 +138,7 @@ class RelationsController extends Controller
         $this->calendarEventService = $calendarEventService;
         $this->contactService       = $contactService;
         $this->deckCardService      = $deckCardService;
+        $this->logger = $logger;
     }//end __construct()
 
     /**
@@ -179,10 +190,19 @@ class RelationsController extends Controller
     /**
      * Gather all relations for an object, optionally filtered by type.
      *
+     * Per-type failures are caught individually so that one bad service cannot
+     * block the rest of the aggregation, but each failure is now logged via
+     * {@see LoggerInterface::error()} (with the exception attached for the
+     * full stack trace) and recorded under the response's `_errors` key so
+     * callers can detect partial failures instead of silently receiving an
+     * incomplete envelope.
+     *
      * @param string     $objectUuid  The object UUID.
      * @param array|null $typesFilter Types to include, or null for all.
      *
-     * @return array Relations grouped by type.
+     * @return array Relations grouped by type. When one or more per-type
+     *               lookups fail, the result also carries an `_errors` map
+     *               keyed by type with `{message, exception}` entries.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -190,6 +210,7 @@ class RelationsController extends Controller
     private function gatherRelations(string $objectUuid, ?array $typesFilter): array
     {
         $relations = [];
+        $errors    = [];
 
         // Notes.
         if ($typesFilter === null || in_array('notes', $typesFilter) === true) {
@@ -197,7 +218,8 @@ class RelationsController extends Controller
                 $notes = $this->noteService->getNotesForObject($objectUuid);
                 $relations['notes'] = ['results' => $notes, 'total' => count($notes)];
             } catch (Exception $e) {
-                // Silently skip on error.
+                $this->logRelationFailure(type: 'notes', objectUuid: $objectUuid, exception: $e);
+                $errors['notes'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
             }
         }
 
@@ -207,7 +229,8 @@ class RelationsController extends Controller
                 $tasks = $this->taskService->getTasksForObject($objectUuid);
                 $relations['tasks'] = ['results' => $tasks, 'total' => count($tasks)];
             } catch (Exception $e) {
-                // Silently skip on error.
+                $this->logRelationFailure(type: 'tasks', objectUuid: $objectUuid, exception: $e);
+                $errors['tasks'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
             }
         }
 
@@ -218,7 +241,8 @@ class RelationsController extends Controller
             try {
                 $relations['emails'] = $this->emailService->getEmailsForObject($objectUuid);
             } catch (Exception $e) {
-                // Silently skip on error.
+                $this->logRelationFailure(type: 'emails', objectUuid: $objectUuid, exception: $e);
+                $errors['emails'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
             }
         }
 
@@ -228,7 +252,8 @@ class RelationsController extends Controller
                 $events = $this->calendarEventService->getEventsForObject($objectUuid);
                 $relations['events'] = ['results' => $events, 'total' => count($events)];
             } catch (Exception $e) {
-                // Silently skip on error.
+                $this->logRelationFailure(type: 'events', objectUuid: $objectUuid, exception: $e);
+                $errors['events'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
             }
         }
 
@@ -237,7 +262,8 @@ class RelationsController extends Controller
             try {
                 $relations['contacts'] = $this->contactService->getContactsForObject($objectUuid);
             } catch (Exception $e) {
-                // Silently skip on error.
+                $this->logRelationFailure(type: 'contacts', objectUuid: $objectUuid, exception: $e);
+                $errors['contacts'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
             }
         }
 
@@ -248,12 +274,43 @@ class RelationsController extends Controller
             try {
                 $relations['deck'] = $this->deckCardService->getCardsForObject($objectUuid);
             } catch (Exception $e) {
-                // Silently skip on error.
+                $this->logRelationFailure(type: 'deck', objectUuid: $objectUuid, exception: $e);
+                $errors['deck'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
             }
+        }
+
+        if (empty($errors) === false) {
+            $relations['_errors'] = $errors;
         }
 
         return $relations;
     }//end gatherRelations()
+
+    /**
+     * Log a per-type aggregation failure surfaced from gatherRelations().
+     *
+     * Uses structured context so log scrapers can group by type and object
+     * uuid. The Throwable is passed via the `exception` context key so the
+     * Nextcloud logger preserves the original stack trace.
+     *
+     * @param string     $type       The relation type that failed (notes, tasks, emails, …).
+     * @param string     $objectUuid The object UUID being aggregated.
+     * @param \Throwable $exception  The caught exception.
+     *
+     * @return void
+     */
+    private function logRelationFailure(string $type, string $objectUuid, \Throwable $exception): void
+    {
+        $this->logger->error(
+            '[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',
+            [
+                'type'      => $type,
+                'uuid'      => $objectUuid,
+                'error'     => $exception->getMessage(),
+                'exception' => $exception,
+            ]
+        );
+    }//end logRelationFailure()
 
     /**
      * Build a timeline view from grouped relations.
