@@ -75,6 +75,147 @@ class ContactServiceTest extends TestCase
         $this->assertSame([], $result['results']);
     }
 
+    /**
+     * Phase B-1: full vCard with TEL / ORG / PHOTO produces all three
+     * widened fields plus the original ContactLink fields.
+     */
+    public function testGetContactsForObjectEnrichesWithFullVcard(): void
+    {
+        $link = new ContactLink();
+        $link->setObjectUuid('abc-123');
+        $link->setDisplayName('Jan de Vries');
+        $link->setEmail('jan@example.nl');
+        $link->setAddressbookId(2);
+        $link->setContactUri('jan.vcf');
+        $link->setContactUid('jan-uid');
+
+        // vCard 3.0 PHOTO with VALUE=URI parameter is how NC Contacts
+        // emits external image URLs (it auto-classifies bare PHOTO bodies
+        // as base64 binary; see Sabre VObject Property\Binary handling).
+        $vcardData = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:jan-uid\r\nFN:Jan de Vries\r\nEMAIL:jan@example.nl\r\nTEL;TYPE=CELL:+31 6 1234 5678\r\nORG:Acme B.V.;Engineering\r\nPHOTO;VALUE=URI:https://example.com/jan.jpg\r\nEND:VCARD\r\n";
+
+        $this->contactLinkMapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
+        $this->contactLinkMapper->method('countByObjectUuid')->with('abc-123')->willReturn(1);
+        $this->cardDavBackend->method('getCard')->with(2, 'jan.vcf')->willReturn(['carddata' => $vcardData]);
+
+        $result = $this->service->getContactsForObject('abc-123');
+
+        $row = $result['results'][0];
+        $this->assertSame('+31 6 1234 5678', $row['phone']);
+        $this->assertSame('Acme B.V.', $row['org']);
+        $this->assertSame('https://example.com/jan.jpg', $row['avatarUrl']);
+        // Original payload still present.
+        $this->assertSame('Jan de Vries', $row['displayName']);
+        $this->assertSame('jan@example.nl', $row['email']);
+    }
+
+    /**
+     * Phase B-1: inline base64 PHOTO (vCard 3.0 binary) is wrapped as a
+     * data URL using the TYPE parameter for the media type.
+     */
+    public function testGetContactsForObjectEnrichesWithInlineBase64Photo(): void
+    {
+        $link = new ContactLink();
+        $link->setObjectUuid('abc-123');
+        $link->setDisplayName('Lisa');
+        $link->setAddressbookId(2);
+        $link->setContactUri('lisa.vcf');
+        $link->setContactUid('lisa-uid');
+
+        $b64 = base64_encode('FAKE_PNG_BYTES');
+        $vcardData = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:lisa-uid\r\nFN:Lisa\r\nPHOTO;ENCODING=b;TYPE=JPEG:$b64\r\nEND:VCARD\r\n";
+
+        $this->contactLinkMapper->method('findByObjectUuid')->willReturn([$link]);
+        $this->contactLinkMapper->method('countByObjectUuid')->willReturn(1);
+        $this->cardDavBackend->method('getCard')->willReturn(['carddata' => $vcardData]);
+
+        $result = $this->service->getContactsForObject('abc-123');
+
+        $row = $result['results'][0];
+        $this->assertStringStartsWith('data:image/jpeg;base64,', $row['avatarUrl']);
+        $this->assertStringContainsString($b64, $row['avatarUrl']);
+    }
+
+    /**
+     * Phase B-1: vCard without TEL / ORG / PHOTO returns the widened
+     * fields as null (with avatarUrl falling back to the per-uid
+     * Contacts route). No exception thrown.
+     */
+    public function testGetContactsForObjectEnrichesWithPartialVcard(): void
+    {
+        $link = new ContactLink();
+        $link->setObjectUuid('abc-123');
+        $link->setDisplayName('Anna');
+        $link->setAddressbookId(2);
+        $link->setContactUri('anna.vcf');
+        $link->setContactUid('anna-uid');
+
+        // No TEL / ORG / PHOTO.
+        $vcardData = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:anna-uid\r\nFN:Anna\r\nEND:VCARD\r\n";
+
+        $this->contactLinkMapper->method('findByObjectUuid')->willReturn([$link]);
+        $this->contactLinkMapper->method('countByObjectUuid')->willReturn(1);
+        $this->cardDavBackend->method('getCard')->willReturn(['carddata' => $vcardData]);
+
+        $result = $this->service->getContactsForObject('abc-123');
+
+        $row = $result['results'][0];
+        $this->assertNull($row['phone']);
+        $this->assertNull($row['org']);
+        // PHOTO absent → fallback to per-uid Contacts route.
+        $this->assertSame('/index.php/apps/contacts/photo/anna-uid', $row['avatarUrl']);
+    }
+
+    /**
+     * Phase B-1: when CardDAV returns false (card deleted) the link
+     * is still surfaced with null widened fields.
+     */
+    public function testGetContactsForObjectGracefulWhenVcardMissing(): void
+    {
+        $link = new ContactLink();
+        $link->setObjectUuid('abc-123');
+        $link->setDisplayName('Ghost');
+        $link->setAddressbookId(2);
+        $link->setContactUri('ghost.vcf');
+        $link->setContactUid('ghost-uid');
+
+        $this->contactLinkMapper->method('findByObjectUuid')->willReturn([$link]);
+        $this->contactLinkMapper->method('countByObjectUuid')->willReturn(1);
+        $this->cardDavBackend->method('getCard')->willReturn(false);
+
+        $result = $this->service->getContactsForObject('abc-123');
+
+        $row = $result['results'][0];
+        $this->assertNull($row['phone']);
+        $this->assertNull($row['org']);
+        $this->assertNull($row['avatarUrl']);
+        $this->assertSame('Ghost', $row['displayName']);
+    }
+
+    /**
+     * Phase B-1: CardDAV throwing during getCard must not propagate.
+     */
+    public function testGetContactsForObjectGracefulWhenCardDavThrows(): void
+    {
+        $link = new ContactLink();
+        $link->setObjectUuid('abc-123');
+        $link->setDisplayName('Throwy');
+        $link->setAddressbookId(2);
+        $link->setContactUri('throwy.vcf');
+        $link->setContactUid('throwy-uid');
+
+        $this->contactLinkMapper->method('findByObjectUuid')->willReturn([$link]);
+        $this->contactLinkMapper->method('countByObjectUuid')->willReturn(1);
+        $this->cardDavBackend->method('getCard')->willThrowException(new \RuntimeException('DAV blew up'));
+
+        $result = $this->service->getContactsForObject('abc-123');
+
+        $row = $result['results'][0];
+        $this->assertNull($row['phone']);
+        $this->assertNull($row['org']);
+        $this->assertNull($row['avatarUrl']);
+    }
+
     public function testLinkContactThrowsWhenContactNotFound(): void
     {
         $this->setupUser();
