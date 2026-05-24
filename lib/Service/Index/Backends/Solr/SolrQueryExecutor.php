@@ -6,6 +6,9 @@
  * Handles query execution and search operations for Solr.
  * Manages query building, execution, and result parsing.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>

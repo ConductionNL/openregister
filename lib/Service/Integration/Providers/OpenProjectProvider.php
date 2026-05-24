@@ -16,6 +16,9 @@
  * No NC app is required — OpenProject is external; the only install
  * dependency is OpenConnector (which carries the source + credentials).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *

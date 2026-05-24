@@ -6,6 +6,9 @@
  * Assembles SIP (Submission Information Package) archives conforming to the
  * OAIS reference model (ISO 14721) for e-Depot transfer.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot
  *

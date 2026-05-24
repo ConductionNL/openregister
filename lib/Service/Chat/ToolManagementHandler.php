@@ -5,6 +5,9 @@
  *
  * Handler for LLM tool/function calling management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *

@@ -6,6 +6,9 @@
  * Handler for RAG (Retrieval Augmented Generation) context retrieval.
  * Manages semantic search, keyword search, and source extraction for chat context.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *

@@ -6,6 +6,9 @@
  * Handles file chunk indexing to Solr/Elasticsearch.
  * Reads chunks from database (created by TextExtractionService) and indexes them.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Index
  *

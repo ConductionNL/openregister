@@ -8,6 +8,9 @@
  * matches. v1 supports trigger types created/updated/transition,
  * recipient kinds users/field, channel `nc-notification`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *

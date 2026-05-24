@@ -6,6 +6,9 @@
  * Handles HTTP client configuration and basic HTTP operations for Solr.
  * Responsible for building URLs, managing HTTP client, and making requests.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
