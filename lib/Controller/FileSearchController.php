@@ -75,6 +75,7 @@ class FileSearchController extends Controller
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-87
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-1
      */
     public function keywordSearch(): JSONResponse
     {
@@ -211,6 +212,8 @@ class FileSearchController extends Controller
      *     total?: int<0, max>, results?: array<int, array<string, mixed>>,
      *     search_type?: 'semantic'},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-1
      */
     public function semanticSearch(): JSONResponse
     {
@@ -272,6 +275,8 @@ class FileSearchController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with hybrid search results or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-1
      */
     public function hybridSearch(): JSONResponse
     {

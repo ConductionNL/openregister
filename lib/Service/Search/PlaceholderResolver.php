@@ -45,6 +45,8 @@ final class PlaceholderResolver
      * Constructor.
      *
      * @param IUserSession $userSession Session resolver for `$currentUser`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-5
      */
     public function __construct(
         private readonly IUserSession $userSession
@@ -59,6 +61,8 @@ final class PlaceholderResolver
      *
      * @return mixed Resolved value: DateTimeImmutable for date placeholders,
      *               string for $currentUser, original value otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-5
      */
     public function resolve(mixed $value): mixed
     {
@@ -79,6 +83,8 @@ final class PlaceholderResolver
      * @param array<string, mixed> $values The array whose leaf values may contain placeholders.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-5
      */
     public function resolveArray(array $values): array
     {
@@ -101,6 +107,8 @@ final class PlaceholderResolver
      * @param string $expr The raw placeholder expression (e.g. `$now-7d`).
      *
      * @return mixed A DateTimeImmutable for known placeholders; the raw string when unknown.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-5
      */
     private function resolveDate(string $expr): mixed
     {
@@ -154,6 +162,8 @@ final class PlaceholderResolver
      * @param string $base The placeholder base (e.g. `$startOfWeek`).
      *
      * @return string One of `d`, `w`, `m`, `y`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-5
      */
     private function defaultUnitFor(string $base): string
     {

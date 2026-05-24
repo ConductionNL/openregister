@@ -75,6 +75,8 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-backend search requires multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)       Complex search path handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive semantic search with multiple backends
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-2
      */
     public function semanticSearch(
         array $queryEmbedding,
@@ -220,6 +222,8 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Solr KNN search requires multiple condition checks
      * @SuppressWarnings(PHPMD.NPathComplexity)       Complex search path handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive Solr KNN search with error handling
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-2
      */
     private function searchVectorsInSolr(
         array $queryEmbedding,
@@ -370,6 +374,8 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Hybrid search combines multiple result sets
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple search path combinations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive hybrid search with result fusion
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-2
      */
     public function hybridSearch(
         array $queryEmbedding,
@@ -486,6 +492,8 @@ class VectorSearchHandler
      *     metadata: array<never, never>|mixed, solr_rank: int|null,
      *     solr_score: mixed|null, vector_rank: int|null,
      *     vector_similarity: mixed|null}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-2
      */
     private function reciprocalRankFusion(
         array $vectorResults,
@@ -569,6 +577,8 @@ class VectorSearchHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Filter handling requires multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter handling paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-2
      */
     private function fetchVectors(array $filters=[]): array
     {
@@ -643,6 +653,8 @@ class VectorSearchHandler
      * @param array<float> $vector2 Second vector
      *
      * @return float Similarity score (0-1, where 1 is identical)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-2
      */
     private function cosineSimilarity(array $vector1, array $vector2): float
     {
@@ -678,6 +690,8 @@ class VectorSearchHandler
      * @param string $entityType Entity type ('file' or 'object')
      *
      * @return string Entity ID
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-2
      */
     private function extractEntityId(array $doc, string $entityType): string
     {
@@ -699,6 +713,7 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter and collection resolution paths
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-2
      */
     private function getCollectionsToSearch(array $filters): array
     {
@@ -753,6 +768,8 @@ class VectorSearchHandler
      * @param array  $settings   Settings array
      *
      * @return string|null Collection name
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search/tasks.md#task-2
      */
     private function getSolrCollectionForEntityType(string $entityType, array $settings): ?string
     {
