@@ -13,6 +13,9 @@
  * gte / lt / lte / ne (mirrors the inline magic-table SQL path that
  * lived in `AggregationRunner::tryNativeAggregation`).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *

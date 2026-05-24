@@ -7,6 +7,9 @@
  * schema + name + resolved-filters hash + RBAC scope hash. Evicted
  * by the existing object-write event listeners.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *

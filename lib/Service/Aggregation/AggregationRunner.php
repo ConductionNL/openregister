@@ -10,6 +10,9 @@
  * v1 trades performance for simplicity: backend-native aggregation
  * (Postgres GROUP BY / Solr facets / ES aggs) ships in a follow-up.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *

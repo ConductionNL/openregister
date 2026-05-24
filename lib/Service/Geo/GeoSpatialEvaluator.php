@@ -21,6 +21,9 @@
  *   - Polygon-polygon overlap is approximated as "any vertex of A is in
  *     B, OR any vertex of B is in A".
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Geo
  *

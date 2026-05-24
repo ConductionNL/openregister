@@ -7,6 +7,9 @@
  * This handler consolidates performance-related operations from ObjectService,
  * improving code organization and making optimization logic more maintainable.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *

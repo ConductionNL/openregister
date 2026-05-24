@@ -11,6 +11,9 @@
  * Filter list semantics: AND. A row passes only when every filter
  * matches. Empty filter list = pass-through.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Geo
  *

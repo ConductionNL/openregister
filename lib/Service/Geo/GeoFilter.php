@@ -15,6 +15,9 @@
  * Filters are immutable and constructed via static factory methods so
  * invalid input fails fast at parse time.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Geo
  *

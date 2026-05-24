@@ -43,6 +43,9 @@
  * - Time complexity: O(N*M*P) → O(N*M)
  * - Processing speed: 2-3x faster for large datasets
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Service\ObjectHandlers
  * @author    Conduction Development Team <info@conduction.nl>

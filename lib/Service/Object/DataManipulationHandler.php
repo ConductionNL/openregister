@@ -7,6 +7,9 @@
  * This handler consolidates utility functions for manipulating object data,
  * making these operations more testable and maintainable.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *
