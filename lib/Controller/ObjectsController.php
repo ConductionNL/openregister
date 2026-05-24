@@ -22,6 +22,7 @@
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -1291,6 +1292,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public function geoSearch(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1342,6 +1345,8 @@ class ObjectsController extends Controller
      * @param array $result The listing-result envelope from objectService.
      *
      * @return array The result, possibly with `results` filtered down.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     private function applyGeoQueryFilters(array $params, array $result): array
     {
@@ -1405,6 +1410,8 @@ class ObjectsController extends Controller
      * @param array $params The raw query params from IRequest::getParams.
      *
      * @return array The same params with `geo.*` keys hoisted from `geo`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     private function flattenGeoParams(array $params): array
     {

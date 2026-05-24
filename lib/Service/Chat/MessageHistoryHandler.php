@@ -15,6 +15,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -77,6 +79,8 @@ class MessageHistoryHandler
      * @param LoggerInterface    $logger             Logger.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function __construct(
         MessageMapper $messageMapper,
@@ -101,6 +105,8 @@ class MessageHistoryHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         LLPhantMessage factory methods are standard LLPhant pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Message role handling requires multiple conditional branches
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function buildMessageHistory(int $conversationId): array
     {
@@ -198,6 +204,8 @@ class MessageHistoryHandler
      *                                   sent with the message (orchestrator §8).
      *
      * @return Message Stored message entity
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function storeMessage(
         int $conversationId,

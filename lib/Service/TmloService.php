@@ -22,6 +22,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-32
  */
 
 namespace OCA\OpenRegister\Service;
@@ -220,6 +222,8 @@ class TmloService
      * @param string $duration ISO-8601 duration (e.g., P7Y, P5Y6M)
      *
      * @return string|null ISO-8601 date string or null if invalid duration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-32
      */
     public function calculateArchiefactiedatum(string $duration): ?string
     {

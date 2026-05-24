@@ -15,6 +15,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -72,6 +74,8 @@ class ToolManagementHandler
      * @param LoggerInterface $logger       Logger.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function __construct(
         AgentMapper $agentMapper,
@@ -95,6 +99,8 @@ class ToolManagementHandler
      * @return array Array of ToolInterface instances
      *
      * @psalm-return list<ToolInterface>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function getAgentTools(?Agent $agent, array $selectedTools=[]): array
     {
@@ -186,6 +192,8 @@ class ToolManagementHandler
      * @return array Array of function definitions for OpenAI
      *
      * @psalm-return list<array>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function convertToolsToFunctions(array $tools): array
     {

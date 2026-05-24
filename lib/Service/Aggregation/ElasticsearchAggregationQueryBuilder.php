@@ -25,6 +25,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/aggregations-backend-native/tasks.md "ElasticsearchBackend::aggregate"
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */
 
 declare(strict_types=1);
@@ -118,6 +119,8 @@ class ElasticsearchAggregationQueryBuilder
      * @param array<string, mixed> $filter The filter map.
      *
      * @return array<string, mixed> The `bool` clause body, or empty array when no filters.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     public function translateFilters(array $filter): array
     {
@@ -164,6 +167,8 @@ class ElasticsearchAggregationQueryBuilder
      * @param array  $mustNot Accumulator for must_not clauses.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function collectOp(string $field, string $op, mixed $value, array &$must, array &$mustNot): void
     {

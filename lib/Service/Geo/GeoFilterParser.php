@@ -21,6 +21,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -108,6 +109,8 @@ class GeoFilterParser
      * @return GeoFilter[]
      *
      * @throws InvalidArgumentException When malformed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public function fromGeoSearchBody(array $body): array
     {

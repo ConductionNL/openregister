@@ -24,6 +24,9 @@
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-65
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-68
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-67
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-6
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-7
  */
 
 declare(strict_types=1);
@@ -393,6 +396,8 @@ class RetentionService
      * @param string $categorie The selectielijst category code (e.g., B1, A1)
      *
      * @return array|null The selectielijst entry data or null if not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-5
      */
     public function lookupSelectielijstEntry(string $categorie): ?array
     {
@@ -461,6 +466,8 @@ class RetentionService
      * @param string       $reason The reason for the legal hold
      *
      * @return ObjectEntity The object with legal hold applied
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-7
      */
     public function placeLegalHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -488,6 +495,8 @@ class RetentionService
      * @param string       $reason The reason for releasing the hold
      *
      * @return ObjectEntity The object with legal hold released
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-7
      */
     public function releaseLegalHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -530,6 +539,8 @@ class RetentionService
      * @param ObjectEntity $object The object to check
      *
      * @return bool True if object has active legal hold
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-7
      */
     public function hasActiveLegalHold(ObjectEntity $object): bool
     {
@@ -544,6 +555,8 @@ class RetentionService
      * @param string|null  $extensionPeriod ISO 8601 duration (default from settings)
      *
      * @return ObjectEntity The object with extended archiefactiedatum
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-6
      */
     public function extendArchiefactiedatum(ObjectEntity $object, ?string $extensionPeriod=null): ObjectEntity
     {
@@ -590,6 +603,8 @@ class RetentionService
      * @return ObjectEntity[] Array of eligible objects
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-5
      */
     public function findEligibleForDestruction(array $excludeUuids=[]): array
     {

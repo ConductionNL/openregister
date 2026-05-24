@@ -18,6 +18,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -114,6 +115,8 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with bulk delete result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
      */
     public function delete(string $register, string $schema): JSONResponse
     {
@@ -188,6 +191,8 @@ class BulkController extends Controller
      *     message?: 'Bulk save operation completed successfully',
      *     saved_count?: mixed, saved_objects?: array<string, mixed>,
      *     requested_count?: int<0, max>}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
      */
     public function save(string $register, string $schema): JSONResponse
     {

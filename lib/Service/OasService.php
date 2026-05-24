@@ -13,6 +13,16 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-12
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-14
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-17
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-22
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-24
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
  */
 
 declare(strict_types=1);
@@ -170,6 +180,8 @@ class OasService
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     public function createOas(?string $registerId=null, bool $strict=false): array
     {
@@ -349,6 +361,8 @@ class OasService
      * Log every validation issue once at the appropriate severity level.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
      */
     private function logValidationIssues(): void
     {
@@ -373,6 +387,8 @@ class OasService
      * @return array The base OAS array
      *
      * @throws \Exception When file cannot be read or parsed
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function getBaseOas(): array
     {
@@ -399,6 +415,8 @@ class OasService
      *
      * @return array{createGroups: string[], readGroups: string[], updateGroups: string[], deleteGroups: string[]}
      *               Unique groups per CRUD action
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-12
      */
     private function extractSchemaGroups(object $schema): array
     {
@@ -459,6 +477,8 @@ class OasService
      * @param mixed $rule The authorization rule (string or array)
      *
      * @return string|null The group name, or null if not extractable
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function extractGroupFromRule($rule): ?string
     {
@@ -479,6 +499,8 @@ class OasService
      * @param string $group The Nextcloud group name
      *
      * @return string The scope description
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function getScopeDescription(string $group): string
     {
@@ -517,6 +539,8 @@ class OasService
      * @param string[] $groups    The schema-specific groups that have access to this operation
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function applyRbacToOperation(array &$operation, array $groups): void
     {
@@ -583,6 +607,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array Enriched schema with type, x-tags, and properties.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function enrichSchema(object $schema): array
     {
@@ -867,6 +893,8 @@ class OasService
      * @param string $operationIdPrefix Prefix for operationId to ensure uniqueness across registers
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function addCrudPaths(object $register, object $schema, array $rbac=[], string $operationIdPrefix=''): void
     {
@@ -937,6 +965,8 @@ class OasService
      * @param object $schema   The schema object
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function addExtendedPaths(object $register, object $schema): void
     {
@@ -1000,6 +1030,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls collection vs single item parameters
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dynamic parameter generation from schema properties
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createCommonQueryParameters(bool $isCollection=false, ?object $schema=null): array
     {
@@ -1097,6 +1129,8 @@ class OasService
      * @param mixed $propertyDefinition The property definition from the schema
      *
      * @return string The OpenAPI type for the property
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-17
      */
     private function getPropertyType($propertyDefinition): string
     {
@@ -1138,6 +1172,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for GET collection.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
      */
     private function createGetCollectionOperation(object $schema): array
     {
@@ -1204,6 +1240,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for GET single item.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createGetOperation(object $schema): array
     {
@@ -1264,6 +1302,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for PUT.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
      */
     private function createPutOperation(object $schema): array
     {
@@ -1334,6 +1374,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for POST.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
      */
     private function createPostOperation(object $schema): array
     {
@@ -1388,6 +1430,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for DELETE.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createDeleteOperation(object $schema): array
     {
@@ -1432,6 +1476,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for logs endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createLogsOperation(object $schema): array
     {
@@ -1486,6 +1532,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for get files endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createGetFilesOperation(object $schema): array
     {
@@ -1540,6 +1588,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for post file endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createPostFileOperation(object $schema): array
     {
@@ -1608,6 +1658,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for lock endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createLockOperation(object $schema): array
     {
@@ -1662,6 +1714,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for unlock endpoint.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function createUnlockOperation(object $schema): array
     {
@@ -1709,6 +1763,8 @@ class OasService
      * @param string $string The string to convert
      *
      * @return string The slugified string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function slugify(string $string): string
     {
@@ -1721,6 +1777,8 @@ class OasService
      * @param string $string The string to convert
      *
      * @return string The PascalCase string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-14
      */
     private function pascalCase(string $string): string
     {
@@ -1736,6 +1794,8 @@ class OasService
      * @param string|null $title The schema title to sanitize
      *
      * @return string The sanitized schema name
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-23
      */
     private function sanitizeSchemaName(?string $title): string
     {
@@ -1776,6 +1836,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple nested loops and conditional checks for validating
      *                                               paths, responses, and schemas
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-22
      */
     private function validateOasIntegrity(): void
     {
@@ -1885,6 +1947,8 @@ class OasService
      * Verify every entry in `servers` uses an absolute URL.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function validateServerUrls(): void
     {
@@ -1910,6 +1974,8 @@ class OasService
      * deduplicated in place by appending a numeric suffix (`_2`, `_3`, ...).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function validateOperationIdUniqueness(): void
     {
@@ -1973,6 +2039,8 @@ class OasService
      * @return void
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
      */
     private function validateTagConsistency(): void
     {
@@ -2099,6 +2167,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive schema validation with multiple reference types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for allOf, $ref, and nested validation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-24
      */
     private function validateSchemaReferences(array &$schema, string $context): void
     {
@@ -2229,6 +2299,8 @@ class OasService
      * @param object $schema The schema object.
      *
      * @return array|null The effective authorization array.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function resolveEffectiveAuthorization(object $schema): ?array
     {
@@ -2267,6 +2339,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-21
      */
     private function expandRolesForOas(array $authorization, object $schema, ?object $register=null): array
     {

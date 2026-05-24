@@ -26,6 +26,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -92,6 +94,8 @@ class ResponseGenerationHandler
      * @param LoggerInterface       $logger          Logger.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function __construct(
         SettingsService $settingsService,
@@ -145,6 +149,8 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Response generation requires many conditional API calls
      * @SuppressWarnings(PHPMD.NPathComplexity)       Response generation requires many conditional API calls
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function generateResponse(
         string $userMessage,
@@ -500,6 +506,8 @@ class ResponseGenerationHandler
      *
      * @psalm-param  list<\LLPhant\Chat\FunctionInfo\FunctionInfo> $functionInfoObjects
      * @psalm-return list<\LLPhant\Chat\FunctionInfo\FunctionInfo>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function wrapToolsForStreaming(array $functionInfoObjects, ?StreamYieldChannel $channel): array
     {
@@ -529,6 +537,8 @@ class ResponseGenerationHandler
      * @param string                  $provider       Provider slug (for logging).
      *
      * @return string The assistant's textual response.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function invokeChat(
         OpenAIChat|OllamaChat $chat,
@@ -582,6 +592,8 @@ class ResponseGenerationHandler
      * @param OpenAIChat|OllamaChat $chat Configured chat instance
      *
      * @return bool True when the instance has at least one FunctionInfo registered
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function chatHasTools(OpenAIChat|OllamaChat $chat): bool
     {
@@ -623,6 +635,8 @@ class ResponseGenerationHandler
      * @return string Assembled assistant text.
      *
      * @throws MissingFeatureException When the provider's streaming surface throws.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function streamChat(
         OpenAIChat|OllamaChat $chat,
@@ -666,6 +680,8 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  API call requires handling many response scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       API call requires handling many response scenarios
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) API error handling requires verbose code
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function callFireworksChatAPIWithHistory(
         string $apiKey,

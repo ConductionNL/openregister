@@ -18,6 +18,8 @@
  * @link      https://www.OpenRegister.app
  *
  * @since 2.0.0 Extracted from PropertyRbacHandler
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -89,6 +91,8 @@ class ConditionMatcher
      * @param array $match Match conditions
      *
      * @return array Filtered match conditions
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
      */
     public function filterOrganisationMatchForCreate(array $match): array
     {
@@ -118,6 +122,8 @@ class ConditionMatcher
      * @param mixed  $value    Expected value or operator expression
      *
      * @return bool True if the condition is satisfied
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
      */
     private function singleConditionMatches(array $object, string $property, mixed $value): bool
     {
@@ -274,6 +280,8 @@ class ConditionMatcher
      * Get the current user's active organisation UUID
      *
      * @return string|null The active organisation UUID or null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
      */
     private function getActiveOrganisationUuid(): ?string
     {

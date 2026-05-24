@@ -18,6 +18,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -46,6 +48,8 @@ class AggregationCacheInvalidationListener implements IEventListener
      * @param AggregationCache $cache Cache holding aggregation read-models.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function __construct(
         private readonly AggregationCache $cache
@@ -58,6 +62,8 @@ class AggregationCacheInvalidationListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function handle(Event $event): void
     {
@@ -78,6 +84,8 @@ class AggregationCacheInvalidationListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return ObjectEntity|null Object instance, or null when not resolvable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     private function extractObject(Event $event): ?ObjectEntity
     {

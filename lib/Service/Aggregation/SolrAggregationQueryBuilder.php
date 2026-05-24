@@ -25,6 +25,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/aggregations-backend-native/tasks.md "SolrSearchBackend::aggregate"
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */
 
 declare(strict_types=1);
@@ -120,6 +121,8 @@ class SolrAggregationQueryBuilder
      * @param array<string, mixed> $filter The filter map.
      *
      * @return string[] List of Solr `fq` strings.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     public function translateFilters(array $filter): array
     {
@@ -150,6 +153,8 @@ class SolrAggregationQueryBuilder
      * @param mixed  $value The operand.
      *
      * @return ?string The fq clause, or null when the op is unrecognised.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function translateOp(string $field, string $op, mixed $value): ?string
     {

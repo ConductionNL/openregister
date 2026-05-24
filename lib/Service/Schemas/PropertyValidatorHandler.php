@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
@@ -123,6 +125,8 @@ class PropertyValidatorHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
      */
     public function validateProperty(array $property, string $path=''): bool
     {

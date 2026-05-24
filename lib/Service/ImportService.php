@@ -17,6 +17,7 @@
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
  */
 
 declare(strict_types=1);
@@ -548,6 +549,8 @@ class ImportService
      * }>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */
     private function processMultiSchemaSpreadsheetAsync(
         Spreadsheet $spreadsheet,
@@ -669,6 +672,8 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Spreadsheet batch processing requires many validation branches
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple row/column validation paths needed for data integrity
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing consolidates related operations for performance
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -856,6 +861,8 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  CSV processing requires many conditional branches for data handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       CSV processing requires many conditional row/column handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) CSV processing consolidates related operations for performance
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
