@@ -6,6 +6,9 @@
  * Service that wraps Nextcloud Deck card operations for linking cards to OpenRegister objects.
  * Uses the Deck app's internal PHP service classes when available.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>

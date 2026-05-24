@@ -6,6 +6,9 @@
  * Calculates the archive action date (archiefactiedatum) using configurable
  * derivation methods (afleidingswijzen) as defined by the ZGW API standard.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Archival
  *

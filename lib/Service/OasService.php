@@ -5,6 +5,9 @@
  *
  * This service generates OpenAPI Specification (OAS) documentation for registers and schemas.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

@@ -6,6 +6,9 @@
  * Service for managing AI chat conversations with RAG (Retrieval Augmented Generation).
  * This is a thin facade that orchestrates specialized handlers.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

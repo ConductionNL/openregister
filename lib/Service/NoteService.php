@@ -6,6 +6,9 @@
  * Service that wraps Nextcloud's ICommentsManager for adding notes to OpenRegister objects.
  * Notes are stored as standard Nextcloud comments with objectType "openregister".
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>

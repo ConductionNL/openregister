@@ -6,6 +6,9 @@
  * Main service for search indexing operations.
  * Acts as a facade coordinating FileHandler, ObjectHandler, and SchemaHandler.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

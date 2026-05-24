@@ -6,6 +6,9 @@
  * Logs all changes to authorization configuration on registers and schemas.
  * Provides structured audit entries for compliance and debugging.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>

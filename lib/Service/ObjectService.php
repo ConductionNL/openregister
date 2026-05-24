@@ -8,6 +8,9 @@
  * This service acts as a facade for the various object handlers,
  * coordinating operations between them and maintaining state.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *

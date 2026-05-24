@@ -6,6 +6,9 @@
  * This file contains the service class for handling configuration imports and exports
  * in the OpenRegister application, supporting various formats including OpenAPI.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

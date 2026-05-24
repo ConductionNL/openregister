@@ -8,6 +8,9 @@
  * across instance migrations: `urn:nl-or:{instance}:{register}:{schema}:{uuid}`.
  * Resolution is bidirectional — URN → API URL and URL → URN.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

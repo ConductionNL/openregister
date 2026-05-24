@@ -10,6 +10,9 @@
  * Cache per request — multiple transitions on the same object during one
  * request reuse the resolved instance.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Lifecycle
  *
