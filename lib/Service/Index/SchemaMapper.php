@@ -60,6 +60,8 @@ class SchemaMapper
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
      * @psalm-return array<never, never>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     public function mapToBackendSchema(array $_schema): array
     {
@@ -77,6 +79,8 @@ class SchemaMapper
      * @param string $fieldType OpenRegister field type
      *
      * @return string Search backend field type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     public function mapFieldType(string $fieldType): string
     {

@@ -528,6 +528,8 @@ class SchemaHandler
      *     stored: true},
      *     schema: array{name: 'schema', type: 'string', indexed: true,
      *     stored: true}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     private function getCoreMetadataFields(): array
     {
@@ -561,6 +563,8 @@ class SchemaHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field application requires handling multiple result scenarios
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     private function applySolrFields(array $solrFields, bool $force): array
     {

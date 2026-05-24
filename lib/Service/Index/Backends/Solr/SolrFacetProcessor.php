@@ -176,6 +176,8 @@ class SolrFacetProcessor
      * @return (array[]|mixed)[][] Processed facets
      *
      * @psalm-return array<array{field: mixed, items: non-empty-list<array{count: mixed, value: mixed}>}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function processFacetResponse(array $solrResponse): array
     {

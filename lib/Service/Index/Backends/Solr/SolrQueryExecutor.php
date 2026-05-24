@@ -62,6 +62,8 @@ class SolrQueryExecutor
      * @param LoggerInterface       $logger            Logger
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function __construct(
         SolrHttpClient $httpClient,
@@ -79,6 +81,8 @@ class SolrQueryExecutor
      * @param array $params Query parameters
      *
      * @return array Search results
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function search(array $params): array
     {
@@ -190,6 +194,8 @@ class SolrQueryExecutor
      * @psalm-return array{q: '*:*'|mixed, start: int, rows: int, sort?: string, fl?: mixed|string}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Query building requires handling multiple parameter types
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     private function buildSolrQuery(array $query): array
     {
@@ -221,6 +227,8 @@ class SolrQueryExecutor
      * @param array|string $order Sort specification
      *
      * @return string Solr sort string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     private function translateSortField(array|string $order): string
     {
@@ -248,6 +256,8 @@ class SolrQueryExecutor
      * @param array $query      Original query
      *
      * @return array Paginated format with results and pagination info.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     private function convertToPaginatedFormat(array $solrResult, array $query): array
     {
@@ -283,6 +293,8 @@ class SolrQueryExecutor
      * @param string $fields Fields to return
      *
      * @return array Inspection results
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function inspectIndex(
         string $query='*:*',

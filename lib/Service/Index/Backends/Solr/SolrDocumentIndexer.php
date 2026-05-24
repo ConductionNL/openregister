@@ -244,6 +244,8 @@ class SolrDocumentIndexer
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function indexDocuments(array $documents, bool $commit=false): bool
     {

@@ -77,6 +77,8 @@ class SolrCollectionManager
      * @param string $collectionName Collection name
      *
      * @return bool True if exists
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function collectionExists(string $collectionName): bool
     {
