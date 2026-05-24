@@ -30,6 +30,8 @@ class FileVersionRestoredEvent extends Event
      * @param array  $data       Additional event data.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-content-versioning/tasks.md#task-1
      */
     public function __construct(
         private readonly string $objectUuid,
