@@ -325,6 +325,15 @@ class Application extends App implements IBootstrap
         // advertise the integration registry through the OCS
         // capabilities endpoint.
         $context->registerCapability(\OCA\OpenRegister\Capabilities\IntegrationsCapability::class);
+
+        // ADR-019 Phase E (Option B): single umbrella widget hosted on
+        // the Nextcloud user-dashboard. Iterates the integration
+        // registry client-side and mounts each leaf's `user-dashboard`
+        // widget — locked in over the 24-tile alternative because per-
+        // integration NC widgets would clutter the global dashboard.
+        $context->registerDashboardWidget(
+            \OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::class
+        );
     }//end register()
 
     /**
