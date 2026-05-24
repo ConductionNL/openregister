@@ -48,6 +48,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		async deleteApplication() {
 			try {
 				await applicationStore.deleteApplication(applicationStore.applicationItem)

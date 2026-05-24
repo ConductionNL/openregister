@@ -120,6 +120,9 @@ export default {
 		this.initializeSelection()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 */
 		initializeSelection() {
 			// Get selected objects from the store or navigation context
 			this.selectedObjects = objectStore.selectedObjects || []

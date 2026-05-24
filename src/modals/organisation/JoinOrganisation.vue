@@ -175,6 +175,7 @@ export default {
 		 * Get the current user information from Nextcloud
 		 *
 		 * @return {object|null} Current user object
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
 		 */
 		getCurrentUser() {
 			if (window.OC && window.OC.getCurrentUser) {

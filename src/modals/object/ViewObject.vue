@@ -1202,6 +1202,8 @@ export default {
 		/**
 		 * Returns { type, objectId } needed for all file store operations.
 		 * Handles both string IDs and embedded register/schema objects.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
 		 */
 		_getFileParams() {
 			const rawRegister = objectStore.objectItem['@self']?.register
