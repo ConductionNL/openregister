@@ -43,7 +43,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20260524120000 extends SimpleMigrationStep
+class Version1Date20260524130000 extends SimpleMigrationStep
 {
     /**
      * Change the database schema.
