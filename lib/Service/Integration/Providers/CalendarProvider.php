@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -70,6 +71,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      * @param CalendarLinkService  $calendarLinkService  Tier-2 link-table service (UNION read path).
      * @param IAppManager          $appManager           NC app manager.
      * @param IL10N                $l10n                 Localisation.
+     * @param LoggerInterface      $logger               PSR-3 logger for surfacing CalDAV failures.
      *
      * @return void
      */
@@ -78,6 +80,7 @@ class CalendarProvider extends AbstractIntegrationProvider
         private CalendarLinkService $calendarLinkService,
         private IAppManager $appManager,
         private IL10N $l10n,
+        private LoggerInterface $logger,
     ) {
     }//end __construct()
 
@@ -153,7 +156,23 @@ class CalendarProvider extends AbstractIntegrationProvider
             return $this->calendarLinkService->getLinkedEvents(objectUuid: $objectId);
         } catch (Throwable $e) {
             // CalDAV failures (no user, no VEVENT calendar) degrade to
-            // an empty list rather than breaking the tab — AD-23.
+            // an empty list rather than breaking the tab — AD-23 covers
+            // the user-facing contract (empty list, no thrown exception
+            // for link-table providers) but does NOT mandate silent
+            // failure: surface the cause so an empty Meetings tab can
+            // be diagnosed from nextcloud.log instead of guessing.
+            $this->logger->warning(
+                'CalendarProvider::list() failed; degrading to empty list',
+                [
+                    'app'       => 'openregister',
+                    'provider'  => self::class,
+                    'method'    => 'list',
+                    'objectId'  => $objectId,
+                    'register'  => $register,
+                    'schema'    => $schema,
+                    'exception' => $e,
+                ]
+            );
             return [];
         }
     }//end list()

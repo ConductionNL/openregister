@@ -68,6 +68,7 @@ use OCP\IL10N;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Contract + delegation tests for all 16 leaf integration providers.
@@ -105,6 +106,17 @@ class LeafProvidersMetadataTest extends TestCase
         );
         return $mock;
     }//end buildAppManager()
+
+    /**
+     * Build a PSR-3 logger mock — providers log failure paths through
+     * this; in unit tests we only care that the type contract is met.
+     *
+     * @return LoggerInterface
+     */
+    private function buildLogger(): LoggerInterface
+    {
+        return $this->createMock(LoggerInterface::class);
+    }//end buildLogger()
 
     /**
      * Build a greenfield provider instance. The provider's constructor
@@ -223,6 +235,7 @@ class LeafProvidersMetadataTest extends TestCase
             calendarLinkService: $this->createMock(CalendarLinkService::class),
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
+            logger: $this->buildLogger(),
         );
 
         $this->assertSame('calendar', $provider->getId());
@@ -249,6 +262,7 @@ class LeafProvidersMetadataTest extends TestCase
             calendarLinkService: $link,
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
+            logger: $this->buildLogger(),
         );
 
         $this->assertSame([['id' => 'cal1/event.ics', 'source' => 'both']], $provider->list('reg', 'sch', 'obj-uuid'));
@@ -259,11 +273,26 @@ class LeafProvidersMetadataTest extends TestCase
         $link = $this->createMock(CalendarLinkService::class);
         $link->method('getLinkedEvents')->willThrowException(new \RuntimeException('no calendar'));
 
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('warning')
+            ->with(
+                $this->stringContains('CalendarProvider::list()'),
+                $this->callback(static function (array $ctx): bool {
+                    return ($ctx['provider'] ?? null) === CalendarProvider::class
+                        && ($ctx['method'] ?? null) === 'list'
+                        && ($ctx['objectId'] ?? null) === 'obj-uuid'
+                        && isset($ctx['exception'])
+                        && $ctx['exception'] instanceof \Throwable;
+                })
+            );
+
         $provider = new CalendarProvider(
             calendarEventService: $this->createMock(CalendarEventService::class),
             calendarLinkService: $link,
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
+            logger: $logger,
         );
 
         $this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
@@ -281,6 +310,7 @@ class LeafProvidersMetadataTest extends TestCase
             calendarLinkService: $linkSvc,
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
+            logger: $this->buildLogger(),
         );
 
         // Legacy composite shape — strips X-OR-* via CalendarEventService.
@@ -296,6 +326,7 @@ class LeafProvidersMetadataTest extends TestCase
             calendarLinkService: $this->createMock(CalendarLinkService::class),
             appManager: $this->buildAppManager([]),
             l10n: $this->buildL10n(),
+            logger: $this->buildLogger(),
         );
 
         $health = $provider->health();
