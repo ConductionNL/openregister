@@ -5,6 +5,9 @@
  *
  * Handles mapping between OpenRegister schemas and search backend schemas.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <info@conduction.nl>

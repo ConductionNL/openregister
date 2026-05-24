@@ -9,6 +9,9 @@
  * computed properties like facetable fields, validation rules, and configuration.
  * It automatically invalidates cache when schemas are updated.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Schemas
  *

@@ -18,6 +18,9 @@
  * to enqueue a notification call `NotificationDigest::enqueue()`
  * instead of dispatching immediately; this job is the consumer side.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *

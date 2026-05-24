@@ -6,6 +6,9 @@
  * Core business logic for archiving and destruction workflows conforming
  * to Dutch archival standards (MDTO, NEN 2082, Archiefwet 1995).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -18,6 +21,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-6
  */
 
 declare(strict_types=1);
@@ -334,6 +338,8 @@ class ArchivalService
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Reserved for future audit-trail correlation.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-6
      */
     private function destroyObject(string $objectUuid, string $destructionListId): void
     {

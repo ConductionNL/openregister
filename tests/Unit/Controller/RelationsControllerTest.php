@@ -210,4 +210,71 @@ class RelationsControllerTest extends TestCase
 
         $this->assertArrayNotHasKey('_errors', $data);
     }
+
+    /**
+     * Regression test for the naive `rtrim($type, 's')` singularisation in
+     * buildTimeline(). The previous implementation worked by accident for the
+     * current key set but silently mangled any future key whose singular form
+     * ends in 's' (e.g. `news`, `address`). The new explicit map guarantees
+     * the documented mapping notes→note, tasks→task, emails→email,
+     * events→event, contacts→contact, deck→deck.
+     *
+     * @return void
+     */
+    public function testTimelineViewSetsSingularTypeForEachItem(): void
+    {
+        $this->setupObject();
+        $this->request->method('getParams')->willReturn(['view' => 'timeline']);
+
+        $this->noteService->method('getNotesForObject')->willReturn([
+            ['id' => 1, 'message' => 'Note A', 'createdAt' => '2026-05-24T10:00:00Z'],
+        ]);
+        $this->taskService->method('getTasksForObject')->willReturn([
+            ['id' => 2, 'title' => 'Task A', 'createdAt' => '2026-05-24T11:00:00Z'],
+        ]);
+        $this->emailService->method('isMailAvailable')->willReturn(true);
+        $this->emailService->method('getEmailsForObject')->willReturn([
+            'results' => [
+                ['id' => 3, 'subject' => 'Email A', 'date' => '2026-05-24T12:00:00Z'],
+            ],
+            'total' => 1,
+        ]);
+        $this->calendarEventService->method('getEventsForObject')->willReturn([
+            ['id' => 4, 'summary' => 'Event A', 'dtstart' => '2026-05-24T13:00:00Z'],
+        ]);
+        $this->contactService->method('getContactsForObject')->willReturn([
+            'results' => [
+                ['id' => 5, 'displayName' => 'Contact A', 'linkedAt' => '2026-05-24T14:00:00Z'],
+            ],
+            'total' => 1,
+        ]);
+        $this->deckCardService->method('isDeckAvailable')->willReturn(true);
+        $this->deckCardService->method('getCardsForObject')->willReturn([
+            'results' => [
+                ['id' => 6, 'title' => 'Card A', 'createdAt' => '2026-05-24T15:00:00Z'],
+            ],
+            'total' => 1,
+        ]);
+
+        $response = $this->controller->index('1', '2', 'abc-123');
+        $timeline = $response->getData();
+
+        $this->assertIsArray($timeline);
+        $this->assertCount(6, $timeline);
+
+        // Index timeline items by their original id so order-independent.
+        $typeById = [];
+        foreach ($timeline as $entry) {
+            $typeById[$entry['id']] = $entry['type'];
+        }
+
+        $this->assertSame('note', $typeById[1]);
+        $this->assertSame('task', $typeById[2]);
+        $this->assertSame('email', $typeById[3]);
+        $this->assertSame('event', $typeById[4]);
+        $this->assertSame('contact', $typeById[5]);
+        // Deck stays singular - the old rtrim() left it as 'deck', and the new
+        // explicit map continues to do so. This pins that contract.
+        $this->assertSame('deck', $typeById[6]);
+    }
 }

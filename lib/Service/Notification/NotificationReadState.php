@@ -19,6 +19,9 @@
  * (`oc_openregister_notification_readstate` table with a unique
  * `(user_id, notification_id)` index) follows exactly these semantics.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *

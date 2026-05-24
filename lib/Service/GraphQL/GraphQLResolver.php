@@ -6,6 +6,9 @@
  * Resolves GraphQL queries, mutations, and fields by delegating
  * to OpenRegister services with RBAC enforcement and DataLoader batching.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  * @author   Conduction B.V. <info@conduction.nl>

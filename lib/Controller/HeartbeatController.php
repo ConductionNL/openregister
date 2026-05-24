@@ -6,6 +6,9 @@
  * This file contains the controller class for handling heartbeat requests in the OpenRegister application.
  * Used to keep connections alive during long-running operations to prevent gateway timeouts.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

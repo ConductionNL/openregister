@@ -7,6 +7,9 @@
  * Supports save-time and read-time evaluation of Twig expressions
  * defined in schema property `computed` attributes.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *

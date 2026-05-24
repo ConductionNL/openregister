@@ -6,6 +6,9 @@
  * Request-scoped service that stores the resolved language from the Accept-Language header.
  * Used by RenderObject and SaveObject to determine which translation variant to serve or store.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

@@ -5,11 +5,16 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
  */
 
 declare(strict_types=1);
@@ -48,6 +53,8 @@ class FileVersioningHandler
      * @param IAppManager     $appManager  App manager to check if files_versions is enabled.
      * @param IUserSession    $userSession User session for current user context.
      * @param LoggerInterface $logger      Logger for logging operations.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,

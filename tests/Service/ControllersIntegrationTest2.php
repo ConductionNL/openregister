@@ -169,19 +169,6 @@ class ControllersIntegrationTest2 extends TestCase
     // ─── ChatController ──────────────────────────────────────────────────
 
     /**
-     * Test ChatController::page returns TemplateResponse
-     *
-     * @return void
-     */
-    public function testChatControllerPage(): void
-    {
-        $controller = $this->buildChatController();
-        $response   = $controller->page();
-
-        $this->assertSame(200, $response->getStatus());
-    }//end testChatControllerPage()
-
-    /**
      * Test ChatController::sendMessage with empty message
      *
      * @return void

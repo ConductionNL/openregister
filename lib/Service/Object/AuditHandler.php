@@ -6,6 +6,9 @@
  * Handles audit trail and logging operations for objects.
  * Tracks all changes and access to objects for compliance and debugging.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *

@@ -5,6 +5,9 @@
  *
  * Handler for applying activity subject text and rich parameters to events.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Activity
  * @package  OCA\OpenRegister\Activity
  *

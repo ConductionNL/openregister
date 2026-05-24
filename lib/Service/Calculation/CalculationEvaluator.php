@@ -7,6 +7,9 @@
  * DB access, no HTTP. Inputs: object payload + expression. Output:
  * typed value or EvaluationException.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Calculation
  *

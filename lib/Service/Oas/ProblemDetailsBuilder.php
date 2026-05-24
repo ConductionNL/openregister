@@ -19,6 +19,9 @@
  * HTTP error response carries the same machine-readable shape and the
  * `Content-Type: application/problem+json` header.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Oas
  *

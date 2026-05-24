@@ -6,6 +6,9 @@
  * Provides a GraphQL endpoint at /api/graphql and an interactive
  * GraphiQL explorer at /api/graphql/explorer.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

@@ -5,8 +5,10 @@
  * object via a `[or:{objectUuid}]` marker in the entity's `subject`
  * field.
  *
- * Storage strategy is `link-table` — the marker lives in the upstream
- * app's own table (`activity`), not in OR.
+ * Storage strategy is `query-time` — the marker lives in the upstream
+ * app's own table (`activity`), not in OR. Every `list()` call runs a
+ * live LIKE query against the upstream `activity` table; OpenRegister
+ * persists nothing about the link itself.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers

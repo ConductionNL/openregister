@@ -12,6 +12,9 @@
  * delegate to this class. Direct use of `new DateTime($value)` on user data
  * is forbidden — see OpenSpec change `fix-empty-string-date-conversion`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>

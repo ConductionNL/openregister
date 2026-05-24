@@ -7,6 +7,9 @@
  * Provides endpoints for retrieving and managing tags used for categorizing
  * objects and files.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

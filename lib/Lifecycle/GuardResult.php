@@ -6,6 +6,9 @@
  * Value object returned by `LifecycleGuardInterface::check`. Two factory
  * constructors (`allow` and `deny`) plus read-only inspectors.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Lifecycle
  * @package  OCA\OpenRegister\Lifecycle
  *

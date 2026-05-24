@@ -18,6 +18,9 @@
  * ContactsController routes; the registry's generic create() would lose
  * that distinction.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *

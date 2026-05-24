@@ -12,6 +12,9 @@
  * - TMLO field value validation
  * - MDTO-compliant XML export generation
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -22,6 +25,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-32
  */
 
 namespace OCA\OpenRegister\Service;
@@ -220,6 +225,8 @@ class TmloService
      * @param string $duration ISO-8601 duration (e.g., P7Y, P5Y6M)
      *
      * @return string|null ISO-8601 date string or null if invalid duration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-32
      */
     public function calculateArchiefactiedatum(string $duration): ?string
     {
@@ -473,7 +480,7 @@ class TmloService
             $root->appendChild(
                 $dom->createElementNS(
                     self::MDTO_NAMESPACE,
-                    'mdto:waarpinaering',
+                    'mdto:waardering',
                     $this->mapArchiefnominatie(nominatie: $tmlo['archiefnominatie'])
                 )
             );

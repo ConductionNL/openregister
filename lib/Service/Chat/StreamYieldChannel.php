@@ -30,6 +30,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 declare(strict_types=1);
@@ -164,6 +165,8 @@ class StreamYieldChannel
      *                                      `arguments`).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function emitToolCall(array $payload): void
     {
@@ -180,6 +183,8 @@ class StreamYieldChannel
      *                                      `result`, `isError`).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function emitToolResult(array $payload): void
     {

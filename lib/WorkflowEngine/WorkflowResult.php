@@ -3,6 +3,9 @@
 /**
  * OpenRegister WorkflowResult Value Object
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category WorkflowEngine
  * @package  OCA\OpenRegister\WorkflowEngine
  *

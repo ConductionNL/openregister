@@ -5,6 +5,9 @@
  *
  * Queued background job that executes e-Depot transfers for approved transfer lists.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
