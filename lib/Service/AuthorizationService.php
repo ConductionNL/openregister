@@ -10,6 +10,10 @@
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-auth-system/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-auth-system/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-auth-system/tasks.md#task-3
  */
 
 namespace OCA\OpenRegister\Service;

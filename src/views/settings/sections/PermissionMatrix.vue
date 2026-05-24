@@ -195,6 +195,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-auth-system/tasks.md#task-5
+		 */
 		async loadData() {
 			this.loading = true
 			try {

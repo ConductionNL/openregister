@@ -36,6 +36,8 @@
  * @link      https://www.OpenRegister.app
  *
  * @since 2.0.0 Initial implementation for property-level RBAC
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-auth-system/tasks.md#task-4
  */
 
 declare(strict_types=1);

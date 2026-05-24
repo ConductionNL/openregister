@@ -241,6 +241,7 @@ export default {
 	 * @param {string} groupId - The group ID
 	 * @param {string} action - The action (create, read, update, delete)
 	 * @return {boolean} True if group has permission
+	 * @spec openspec/changes/retrofit-2026-05-24-auth-system/tasks.md#task-5
 	 */
 		hasPermission(groupId, action) {
 		// For applications, authorization is flat (just {create: [], read: [], ...})
