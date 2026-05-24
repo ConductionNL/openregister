@@ -6,6 +6,9 @@
  * Subscribes to ObjectCreated/Updated/Deleted/Transitioned events and
  * records each one as a CloudEvent in the realtime event log.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *

@@ -26,6 +26,9 @@
  *  - IAppConfig key `openregister.push_available` is set to '1' on the first
  *    successful IQueue::push() call (consumed by OpenRegisterAdmin::getPushStatus()).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *

@@ -13,6 +13,9 @@
  * fires once on breach, not on every subsequent write while still over
  * the threshold.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
