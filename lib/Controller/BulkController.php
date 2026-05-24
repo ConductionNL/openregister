@@ -6,6 +6,9 @@
  * Controller for handling bulk operations on objects in the OpenRegister app.
  * Provides endpoints for bulk delete and save operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

@@ -15,6 +15,9 @@
  * already accommodates this degradation, so no client change is needed
  * when token streaming lands later.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

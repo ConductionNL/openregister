@@ -8,6 +8,9 @@
  * over the existing CalendarEventService / X-OPENREGISTER-* properties)
  * plus picker source endpoints for the frontend CnCalendarEventPicker.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>

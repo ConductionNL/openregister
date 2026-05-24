@@ -7,6 +7,9 @@
  * x-openregister-lifecycle annotation no longer need to write their
  * own action endpoint per schema.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

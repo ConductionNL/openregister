@@ -6,6 +6,9 @@
  * Controller for managing archival destruction workflows including
  * destruction lists, legal holds, and destruction certificates.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
