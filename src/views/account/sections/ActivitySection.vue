@@ -59,6 +59,11 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * Reset paging state and load the first page of the current user's activity feed.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-5
+		 */
 		async loadActivity() {
 			this.loading = true
 			this.offset = 0
