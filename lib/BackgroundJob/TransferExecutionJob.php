@@ -117,6 +117,8 @@ class TransferExecutionJob extends QueuedJob
      * Resolve the configured transport implementation.
      *
      * @return TransportInterface The transport to use.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-1
      */
     private function resolveTransport(): TransportInterface
     {

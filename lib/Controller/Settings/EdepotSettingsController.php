@@ -186,6 +186,8 @@ class EdepotSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The connection test result.
+     *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
      */
     public function testEdepotConnection(): JSONResponse
     {
@@ -218,6 +220,8 @@ class EdepotSettingsController extends Controller
      * @param string $type The transport type.
      *
      * @return TransportInterface The transport.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-1
      */
     private function resolveTransport(string $type): TransportInterface
     {

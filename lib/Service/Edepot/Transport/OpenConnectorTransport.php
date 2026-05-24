@@ -40,6 +40,8 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @param Client          $httpClient The HTTP client.
      * @param LoggerInterface $logger     Logger.
+     *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function __construct(
         private readonly Client $httpClient,
