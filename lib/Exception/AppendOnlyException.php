@@ -6,6 +6,9 @@
  * Exception thrown when a mutating operation (UPDATE or DELETE) is attempted
  * on an object whose schema is declared append-only.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *

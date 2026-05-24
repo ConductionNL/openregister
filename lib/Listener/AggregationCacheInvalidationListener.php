@@ -8,6 +8,9 @@
  * AggregationCache so the next aggregation read recomputes against
  * fresh data. The 60s TTL bounds staleness even when an evict is missed.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
