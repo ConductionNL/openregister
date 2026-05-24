@@ -1,23 +1,11 @@
----
-status: proposed
----
-
-# Integration: Talk
+# integration-talk Specification
 
 ## Purpose
-
-Surface NC Talk conversations and chat messages linked to OR objects through the registry. A single `talk` integration routes both Chat and Conversation controllers internally.
-
-**Standards**: NC Talk (Spreed) API, ADR-019
-**Cross-references**: [generic-integrations](../../../pluggable-integration-registry/specs/generic-integrations/spec.md)
-
----
-
+TBD - created by archiving change integration-talk. Update Purpose after archive.
 ## Requirements
-
 ### Requirement: Talk Provider Registration
 
-`TalkProvider` registered with id='talk', group='comms', requiredApp='spreed', storage='link-table'. A SINGLE provider routes both chat and conversation concerns.
+`TalkProvider` SHALL be registered with id='talk', group='comms', requiredApp='spreed', storage='link-table'. A SINGLE provider MUST route both chat and conversation concerns; no separate `talk-chat` or `talk-rooms` providers are permitted.
 
 #### Scenario: Present when Spreed installed
 
@@ -67,8 +55,22 @@ Widget on `user-dashboard` / `app-dashboard` SHALL display unread-message count 
 
 `referenceType: 'talk'` SHALL render `CnTalkCard` at `surface='single-entity'` showing conversation name + unread indicator.
 
+#### Scenario: Schema property declares referenceType talk
+
+- **GIVEN** a schema property `chat` with `referenceType: 'talk'` and a value pointing to a Talk room token
+- **WHEN** the property is rendered on a detail page
+- **THEN** `CnTalkCard` MUST mount at `surface='single-entity'` with `value` set to the room token
+- **AND** the chip MUST show the conversation name plus an unread badge when the room has unread messages
+
 ---
 
 ### Requirement: Permission Inheritance
 
 `TalkProvider::requiresPermission()` SHALL return `null`. Talk's own room ACLs govern visibility transitively.
+
+#### Scenario: Provider declares no extra OR permission requirement
+
+- **WHEN** `IntegrationRegistry` introspects the `talk` provider for required OpenRegister permissions
+- **THEN** `requiresPermission()` MUST return `null`
+- **AND** Talk's own conversation-level ACL MUST be the only access check applied at list time
+

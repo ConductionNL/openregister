@@ -17,7 +17,7 @@ Surface NC Talk conversations and chat messages linked to OR objects through the
 
 ### Requirement: Talk Provider Registration
 
-`TalkProvider` registered with id='talk', group='comms', requiredApp='spreed', storage='link-table'. A SINGLE provider routes both chat and conversation concerns.
+`TalkProvider` SHALL be registered with id='talk', group='comms', requiredApp='spreed', storage='link-table'. A SINGLE provider MUST route both chat and conversation concerns; no separate `talk-chat` or `talk-rooms` providers are permitted.
 
 #### Scenario: Present when Spreed installed
 
@@ -67,21 +67,21 @@ Widget on `user-dashboard` / `app-dashboard` SHALL display unread-message count 
 
 `referenceType: 'talk'` SHALL render `CnTalkCard` at `surface='single-entity'` showing conversation name + unread indicator.
 
+#### Scenario: Schema property declares referenceType talk
+
+- **GIVEN** a schema property `chat` with `referenceType: 'talk'` and a value pointing to a Talk room token
+- **WHEN** the property is rendered on a detail page
+- **THEN** `CnTalkCard` MUST mount at `surface='single-entity'` with `value` set to the room token
+- **AND** the chip MUST show the conversation name plus an unread badge when the room has unread messages
+
 ---
 
 ### Requirement: Permission Inheritance
 
 `TalkProvider::requiresPermission()` SHALL return `null`. Talk's own room ACLs govern visibility transitively.
 
----
+#### Scenario: Provider declares no extra OR permission requirement
 
-### Requirement: Graceful Degradation
-
-The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying conversation in NC Talk is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
-
-#### Scenario: Conversation deleted in Talk
-
-- **GIVEN** a linked Talk conversation that the user or an admin deleted in the Talk app
-- **WHEN** `CnTalkTab` renders
-- **THEN** the conversation MUST be filtered out of the listing
-- **AND** the empty state MUST appear if it was the last linked conversation
+- **WHEN** `IntegrationRegistry` introspects the `talk` provider for required OpenRegister permissions
+- **THEN** `requiresPermission()` MUST return `null`
+- **AND** Talk's own conversation-level ACL MUST be the only access check applied at list time
