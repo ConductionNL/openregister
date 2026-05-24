@@ -8,6 +8,9 @@
  * expression changes so existing objects reflect the new shape without
  * waiting for the next user-driven save.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Command
  * @package  OCA\OpenRegister\Command
  *

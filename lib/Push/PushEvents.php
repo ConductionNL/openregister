@@ -11,6 +11,9 @@
  *   - OR_OBJECT     → `or-object`     — base string; append `-{uuid}` to target a single object.
  *   - OR_COLLECTION → `or-collection` — base string; append `-{register-slug}-{schema-slug}` to target a collection.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Push
  * @package  OCA\OpenRegister\Push
  *

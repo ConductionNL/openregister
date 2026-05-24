@@ -6,6 +6,9 @@
  * Interface for LLphant function tools that agents can use to interact
  * with OpenRegister data.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  *

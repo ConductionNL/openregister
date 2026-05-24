@@ -6,6 +6,9 @@
  * Twig runtime extension providing mapping functions and filters
  * for use within Twig mapping templates.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *

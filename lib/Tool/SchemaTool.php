@@ -6,6 +6,9 @@
  * LLphant function tool for managing schemas through natural language.
  * Provides CRUD operations on schemas with RBAC and multi-tenancy support.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  *
