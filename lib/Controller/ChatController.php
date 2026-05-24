@@ -38,7 +38,6 @@ use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -403,30 +402,6 @@ class ChatController extends Controller
             throw new Exception('You do not have access to this conversation', 403);
         }
     }//end verifyConversationAccess()
-
-    /**
-     * Returns the template of the main chat page
-     *
-     * Renders the Single Page Application template for the chat interface.
-     * All routing is handled client-side by the SPA.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse Template response for chat SPA
-     *
-     * @psalm-return TemplateResponse<200, array<never, never>>
-     */
-    public function page(): TemplateResponse
-    {
-        // Return SPA template response (routing handled client-side).
-        return new TemplateResponse(
-            appName: 'openregister',
-            templateName: 'index',
-            params: []
-        );
-    }//end page()
 
     /**
      * Send a chat message in a conversation and get AI response
