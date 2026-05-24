@@ -17,7 +17,7 @@ Surface NC Deck cards linked to OR objects through the registry. Supports create
 
 ### Requirement: Deck Provider Registration
 
-`DeckProvider` registered with id='deck', group='workflow', requiredApp='deck', storage='link-table'.
+The system SHALL register `DeckProvider` with id='deck', group='workflow', requiredApp='deck', storage='link-table'.
 
 #### Scenario: Present when Deck installed
 
@@ -74,21 +74,20 @@ Tab SHALL support both creating new cards and linking existing cards. Creating S
 
 `referenceType: 'deck'` SHALL render `CnDeckCard` at `surface='single-entity'`.
 
+#### Scenario: Reference field renders single-entity widget
+
+- **GIVEN** an object property declares `referenceType: 'deck'` and a card id value
+- **WHEN** the detail page renders the field
+- **THEN** `CnDeckCard` MUST mount with `surface='single-entity'` and the card id forwarded via `value`
+
 ---
 
 ### Requirement: Permission Inheritance
 
 `DeckProvider::requiresPermission()` SHALL return `null`. Deck ACLs govern per-board access transitively.
 
----
+#### Scenario: Provider exposes no extra OR permission
 
-### Requirement: Graceful Degradation
-
-The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying Deck card in NC Deck is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
-
-#### Scenario: Linked card archived in Deck
-
-- **GIVEN** a linked card that was archived in Deck (not deleted)
-- **WHEN** `CnDeckCard` renders
-- **THEN** the card MUST display with a visible "Archived" badge
-- **AND** link operations (unlink, reassign board) MUST remain available
+- **WHEN** `DeckProvider::requiresPermission()` is invoked
+- **THEN** the return value MUST be `null`
+- **AND** access decisions MUST fall through to Deck's own ACLs per board
