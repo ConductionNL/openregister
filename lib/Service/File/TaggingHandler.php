@@ -238,6 +238,8 @@ class TaggingHandler
      * @param ObjectEntity|string $objectEntity Object entity or UUID.
      *
      * @return string The object tag (e.g., 'object:uuid').
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
@@ -258,6 +260,8 @@ class TaggingHandler
      *
      * @phpstan-return array<int, string>
      * @psalm-return   list<string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function getObjectTags(string $objectUuid): array
     {
@@ -295,6 +299,8 @@ class TaggingHandler
      * @param string $tagName    The tag name to add.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function addObjectTag(string $objectUuid, string $tagName): void
     {
@@ -315,6 +321,8 @@ class TaggingHandler
      * @return void
      *
      * @throws Exception If the tag is not found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function removeObjectTag(string $objectUuid, string $tagName): void
     {
@@ -341,6 +349,8 @@ class TaggingHandler
      * @phpstan-return array<int, string>
      *
      * @psalm-return list<string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function getAllTags(): array
     {
