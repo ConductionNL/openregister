@@ -20,6 +20,9 @@
  * - Schema property columns mapped from JSON schema to SQL types
  * - Automatic indexing for performance optimization
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *

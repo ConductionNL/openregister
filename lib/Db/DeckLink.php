@@ -3,6 +3,9 @@
 /**
  * DeckLink entity for linking Nextcloud Deck cards to OpenRegister objects.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * Tier-2 schema: also carries schema_id, due_date, labels, assignees so the
  * link row alone can hydrate the sidebar tab + picker UX without a per-card
  * roundtrip to Deck's CardService.
