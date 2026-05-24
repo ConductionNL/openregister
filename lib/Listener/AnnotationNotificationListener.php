@@ -43,6 +43,8 @@ class AnnotationNotificationListener implements IEventListener
      * @param AnnotationNotificationDispatcher $dispatcher Dispatcher used to fire notifications.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     public function __construct(
         private readonly AnnotationNotificationDispatcher $dispatcher
@@ -55,6 +57,8 @@ class AnnotationNotificationListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     public function handle(Event $event): void
     {
@@ -110,6 +114,8 @@ class AnnotationNotificationListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null Object instance, or null when none could be derived.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     private function extractObject(Event $event): ?\OCA\OpenRegister\Db\ObjectEntity
     {

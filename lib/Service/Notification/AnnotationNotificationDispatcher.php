@@ -72,6 +72,8 @@ class AnnotationNotificationDispatcher
      * @param NotificationDispatchLogMapper|null                       $dispatchLogMapper   Optional dispatch-log mapper for idempotency-key dedup.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -105,6 +107,8 @@ class AnnotationNotificationDispatcher
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     public function dispatch(ObjectEntity $object, string $trigger, array $context=[]): void
     {
@@ -393,6 +397,8 @@ class AnnotationNotificationDispatcher
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     private function dispatchBroadcastChannel(
         string $channel,
@@ -470,6 +476,8 @@ class AnnotationNotificationDispatcher
      * @param array<string, mixed>|null $rateLimit Per-rule override block.
      *
      * @return bool True when the dispatch may proceed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-3
      */
     private function rateLimitAllows(string $ruleId, string $recipient, ?array $rateLimit): bool
     {
@@ -496,6 +504,7 @@ class AnnotationNotificationDispatcher
      * @return bool True when the dispatch may proceed.
      *
      * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-4
      */
     private function coalesceAllows(string $ruleId, string $recipient, ?array $coalesce): bool
     {
@@ -532,6 +541,8 @@ class AnnotationNotificationDispatcher
      * @return bool True when the dispatch may proceed (claim succeeded
      *              or mapper unavailable); false when a competing
      *              dispatcher already claimed this (slug, key).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-5
      */
     private function claimIdempotencyKey(string $slug, string $key): bool
     {
@@ -590,6 +601,8 @@ class AnnotationNotificationDispatcher
      * @param array<string, mixed> $data     Pre-fetched object data array.
      *
      * @return string The resolved key.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-5
      */
     private function resolveIdempotencyKey(string $template, ObjectEntity $object, array $data): string
     {
@@ -640,6 +653,7 @@ class AnnotationNotificationDispatcher
      * @return void
      *
      * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     private function recordHistory(
         string $ruleId,
@@ -702,6 +716,7 @@ class AnnotationNotificationDispatcher
      * @return void
      *
      * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     private function recordHistoryAcrossChannels(
         string $ruleId,
@@ -938,6 +953,8 @@ class AnnotationNotificationDispatcher
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     private function matches(array $triggerSpec, string $trigger, array $context): bool
     {
@@ -1017,6 +1034,8 @@ class AnnotationNotificationDispatcher
      * @return bool True when the value satisfies every declared operator.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     private function numericConditionMatches(mixed $value, array $operators): bool
     {
@@ -1053,6 +1072,8 @@ class AnnotationNotificationDispatcher
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-2
      */
     private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object=null, array $context=[]): array
     {
@@ -1187,6 +1208,8 @@ class AnnotationNotificationDispatcher
      * @return array<int, string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-2
      */
     private function resolveObjectAclRecipients(ObjectEntity $object, string $permission): array
     {
@@ -1249,6 +1272,8 @@ class AnnotationNotificationDispatcher
      * @param array<string, mixed> $context     Per-event context passed through to the resolver.
      *
      * @return array<int, string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-2
      */
     private function resolveExpressionRecipients(string $resolverTag, ObjectEntity $object, array $context): array
     {
@@ -1288,6 +1313,8 @@ class AnnotationNotificationDispatcher
      * @param string $uid Candidate Nextcloud user identifier.
      *
      * @return bool True when the uid corresponds to a real Nextcloud user.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-2
      */
     private function userExists(string $uid): bool
     {
@@ -1339,6 +1366,8 @@ class AnnotationNotificationDispatcher
      * @return array<int, string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-2
      */
     private function extractUidsFromRelation(mixed $value): array
     {
@@ -1660,6 +1689,8 @@ class AnnotationNotificationDispatcher
      * @param ObjectEntity $object The object whose schema should be looked up.
      *
      * @return Schema|null The resolved schema, or null when missing/unresolvable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
@@ -1681,6 +1712,8 @@ class AnnotationNotificationDispatcher
      * @param Schema $schema The schema whose annotation should be read.
      *
      * @return array<string, mixed>|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-1
      */
     private function getAnnotation(Schema $schema): ?array
     {

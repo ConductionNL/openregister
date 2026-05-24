@@ -86,6 +86,8 @@ class RateLimiter
      * @param IAppConfig      $appConfig    App-config reader for kill switch + defaults.
      * @param LoggerInterface $logger       Logger for dropped-dispatch info events.
      * @param callable|null   $timeProvider Optional time source (defaults to time()).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-3
      */
     public function __construct(
         ICacheFactory $cacheFactory,
@@ -126,6 +128,8 @@ class RateLimiter
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-3
      */
     public function tryConsume(string $ruleId, string $recipient, ?array $perRuleOverride=null): bool
     {
@@ -198,6 +202,8 @@ class RateLimiter
      * Whether the limiter is enabled. Defaults to ON.
      *
      * @return bool True when the limiter should run.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-3
      */
     private function isEnabled(): bool
     {
@@ -221,6 +227,8 @@ class RateLimiter
      * @return array{0:int,1:int} Tuple of (bucketSize, refillSeconds).
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-3
      */
     private function resolveLimits(?array $perRuleOverride): array
     {
@@ -281,6 +289,8 @@ class RateLimiter
      * @param string $recipient Recipient identifier.
      *
      * @return string Cache key.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-3
      */
     private function key(string $ruleId, string $recipient): string
     {
@@ -298,6 +308,8 @@ class RateLimiter
      * @param int    $lastRefill Last refill timestamp.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-3
      */
     private function persist(string $key, float $tokens, int $lastRefill): void
     {

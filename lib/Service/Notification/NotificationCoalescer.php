@@ -89,6 +89,8 @@ class NotificationCoalescer
      * @param IAppConfig      $appConfig    App-config reader for kill switch.
      * @param LoggerInterface $logger       Logger for silenced-dispatch info events.
      * @param callable|null   $timeProvider Optional time source (defaults to time()).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-4
      */
     public function __construct(
         ICacheFactory $cacheFactory,
@@ -130,6 +132,8 @@ class NotificationCoalescer
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-4
      */
     public function shouldDispatch(string $ruleId, string $recipient, ?array $perRuleOverride): bool
     {
@@ -218,6 +222,8 @@ class NotificationCoalescer
      * @param string $recipient Recipient identifier.
      *
      * @return array{count:int,opened:int}|null Null when no state exists.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-4
      */
     public function inspect(string $ruleId, string $recipient): ?array
     {
@@ -255,6 +261,8 @@ class NotificationCoalescer
      * Whether the coalescer is enabled. Defaults to ON.
      *
      * @return bool True when the coalescer should run.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-4
      */
     private function isEnabled(): bool
     {
@@ -274,6 +282,8 @@ class NotificationCoalescer
      * @param array<string, mixed> $perRuleOverride The rule's `coalesce` config block.
      *
      * @return int Window length in seconds (0 = disabled).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-4
      */
     private function resolveWindowSeconds(array $perRuleOverride): int
     {
@@ -296,6 +306,8 @@ class NotificationCoalescer
      * @param array<string, mixed> $perRuleOverride The rule's `coalesce` config block.
      *
      * @return int|null Max events (null = no cap).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-4
      */
     private function resolveMaxEvents(array $perRuleOverride): ?int
     {
@@ -319,6 +331,8 @@ class NotificationCoalescer
      * @param string $recipient Recipient identifier.
      *
      * @return string The cache key.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-4
      */
     private function key(string $ruleId, string $recipient): string
     {
@@ -334,6 +348,8 @@ class NotificationCoalescer
      * @param int    $opened Unix timestamp the window opened.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-notificatie-engine/tasks.md#task-4
      */
     private function persist(string $key, int $count, int $opened): void
     {
