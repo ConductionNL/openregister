@@ -344,6 +344,13 @@ export default {
 		configurationStore.refreshConfigurationList(null, true)
 	},
 	methods: {
+		/**
+		 * Toggle selection state for every configuration in the current list.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-1
+		 * @param {boolean} checked - true selects all, false clears the selection
+		 * @return {void}
+		 */
 		toggleSelectAll(checked) {
 			if (checked) {
 				this.selectedConfigurations = configurationStore.configurationList.map(configuration => configuration.id)

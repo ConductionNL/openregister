@@ -89,6 +89,14 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * Submit a deactivation request for the signed-in user. Soft state change —
+		 * does not end the current session; an admin must approve before any account
+		 * effect.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-4
+		 * @return {Promise<void>}
+		 */
 		async requestDeactivation() {
 			try {
 				await axios.post(
