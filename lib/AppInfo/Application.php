@@ -1147,12 +1147,12 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
             // @spec openspec/changes/integration-cospend/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
-            // @spec openspec/changes/integration-flow/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
             // NB: FormsProvider is NO LONGER greenfield — it has a Tier-2
             // link-table dep (FormLinkMapper) that doesn't fit the (db,
             // appManager, l10n) signature shared by the rest of this list.
             // Registered separately below.
+            // NB: FlowProvider was Tier-1 greenfield until Tier-2; it now
+            // takes a FlowLinkMapper. Registered separately below.
             // @spec openspec/changes/integration-maps/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
             // @spec openspec/changes/integration-photos/tasks.md.
@@ -1276,6 +1276,43 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // FlowProvider — Tier-2: backed by FlowLinkMapper + direct
+        // queries against `oc_flow_operations`. Replaces the Tier-1
+        // `[or:{uuid}]` name-marker convention with a proper
+        // persistence layer.
+        // @spec openspec/changes/integration-flow/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\FlowProvider(
+                    flowLinkMapper: $container->get(\OCA\OpenRegister\Db\FlowLinkMapper::class),
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // FlowLinkService — Tier-2 admin-gated link/unlink/picker
+        // service backing the FlowLinksController. NC Flow operations
+        // are configured by admins only; the service enforces that
+        // gate via IGroupManager.
+        // @spec openspec/changes/integration-flow/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\FlowLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\FlowLinkService(
+                    flowLinkMapper: $container->get(\OCA\OpenRegister\Db\FlowLinkMapper::class),
+                    db: $container->get('OCP\IDBConnection'),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
