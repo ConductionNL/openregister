@@ -17,7 +17,7 @@ Surface NC Contacts linked to OR objects through the registry with first-class r
 
 ### Requirement: Contacts Provider Registration
 
-`ContactsProvider` registered with id='contacts', group='core', requiredApp='contacts', storage='link-table'.
+The system SHALL register `ContactsProvider` with id='contacts', group='core', requiredApp='contacts', storage='link-table'.
 
 #### Scenario: Present when Contacts installed
 
@@ -84,6 +84,13 @@ Clicking a contact SHALL open a flyout listing all OR objects (across all schema
 ### Requirement: Permission Inheritance
 
 `ContactsProvider::requiresPermission()` SHALL return `null`. Access inherits from object RBAC + Contacts address book permissions.
+
+#### Scenario: Provider declares null permission
+
+- **GIVEN** the registered `ContactsProvider`
+- **WHEN** `requiresPermission()` is invoked
+- **THEN** it MUST return `null`
+- **AND** OR MUST defer access control to object RBAC plus the user's CardDAV address-book permissions
 
 ---
 
