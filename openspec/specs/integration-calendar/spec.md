@@ -1,20 +1,8 @@
----
-status: proposed
----
-
-# Integration: Calendar
+# integration-calendar Specification
 
 ## Purpose
-
-Surface Nextcloud Calendar VEVENT entries linked to OpenRegister objects through the standard integration registry contract. Users see meetings on object detail pages, dashboards, and inline next to schema reference properties; they can link, create, and unlink meetings without leaving the OR object context.
-
-**Standards**: RFC 5545 (iCalendar), RFC 9253 (LINK property), Nextcloud CalDAV, ADR-019 (Integration Registry)
-**Cross-references**: [generic-integrations](../../../pluggable-integration-registry/specs/generic-integrations/spec.md), [nextcloud-entity-relations](../../../../specs/nextcloud-entity-relations/spec.md)
-
----
-
+TBD - created by archiving change integration-calendar. Update Purpose after archive.
 ## Requirements
-
 ### Requirement: Calendar Provider Registration
 
 The system SHALL ship a `CalendarProvider` implementing `IntegrationProvider`. The provider SHALL be registered as a DI-tagged service and SHALL appear in `IntegrationRegistry::list()` with id `calendar` whenever the Nextcloud Calendar app is installed and enabled.
@@ -127,3 +115,4 @@ The provider SHALL declare `requiresPermission(): null`. Access to the calendar 
 - **GIVEN** a user with object read access AND a restricted view of NC Calendar (limited to one calendar)
 - **WHEN** the user lists the object's meetings
 - **THEN** only meetings on calendars the user can see MUST be returned (NC Calendar enforces this transitively)
+
