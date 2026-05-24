@@ -19,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-10
  */
 
 namespace OCA\OpenRegister\Service;
@@ -225,6 +227,8 @@ class ToolRegistry
      * Get all registered tools
      *
      * @return array Array of tool IDs and their metadata
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-10
      */
     public function getAllTools(): array
     {

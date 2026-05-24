@@ -26,6 +26,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/aggregations-backend-native/tasks.md "SearchBackendInterface::aggregate"
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
  */
 
 declare(strict_types=1);
@@ -102,6 +103,8 @@ class AggregationQuery
      *   Fail-fast validation chain: each `if` is one independent guard
      *   against bad input. Extracting them would reduce the count but
      *   obscure the per-rule error messages.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      */
     public static function create(
         string $metric,
@@ -196,6 +199,8 @@ class AggregationQuery
      * Get the groupBy field (or null when ungrouped).
      *
      * @return ?string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      */
     public function getGroupByField(): ?string
     {

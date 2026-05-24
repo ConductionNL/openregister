@@ -26,6 +26,7 @@
  *
  * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-1
  * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-22
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -124,6 +125,8 @@ class OasController extends Controller
      * @param string|null $registerId Register slug/identifier or null for all registers.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-22
      */
     private function generateInternal(?string $registerId): JSONResponse
     {

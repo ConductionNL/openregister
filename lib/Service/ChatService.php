@@ -21,6 +21,7 @@
  * @link https://www.OpenRegister.nl
  *
  * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service;
@@ -360,6 +361,8 @@ class ChatService
      * @param string $firstMessage First user message.
      *
      * @return string Generated title
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function generateConversationTitle(string $firstMessage): string
     {
@@ -376,6 +379,8 @@ class ChatService
      * @param int    $agentId   Agent ID.
      *
      * @return string Unique title
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {

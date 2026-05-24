@@ -22,6 +22,8 @@
  * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
  * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -114,6 +116,8 @@ class ActionExecutor
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
      */
     private function executeSingleAction(Action $action, Event $event, array $payload, string $eventType): void
     {
@@ -239,6 +243,8 @@ class ActionExecutor
      * @param Event          $event  The original event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
      */
     private function processWorkflowResult(WorkflowResult $result, Action $action, Event $event): void
     {
@@ -271,6 +277,8 @@ class ActionExecutor
      * @param string $error   The error message
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-3
      */
     private function handleFailure(Action $action, array $payload, string $error): void
     {
@@ -310,6 +318,8 @@ class ActionExecutor
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Log entries require many fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
      */
     private function createLogEntry(
         Action $action,

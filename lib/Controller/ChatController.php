@@ -23,6 +23,7 @@
  * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-3
  * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -229,6 +230,8 @@ class ChatController extends Controller
      *     message: string, selectedViews: array, selectedTools: array,
      *     ragSettings: array{includeObjects: bool|mixed, includeFiles: bool|mixed,
      *     numSourcesFiles: int|mixed, numSourcesObjects: int|mixed}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function extractMessageRequestParams(): array
     {
@@ -289,6 +292,8 @@ class ChatController extends Controller
      * @return Conversation The conversation entity
      *
      * @throws Exception If conversation not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function loadExistingConversation(string $uuid): Conversation
     {
@@ -307,6 +312,8 @@ class ChatController extends Controller
      * @return Conversation The newly created conversation
      *
      * @throws Exception If agent not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function createNewConversation(string $agentUuid): Conversation
     {
@@ -360,6 +367,8 @@ class ChatController extends Controller
      * @return Conversation The resolved or created conversation
      *
      * @throws Exception If both parameters are empty or if entities not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function resolveConversation(string $conversationUuid, string $agentUuid): Conversation
     {
@@ -385,6 +394,8 @@ class ChatController extends Controller
      * @return void
      *
      * @throws Exception If user does not have access (403)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function verifyConversationAccess(Conversation $conversation): void
     {

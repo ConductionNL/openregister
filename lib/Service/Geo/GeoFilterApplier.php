@@ -24,6 +24,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -56,6 +57,8 @@ class GeoFilterApplier
      * @param GeoFilter[] $filters The filters to apply.
      *
      * @return array The matching rows, in original order.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public function applyAll(array $rows, array $filters): array
     {
@@ -81,6 +84,8 @@ class GeoFilterApplier
      * @param GeoFilter[] $filters The filters.
      *
      * @return bool True when the row passes every filter.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public function rowMatchesAll(array $row, array $filters): bool
     {
@@ -126,6 +131,8 @@ class GeoFilterApplier
      * @param mixed $value The candidate.
      *
      * @return ?array The geometry when shape matches, null otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     private function coerceGeometry(mixed $value): ?array
     {

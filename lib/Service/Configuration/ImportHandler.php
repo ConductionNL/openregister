@@ -25,6 +25,8 @@
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-86
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
 
 namespace OCA\OpenRegister\Service\Configuration;
@@ -3085,6 +3087,8 @@ class ImportHandler
      * @param array         $result        The result array to append object IDs to.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
      */
     private function importSeedData(
         array $configData,
@@ -3552,6 +3556,8 @@ class ImportHandler
      * @param array<string, mixed> $result         Result accumulator updated in place with related-item counts.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
      */
     private function processRelatedItems(
         ObjectEntity $object,

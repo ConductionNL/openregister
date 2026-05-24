@@ -34,6 +34,8 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
  */
 
 declare(strict_types=1);
@@ -104,6 +106,8 @@ class GeoSpatialEvaluator
      * @param float $lat2 Latitude of point B.
      *
      * @return float Distance in meters.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
      */
     public function haversineMeters(float $lon1, float $lat1, float $lon2, float $lat2): float
     {
@@ -125,6 +129,8 @@ class GeoSpatialEvaluator
      * @param array $bbox     west/south/east/north.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
      */
     private function matchesBbox(array $geometry, array $bbox): bool
     {
@@ -149,6 +155,8 @@ class GeoSpatialEvaluator
      * @param array $payload  lon/lat/radius.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     private function matchesNear(array $geometry, array $payload): bool
     {
@@ -174,6 +182,8 @@ class GeoSpatialEvaluator
      * @param array $predicateGeometry The polygon predicate.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
      */
     private function matchesWithin(array $rowGeometry, array $predicateGeometry): bool
     {
@@ -193,6 +203,8 @@ class GeoSpatialEvaluator
      * @param array $predicateGeometry The polygon predicate.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
      */
     private function matchesIntersects(array $rowGeometry, array $predicateGeometry): bool
     {
@@ -235,6 +247,8 @@ class GeoSpatialEvaluator
      *   MultiPolygon / LineString) plus shape-validity guards.
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *   Same: each geometry type is one branch.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
      */
     private function extractRepresentativePoint(array $geometry): ?array
     {
@@ -282,6 +296,8 @@ class GeoSpatialEvaluator
      * @param array $ring The ring vertices.
      *
      * @return ?array `[lon, lat]` centroid, or null when the ring is empty.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
      */
     private function ringCentroid(array $ring): ?array
     {
@@ -321,6 +337,8 @@ class GeoSpatialEvaluator
      * @param array $geometry GeoJSON Polygon or MultiPolygon.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
      */
     private function pointInPolygonGeometry(array $point, array $geometry): bool
     {
@@ -344,6 +362,8 @@ class GeoSpatialEvaluator
      * @return bool
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Standard Bevis & Chatelain ray-casting algorithm; the branches are inherent to the geometry test.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
      */
     private function pointInRing(array $point, array $ring): bool
     {

@@ -27,6 +27,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-4
  */
 
 declare(strict_types=1);
@@ -261,6 +262,8 @@ final class ArchivalAnnotationValidator
      * @param mixed $value Candidate value.
      *
      * @return bool True when the value parses as a duration.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-4
      */
     private function isIsoDuration(mixed $value): bool
     {

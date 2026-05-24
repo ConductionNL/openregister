@@ -28,6 +28,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -74,6 +75,8 @@ class GeoFilter
      * @return self
      *
      * @throws InvalidArgumentException When malformed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public static function fromBbox(string $bbox, ?string $property=null): self
     {
@@ -120,6 +123,8 @@ class GeoFilter
      * @return self
      *
      * @throws InvalidArgumentException When malformed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public static function fromNearAndRadius(
         float|string $lon,
@@ -153,6 +158,8 @@ class GeoFilter
      * @return self
      *
      * @throws InvalidArgumentException When geometry is malformed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public static function fromWithinGeometry(array $geometry, ?string $property=null): self
     {
@@ -170,6 +177,8 @@ class GeoFilter
      * @return self
      *
      * @throws InvalidArgumentException When geometry is malformed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public static function fromIntersectsGeometry(array $geometry, ?string $property=null): self
     {
@@ -187,6 +196,8 @@ class GeoFilter
      * @return void
      *
      * @throws InvalidArgumentException When the geometry is invalid.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     private static function assertGeoJsonGeometry(mixed $geometry, string $opName): void
     {

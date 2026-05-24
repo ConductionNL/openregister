@@ -19,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
  */
 
 namespace OCA\OpenRegister\Service;
@@ -445,6 +447,8 @@ class ConfigurationService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Configuration import requires many optional parameters
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
      */
     public function importFromJson(
         array $data,

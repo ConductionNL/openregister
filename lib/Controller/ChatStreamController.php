@@ -30,6 +30,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 declare(strict_types=1);
@@ -575,6 +576,8 @@ class ChatStreamController extends Controller
      *                          (message === self::ERROR_FORBIDDEN); the
      *                          stream() entry point translates this into the
      *                          `forbidden` SSE error.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function resolveConversation(string $conversationUuid, string $agentUuid, string $userId): Conversation
     {

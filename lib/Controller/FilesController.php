@@ -17,6 +17,7 @@
  * @link      https://OpenRegister.app
  *
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
  */
 
 declare(strict_types=1);
@@ -1413,6 +1414,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
      */
     public function listVersions(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1452,6 +1455,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
      */
     public function restoreVersion(
         string $register,
