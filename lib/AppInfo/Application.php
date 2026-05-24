@@ -1145,8 +1145,10 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
             // @spec openspec/changes/integration-flow/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
-            // @spec openspec/changes/integration-forms/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
+            // NB: FormsProvider is NO LONGER greenfield — it has a Tier-2
+            // link-table dep (FormLinkMapper) that doesn't fit the (db,
+            // appManager, l10n) signature shared by the rest of this list.
+            // Registered separately below.
             // @spec openspec/changes/integration-maps/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
             // @spec openspec/changes/integration-photos/tasks.md.
@@ -1169,6 +1171,24 @@ class Application extends App implements IBootstrap
                 }
             );
         }
+
+        // FormsProvider — Tier-2 link-table backed. Promoted from the
+        // marker-only greenfield wave to its own factory so it gets the
+        // FormLinkMapper injected. The provider still gracefully degrades
+        // to the legacy marker scan when the link table is empty (e.g.
+        // forms that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-forms/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\FormsProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    formLinkMapper: $container->get(\OCA\OpenRegister\Db\FormLinkMapper::class),
+                );
+            }
+        );
 
         // SharesProvider — NC core (no app gate); uses MarkerLookupTrait
         // against the `share` table's `note` column.

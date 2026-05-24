@@ -340,6 +340,49 @@ return [
         ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckRef}',        'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckRef' => '[^/]+']],
         ['name' => 'deck#objects', 'url' => '/api/deck/boards/{boardId}/objects',                          'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
 
+        // Forms — Tier-2 link-table API. Specific routes (`/new`, `/submissions/{id}`)
+        // MUST precede the wildcard `{formId}` route so they aren't grabbed as
+        // formId='new' / formId='submissions'. Available-forms picker is app-global.
+        [
+            'name' => 'formLinks#available',
+            'url'  => '/api/integrations/forms/available',
+            'verb' => 'GET',
+        ],
+        [
+            'name'         => 'formLinks#index',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms',
+            'verb'         => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name'         => 'formLinks#create',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms/new',
+            'verb'         => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name'         => 'formLinks#link',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms',
+            'verb'         => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name'         => 'formLinks#destroySubmission',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms/{formId}/submissions/{submissionId}',
+            'verb'         => 'DELETE',
+            'requirements' => [
+                'id'           => '[^/]+',
+                'formId'       => '[0-9]+',
+                'submissionId' => '[0-9]+',
+            ],
+        ],
+        [
+            'name'         => 'formLinks#destroyForm',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms/{formId}',
+            'verb'         => 'DELETE',
+            'requirements' => ['id' => '[^/]+', 'formId' => '[0-9]+'],
+        ],
+
         // Unified relations endpoint — aggregates emails/contacts/calendar/deck for an object.
         ['name' => 'relations#index', 'url' => '/api/objects/{register}/{schema}/{id}/relations',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
 
