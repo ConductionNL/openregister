@@ -97,6 +97,8 @@ class ToolRegistry
      *
      * @param IEventDispatcher $eventDispatcher Event dispatcher
      * @param LoggerInterface  $logger          Logger
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-1
      */
     public function __construct(
         IEventDispatcher $eventDispatcher,
@@ -112,6 +114,8 @@ class ToolRegistry
      * This is called lazily the first time tools are accessed.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-1
      */
     private function loadTools(): void
     {
@@ -155,6 +159,8 @@ class ToolRegistry
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple validation checks required
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths with exceptions
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-2
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
@@ -206,6 +212,8 @@ class ToolRegistry
      * @param string $id Tool identifier
      *
      * @return ToolInterface|null Tool instance or null if not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
      */
     public function getTool(string $id): ?ToolInterface
     {
@@ -222,6 +230,8 @@ class ToolRegistry
      * Get all registered tools
      *
      * @return array Array of tool IDs and their metadata
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
      */
     public function getAllTools(): array
     {
@@ -243,6 +253,8 @@ class ToolRegistry
      * @param array $ids Array of tool IDs
      *
      * @return array Array of ToolInterface instances (key: id, value: tool)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
      */
     public function getTools(array $ids): array
     {
