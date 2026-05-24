@@ -20,6 +20,10 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-4
  */
 
 declare(strict_types=1);
