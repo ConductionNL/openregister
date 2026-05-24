@@ -19,6 +19,9 @@
  *   5. Emit one structured log entry per schema:
  *      `{schemaSlug, scanned, expired, deleted}`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Cron
  * @package  OCA\OpenRegister\Cron
  *

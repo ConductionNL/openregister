@@ -5,6 +5,9 @@
  *
  * OCC command for migrating objects between blob storage and magic tables.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Command
  * @package   OCA\OpenRegister\Command
  * @author    Conduction Development Team <dev@conduction.nl>
