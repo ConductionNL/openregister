@@ -6,6 +6,9 @@
  * Orchestrates archival lifecycle operations: metadata population, archiefactiedatum
  * calculation, selectielijst lookup, legal hold management, and destruction coordination.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

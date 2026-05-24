@@ -6,6 +6,9 @@
  * Manages legal holds (bevriezing) on register objects, preventing destruction
  * regardless of archival dates. Supports WOB/WOO requests and regulatory investigations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Archival
  *

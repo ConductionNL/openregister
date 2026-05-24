@@ -6,6 +6,9 @@
  * Central registry for managing LLphant function tools from all apps.
  * Allows other Nextcloud apps to register their own tools for agents to use.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

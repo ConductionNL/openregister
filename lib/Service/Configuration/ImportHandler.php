@@ -6,6 +6,9 @@
  * This file contains the handler class for importing configurations
  * from various sources in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *

@@ -8,6 +8,9 @@
  * This service acts as a facade for view operations,
  * coordinating between ViewMapper and business logic.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

@@ -6,6 +6,9 @@
  * Service that wraps CardDAV vCard operations for linking contacts to OpenRegister objects.
  * Uses dual storage: X-OPENREGISTER-* vCard properties + openregister_contact_links table.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>

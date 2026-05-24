@@ -20,6 +20,9 @@
  * If the total entity count exceeds 50, the risk level is escalated by one tier
  * (capped at very_high).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

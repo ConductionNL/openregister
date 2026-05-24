@@ -19,6 +19,9 @@
  * is intentionally out of scope. A future change can layer a real
  * expression engine on top if the fleet ever needs it.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Archival
  *

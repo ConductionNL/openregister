@@ -6,6 +6,9 @@
  * This service handles all text extraction logic for files in the system.
  * It consolidates extraction workflows, file tracking, and re-extraction detection.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

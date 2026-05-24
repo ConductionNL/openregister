@@ -6,6 +6,9 @@
  * This file contains the service class for managing organisations and multi-tenancy.
  * Handles user-organisation relationships, session management, and organisational context.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

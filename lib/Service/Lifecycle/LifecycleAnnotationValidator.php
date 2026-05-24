@@ -9,6 +9,9 @@
  * Per ADR-024 (hydra#202), schemas declare state machines via this annotation;
  * the implementation is in `lifecycle-annotation` change directory.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Lifecycle
  *

@@ -6,6 +6,9 @@
  * Core business logic for archiving and destruction workflows conforming
  * to Dutch archival standards (MDTO, NEN 2082, Archiefwet 1995).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
