@@ -13,6 +13,9 @@
  * by tasks 1.14 – 1.22 and lands in a follow-up commit. This file implements the core
  * proxy shape only (tasks 1.3, 1.5, 1.6, 1.7, 1.8, 1.9).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

@@ -6,6 +6,9 @@
  * Provides SHA-256 hash computation, chain verification, and genesis hash management
  * for the immutable audit trail system.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

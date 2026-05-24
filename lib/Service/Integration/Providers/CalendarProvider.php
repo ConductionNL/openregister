@@ -21,6 +21,9 @@
  * registry-driven sidebar uses for rendering, with `delete()` wired so
  * the unified inline unlink works out of the box.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *
@@ -41,9 +44,11 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -62,16 +67,20 @@ class CalendarProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param CalendarEventService $calendarEventService Backing service.
+     * @param CalendarEventService $calendarEventService Legacy X-OR-* CalDAV service.
+     * @param CalendarLinkService  $calendarLinkService  Tier-2 link-table service (UNION read path).
      * @param IAppManager          $appManager           NC app manager.
      * @param IL10N                $l10n                 Localisation.
+     * @param LoggerInterface      $logger               PSR-3 logger for surfacing CalDAV failures.
      *
      * @return void
      */
     public function __construct(
         private CalendarEventService $calendarEventService,
+        private CalendarLinkService $calendarLinkService,
         private IAppManager $appManager,
         private IL10N $l10n,
+        private LoggerInterface $logger,
     ) {
     }//end __construct()
 
@@ -117,6 +126,22 @@ class CalendarProvider extends AbstractIntegrationProvider
      * returns the full per-object set; pagination is a UI concern and
      * the list is bounded by the user's own calendar size.
      *
+     * Payload contract — each row carries the keys serialized by
+     * `CalendarEventService::veventToArray()`:
+     *   id (event uri), uid, calendarId, summary, dtstart (ATOM),
+     *   dtend (ATOM), location, description, attendees (array of
+     *   email strings), status, objectUuid, registerId, schemaId
+     *
+     * This shape matches every field `CnCalendarTab` (timeline rows +
+     * inline create form) and `CnCalendarCard` (all four surfaces —
+     * including the single-entity chip's status badge) consume. No
+     * widening required for Phase B-2.
+     *
+     * Known limitation: `CalendarEventService::findUserCalendar()`
+     * picks the *first* VEVENT-supporting calendar for the current
+     * user. Events written to a different calendar are not discovered.
+     * Multi-calendar awareness is tracked as a fleet-wide follow-up.
+     *
      * @param string              $register Register slug or numeric id (unused — CalDAV scope is per-user).
      * @param string              $schema   Schema slug or numeric id (unused).
      * @param string              $objectId Object uuid.
@@ -127,10 +152,27 @@ class CalendarProvider extends AbstractIntegrationProvider
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         try {
-            return $this->calendarEventService->getEventsForObject(objectUuid: $objectId);
+            // Tier-2: UNION read across link-table + legacy X-OR-* scan.
+            return $this->calendarLinkService->getLinkedEvents(objectUuid: $objectId);
         } catch (Throwable $e) {
             // CalDAV failures (no user, no VEVENT calendar) degrade to
-            // an empty list rather than breaking the tab — AD-23.
+            // an empty list rather than breaking the tab — AD-23 covers
+            // the user-facing contract (empty list, no thrown exception
+            // for link-table providers) but does NOT mandate silent
+            // failure: surface the cause so an empty Meetings tab can
+            // be diagnosed from nextcloud.log instead of guessing.
+            $this->logger->warning(
+                'CalendarProvider::list() failed; degrading to empty list',
+                [
+                    'app'       => 'openregister',
+                    'provider'  => self::class,
+                    'method'    => 'list',
+                    'objectId'  => $objectId,
+                    'register'  => $register,
+                    'schema'    => $schema,
+                    'exception' => $e,
+                ]
+            );
             return [];
         }
     }//end list()
@@ -151,13 +193,19 @@ class CalendarProvider extends AbstractIntegrationProvider
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
+        // New shape: simple eventUid (Tier-2 link-table). Legacy shape:
+        // "{calendarId}/{eventUri}" (CalendarProvider Phase B-2). We accept
+        // both — if the entityId contains a slash, treat as legacy and
+        // strip X-OR-* on the VEVENT; otherwise treat as link-table unlink.
         $parts = explode('/', $entityId, 2);
-        if (count($parts) !== 2) {
-            throw new InvalidArgumentException('Calendar entityId must be "calendarId/eventUri"');
+        if (count($parts) === 2) {
+            [$calendarId, $eventUri] = $parts;
+            $this->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
+            return;
         }
 
-        [$calendarId, $eventUri] = $parts;
-        $this->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
+        // entityId is a bare eventUid — Tier-2 link-only removal.
+        $this->calendarLinkService->unlinkEvent(objectUuid: $objectId, eventUid: $entityId);
     }//end delete()
 
     /**

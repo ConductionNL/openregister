@@ -7,6 +7,9 @@
  * updates, and profile management. It centralizes user operations and provides
  * a clean interface for controllers and other services.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

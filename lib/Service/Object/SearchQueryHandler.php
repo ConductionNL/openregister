@@ -7,6 +7,9 @@
  * This handler separates search-related business logic from the main ObjectService,
  * improving code organization and maintainability.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *

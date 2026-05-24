@@ -88,7 +88,6 @@
 		]
 	},
 	"require": {
-		"php": "^8.3",
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
 		"cweagans/composer-patches": "^1.7",
@@ -96,14 +95,18 @@
 		"elasticsearch/elasticsearch": "^v8.14.0",
 		"guzzlehttp/guzzle": "^7.0",
 		"opis/json-schema": "^2.3",
+		"php": "^8.3",
 		"phpoffice/phpspreadsheet": "^5.0",
 		"phpoffice/phpword": "^1.2",
 		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
 		"smalot/pdfparser": "^2.9",
+		"symfony/console": "^6.4",
+		"symfony/http-kernel": "^6.4",
+		"symfony/process": "^6.4",
 		"symfony/uid": "^6.4",
-		"symfony/yaml": "^6.4",
+		"symfony/yaml": "^6.4 || ^7.0",
 		"theodo-group/llphant": "^0.9.3",
 		"twig/twig": "^3.18",
 		"web-token/jwt-framework": "^3",
@@ -143,7 +146,7 @@
 		"composer-exit-on-patch-failure": true,
 		"patches": {
 			"theodo-group/llphant": {
-				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) — drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch"
+				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) \u2014 drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch"
 			}
 		}
 	}

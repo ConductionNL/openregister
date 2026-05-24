@@ -7,6 +7,9 @@
  * Supports both reading (selecting the correct language variant) and writing
  * (normalizing input to language-keyed objects) for translatable properties.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Object
  *

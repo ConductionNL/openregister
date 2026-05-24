@@ -5,6 +5,9 @@
  *
  * Thrown by CalculationEvaluator when an expression cannot be reduced.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Calculation
  *

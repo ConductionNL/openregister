@@ -5,8 +5,10 @@
  * object via a `[or:{objectUuid}]` marker in the entity's `subject`
  * field.
  *
- * Storage strategy is `link-table` — the marker lives in the upstream
- * app's own table (`activity`), not in OR.
+ * Storage strategy is `query-time` — the marker lives in the upstream
+ * app's own table (`activity`), not in OR. Every `list()` call runs a
+ * live LIKE query against the upstream `activity` table; OpenRegister
+ * persists nothing about the link itself.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -114,11 +116,21 @@ class ActivityProvider extends AbstractIntegrationProvider
 
         return array_map(
                 static function (array $row): array {
+                    // Flatten the activity event so CnActivityTab can read
+                    // type / timestamp / actor at the row root without
+                    // hand-walking `data.*`. `data` is retained for any
+                    // generic consumer that still wants the raw row.
                     return [
-                        'id'    => (string) ($row['activity_id'] ?? ''),
-                        'title' => (string) ($row['subject'] ?? ''),
-                        'url'   => '/index.php/apps/activity/'.(string) ($row['activity_id'] ?? ''),
-                        'data'  => $row,
+                        'id'           => (string) ($row['activity_id'] ?? ''),
+                        'title'        => (string) ($row['subject'] ?? ''),
+                        'subject'      => (string) ($row['subject'] ?? ''),
+                        'type'         => (string) ($row['type'] ?? ''),
+                        'timestamp'    => (int) ($row['timestamp'] ?? 0),
+                        'affecteduser' => (string) ($row['affecteduser'] ?? ''),
+                        'actor_id'     => (string) ($row['affecteduser'] ?? ''),
+                        'object_id'    => (string) ($row['object_id'] ?? ''),
+                        'url'          => '/index.php/apps/activity/'.(string) ($row['activity_id'] ?? ''),
+                        'data'         => $row,
                     ];
                 },
                 $rows

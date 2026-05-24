@@ -6,6 +6,9 @@
  * Controller for managing saved search views across multiple registers and schemas.
  * Provides CRUD operations for views that store search configurations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>

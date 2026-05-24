@@ -5,6 +5,9 @@
  *
  * This file contains the event class that is dispatched when an organisation entity is created.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Event
  * @package   OCA\OpenRegister\Event
  * @author    Conduction b.v. <info@conduction.nl>

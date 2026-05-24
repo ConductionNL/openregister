@@ -6,6 +6,9 @@
  * Main entry point for all vector embedding operations.
  * Coordinates handlers for generation, storage, search, and statistics.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *

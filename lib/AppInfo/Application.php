@@ -6,6 +6,9 @@
  * This file contains the controller for handling consumer related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category AppInfo
  * @package  OCA\OpenRegister\AppInfo
  *
@@ -156,6 +159,7 @@ use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
@@ -349,6 +353,15 @@ class Application extends App implements IBootstrap
         // advertise the integration registry through the OCS
         // capabilities endpoint.
         $context->registerCapability(IntegrationsCapability::class);
+
+        // ADR-019 Phase E (Option B): single umbrella widget hosted on
+        // the Nextcloud user-dashboard. Iterates the integration
+        // registry client-side and mounts each leaf's `user-dashboard`
+        // widget — locked in over the 24-tile alternative because per-
+        // integration NC widgets would clutter the global dashboard.
+        $context->registerDashboardWidget(
+            \OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::class
+        );
     }//end register()
 
     /**
@@ -1078,6 +1091,7 @@ class Application extends App implements IBootstrap
                     calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get(\Psr\Log\LoggerInterface::class),
                 );
             }
         );
@@ -1099,7 +1113,7 @@ class Application extends App implements IBootstrap
             DeckProvider::class,
             function (ContainerInterface $container) {
                 return new DeckProvider(
-                    deckCardService: $container->get(\OCA\OpenRegister\Service\DeckCardService::class),
+                    deckLinkService: $container->get(\OCA\OpenRegister\Service\DeckLinkService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                 );
@@ -1135,8 +1149,10 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
             // @spec openspec/changes/integration-flow/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
-            // @spec openspec/changes/integration-forms/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
+            // NB: FormsProvider is NO LONGER greenfield — it has a Tier-2
+            // link-table dep (FormLinkMapper) that doesn't fit the (db,
+            // appManager, l10n) signature shared by the rest of this list.
+            // Registered separately below.
             // @spec openspec/changes/integration-maps/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
             // @spec openspec/changes/integration-photos/tasks.md.
@@ -1159,6 +1175,24 @@ class Application extends App implements IBootstrap
                 }
             );
         }
+
+        // FormsProvider — Tier-2 link-table backed. Promoted from the
+        // marker-only greenfield wave to its own factory so it gets the
+        // FormLinkMapper injected. The provider still gracefully degrades
+        // to the legacy marker scan when the link table is empty (e.g.
+        // forms that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-forms/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\FormsProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    formLinkMapper: $container->get(\OCA\OpenRegister\Db\FormLinkMapper::class),
+                );
+            }
+        );
 
         // SharesProvider — NC core (no app gate); uses MarkerLookupTrait
         // against the `share` table's `note` column.
@@ -1193,7 +1227,9 @@ class Application extends App implements IBootstrap
 
         // TalkProvider — needs container for late-bound `OCA\Talk\Manager`
         // (only on the classpath with `spreed` installed) plus
-        // IUserSession to scope `getRoomsForUser`.
+        // IUserSession to scope `getRoomsForUser`. Tier-2: the
+        // TalkLinkMapper is injected so the provider can short-circuit
+        // the legacy marker scan when the link table is populated.
         // @spec openspec/changes/integration-talk/tasks.md.
         $context->registerService(
             TalkProvider::class,
@@ -1203,20 +1239,40 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     l10n: $container->get('OCP\IL10N'),
+                    talkLinkMapper: $container->get(\OCA\OpenRegister\Db\TalkLinkMapper::class),
                 );
             }
         );
 
-        // PollsProvider — late-bound `OCA\Polls\Service\PollService`
-        // (only on classpath with the `polls` app installed) + user
-        // session for scoping. Links via the `[or:{objectUuid}]`
-        // marker in the poll title.
+        // TalkLinkService — Tier-2 link/create/unlink service backing
+        // the TalkLinksController. Same late-bound Talk pattern as
+        // the provider (container for OCA\Talk\* lookups).
+        // @spec openspec/changes/integration-talk/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\TalkLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\TalkLinkService(
+                    talkLinkMapper: $container->get(\OCA\OpenRegister\Db\TalkLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // PollsProvider — Tier-2: backed by the PollLinkMapper +
+        // direct queries against `oc_polls_*` tables. Replaces the
+        // original title-marker convention with a proper persistence
+        // layer.
         // @spec openspec/changes/integration-polls/tasks.md.
         $context->registerService(
             PollsProvider::class,
             function (ContainerInterface $container) {
                 return new PollsProvider(
-                    container: $container,
+                    pollLinkMapper: $container->get(\OCA\OpenRegister\Db\PollLinkMapper::class),
+                    db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1325,10 +1381,11 @@ class Application extends App implements IBootstrap
         // FilesSidebarListener injects the sidebar tab script into the Files app.
         $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
 
-        // MailAppScriptListener injects the mail sidebar when schemas have linkedTypes: ["mail"].
+        // MailAppScriptListener injects the mail sidebar script into the Mail app
+        // (gated to the Mail app via TemplateResponse->getApp() === 'mail').
         $context->registerEventListener(
             \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
-            \OCA\OpenRegister\Listener\MailAppScriptListener::class
+            MailAppScriptListener::class
         );
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.

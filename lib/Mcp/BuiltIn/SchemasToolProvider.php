@@ -6,6 +6,9 @@
  * Exposes CRUD operations on OpenRegister schemas as an MCP tool
  * under the namespaced id `openregister.schemas`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp\BuiltIn
  *

@@ -94,7 +94,31 @@ class BookmarksProvider extends AbstractIntegrationProvider
      *
      * BookmarkMapper::findAll honours QueryParameters::setTags; we
      * inject the per-object tag and normalise the response rows into
-     * the registry leaf row shape (id, title, description, url, tags).
+     * the registry leaf row shape (id, title, description, url, tags,
+     * added).
+     *
+     * Payload contract per row:
+     *   id    : string — NC Bookmarks numeric id, cast to string
+     *   title : string — bookmark title (falls back to url)
+     *   description : string — user-entered description
+     *   url   : string — canonical URL
+     *   tags  : string[] — Bookmarks-side tags including the `or:*`
+     *           marker (UI filters out `or:*` prefix client-side)
+     *   added : int|null — unix timestamp (seconds) the bookmark was
+     *           saved; used by `CnBookmarksCard` for "most recent"
+     *           sort
+     *
+     * This shape matches every field `CnBookmarksTab` (favicon, title,
+     * url, description, tag chips, tag filter) and `CnBookmarksCard`
+     * (all four surfaces, including "added at" sort) consume. No
+     * widening required for Phase B-2.
+     *
+     * Favicon strategy: the UI derives the favicon URL from the
+     * bookmark's URL origin (`{origin}/favicon.ico`) and falls back
+     * to a generic Bookmark icon on load error. Bookmarks does store
+     * a `last_preview` ID for archived previews but that's not a
+     * public-facing favicon — keeping discovery client-side avoids
+     * an extra API hop per row.
      *
      * @param string              $register Register slug or numeric id (unused).
      * @param string              $schema   Schema slug or numeric id (unused).

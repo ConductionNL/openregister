@@ -5,6 +5,9 @@
  *
  * Background job for retrying schema hooks that failed due to engine unavailability.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *

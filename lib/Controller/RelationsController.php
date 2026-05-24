@@ -5,6 +5,9 @@
  *
  * Unified REST controller that aggregates all relation types for an object.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -256,6 +259,26 @@ class RelationsController extends Controller
     }//end gatherRelations()
 
     /**
+     * Map of relation group keys (as returned by gatherRelations) to the
+     * singular per-item type label used in timeline view.
+     *
+     * Replaces a naive `rtrim($type, 's')` singularisation that silently
+     * mangled any type whose singular form happens to end in 's' (e.g. an
+     * `addresses`/`address` pair, or a singular key like `deck` that would
+     * be untouched today but is one rename away from becoming `decks`).
+     *
+     * @var array<string, string>
+     */
+    private const TIMELINE_TYPE_MAP = [
+        'notes'    => 'note',
+        'tasks'    => 'task',
+        'emails'   => 'email',
+        'events'   => 'event',
+        'contacts' => 'contact',
+        'deck'     => 'deck',
+    ];
+
+    /**
      * Build a timeline view from grouped relations.
      *
      * @param array $relations Grouped relations.
@@ -271,8 +294,10 @@ class RelationsController extends Controller
                 continue;
             }
 
+            $singularType = (self::TIMELINE_TYPE_MAP[$type] ?? $type);
+
             foreach ($data['results'] as $item) {
-                $item['type'] = rtrim($type, 's');
+                $item['type'] = $singularType;
 
                 // Normalize date for sorting.
                 $rawDate           = ($item['date'] ?? $item['linkedAt'] ?? null);

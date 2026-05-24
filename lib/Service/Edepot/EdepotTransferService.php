@@ -6,6 +6,9 @@
  * Orchestrates the full e-Depot transfer pipeline: SIP package building,
  * transport, object status tracking, and audit trail logging.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot
  *

@@ -6,6 +6,9 @@
  * Controller for managing soft deleted objects in the OpenRegister app.
  * Provides functionality for listing, filtering, restoring, and permanently deleting objects.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

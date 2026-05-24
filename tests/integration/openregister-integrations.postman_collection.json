@@ -1,0 +1,1283 @@
+{
+  "info": {
+    "_postman_id": "openregister-integrations-v1",
+    "name": "OpenRegister Integrations API",
+    "description": "Integration tests for OpenRegister's integration API endpoints: Actions, Archival, Email Links, Contacts Match, File Sidebar, User Profile, Workflow, and TMLO.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set auth headers for every request",
+          "const user = pm.collectionVariables.get('username') || 'admin';",
+          "const pass = pm.collectionVariables.get('password') || 'admin';",
+          "pm.request.headers.add({",
+          "    key: 'OCS-APIRequest',",
+          "    value: 'true'",
+          "});",
+          "pm.request.headers.add({",
+          "    key: 'Accept',",
+          "    value: 'application/json'",
+          "});",
+          "pm.request.headers.add({",
+          "    key: 'Content-Type',",
+          "    value: 'application/json'",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/index.php/apps/openregister",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "actionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "selectionListId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Actions API",
+      "description": "CRUD operations for Actions (event-driven workflow triggers).",
+      "item": [
+        {
+          "name": "List Actions",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response has results array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('results');",
+                  "    pm.expect(json.results).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/actions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "actions"]
+            }
+          }
+        },
+        {
+          "name": "Create Action",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response contains created action with ID', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json.name).to.eql('Test Action');",
+                  "    pm.collectionVariables.set('actionId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Action\",\n  \"event_type\": \"object.created\",\n  \"engine\": \"n8n\",\n  \"workflow_id\": \"wf-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/actions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "actions"]
+            }
+          }
+        },
+        {
+          "name": "Read Action",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response contains the correct action', function () {",
+                  "    const json = pm.response.json();",
+                  "    const expectedId = pm.collectionVariables.get('actionId');",
+                  "    pm.expect(String(json.id)).to.eql(String(expectedId));",
+                  "    pm.expect(json.name).to.eql('Test Action');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/actions/{{actionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "actions", "{{actionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Action",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Action name was updated', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.name).to.eql('Updated Action');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Action\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/actions/{{actionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "actions", "{{actionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Action",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Action was deleted', function () {",
+                  "    const json = pm.response.json();",
+                  "    // Depending on implementation, response may contain a success message or empty body",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/actions/{{actionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "actions", "{{actionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Archival API",
+      "description": "Archival selection lists and destruction lists.",
+      "item": [
+        {
+          "name": "List Selection Lists",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response has results array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('results');",
+                  "    pm.expect(json.results).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/archival/selection-lists",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "archival", "selection-lists"]
+            }
+          }
+        },
+        {
+          "name": "Create Selection List",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response contains created selection list with ID', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json.category).to.eql('financial');",
+                  "    pm.expect(json.retentionYears).to.eql(7);",
+                  "    pm.expect(json.action).to.eql('destroy');",
+                  "    pm.collectionVariables.set('selectionListId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"financial\",\n  \"retentionYears\": 7,\n  \"action\": \"destroy\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/archival/selection-lists",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "archival", "selection-lists"]
+            }
+          }
+        },
+        {
+          "name": "Read Selection List",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response contains the correct selection list', function () {",
+                  "    const json = pm.response.json();",
+                  "    const expectedId = pm.collectionVariables.get('selectionListId');",
+                  "    pm.expect(String(json.id)).to.eql(String(expectedId));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/archival/selection-lists/{{selectionListId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "archival", "selection-lists", "{{selectionListId}}"]
+            }
+          }
+        },
+        {
+          "name": "List Destruction Lists",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response has results array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('results');",
+                  "    pm.expect(json.results).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/archival/destruction-lists",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "archival", "destruction-lists"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Email Links API",
+      "description": "Retrieve email-to-object links by message ID or sender.",
+      "item": [
+        {
+          "name": "Get Emails by Message ID",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/emails/by-message/1/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "emails", "by-message", "1", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Emails by Sender",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/emails/by-sender?sender=test@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "emails", "by-sender"],
+              "query": [
+                {
+                  "key": "sender",
+                  "value": "test@example.com"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contacts Match API",
+      "description": "Match contacts by email or name.",
+      "item": [
+        {
+          "name": "Match Contact by Email",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/match?email=admin@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "contacts", "match"],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "admin@example.com"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Match Contact by Name",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacts/match?name=Admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "contacts", "match"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "Admin"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "File Sidebar API",
+      "description": "File-to-object links and extraction status for the Nextcloud Files sidebar.",
+      "item": [
+        {
+          "name": "Get Objects for File",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files/1/objects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "files", "1", "objects"]
+            }
+          }
+        },
+        {
+          "name": "Get Extraction Status for File",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files/1/extraction-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "files", "1", "extraction-status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Profile API",
+      "description": "User profile, notifications, activity, tokens, and deactivation status.",
+      "item": [
+        {
+          "name": "Get Current User Profile",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "me"]
+            }
+          }
+        },
+        {
+          "name": "Get User Notifications",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "me", "notifications"]
+            }
+          }
+        },
+        {
+          "name": "Update User Notification Preferences",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Notification preferences updated', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"objectChanges\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "me", "notifications"]
+            }
+          }
+        },
+        {
+          "name": "Get User Activity",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me/activity",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "me", "activity"]
+            }
+          }
+        },
+        {
+          "name": "List User Tokens",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me/tokens",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "me", "tokens"]
+            }
+          }
+        },
+        {
+          "name": "Create User Token",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response contains token with ID', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.collectionVariables.set('tokenId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"test-token\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me/tokens",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "me", "tokens"]
+            }
+          }
+        },
+        {
+          "name": "Get User Deactivation Status",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON', function () {",
+                  "    pm.response.json();",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me/deactivation-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "me", "deactivation-status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflow API",
+      "description": "Workflow executions, scheduled workflows, approval chains, and approval steps.",
+      "item": [
+        {
+          "name": "List Workflow Executions",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response has results array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('results');",
+                  "    pm.expect(json.results).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workflow-executions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workflow-executions"]
+            }
+          }
+        },
+        {
+          "name": "List Scheduled Workflows",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response has results array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('results');",
+                  "    pm.expect(json.results).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/scheduled-workflows",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scheduled-workflows"]
+            }
+          }
+        },
+        {
+          "name": "List Approval Chains",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response has results array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('results');",
+                  "    pm.expect(json.results).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/approval-chains",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "approval-chains"]
+            }
+          }
+        },
+        {
+          "name": "List Approval Steps",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response has results array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('results');",
+                  "    pm.expect(json.results).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/approval-steps",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "approval-steps"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "TMLO API",
+      "description": "TMLO (Toepassingsprofiel Metadatering Lokale Overheden) metadata summary endpoint.",
+      "item": [
+        {
+          "name": "Get TMLO Summary (expect 400 - not enabled)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [""]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 (TMLO not enabled)', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response is valid JSON with error', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/objects/voorzieningen/applicatie/tmlo/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "objects", "voorzieningen", "applicatie", "tmlo", "summary"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

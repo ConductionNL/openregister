@@ -17,6 +17,9 @@
  * Each public guard returns either `null` (continue) or a `JSONResponse` (short-circuit
  * with a structured error). The controller invokes them via the shared `runGuards` pipeline.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *

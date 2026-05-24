@@ -6,6 +6,9 @@
  * Controller for managing object reversion operations in the OpenRegister app.
  * Provides functionality to revert objects to previous states based on different criteria.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
  *

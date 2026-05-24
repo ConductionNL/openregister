@@ -6,6 +6,9 @@
  * Handler for managing object relations and cascading operations.
  * Handles schema resolution, relation scanning, and cascading object creation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *

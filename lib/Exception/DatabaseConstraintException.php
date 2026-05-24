@@ -6,6 +6,9 @@
  * This file contains the custom exception class for handling database constraint violations
  * with user-friendly error messages.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *

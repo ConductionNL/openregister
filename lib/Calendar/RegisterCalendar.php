@@ -6,6 +6,9 @@
  * Implements ICalendar to provide a virtual calendar backed by
  * OpenRegister schema objects with date fields.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Calendar
  * @package  OCA\OpenRegister\Calendar
  *

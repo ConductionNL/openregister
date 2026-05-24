@@ -10,6 +10,9 @@
  * Delegates type mapping to TypeMapperHandler and composition logic to
  * CompositionHandler to keep class complexity manageable.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  * @author   Conduction B.V. <info@conduction.nl>

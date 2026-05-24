@@ -6,6 +6,9 @@
  * Handles API endpoints for destruction list management, legal holds,
  * and archival workflow operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

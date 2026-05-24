@@ -15,6 +15,9 @@
  * - Object-specific file operations
  * - Audit trails and data aggregation
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -23,6 +26,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
 
 declare(strict_types=1);
@@ -1274,6 +1280,8 @@ class FileService
      * @psalm-param   array<int, string> $tags
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
      */
     public function addFile(
         ObjectEntity | string $objectEntity,
@@ -1766,6 +1774,8 @@ class FileService
      * Get the file versioning handler.
      *
      * @return FileVersioningHandler The versioning handler.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
      */
     public function getVersioningHandler(): FileVersioningHandler
     {

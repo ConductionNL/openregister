@@ -6,6 +6,9 @@
  * This file contains the service class for handling configuration imports and exports
  * in the OpenRegister application, supporting various formats including OpenAPI.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
  */
 
 namespace OCA\OpenRegister\Service;
@@ -442,6 +447,8 @@ class ConfigurationService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Configuration import requires many optional parameters
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
      */
     public function importFromJson(
         array $data,

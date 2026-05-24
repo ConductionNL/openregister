@@ -7,6 +7,9 @@
  * Contains information about what would happen if an object were deleted,
  * including cascade targets, nullification targets, and blockers.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Dto
  * @package  OCA\OpenRegister\Dto
  *

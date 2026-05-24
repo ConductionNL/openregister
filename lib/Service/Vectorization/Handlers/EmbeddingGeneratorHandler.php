@@ -5,6 +5,9 @@
  *
  * Manages creation and caching of embedding generators for different LLM providers.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
  *

@@ -7,6 +7,9 @@
  * the existing event-driven-architecture family — listeners subscribe via
  * `IEventDispatcher` like every other Object*Event in OpenRegister.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *

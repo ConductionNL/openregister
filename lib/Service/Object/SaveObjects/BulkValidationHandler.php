@@ -6,6 +6,9 @@
  * Handler for bulk validation operations and schema analysis.
  * Optimizes validation for bulk object operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObjects
  *
