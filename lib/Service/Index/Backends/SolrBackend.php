@@ -6,6 +6,9 @@
  * Solr backend implementation for OpenRegister search operations.
  * Coordinates specialized Solr service classes to provide SearchBackendInterface.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends
  * @author    Conduction Development Team <dev@conduction.nl>

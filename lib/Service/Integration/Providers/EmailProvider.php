@@ -10,6 +10,9 @@
  * offers "link existing message" via account/folder picker (the UI
  * concern), and the provider exposes that link path through `create()`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *

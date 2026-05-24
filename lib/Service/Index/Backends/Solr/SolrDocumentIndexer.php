@@ -6,6 +6,9 @@
  * Handles document indexing operations to Solr.
  * Manages single and bulk indexing, deletions, and commits.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>

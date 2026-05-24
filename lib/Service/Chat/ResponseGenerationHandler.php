@@ -16,6 +16,9 @@
  * exactly as before — that branch is load-bearing for the
  * non-streaming endpoint and must not regress.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *

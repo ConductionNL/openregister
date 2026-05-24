@@ -9,6 +9,9 @@
  * `ExportService::exportToCsv` once they're updated to be
  * translation-aware (Phase 2.3 wire-in).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Translation
  *

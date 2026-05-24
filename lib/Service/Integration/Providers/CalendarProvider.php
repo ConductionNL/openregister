@@ -21,6 +21,9 @@
  * registry-driven sidebar uses for rendering, with `delete()` wired so
  * the unified inline unlink works out of the box.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *

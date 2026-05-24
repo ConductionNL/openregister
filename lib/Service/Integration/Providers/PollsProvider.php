@@ -15,6 +15,9 @@
  * services need Polls' UserSession populated, which it isn't when OR
  * serves the sub-resource).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *
