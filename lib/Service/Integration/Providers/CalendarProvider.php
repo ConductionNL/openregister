@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -62,7 +63,8 @@ class CalendarProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param CalendarEventService $calendarEventService Backing service.
+     * @param CalendarEventService $calendarEventService Legacy X-OR-* CalDAV service.
+     * @param CalendarLinkService  $calendarLinkService  Tier-2 link-table service (UNION read path).
      * @param IAppManager          $appManager           NC app manager.
      * @param IL10N                $l10n                 Localisation.
      *
@@ -70,6 +72,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      */
     public function __construct(
         private CalendarEventService $calendarEventService,
+        private CalendarLinkService $calendarLinkService,
         private IAppManager $appManager,
         private IL10N $l10n,
     ) {
@@ -143,7 +146,8 @@ class CalendarProvider extends AbstractIntegrationProvider
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         try {
-            return $this->calendarEventService->getEventsForObject(objectUuid: $objectId);
+            // Tier-2: UNION read across link-table + legacy X-OR-* scan.
+            return $this->calendarLinkService->getLinkedEvents(objectUuid: $objectId);
         } catch (Throwable $e) {
             // CalDAV failures (no user, no VEVENT calendar) degrade to
             // an empty list rather than breaking the tab — AD-23.
@@ -167,13 +171,19 @@ class CalendarProvider extends AbstractIntegrationProvider
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
+        // New shape: simple eventUid (Tier-2 link-table). Legacy shape:
+        // "{calendarId}/{eventUri}" (CalendarProvider Phase B-2). We accept
+        // both — if the entityId contains a slash, treat as legacy and
+        // strip X-OR-* on the VEVENT; otherwise treat as link-table unlink.
         $parts = explode('/', $entityId, 2);
-        if (count($parts) !== 2) {
-            throw new InvalidArgumentException('Calendar entityId must be "calendarId/eventUri"');
+        if (count($parts) === 2) {
+            [$calendarId, $eventUri] = $parts;
+            $this->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
+            return;
         }
 
-        [$calendarId, $eventUri] = $parts;
-        $this->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
+        // entityId is a bare eventUid — Tier-2 link-only removal.
+        $this->calendarLinkService->unlinkEvent(objectUuid: $objectId, eventUid: $entityId);
     }//end delete()
 
     /**
