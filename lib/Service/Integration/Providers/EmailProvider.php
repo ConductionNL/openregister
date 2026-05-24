@@ -101,12 +101,35 @@ class EmailProvider extends AbstractIntegrationProvider
     /**
      * List email links for an OR object.
      *
-     * `_limit` / `_page` filters are honoured.
+     * `_limit` / `_page` filters are honoured. Page is zero-indexed
+     * (page=0 returns the first batch, page=1 returns offset=limit).
+     *
+     * Payload contract — each row carries the columns serialized by
+     * `EmailLink::jsonSerialize()`:
+     *   id, objectUuid, registerId, mailAccountId, mailMessageId,
+     *   mailMessageUid, subject, sender, mailDate (ATOM), linkedBy,
+     *   linkedAt (ATOM)
+     *
+     * This shape matches every field `CnEmailTab` and `CnEmailCard`
+     * consume (subject, sender, mailDate, mailAccountId,
+     * mailMessageId — used for the deep-link into NC Mail). No
+     * widening required for Phase B-2.
+     *
+     * Paging total: the inner `EmailService::getEmailsForObject()` does
+     * return `['results' => [...], 'total' => int]`, but the
+     * IntegrationProvider contract is `array<int,array>` (flat list),
+     * so the total is dropped at this layer. The
+     * `ObjectIntegrationsController` wraps the result in
+     * `{items: [...]}` with no `total`. UI load-more (which expects
+     * `data.total`) therefore relies on `messages.length === total`
+     * fallback. Tracked as a fleet-wide contract widening — out of
+     * scope for Phase B-2 (would change the IntegrationProvider return
+     * type and ripple to all 19 providers).
      *
      * @param string              $register Register slug or numeric id (unused).
      * @param string              $schema   Schema slug or numeric id (unused).
      * @param string              $objectId Object uuid.
-     * @param array<string,mixed> $filters  Optional `_limit` / `_page`.
+     * @param array<string,mixed> $filters  Optional `_limit` / `_page` (page zero-indexed).
      *
      * @return array<int,array<string,mixed>>
      */
