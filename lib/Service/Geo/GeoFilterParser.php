@@ -11,6 +11,9 @@
  *
  * Either entry returns a list of GeoFilter; the caller AND-composes.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Geo
  *

@@ -7,6 +7,9 @@
  * with intelligent fallback strategies, response caching, and performance optimization.
  * Solves the fundamental pagination vs faceting architectural conflict.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Service\Object
  * @author    Conduction Development Team <dev@conduction.nl>
