@@ -467,9 +467,13 @@ class DeckCardService
     }//end deleteLinksForObject()
 
     /**
-     * Get Deck card info by card ID using direct DB query.
+     * Get Deck card info by card ID using Deck's services.
      *
-     * Falls back to direct DB if Deck service classes are not available.
+     * Resolves the board ID via `CardMapper::findBoardId()` because the
+     * Deck `Card` entity exposes only `getStackId()` — there is no
+     * `getBoardId()` method (board is reachable via the stack). Mirrors the
+     * pattern used inside Deck's own `CardService::update()` (line 331 in
+     * deck/lib/Service/CardService.php).
      *
      * @param int $cardId The card ID.
      *
@@ -483,9 +487,17 @@ class DeckCardService
                 $cardService = \OC::$server->get('OCA\Deck\Service\CardService');
                 $card        = $cardService->find($cardId);
 
+                // Board ID is not a Card property — look it up via CardMapper,
+                // which is how Deck itself derives it (see CardService::update).
+                $boardId = 0;
+                if (class_exists('OCA\Deck\Db\CardMapper') === true) {
+                    $cardMapper = \OC::$server->get('OCA\Deck\Db\CardMapper');
+                    $boardId    = ($cardMapper->findBoardId($cardId) ?? 0);
+                }
+
                 return [
                     'title'   => $card->getTitle(),
-                    'boardId' => $card->getBoardId() ?? 0,
+                    'boardId' => $boardId,
                     'stackId' => $card->getStackId(),
                 ];
             }
