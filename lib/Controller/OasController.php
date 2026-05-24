@@ -10,6 +10,9 @@
  * response) and `?strict=true` (returns HTTP 422 with the validation report when
  * any validation error is detected, instead of auto-correcting).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
  *

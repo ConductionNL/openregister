@@ -6,6 +6,9 @@
  * Controller for managing mapping operations in the OpenRegister app.
  * Provides endpoints for CRUD operations on mappings used for data transformation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

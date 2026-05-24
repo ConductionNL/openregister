@@ -6,6 +6,9 @@
  * Controller for managing object operations in the OpenRegister app.
  * Provides CRUD functionality for objects within registers and schemas.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
