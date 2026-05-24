@@ -488,6 +488,8 @@ class ComputedFieldHandler
      * @return array<int, array<int, string>> Detected cycles.
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-2
      */
     public function detectCircularDependencies(Schema $schema): array
     {
@@ -574,6 +576,8 @@ class ComputedFieldHandler
      * @param string $expression The Twig expression source.
      *
      * @return array<int, string> Distinct top-level identifiers.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-1
      */
     private function extractTwigVariables(string $expression): array
     {
@@ -674,6 +678,8 @@ class ComputedFieldHandler
      *                                                 already emitted.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-3
      */
     private function dfsForCycles(
         string $node,
@@ -729,6 +735,8 @@ class ComputedFieldHandler
      *                                  node duplicated.
      *
      * @return string Canonical cycle signature.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-4
      */
     private function canonicaliseCycle(array $cycle): string
     {
