@@ -198,7 +198,10 @@ class CollectivesProvider extends AbstractIntegrationProvider
 
         $rows = [];
         foreach ($allPages as $page) {
-            /** @var CollectivesPage $page */
+            /*
+             * @var CollectivesPage $page
+             */
+
             $slug = (string) ($page->getSlug() ?? '');
             if ($slug === '' || str_contains($slug, $marker) === false) {
                 continue;
@@ -216,14 +219,14 @@ class CollectivesProvider extends AbstractIntegrationProvider
                 'title' => $slug,
                 'url'   => '/index.php/apps/collectives/p/'.(string) $page->getId(),
                 'data'  => [
-                    'id'           => $page->getId(),
-                    'fileId'       => $page->getFileId(),
-                    'slug'         => $slug,
-                    'lastUserId'   => $page->getLastUserId(),
-                    'emoji'        => $page->getEmoji(),
+                    'id'         => $page->getId(),
+                    'fileId'     => $page->getFileId(),
+                    'slug'       => $slug,
+                    'lastUserId' => $page->getLastUserId(),
+                    'emoji'      => $page->getEmoji(),
                 ],
             ];
-        }
+        }//end foreach
 
         return $rows;
     }//end list()
@@ -243,7 +246,10 @@ class CollectivesProvider extends AbstractIntegrationProvider
     protected function resolvePageMapper(): ?CollectivesPageMapper
     {
         try {
-            /** @var CollectivesPageMapper $mapper */
+            /*
+             * @var CollectivesPageMapper $mapper
+             */
+
             $mapper = Server::get(CollectivesPageMapper::class);
             return $mapper;
         } catch (Throwable $e) {
