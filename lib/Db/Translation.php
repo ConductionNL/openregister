@@ -7,6 +7,9 @@
  * (object × property × language) translation slot, holding the
  * denormalised value plus its workflow status.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *

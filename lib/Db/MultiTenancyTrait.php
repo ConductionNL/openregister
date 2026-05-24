@@ -6,6 +6,9 @@
  * This trait provides reusable multi-tenancy and RBAC functionality for mappers.
  * It handles organisation filtering, permission checks, and security validation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Trait
  * @package  OCA\OpenRegister\Db
  *
