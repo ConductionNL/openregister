@@ -1237,16 +1237,17 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // PollsProvider — late-bound `OCA\Polls\Service\PollService`
-        // (only on classpath with the `polls` app installed) + user
-        // session for scoping. Links via the `[or:{objectUuid}]`
-        // marker in the poll title.
+        // PollsProvider — Tier-2: backed by the PollLinkMapper +
+        // direct queries against `oc_polls_*` tables. Replaces the
+        // original title-marker convention with a proper persistence
+        // layer.
         // @spec openspec/changes/integration-polls/tasks.md.
         $context->registerService(
             PollsProvider::class,
             function (ContainerInterface $container) {
                 return new PollsProvider(
-                    container: $container,
+                    pollLinkMapper: $container->get(\OCA\OpenRegister\Db\PollLinkMapper::class),
+                    db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     l10n: $container->get('OCP\IL10N'),
