@@ -10,6 +10,12 @@
 
 import Vue from 'vue'
 import { translate as t } from '@nextcloud/l10n'
+import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+
+// Bootstrap the integration registry on the files-sidebar bundle so any
+// tab component that uses useIntegrationRegistry() sees the same populated
+// singleton main.js produced on a non-Files page. Idempotent. See ADR-019.
+ensureIntegrationRegistry()
 
 // MDI icon SVG paths (inline to avoid icon library dependency).
 // database-outline

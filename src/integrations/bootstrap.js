@@ -1,0 +1,37 @@
+/**
+ * Shared integration-registry bootstrap.
+ *
+ * OpenRegister ships four webpack entry bundles (main, adminSettings,
+ * filesSidebar, mailSidebar). Each one runs in its own JS scope when the
+ * containing page loads, so each must install + populate the
+ * window.OCA.OpenRegister.integrations registry. Without that, sub-surfaces
+ * like the /dashboard widgets, the files-sidebar, or the mail-sidebar end
+ * up with an empty registry and the integration tabs / widgets disappear.
+ *
+ * Bootstrap is idempotent: a module-scope guard prevents double registration
+ * when an entry bundle's setup runs after main.js (e.g. inside a Files
+ * sidebar mount on the same page).
+ *
+ * @see ADR-019 — Pluggable Integration Registry
+ */
+import {
+	installIntegrationRegistry,
+	registerBuiltinIntegrations,
+	registerLeafIntegrations,
+} from '@conduction/nextcloud-vue'
+
+let bootstrapped = false
+
+/**
+ * Idempotent — safe to call from every entry bundle. Subsequent calls
+ * after the first are no-ops, so consumers don't need to coordinate.
+ */
+export function ensureIntegrationRegistry() {
+	if (bootstrapped) {
+		return
+	}
+	installIntegrationRegistry(window)
+	registerBuiltinIntegrations()
+	registerLeafIntegrations()
+	bootstrapped = true
+}
