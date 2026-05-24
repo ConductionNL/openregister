@@ -11,6 +11,13 @@
 
 import Vue from 'vue'
 import MailSidebar from './mail-sidebar/MailSidebar.vue'
+import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+
+// Bootstrap the integration registry on the mail-sidebar bundle so any
+// sub-component that uses useIntegrationRegistry() sees the populated
+// singleton even when the user lands directly on the Mail app.
+// Idempotent. See ADR-019.
+ensureIntegrationRegistry()
 
 console.info('[OpenRegister] mail-sidebar.js loaded')
 console.info('[OpenRegister] Vue and MailSidebar imported successfully')

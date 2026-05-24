@@ -28,7 +28,11 @@ export default {
 		const { integrations } = useIntegrationRegistry()
 		const providers = computed(() => (integrations.value || []))
 		const ready = ref(true)
-		return { providers, ready }
+		// Re-export the fallback tab component so the template's
+		// <component :is="provider.tab || CnIntegrationTab" /> dispatch
+		// can resolve it as a JS identifier (Options API templates can't
+		// reference module-scope imports directly).
+		return { providers, ready, CnIntegrationTab }
 	},
 
 	computed: {
@@ -80,11 +84,18 @@ export default {
 						:key="provider.id"
 						:title="provider.label || provider.id"
 						:title-attr="`${provider.id} (${provider.group || 'integration'})`">
-						<CnIntegrationTab
+						<!--
+							Dispatch to the provider's bespoke Vue component
+							(provider.tab) when one is registered; fall back to
+							the generic CnIntegrationTab otherwise. See ADR-019.
+						-->
+						<component :is="provider.tab || CnIntegrationTab"
+							:provider="provider"
 							:integration-id="provider.id"
 							:register="register"
 							:schema="schema"
-							:object-id="objectId" />
+							:object-id="objectId"
+							v-bind="provider.tabProps || {}" />
 					</BTab>
 				</BTabs>
 			</div>

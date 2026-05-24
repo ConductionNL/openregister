@@ -94,6 +94,22 @@ class ContactService
     /**
      * Get all contact links for an object.
      *
+     * Each row is the canonical {@see ContactLink::jsonSerialize()} payload
+     * enriched with `phone`, `org`, and `avatarUrl` resolved from the
+     * underlying vCard. The bespoke CnContactsCard surface
+     * (`single-entity` chip) reads `avatarUrl` for the round avatar; the
+     * `detail-page` and tab surfaces use `phone` + `org` to differentiate
+     * organisational vs. personal contacts.
+     *
+     * Enrichment is best-effort:
+     *   * If CardDAV throws or the card no longer exists, the link is
+     *     still returned but `phone` / `org` / `avatarUrl` are `null`.
+     *   * If the vCard is present but lacks any of TEL / ORG / PHOTO,
+     *     the corresponding field is `null`.
+     *
+     * Idempotent: re-running the enrichment doesn't double-write — the
+     * widened keys are computed fresh each call.
+     *
      * @param string $objectUuid The object UUID.
      *
      * @return array{results: array, total: int}
@@ -104,14 +120,162 @@ class ContactService
         $total = $this->contactLinkMapper->countByObjectUuid($objectUuid);
 
         $results = array_map(
-            static function (ContactLink $link): array {
-                return $link->jsonSerialize();
+            function (ContactLink $link): array {
+                $row     = $link->jsonSerialize();
+                $vfields = $this->extractVcardFields(
+                    addressbookId: $link->getAddressbookId(),
+                    contactUri: $link->getContactUri(),
+                    contactUid: $link->getContactUid()
+                );
+                return $row + $vfields;
             },
             $links
         );
 
         return ['results' => $results, 'total' => $total];
     }//end getContactsForObject()
+
+    /**
+     * Resolve the supplementary vCard fields (`phone`, `org`, `avatarUrl`)
+     * for a link row.
+     *
+     * Returns a defaults-shaped array even when the lookup fails so the
+     * caller never sees missing keys.
+     *
+     * @param int|null    $addressbookId The CardDAV addressbook id.
+     * @param string|null $contactUri    The vCard uri (e.g. `jan.vcf`).
+     * @param string|null $contactUid    The vCard UID (used to build a
+     *                                   fallback avatar route when PHOTO
+     *                                   is absent).
+     *
+     * @return array{phone: ?string, org: ?string, avatarUrl: ?string}
+     */
+    private function extractVcardFields(?int $addressbookId, ?string $contactUri, ?string $contactUid): array
+    {
+        $defaults = ['phone' => null, 'org' => null, 'avatarUrl' => null];
+
+        if ($addressbookId === null || $contactUri === null || $contactUri === '') {
+            // No CardDAV coordinates → still emit a fallback avatar URL
+            // when we have a uid so the chip can render an initials
+            // placeholder via the Contacts app's avatar endpoint.
+            if ($contactUid !== null && $contactUid !== '') {
+                $defaults['avatarUrl'] = '/index.php/apps/contacts/photo/'.rawurlencode($contactUid);
+            }
+
+            return $defaults;
+        }
+
+        try {
+            $card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
+        } catch (\Throwable $e) {
+            $this->logger->debug('vCard lookup failed for enrichment: '.$e->getMessage());
+            return $defaults;
+        }
+
+        if ($card === false || isset($card['carddata']) === false) {
+            return $defaults;
+        }
+
+        try {
+            $vcard = Reader::read($card['carddata']);
+        } catch (\Throwable $e) {
+            $this->logger->debug('vCard parse failed for enrichment: '.$e->getMessage());
+            return $defaults;
+        }
+
+        $phone = null;
+        if (isset($vcard->TEL) === true) {
+            // TEL may be a single value or an iterable of typed entries.
+            // Prefer the first non-empty entry — the bespoke UI shows
+            // one number per chip; richer multi-number rendering belongs
+            // in the upcoming reverse-lookup flyout (AD-3).
+            $tel = $vcard->TEL;
+            if (is_iterable($tel) === true) {
+                foreach ($tel as $entry) {
+                    $value = (string) $entry;
+                    if ($value !== '') {
+                        $phone = $value;
+                        break;
+                    }
+                }
+            } else {
+                $value = (string) $tel;
+                if ($value !== '') {
+                    $phone = $value;
+                }
+            }
+        }
+
+        $org = null;
+        if (isset($vcard->ORG) === true) {
+            $value = (string) $vcard->ORG;
+            // vCard ORG often uses semicolon-separated component fields
+            // (`Acme;Engineering;Backend`) — surface only the primary
+            // organisation name.
+            $primary = trim(explode(';', $value)[0]);
+            if ($primary !== '') {
+                $org = $primary;
+            }
+        }
+
+        $avatarUrl = null;
+        if (isset($vcard->PHOTO) === true) {
+            // Sabre auto-classifies vCard 3.0 PHOTO bodies as Binary when
+            // no `VALUE=URI` parameter is present, which means casting to
+            // string returns the base64-decoded blob. Use the raw
+            // mime-dir value and decide based on its shape instead.
+            $photoProp = $vcard->PHOTO;
+            $rawValue  = '';
+            if (method_exists($photoProp, 'getRawMimeDirValue') === true) {
+                $rawValue = (string) $photoProp->getRawMimeDirValue();
+            }
+
+            if ($rawValue === '') {
+                $rawValue = (string) $photoProp;
+            }
+
+            if ($rawValue !== '') {
+                // Trim any line-folding artefacts ("https//examplecom/janjpg"
+                // can occur when Sabre eagerly strips colons/dots from
+                // the binary view of a URL; in that case we fall back to
+                // the per-uid Contacts route below).
+                if (preg_match('#^(https?://|data:)#i', $rawValue) === 1) {
+                    $avatarUrl = $rawValue;
+                } else {
+                    // Otherwise treat as inline image bytes; wrap as data URL.
+                    $mediaType = 'image/jpeg';
+                    if (isset($photoProp['TYPE']) === true) {
+                        $typeParam = (string) $photoProp['TYPE'];
+                        if ($typeParam !== '') {
+                            $mediaType = 'image/'.strtolower($typeParam);
+                        }
+                    }
+
+                    // Strip any embedded `data:` prefix Sabre may have
+                    // left in place when round-tripping a data URL.
+                    if (str_starts_with($rawValue, 'data:') === true) {
+                        $avatarUrl = $rawValue;
+                    } else {
+                        $avatarUrl = 'data:'.$mediaType.';base64,'.$rawValue;
+                    }
+                }
+            }
+        }//end if
+
+        // Fallback to the Contacts app's per-uid avatar route when no
+        // PHOTO property is embedded — the route 404s gracefully when
+        // the contact has no photo, which the UI treats as "use the
+        // initials placeholder".
+        if ($avatarUrl === null && $contactUid !== null && $contactUid !== '') {
+            $avatarUrl = '/index.php/apps/contacts/photo/'.rawurlencode($contactUid);
+        }
+
+        return [
+            'phone'     => $phone,
+            'org'       => $org,
+            'avatarUrl' => $avatarUrl,
+        ];
+    }//end extractVcardFields()
 
     /**
      * Link an existing contact to an object.
@@ -289,11 +453,20 @@ class ContactService
     /**
      * Remove a contact link.
      *
+     * Idempotent: tolerates a missing or corrupt vCard so the link row
+     * can always be cleaned. If the underlying vCard has been removed
+     * from the addressbook (e.g. user deleted the contact via NC
+     * Contacts), the CardDAV custom-property cleanup is skipped and the
+     * link row is still dropped. Any Throwable from the cleanup path is
+     * caught and logged at warning level — the link row deletion
+     * proceeds regardless so orphan rows are recoverable through this
+     * path rather than only via direct DB DELETE.
+     *
      * @param int $linkId The link ID.
      *
      * @return void
      *
-     * @throws Exception If link not found.
+     * @throws Exception If the link row itself isn't found (404).
      */
     public function unlinkContact(int $linkId): void
     {
@@ -303,7 +476,10 @@ class ContactService
             throw new Exception('Contact link not found', 404);
         }
 
-        // Remove X-OPENREGISTER-* from vCard.
+        // Best-effort: remove X-OPENREGISTER-* from the vCard. If the
+        // vCard is gone or unreadable, skip the cleanup and proceed with
+        // the link-row delete — orphan link rows would otherwise only
+        // be cleanable via direct DB DELETE.
         try {
             $card = $this->cardDavBackend->getCard($link->getAddressbookId(), $link->getContactUri());
             if ($card !== false) {
@@ -312,8 +488,15 @@ class ContactService
                 unset($vcard->{'X-OPENREGISTER-ROLE'});
                 $this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
             }
-        } catch (Exception $e) {
-            $this->logger->warning('Failed to clean vCard properties: '.$e->getMessage());
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                'Failed to clean vCard properties (link row will still be removed): '.$e->getMessage(),
+                [
+                    'linkId'        => $linkId,
+                    'addressbookId' => $link->getAddressbookId(),
+                    'contactUri'    => $link->getContactUri(),
+                ]
+            );
         }
 
         $this->contactLinkMapper->delete($link);

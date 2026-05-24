@@ -135,18 +135,105 @@ class PollsProvider extends AbstractIntegrationProvider
                 continue;
             }
 
-            $id    = (string) ($row['id'] ?? '');
+            $id      = (string) ($row['id'] ?? '');
+            $pollId  = (int) ($row['id'] ?? 0);
+            $expire  = (int) ($row['expire'] ?? 0);
+            $options = $this->fetchOptionsWithCounts($db, $pollId);
+            $voters  = $this->fetchVoterCount($db, $pollId);
+
             $out[] = [
                 'id'          => $id,
                 'title'       => $title,
                 'description' => (string) ($row['description'] ?? ''),
                 'type'        => (string) ($row['type'] ?? ''),
                 'url'         => '/index.php/apps/polls/vote/'.$id,
+                'deadline'    => $expire > 0 ? $expire : null,
+                'closed'      => ($expire > 0 && $expire <= time()),
+                'voterCount'  => $voters,
+                'options'     => $options,
             ];
         }
 
         return $out;
     }//end list()
+
+    /**
+     * Fetch poll options with their yes-vote tallies.
+     *
+     * Returns a list of `{id, text, votes}` rows, ordered by the poll's
+     * stored option order. Vote counts only include rows where
+     * `vote_answer = 'yes'` and the option/vote are not soft-deleted —
+     * mirrors Polls' own tally surface. Returns an empty array on any
+     * DB failure to keep the leaf row degradation-safe.
+     *
+     * @param \OCP\IDBConnection $db     OR's lazy-resolved DB handle.
+     * @param int                $pollId Poll primary key.
+     *
+     * @return array<int,array{id:int,text:string,votes:int}>
+     */
+    private function fetchOptionsWithCounts(\OCP\IDBConnection $db, int $pollId): array
+    {
+        try {
+            $qb = $db->getQueryBuilder();
+            $qb->select('id', 'poll_option_text', 'poll_option_hash')
+                ->from('polls_options')
+                ->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+                ->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+                ->orderBy('order', 'ASC');
+            $optionRows = $qb->executeQuery()->fetchAll();
+        } catch (Throwable $e) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($optionRows as $opt) {
+            $hash = (string) ($opt['poll_option_hash'] ?? '');
+            $votes = 0;
+            try {
+                $vq = $db->getQueryBuilder();
+                $vq->select($vq->func()->count('*', 'cnt'))
+                    ->from('polls_votes')
+                    ->where($vq->expr()->eq('poll_id', $vq->createNamedParameter($pollId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+                    ->andWhere($vq->expr()->eq('vote_option_hash', $vq->createNamedParameter($hash)))
+                    ->andWhere($vq->expr()->eq('vote_answer', $vq->createNamedParameter('yes')))
+                    ->andWhere($vq->expr()->eq('deleted', $vq->createNamedParameter(0, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)));
+                $votes = (int) ($vq->executeQuery()->fetchOne() ?: 0);
+            } catch (Throwable $e) {
+                $votes = 0;
+            }
+
+            $out[] = [
+                'id'    => (int) ($opt['id'] ?? 0),
+                'text'  => (string) ($opt['poll_option_text'] ?? ''),
+                'votes' => $votes,
+            ];
+        }
+
+        return $out;
+    }//end fetchOptionsWithCounts()
+
+    /**
+     * Distinct user count that has cast at least one non-deleted vote.
+     *
+     * @param \OCP\IDBConnection $db     OR's lazy-resolved DB handle.
+     * @param int                $pollId Poll primary key.
+     *
+     * @return int
+     */
+    private function fetchVoterCount(\OCP\IDBConnection $db, int $pollId): int
+    {
+        try {
+            $qb = $db->getQueryBuilder();
+            $qb->selectDistinct('user_id')
+                ->from('polls_votes')
+                ->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+                ->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)));
+            $rows = $qb->executeQuery()->fetchAll();
+            return count($rows);
+        } catch (Throwable $e) {
+            return 0;
+        }
+    }//end fetchVoterCount()
 
     public function health(): array
     {

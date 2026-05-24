@@ -117,6 +117,22 @@ class CalendarProvider extends AbstractIntegrationProvider
      * returns the full per-object set; pagination is a UI concern and
      * the list is bounded by the user's own calendar size.
      *
+     * Payload contract — each row carries the keys serialized by
+     * `CalendarEventService::veventToArray()`:
+     *   id (event uri), uid, calendarId, summary, dtstart (ATOM),
+     *   dtend (ATOM), location, description, attendees (array of
+     *   email strings), status, objectUuid, registerId, schemaId
+     *
+     * This shape matches every field `CnCalendarTab` (timeline rows +
+     * inline create form) and `CnCalendarCard` (all four surfaces —
+     * including the single-entity chip's status badge) consume. No
+     * widening required for Phase B-2.
+     *
+     * Known limitation: `CalendarEventService::findUserCalendar()`
+     * picks the *first* VEVENT-supporting calendar for the current
+     * user. Events written to a different calendar are not discovered.
+     * Multi-calendar awareness is tracked as a fleet-wide follow-up.
+     *
      * @param string              $register Register slug or numeric id (unused — CalDAV scope is per-user).
      * @param string              $schema   Schema slug or numeric id (unused).
      * @param string              $objectId Object uuid.

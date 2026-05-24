@@ -352,15 +352,64 @@ class OpenProjectProvider extends AbstractIntegrationProvider
         $status  = (string) ($row['status'] ?? ($row['_links']['status']['title'] ?? ''));
         $url     = (string) ($row['url'] ?? ($row['_links']['self']['href'] ?? ''));
 
+        // Flatten the OpenProject hAL-style _links/_embedded labels onto
+        // top-level keys so CnOpenprojectTab can render type / priority /
+        // assignee / project without hand-walking nested envelopes.
+        // Falls through to top-level fields when a source pre-maps them.
+        $type     = $this->pickHalLabel(row: $row, field: 'type', linkKey: 'title', embedKey: 'name');
+        $priority = $this->pickHalLabel(row: $row, field: 'priority', linkKey: 'title', embedKey: 'name');
+        $assignee = $this->pickHalLabel(row: $row, field: 'assignee', linkKey: 'title', embedKey: 'name');
+        $project  = $this->pickHalLabel(row: $row, field: 'project', linkKey: 'title', embedKey: 'name');
+
         return array_merge(
             $row,
             [
                 'id'        => $id,
                 'reference' => $id,
+                'subject'   => $subject,
                 'title'     => $subject,
                 'status'    => $status,
+                'type'      => $type,
+                'priority'  => $priority,
+                'assignee'  => $assignee,
+                'project'   => $project,
                 'url'       => $url,
             ]
         );
     }//end normalizeRow()
+
+
+    /**
+     * Pick a hAL label from a work-package row, preferring a top-level
+     * field, then `_links.<field>.<linkKey>`, then `_embedded.<field>.<embedKey>`.
+     *
+     * Empty strings count as "missing" so source mappings that emit a
+     * blank top-level key still fall through to the envelope copy.
+     *
+     * @param array  $row      Raw work-package row.
+     * @param string $field    Field name (`type`, `priority`, `assignee`, `project`).
+     * @param string $linkKey  Label key under `_links.<field>` (`title`).
+     * @param string $embedKey Label key under `_embedded.<field>` (`name`).
+     *
+     * @return string Resolved label or empty string.
+     */
+    private function pickHalLabel(array $row, string $field, string $linkKey, string $embedKey): string
+    {
+        $top = $row[$field] ?? null;
+        if (is_string($top) === true && $top !== '') {
+            return $top;
+        }
+
+        $link = $row['_links'][$field][$linkKey] ?? null;
+        if (is_string($link) === true && $link !== '') {
+            return $link;
+        }
+
+        $embed = $row['_embedded'][$field][$embedKey] ?? null;
+        if (is_string($embed) === true && $embed !== '') {
+            return $embed;
+        }
+
+        return '';
+    }//end pickHalLabel()
 }//end class
