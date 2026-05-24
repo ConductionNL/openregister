@@ -166,6 +166,17 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch the contact list for the current object via the per-object
+		 * `GET /api/objects/{register}/{schema}/{id}/contacts` endpoint. Sets
+		 * `error` / `errorMessage` on failure; the 501 graceful-degradation
+		 * path is handled inside the store and surfaces as
+		 * `store.contactsUnavailable`.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 *
+		 * @return {Promise<void>}
+		 */
 		async fetchContacts() {
 			this.error = false
 			this.errorMessage = ''

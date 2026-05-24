@@ -17,6 +17,8 @@ import axios from '@nextcloud/axios'
  *  - DELETE /api/objects/{register}/{schema}/{id}/contacts/{contactUid}
  *
  * Spec: openspec/changes/nextcloud-entity-relations/specs/contact-relations/spec.md
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
  */
 export const useContactRelationsStore = defineStore('contactRelations', {
 	state: () => ({

@@ -115,6 +115,8 @@ class ContactsProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional filters (currently ignored).
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-4
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -140,6 +142,8 @@ class ContactsProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Must carry `role`.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-4
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -165,6 +169,8 @@ class ContactsProvider extends AbstractIntegrationProvider
      * @param string $entityId Numeric link id.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-4
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
