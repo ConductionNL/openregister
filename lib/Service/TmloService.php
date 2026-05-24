@@ -473,7 +473,7 @@ class TmloService
             $root->appendChild(
                 $dom->createElementNS(
                     self::MDTO_NAMESPACE,
-                    'mdto:waarpinaering',
+                    'mdto:waardering',
                     $this->mapArchiefnominatie(nominatie: $tmlo['archiefnominatie'])
                 )
             );
