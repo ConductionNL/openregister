@@ -305,13 +305,19 @@ return [
         ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
 
         // Mail sidebar — reverse lookup of OR objects linked to an email.
-        // Search + bySender are app-global (no register/schema in path); the
-        // CRUD endpoints are scoped to an object so they take register/schema/id.
+        // Search + bySender are app-global (no register/schema in path) and
+        // stay on the legacy Tier-1 controller. The per-object link/unlink
+        // surface is served by the Tier-2 `emailLinks` controller which adds
+        // idempotent upsert + composite-key uniqueness; the picker step
+        // routes (accounts/mailboxes/messages) live alongside.
         ['name' => 'emails#search',   'url' => '/api/emails/search',                                'verb' => 'GET'],
         ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender',                             'verb' => 'GET'],
-        ['name' => 'emails#index',    'url' => '/api/objects/{register}/{schema}/{id}/emails',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'emails#create',   'url' => '/api/objects/{register}/{schema}/{id}/emails',     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'emails#destroy',  'url' => '/api/objects/{register}/{schema}/{id}/emails/{emailId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'emailId' => '[0-9]+']],
+        ['name' => 'emailLinks#index',   'url' => '/api/objects/{register}/{schema}/{id}/emails',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emailLinks#link',    'url' => '/api/objects/{register}/{schema}/{id}/emails',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emailLinks#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/emails/{linkId}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'linkId' => '[0-9]+']],
+        ['name' => 'emailLinks#accounts',  'url' => '/api/integrations/email/accounts',                                       'verb' => 'GET'],
+        ['name' => 'emailLinks#mailboxes', 'url' => '/api/integrations/email/accounts/{accountId}/mailboxes',                 'verb' => 'GET',    'requirements' => ['accountId' => '[0-9]+']],
+        ['name' => 'emailLinks#messages',  'url' => '/api/integrations/email/accounts/{accountId}/messages',                  'verb' => 'GET',    'requirements' => ['accountId' => '[0-9]+']],
 
         // Contacts — object↔NC contact links + reverse lookup. Match is app-global.
         // The explicit `/contacts/new` route is the Tier-2 create-only path
