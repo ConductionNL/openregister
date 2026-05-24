@@ -346,6 +346,16 @@ return [
         // Reverse lookup — keep on Tier-1 controller (not in Tier-2 scope).
         ['name' => 'deck#objects',        'url' => '/api/deck/boards/{boardId}/objects',                      'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
 
+        // Talk — Tier-2 link table + picker UX. Specific routes (`/new`)
+        // MUST precede the wildcard `{roomToken}` route so they aren't
+        // grabbed as roomToken='new'. The picker source endpoint is
+        // app-global (not per-object).
+        ['name' => 'talkLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/talk',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'talkLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/talk',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'talkLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/talk/new',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'talkLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/talk/{roomToken}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'roomToken' => '[A-Za-z0-9]+']],
+        ['name' => 'talkLinks#rooms',     'url' => '/api/integrations/talk/rooms',                            'verb' => 'GET'],
+
         // Forms — Tier-2 link-table API. Specific routes (`/new`, `/submissions/{id}`)
         // MUST precede the wildcard `{formId}` route so they aren't grabbed as
         // formId='new' / formId='submissions'. Available-forms picker is app-global.
