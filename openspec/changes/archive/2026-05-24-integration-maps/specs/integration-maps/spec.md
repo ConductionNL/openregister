@@ -1,5 +1,6 @@
 ---
-status: proposed
+status: partial
+archived: 2026-05-24
 ---
 
 # Integration: Maps
