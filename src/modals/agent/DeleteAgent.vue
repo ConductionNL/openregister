@@ -71,6 +71,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Modal dialog close handler — resets navigationStore.dialog; UI plumbing.
+		 */
 		closeDialog() {
 			navigationStore.setDialog(null)
 		},

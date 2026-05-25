@@ -378,6 +378,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed dropdown options from target-schema properties; UI presentation helper.
+		 */
 		targetPropertyOptions() {
 			const options = this.targetProperties.map(prop => ({
 				label: `${prop.name} (${prop.type})`,
@@ -391,6 +394,9 @@ export default {
 
 			return options
 		},
+		/**
+		 * @spec exclude Computed enablement guard for the migrate button; UI validation helper.
+		 */
 		canMigrate() {
 			// Check if we have target register/schema and at least one property mapping
 			const hasValidMappings = Object.values(this.uiMappings).some(option => option && option.value)
@@ -413,6 +419,9 @@ export default {
 			}
 			this.loadAvailableRegisters()
 		},
+		/**
+		 * @spec exclude Fetches registers to populate the target-register select; UI form-loading plumbing.
+		 */
 		async loadAvailableRegisters() {
 			this.loading = true
 			try {
@@ -426,6 +435,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Reloads target schemas when the register select changes; UI reactivity plumbing.
+		 */
 		async onRegisterChange() {
 			if (!this.targetRegister) {
 				this.availableSchemas = []
@@ -445,18 +457,27 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Loads schema properties when the target-schema select changes; UI reactivity plumbing.
+		 */
 		async onSchemaChange() {
 			if (!this.targetSchema) {
 				return
 			}
 			await this.loadSchemaProperties()
 		},
+		/**
+		 * @spec exclude Removes one object from the local migration selection; UI selection plumbing.
+		 */
 		removeObject(objectId) {
 			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
 			if (this.selectedObjects.length === 0) {
 				this.closeModal()
 			}
 		},
+		/**
+		 * @spec exclude Wizard forward-navigation guard across migration steps; UI step plumbing.
+		 */
 		nextStep() {
 			if (this.step === 1 && this.selectedObjects.length > 0) {
 				this.step = 2
@@ -464,11 +485,17 @@ export default {
 				this.step = 3
 			}
 		},
+		/**
+		 * @spec exclude Wizard back-navigation across migration steps; UI step plumbing.
+		 */
 		previousStep() {
 			if (this.step > 1) {
 				this.step--
 			}
 		},
+		/**
+		 * @spec exclude Loads source+target schema properties and seeds mappings; UI form-loading plumbing.
+		 */
 		async loadSchemaProperties() {
 			if (!schemaStore.schemaItem || !this.targetSchema) {
 				return
@@ -492,6 +519,9 @@ export default {
 				console.error('Error loading schema properties:', error)
 			}
 		},
+		/**
+		 * @spec exclude Flattens a schema definition into a name/type/required list; UI presentation helper.
+		 */
 		extractSchemaProperties(schema) {
 			// Extract properties from schema definition
 			const properties = []
@@ -506,6 +536,9 @@ export default {
 			}
 			return properties
 		},
+		/**
+		 * @spec exclude Auto-maps same-named source/target properties on load; UI form-init plumbing.
+		 */
 		initializePropertyMappings() {
 			this.mapping = {}
 			this.uiMappings = {}
@@ -527,6 +560,9 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @spec exclude Migrate-confirm handler posting the mapping to the /migrate endpoint and refreshing the list; UI orchestration plumbing.
+		 */
 		async performMigration() {
 			if (!this.canMigrate) {
 				return
@@ -573,13 +609,22 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 		},
+		/**
+		 * @spec exclude UI-change handler re-syncing the mapping object; UI reactivity plumbing.
+		 */
 		updateMappingFromUI(_sourceProperty) {
 			// Convert UI mappings to our simple mapping format
 			this.convertUIToMapping()
 		},
+		/**
+		 * @spec exclude Converts the UI mapping model to the API mapping shape; UI data-shape helper.
+		 */
 		convertUIToMapping() {
 			// Convert from UI format (source -> target option) to our format (target -> source)
 			this.mapping = {}
@@ -590,6 +635,9 @@ export default {
 				}
 			}
 		},
+		/**
+		 * @spec exclude Converts the API mapping shape back to the UI mapping model; UI data-shape helper.
+		 */
 		convertMappingToUI() {
 			// Convert from our format (target -> source) to UI format (source -> target option)
 			this.uiMappings = {}
