@@ -72,3 +72,29 @@ retrofit_extensions:
 - **THEN** `status` MUST remain `'open'`
 - **AND** `createdAfter` MUST be the Monday-anchored `DateTimeImmutable` for the current week
 - **AND** `nested.by` MUST be the resolved session UID
+
+## Non-Functional
+
+- **i18n (ADR-007):** This delta covers backend validators and a placeholder
+  resolver with no user-facing copy of its own. Validation errors
+  (`InvalidArgumentException` messages, the `{code, message}` widget error
+  descriptors) are developer/operator diagnostics; the stable machine-readable
+  `code` (e.g. `widget-bad-type`) is the contract, leaving the human `message`
+  free for the caller to localise. The DSL MUST NOT assume a locale — week
+  boundaries are anchored on Monday (ISO-8601), independent of display locale.
+- **Determinism:** placeholder resolution MUST be applied exactly once per
+  request, before cache-key derivation, so identical filters yield identical
+  cache keys.
+- **Safety:** field allow-listing against declared schema properties MUST gate
+  every timeseries request to prevent unbounded/arbitrary-field aggregation.
+
+## Acceptance Criteria
+
+- `TimeseriesRequestValidator::validate` rejects undeclared fields, enforces the
+  closed interval vocabulary, requires `date-time` fields for sub-day intervals,
+  and produces exactly one of `dateBucket` / `groupBy`.
+- `WidgetAnnotationValidator::validate` returns `[]` for absent annotations and a
+  coded error per violated rule otherwise.
+- `PlaceholderResolver::resolve` handles `$currentUser`, the date anchors, signed
+  offset arithmetic with unit defaulting, and passes unknown/non-string values
+  through unchanged; `resolveArray` recurses preserving keys.
