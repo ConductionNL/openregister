@@ -43,6 +43,8 @@ class OasETagComputer
      * @param array $oas The generated OAS payload.
      *
      * @return string Strong ETag, quoted per RFC 7232 (e.g. `"abc123"`).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-7
      */
     public function computeETag(array $oas): string
     {
@@ -56,6 +58,8 @@ class OasETagComputer
      * @param array $spec The OAS payload.
      *
      * @return string The hex-encoded SHA-256 hash.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-7
      */
     public function hash(array $spec): string
     {
@@ -75,6 +79,8 @@ class OasETagComputer
      * @param string $currentETag The currently computed ETag (quoted).
      *
      * @return bool True when a 304 response can be returned.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-7
      */
     public function matches(string $ifNoneMatch, string $currentETag): bool
     {

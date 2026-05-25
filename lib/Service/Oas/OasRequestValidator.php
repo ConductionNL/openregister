@@ -46,6 +46,8 @@ class OasRequestValidator
      * @param array $schema The JSON-Schema to validate against (decoded).
      *
      * @return array<int, array{path: string, message: string}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-8
      */
     public function validate(mixed $body, array $schema): array
     {

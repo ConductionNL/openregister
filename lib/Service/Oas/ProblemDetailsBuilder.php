@@ -62,6 +62,8 @@ class ProblemDetailsBuilder
      * @param array  $extensions Free-form extension fields (e.g. `errors`, `code`).
      *
      * @return array<string, mixed> The problem-json payload.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
      */
     public function build(
         int $status,
@@ -107,6 +109,8 @@ class ProblemDetailsBuilder
      * @param string $instance Instance URI, '' = omit.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
      */
     public function validationFailed(array $errors, string $detail='', string $instance=''): array
     {
@@ -128,6 +132,8 @@ class ProblemDetailsBuilder
      * @param string $instance Instance URI, '' = omit.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
      */
     public function notFound(string $detail='', string $instance=''): array
     {
@@ -147,6 +153,8 @@ class ProblemDetailsBuilder
      * @param string $instance Instance URI, '' = omit.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
      */
     public function conflict(string $detail='', string $instance=''): array
     {

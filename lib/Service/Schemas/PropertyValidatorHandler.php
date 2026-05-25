@@ -249,6 +249,8 @@ class PropertyValidatorHandler
      * @throws Exception If any property definition is invalid
      *
      * @return true True if all properties are valid
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-13
      */
     public function validateProperties(array $properties, string $path=''): bool
     {
