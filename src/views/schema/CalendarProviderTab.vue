@@ -180,6 +180,7 @@ export default {
 	computed: {
 		/**
 		 * Property names available for placeholders
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
 		propertyNames() {
@@ -190,6 +191,7 @@ export default {
 		},
 		/**
 		 * Date/datetime properties for dtstart/dtend selectors
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
 		datePropertyOptions() {
@@ -206,6 +208,7 @@ export default {
 		},
 		/**
 		 * String properties for location selector
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
 		stringPropertyOptions() {
@@ -218,6 +221,7 @@ export default {
 		},
 		/**
 		 * Validation: dtstart and titleTemplate required when enabled
+		 * @spec exclude UI plumbing — derived form-validity flag for display
 		 * @return {boolean}
 		 */
 		isValid() {
@@ -229,6 +233,13 @@ export default {
 	},
 	watch: {
 		schema: {
+			/**
+			 * Reload the calendar config when the schema prop changes.
+			 *
+			 * @param {object} newSchema The new schema.
+			 * @spec exclude UI plumbing — prop watch handler
+			 * @return {void}
+			 */
 			handler(newSchema) {
 				if (newSchema) {
 					this.loadConfig(newSchema)
@@ -259,6 +270,8 @@ export default {
 		},
 		/**
 		 * Save the calendar provider configuration via schema update
+		 * @spec exclude UI plumbing — save action delegates to the schema store
+		 * @return {Promise<void>}
 		 */
 		async save() {
 			this.saving = true

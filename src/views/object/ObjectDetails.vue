@@ -375,6 +375,13 @@ export default {
 		RelationsTab,
 		CnIntegrationTab,
 	},
+	/**
+	 * Composition-API setup: expose the integration-provider registry and
+	 * template helpers to the Options-API template.
+	 *
+	 * @spec exclude UI plumbing — registry snapshot and template helper exposure
+	 * @return {object}
+	 */
 	setup() {
 		// Reactive snapshot of every IntegrationProvider registered through
 		// nc-vue's in-page registry — drained from window.OCA.OpenRegister
@@ -447,6 +454,7 @@ export default {
 		 * any of the three is missing, so the tabs only render once a saved
 		 * object is being viewed.
 		 *
+		 * @spec exclude UI plumbing — derived view state gating relation tabs
 		 * @return {{register:(string|number), schema:(string|number), id:string}|null}
 		 */
 		relationContext() {
@@ -468,21 +476,45 @@ export default {
 	},
 	watch: {
 		'pagination.files.currentPage': {
+			/**
+			 * Reload files when the files page changes.
+			 *
+			 * @spec exclude UI plumbing — pagination watch handler
+			 * @return {void}
+			 */
 			handler() {
 				this.getFiles()
 			},
 		},
 		'pagination.auditTrails.currentPage': {
+			/**
+			 * Reload audit trails when the audit-trails page changes.
+			 *
+			 * @spec exclude UI plumbing — pagination watch handler
+			 * @return {void}
+			 */
 			handler() {
 				this.getAuditTrails()
 			},
 		},
 		'pagination.relations.currentPage': {
+			/**
+			 * Reload relations when the relations page changes.
+			 *
+			 * @spec exclude UI plumbing — pagination watch handler
+			 * @return {void}
+			 */
 			handler() {
 				this.getRelations()
 			},
 		},
 	},
+	/**
+	 * Lifecycle hook: load files, audit trails and relations on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {void}
+	 */
 	mounted() {
 		if (objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
@@ -491,6 +523,12 @@ export default {
 			this.getRelations()
 		}
 	},
+	/**
+	 * Lifecycle hook: reload sub-resources when the viewed object changes.
+	 *
+	 * @spec exclude UI plumbing — re-fetch on active-object change
+	 * @return {void}
+	 */
 	updated() {
 		if (this.currentActiveObject !== objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
@@ -506,6 +544,12 @@ export default {
 		// relationsPlugin) have installed them. Calling a method that
 		// doesn't exist on the store throws TypeError mid-mount and
 		// aborts the whole render — guard each call.
+		/**
+		 * Fetch the object's attached files for display (race-safe).
+		 *
+		 * @spec exclude UI plumbing — delegates to the object store fetch
+		 * @return {void}
+		 */
 		getFiles() {
 			if (!objectStore.objectItem?.id || typeof objectStore.getFiles !== 'function') {
 				return
@@ -519,6 +563,12 @@ export default {
 				this.fileLoading = false
 			})
 		},
+		/**
+		 * Fetch the object's audit trails for display (race-safe).
+		 *
+		 * @spec exclude UI plumbing — delegates to the object store fetch
+		 * @return {void}
+		 */
 		getAuditTrails() {
 			if (!objectStore.objectItem?.id || typeof objectStore.getAuditTrails !== 'function') {
 				return
@@ -537,6 +587,12 @@ export default {
 					this.auditTrailLoading = false
 				})
 		},
+		/**
+		 * Fetch the object's relations for display (race-safe).
+		 *
+		 * @spec exclude UI plumbing — delegates to the object store fetch
+		 * @return {void}
+		 */
 		getRelations() {
 			if (!objectStore.objectItem?.id || typeof objectStore.getRelations !== 'function') {
 				return
@@ -558,6 +614,7 @@ export default {
 		/**
 		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
 		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
+		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
 		 */
 		openFolder(url) {
 			// Parse the encoded URL by replacing escaped characters
@@ -576,6 +633,7 @@ export default {
 		/**
 		 * Opens a file in the Nextcloud Files app
 		 * @param {object} file - The file object containing id, path, and other metadata
+		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
 		 */
 		openFile(file) {
 			// Extract the directory path without the filename
@@ -593,6 +651,7 @@ export default {
 		/**
 		 * Formats a file size in bytes to a human readable string
 		 * @param {number} bytes - The file size in bytes
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted file size (e.g. "1.5 MB")
 		 */
 		 formatFileSize(bytes) {

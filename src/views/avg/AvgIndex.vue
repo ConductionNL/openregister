@@ -401,9 +401,21 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Expose the l10n translate helper to the template.
+		 *
+		 * @spec exclude UI plumbing — template translation helper
+		 * @return {Function}
+		 */
 		t() {
 			return t
 		},
+		/**
+		 * Tab definitions for the AVG view header.
+		 *
+		 * @spec exclude UI plumbing — static tab list for display
+		 * @return {Array<object>}
+		 */
 		tabs() {
 			return [
 				{ id: 'activities', label: t('openregister', 'Activities'), icon: 'ShieldLockOutline' },
@@ -412,31 +424,80 @@ export default {
 				{ id: 'compliance', label: t('openregister', 'Compliance'), icon: 'ShieldAlertOutline' },
 			]
 		},
+		/**
+		 * Activities list from the AVG store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {Array<object>}
+		 */
 		activities() {
 			return avgStore.getActivities ?? []
 		},
+		/**
+		 * Verantwoording report from the AVG store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object}
+		 */
 		verantwoording() {
 			return avgStore.getVerantwoording
 		},
+		/**
+		 * DSAR result rows from the AVG store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object}
+		 */
 		dsarResults() {
 			return avgStore.getDsarResults
 		},
+		/**
+		 * DSAR summary from the AVG store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object}
+		 */
 		dsarSummary() {
 			return avgStore.getDsarSummary
 		},
+		/**
+		 * Compliance report from the AVG store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object}
+		 */
 		complianceReport() {
 			return avgStore.getComplianceReport
 		},
+		/**
+		 * Whether the AVG store is currently loading, for spinner display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loading() {
 			return avgStore.isLoading
 		},
 	},
 
+	/**
+	 * Lifecycle hook: load activities when the view mounts.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {void}
+	 */
 	mounted() {
 		this.refreshActivities()
 	},
 
 	methods: {
+		/**
+		 * Format an ISO timestamp as a locale string for display.
+		 *
+		 * @param {string} value The timestamp to format.
+		 * @spec exclude UI plumbing — pure presentation helper
+		 * @return {string}
+		 */
 		formatTime(value) {
 			if (!value) return ''
 			try {
@@ -446,6 +507,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Reload the activities list from the store.
+		 *
+		 * @spec exclude UI plumbing — delegates to the AVG store fetch
+		 * @return {Promise<void>}
+		 */
 		async refreshActivities() {
 			try {
 				await avgStore.fetchActivities()
@@ -454,26 +521,58 @@ export default {
 			}
 		},
 
+		/**
+		 * Open the create-activity dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle
+		 * @return {void}
+		 */
 		openCreateDialog() {
 			this.dialogActivity = null
 			this.dialogOpen = true
 		},
 
+		/**
+		 * Open the edit-activity dialog for a given activity.
+		 *
+		 * @param {object} activity The activity to edit.
+		 * @spec exclude UI plumbing — dialog visibility toggle
+		 * @return {void}
+		 */
 		openEditDialog(activity) {
 			this.dialogActivity = { ...activity }
 			this.dialogOpen = true
 		},
 
+		/**
+		 * Close the activity dialog and clear its state.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle
+		 * @return {void}
+		 */
 		closeDialog() {
 			this.dialogOpen = false
 			this.dialogActivity = null
 		},
 
+		/**
+		 * Handle the dialog's saved event by closing it and refreshing the list.
+		 *
+		 * @spec exclude UI plumbing — dialog callback wiring
+		 * @return {void}
+		 */
 		onActivitySaved() {
 			this.closeDialog()
 			this.refreshActivities()
 		},
 
+		/**
+		 * Archive an activity after user confirmation.
+		 *
+		 * @param {object} activity The activity to archive.
+		 * @spec exclude UI plumbing — confirm dialog plus store delegation
+		 * @return {Promise<void>}
+		 */
 		async archiveActivity(activity) {
 			// eslint-disable-next-line no-alert
 			if (!confirm(t('openregister', 'Archive this verwerkingsactiviteit? Audit-trail rows will keep referring to it.'))) {
@@ -487,6 +586,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Load the verantwoording report from the store.
+		 *
+		 * @spec exclude UI plumbing — delegates to the AVG store fetch
+		 * @return {Promise<void>}
+		 */
 		async loadVerantwoording() {
 			try {
 				await avgStore.fetchVerantwoording()
@@ -495,6 +600,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Run a DSAR inzage (subject-access) request via the store.
+		 *
+		 * @spec exclude UI plumbing — delegates to the AVG store action
+		 * @return {Promise<void>}
+		 */
 		async runInzage() {
 			try {
 				await avgStore.runInzage({
@@ -506,6 +617,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Run a vergetelheid (erasure) dry-run via the store.
+		 *
+		 * @spec exclude UI plumbing — delegates to the AVG store action
+		 * @return {Promise<void>}
+		 */
 		async runVergetelheidDryRun() {
 			try {
 				await avgStore.runVergetelheid({
@@ -518,6 +635,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Confirm and run a vergetelheid (erasure) after user confirmation.
+		 *
+		 * @spec exclude UI plumbing — confirm dialog plus store delegation
+		 * @return {Promise<void>}
+		 */
 		async confirmVergetelheid() {
 			// eslint-disable-next-line no-alert
 			if (!confirm(t('openregister', 'Erase {count} object(s) for this subject? This action is logged in the audit trail.', {
@@ -536,6 +659,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Run a portabiliteit export and download the result as JSON.
+		 *
+		 * @spec exclude UI plumbing — store delegation plus browser download
+		 * @return {Promise<void>}
+		 */
 		async downloadPortabiliteit() {
 			try {
 				const data = await avgStore.runPortabiliteit({
@@ -555,6 +684,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Load the compliance report from the store.
+		 *
+		 * @spec exclude UI plumbing — delegates to the AVG store fetch
+		 * @return {Promise<void>}
+		 */
 		async loadCompliance() {
 			try {
 				await avgStore.fetchCompliance()
