@@ -36,6 +36,8 @@ use OCP\IRequest;
  * Controller for managing source operations.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class SourcesController extends Controller
 {
