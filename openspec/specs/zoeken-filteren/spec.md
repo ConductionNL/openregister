@@ -5,15 +5,12 @@ retrofit_extensions:
 ---
 # Zoeken en Filteren
 
-
 # Zoeken en Filteren
 ## Purpose
 Provide a comprehensive, backend-agnostic search and filtering system for register objects that supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, cursor and offset pagination, and saved search trails. The system MUST transparently operate against PostgreSQL (with optional pg_trgm fuzzy matching), Apache Solr, or Elasticsearch as interchangeable backends, while exposing a single unified API surface through `ObjectService.searchObjectsPaginated()` and `SearchBackendInterface`.
 
 **Tender demand**: 78% of analyzed government tenders require advanced search and filtering capabilities, including full-text search, faceted navigation, and multi-criteria filtering across structured data.
-
 ## Requirements
-
 ### Requirement: Full-text search across object properties
 The system MUST support free-text search across all string-typed properties of register objects. The `_search` query parameter MUST trigger a case-insensitive search that matches against every string column in the schema's dynamic table, plus the metadata fields `_name`, `_description`, and `_summary`. Search MUST be performed using SQL `ILIKE` patterns in the database backend and native query parsing in Solr/Elasticsearch.
 
@@ -448,6 +445,107 @@ The system MUST provide configurable performance optimizations including: index 
 - **WHEN** `SearchQueryHandler.buildSearchQuery()` processes request parameters
 - **THEN** it MUST reconstruct the nested structure by splitting underscore-separated keys back into nested arrays
 - **AND** system parameters starting with `_` MUST be preserved as-is
+
+### Requirement: Search Trail Analytics and Audit API
+
+The system MUST expose an analytics and audit API over the search-trail log so
+operators can review search activity, surface aggregate insight, export the
+trail, and apply retention. The API MUST provide: a paginated list of trail
+entries returning the same `{results, total, page, pages, limit, offset}`
+pagination envelope used by the objects list endpoint; retrieval of a single
+trail entry by id returning HTTP `404` when it does not exist; aggregate search
+statistics over an optional `from`/`to` window; popular search terms; a search
+activity time-series; per-(register, schema) search statistics; and user-agent
+statistics. The API MUST support exporting the trail (CSV or JSON), and MUST
+provide retention operations: age-based cleanup, single-entry delete, and a
+clear-all purge. Date-window and pagination parameters MUST be parsed through a
+shared parameter-extraction helper, and system/query parameters (`_route`,
+`id`) MUST be stripped before they reach the service.
+
+#### Scenario: List search trail entries with pagination envelope
+- **GIVEN** search-trail entries exist
+- **WHEN** a GET request is sent to the search-trail list endpoint
+- **THEN** the response MUST be the shared pagination envelope (`results`, `total`, `page`, `pages`, `limit`, `offset`)
+- **AND** `_route` and `id` MUST be stripped from the parameters passed to the service
+
+#### Scenario: Fetch a missing trail entry yields 404
+- **GIVEN** no search-trail entry exists for the requested id
+- **WHEN** the show endpoint is invoked with that id
+- **THEN** the response MUST be HTTP `404` with `{error: "Search trail not found"}`
+
+#### Scenario: Aggregate statistics honour the date window
+- **GIVEN** a statistics request carrying optional `from` and `to` parameters
+- **WHEN** the statistics endpoint is invoked
+- **THEN** the service MUST receive the parsed `from`/`to` window and return aggregate search statistics
+
+#### Scenario: Export the search trail
+- **GIVEN** search-trail entries exist
+- **WHEN** the export endpoint is invoked
+- **THEN** the trail MUST be returned in the requested export format (CSV or JSON)
+
+#### Scenario: Retention operations prune the trail
+- **GIVEN** stale search-trail entries
+- **WHEN** the cleanup, single-delete, or clear-all endpoint is invoked
+- **THEN** the matching entries MUST be removed and the operation result MUST be reported
+
+### Requirement: Search-Trail Analytics Statistics Surface
+
+The system MUST expose a search-trail analytics surface through `SearchTrailService` that
+enriches raw aggregations from `SearchTrailMapper` into report-ready structures, each
+accepting an optional `from`/`to` datetime window. `getPopularSearchTerms()` MUST return
+the most-used search terms annotated with each term's share-of-total percentage and an
+effectiveness rating derived from its average result count. `getRegisterSchemaStatistics()`
+MUST return per-register/schema search counts annotated with percentage and a performance
+rating, sorted by percentage descending. `getSearchActivity()` MUST return search counts
+bucketed by a time interval (e.g. day) together with computed activity insights.
+`getSearchStatistics()` MUST return aggregate totals enriched with searches-with-results /
+without-results splits, a success rate, unique-term and unique-user counts, and
+per-session averages. `getUserAgentStatistics()` MUST return top user agents with parsed
+browser info plus an aggregated browser distribution.
+
+#### Scenario: Popular terms include percentage and effectiveness
+- **GIVEN** persisted search trails within the requested window
+- **WHEN** `getPopularSearchTerms()` is called
+- **THEN** each returned term MUST include its share-of-total percentage and an effectiveness rating
+
+#### Scenario: Aggregate statistics include success rate and uniqueness counts
+- **GIVEN** persisted search trails
+- **WHEN** `getSearchStatistics()` is called
+- **THEN** the result MUST include searches-with-results, searches-without-results, a success rate, unique-term and unique-user counts, and per-session averages
+
+#### Scenario: User-agent statistics aggregate by browser
+- **GIVEN** persisted search trails carrying user-agent strings
+- **WHEN** `getUserAgentStatistics()` is called
+- **THEN** each user agent MUST be annotated with parsed browser info
+- **AND** the result MUST include an aggregated browser distribution
+
+### Requirement: Search-trail analytics dashboard
+
+The search-trail sidebar (`SearchTrailSideBar.vue`) MUST render a read-only analytics dashboard over persisted `SearchTrail` data, sourced from `searchTrailStore`. The canonical `zoeken-filteren` spec covers search-trail *persistence*; this requirement covers the *analytics reporting* surface that the persistence-spec Notes section flags as unspecified. On mount the sidebar MUST load the trail list (`loadSearchTrailData`), aggregate statistics (`loadStatistics` → totals, averages, success rate, unique terms/users/organisations, per-session averages, and a `queryComplexity` distribution), popular terms (`loadPopularTerms`), register/schema usage (`loadRegisterSchemaStats`), user-agent usage (`loadUserAgentStats`), and period-bucketed activity (`loadActivityData` for the selected `hourly`/`daily`/`weekly`/`monthly` period). Each loader MUST degrade gracefully to safe empty/zero defaults on error. Display helpers MUST format the aggregates for the panel: `getComplexityPercentage(type)` returns the share of a complexity bucket, `formatActivityPeriod(period)` localises a bucket label per the selected period, `getRegisterSchemaName(stat)` resolves register/schema ids to titles, `getBrowserName(agent)` derives a browser label from the user-agent record, and `updateFilteredCount()` reflects the current list length. Changing the activity period MUST reload activity data and reflect the period in the route query.
+
+#### Scenario: Mounting the sidebar loads every analytics dataset
+- **GIVEN** the search-trail sidebar is mounted
+- **WHEN** the `mounted()` hook runs
+- **THEN** `loadSearchTrailData`, `loadStatistics`, `loadPopularTerms`, `loadRegisterSchemaStats`, `loadUserAgentStats`, and `loadActivityData` MUST each be invoked
+- **AND** the filtered count MUST be initialised from the store list length
+
+#### Scenario: A failing analytics loader degrades to safe defaults
+- **GIVEN** `searchTrailStore.getStatistics()` rejects
+- **WHEN** `loadStatistics()` handles the error
+- **THEN** all statistic fields MUST be reset to zero defaults (totals `0`, `queryComplexity = { simple: 0, medium: 0, complex: 0 }`)
+- **AND** no exception MUST propagate to the caller
+
+#### Scenario: Changing the activity period reloads bucketed activity
+- **GIVEN** the user selects a different activity period (e.g. `monthly`)
+- **WHEN** `loadActivityData()` runs
+- **THEN** `searchTrailStore.getActivity(period)` MUST be called with the selected period
+- **AND** the selected period MUST be reflected in the `/search-trails` route query via `updateRouteQueryFromState()`
+
+#### Scenario: Complexity percentage is computed against the bucket total
+- **GIVEN** `queryComplexity = { simple: 3, medium: 1, complex: 0 }`
+- **WHEN** `getComplexityPercentage('simple')` runs
+- **THEN** it MUST return `75`
+- **AND** when the total is `0` it MUST return `0` without dividing by zero
 
 ## Current Implementation Status
 

@@ -8,9 +8,7 @@ status: implemented
 Auto-generate OpenAPI 3.1.0 specifications from register and schema definitions stored in OpenRegister, producing complete API documentation that covers every CRUD endpoint, query parameter, authentication scheme, and response model. The generated spec MUST be downloadable in JSON and YAML formats, serveable via an interactive Swagger UI, and MUST regenerate automatically when schemas change so that documentation never drifts from the live API surface. The generation pipeline MUST also support NL API Design Rules compliance markers for Dutch government API interoperability.
 
 **Source**: Gap identified in cross-platform analysis; developer experience improvement. Competitors Strapi (`@strapi/openapi`) and Directus both auto-generate OpenAPI specs from their data models. NocoDB exposes a Swagger endpoint per base.
-
 ## Requirements
-
 ### Requirement: The system MUST auto-generate OpenAPI 3.1.0 specs from register/schema definitions
 Each register MUST have an automatically generated OpenAPI 3.1.0 specification reflecting all schemas belonging to that register, their properties, and all available CRUD operations. The generation MUST be driven by `OasService::createOas()` reading from `RegisterMapper` and `SchemaMapper`, using `BaseOas.json` as the foundation template.
 
@@ -404,6 +402,63 @@ The generated OpenAPI spec MUST support internationalized descriptions for endpo
 - **GIVEN** a schema with `description: "Register voor het opslaan van meldingen"`
 - **WHEN** OAS is generated in any language
 - **THEN** the schema's own description MUST be preserved verbatim (not translated)
+
+### Requirement: Schema Authoring Sub-Resources and Meta-Entity Operational Endpoints
+
+The system MUST expose schema-authoring sub-resources and registry
+meta-entity operational endpoints beyond the uniform resource-CRUD contract.
+
+`SchemasController` MUST provide:
+
+- `download` (`GET /api/schemas/{id}/download`) — return the schema as a JSON
+  document (`404` when the schema does not exist);
+- `upload` (`POST /api/schemas/upload`) and `uploadUpdate`
+  (`PUT /api/schemas/{id}/upload`) — create or update a schema from a JSON
+  document supplied by `file`, `url`, or inline `json`;
+- `related` (`GET /api/schemas/{id}/related`) — return the incoming and
+  outgoing `$ref` relationships of the schema as `{incoming, outgoing, total}`;
+- `explore` (`GET /api/schemas/{id}/explore`) — analyse all objects of the
+  schema to discover properties present in object data but absent from the
+  schema definition; and
+- `updateFromExploration` (`POST /api/schemas/{id}/update-from-exploration`) —
+  apply selected discovered properties back onto the schema.
+
+`RegistersController` MUST provide the register sub-resource lookups
+`schemas` (`GET /api/registers/{id}/schemas`, returning `{results, total}`)
+and `objects` (`GET /api/registers/{id}/objects`).
+
+`EndpointsController::test` (`POST /api/endpoints/{id}/test`) and
+`MappingsController::test` (`POST /api/mappings/test`) MUST execute a dry-run
+of the endpoint or mapping against supplied sample input and return the
+execution result (status code, transformed output, or structured error)
+WITHOUT persisting any side effect.
+
+All of these endpoints MUST return `404` with an `{error}` body for an unknown
+id and MUST respect the same RBAC + multi-tenancy filters as the underlying
+mapper/service.
+
+#### Scenario: Download a schema as JSON
+- **GIVEN** a schema with a known id
+- **WHEN** `GET /api/schemas/{id}/download` is called
+- **THEN** the response MUST return HTTP 200 with the schema's JSON document
+- **AND** an unknown id MUST return HTTP 404 with `{error: "Schema not found"}`
+
+#### Scenario: Explore discovers undeclared properties
+- **GIVEN** a schema whose objects carry properties not present in the schema definition
+- **WHEN** `GET /api/schemas/{id}/explore` is called
+- **THEN** the response MUST list the discovered properties
+- **AND** `POST /api/schemas/{id}/update-from-exploration` MUST be able to apply selected discovered properties onto the schema
+
+#### Scenario: Related returns incoming and outgoing references
+- **GIVEN** schema A is `$ref`-referenced by schema B and itself references schema C
+- **WHEN** `GET /api/schemas/{idA}/related` is called
+- **THEN** the response MUST include B under `incoming` and C under `outgoing` with a `total` count
+
+#### Scenario: Dry-run test does not persist
+- **GIVEN** an endpoint or mapping with a known id
+- **WHEN** its `test` endpoint is called with sample input
+- **THEN** the response MUST return the execution result
+- **AND** no entity or audit side effect MUST be persisted
 
 ## Current Implementation Status
 - **Fully implemented -- OAS generation from schemas**: `OasService` (`lib/Service/OasService.php`) generates OpenAPI specs from register/schema definitions via `createOas()`. It maps schema properties to OpenAPI types, generates paths for CRUD operations, and handles multi-register generation with operationId prefixing.
