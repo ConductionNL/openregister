@@ -404,6 +404,8 @@ class GeoSpatialEvaluator
      * @param array $geometry The geometry.
      *
      * @return array<int, array<int, array<int, array<int, float>>>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-geo-metadata-kaart/tasks.md#task-2
      */
     private function extractPolygons(array $geometry): array
     {
