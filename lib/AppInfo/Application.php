@@ -1194,8 +1194,8 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // SharesProvider — NC core (no app gate); uses MarkerLookupTrait
-        // against the `share` table's `note` column.
+        // SharesProvider — NC core (no app gate); wraps OCP\Share\IManager
+        // (query-time, no link table — IShare is first-class NC state).
         // @spec openspec/changes/integration-shares/tasks.md.
         $context->registerService(
             SharesProvider::class,
@@ -1204,6 +1204,21 @@ class Application extends App implements IBootstrap
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // ShareLinkService — Tier-2 share create/revoke/list service
+        // backing the ShareLinksController. NO link table / NO cache:
+        // OCP\Share\IManager is the single source of truth, resolved
+        // lazily through the container (same pattern as SharesProvider).
+        // @spec openspec/changes/integration-shares/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\ShareLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\ShareLinkService(
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
