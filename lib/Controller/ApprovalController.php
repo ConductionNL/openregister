@@ -225,6 +225,7 @@ class ApprovalController extends Controller
      * @return JSONResponse
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-1
      */
     public function steps(): JSONResponse
     {

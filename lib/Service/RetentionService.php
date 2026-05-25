@@ -794,6 +794,7 @@ class RetentionService
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-62
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-67
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-2
      */
     public function generateDestructionCertificate(
         array $destructionList,
