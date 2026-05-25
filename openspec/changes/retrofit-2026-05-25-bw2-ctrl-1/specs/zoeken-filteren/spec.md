@@ -55,3 +55,24 @@ shared parameter-extraction helper, and system/query parameters (`_route`,
 - **GIVEN** stale search-trail entries
 - **WHEN** the cleanup, single-delete, or clear-all endpoint is invoked
 - **THEN** the matching entries MUST be removed and the operation result MUST be reported
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: This is an operator-facing analytics/audit JSON API. The
+  only app-authored string is the `{error: "Search trail not found"}` 404
+  diagnostic, which is operator copy and exempt from translation; trail rows and
+  aggregates carry recorded search terms and counts, not localisable UI copy. CSV
+  and JSON exports emit raw recorded data. (ADR-007 n/a.)
+- **REST/error contract (ADR-002)**: Follows OpenRegister REST conventions —
+  the shared `{results, total, page, pages, limit, offset}` pagination envelope
+  (identical to the objects list endpoint), `404` for a missing entry, and the
+  shared parameter-extraction helper that strips system params (`_route`, `id`)
+  before they reach the service.
+
+## Acceptance Criteria
+
+- [x] `SearchTrailController` carries `@spec zoeken-filteren#...` annotations pointing at this requirement.
+- [x] The list endpoint returns the shared pagination envelope and strips `_route`/`id`; a missing entry returns `404`.
+- [x] Statistics endpoints honour the optional `from`/`to` window; popular-terms, time-series, per-(register,schema), and user-agent stats are exposed.
+- [x] Export (CSV/JSON) and retention (cleanup/delete/clear-all) operations behave as specified.
+- [x] `openspec validate retrofit-2026-05-25-bw2-ctrl-1 --strict` passes.

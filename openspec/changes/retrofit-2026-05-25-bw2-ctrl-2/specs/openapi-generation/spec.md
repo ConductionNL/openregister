@@ -71,3 +71,26 @@ mapper/service.
 - **WHEN** its `test` endpoint is called with sample input
 - **THEN** the response MUST return the execution result
 - **AND** no entity or audit side effect MUST be persisted
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: These are administrator/authoring JSON REST endpoints. The
+  only app-authored strings are `{error}` diagnostics (e.g. `{error: "Schema
+  not found"}`), which are operator copy and exempt from translation. Schema
+  documents, `$ref` relationship maps, and dry-run results are machine-readable
+  artefacts, not localisable UI copy. (ADR-007 n/a.)
+- **REST/error contract (ADR-002)**: Follows OpenRegister REST conventions —
+  `404` with an `{error}` body for unknown ids, the `{results, total}` envelope
+  on sub-resource lookups, and `{incoming, outgoing, total}` on the relationship
+  endpoint. The `test` dry-run endpoints MUST return the execution result
+  (status / transformed output / structured error) WITHOUT persisting any side
+  effect, and all endpoints MUST respect the underlying mapper/service RBAC +
+  multi-tenancy filters.
+
+## Acceptance Criteria
+
+- [x] `SchemasController`, `RegistersController`, `EndpointsController`, and `MappingsController` carry `@spec openapi-generation#...` annotations for these verbs.
+- [x] `download`/`upload`/`uploadUpdate`/`related`/`explore`/`updateFromExploration` behave as specified; unknown ids return `404`.
+- [x] Register `schemas`/`objects` sub-resource lookups return their envelopes; `related` returns `{incoming, outgoing, total}`.
+- [x] `EndpointsController::test` and `MappingsController::test` run a dry-run with no persisted side effect and respect RBAC/multi-tenancy.
+- [x] `openspec validate retrofit-2026-05-25-bw2-ctrl-2 --strict` passes.

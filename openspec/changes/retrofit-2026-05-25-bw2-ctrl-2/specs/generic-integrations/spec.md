@@ -94,3 +94,27 @@ all authenticated users.
 - **WHEN** a non-admin attempts a mutating verb
 - **THEN** the Activity leaf MUST expose no link/create/unlink verb at all
 - **AND** the Flow leaf MUST reject the mutating verb for non-admins while still serving its list verb read-only
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: These are JSON REST link controllers. The error bodies
+  (`{error}`, `{error, code: "APP_NOT_AVAILABLE"}`) are machine-readable
+  diagnostics keyed by a stable `code`; the human-readable text is
+  developer/operator copy and exempt from translation. Linked-entity payloads
+  carry only backing-app data, no app-authored user-facing strings, so nl+en
+  localisation does not apply here. (ADR-007 n/a.)
+- **REST/error contract (ADR-002)**: Deliberately identical to the sibling
+  `retrofit-2026-05-25-bw2-ctrl-1` "Object-Scoped Integration Link REST Contract"
+  so the contract reads as one — `{results, total}` list envelope, `201` on
+  link/create, `400` for a missing reference id, `404` for an unresolved object,
+  `501 APP_NOT_AVAILABLE` degradation, and exception-code→HTTP mapping
+  (`409/404/503/400`). The full RFC 7807 problem-details shape is out of scope
+  for these link controllers.
+
+## Acceptance Criteria
+
+- [x] Every Tier-2 leaf link controller (`*LinksController` / `EmailsController` family) carries `@spec generic-integrations#...` annotations pointing at this requirement.
+- [x] List returns `{results, total}`; link/create returns `201`; a missing reference id returns `400`; an unresolved object returns `404`.
+- [x] A missing backing app yields `501` with `{error, code: "APP_NOT_AVAILABLE"}` on every verb.
+- [x] Read-only (Activity) and admin-gated (Flow) leaves restrict mutating verbs as specified; the contract stays byte-identical to the ctrl-1 sibling REQ with no controller overlap.
+- [x] `openspec validate retrofit-2026-05-25-bw2-ctrl-2 --strict` passes.

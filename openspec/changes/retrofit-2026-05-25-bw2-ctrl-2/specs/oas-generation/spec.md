@@ -53,3 +53,24 @@ The endpoint MAY accept `path`, `branch` (default `main`), and
 - **WHEN** `POST /api/registers/{id}/publish/github` is called without `owner` or `repo`
 - **THEN** the response MUST be HTTP 400 with an `{error}` body
 - **AND** a request with valid `owner` and `repo` MUST commit the generated OAS document to the target repository
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: These are administrator-facing publication/publishing JSON
+  REST endpoints. The only app-authored strings are `{error}` diagnostics on
+  unknown ids, missing `owner`/`repo`, and publish failures, which are operator
+  copy and exempt from translation. The published artefact is a machine-readable
+  OAS document, not localisable UI copy. (ADR-007 n/a.)
+- **REST/error contract (ADR-002)**: Follows OpenRegister REST conventions —
+  publish/depublish return the updated entity, `404` for unknown ids, `400` for
+  missing required `owner`/`repo`. The GitHub publish path MUST surface failures
+  as a `500` with a descriptive `{error}` body rather than leaking the
+  underlying exception trace.
+
+## Acceptance Criteria
+
+- [x] `RegistersController` and `SchemasController` publish/depublish verbs carry `@spec oas-generation#...` annotations.
+- [x] Publish/depublish toggle the entity's published state and return the updated entity; an unknown id returns `404`.
+- [x] `publishToGitHub` requires `owner` and `repo` (`400` when missing) and commits the generated OAS to the target repository on success.
+- [x] A GitHub publish failure returns `500` with a descriptive `{error}` body and no leaked trace.
+- [x] `openspec validate retrofit-2026-05-25-bw2-ctrl-2 --strict` passes.
