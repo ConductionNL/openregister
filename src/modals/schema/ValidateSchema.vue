@@ -210,6 +210,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI display helper — flattens/filters validation results for the table.
+		 */
 		filteredResults() {
 			if (!this.validationResults) return []
 
@@ -228,6 +231,9 @@ export default {
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
+			/**
+			 * @spec exclude UI watcher — reloads the object count when the schema item changes.
+			 */
 			handler(newSchemaItem) {
 				console.info('Schema item changed in ValidateSchema:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
@@ -238,6 +244,9 @@ export default {
 		},
 		// Watch for dialog state changes to load count when dialog becomes visible
 		'navigationStore.dialog': {
+			/**
+			 * @spec exclude UI watcher — loads the object count when the dialog opens.
+			 */
 			handler(newDialog) {
 				console.info('Dialog changed to:', newDialog)
 				if (newDialog === 'validateSchema' && schemaStore.schemaItem?.id) {
@@ -248,11 +257,17 @@ export default {
 			immediate: true,
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
+	 */
 	async mounted() {
 		console.info('ValidateSchema dialog mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches schema object-count stats.
+		 */
 		async loadObjectCount() {
 			console.info('loadObjectCount called, schemaItem:', schemaStore.schemaItem)
 			try {
@@ -276,6 +291,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Modal action plumbing — posts to the bulk schema-validate endpoint.
+		 */
 		async startValidation() {
 			this.loading = true
 			this.error = false
@@ -312,12 +330,18 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude UI navigation stub — placeholder for viewing an object's details.
+		 */
 		viewObjectDetails(object) {
 			// Navigate to object details view
 			// This would need to be implemented based on your navigation structure
 			console.info('View object details:', object)
 		},
 
+		/**
+		 * @spec exclude Modal close plumbing — closes the dialog and resets validation state.
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			this.loading = false

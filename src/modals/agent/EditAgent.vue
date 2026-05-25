@@ -468,6 +468,9 @@ export default {
 			}
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — hydrates agent edit modal on mount.
+	 */
 	mounted() {
 		this.initializeAgent()
 		this.fetchGroups()
@@ -536,22 +539,40 @@ export default {
 			this.success = false
 			this.error = null
 		},
+		/**
+		 * @spec exclude Form-field binding — sets agent type from select input.
+		 */
 		updateType(type) {
 			this.agentItem.type = type ? type.value : 'chat'
 		},
+		/**
+		 * @spec exclude Form-field binding — sets RAG search mode from select input.
+		 */
 		updateRagSearchMode(mode) {
 			this.agentItem.ragSearchMode = mode ? mode.value : 'hybrid'
 		},
+		/**
+		 * @spec exclude Form-field binding — maps selected groups to id array.
+		 */
 		updateGroups(groups) {
 			this.agentItem.groups = groups ? groups.map(g => g.id) : []
 		},
+		/**
+		 * @spec exclude Form-field binding — removes a group from the selection.
+		 */
 		removeGroup(group) {
 			this.selectedGroups = this.selectedGroups.filter(g => g.id !== group.id)
 			this.agentItem.groups = this.selectedGroups.map(g => g.id)
 		},
+		/**
+		 * @spec exclude Form-field binding — maps selected views to id array.
+		 */
 		updateViews(views) {
 			this.agentItem.views = views ? views.map(v => v.id) : []
 		},
+		/**
+		 * @spec exclude Form-field binding — adds a username to the invited-users list.
+		 */
 		addInvitedUser() {
 			if (!this.newUserInput || !this.newUserInput.trim()) {
 				return
@@ -563,10 +584,16 @@ export default {
 			}
 			this.newUserInput = ''
 		},
+		/**
+		 * @spec exclude Form-field binding — removes a username from the invited-users list.
+		 */
 		removeInvitedUser(username) {
 			this.selectedInvitedUsers = this.selectedInvitedUsers.filter(u => u !== username)
 			this.agentItem.invitedUsers = [...this.selectedInvitedUsers]
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches available agent tools for the picker.
+		 */
 		async fetchTools() {
 			this.loadingTools = true
 			try {
@@ -591,6 +618,9 @@ export default {
 				this.loadingTools = false
 			}
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches selectable users for the picker.
+		 */
 		async fetchUsers() {
 			this.loadingUsers = true
 			try {
@@ -656,18 +686,30 @@ export default {
 				this.loadingUsers = false
 			}
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the agent owner from the user picker.
+		 */
 		updateUser(selectedUser) {
 			this.agentItem.user = selectedUser ? selectedUser.id : ''
 		},
+		/**
+		 * @spec exclude UI event handler — toggles a tool when its card is clicked.
+		 */
 		handleCardClick(toolId, _event) {
 			// Card click handler - toggle the tool
 			const currentState = this.isToolChecked(toolId)
 			this.toggleTool(toolId, !currentState)
 		},
+		/**
+		 * @spec exclude UI event handler — toggles a tool when its switch is changed.
+		 */
 		handleToggleChange(toolId, newValue) {
 			// Toggle change handler - called when toggle is clicked directly
 			this.toggleTool(toolId, newValue)
 		},
+		/**
+		 * @spec exclude Form-field binding — adds/removes a tool id in the agent's tools array.
+		 */
 		toggleTool(toolId, enabled) {
 			if (!this.agentItem.tools) {
 				this.$set(this.agentItem, 'tools', [])
@@ -689,6 +731,9 @@ export default {
 				this.$set(this.agentItem, 'tools', newTools)
 			}
 		},
+		/**
+		 * @spec exclude UI state helper — reports whether a tool id is currently selected.
+		 */
 		isToolChecked(toolId) {
 			if (!this.agentItem.tools) {
 				return false
@@ -697,6 +742,9 @@ export default {
 			const legacyId = toolId.split('.').pop() // Extract 'register' from 'openregister.register'
 			return this.agentItem.tools.includes(toolId) || this.agentItem.tools.includes(legacyId)
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches Nextcloud groups for the picker.
+		 */
 		async fetchGroups() {
 			this.loadingGroups = true
 			try {
@@ -724,6 +772,9 @@ export default {
 				this.loadingGroups = false
 			}
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches available views for the picker.
+		 */
 		async fetchViews() {
 			this.loadingViews = true
 			try {
@@ -755,6 +806,9 @@ export default {
 				this.loadingViews = false
 			}
 		},
+		/**
+		 * @spec exclude Modal save plumbing — delegates persistence to agentStore.saveAgent.
+		 */
 		async saveAgent() {
 			this.loading = true
 			this.error = null
@@ -771,9 +825,15 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Modal close plumbing — clears the active modal in navigationStore.
+		 */
 		closeModal() {
 			navigationStore.setModal(null)
 		},
+		/**
+		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
+		 */
 		handleDialogClose(open) {
 			if (!open) {
 				this.closeModal()
