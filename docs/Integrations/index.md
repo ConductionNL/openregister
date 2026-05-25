@@ -1,10 +1,12 @@
 ---
 title: Integrations
 sidebar_position: 1
-description: Open Register surfaces every linked thing (meetings, contacts, files, wiki pages, ...) through one pluggable registry. This index links the leaf-by-leaf reference plus the LLM and automation integrations.
+description: Open Register's pluggable integration registry makes 24+ Nextcloud apps and external services discoverable and actionable by AI agents through one MCP tool — even apps that ship no MCP of their own. This index leads with the MCP-enablement value, then links the leaf-by-leaf reference plus the LLM and automation integrations.
 keywords:
   - Open Register
   - Integrations
+  - MCP
+  - AI agents
   - Leaf system
   - LLM
   - Automation
@@ -12,15 +14,51 @@ keywords:
 
 # Integrations
 
-Every "linked thing" on an Open Register object is a **leaf**. Meetings, contacts, files, wiki pages, kanban cards, chat threads — each is a leaf with the same provider contract on the backend and the same registry surface on the frontend. Plus a separate set of integrations for LLMs and automation engines.
+## AI-ready integrations: one MCP surface for every linked app
+
+**Open Register's integration registry gives AI agents (MCP) access to Nextcloud apps that ship no MCP tools of their own.**
+
+Most Nextcloud apps — Deck, Forms, Maps, Cospend, Polls, TimeManager, Collectives, Photos, Bookmarks — have **no native MCP surface**. To an AI agent they are invisible: the agent cannot see them, query them, or write to them. The integration registry changes that. By linking those apps through Open Register as **leaves**, the agent can discover, read, link, and create in them through a **single** Open Register MCP tool:
+
+> **Apps that were MCP-invisible become MCP-addressable for free.**
+
+The tool is `openregister.integrations` (provided by `IntegrationsToolProvider`, [openregister#1853](https://github.com/ConductionNL/openregister/pull/1853)). It exposes five actions:
+
+| Action | What it does |
+|---|---|
+| `list-integrations` | Enumerate every integration registered on this instance (id, label, group, enabled, requiredApp, storageStrategy). The agent's discovery entry-point. |
+| `list` | List the linked things one integration exposes for a given object. |
+| `get` | Fetch one linked thing by id. |
+| `link` | Attach an existing upstream thing to an object. |
+| `create` | Create a new upstream thing and link it (where the integration's storage strategy supports writes). |
+
+An agent calls `list-integrations` once to learn what is wired, then `list`/`get`/`link`/`create` against any leaf — so a single tool reaches Deck cards, Maps locations, Cospend bills, Forms responses, and 20+ more, **without each of those apps needing its own MCP server**. Read the full agent walkthrough in **[AI-agent / MCP setup](./setup/mcp.md)**.
+
+The same registered set is also advertised on the OCS capability surface under `openregister.integrations` (with per-leaf `requiredApp`, `available`, `storageStrategy`, and `surfaces`), so non-MCP clients discover the registry the same way.
+
+:::tip This is the headline
+Adding a leaf is the cheapest way to make a previously MCP-silent Nextcloud app addressable by an AI agent. You write one provider; you get MCP discovery, query, link, and create for free.
+:::
+
+## What is a leaf
+
+Every "linked thing" on an Open Register object is a **leaf**. Meetings, contacts, files, wiki pages, kanban cards, chat threads — each is a leaf: a vertical slice that links a Nextcloud app or external service to Open Register objects, with the same provider contract on the backend and the same registry surface on the frontend (a sidebar tab + a dashboard widget). Plus a separate set of integrations for LLMs and automation engines.
 
 ## Leaf integrations
 
-Open Register ships **18 leaves** plus the 5 always-available built-ins. Every leaf surfaces as a sidebar tab on linked objects, a dashboard widget in four surfaces, and an admin row with health status. See **[Leaf integration system](./leaf-system.md)** for the architecture and **[Pluggable integration registry](./pluggable-integration-registry.md)** for the full ADR-019 contract.
+Open Register ships **18 leaves** plus the 5 always-available built-ins (24 advertised providers in total). Every leaf surfaces as a sidebar tab on linked objects, a dashboard widget in four surfaces, and an admin row with health status. See **[Leaf integration system](./leaf-system.md)** for the architecture and **[Pluggable integration registry](./pluggable-integration-registry.md)** for the full ADR-019 contract.
+
+**Start here:**
+
+- **[Maturity tiers](./tiers.md)** — Tier 0 → Tier 4, what each tier delivers, and why Tier 4 is the MCP-enablement capstone.
+- **[Leaf status](./status.md)** — per-leaf table: tier, link table, picker, create, and MCP-addressable status for all 24 leaves.
+- **[Setup guides](./setup/index.md)** — per-tier guides: using an integration, external connections, and the AI-agent / MCP path.
+
+![All 24 integration leaves rendered as tabs on an Open Register object's Integrations view](/screenshots/integrations/_overview.png)
 
 ### Always-available built-ins
 
-- **[Files](../features/files)** — files attached to an object (magic-column).
+- **[Files](../Features/files.md)** — files attached to an object (magic-column).
 - **Notes** — free-form notes (link-table). Documented under the [pluggable integration registry](./pluggable-integration-registry.md).
 - **Tags** — system tags (link-table).
 - **Tasks** — to-dos (link-table).
