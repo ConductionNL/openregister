@@ -95,6 +95,8 @@ class WorkflowEngineRegistry
      * @param int $engineId Engine ID
      *
      * @return WorkflowEngineInterface
+     *
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-registration-and-discovery
      */
     public function resolveAdapterById(int $engineId): WorkflowEngineInterface
     {
@@ -143,6 +145,8 @@ class WorkflowEngineRegistry
      * @param array<string, mixed> $data Engine configuration data
      *
      * @return WorkflowEngine
+     *
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-specific-credential-management
      */
     public function createEngine(array $data): WorkflowEngine
     {
@@ -160,6 +164,8 @@ class WorkflowEngineRegistry
      * @param array<string, mixed> $data Updated data
      *
      * @return WorkflowEngine
+     *
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-specific-credential-management
      */
     public function updateEngine(int $id, array $data): WorkflowEngine
     {
@@ -176,6 +182,8 @@ class WorkflowEngineRegistry
      * @param int $id Engine ID
      *
      * @return WorkflowEngine The deleted engine
+     *
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-registration-and-discovery
      */
     public function deleteEngine(int $id): WorkflowEngine
     {
@@ -218,6 +226,8 @@ class WorkflowEngineRegistry
      * Discover available workflow engine ExApps.
      *
      * @return array<int, array{engineType: string, suggestedBaseUrl: string, installed: bool}>
+     *
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-registration-and-discovery
      */
     public function discoverEngines(): array
     {

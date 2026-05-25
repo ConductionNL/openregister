@@ -1615,6 +1615,8 @@ class SettingsService
      * @param int $precision Decimal precision.
      *
      * @return string Formatted string.
+     *
+     * @spec exclude Pure byte-to-human-readable formatting helper; no orchestration or persisted state.
      */
     public function formatBytes(int $bytes, int $precision=2): string
     {
@@ -1638,6 +1640,8 @@ class SettingsService
      * @param string $memoryLimit Memory limit string (e.g., '128M', '1G').
      *
      * @return int Memory limit in bytes.
+     *
+     * @spec exclude Pure memory-limit-string-to-bytes parsing helper; no orchestration or persisted state.
      */
     public function convertToBytes(string $memoryLimit): int
     {
@@ -1667,6 +1671,8 @@ class SettingsService
      * @param string $token The token to mask.
      *
      * @return string The masked token.
+     *
+     * @spec exclude Pure display helper masking the middle of a token; no orchestration or persisted state.
      */
     public function maskToken(string $token): string
     {
@@ -1691,6 +1697,8 @@ class SettingsService
      * @param \OCA\OpenRegister\Service\IndexService $solrSchemaService Index service for field analysis.
      *
      * @return array Expected field configuration.
+     *
+     * @spec exclude Assembles the expected Solr field set from core metadata + schema fields for diffing; admin-tooling helper.
      */
     public function getExpectedSchemaFields(
         \OCA\OpenRegister\Db\SchemaMapper $schemaMapper,
@@ -1747,6 +1755,8 @@ class SettingsService
      * @return array Field comparison results
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field comparison paths
+     *
+     * @spec exclude Pure diff helper categorising missing/extra/mismatched Solr fields; admin-tooling computation.
      */
     public function compareFields(array $actualFields, array $expectedFields): array
     {

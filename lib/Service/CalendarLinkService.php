@@ -86,6 +86,8 @@ class CalendarLinkService
      * @return CalendarLink The persisted link row.
      *
      * @throws Exception When no user is logged in or the event cannot be located.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function linkEvent(
         string $objectUuid,
@@ -144,6 +146,8 @@ class CalendarLinkService
      * @return CalendarLink The persisted link row.
      *
      * @throws Exception On creation failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function createAndLinkEvent(
         string $objectUuid,
@@ -224,6 +228,8 @@ class CalendarLinkService
      * @param string $eventUid   VEVENT UID.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function unlinkEvent(string $objectUuid, string $eventUid): void
     {
@@ -297,6 +303,8 @@ class CalendarLinkService
      * @param string $objectUuid Object UUID.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getLinkedEvents(string $objectUuid): array
     {
@@ -377,6 +385,8 @@ class CalendarLinkService
      * @return array<int,array<string,mixed>> Each entry has id, uri, displayName, color.
      *
      * @throws Exception When no user is logged in.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getAvailableCalendars(): array
     {
@@ -417,6 +427,8 @@ class CalendarLinkService
      * @return array<int,array<string,mixed>>
      *
      * @throws Exception When no user, no calendar, or calendar URI is unknown.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getEventsForCalendar(string $calendarUri, ?int $limit = 100, ?DateTimeInterface $after = null): array
     {

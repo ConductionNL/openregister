@@ -87,6 +87,8 @@ class FileSidebarService
      *     register: array{id: int, title: string},
      *     schema: array{id: int, title: string}
      * }>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-4
      */
     public function getObjectsForFile(int $fileId): array
     {
@@ -272,6 +274,8 @@ class FileSidebarService
      *   anonymizedAt: string|null,
      *   anonymizedFileId: int|null
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-4
      */
     public function getExtractionStatus(int $fileId): array
     {

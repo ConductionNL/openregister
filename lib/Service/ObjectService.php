@@ -356,6 +356,8 @@ class ObjectService
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @spec exclude Lazily creates the object's storage folder via FileService when missing; file-folder plumbing.
      */
     public function ensureObjectFolderExists(ObjectEntity $entity): void
     {
@@ -559,6 +561,8 @@ class ObjectService
      * Get the current object context.
      *
      * @return ObjectEntity|null The current object entity or null if not set.
+     *
+     * @spec exclude Context getter returning the current object field; no business rule.
      */
     public function getObject(): ?ObjectEntity
     {
@@ -584,6 +588,8 @@ class ObjectService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex permission and context handling requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional parameters create many execution paths
+     *
+     * @spec exclude Facade coordinating GetObject + permission check + RenderObject handlers; read/RBAC/render behavior owned by object-interactions / rbac-scopes / files-render-extension.
      */
     public function find(
         int | string $id,
@@ -701,6 +707,8 @@ class ObjectService
      * @throws Exception If there is an error during retrieval.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec exclude Facade variant of find() that skips audit logging; read behavior owned by object-interactions / audit-trail-immutable.
      */
     public function findSilent(
         string $id,
@@ -762,6 +770,8 @@ class ObjectService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex configuration handling requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many configuration options create many execution paths
+     *
+     * @spec exclude Facade preparing config then delegating to the GetObject handler; list/search behavior owned by zoeken-filteren.
      */
     public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -974,6 +984,8 @@ class ObjectService
      * @return int The number of matching objects.
      *
      * @throws \Exception If register or schema is not set
+     *
+     * @spec exclude Facade injecting register/schema context then delegating to ObjectMapper::countAll(); count behavior owned by zoeken-filteren.
      */
     public function count(
         array $config=[]
@@ -1007,6 +1019,8 @@ class ObjectService
      * @return \OCA\OpenRegister\Db\ObjectEntity[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @spec exclude One-line delegation to ObjectMapper::findByRelation(); relation lookup owned by nextcloud-entity-relations.
      */
     public function findByRelations(string $search, bool $partialMatch=true): array
     {
@@ -1027,6 +1041,8 @@ class ObjectService
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec exclude Find-then-delegate to GetObject::findLogs(); audit-log read owned by audit-trail-immutable.
      */
     public function getLogs(string $uuid, array $filters=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -1781,6 +1797,8 @@ class ObjectService
      *
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
+     *
+     * @spec exclude One-line delegation to SearchQueryHandler::buildSearchQuery(); query-building owned by zoeken-filteren.
      */
     public function buildSearchQuery(
         array $requestParams,
@@ -1855,6 +1873,8 @@ class ObjectService
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @spec exclude One-line delegation to QueryHandler::searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjects(
         array $query=[],
@@ -1919,6 +1939,8 @@ class ObjectService
      * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags mirror searchObjects() upstream.
+     *
+     * @spec exclude Slug-resolution bridge delegating to searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjectsBySlug(
         string $registerSlug,
@@ -2001,6 +2023,8 @@ class ObjectService
      * @phpstan-return int
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec exclude Resolves org context then delegates to ObjectMapper::countSearchObjects(); count behavior owned by zoeken-filteren.
      */
     public function countSearchObjects(
         array $query=[],
@@ -2049,6 +2073,8 @@ class ObjectService
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec exclude One-line delegation to FacetHandler::getFacetsForObjects(); faceting owned by faceting-configuration.
      */
     public function getFacetsForObjects(array $query=[]): array
     {
@@ -2084,6 +2110,8 @@ class ObjectService
      * @throws \Exception If facetable field discovery fails
      *
      * @psalm-return array{'@self': array, object_fields: array}
+     *
+     * @spec exclude One-line delegation to FacetHandler::getFacetableFields(); facetable-field discovery owned by faceting-configuration.
      */
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
@@ -2199,6 +2227,8 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex search routing requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)      Many search options create many execution paths
+     *
+     * @spec exclude Facade routing the unified paginated/faceted search to the query + facet handlers; behavior owned by zoeken-filteren / faceting-configuration.
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -2419,6 +2449,8 @@ class ObjectService
      * @deprecated
      *
      * @return int The current schema
+     *
+     * @spec exclude Deprecated context getter returning the current schema id; no business rule.
      */
     public function getSchema(): int
     {
@@ -2435,6 +2467,8 @@ class ObjectService
      * @deprecated
      *
      * @return int
+     *
+     * @spec exclude Deprecated context getter returning the current register id; no business rule.
      */
     public function getRegister(): int
     {
@@ -2460,6 +2494,8 @@ class ObjectService
      * @return array Rendered entity data
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     *
+     * @spec exclude Facade delegating object rendering to the render handler; render contract owned by files-render-extension / schema-driven-read-coercion.
      */
     public function renderEntity(
         ObjectEntity $entity,
@@ -2743,6 +2779,8 @@ class ObjectService
      * Should be called before processing a new parent object.
      *
      * @return void
+     *
+     * @spec exclude One-line delegation to SaveObject::clearCreatedSubObjects(); cache-reset plumbing.
      */
     public function clearCreatedSubObjects(): void
     {
@@ -2757,6 +2795,8 @@ class ObjectService
      * @return \OCP\AppFramework\Http\JSONResponse JSON error response
      *
      * @deprecated
+     *
+     * @spec exclude Deprecated one-line delegation to ValidateObject::handleValidationException(); error-shaping plumbing.
      */
     public function handleValidationException(
         ValidationException|CustomValidationException $exception
@@ -2776,6 +2816,8 @@ class ObjectService
      * @return array Lock information
      *
      * @throws \Exception If lock operation fails
+     *
+     * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
      */
     public function lockObject(string $identifier, ?string $process=null, ?int $duration=null): array
     {
@@ -2792,6 +2834,8 @@ class ObjectService
      * @return true True if unlocked successfully
      *
      * @throws \Exception If unlock operation fails
+     *
+     * @spec exclude One-line delegation to lock handler; unlock behavior owned by object-lifecycle.
      */
     public function unlockObject(string|int $identifier): bool
     {
@@ -2954,6 +2998,8 @@ class ObjectService
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found.
      * @throws \InvalidArgumentException If invalid parameters provided.
+     *
+     * @spec exclude One-line delegation to MigrationHandler::migrateObjects(); migration logic owned by the handler.
      */
     public function migrateObjects(
         string|int $sourceRegister,
@@ -2995,6 +3041,8 @@ class ObjectService
      * @psalm-param    array<int, string> $uuids
      * @phpstan-return array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>, cascade_count: int}
      * @psalm-return   array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>, cascade_count: int}
+     *
+     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
      */
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -3100,6 +3148,8 @@ class ObjectService
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      *
      * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
+     *
+     * @spec exclude Deprecated throwing stub; schema-wide delete awaits MagicMapper reimplementation (blob table retired).
      */
     public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array
     {
@@ -3124,6 +3174,8 @@ class ObjectService
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
      *
      * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, register_id: int}
+     *
+     * @spec exclude Deprecated throwing stub; register-wide delete awaits MagicMapper reimplementation (blob table retired).
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
@@ -3165,6 +3217,8 @@ class ObjectService
      * @return array Results with object entities and pagination info.
      *
      * @throws \Exception If retrieval fails.
+     *
+     * @spec exclude One-line delegation to RelationHandler::getUses(); outgoing-relation behavior owned by nextcloud-entity-relations.
      */
     public function getObjectUses(
         string $objectId,
@@ -3193,6 +3247,8 @@ class ObjectService
      * @return array Paginated results with referencing objects
      *
      * @throws \Exception If retrieval fails
+     *
+     * @spec exclude One-line delegation to RelationHandler::getUsedBy(); incoming-relation behavior owned by nextcloud-entity-relations.
      */
     public function getObjectUsedBy(
         string $objectId,
@@ -3219,6 +3275,8 @@ class ObjectService
      * @return never Vectorization results
      *
      * @throws \Exception If vectorization fails
+     *
+     * @spec exclude Deprecated throwing stub; disabled pending VectorizationService circular-dependency refactor.
      */
     public function vectorizeBatchObjects(?array $_views=null, int $_batchSize=25)
     {
@@ -3235,6 +3293,8 @@ class ObjectService
      * @return never Statistics data
      *
      * @throws \Exception If stats retrieval fails
+     *
+     * @spec exclude Deprecated throwing stub; disabled pending VectorizationService circular-dependency refactor.
      */
     public function getVectorizationStatistics(?array $_views=null)
     {
@@ -3250,6 +3310,8 @@ class ObjectService
      * @return never Object count
      *
      * @throws \Exception If count fails
+     *
+     * @spec exclude Deprecated throwing stub; disabled pending VectorizationService circular-dependency refactor.
      */
     public function getVectorizationCount(?array $_schemas=null)
     {
@@ -3277,6 +3339,8 @@ class ObjectService
      * @throws \Exception If listing fails
      *
      * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @spec exclude Facade alias delegating to searchObjects(); listing behavior owned by zoeken-filteren.
      */
     public function listObjects(
         array $query=[],
@@ -3306,6 +3370,8 @@ class ObjectService
      * @return ObjectEntity Created object entity
      *
      * @throws \Exception If creation fails
+     *
+     * @spec exclude Facade delegating to saveObject(); create behavior owned by object-interactions / object-lifecycle.
      */
     public function createObject(array $data, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
     {
@@ -3324,6 +3390,8 @@ class ObjectService
      * @return ObjectEntity Updated object entity
      *
      * @throws \Exception If update fails
+     *
+     * @spec exclude Facade delegating to saveObject() with id; update behavior owned by object-interactions / object-lifecycle.
      */
     public function updateObject(
         string $objectId,
@@ -3349,6 +3417,8 @@ class ObjectService
      * @return ObjectEntity Patched object entity
      *
      * @throws \Exception If patch fails
+     *
+     * @spec exclude Facade delegating to saveObject() with merged partial data; patch behavior owned by object-interactions.
      */
     public function patchObject(
         string $objectId,
@@ -3372,6 +3442,8 @@ class ObjectService
      * @return array Normalized search query
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec exclude Facade alias delegating to buildSearchQuery(); query-building owned by zoeken-filteren.
      */
     public function buildObjectSearchQuery(array $params): array
     {
@@ -3395,6 +3467,8 @@ class ObjectService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex merge logic delegated to handler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many merge scenarios handled by handler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Merge operations require comprehensive handling
+     *
+     * @spec exclude One-line delegation to MergeHandler::mergeObjects(); merge logic owned by the handler.
      */
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
     {
@@ -3428,6 +3502,8 @@ class ObjectService
      * @param int      $offset     Number of objects to skip before processing
      *
      * @return array{processed: int, updated: int, failed: int, total: int, errors: array} Validation statistics
+     *
+     * @spec exclude Delegation to ValidationHandler::validateAndSaveObjectsBySchema() with a saveObject callback; handler owns the loop.
      */
     public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, ?int $limit=null, int $offset=0): array
     {
@@ -3447,6 +3523,8 @@ class ObjectService
      * lookup to prevent stale context from a previous request bleeding through.
      *
      * @return void
+     *
+     * @spec exclude Context-reset setter nulling the current register/schema/object fields; no business rule.
      */
     public function clearCurrents(): void
     {
@@ -3482,6 +3560,8 @@ class ObjectService
      * @param int|string|null $schema   Schema ID.
      *
      * @return ObjectServiceMapperAdapter
+     *
+     * @spec exclude Factory accessor returning a register/schema-scoped mapper adapter for external callers; no business rule.
      */
     public function getMapper(int|string|null $register=null, int|string|null $schema=null): ObjectServiceMapperAdapter
     {
