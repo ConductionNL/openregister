@@ -71,6 +71,8 @@ class FileSidebarController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getObjectsForFile(int $fileId): JSONResponse
     {
@@ -107,6 +109,8 @@ class FileSidebarController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getExtractionStatus(int $fileId): JSONResponse
     {

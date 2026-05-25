@@ -148,6 +148,8 @@ class LinkedEntityController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -181,6 +183,8 @@ class LinkedEntityController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

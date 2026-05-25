@@ -102,6 +102,8 @@ class ChatHealthController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse 200 or 503 JSON response
+     *
+     * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#health-probe-endpoint-get-apichathealth
      */
     #[PublicPage]
     #[NoCSRFRequired]

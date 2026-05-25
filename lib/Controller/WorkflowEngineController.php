@@ -87,6 +87,8 @@ class WorkflowEngineController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function show(int $id): JSONResponse
     {
@@ -167,6 +169,8 @@ class WorkflowEngineController extends Controller
      * @param int $id Engine ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function update(int $id): JSONResponse
     {
@@ -188,6 +192,8 @@ class WorkflowEngineController extends Controller
      * @param int $id Engine ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function destroy(int $id): JSONResponse
     {
@@ -245,6 +251,8 @@ class WorkflowEngineController extends Controller
      * @param int $id Engine ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
      */
     public function testHook(int $id): JSONResponse
     {

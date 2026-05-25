@@ -79,6 +79,8 @@ class AnalyticsLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -123,6 +125,8 @@ class AnalyticsLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
@@ -172,6 +176,8 @@ class AnalyticsLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */
     public function createAndLink(string $register, string $schema, string $id): JSONResponse
     {
@@ -224,6 +230,8 @@ class AnalyticsLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */
     public function destroy(string $register, string $schema, string $id, string $reportId): JSONResponse
     {
@@ -259,6 +267,8 @@ class AnalyticsLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
      */
     public function available(): JSONResponse
     {
@@ -286,6 +296,8 @@ class AnalyticsLinksController extends Controller
      * @param string $id       Object id.
      *
      * @return ObjectEntity|null
+     *
+     * @spec exclude Private helper: resolves an object from register/schema/id; the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
      */
     private function validateObject(string $register, string $schema, string $id): ?ObjectEntity
     {
@@ -310,6 +322,8 @@ class AnalyticsLinksController extends Controller
      * @param Exception $exception Source exception.
      *
      * @return JSONResponse
+     *
+     * @spec exclude Private helper: maps a service exception code to an HTTP status; the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
      */
     private function mapException(Exception $exception): JSONResponse
     {

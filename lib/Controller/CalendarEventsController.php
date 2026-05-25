@@ -104,6 +104,8 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -186,6 +188,8 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
@@ -238,6 +242,8 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function unlink(string $register, string $schema, string $id, string $eventUid): JSONResponse
     {
@@ -331,6 +337,8 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function listCalendars(): JSONResponse
     {
@@ -351,6 +359,8 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function listCalendarEvents(string $calendarUri): JSONResponse
     {
@@ -390,6 +400,8 @@ class CalendarEventsController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
+     *
+     * @spec exclude Private helper: resolves an object from register/schema/id; the calendar link REST contract is owned by retrofit-2026-05-24-calendar-integration/tasks.md#task-1.
      */
     private function validateObject(
         string $register,

@@ -66,6 +66,8 @@ class SearchTrailController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)       Request parameter extraction requires many conditional checks
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec exclude Private helper: parses pagination/filter/date params; the search-trail analytics API is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
      */
     private function extractRequestParameters(): array
     {
@@ -211,6 +213,8 @@ class SearchTrailController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec exclude Private helper: shared pagination-envelope builder; the search-trail analytics API is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -304,6 +308,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search trail logs
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function index(): JSONResponse
     {
@@ -352,6 +358,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search trail data
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function show(int $id): JSONResponse
     {
@@ -377,6 +385,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function statistics(): JSONResponse
     {
@@ -404,6 +414,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with popular search terms
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function popularTerms(): JSONResponse
     {
@@ -455,6 +467,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with search activity data
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function activity(): JSONResponse
     {
@@ -483,6 +497,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with register schema statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function registerSchemaStats(): JSONResponse
     {
@@ -534,6 +550,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with user agent statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function userAgentStats(): JSONResponse
     {
@@ -634,6 +652,8 @@ class SearchTrailController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function cleanup(): JSONResponse
     {
@@ -666,6 +686,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with export data
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function export(): JSONResponse
     {
@@ -768,6 +790,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function destroy(int $id): JSONResponse
     {
@@ -878,6 +902,8 @@ class SearchTrailController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
      */
     public function clearAll(): JSONResponse
     {
