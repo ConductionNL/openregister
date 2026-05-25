@@ -32,6 +32,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/oas-validation/tasks.md "API-46 Problem Details (RFC 7807)"
+ * @spec openspec/changes/oas-validation/specs/oas-validation/spec.md "Error responses include problem details (API-46 / RFC 7807)"
  */
 
 declare(strict_types=1);
@@ -40,6 +41,8 @@ namespace OCA\OpenRegister\Service\Oas;
 
 /**
  * Builds RFC 7807 problem-details response payloads.
+ *
+ * @spec openspec/changes/oas-validation/specs/oas-validation/spec.md "Error responses include problem details (API-46 / RFC 7807)"
  */
 class ProblemDetailsBuilder
 {
