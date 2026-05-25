@@ -19,6 +19,7 @@
 		"download-oas": "scripts/download-oas.sh",
 		"test:e2e": "playwright test",
 		"test:e2e:docs": "playwright test --project docs-capture",
+		"test:e2e:integrations": "playwright test tests/e2e/integration-mount.spec.ts tests/e2e/integration-registry.spec.ts --project chromium",
 		"test:e2e:install": "playwright install chromium",
 		"check:json-strict": "node tests/validate-json-strict.js",
 		"check:manifest": "node tests/validate-manifest.js",
