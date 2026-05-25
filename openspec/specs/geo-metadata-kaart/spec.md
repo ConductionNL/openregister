@@ -33,6 +33,8 @@ Schema definitions MUST support point coordinates, polygons, and base registrati
 - AND the system SHOULD resolve the BAG ID to coordinates via the BAG API
 
 ### Requirement: Objects MUST be visualizable on a map widget
+> **Status: Aspirational / not yet implemented** (tracked in #1843). No Leaflet/map component exists in `src/`; the scenarios below describe the intended future behavior, not shipped behavior.
+
 The UI MUST include a Leaflet-based map widget that displays objects with geospatial properties on an interactive map.
 
 #### Scenario: Display objects as map markers
@@ -86,6 +88,8 @@ Objects with BAG/BGT references MUST support lookup and enrichment from the nati
 - BUT the save MUST NOT be blocked (the BAG API may be temporarily unavailable)
 
 ### Requirement: The map widget MUST support layer toggling
+> **Status: Aspirational / not yet implemented** (tracked in #1843). Depends on the map widget above; no PDOK/layer-control UI exists yet.
+
 The map MUST support toggling between different base layers and overlay layers.
 
 #### Scenario: Switch between map layers
