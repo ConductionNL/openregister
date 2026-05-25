@@ -308,6 +308,8 @@ class NotifyPushListener implements IEventListener
      * @return void
      *
      * @internal For use in unit tests only.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-7
      */
     public static function resetStaticState(): void
     {
@@ -381,6 +383,8 @@ class NotifyPushListener implements IEventListener
      * not installed or not reachable. Never logs WARNING/ERROR.
      *
      * @return object|null The IQueue instance, or null when unavailable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-8
      */
     private function resolveQueue(): ?object
     {
@@ -410,6 +414,8 @@ class NotifyPushListener implements IEventListener
      * @param string|null $registerUuid The register UUID from ObjectEntity::getRegister().
      *
      * @return string|null The register slug, or null when not resolvable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-9
      */
     private function resolveRegisterSlug(?string $registerUuid): ?string
     {
@@ -440,6 +446,8 @@ class NotifyPushListener implements IEventListener
      * @param string|null $schemaUuid The schema UUID from ObjectEntity::getSchema().
      *
      * @return string|null The schema slug, or null when not resolvable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-10
      */
     private function resolveSchemaSlug(?string $schemaUuid): ?string
     {
