@@ -26,11 +26,11 @@ coverage matcher can resolve `@spec` annotations on those methods.
 
 ### Requirement: Long register imports MUST be kept alive by a client-side heartbeat
 
-Register imports can run far longer than a typical HTTP request, risking gateway and
-session timeouts. The register store (`src/store/modules/register.js`) MUST provide a
-client-side heartbeat that, while an import is in flight, periodically issues a
-lightweight `GET /index.php/apps/openregister/api/heartbeat` request to keep the
-session warm. The heartbeat MUST run on a fixed interval (default 15 seconds), MUST
+The register store (`src/store/modules/register.js`) MUST provide a client-side
+heartbeat that, while an import is in flight, periodically issues a lightweight
+`GET /index.php/apps/openregister/api/heartbeat` request to keep the session warm,
+because register imports can run far longer than a typical HTTP request and risk
+gateway and session timeouts. The heartbeat MUST run on a fixed interval (default 15 seconds), MUST
 track consecutive failures, MUST consider itself unhealthy only after 3 consecutive
 failures, MUST NOT stop polling on transient failure, and MUST surface health
 transitions through an optional status callback. The heartbeat MUST return a handle

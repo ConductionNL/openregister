@@ -116,3 +116,24 @@ target the object-scoped file endpoint and MUST raise on a non-OK HTTP response.
 - **GIVEN** any of the file-metadata calls receiving a non-OK response
 - **WHEN** the response resolves
 - **THEN** the client SHALL throw an `Error` carrying the HTTP status
+
+## Non-Functional Requirements
+
+- **Resilience:** Startup hot-loading (REQ-001) MUST isolate per-store failures so a
+  single failing fetch never aborts the others or wedges the SPA mount.
+- **Internationalisation (ADR-007):** REQ-001..REQ-003 cover the bootstrap and
+  client-service layer (`AppInitializationService`, `appInstallService`, `fileMetadata`)
+  which carries no user-facing strings; locale does not affect their behaviour. Any
+  user-facing copy lives in the calling Vue components, which already meet the platform's
+  Dutch + English requirement; these service contracts are i18n-agnostic.
+- **Security:** The install client (REQ-002) MUST honour Nextcloud's HTTP 403
+  password-confirmation contract rather than swallowing it, so privileged app-management
+  actions remain gated by re-authentication.
+
+## Acceptance Criteria
+
+- [ ] `@spec` annotations on `AppInitializationService.js`, `App.vue` (`mounted`/`provide`),
+  `appInstallService.js`, and `fileMetadata.js` point at this change's `tasks.md` REQs.
+- [ ] `openspec validate retrofit-2026-05-25-fe-misc --strict` passes.
+- [ ] Coverage scan re-run after archive resolves the 16 annotated methods to their REQ
+  and the 30 excluded methods to reasoned `@spec exclude` tags (no longer uncovered).

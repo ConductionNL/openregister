@@ -1,5 +1,9 @@
 # zoeken-filteren — Spec Delta
 
+## Purpose
+
+Extends the canonical `zoeken-filteren` capability with the search-trail **analytics-reporting** surface rendered by `src/sidebars/logs/SearchTrailSideBar.vue`. The canonical spec covers search-trail *persistence* and explicitly flags analytics reporting as unspecified; this delta closes that read/display gap. Retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`, `retrofit_extensions`); captures observed behaviour rather than original intent.
+
 ## ADDED Requirements
 
 ### Requirement: Search-trail analytics dashboard
@@ -29,3 +33,14 @@ The search-trail sidebar (`SearchTrailSideBar.vue`) MUST render a read-only anal
 - **WHEN** `getComplexityPercentage('simple')` runs
 - **THEN** it MUST return `75`
 - **AND** when the total is `0` it MUST return `0` without dividing by zero
+
+## Non-Functional Requirements
+
+- **Resilience:** Each analytics loader MUST degrade to safe zero/empty defaults on error so a failing aggregate never blanks the dashboard or throws into the mount hook.
+- **Internationalisation (ADR-007):** The dashboard is user-facing; period labels, complexity-bucket labels, and column headings MUST be available in both Dutch and English per the platform's i18n requirement. `formatActivityPeriod` localises bucket labels to the active locale.
+
+## Acceptance Criteria
+
+- [ ] `@spec` annotations on the `SearchTrailSideBar.vue` analytics loaders/formatters point at this change's `tasks.md` REQ.
+- [ ] `openspec validate retrofit-2026-05-25-fe-sidebars --strict` passes.
+- [ ] Coverage scan re-run after archive resolves the analytics methods to this REQ (no longer uncovered).

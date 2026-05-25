@@ -6,9 +6,11 @@ The `/opsx-coverage-scan` run on 2026-05-25 reported **149 uncovered methods** a
 
 This change brings every one of the 149 under ADR-003's `@spec` convention via the two-tool approach: **annotate against an existing capability** where the sidebar drives a real domain interaction, **mint a new REQ** only for genuinely novel UI behaviour, and **`@spec exclude <reason>`** for presentation/format/plumbing helpers that should never carry a capability reference.
 
-## What the cluster actually contains
+## What Changes
 
-After reading all eight files, the 149 methods decompose into:
+After reading all eight files, the 149 methods decompose into the buckets below. Each
+method ends tagged — annotated to a REQ (new or existing) or carried as a reasoned
+`@spec exclude`. This is a retroactive specification; no runtime behaviour changes.
 
 ### 1. Genuinely novel behaviour — NEW REQs (3 minted, ≤3 cap)
 
@@ -54,6 +56,14 @@ Pure display helpers, date/byte formatters, tab-switch state, lifecycle `mounted
 - `src/sidebars/register/RegisterSideBar.vue`
 - `src/sidebars/register/RegistersSideBar.vue`
 - `src/sidebars/search/SearchSideBar.vue`
+
+## Impact
+
+- **New capability**: `saved-search-views` (2 REQs) — canonical home for the `/api/views` saved-view UI contract.
+- **Extended capability**: `zoeken-filteren` (+1 REQ, `retrofit_extensions`) — the search-trail analytics-reporting surface previously flagged unspecified.
+- **Specs touched**: `specs/saved-search-views/spec.md` and `specs/zoeken-filteren/spec.md` (ADDED only).
+- **Code**: none — annotation-only retrofit across the eight `src/sidebars/**/*.vue` files.
+- **Cross-references**: sidebar methods mapped to `chat-ai`, `files-sidebar-tabs`, `faceting-configuration`, `entity-management-modals`, `openapi-generation`, and `built-in-dashboards` gain pointers to those owners; no requirement text in those capabilities changes.
 
 ## Out of scope
 

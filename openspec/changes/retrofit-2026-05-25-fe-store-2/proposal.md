@@ -65,6 +65,16 @@ After triage:
 
 New REQs minted: **3** (`frontend-store-client-state` REQ-001..REQ-003).
 
+## Impact
+
+- **Capability**: `frontend-store-client-state` (REQ-001..REQ-003) — the same capability
+  the sibling `retrofit-2026-05-25-fe-store-1` change extends; this change was reconciled
+  from a duplicate `frontend-client-state-orchestration` cap into the shared one. The two
+  changes' REQ sets are disjoint (this one: heartbeat + saved-view apply/capture; sibling:
+  caching/preload/memoisation) and coherent as a single capability.
+- **Specs touched**: `specs/frontend-store-client-state/spec.md` (ADDED only).
+- **Code**: none — annotation-only retrofit across the eleven `src/store/` files.
+
 ## Approach
 
 For each method: read the body, classify as spec-to-new-REQ, annotate-to-existing,
