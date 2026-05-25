@@ -809,6 +809,8 @@ class WebhookService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex request interception logic
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple webhook processing paths
      * Fallback when formatter is unavailable
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks (finds before-event webhooks for the event type, formats the request as a CloudEvent, delivers to each, and continues past per-webhook failures, returning the request data)
      */
     public function interceptRequest(IRequest $request, string $eventType): array
     {

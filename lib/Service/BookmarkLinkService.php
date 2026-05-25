@@ -131,6 +131,8 @@ class BookmarkLinkService
      * @return BookmarkLink The persisted link row.
      *
      * @throws Exception On missing user, missing bookmark (404), duplicate (409).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function linkBookmark(string $objectUuid, int $registerId, int $schemaId, int $bookmarkId): BookmarkLink
     {
@@ -178,6 +180,8 @@ class BookmarkLinkService
      * @return void
      *
      * @throws Exception When no matching link is found (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function unlinkBookmark(string $objectUuid, int $bookmarkId): void
     {
@@ -199,6 +203,8 @@ class BookmarkLinkService
      * @return array<int,array<string,mixed>>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getLinkedBookmarks(string $objectUuid): array
     {
@@ -250,6 +256,8 @@ class BookmarkLinkService
      * @return array<int,array{id:int,title:string,url:string,description:string,tags:array<int,string>,added:?int}>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getAvailableBookmarks(?string $search=null, ?array $tags=null): array
     {
@@ -313,6 +321,8 @@ class BookmarkLinkService
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function createAndLinkBookmark(
         string $objectUuid,

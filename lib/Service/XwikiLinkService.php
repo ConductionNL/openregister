@@ -206,6 +206,8 @@ class XwikiLinkService
      *
      * @throws Exception On missing user (401), empty reference (400),
      *                   duplicate (409), source unconfigured/upstream down (503).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function linkPage(string $objectUuid, int $registerId, int $schemaId, string $pageReference): XwikiLink
     {
@@ -260,6 +262,8 @@ class XwikiLinkService
      *
      * @throws Exception On missing user (401), empty title/space (400),
      *                   source unconfigured/upstream down (503).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function createAndLinkPage(
         string $objectUuid,
@@ -378,6 +382,8 @@ class XwikiLinkService
      * @return void
      *
      * @throws Exception On missing user (401) or no matching link (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function unlinkPage(string $objectUuid, string $pageReference): void
     {
@@ -400,6 +406,8 @@ class XwikiLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getLinkedPages(string $objectUuid): array
     {
@@ -431,6 +439,8 @@ class XwikiLinkService
      * @return array<string,mixed> `{ results, total }` on success, or
      *                             `{ unavailable, cause, results, total }`
      *                             when the source is unconfigured/down.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getAvailablePages(?string $search=null): array
     {

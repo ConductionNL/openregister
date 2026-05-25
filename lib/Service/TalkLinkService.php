@@ -126,6 +126,8 @@ class TalkLinkService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential guard
      *     clauses (no user, duplicate, Talk unavailable, find failure,
      *     null room) followed by best-effort cache extraction.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function linkRoom(string $objectUuid, int $registerId, int $schemaId, string $roomToken): TalkLink
     {
@@ -182,6 +184,8 @@ class TalkLinkService
      * @return void
      *
      * @throws Exception When no matching link is found (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function unlinkRoom(string $objectUuid, string $roomToken): void
     {
@@ -202,6 +206,8 @@ class TalkLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getLinkedRooms(string $objectUuid): array
     {
@@ -269,6 +275,8 @@ class TalkLinkService
      *                   type, or create failure.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function createAndLinkRoom(
         string $objectUuid,
@@ -387,6 +395,8 @@ class TalkLinkService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getAvailableRoomsForUser(?string $search = null): array
     {

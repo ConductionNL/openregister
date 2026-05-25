@@ -674,6 +674,8 @@ class ContactService
      * @return void
      *
      * @throws Exception If no row is found for the (objectUuid, contactUid) pair.
+     *
+     * @spec exclude Thin (objectUuid,contactUid)->linkId overload; resolves the row then delegates to the already-specced unlinkContact (contacts-actions#task-1).
      */
     public function unlinkContactByUid(string $objectUuid, string $contactUid): void
     {

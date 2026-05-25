@@ -81,6 +81,8 @@ class RequestScopedCache
      * @param mixed  $value     The value to cache
      *
      * @return void
+     *
+     * @spec exclude Trivial in-memory cache write; no business logic. Class behavior already annotated under annotate-openregister#task-58.
      */
     public function set(string $namespace, string $key, mixed $value): void
     {
@@ -94,6 +96,8 @@ class RequestScopedCache
      * @param string $key       The cache key
      *
      * @return bool True if the key exists (even if value is null)
+     *
+     * @spec exclude Trivial array-key existence check; no business logic.
      */
     public function has(string $namespace, string $key): bool
     {
@@ -108,6 +112,8 @@ class RequestScopedCache
      * @param string[] $keys      The cache keys to look up
      *
      * @return array<string, mixed> Map of key => value for found entries only
+     *
+     * @spec exclude Trivial fan-out over has()/get(); no business logic.
      */
     public function getMultiple(string $namespace, array $keys): array
     {
@@ -127,6 +133,8 @@ class RequestScopedCache
      * @param string|null $namespace Namespace to clear, or null to clear everything
      *
      * @return void
+     *
+     * @spec exclude Trivial cache reset (unset namespace or empty array); no business logic.
      */
     public function clear(?string $namespace=null): void
     {

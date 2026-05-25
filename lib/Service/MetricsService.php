@@ -140,6 +140,8 @@ class MetricsService
      * @throws \Exception If database operation fails (logged but not rethrown)
      *
      * @psalm-suppress PossiblyNullArgument
+     *
+     * @spec openspec/specs/production-observability/spec.md#metrics-storage-strategy (fail-soft insert of an operational metric row — type, entity, status, duration, metadata, error, user, timestamp — that never disrupts the calling operation on DB error)
      */
     public function recordMetric(
         string $metricType,
@@ -478,6 +480,8 @@ class MetricsService
      * @return int Number of deleted records
      *
      * @psalm-suppress PossiblyInvalidMethodCall
+     *
+     * @spec openspec/specs/production-observability/spec.md#metrics-storage-strategy (retention pruning: deletes metric rows older than the retention window to bound table growth)
      */
     public function cleanOldMetrics(int $retentionDays=90): int
     {

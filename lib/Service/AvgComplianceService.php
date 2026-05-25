@@ -150,6 +150,8 @@ class AvgComplianceService
      * Run every check in sequence and return the aggregate envelope.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md#automated-pii-detection (aggregates every compliance check into a single dashboard envelope with generated timestamp, per-check issues, and totals)
      */
     public function runAllChecks(): array
     {
