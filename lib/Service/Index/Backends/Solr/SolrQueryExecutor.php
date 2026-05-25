@@ -330,6 +330,8 @@ class SolrQueryExecutor
      * @return (bool|int|mixed|null|string)[] Statistics
      *
      * @psalm-return array{available: bool, collection: null|string, error?: string, documents?: 0|mixed, status?: 'OK'}
+     *
+     * @spec exclude thin stats wrapper — runs a rows=0 search and reports numFound
      */
     public function getStats(): array
     {

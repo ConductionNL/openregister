@@ -157,6 +157,8 @@ class SolrFacetProcessor
      * @return (array|int|string)[]
      *
      * @psalm-return array{facet?: 'true', 'facet.field'?: array, 'facet.limit'?: 100}
+     *
+     * @spec exclude boilerplate query-param builder — assembles Solr facet.* params array
      */
     public function buildFacetQuery(array $facetFields): array
     {

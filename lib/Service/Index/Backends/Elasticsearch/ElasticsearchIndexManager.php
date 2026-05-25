@@ -71,6 +71,8 @@ class ElasticsearchIndexManager
      * @param string $indexName The index name to check.
      *
      * @return bool True if index exists
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — GET index, no error means exists
      */
     public function indexExists(string $indexName): bool
     {
@@ -91,6 +93,8 @@ class ElasticsearchIndexManager
      * @param array  $mapping   Index mapping configuration (default: empty array).
      *
      * @return bool True on success
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — PUTs index settings/mappings
      */
     public function createIndex(string $indexName, array $mapping=[]): bool
     {
@@ -144,6 +148,8 @@ class ElasticsearchIndexManager
      * @param string $indexName The index name to delete.
      *
      * @return bool True on success
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — DELETEs the index
      */
     public function deleteIndex(string $indexName): bool
     {
@@ -185,6 +191,8 @@ class ElasticsearchIndexManager
      * @param string $indexName The index name to ensure exists.
      *
      * @return bool True on success
+     *
+     * @spec exclude thin helper — checks indexExists then createIndex
      */
     public function ensureIndex(string $indexName): bool
     {
@@ -219,6 +227,8 @@ class ElasticsearchIndexManager
      * @param string $indexName Index name
      *
      * @return array Index statistics
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — GETs /_stats
      */
     public function getIndexStats(string $indexName): array
     {
@@ -245,6 +255,8 @@ class ElasticsearchIndexManager
      * @param string $indexName Index name
      *
      * @return bool True on success
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — POSTs /_refresh
      */
     public function refreshIndex(string $indexName): bool
     {

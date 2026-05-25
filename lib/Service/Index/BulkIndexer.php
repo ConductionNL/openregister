@@ -136,6 +136,8 @@ class BulkIndexer
      * @psalm-return array{success: false, message: 'Method not yet extracted to BulkIndexer'}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec exclude TODO stub returning 'not yet extracted' — implemented path is bulkIndexFromDatabase (REQ-3)
      */
     public function bulkIndexObjects(array $_objects, bool $_commit=true): array
     {
