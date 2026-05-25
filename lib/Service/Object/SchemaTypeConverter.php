@@ -85,7 +85,13 @@ class SchemaTypeConverter
             'number'          => $this->convertNumber(value: $value),
             'integer'         => $this->convertInteger(value: $value),
             'boolean'         => $this->convertBoolean(value: $value),
-            default           => $this->convertString(value: $value, schemaType: $schemaType),
+            // Extended field types `color` and `recurrence` are typed strings:
+            // persisted and returned verbatim via the string path. The `recurrence`
+            // `_occurrences` enrichment is materialised by the render layer
+            // (RenderObject), not here, since it is a sibling virtual field on the
+            // parent object rather than a transform of the value itself.
+            'color', 'recurrence' => $this->convertString(value: $value, schemaType: $schemaType),
+            default               => $this->convertString(value: $value, schemaType: $schemaType),
         };
     }//end convertValue()
 

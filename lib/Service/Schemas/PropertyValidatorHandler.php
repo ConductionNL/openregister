@@ -54,6 +54,9 @@ class PropertyValidatorHandler
         'null',
         'file',
         'geo',
+        // Extended field types (see extended-field-types spec).
+        'color',
+        'recurrence',
         'NcFile',
         'NcMail',
         'NcContact',

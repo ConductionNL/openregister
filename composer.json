@@ -88,6 +88,7 @@
 		]
 	},
 	"require": {
+		"php": "^8.3",
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
 		"cweagans/composer-patches": "^1.7",
@@ -95,12 +96,12 @@
 		"elasticsearch/elasticsearch": "^v8.14.0",
 		"guzzlehttp/guzzle": "^7.0",
 		"opis/json-schema": "^2.3",
-		"php": "^8.3",
 		"phpoffice/phpspreadsheet": "^5.0",
 		"phpoffice/phpword": "^1.2",
 		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
+		"sabre/vobject": "^4.5",
 		"smalot/pdfparser": "^2.9",
 		"symfony/console": "^6.4",
 		"symfony/http-kernel": "^6.4",
