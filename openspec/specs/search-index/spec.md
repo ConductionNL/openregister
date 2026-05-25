@@ -17,9 +17,7 @@ This spec was reverse-engineered from code under `lib/Service/IndexService.php` 
 - **zoeken-filteren** — frontend search calls land on `IndexService::searchObjectsPaginated()`.
 - **faceting-configuration** — frontend facet calls land on `SolrFacetProcessor` via the backend.
 - **aggregations-backend-native** — `SearchBackendInterface::aggregate()` is the cross-backend aggregation entry point.
-
 ## Requirements
-
 ### Requirement: Search backend operations route through SearchBackendInterface
 
 All search/index runtime operations exposed by `IndexService` (the facade in `lib/Service/IndexService.php`) MUST be performed against a `SearchBackendInterface` implementation, never against a concrete backend class. `IndexService` SHALL NOT make direct Solr or Elasticsearch HTTP calls — it delegates `indexObject()`, `deleteObject()`, `isAvailable()`, `warmupIndex()`, `collectionExists()`, `indexFiles()`, `getStats()`, etc. to `$this->searchBackend`. Concrete Solr-side primitives (`SolrCollectionManager`, `SolrDocumentIndexer`, `SolrQueryExecutor`, `SolrFacetProcessor`, `SolrHttpClient`) implement the backend's I/O and are only reachable through the interface.
@@ -204,6 +202,211 @@ SolrCloud setup is genuinely multi-step: nodes need to agree (via ZooKeeper) tha
 - **AND** include `self_object_id` (type `pint`), `self_register` (`pint`, `docValues: true`), and `self_schema` (`pint`, `docValues: true`) as the per-tenant identity/classification trio
 
 ---
+
+### Requirement: Asynchronous file text extraction MUST run as a queued background job
+
+When file text extraction is enabled, the system MUST extract text from uploaded files asynchronously via a one-time `QueuedJob` (`FileTextExtractionJob`) rather than blocking the user request that created or modified the file. The job MUST be a no-op when extraction is disabled in configuration, MUST validate that a `file_id` argument is present, and MUST delegate the actual extraction to `TextExtractionService::extractFile()`. Failures MUST be logged and MUST NOT propagate as uncaught exceptions out of the job.
+
+#### Scenario: Extraction is skipped when disabled
+- **GIVEN** the `fileManagement` app-config either has no value or declares `extractionScope === 'none'`
+- **WHEN** `FileTextExtractionJob::run()` executes
+- **THEN** the job MUST log an info message that extraction is disabled
+- **AND** it MUST return without calling `TextExtractionService`
+
+#### Scenario: Missing file_id is rejected
+- **GIVEN** the job is queued without a `file_id` argument
+- **WHEN** `run()` executes
+- **THEN** it MUST log an error naming the missing argument
+- **AND** it MUST return without attempting extraction
+
+#### Scenario: Text is extracted for a valid file id
+- **GIVEN** extraction is enabled and the job argument carries a valid `file_id`
+- **WHEN** `run()` executes
+- **THEN** it MUST call `TextExtractionService::extractFile(fileId: <id>, forceReExtract: false)`
+- **AND** it MUST log start and successful-completion entries including a processing-time metric
+
+#### Scenario: Extraction failure is contained
+- **GIVEN** `TextExtractionService::extractFile()` throws an exception
+- **WHEN** `run()` executes
+- **THEN** the exception MUST be caught and logged at error level with the file id and the error message
+- **AND** the job MUST NOT re-throw (the failure does not crash the cron worker)
+
+#### Notes
+- The job is queued from the file create/modify path so extraction never blocks the user request — this is the asynchronous complement to the synchronous Solr indexing covered by the bulk-indexing REQ.
+
+### Requirement: DocumentBuilder coerces, validates, and reshapes object data into backend-safe documents
+
+`DocumentBuilder` MUST transform raw `ObjectEntity` data into a backend-safe document by coercing each value to its declared SOLR field type, validating type compatibility, truncating oversized strings, reconstructing dot-notation array relations, and resolving register/schema references to integer IDs. The transformation MUST be lossy-safe — incompatible or unresolvable values are skipped or coerced rather than aborting the document build.
+
+#### Rationale
+
+SOLR is strongly typed and has a hard 32 KB byte ceiling on indexed string fields, while OpenRegister object bodies are schema-loose JSON that can carry base64 blobs, mixed-type arrays, and relations stored only as dot-notation keys (`standaarden.0`). Coercing, validating, and truncating at document-build time keeps a single malformed property from failing an entire batch index, and resolving register/schema slugs to integer IDs keeps `register:5` style filtering working regardless of how the reference was stored.
+
+#### Scenario: convertValueForSolr coerces by declared type and skips non-numeric values
+
+- **GIVEN** a value `"abc"` for a field declared `integer`
+- **WHEN** `DocumentBuilder::convertValueForSolr("abc", "integer")` runs
+- **THEN** the method MUST return `null` (non-numeric skipped, not cast to `0`)
+- **AND** a numeric `"42"` for an `integer` field MUST return the int `42`
+- **AND** a `date`/`datetime` value MUST be formatted as `Y-m-d\TH:i:s\Z`
+
+#### Scenario: isValueCompatibleWithSolrType rejects type mismatches but allows arrays element-wise
+
+- **GIVEN** a non-numeric string and a SOLR field type of `pint`
+- **WHEN** `DocumentBuilder::isValueCompatibleWithSolrType($value, 'pint')` runs
+- **THEN** the method MUST return `false`
+- **AND** for an array value the method MUST recurse, returning `true` only if every element is compatible
+- **AND** unknown SOLR field types MUST default to `true` (permissive)
+
+#### Scenario: truncateFieldValue caps strings at the SOLR byte ceiling
+
+- **GIVEN** a string longer than 32766 bytes
+- **WHEN** `DocumentBuilder::truncateFieldValue($value)` runs
+- **THEN** the result MUST be UTF-8-safe truncated to under the limit and suffixed with `...[TRUNCATED]`
+- **AND** values within the limit MUST be returned unchanged
+- **AND** non-string values MUST be returned unchanged
+
+#### Scenario: extractArraysFromRelations rebuilds arrays from dot-notation keys
+
+- **GIVEN** relations `["standaarden.1" => "b", "standaarden.0" => "a", "nested.x" => "y"]`
+- **WHEN** `DocumentBuilder::extractArraysFromRelations($relations)` runs
+- **THEN** the result MUST contain `standaarden => ["a", "b"]` (sorted by numeric index, re-keyed sequentially)
+- **AND** non-numeric indices (`nested.x`) MUST be skipped, not added as array elements
+
+#### Scenario: resolveRegisterToId returns integer IDs and falls back to 0
+
+- **GIVEN** a numeric register value
+- **WHEN** `DocumentBuilder::resolveRegisterToId($value)` runs
+- **THEN** the method MUST return it cast to int
+- **AND** a slug/name value MUST be resolved via `RegisterMapper::find()` to its ID
+- **AND** an empty or unresolvable value MUST return `0` (the same contract holds for `resolveSchemaToId` via `SchemaMapper`)
+
+---
+
+### Requirement: SchemaHandler resolves cross-schema field-type conflicts and provisions vector fields
+
+`SchemaHandler::mirrorSchemas()` MUST analyse every OpenRegister schema's properties before applying any field and, when the same field name resolves to different SOLR types across schemas, MUST resolve the conflict to the most permissive type using the hierarchy `string > text > float > integer > boolean`. `SchemaHandler::ensureVectorFieldType()` MUST provision a `knn_vector` dense-vector field type (idempotently) for vector-similarity search.
+
+#### Rationale
+
+A single SOLR collection mirrors fields from every schema, so a field named `code` that is an integer in one schema and a string in another would otherwise fail to index against whichever type was created first. Choosing the most permissive type (string can hold everything; integer cannot hold text) lets one collection serve heterogeneous schemas without per-schema collections. The `knn_vector` provisioning is the prerequisite for semantic/vector search and must be a no-op when the type already exists so re-runs of the mirror are safe.
+
+#### Scenario: mirrorSchemas resolves a field-type conflict to the most permissive type
+
+- **GIVEN** field `code` resolves to `integer` in one schema and `string` in another
+- **WHEN** `SchemaHandler::mirrorSchemas()` analyses the schemas
+- **THEN** the conflict MUST be recorded and resolved to `string` (most permissive)
+- **AND** the resolved type MUST be used when generating the SOLR field definition
+- **AND** the run MUST report `resolved_conflicts` in its result
+
+#### Scenario: ensureVectorFieldType is idempotent
+
+- **GIVEN** a collection that already has a `knn_vector` field type
+- **WHEN** `SchemaHandler::ensureVectorFieldType($collection)` runs
+- **THEN** the method MUST detect the existing type via `getFieldTypes()` and return `true` without re-creating it
+- **AND** when absent, it MUST create a `solr.DenseVectorField` with the requested `vectorDimension` and `similarityFunction`
+
+---
+
+### Requirement: FileHandler indexes database-resident file chunks into the backend file collection
+
+`FileHandler` MUST index file-content chunks — produced separately by the text-extraction flow and persisted via `ChunkMapper` — into the search backend's file collection. It MUST NOT extract text itself; it only reads existing chunks, maps each chunk to a document, submits them via `SearchBackendInterface::index()`, and marks successfully indexed chunks as indexed in the database.
+
+#### Rationale
+
+Text extraction (OCR, PDF parsing) is expensive and runs on its own schedule, writing chunks to the database. Decoupling indexing from extraction lets the index be (re)built from already-extracted chunks without re-parsing files, and lets a backfill (`processUnindexedChunks`) catch up chunks that were extracted while the backend was unavailable. Marking chunks indexed only after a successful submit keeps the backfill idempotent.
+
+#### Scenario: processUnindexedChunks groups by file, indexes, and marks chunks
+
+- **GIVEN** `ChunkMapper::findUnindexed()` returns chunks for two file IDs
+- **WHEN** `FileHandler::processUnindexedChunks()` runs
+- **THEN** chunks MUST be grouped by their source file ID and each group submitted via `indexFileChunks()`
+- **AND** on a successful index the chunks MUST be marked `indexed` via `ChunkMapper::update()`
+- **AND** a per-file failure MUST increment `failed` and record an error without aborting the remaining files
+
+#### Scenario: indexFileChunks maps chunks to documents and reports the indexed count
+
+- **GIVEN** a file ID, an array of chunk entities, and file metadata
+- **WHEN** `FileHandler::indexFileChunks($fileId, $chunks, $metadata)` runs
+- **THEN** each chunk MUST become a document carrying `file_id`, `chunk_index`, `total_chunks`, `chunk_text`, owner/organisation/language, and created/updated timestamps
+- **AND** the documents MUST be submitted via `SearchBackendInterface::index()`
+- **AND** the result MUST report `success` and an `indexed` count equal to the document count on success
+
+### Requirement: File Text Extraction and Indexing HTTP Surface
+
+The system MUST expose an HTTP surface for the file text-extraction-and-indexing
+pipeline so administrators and the Files UI can extract text from files, index
+the resulting chunks into the configured search backend, inspect extraction and
+chunking statistics, search over file contents, and anonymise detected PII.
+
+Text extraction MUST support per-file (re-)extraction and a bounded bulk
+extraction over pending files, and MUST return HTTP `501` when file management
+or extraction is disabled in configuration. Chunk indexing MUST process
+unindexed chunks into the search backend and report indexing counts. The
+surface MUST expose extraction statistics and chunking statistics. File search
+MUST support semantic (vector-similarity) and hybrid (keyword + vector) modes
+over the `file` entity type, each returning a `{success, query, total, results,
+search_type}` envelope and rejecting an empty `query` with HTTP `400`. The
+Files-sidebar endpoints MUST return the OpenRegister objects referencing a given
+Nextcloud file id and that file's extraction status. File-index administration
+MUST expose: read/update of file settings, file-collection field discovery and
+creation, index warmup, per-file and bulk (re)indexing, file-index and
+file-extraction statistics, and connection tests for the configured extraction
+and anonymisation backends (Dolphin / Presidio / OpenAnonymiser). Anonymisation
+MUST create a new anonymised copy of a file from previously detected entities,
+leaving the original unchanged, and MUST reject files that are already
+anonymised or have no detected entities.
+
+#### Scenario: Force per-file text extraction
+- **GIVEN** file management is enabled with an extraction scope other than `none`
+- **WHEN** a POST request is sent to extract text for a file id
+- **THEN** the controller MUST force re-extraction via the extraction service and return success
+
+#### Scenario: Extraction disabled yields 501
+- **GIVEN** file management is absent or its `extractionScope` is `none`
+- **WHEN** per-file extraction is requested
+- **THEN** the response MUST be HTTP `501` with `{success:false, message:"Text extraction disabled"}`
+
+#### Scenario: Bulk extraction is bounded
+- **GIVEN** a bulk-extract request with a `limit` above the cap
+- **WHEN** the controller invokes the extraction service
+- **THEN** the processed batch MUST be capped (at most 500 files) and the response MUST report `processed`/`failed`/`total`
+
+#### Scenario: Chunk indexing reports counts
+- **GIVEN** extracted file chunks awaiting indexing
+- **WHEN** the process-and-index endpoint is invoked
+- **THEN** unindexed chunks MUST be processed into the search backend and the response MUST carry the indexing result
+
+#### Scenario: Semantic file search rejects empty query
+- **GIVEN** a semantic-search request with an empty `query`
+- **WHEN** the endpoint is invoked
+- **THEN** the response MUST be HTTP `400` with `{success:false, message:"Query parameter is required"}`
+
+#### Scenario: Anonymisation guards already-anonymised files
+- **GIVEN** a file whose name already contains `_anonymized`
+- **WHEN** the anonymise endpoint is invoked
+- **THEN** the response MUST be HTTP `400` and no new anonymised copy MUST be created
+
+### Requirement: Adaptive Post-Import Search-Index Warmup Scheduling
+On import completion the service MUST schedule a one-time background Solr warmup job whose warmup mode and maximum-object cap are derived from the number of objects imported, MUST skip scheduling entirely when nothing was imported, and MUST treat a scheduling failure as non-fatal to the import.
+
+`ImportService::scheduleSolrWarmup()` MUST compute the total objects imported across all sheets and MUST return `false` without scheduling when that total is zero. `ImportService::getRecommendedWarmupMode()` MUST select a warmup mode by import-size tier (large imports get the fastest mode, medium imports a balanced mode, small imports the safe mode). `ImportService::scheduleSmartSolrWarmup()` MUST use the recommended mode and a size-derived object cap (bounded by a hard maximum), MUST default to a delayed schedule with an immediate-run override, and MUST delegate to `scheduleSolrWarmup()`. A failure to enqueue the job MUST be logged and MUST NOT abort or roll back the completed import.
+
+#### Scenario: Large import schedules a fast, capped warmup
+- **GIVEN** an import that created a large number of objects
+- **WHEN** the smart warmup is scheduled
+- **THEN** the recommended mode MUST be the fastest tier
+- **AND** the warmup object cap MUST be bounded by the hard maximum
+
+#### Scenario: Empty import skips warmup
+- **GIVEN** an import that created and updated zero objects
+- **WHEN** warmup scheduling runs
+- **THEN** no job MUST be enqueued and the call MUST return false
+
+#### Scenario: Scheduling failure does not fail the import
+- **GIVEN** the background job queue rejects the warmup job
+- **WHEN** scheduling fails
+- **THEN** the failure MUST be logged and the import MUST remain successful
 
 ## Notes
 

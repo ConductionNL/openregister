@@ -9,9 +9,7 @@ status: implemented
 Integrate OpenRegister with Nextcloud's Activity app so that all CRUD operations on Objects, Registers, and Schemas are visible in the standard Nextcloud activity stream, dashboard activity widget, and (optionally) email notifications. This gives users and administrators a clear, auditable timeline of who changed what and when, using the standard `OCP\Activity` API (IManager, IProvider, IFilter, ActivitySettings).
 
 **Source**: OpenRegister is a multi-user data registration platform where multiple people collaborate on structured data. Without Activity integration, users have no Nextcloud-native visibility into changes made by others. The existing internal event system (`ObjectCreatedEvent`, etc.) already dispatches events but they are not surfaced to end users.
-
 ## Requirements
-
 ### Requirement: OpenRegister MUST publish activity events for Object CRUD operations
 
 When an object is created, updated, or deleted, the app MUST publish a corresponding activity event via `OCP\Activity\IManager::publish()`. The event MUST contain the app ID, activity type, author, timestamp, subject with parameters, object reference, and a link to the object in the OpenRegister UI.
@@ -225,6 +223,22 @@ All user-visible strings in the Provider, Filter, and Settings MUST use `IL10N` 
   - `'Object wijzigingen'` for object setting
   - `'Register wijzigingen'` for register setting
   - `'Schema wijzigingen'` for schema setting
+
+### Requirement: Tier-2 Object Activity Read Surface
+The service MUST resolve NC Activity entries linked to an OR object via the `[or:{objectUuid}]` subject marker, apply optional type / actor / date-range filters, return a bounded cursor-paginated page ordered newest-first, and return an empty result set (never throw) when the NC Activity app is not installed or a query fails.
+
+`ActivityFilterService::getActivityEntries()` MUST match entries by the `[or:{objectUuid}]` marker in the `activity.subject` column, MUST apply the optional exact `type`, exact `actor` (`affecteduser`), and `after` (Unix-timestamp lower bound) filters when supplied, MUST clamp the requested page size into `[1, MAX_LIMIT]` defaulting to `DEFAULT_LIMIT`, MUST page descending by `timestamp` then `activity_id` using a strict-less-than cursor, and MUST return `{ results, total, nextCursor }` where `total` is the filter-set count ignoring the cursor and `nextCursor` is null on the last page. When the Activity app is unavailable the result MUST be `{ results: [], total: 0, nextCursor: null }`, and any DB error MUST be logged and degraded to an empty result rather than propagated.
+
+#### Scenario: Filtered page returned with next cursor
+- **GIVEN** an OR object has more linked activity entries than one page
+- **WHEN** `getActivityEntries()` is called with a type filter and a page limit
+- **THEN** only marker-matched entries of that type MUST be returned, newest-first
+- **AND** `nextCursor` MUST carry the oldest returned entry's timestamp so the next call resumes correctly
+
+#### Scenario: Activity app absent degrades to empty
+- **GIVEN** the NC Activity app is not installed
+- **WHEN** `getActivityEntries()` is called
+- **THEN** the result MUST be `{ results: [], total: 0, nextCursor: null }` without throwing
 
 ## Current Implementation Status
 
