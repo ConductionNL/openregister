@@ -98,6 +98,8 @@ class UserSettingsController extends Controller
      *     hasToken?: bool, isValid?: bool,
      *     message?: 'No GitHub token configured'|'Token is invalid or expired'|
      *     'Token is valid'}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-12
      */
     public function getGitHubTokenStatus(): JSONResponse
     {
@@ -155,6 +157,8 @@ class UserSettingsController extends Controller
      *     array{error?: string, success?: true,
      *     message?: 'GitHub token saved successfully'},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-12
      */
     public function setGitHubToken(): JSONResponse
     {
@@ -218,6 +222,8 @@ class UserSettingsController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-12
      */
     public function removeGitHubToken(): JSONResponse
     {
