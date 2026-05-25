@@ -17,6 +17,17 @@ Activity, Shares, Mail) implements identically. Reverse-specced from the live
 shares (the query-time `SharesProvider` documented elsewhere in this spec is
 its backing provider).
 
+This REQ is the **leaf-controller** companion to the "Object-Scoped
+Integration Link REST Contract" REQ added by the sibling controller-batch
+change `retrofit-2026-05-25-bw2-ctrl-1` (which covers the
+Analytics/Collective/Map/OpenProject/Poll/Talk/Xwiki/Email *Links*
+controllers). Both REQs describe the *same* uniform object-scoped link
+contract — they were split only because the controller layer was scanned in
+two batches. The two REQs partition the controller set with no overlap; the
+shared HTTP semantics (route shape, `{results, total}` envelope,
+`501 APP_NOT_AVAILABLE` degradation, exception-code→HTTP mapping) are kept
+deliberately identical so the contract reads as one.
+
 ## ADDED Requirements
 
 ### Requirement: Tier-2 Integration Leaf Link Controller Contract

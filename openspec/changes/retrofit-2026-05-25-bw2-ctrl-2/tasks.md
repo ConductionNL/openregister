@@ -60,8 +60,10 @@ and are not individual tasks.
 
 ## oas-generation (NEW REQ — publish / depublish surface)
 
-- [x] **task-5**: oas-generation#REQ-002 "Register and Schema Publication and
-  GitHub OAS Publishing" — `RegistersController`
+- [x] **task-5**: oas-generation ADDED REQ "Register and Schema Publication and
+  GitHub OAS Publishing" (a new requirement; NOT a redefinition of the existing
+  `REQ-002 Generate OpenAPI Specification for a specific register`) —
+  `RegistersController`
   (`publish`/`depublish`/`publishToGitHub`) and `SchemasController`
   (`publish`/`depublish`): register/schema publication lifecycle + OAS-to-GitHub
   push.
