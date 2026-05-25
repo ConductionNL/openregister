@@ -42,6 +42,9 @@ class ActivityProvider extends AbstractIntegrationProvider
 
     private const MARKER_PREFIX = '[or:';
 
+    /**
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+     */
     public function __construct(
         private IDBConnection $db,
         private IAppManager $appManager,
@@ -49,36 +52,57 @@ class ActivityProvider extends AbstractIntegrationProvider
     ) {
     }//end __construct()
 
+    /**
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+     */
     public function getId(): string
     {
         return 'activity';
     }//end getId()
 
+    /**
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+     */
     public function getLabel(): string
     {
         return $this->l10n->t('Activity');
     }//end getLabel()
 
+    /**
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+     */
     public function getIcon(): string
     {
         return 'Timeline';
     }//end getIcon()
 
+    /**
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+     */
     public function getGroup(): ?string
     {
         return 'workflow';
     }//end getGroup()
 
+    /**
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+     */
     public function getRequiredApp(): ?string
     {
         return self::REQUIRED_APP;
     }//end getRequiredApp()
 
+    /**
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+     */
     public function getStorageStrategy(): string
     {
         return 'query-time';
     }//end getStorageStrategy()
 
+    /**
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+     */
     public function isEnabled(): bool
     {
         return $this->appManager->isInstalled(self::REQUIRED_APP);
@@ -103,6 +127,8 @@ class ActivityProvider extends AbstractIntegrationProvider
      * @param array  $filters  Optional filters: `type`, `actor`, `after` (Unix ts).
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-3
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -203,6 +229,10 @@ class ActivityProvider extends AbstractIntegrationProvider
         );
     }//end applyFilters()
 
+
+    /**
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-4
+     */
     public function health(): array
     {
         $available = $this->isEnabled();
