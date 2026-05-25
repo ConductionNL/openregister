@@ -76,6 +76,9 @@ export default {
 			return t('openregister', key)
 		},
 		/**
+		 * Navigate to a router path (used by the primary-action button).
+		 *
+		 * @param {string} path The vue-router path to push.
 		 * @spec exclude App-navigation plumbing: $router.push wrapper; no standalone behavioural contract.
 		 */
 		handleNavigate(path) {

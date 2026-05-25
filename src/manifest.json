@@ -4,6 +4,7 @@
 	"nav": {
 		"includePersonalSettings": false
 	},
+	"pages": [],
 	"menu": [
 		{
 			"id": "Chat",
