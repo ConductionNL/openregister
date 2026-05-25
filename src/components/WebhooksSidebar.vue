@@ -69,10 +69,16 @@ export default {
 	},
 
 	props: {
+		/**
+		 * @spec exclude two-way-bound search prop, UI plumbing
+		 */
 		search: {
 			type: String,
 			default: '',
 		},
+		/**
+		 * @spec exclude two-way-bound enabled-status filter prop, UI plumbing
+		 */
 		enabled: {
 			type: Boolean,
 			default: null,
@@ -129,6 +135,7 @@ export default {
 		 *
 		 * @param {boolean|null} enabled - The enabled status to filter by
 		 * @return {void}
+		 * @spec exclude filter-state writer emitting update:enabled, UI plumbing
 		 */
 		updateEnabled(enabled) {
 			this.selectedEnabled = enabled
@@ -139,6 +146,7 @@ export default {
 		 * Clear all filters
 		 *
 		 * @return {void}
+		 * @spec exclude filter-reset emitting cleared values, UI plumbing
 		 */
 		clearFilters() {
 			this.localSearch = ''

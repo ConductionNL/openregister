@@ -112,14 +112,23 @@ export default {
 		Magnify,
 	},
 	props: {
+		/**
+		 * @spec exclude two-way-bound search prop, UI plumbing
+		 */
 		search: {
 			type: String,
 			default: '',
 		},
+		/**
+		 * @spec exclude two-way-bound entity-type filter prop, UI plumbing
+		 */
 		type: {
 			type: String,
 			default: null,
 		},
+		/**
+		 * @spec exclude two-way-bound category filter prop, UI plumbing
+		 */
 		category: {
 			type: String,
 			default: null,
@@ -164,14 +173,23 @@ export default {
 				this.$emit('update:search', value)
 			}, 500)
 		},
+		/**
+		 * @spec exclude filter-state writer emitting update:type to parent, UI plumbing
+		 */
 		updateType(type) {
 			this.selectedType = type
 			this.$emit('update:type', type)
 		},
+		/**
+		 * @spec exclude filter-state writer emitting update:category to parent, UI plumbing
+		 */
 		updateCategory(category) {
 			this.selectedCategory = category
 			this.$emit('update:category', category)
 		},
+		/**
+		 * @spec exclude filter-reset emitting cleared values to parent, UI plumbing
+		 */
 		clearFilters() {
 			this.localSearch = ''
 			this.selectedType = null

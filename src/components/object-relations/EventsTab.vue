@@ -150,15 +150,27 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
+		 */
 		key() {
 			return `${this.register}:${this.schema}:${this.objectId}`
 		},
+		/**
+		 * @spec exclude computed read of linked events from store; event-relations contract owned by integration-calendar capability
+		 */
 		events() {
 			return this.store.byObject[this.key] || []
 		},
+		/**
+		 * @spec exclude computed read of loading state from store, UI plumbing
+		 */
 		loading() {
 			return !!this.store.loading[this.key]
 		},
+		/**
+		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
+		 */
 		calendarUnavailable() {
 			return this.store.calendarUnavailable
 		},
@@ -167,6 +179,9 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @spec exclude watcher refetching events on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchEvents()
@@ -195,6 +210,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude store passthrough unlinking event + change emit; event-relations contract owned by integration-calendar capability
+		 */
 		async unlinkEvent(event) {
 			try {
 				await this.store.unlink(this.register, this.schema, this.objectId, event.id)
@@ -205,16 +223,25 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude emit UI handler surfacing create-event intent, UI plumbing
+		 */
 		openCreateDialog() {
 			// Surface intent to the parent so it can mount a calendar-event modal
 			// (the modal lives outside the tab to avoid pulling it into every detail view).
 			this.$emit('create-event')
 		},
 
+		/**
+		 * @spec exclude emit UI handler surfacing link-event intent, UI plumbing
+		 */
 		openLinkDialog() {
 			this.$emit('link-event')
 		},
 
+		/**
+		 * @spec exclude computed date-format display helper, UI plumbing
+		 */
 		formatDate(value) {
 			if (!value) {
 				return ''

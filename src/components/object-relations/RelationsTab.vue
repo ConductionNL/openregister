@@ -145,6 +145,9 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed distinct relation-type list for filters, UI plumbing
+		 */
 		availableTypes() {
 			const set = new Set()
 			for (const r of this.relations) {
@@ -156,6 +159,9 @@ export default {
 			return Array.from(set)
 		},
 
+		/**
+		 * @spec exclude computed type-filtered relation list for display, UI plumbing
+		 */
 		visibleRelations() {
 			if (this.selectedTypes.length === 0) {
 				return this.relations
@@ -168,6 +174,9 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @spec exclude watcher refetching relations on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchRelations()
@@ -207,6 +216,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude client-side normalisation of timeline/envelope response shapes for display, UI plumbing
+		 */
 		normaliseResponse(data) {
 			// The unified endpoint may return either a flat timeline array
 			// (`view=timeline`) or a typed envelope (`{ emails: [...], events: [...] }`).
@@ -242,6 +254,9 @@ export default {
 			return out
 		},
 
+		/**
+		 * @spec exclude client-side normalisation of a single relation entry for display, UI plumbing
+		 */
 		normaliseEntry(raw) {
 			const type = raw.type || raw.entityType || 'unknown'
 			let title = raw.title || raw.subject || raw.summary || raw.displayName || raw.name || ''
@@ -270,6 +285,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude local type-filter toggle plumbing, UI plumbing
+		 */
 		toggleType(type) {
 			if (this.selectedTypes.includes(type)) {
 				this.selectedTypes = this.selectedTypes.filter(t => t !== type)
@@ -278,6 +296,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude computed date-format display helper, UI plumbing
+		 */
 		formatDate(value) {
 			if (!value) {
 				return ''

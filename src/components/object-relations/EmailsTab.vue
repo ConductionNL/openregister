@@ -134,6 +134,9 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @spec exclude watcher refetching emails on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchEmails()
@@ -145,6 +148,9 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * @spec exclude API passthrough loading linked emails; email-relations contract owned by integration-email capability
+		 */
 		async fetchEmails() {
 			this.loading = true
 			this.error = false
@@ -172,6 +178,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude API passthrough unlinking email + change emit; email-relations contract owned by integration-email capability
+		 */
 		async unlinkEmail(email) {
 			const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/emails/{emailId}', {
 				register: this.register,
@@ -190,6 +199,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude computed date-format display helper, UI plumbing
+		 */
 		formatDate(value) {
 			if (!value) {
 				return ''

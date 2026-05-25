@@ -83,6 +83,9 @@ import { useTranslationsStore } from '../../store/modules/translations.js'
 export default {
 	name: 'BulkTranslateDialog',
 	props: {
+		/**
+		 * @spec exclude dialog open/visibility prop, UI plumbing
+		 */
 		open: {
 			type: Boolean,
 			default: false,
@@ -111,6 +114,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude computed submit-enabled form-validation flag, UI plumbing
+		 */
 		canSubmit() {
 			return !this.loading
 				&& this.from !== ''
@@ -136,6 +142,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec exclude store passthrough invoking bulk-translate; bulk-translate contract owned by register-i18n capability
+		 */
 		async onSubmit() {
 			if (!this.canSubmit) return
 			this.loading = true
