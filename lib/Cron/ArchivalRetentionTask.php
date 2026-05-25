@@ -169,6 +169,8 @@ class ArchivalRetentionTask extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-11
      */
     protected function run($argument): void
     {
