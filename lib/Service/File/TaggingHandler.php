@@ -87,6 +87,8 @@ class TaggingHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Tag management requires handling create/find/attach scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for tag creation and attachment
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-005
      */
     public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
@@ -205,6 +207,8 @@ class TaggingHandler
      * @phpstan-return array<int, string>
      *
      * @psalm-return list<string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-005
      */
     public function getFileTags(string $fileId): array
     {

@@ -101,6 +101,8 @@ class FilePublishingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File lookup requires handling ID vs path scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple file resolution paths with fallback logic
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file lookup and sharing requires extensive code
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function publishFile(ObjectEntity | string $object, string | int $file): File
     {
@@ -303,6 +305,8 @@ class FilePublishingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File lookup requires handling ID vs path scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple file resolution paths with fallback logic
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file lookup and unsharing requires extensive code
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function unpublishFile(ObjectEntity | string $object, string|int $filePath): File
     {
@@ -503,6 +507,8 @@ class FilePublishingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  ZIP creation requires handling multiple file and error scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for file processing and error handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) ZIP archive creation with file processing requires extensive code
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {

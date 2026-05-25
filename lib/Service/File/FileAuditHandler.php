@@ -72,6 +72,8 @@ class FileAuditHandler
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec exclude No-op audit shim: only emits a log line; the AuditTrail insert is commented out, so there is no persisted behavior to specify.
      */
     public function logDownload(
         int $fileId,

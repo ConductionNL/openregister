@@ -85,6 +85,8 @@ class FileOwnershipHandler
      *
      * @psalm-return   IUser
      * @phpstan-return IUser
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function getUser(): IUser
     {
@@ -159,6 +161,8 @@ class FileOwnershipHandler
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-006
      */
     public function transferFileOwnershipIfNeeded(File $file, ?FileSharingHandler $fileSharingHandler=null): void
     {
@@ -244,6 +248,8 @@ class FileOwnershipHandler
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function transferFolderOwnershipIfNeeded(Node $folder, ?FileSharingHandler $fileSharingHandler=null): void
     {
