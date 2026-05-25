@@ -54,6 +54,12 @@ export default {
 		Views,
 		SideBars,
 	},
+	/**
+	 * Expose the shared object-sidebar state to descendant components.
+	 *
+	 * @return {object} The provided injectables.
+	 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
+	 */
 	provide() {
 		return {
 			objectSidebarState: this.objectSidebarState,
@@ -74,6 +80,12 @@ export default {
 			}),
 		}
 	},
+	/**
+	 * On mount, kick off application-data hot-loading and dashboard watchers.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
+	 */
 	mounted() {
 		// Initialize hot-loading of essential application data
 		// This loads registers, schemas, organisations, applications, views, agents, sources, and conversations
