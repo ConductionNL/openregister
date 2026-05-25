@@ -1297,6 +1297,22 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // ActivityFilterService — Tier-2 read-only filter/paginate
+        // service backing the ActivityLinksController. NC Activity
+        // entries are core-generated; this only wraps the wave-5.3
+        // MarkerLookupTrait carve-out query with type/actor/date
+        // filters + cursor pagination.
+        // @spec openspec/changes/integration-activity/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\ActivityFilterService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\ActivityFilterService(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                );
+            }
+        );
+
         // FlowLinkService — Tier-2 admin-gated link/unlink/picker
         // service backing the FlowLinksController. NC Flow operations
         // are configured by admins only; the service enforces that
