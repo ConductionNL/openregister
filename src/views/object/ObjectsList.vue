@@ -149,12 +149,18 @@ export default {
 		}
 	},
 	watch: {
+		/**
+		 * @spec exclude list-view watcher; reloads the object list on page change (object-lifecycle contract)
+		 */
 		currentPage(newVal) {
 			this.loading = true
 			objectStore.refreshObjectList({ limit: this.limit, page: newVal, search: this.search }).finally(() => {
 				this.loading = false
 			})
 		},
+		/**
+		 * @spec exclude list-view watcher; debounced reload of the object list on search change (object-lifecycle contract)
+		 */
 		search(newVal) {
 			clearTimeout(this.searchTimeout)
 			this.searchTimeout = setTimeout(() => {
@@ -165,6 +171,9 @@ export default {
 			}, 700)
 		},
 	},
+	/**
+	 * @spec exclude list-view lifecycle; conditionally loads the object list on mount when register+schema are scoped (object-lifecycle contract)
+	 */
 	mounted() {
 		// Skip the refresh when neither a register nor a schema is in
 		// scope — the deep-link route /objects/:register/:schema/:id
@@ -184,6 +193,9 @@ export default {
 		})
 	},
 	methods: {
+		/**
+		 * @spec exclude list-view action; opens the add-object modal with register/schema context (object-lifecycle contract)
+		 */
 		addObject() {
 			// Clear any existing object and open the add object modal
 			objectStore.setObjectItem(null)
