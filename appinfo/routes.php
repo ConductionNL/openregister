@@ -423,6 +423,18 @@ return [
         ['name' => 'collectiveLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/collectives',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'collectiveLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/collectives/{pageId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageId' => '[0-9]+']],
 
+        // OpenProject (external / OpenConnector-routed) — Tier-2 link-table
+        // API. The picker source `available` is reached through the
+        // OpenConnector `openproject` source. The specific
+        // `/openproject/new` (create + link) route MUST precede the
+        // wildcard `/openproject/{wpId}` unlink route, and the app-global
+        // `available` route precedes the object-scoped routes.
+        ['name' => 'openProjectLinks#available',    'url' => '/api/integrations/openproject/available',                  'verb' => 'GET'],
+        ['name' => 'openProjectLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/openproject',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'openProjectLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/openproject/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'openProjectLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/openproject',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'openProjectLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/openproject/{wpId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'wpId' => '[0-9]+']],
+
         // Maps (NC Maps / Location) — Tier-2 link-table API. User-scoped
         // (no admin gate). The specific `/maps/new` (create + link) route
         // MUST precede the wildcard `/maps/{favoriteId}` unlink route.
