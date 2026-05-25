@@ -2,7 +2,7 @@
 
 OpenRegister's object surfaces — the per-object **sidebar tabs**, the **dashboard widgets**, the **detail-page widgets**, and **reference properties** in forms — are not hard-coded. They are driven by a registry of *integration providers*. Each provider exposes a small contract on the PHP side (data access, auth requirements, health) and a matching pair of Vue components on the JS side (a sidebar `tab` and a `widget`). Apps register their own providers without touching OpenRegister core; OpenConnector-backed integrations (xWiki, Confluence, …) plug in the same way.
 
-This page is the worked walkthrough. The normative contract lives in [`openspec/changes/pluggable-integration-registry/design.md`](../../openspec/changes/pluggable-integration-registry/design.md).
+This page is the worked walkthrough. The normative contract lives in [`openspec/changes/pluggable-integration-registry/design.md`](https://github.com/ConductionNL/openregister/blob/development/openspec/changes/pluggable-integration-registry/design.md).
 
 ## The five built-ins
 
@@ -112,6 +112,6 @@ OpenRegister's **Administration → OpenRegister → Integrations** page lists e
 
 ## Reference
 
-- Contract & ADs: [`openspec/changes/pluggable-integration-registry/design.md`](../../openspec/changes/pluggable-integration-registry/design.md)
+- Contract & ADs: [`openspec/changes/pluggable-integration-registry/design.md`](https://github.com/ConductionNL/openregister/blob/development/openspec/changes/pluggable-integration-registry/design.md)
 - JS API in `@conduction/nextcloud-vue`: `integrations`, `installIntegrationRegistry`, `registerBuiltinIntegrations`, `useIntegrationRegistry`, `VALID_SURFACES` (documented in that repo's `CLAUDE.md` and `docs/utilities/`)
 - xWiki leaf (worked external example): `openspec/changes/integration-xwiki/`

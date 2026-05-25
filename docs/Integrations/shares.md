@@ -121,6 +121,6 @@ Creating shares is a multi-step UX with permission pickers, group search, expiry
 
 ## Related
 
-- **[Files leaf](../features/files)** — files attached to the object. Shares ride on top of these.
+- **[Files leaf](../features/object-storage.md)** — files attached to the object. Shares ride on top of these.
 - **[Leaf integration system](./leaf-system.md)** — how every leaf wires the same way.
 - **[Pluggable integration registry](./pluggable-integration-registry.md)** — the full ADR-019 contract.

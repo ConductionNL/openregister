@@ -119,5 +119,5 @@ Provider registered. Wrapping service + link table tracked under [openspec/chang
 ## Related
 
 - **[Leaf integration system](./leaf-system.md)** — how every leaf wires the same way.
-- **[Time-tracker leaf](./time-tracker)** — link time entries to the same objects.
+- **[Time-tracker leaf](./time-tracker.md)** — link time entries to the same objects.
 - **[Pluggable integration registry](./pluggable-integration-registry.md)** — the full ADR-019 contract.

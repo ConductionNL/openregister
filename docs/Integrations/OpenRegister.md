@@ -85,7 +85,7 @@ PermissionHandler::getReadableByUsers($object)
     ])
 ```
 
-This means an object change costs `N` pushes where `N` = the number of users who can read it. For typical small-to-medium organisations this is correct and efficient. For installations where a single object has more than ~1,000 readers, consider a broadcast-channel approach (out of scope for v1; see the [realtime-updates spec](../../openspec/specs/realtime-updates/spec.md)).
+This means an object change costs `N` pushes where `N` = the number of users who can read it. For typical small-to-medium organisations this is correct and efficient. For installations where a single object has more than ~1,000 readers, consider a broadcast-channel approach (out of scope for v1; see the [realtime-updates spec](https://github.com/ConductionNL/openregister/blob/development/openspec/specs/realtime-updates/spec.md)).
 
 ### Open / public schemas
 
@@ -229,9 +229,9 @@ ObjectCreatedEvent / ObjectUpdatedEvent / ObjectDeletedEvent (single internal so
     └── GraphQLSubscriptionListener  → SubscriptionService (APCu/Redis)   → SSE /api/graphql/subscribe  [GraphQL clients]
 ```
 
-REST clients (the default for `@conduction/nextcloud-vue`'s object store) consume `notify_push`. GraphQL clients use the existing SSE transport from the [graphql-api capability](../../openspec/specs/graphql-api/spec.md). Both transports receive the same logical change at the same instant; consumers should pick one transport per page, not both.
+REST clients (the default for `@conduction/nextcloud-vue`'s object store) consume `notify_push`. GraphQL clients use the existing SSE transport from the [graphql-api capability](https://github.com/ConductionNL/openregister/blob/development/openspec/specs/graphql-api/spec.md). Both transports receive the same logical change at the same instant; consumers should pick one transport per page, not both.
 
-A third transport MUST NOT be added without extending the [realtime-updates spec](../../openspec/specs/realtime-updates/spec.md).
+A third transport MUST NOT be added without extending the [realtime-updates spec](https://github.com/ConductionNL/openregister/blob/development/openspec/specs/realtime-updates/spec.md).
 
 ## Operational
 
@@ -257,7 +257,7 @@ OpenRegister push events require:
 
 ## Related documentation
 
-- [Realtime Updates capability spec](../../openspec/specs/realtime-updates/spec.md)
+- [Realtime Updates capability spec](https://github.com/ConductionNL/openregister/blob/development/openspec/specs/realtime-updates/spec.md)
 - [Deck Integration](./Deck.md) — Deck's own push events that complement OR events
 - [Custom Webhooks](./custom-webhooks.md) — push to external HTTP endpoints (different mechanism)
 - [notify_push on GitHub](https://github.com/nextcloud/notify_push)

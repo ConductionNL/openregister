@@ -120,5 +120,5 @@ Provider registered. Wrapping service + link table tracked under [openspec/chang
 ## Related
 
 - **[Leaf integration system](./leaf-system.md)** — how every leaf wires the same way.
-- **[Polls leaf](./polls)** — for collective decision-making instead of free-form submissions.
+- **[Polls leaf](./polls.md)** — for collective decision-making instead of free-form submissions.
 - **[Pluggable integration registry](./pluggable-integration-registry.md)** — the full ADR-019 contract.
