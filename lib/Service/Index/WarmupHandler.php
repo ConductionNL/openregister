@@ -109,6 +109,8 @@ class WarmupHandler
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Index warmup requires handling multiple configuration scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple warmup modes create many execution paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     public function warmupIndex(
         array $schemas=[],

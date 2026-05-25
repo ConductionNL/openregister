@@ -64,6 +64,8 @@ class ConfigurationHandler
      *
      * @param SettingsService $settingsService Service for retrieving settings.
      * @param LoggerInterface $logger          Logger for configuration events.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
      */
     public function __construct(
         private readonly SettingsService $settingsService,
@@ -183,6 +185,8 @@ class ConfigurationHandler
      * @param string $baseCollectionName Base collection name.
      *
      * @return string Collection name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
      */
     public function getTenantSpecificCollectionName(string $baseCollectionName): string
     {
@@ -280,6 +284,8 @@ class ConfigurationHandler
      * @return string Status description.
      *
      * @psalm-return '✓ Configured'|'✗ Not configured'
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-4
      */
     public function getConfigStatus(string $key): string
     {

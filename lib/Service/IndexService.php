@@ -91,6 +91,8 @@ class IndexService
      * @return (bool|int|string)[]
      *
      * @psalm-return array{success: bool, indexed: int<0, max>, collection: 'files'}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-3
      */
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
@@ -196,6 +198,8 @@ class IndexService
      * @return bool Success status
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Commit flag controls transaction behavior
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -341,6 +345,8 @@ class IndexService
      * @return bool Availability status
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force-refresh flag bypasses cache
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function isAvailable(bool $forceRefresh=false): bool
     {
@@ -581,6 +587,8 @@ class IndexService
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Indexing results.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function indexFiles(array $fileIds, ?string $collectionName=null): array
     {
@@ -617,6 +625,8 @@ class IndexService
      * @return array Warmup results with statistics and errors.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls error collection verbosity
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-5
      */
     public function warmupIndex(
         array $schemas=[],
@@ -716,6 +726,8 @@ class IndexService
      * @param string $collectionName Collection name to check
      *
      * @return bool True if collection exists
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function collectionExists(string $collectionName): bool
     {
