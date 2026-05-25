@@ -2,10 +2,12 @@
 retrofit: true
 ---
 
-# Frontend Client-State Orchestration Specification
+# Frontend Store Client State
 
 **Status**: in-progress
 **Scope**: openregister
+
+> Consolidated into the `frontend-store-client-state` capability (was the separate `frontend-client-state-orchestration` cap). This delta adds the import-keepalive heartbeat + saved-view apply/capture orchestration REQs; the sibling `retrofit-2026-05-25-fe-store-1` change adds the store-internal caching/preload/memoisation REQs. Both archive into one capability.
 
 ## Purpose
 
@@ -22,7 +24,7 @@ coverage matcher can resolve `@spec` annotations on those methods.
 
 ## ADDED Requirements
 
-### Requirement: REQ-001 — Long register imports MUST be kept alive by a client-side heartbeat
+### Requirement: Long register imports MUST be kept alive by a client-side heartbeat
 
 Register imports can run far longer than a typical HTTP request, risking gateway and
 session timeouts. The register store (`src/store/modules/register.js`) MUST provide a
@@ -57,7 +59,7 @@ call `stop()` when the import settles (success or error).
 - **THEN** `importRegister` SHALL call the handle's `stop()` in its `finally` block
 - **AND** `stop()` SHALL clear the polling interval so no further heartbeat requests are issued
 
-### Requirement: REQ-002 — A saved view's configuration MUST be applied onto the live search store
+### Requirement: A saved view's configuration MUST be applied onto the live search store
 
 The views store (`src/store/modules/views.js`) MUST be able to project a saved view's
 persisted `configuration` onto a live search-store instance so that selecting a saved
@@ -88,7 +90,7 @@ MUST be rejected as a no-op (with a warning) rather than partially applied.
 - **WHEN** `applyView(view, searchStore)` is called
 - **THEN** the method SHALL warn and return without mutating the search store or the active view
 
-### Requirement: REQ-003 — The live search-store state MUST be capturable into a saveable view configuration
+### Requirement: The live search-store state MUST be capturable into a saveable view configuration
 
 Conversely, the views store MUST be able to snapshot the current search context into a
 view object suitable for persistence. `createViewFromSearchState(searchStore, name,
