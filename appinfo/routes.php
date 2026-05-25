@@ -371,6 +371,17 @@ return [
         ['name' => 'pollLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/polls/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'pollLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/polls/{pollId}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pollId' => '[0-9]+']],
 
+        // Shares — Tier-2: NO link table, NO cache. Every endpoint wraps
+        // OCP\Share\IManager (NC core sharing is the single source of
+        // truth). The shareable-files picker source is app-global but
+        // object-scoped (it lists files inside the object's folder), so
+        // the specific `/api/integrations/shares/files/...` route is
+        // declared before the per-object wildcard `{shareId}` route.
+        ['name' => 'shareLinks#files',   'url' => '/api/integrations/shares/files/{register}/{schema}/{id}', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#index',   'url' => '/api/objects/{register}/{schema}/{id}/shares',            'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#create',  'url' => '/api/objects/{register}/{schema}/{id}/shares',            'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/shares/{shareId}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'shareId' => '[^/]+']],
+
         // Flow (workflowengine) — Tier-2 link-table API. Admin-gated:
         // POST/DELETE return 403 for non-admins; GET is read-only for
         // everyone. NC Flow operations are configured globally in the
