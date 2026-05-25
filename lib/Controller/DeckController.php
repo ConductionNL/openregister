@@ -85,6 +85,8 @@ class DeckController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -122,6 +124,8 @@ class DeckController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -172,6 +176,8 @@ class DeckController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
      */
     public function objects(string $boardId): JSONResponse
     {
@@ -199,6 +205,8 @@ class DeckController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
      */
     private function validateObject(
         string $register,

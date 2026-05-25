@@ -56,6 +56,8 @@ class MigrationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Storage status.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-7
      */
     public function status(string $register, string $schema): JSONResponse
     {
@@ -87,6 +89,8 @@ class MigrationController extends Controller
      * Expected body: {register, schema, direction, batchSize?, dryRun?}
      *
      * @return JSONResponse Migration report.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-7
      */
     public function migrate(): JSONResponse
     {

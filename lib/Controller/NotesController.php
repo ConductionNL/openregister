@@ -182,6 +182,8 @@ class NotesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function update(
         string $register,
@@ -265,6 +267,8 @@ class NotesController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     private function validateObject(
         string $register,
