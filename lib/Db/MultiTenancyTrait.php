@@ -256,6 +256,8 @@ trait MultiTenancyTrait
      * @param string        $tableAlias          Optional table alias
      * @param bool          $multiTenancyEnabled Whether multitenancy is enabled (default: true)
      *
+     * @spec openspec/specs/deprecate-published-metadata/spec.md#REQ-5 (MultiTenancyTrait Documentation — published-bypass docs scoped to Register/Schema entities only; object-level published bypass removed)
+     *
      * @return void
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
