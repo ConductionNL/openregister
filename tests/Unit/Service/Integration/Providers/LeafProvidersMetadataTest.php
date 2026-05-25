@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
@@ -130,8 +131,46 @@ class LeafProvidersMetadataTest extends TestCase
      */
     private function buildGreenfieldProvider(string $class, string $requiredApp): object
     {
-        $appManager = $this->buildAppManager([$requiredApp]);
+        return $this->instantiateGreenfieldProvider($class, [$requiredApp]);
+    }//end buildGreenfieldProvider()
+
+    /**
+     * Build a mocked link mapper whose `findByObjectUuid()` returns an
+     * empty array — the stub providers query it from `list()` and we
+     * assert an empty result.
+     *
+     * @param string $mapperClass Link-mapper FQN.
+     *
+     * @return object Mock mapper.
+     */
+    private function buildLinkMapper(string $mapperClass): object
+    {
+        $mapper = $this->getMockBuilder($mapperClass)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findByObjectUuid'])
+            ->getMock();
+        $mapper->method('findByObjectUuid')->willReturn([]);
+        return $mapper;
+    }//end buildLinkMapper()
+
+    /**
+     * Instantiate a greenfield provider with the right constructor shape.
+     *
+     * The Tier-2 work gave most leaf providers a per-integration link
+     * mapper. Constructor arg order varies by provider, so each shape is
+     * handled explicitly. `$installed` controls which NC apps the mocked
+     * IAppManager reports installed (drives isEnabled()/health()).
+     *
+     * @param string            $class     Provider class FQN.
+     * @param array<int,string> $installed App ids to treat as installed.
+     *
+     * @return object Provider instance.
+     */
+    private function instantiateGreenfieldProvider(string $class, array $installed): object
+    {
+        $appManager = $this->buildAppManager($installed);
         $l10n       = $this->buildL10n();
+        $db         = $this->createMock(IDBConnection::class);
 
         // Container/session-backed provider (Talk).
         if ($class === TalkProvider::class) {
@@ -143,58 +182,71 @@ class LeafProvidersMetadataTest extends TestCase
             );
         }
 
-        // PollsProvider — Tier-2 link-table backed (PollLinkMapper + db).
+        // PollsProvider — (mapper, db, appManager, userSession, l10n).
         if ($class === PollsProvider::class) {
-            $pollLinkMapper = $this->getMockBuilder(\OCA\OpenRegister\Db\PollLinkMapper::class)
-                ->disableOriginalConstructor()
-                ->onlyMethods(['findByObjectUuid'])
-                ->getMock();
-            $pollLinkMapper->method('findByObjectUuid')->willReturn([]);
             return new $class(
-                pollLinkMapper: $pollLinkMapper,
-                db: $this->createMock(IDBConnection::class),
+                pollLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\PollLinkMapper::class),
+                db: $db,
                 appManager: $appManager,
                 userSession: $this->createMock(IUserSession::class),
                 l10n: $l10n,
             );
         }
 
-        // BookmarksProvider — Tier-2 link-table backed (BookmarkLinkMapper).
+        // BookmarksProvider — (mapper, appManager, l10n).
         if ($class === BookmarksProvider::class) {
-            $bookmarkLinkMapper = $this->getMockBuilder(\OCA\OpenRegister\Db\BookmarkLinkMapper::class)
-                ->disableOriginalConstructor()
-                ->onlyMethods(['findByObjectUuid'])
-                ->getMock();
-            $bookmarkLinkMapper->method('findByObjectUuid')->willReturn([]);
             return new $class(
-                bookmarkLinkMapper: $bookmarkLinkMapper,
+                bookmarkLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\BookmarkLinkMapper::class),
                 appManager: $appManager,
                 l10n: $l10n,
             );
         }
 
-        // FormsProvider — Tier-2 link-table backed (extra FormLinkMapper dep).
-        if ($class === FormsProvider::class) {
-            $formLinkMapper = $this->getMockBuilder(\OCA\OpenRegister\Db\FormLinkMapper::class)
-                ->disableOriginalConstructor()
-                ->onlyMethods(['findByObjectUuid'])
-                ->getMock();
-            $formLinkMapper->method('findByObjectUuid')->willReturn([]);
+        // FlowProvider — (mapper, db, appManager, l10n).
+        if ($class === FlowProvider::class) {
             return new $class(
-                db: $this->createMock(IDBConnection::class),
+                flowLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\FlowLinkMapper::class),
+                db: $db,
                 appManager: $appManager,
                 l10n: $l10n,
-                formLinkMapper: $formLinkMapper,
             );
         }
 
-        // Default: db-backed providers.
+        // CospendProvider — (db, appManager, l10n, mapper, ?container).
+        if ($class === CospendProvider::class) {
+            return new $class(
+                db: $db,
+                appManager: $appManager,
+                l10n: $l10n,
+                cospendLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\CospendLinkMapper::class),
+            );
+        }
+
+        // Providers shaped (db, appManager, l10n, <mapper>).
+        $trailingMapper = [
+            AnalyticsProvider::class   => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
+            CollectivesProvider::class => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
+            MapsProvider::class        => \OCA\OpenRegister\Db\MapLinkMapper::class,
+            PhotosProvider::class      => \OCA\OpenRegister\Db\PhotoLinkMapper::class,
+            TimeProvider::class        => \OCA\OpenRegister\Db\TimeTrackerLinkMapper::class,
+            FormsProvider::class       => \OCA\OpenRegister\Db\FormLinkMapper::class,
+        ];
+        if (isset($trailingMapper[$class]) === true) {
+            return new $class(
+                $db,
+                $appManager,
+                $l10n,
+                $this->buildLinkMapper($trailingMapper[$class]),
+            );
+        }
+
+        // Default: plain (db, appManager, l10n) providers (Activity, ...).
         return new $class(
-            db: $this->createMock(IDBConnection::class),
+            db: $db,
             appManager: $appManager,
             l10n: $l10n,
         );
-    }//end buildGreenfieldProvider()
+    }//end instantiateGreenfieldProvider()
 
     /**
      * Build a greenfield provider instance with the required NC app
@@ -206,56 +258,7 @@ class LeafProvidersMetadataTest extends TestCase
      */
     private function buildGreenfieldProviderMissingApp(string $class): object
     {
-        $appManager = $this->buildAppManager([]);
-        $l10n       = $this->buildL10n();
-
-        if ($class === TalkProvider::class) {
-            return new $class(
-                container: $this->createMock(ContainerInterface::class),
-                appManager: $appManager,
-                userSession: $this->createMock(IUserSession::class),
-                l10n: $l10n,
-            );
-        }
-
-        if ($class === PollsProvider::class) {
-            return new $class(
-                pollLinkMapper: $this->getMockBuilder(\OCA\OpenRegister\Db\PollLinkMapper::class)
-                    ->disableOriginalConstructor()
-                    ->getMock(),
-                db: $this->createMock(IDBConnection::class),
-                appManager: $appManager,
-                userSession: $this->createMock(IUserSession::class),
-                l10n: $l10n,
-            );
-        }
-
-        if ($class === BookmarksProvider::class) {
-            return new $class(
-                bookmarkLinkMapper: $this->getMockBuilder(\OCA\OpenRegister\Db\BookmarkLinkMapper::class)
-                    ->disableOriginalConstructor()
-                    ->getMock(),
-                appManager: $appManager,
-                l10n: $l10n,
-            );
-        }
-
-        if ($class === FormsProvider::class) {
-            return new $class(
-                db: $this->createMock(IDBConnection::class),
-                appManager: $appManager,
-                l10n: $l10n,
-                formLinkMapper: $this->getMockBuilder(\OCA\OpenRegister\Db\FormLinkMapper::class)
-                    ->disableOriginalConstructor()
-                    ->getMock(),
-            );
-        }
-
-        return new $class(
-            db: $this->createMock(IDBConnection::class),
-            appManager: $appManager,
-            l10n: $l10n,
-        );
+        return $this->instantiateGreenfieldProvider($class, []);
     }//end buildGreenfieldProviderMissingApp()
 
     /**
@@ -434,11 +437,15 @@ class LeafProvidersMetadataTest extends TestCase
     public function testEmailProviderMetadataAndDelegation(): void
     {
         $service = $this->createMock(EmailService::class);
-        $service->method('isMailAvailable')->willReturn(true);
         $service->method('getEmailsForObject')->willReturn(['results' => [['id' => 9]], 'total' => 1]);
+
+        // Tier-2: isEnabled()/health() gate through EmailLinkService.
+        $linkService = $this->createMock(EmailLinkService::class);
+        $linkService->method('isMailAvailable')->willReturn(true);
 
         $provider = new EmailProvider(
             emailService: $service,
+            emailLinkService: $linkService,
             appManager: $this->buildAppManager(['mail']),
             l10n: $this->buildL10n(),
         );
