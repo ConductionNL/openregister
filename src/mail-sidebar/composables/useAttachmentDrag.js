@@ -10,6 +10,8 @@
  * should retire this composable when native drag support lands.
  *
  * @package OpenRegister
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-3
  */
 
 import { onMounted, onBeforeUnmount } from 'vue'

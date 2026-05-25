@@ -9,6 +9,9 @@
  *
  * This service also supports self-clearing (automatic cleanup) of old search trails.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

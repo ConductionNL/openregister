@@ -8,6 +8,9 @@
  * via DI tag; the schema's `x-openregister-lifecycle.transitions[*].requires`
  * field names the tag.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Lifecycle
  * @package  OCA\OpenRegister\Lifecycle
  *
@@ -41,6 +44,8 @@ interface LifecycleGuardInterface
      * @param string               $userId The uid of the caller.
      *
      * @return GuardResult Allow or deny + optional message.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-4
      */
     public function check(array $object, string $action, string $userId): GuardResult;
 }//end interface

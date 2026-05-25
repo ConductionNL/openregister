@@ -9,6 +9,9 @@
  * eventing, and audit machinery runs unchanged), and dispatches the
  * typed ObjectTransitionedEvent.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Lifecycle
  *
@@ -54,6 +57,8 @@ class TransitionEngine
      * @param IEventDispatcher  $eventDispatcher   Dispatcher used to fire ObjectTransitionedEvent.
      * @param IUserSession      $userSession       Current user session, for actor attribution.
      * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -75,6 +80,8 @@ class TransitionEngine
      * @throws RuntimeException When the object/schema/transition is missing,
      *                          the action is not allowed from the current
      *                          state, or the underlying save is rejected.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
      */
     public function transition(string $objectId, string $action): ObjectEntity
     {

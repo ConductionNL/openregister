@@ -6,6 +6,9 @@
  * Handles schema management operations for Solr collections.
  * Manages field types, schema mirroring, and collection field status.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Index
  *
@@ -528,6 +531,8 @@ class SchemaHandler
      *     stored: true},
      *     schema: array{name: 'schema', type: 'string', indexed: true,
      *     stored: true}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     private function getCoreMetadataFields(): array
     {
@@ -561,6 +566,8 @@ class SchemaHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field application requires handling multiple result scenarios
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     private function applySolrFields(array $solrFields, bool $force): array
     {

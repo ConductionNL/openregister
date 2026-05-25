@@ -3,6 +3,9 @@
 /**
  * OpenRegister Vector Settings Controller
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>

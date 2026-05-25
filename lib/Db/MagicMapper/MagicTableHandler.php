@@ -15,6 +15,9 @@
  * - Discovery of existing register+schema tables
  * - Magic mapping configuration checking
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>

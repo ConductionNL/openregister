@@ -5,11 +5,16 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
@@ -83,6 +88,8 @@ class TransformationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many code paths for different object structures and metadata
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete transformation workflow
      * Else branches handle different object structures and fallbacks
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
      */
     public function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {

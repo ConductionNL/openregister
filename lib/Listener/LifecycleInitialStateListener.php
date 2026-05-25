@@ -7,6 +7,9 @@
  * to the schema's declared `initial` value when the caller did not
  * supply a value. Apps don't need to remember to set it.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *

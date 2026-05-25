@@ -6,6 +6,9 @@
  * Listens for ObjectDeletedEvent and cleans up associated notes, tasks,
  * email links, calendar event links, contact links, and deck card links.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Listener
  * @package   OCA\OpenRegister\Listener
  * @author    Conduction Development Team <dev@conduction.nl>

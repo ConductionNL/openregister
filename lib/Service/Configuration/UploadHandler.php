@@ -6,6 +6,9 @@
  * This file contains the handler class for processing file uploads
  * and parsing JSON/YAML data in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *

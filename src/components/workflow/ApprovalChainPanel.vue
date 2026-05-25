@@ -38,6 +38,9 @@ import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
+/**
+ * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-1
+ */
 export default {
 	name: 'ApprovalChainPanel',
 	components: { NcButton },
@@ -55,6 +58,9 @@ export default {
 		this.fetchChains()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-1
+		 */
 		async fetchChains() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-chains')

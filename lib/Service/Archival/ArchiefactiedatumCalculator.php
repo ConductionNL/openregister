@@ -6,6 +6,9 @@
  * Calculates the archive action date (archiefactiedatum) using configurable
  * derivation methods (afleidingswijzen) as defined by the ZGW API standard.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Archival
  *
@@ -19,6 +22,7 @@
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-8
  */
 
 declare(strict_types=1);
@@ -221,6 +225,8 @@ class ArchiefactiedatumCalculator
      * @param array<string, mixed> $objectData    The object data.
      *
      * @return DateTime|null The date from the property value, or null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-8
      */
     private function brondatumFromProperty(array $archiveConfig, array $objectData): ?DateTime
     {

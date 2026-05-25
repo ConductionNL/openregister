@@ -6,6 +6,9 @@
  * This file contains the controller class for handling configuration operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -316,6 +319,8 @@ class ConfigurationsController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
     {
@@ -367,6 +372,8 @@ class ConfigurationsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function import(): JSONResponse
     {

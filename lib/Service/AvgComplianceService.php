@@ -95,6 +95,8 @@ class AvgComplianceService
      * personal data, or accepts the gap with a documented rationale.
      *
      * @return array<int, array<string, mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-avg-verwerkingsregister/tasks.md#task-1
      */
     public function findUnannotatedSchemasWithPii(): array
     {

@@ -5,6 +5,9 @@
  *
  * Formats GraphQL errors into structured responses with extension codes.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  *
@@ -35,6 +38,8 @@ class GraphQLErrorFormatter
      * @param Error $error The GraphQL error
      *
      * @return array<string, mixed> The formatted error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-8
      */
     public function format(Error $error): array
     {

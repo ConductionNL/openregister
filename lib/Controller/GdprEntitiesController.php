@@ -7,6 +7,9 @@
  * Provides endpoints for listing, viewing, and managing detected entities
  * from text extraction and entity recognition.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -81,6 +84,8 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entities list
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
      */
     public function index(): JSONResponse
     {
@@ -221,6 +226,8 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entity details
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
      */
     public function show(int $id): JSONResponse
     {
@@ -274,6 +281,8 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entity types
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
      */
     public function getTypes(): JSONResponse
     {
@@ -322,6 +331,8 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entity categories
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
      */
     public function getCategories(): JSONResponse
     {
@@ -370,6 +381,8 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with entity statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
      */
     public function getStats(): JSONResponse
     {
@@ -461,6 +474,8 @@ class GdprEntitiesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
      */
     public function destroy(int $id): JSONResponse
     {

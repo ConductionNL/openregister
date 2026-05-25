@@ -79,6 +79,8 @@ class AvgRetentionJob extends TimedJob
      * @param IAppConfig          $appConfig        App-config reader.
      * @param AvgRetentionService $retentionService Domain service.
      * @param LoggerInterface     $logger           Logger.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
      */
     public function __construct(
         ITimeFactory $time,
@@ -99,6 +101,8 @@ class AvgRetentionJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
      */
     protected function run($argument): void
     {

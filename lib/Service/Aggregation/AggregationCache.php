@@ -7,6 +7,9 @@
  * schema + name + resolved-filters hash + RBAC scope hash. Evicted
  * by the existing object-write event listeners.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *
@@ -17,6 +20,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -64,6 +69,8 @@ class AggregationCache
      * @param LoggerInterface $logger       Logger for backend-unavailable warnings.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function __construct(
         ICacheFactory $cacheFactory,
@@ -92,6 +99,8 @@ class AggregationCache
      * @param array<string, mixed> $filter       Resolved filter (placeholders concrete).
      *
      * @return array<string, mixed>|null Cached result or null on miss.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function get(string $registerSlug, string $schemaSlug, string $name, array $filter): ?array
     {
@@ -164,6 +173,8 @@ class AggregationCache
      * @param AggregationQuery $query        Query value object hashed into the cache key.
      *
      * @return array<string, mixed>|null Cached envelope or null on miss.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function getAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query): ?array
     {
@@ -266,6 +277,8 @@ class AggregationCache
      * @param array<string, mixed> $filter       Resolved filter map.
      *
      * @return string The cache key string.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     private function key(string $registerSlug, string $schemaSlug, string $name, array $filter): string
     {

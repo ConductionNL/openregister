@@ -6,6 +6,9 @@
  * This file contains the service class for handling dashboard related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -51,6 +54,8 @@ use Psr\Log\LoggerInterface;
  * @link https://www.OpenRegister.app
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
  */
 class DashboardService
 {
@@ -147,6 +152,8 @@ class DashboardService
      * @param int|null $schemaId   The schema ID (optional)
      *
      * @return array Statistics with objects, logs, webhookLogs, and files totals and sizes.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     private function getStats(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -294,6 +301,8 @@ class DashboardService
      * @throws \Exception If there is an error getting the registers with schemas
      *
      * @return array Registers with their schemas and statistics for dashboard display.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function getRegistersWithSchemas(
         ?int $registerId=null,
@@ -382,6 +391,8 @@ class DashboardService
      * @return int[] Array containing counts of processed and failed objects
      *
      * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function recalculateSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -530,6 +541,8 @@ class DashboardService
      *     total: array{processed: mixed, failed: mixed}},
      *     summary: array{total_processed: mixed, total_failed: mixed,
      *     success_rate: float}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -679,6 +692,8 @@ class DashboardService
      * @return ((int[]|string)[]|(int|string))[][]
      *
      * @psalm-return array{labels: list<array-key>, series: list<array{data: list<int>, name: string}>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function getAuditTrailActionChartData(
         ?\DateTime $from=null,

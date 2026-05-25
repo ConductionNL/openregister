@@ -16,6 +16,9 @@
  * No NC app is required — OpenProject is external; the only install
  * dependency is OpenConnector (which carries the source + credentials).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *
@@ -34,10 +37,13 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Db\OpenProjectLink;
+use OCA\OpenRegister\Db\OpenProjectLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCP\App\IAppManager;
 use OCP\IL10N;
+use Throwable;
 
 /**
  * OpenProject integration provider — external, OpenConnector-backed.
@@ -63,9 +69,10 @@ class OpenProjectProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param ExternalIntegrationRouter $router     External-call router.
-     * @param IAppManager               $appManager NC app manager.
-     * @param IL10N                     $l10n       Localisation.
+     * @param ExternalIntegrationRouter  $router                External-call router.
+     * @param IAppManager                $appManager            NC app manager.
+     * @param IL10N                      $l10n                  Localisation.
+     * @param OpenProjectLinkMapper|null $openProjectLinkMapper Tier-2 link table (optional).
      *
      * @return void
      */
@@ -73,6 +80,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider
         private ExternalIntegrationRouter $router,
         private IAppManager $appManager,
         private IL10N $l10n,
+        private ?OpenProjectLinkMapper $openProjectLinkMapper=null,
     ) {
     }//end __construct()
 
@@ -134,6 +142,12 @@ class OpenProjectProvider extends AbstractIntegrationProvider
     /**
      * List OpenProject work packages linked to an OR object.
      *
+     * Tier-2 path: reads the dedicated `openregister_openproject_links`
+     * table first so the linked list renders from the cached row even
+     * when the OpenConnector source is temporarily unconfigured / down.
+     * When no link rows exist (or the mapper isn't wired) it falls back
+     * to the external router so a fresh source still surfaces rows.
+     *
      * @param string              $register Register slug or numeric id.
      * @param string              $schema   Schema slug or numeric id.
      * @param string              $objectId Object uuid.
@@ -143,6 +157,23 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
+        // Tier-2 path: read from the link table first.
+        if ($this->openProjectLinkMapper !== null) {
+            try {
+                $linkRows = $this->openProjectLinkMapper->findByObjectUuid($objectId);
+            } catch (Throwable $e) {
+                $linkRows = [];
+            }
+
+            if (count($linkRows) > 0) {
+                return array_map(
+                    fn (OpenProjectLink $link): array => $this->rowFromLink(link: $link),
+                    $linkRows
+                );
+            }
+        }
+
+        // Fallback: query the external source through OpenConnector.
         $query    = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
         $response = $this->router->call(
             provider: $this,
@@ -153,6 +184,35 @@ class OpenProjectProvider extends AbstractIntegrationProvider
 
         return $this->normalizeList(response: $response);
     }//end list()
+
+    /**
+     * Convert an OpenProjectLink row into the registry leaf-row shape,
+     * preserving the flat type / status / priority / assignee / project
+     * fields the bespoke CnOpenprojectTab renders.
+     *
+     * @param OpenProjectLink $link Link row from the mapper.
+     *
+     * @return array<string,mixed>
+     */
+    private function rowFromLink(OpenProjectLink $link): array
+    {
+        $id   = (string) $link->getWorkPackageId();
+        $data = $link->jsonSerialize();
+
+        return [
+            'id'        => $id,
+            'reference' => $id,
+            'subject'   => (string) $link->getSubject(),
+            'title'     => (string) $link->getSubject(),
+            'status'    => (string) ($link->getStatus() ?? ''),
+            'type'      => (string) ($link->getType() ?? ''),
+            'priority'  => (string) ($link->getPriority() ?? ''),
+            'assignee'  => (string) ($link->getAssignee() ?? ''),
+            'project'   => (string) ($link->getProject() ?? ''),
+            'url'       => (string) ($link->getUrl() ?? ''),
+            'data'      => $data,
+        ];
+    }//end rowFromLink()
 
     /**
      * Fetch a single linked OpenProject work package.
@@ -285,7 +345,10 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      *
      * @return array<string,string>
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Body-vs-no-body is the natural toggle for HTTP request headers; a two-method split (requestHeaders / requestHeadersWithBody) would duplicate the static Accept header
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Body-vs-no-body is the
+     *     natural toggle for HTTP request headers; a two-method split
+     *     (requestHeaders / requestHeadersWithBody) would duplicate the
+     *     static Accept header.
      */
     private function requestHeaders(bool $withBody=false): array
     {
@@ -377,7 +440,6 @@ class OpenProjectProvider extends AbstractIntegrationProvider
             ]
         );
     }//end normalizeRow()
-
 
     /**
      * Pick a hAL label from a work-package row, preferring a top-level

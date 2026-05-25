@@ -5,6 +5,9 @@
  *
  * Controller for handling endpoint management operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -53,6 +56,13 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public method per endpoint route.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ *
+ * The resource-CRUD verbs (index/show/create/update/patch/destroy) are governed by task-1.
+ * The test/logs/logStats/allLogs methods are a production-observability cross-cut (endpoint
+ * call logging) and are intentionally NOT annotated here — they belong to the
+ * production-observability capability.
  */
 class EndpointsController extends Controller
 {

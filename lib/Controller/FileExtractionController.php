@@ -6,6 +6,9 @@
  * This controller handles file operations and text extraction endpoints.
  * Provides core file extraction functionality accessible via API.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

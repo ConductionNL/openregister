@@ -5,6 +5,9 @@
  *
  * SOLR Debug Command for testing SOLR functionality step by step.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Command
  * @package  OCA\OpenRegister\Command
  *

@@ -6,6 +6,9 @@
  * Provides a Server-Sent Events endpoint for GraphQL subscriptions.
  * Clients connect via GET and receive real-time object change events.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

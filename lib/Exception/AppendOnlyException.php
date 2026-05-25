@@ -6,6 +6,9 @@
  * Exception thrown when a mutating operation (UPDATE or DELETE) is attempted
  * on an object whose schema is declared append-only.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
@@ -68,6 +71,8 @@ class AppendOnlyException extends \Exception
      * @param string         $schemaIdentifier The schema slug, UUID, or ID
      * @param string         $operation        The rejected operation ('update' or 'delete')
      * @param Throwable|null $previous         Previous exception
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
      */
     public function __construct(
         string $schemaIdentifier,
@@ -90,6 +95,8 @@ class AppendOnlyException extends \Exception
      * Get the schema identifier that triggered this exception.
      *
      * @return string The schema slug, UUID, or ID
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
      */
     public function getSchemaIdentifier(): string
     {
@@ -100,6 +107,8 @@ class AppendOnlyException extends \Exception
      * Get the mutating operation that was rejected.
      *
      * @return string 'update' or 'delete'
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
      */
     public function getOperation(): string
     {
@@ -110,6 +119,8 @@ class AppendOnlyException extends \Exception
      * Build the structured JSON error body for HTTP 405 responses.
      *
      * @return array{error: string, message: string, schema: string, operation: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
      */
     public function toResponseBody(): array
     {

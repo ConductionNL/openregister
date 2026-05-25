@@ -6,6 +6,9 @@
  * Handler for extracting and hydrating object metadata.
  * Handles name, description, summary, image extraction, and slug generation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
@@ -94,6 +97,7 @@ class MetadataHydrationHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/deprecate-published-metadata/spec.md#REQ-6 (Deprecation Warnings — logs a warning for objectPublishedField/objectDepublishedField/autoPublish schema config keys, recommending RBAC $now rules)
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {

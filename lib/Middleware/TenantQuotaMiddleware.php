@@ -7,6 +7,9 @@
  * status checks before controller execution. Uses APCu for high-performance
  * counter management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Middleware
  * @package  OCA\OpenRegister\Middleware
  *
@@ -219,6 +222,8 @@ class TenantQuotaMiddleware extends Middleware
      * @return Response|null A JSON error response or null to re-throw
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-4
      */
     public function afterException(string|Controller $controller, string $methodName, \Exception $exception): ?Response
     {

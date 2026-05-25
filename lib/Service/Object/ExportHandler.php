@@ -6,6 +6,9 @@
  * Handles object export, import, and file download operations.
  * Coordinates between controller and specialized export/import services.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *

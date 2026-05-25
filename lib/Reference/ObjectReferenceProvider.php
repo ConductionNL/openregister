@@ -7,6 +7,9 @@
  * to search for and insert rich references to register objects in Mail,
  * Text, Talk, Collectives, and any Nextcloud app supporting the Smart Picker.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Reference
  * @package  OCA\OpenRegister\Reference
  *

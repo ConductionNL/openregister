@@ -5,6 +5,9 @@
  *
  * Controller for managing source operations in the OpenRegister app.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -33,6 +36,8 @@ use OCP\IRequest;
  * Controller for managing source operations.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class SourcesController extends Controller
 {

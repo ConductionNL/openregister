@@ -60,6 +60,8 @@ class AvgRetentionService
      * @param VerwerkingsactiviteitMapper $vrwMapper    Catalog reader.
      * @param MagicMapper                 $objectMapper Object loader.
      * @param LoggerInterface             $logger       Logger.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -98,6 +100,8 @@ class AvgRetentionService
      * @return array<string, mixed>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
      */
     public function runRetentionPass(bool $dryRun=false): array
     {
@@ -140,6 +144,8 @@ class AvgRetentionService
      * @param bool                  $dryRun   Pass-through dry-run flag.
      *
      * @return array<string, mixed>|null Per-activity result or null skip.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
      */
     private function processActivity(Verwerkingsactiviteit $activity, DateTime $now, bool $dryRun): ?array
     {
@@ -195,6 +201,8 @@ class AvgRetentionService
      * @param string   $duration ISO-8601 duration string.
      *
      * @return DateTime|null Cutoff timestamp or null on parse error.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
      */
     private function computeCutoff(DateTime $now, string $duration): ?DateTime
     {
@@ -221,6 +229,8 @@ class AvgRetentionService
      * @param DateTime $cutoff       Cut-off timestamp.
      *
      * @return array<int, array{object: int, object_uuid: string|null, register: int|null, schema: int|null}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
      */
     private function findOverdueObjectsForActivity(string $activityUuid, DateTime $cutoff): array
     {
@@ -284,6 +294,8 @@ class AvgRetentionService
      * @param Verwerkingsactiviteit            $activity   Owning activity.
      *
      * @return int
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
      */
     private function erasePastRetention(array $candidates, Verwerkingsactiviteit $activity): int
     {
@@ -327,6 +339,8 @@ class AvgRetentionService
      * @param array<string, mixed> $candidate Single candidate row.
      *
      * @return ObjectEntity|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
      */
     private function loadCandidate(array $candidate): ?ObjectEntity
     {

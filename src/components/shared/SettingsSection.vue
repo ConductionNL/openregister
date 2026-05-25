@@ -197,9 +197,20 @@ export default {
 	},
 
 	methods: {
-		// quick and dirty way to sanitize HTML.
-		// this guarantees that no dangerous HTML is rendered, though it'll make the output ugly.
-		// @TODO: Implement production ready sanitization.
+		/**
+		 * Quick and dirty way to sanitize HTML for the detailedDescription slot.
+		 *
+		 * Guarantees no dangerous HTML is rendered by round-tripping through
+		 * `textContent` (escapes every tag/entity); cost is that the output is
+		 * plain text, not formatted HTML.
+		 *
+		 * @TODO Replace with an allowlist-based sanitiser (e.g. DOMPurify) once
+		 * formatted descriptions are needed.
+		 *
+		 * @param {string} html Untrusted markup
+		 * @return {string} HTML-entity-escaped string safe for v-html
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-components/tasks.md#task-4
+		 */
 		sanitizeHtml(html) {
 			const div = document.createElement('div')
 			div.textContent = html

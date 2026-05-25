@@ -6,6 +6,9 @@
  * This file contains the class for validating schema properties
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
@@ -123,6 +128,8 @@ class PropertyValidatorHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
      */
     public function validateProperty(array $property, string $path=''): bool
     {

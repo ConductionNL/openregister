@@ -124,6 +124,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		getCurrentUser() {
 			// Implementation would depend on how you get current user
 			return 'current-user' // Placeholder

@@ -10,6 +10,9 @@
  * offers "link existing message" via account/folder picker (the UI
  * concern), and the provider exposes that link path through `create()`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *
@@ -28,6 +31,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
@@ -36,6 +40,8 @@ use Throwable;
 
 /**
  * Email (NC Mail link-only) integration provider.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class EmailProvider extends AbstractIntegrationProvider
 {
@@ -50,14 +56,21 @@ class EmailProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param EmailService $emailService Backing service.
-     * @param IAppManager  $appManager   NC app manager.
-     * @param IL10N        $l10n         Localisation.
+     * Holds both the Tier-1 {@see EmailService} (kept for the legacy
+     * `list/search/bySender` surface that reads the `_mail` JSON column)
+     * and the Tier-2 {@see EmailLinkService} (idempotent upsert keyed
+     * on the full composite tuple, plus cursor pagination).
+     *
+     * @param EmailService     $emailService     Legacy service (list + search).
+     * @param EmailLinkService $emailLinkService Tier-2 link-table service.
+     * @param IAppManager      $appManager       NC app manager.
+     * @param IL10N            $l10n             Localisation.
      *
      * @return void
      */
     public function __construct(
         private EmailService $emailService,
+        private EmailLinkService $emailLinkService,
         private IAppManager $appManager,
         private IL10N $l10n,
     ) {
@@ -95,7 +108,7 @@ class EmailProvider extends AbstractIntegrationProvider
 
     public function isEnabled(): bool
     {
-        return $this->emailService->isMailAvailable();
+        return $this->emailLinkService->isMailAvailable();
     }//end isEnabled()
 
     /**
@@ -157,27 +170,42 @@ class EmailProvider extends AbstractIntegrationProvider
     /**
      * Link an existing email to an OR object.
      *
-     * Payload must carry `mailAccountId` (int) and `mailMessageId` (int);
-     * `registerId` is read from the call's `$register` (numeric form).
+     * Payload contract — supports both shapes:
+     *   - Tier-2 picker:  `{ mailAccountId, messageId, messageUid }`
+     *   - Legacy (back-compat): `{ mailAccountId, mailMessageId }`
+     *
+     * `registerId` / `schemaId` are read from the call's `$register` /
+     * `$schema` (numeric form). The Tier-2 path is idempotent on the
+     * full composite key `(objectUuid, accountId, messageId, messageUid)`
+     * and is preferred. When the caller still uses the legacy field
+     * `mailMessageId` the provider falls through to the Tier-2 service
+     * with an empty UID, which still de-duplicates on the
+     * `(objectUuid, accountId, messageId)` subset.
      *
      * @param string              $register Register slug or numeric id.
-     * @param string              $schema   Schema slug or numeric id (unused).
+     * @param string              $schema   Schema slug or numeric id.
      * @param string              $objectId Object uuid.
-     * @param array<string,mixed> $payload  Must carry `mailAccountId` + `mailMessageId`.
+     * @param array<string,mixed> $payload  Picker (Tier-2) or legacy shape.
      *
      * @return array<string,mixed>
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
         $registerId    = (int) ($payload['registerId'] ?? $register);
+        $schemaId      = (int) ($payload['schemaId'] ?? $schema);
         $mailAccountId = (int) ($payload['mailAccountId'] ?? 0);
-        $mailMessageId = (int) ($payload['mailMessageId'] ?? 0);
 
-        $link = $this->emailService->linkEmail(
+        // Tier-2 fields first, legacy fall-through second.
+        $messageId  = (string) ($payload['messageId'] ?? $payload['mailMessageId'] ?? '');
+        $messageUid = (string) ($payload['messageUid'] ?? $payload['mailMessageUid'] ?? '');
+
+        $link = $this->emailLinkService->linkEmail(
             objectUuid: $objectId,
             registerId: $registerId,
+            schemaId: $schemaId,
             mailAccountId: $mailAccountId,
-            mailMessageId: $mailMessageId
+            messageId: $messageId,
+            messageUid: $messageUid
         );
 
         return $link->jsonSerialize();
@@ -188,19 +216,19 @@ class EmailProvider extends AbstractIntegrationProvider
      *
      * @param string $register Register slug or numeric id (unused).
      * @param string $schema   Schema slug or numeric id (unused).
-     * @param string $objectId Object uuid (unused).
+     * @param string $objectId Object uuid.
      * @param string $entityId Numeric link id.
      *
      * @return void
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
-        $this->emailService->unlinkEmail(linkId: (int) $entityId);
+        $this->emailLinkService->unlinkEmail(objectUuid: $objectId, linkId: (int) $entityId);
     }//end delete()
 
     public function health(): array
     {
-        $available = $this->emailService->isMailAvailable();
+        $available = $this->emailLinkService->isMailAvailable();
         return [
             'status'     => $available === true ? 'ok' : 'unavailable',
             'authStatus' => 'configured',

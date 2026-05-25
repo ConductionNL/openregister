@@ -4,6 +4,8 @@
  * Supports both hash-based routing (legacy Mail) and path-based routing (Mail 5.x+).
  *
  * @package OpenRegister
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-2
  */
 
 import { ref, onMounted, onBeforeUnmount } from 'vue'

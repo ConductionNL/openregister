@@ -6,6 +6,9 @@
  * Controller for managing search trail operations and analytics in the OpenRegister app.
  * Provides functionality to retrieve search statistics, popular search terms, and search logs.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
