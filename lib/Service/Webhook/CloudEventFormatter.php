@@ -280,6 +280,8 @@ class CloudEventFormatter
      * @param IRequest $request Request object with getHeader method
      *
      * @return string Content type header value
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-26
      */
     private function getContentTypeHeader(IRequest $request): string
     {
