@@ -111,6 +111,8 @@ class BatchOperationStatus
      * reset; use a fresh instance for a fresh run.
      *
      * @return void
+     *
+     * @spec exclude Boilerplate value-object timing setter; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function start(): void
     {
@@ -123,6 +125,8 @@ class BatchOperationStatus
      * Mark the end of the batch.
      *
      * @return void
+     *
+     * @spec exclude Boilerplate value-object timing setter; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function complete(): void
     {
@@ -137,6 +141,8 @@ class BatchOperationStatus
      * @param string $uuid UUID of the newly created row.
      *
      * @return void
+     *
+     * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function recordCreated(string $uuid): void
     {
@@ -149,6 +155,8 @@ class BatchOperationStatus
      * @param string $uuid UUID of the updated row.
      *
      * @return void
+     *
+     * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function recordUpdated(string $uuid): void
     {
@@ -161,6 +169,8 @@ class BatchOperationStatus
      * @param string $uuid UUID of the unchanged row.
      *
      * @return void
+     *
+     * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function recordUnchanged(string $uuid): void
     {
@@ -175,6 +185,8 @@ class BatchOperationStatus
      * @param string      $exceptionClass Fully-qualified class name of the exception.
      *
      * @return void
+     *
+     * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function recordFailed(?string $uuid, string $message, string $exceptionClass): void
     {
@@ -191,6 +203,8 @@ class BatchOperationStatus
      * via the request-scoped cache instead of a fresh DB lookup.
      *
      * @return void
+     *
+     * @spec exclude Boilerplate value-object counter; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function recordReferenceCacheHit(): void
     {
@@ -201,6 +215,8 @@ class BatchOperationStatus
      * Increment the reference-cache-miss counter (fresh DB lookup).
      *
      * @return void
+     *
+     * @spec exclude Boilerplate value-object counter; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function recordReferenceCacheMiss(): void
     {
@@ -291,6 +307,8 @@ class BatchOperationStatus
      * Total number of rows processed (created + updated + unchanged + failed).
      *
      * @return int
+     *
+     * @spec exclude Boilerplate value-object derived accessor; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function getProcessedCount(): int
     {
@@ -326,6 +344,8 @@ class BatchOperationStatus
      * been completed yet.
      *
      * @return float|null
+     *
+     * @spec exclude Boilerplate value-object derived accessor; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function getDurationSeconds(): ?float
     {
@@ -341,6 +361,8 @@ class BatchOperationStatus
      * responses, log lines, or persistence.
      *
      * @return array<string, mixed>
+     *
+     * @spec exclude Boilerplate value-object serialization; the batch outcome aggregator is anchored to reference-existence-validation at class level.
      */
     public function toArray(): array
     {

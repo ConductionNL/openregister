@@ -82,6 +82,8 @@ class FileSettingsHandler
      * @return array File management configuration.
      *
      * @throws \RuntimeException If File Management settings retrieval fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function getFileSettingsOnly(): array
     {
@@ -156,6 +158,8 @@ class FileSettingsHandler
      *     textExtractor: 'llphant'|mixed, extractionMode: 'background'|mixed,
      *     maxFileSize: 100|mixed, batchSize: 10|mixed,
      *     dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function updateFileSettingsOnly(array $fileData): array
     {

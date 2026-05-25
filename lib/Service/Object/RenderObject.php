@@ -482,6 +482,8 @@ class RenderObject
      *
      * Caller must not call this when rows already have full file metadata from
      * renderEntities() — this method overwrites with IDs.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-15
      */
     public function attachLightweightFilesToRows(array &$rows): void
     {

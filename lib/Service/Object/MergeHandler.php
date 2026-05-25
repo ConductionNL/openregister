@@ -88,6 +88,8 @@ class MergeHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex merge operation handling files, relations, and references
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple merge paths for different data types and actions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive merge requires handling all object aspects
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-13
      */
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
     {

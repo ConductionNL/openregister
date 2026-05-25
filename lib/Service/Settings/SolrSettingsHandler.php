@@ -179,6 +179,8 @@ class SolrSettingsHandler
      * @deprecated This method is deprecated. Use IndexService->warmupIndex() directly via controller.
      * This method is kept for backward compatibility but should not be used.
      * The controller now uses IndexService directly to avoid circular dependencies.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
      */
     public function warmupSolrIndex()
     {
@@ -201,6 +203,8 @@ class SolrSettingsHandler
      * @throws \RuntimeException If SOLR statistics retrieval fails.
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive dashboard requires complete statistics structure
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
      */
     public function getSolrDashboardStats(): array
     {
@@ -452,6 +456,8 @@ class SolrSettingsHandler
      *     fileCollection: mixed|null}
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) SOLR configuration requires many settings fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
      */
     public function getSolrSettingsOnly(): array
     {
@@ -576,6 +582,8 @@ class SolrSettingsHandler
      * @return array Backend configuration with 'active' key
      *
      * @throws \RuntimeException If backend configuration retrieval fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
      */
     public function getSearchBackendConfig(): array
     {
@@ -608,6 +616,8 @@ class SolrSettingsHandler
      * @throws \RuntimeException If backend configuration update fails
      *
      * @psalm-return array{active: string, available: list{'solr', 'elasticsearch'}, updated: int<1, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
      */
     public function updateSearchBackendConfig(string $backend): array
     {
@@ -655,6 +665,8 @@ class SolrSettingsHandler
      * @throws \RuntimeException If facet configuration retrieval fails
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default configuration structure requires comprehensive initialization
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
      */
     public function getSolrFacetConfiguration(): array
     {
@@ -711,6 +723,8 @@ class SolrSettingsHandler
      * @throws \RuntimeException If facet configuration update fails.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Facet configuration validation requires multiple checks
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-4
      */
     public function updateSolrFacetConfiguration(array $facetConfig): array
     {
