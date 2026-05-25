@@ -151,6 +151,13 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * Handle search input with 500ms debounce; emits `update:search` once typing pauses.
+		 *
+		 * @param {string} value - The search value
+		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-1
+		 */
 		handleSearchInput(value) {
 			clearTimeout(this.searchTimeout)
 			this.searchTimeout = setTimeout(() => {
