@@ -2909,6 +2909,8 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Configuration creation requires many conditional checks
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity ID collection and metadata mapping has many branches
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Configuration tracking involves detailed entity management
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-4
      */
     public function createOrUpdateConfiguration(
         array $data,

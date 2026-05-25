@@ -58,6 +58,8 @@ class GeoFilterParser
      * @return GeoFilter[]
      *
      * @throws InvalidArgumentException When `geo.near`/`geo.radius` are mismatched.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public function fromQueryParams(array $params): array
     {

@@ -72,6 +72,8 @@ class GeoSpatialEvaluator
      * @param GeoFilter  $filter      The filter to apply.
      *
      * @return bool True when the row passes the filter; null geometries always fail.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
      */
     public function matches(?array $rowGeometry, GeoFilter $filter): bool
     {

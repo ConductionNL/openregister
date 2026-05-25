@@ -72,6 +72,8 @@ class CloudEventFormatter
      *     id: string, time: string, datacontenttype: 'application/json',
      *     subject: null|string, dataschema: null, data: array,
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
      */
     public function formatAsCloudEvent(
         string $eventType,
@@ -128,6 +130,8 @@ class CloudEventFormatter
      *     data: array{method: mixed|string, path: false|mixed|string,
      *     queryParams: array|mixed, headers: array|mixed, body: array|mixed,...},
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
+     *
+     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
      */
     public function formatRequestAsCloudEvent(
         IRequest $request,

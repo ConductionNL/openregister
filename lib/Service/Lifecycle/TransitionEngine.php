@@ -189,6 +189,8 @@ class TransitionEngine
      * @param string $objectId Object id/uuid/slug.
      *
      * @return array<int, array{action: string, to: string, requires: ?string, description: ?string}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
      */
     public function availableActions(string $objectId): array
     {
