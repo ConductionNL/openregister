@@ -63,6 +63,8 @@ class NotificationsAnnotationInstaller implements IEventListener
      * @param Event $event The event carrying the saved schema.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
      */
     public function handle(Event $event): void
     {
@@ -86,6 +88,8 @@ class NotificationsAnnotationInstaller implements IEventListener
      * @param Schema $schema The schema whose annotations should be installed.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
      */
     public function installSchema(Schema $schema): void
     {

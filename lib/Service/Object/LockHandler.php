@@ -243,6 +243,8 @@ class LockHandler
      * @param string $identifier Object ID or UUID
      *
      * @return bool True if locked, false otherwise
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-12
      */
     public function isLocked(string $identifier): bool
     {
@@ -289,6 +291,8 @@ class LockHandler
      * @param string $identifier Object ID or UUID
      *
      * @return array|null Lock info array or null if not locked.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-12
      */
     public function getLockInfo(string $identifier): array|null
     {

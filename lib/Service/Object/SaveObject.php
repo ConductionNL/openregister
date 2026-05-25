@@ -4225,6 +4225,8 @@ class SaveObject
      * verdicts leak across logical request boundaries.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-14
      */
     public function clearReferenceValidationCache(): void
     {
@@ -4271,6 +4273,8 @@ class SaveObject
      * @return BatchOperationStatus
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-14
      */
     public function saveObjectsStreaming(
         Register | int | string | null $register,
