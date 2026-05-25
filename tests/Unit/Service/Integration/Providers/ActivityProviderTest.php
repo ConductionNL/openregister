@@ -47,7 +47,12 @@ use PHPUnit\Framework\TestCase;
  */
 class TestableActivityProvider extends ActivityProvider
 {
-    /** @var array<int,array<string,mixed>> */
+
+    /**
+     * Pre-baked rows returned in place of the trait DB call.
+     *
+     * @var array<int,array<string,mixed>>
+     */
     public array $stubRows = [];
 
     protected function findByMarker(
@@ -59,8 +64,8 @@ class TestableActivityProvider extends ActivityProvider
         string $idColumn='id'
     ): array {
         return $this->stubRows;
-    }
-}
+    }//end findByMarker()
+}//end class
 
 /**
  * Unit tests for ActivityProvider.
@@ -69,8 +74,7 @@ class TestableActivityProvider extends ActivityProvider
  */
 class ActivityProviderTest extends TestCase
 {
-
-    private function buildProvider(bool $installed = true): TestableActivityProvider
+    private function buildProvider(bool $installed=true): TestableActivityProvider
     {
         $db   = $this->createMock(IDBConnection::class);
         $apps = $this->createMock(IAppManager::class);
@@ -78,22 +82,20 @@ class ActivityProviderTest extends TestCase
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnArgument(0);
         return new TestableActivityProvider(db: $db, appManager: $apps, l10n: $l10n);
-    }
-
+    }//end buildProvider()
 
     public function testListEmptyWhenAppMissing(): void
     {
-        $provider = $this->buildProvider(installed: false);
+        $provider           = $this->buildProvider(installed: false);
         $provider->stubRows = [
             ['activity_id' => 1, 'subject' => 'x [or:uuid]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'a', 'object_id' => 'uuid'],
         ];
         self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
-    }
-
+    }//end testListEmptyWhenAppMissing()
 
     public function testListWidenedPayloadFlattensFields(): void
     {
-        $provider = $this->buildProvider();
+        $provider           = $this->buildProvider();
         $provider->stubRows = [
             [
                 'activity_id'  => 17,
@@ -134,32 +136,68 @@ class ActivityProviderTest extends TestCase
         $r1 = $rows[1];
         self::assertSame('or:decision', $r1['type']);
         self::assertSame('bob', $r1['actor_id']);
-    }
+    }//end testListWidenedPayloadFlattensFields()
 
+    public function testListFiltersByType(): void
+    {
+        $provider           = $this->buildProvider();
+        $provider->stubRows = [
+            ['activity_id' => 1, 'subject' => 'a [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
+            ['activity_id' => 2, 'subject' => 'b [or:u]', 'type' => 'or:decision', 'timestamp' => 200, 'affecteduser' => 'bob', 'object_id' => 'u'],
+        ];
+
+        $rows = $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['type' => 'or:decision']);
+        self::assertCount(1, $rows);
+        self::assertSame('or:decision', $rows[0]['type']);
+    }//end testListFiltersByType()
+
+    public function testListFiltersByActor(): void
+    {
+        $provider           = $this->buildProvider();
+        $provider->stubRows = [
+            ['activity_id' => 1, 'subject' => 'a [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
+            ['activity_id' => 2, 'subject' => 'b [or:u]', 'type' => 'files', 'timestamp' => 200, 'affecteduser' => 'bob', 'object_id' => 'u'],
+        ];
+
+        $rows = $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['actor' => 'bob']);
+        self::assertCount(1, $rows);
+        self::assertSame('bob', $rows[0]['actor_id']);
+    }//end testListFiltersByActor()
+
+    public function testListFiltersByAfterTimestamp(): void
+    {
+        $provider           = $this->buildProvider();
+        $provider->stubRows = [
+            ['activity_id' => 1, 'subject' => 'old [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
+            ['activity_id' => 2, 'subject' => 'new [or:u]', 'type' => 'files', 'timestamp' => 500, 'affecteduser' => 'bob', 'object_id' => 'u'],
+        ];
+
+        $rows = $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['after' => 300]);
+        self::assertCount(1, $rows);
+        self::assertSame(500, $rows[0]['timestamp']);
+    }//end testListFiltersByAfterTimestamp()
 
     public function testListHandlesEmptyResult(): void
     {
-        $provider = $this->buildProvider();
+        $provider           = $this->buildProvider();
         $provider->stubRows = [];
         self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
-    }
-
+    }//end testListHandlesEmptyResult()
 
     public function testHealthReportsOk(): void
     {
         $provider = $this->buildProvider();
-        $h = $provider->health();
+        $h        = $provider->health();
         self::assertSame('ok', $h['status']);
         self::assertSame('configured', $h['authStatus']);
         self::assertNull($h['message']);
-    }
-
+    }//end testHealthReportsOk()
 
     public function testHealthReportsUnavailable(): void
     {
         $provider = $this->buildProvider(installed: false);
-        $h = $provider->health();
+        $h        = $provider->health();
         self::assertSame('unavailable', $h['status']);
         self::assertNotNull($h['message']);
-    }
-}
+    }//end testHealthReportsUnavailable()
+}//end class
