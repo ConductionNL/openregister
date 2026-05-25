@@ -108,6 +108,9 @@ export default {
 	mounted() {
 		this.initializeSourceItem()
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — initializes the source form once when the modal opens.
+	 */
 	updated() {
 		if (navigationStore.modal === 'editSource' && !this.hasUpdated) {
 			this.initializeSourceItem()
@@ -128,6 +131,9 @@ export default {
 				this.typeOptions.value = this.typeOptions.options.find(option => option.id === this.sourceItem.type)
 			}
 		},
+		/**
+		 * @spec exclude Modal close plumbing — resets the source form and closes the modal.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -144,6 +150,9 @@ export default {
 			// reset typeOptions to the internal option
 			this.typeOptions.value = this.typeOptions.options.find(option => option.id === 'internal')
 		},
+		/**
+		 * @spec exclude Modal save plumbing — delegates source persistence to sourceStore.saveSource.
+		 */
 		async editSource() {
 			this.loading = true
 

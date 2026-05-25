@@ -142,6 +142,9 @@ export default {
 				this.closeDialog()
 			}
 		},
+		/**
+		 * @spec exclude UI selection plumbing — removes an object from the mass-validate selection.
+		 */
 		removeObject(objectId) {
 			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
 			// Update the store as well
@@ -150,11 +153,17 @@ export default {
 				this.closeDialog()
 			}
 		},
+		/**
+		 * @spec exclude Modal close plumbing — closes the mass-validate dialog.
+		 */
 		closeDialog() {
 			clearTimeout(this.closeModalTimeout)
 			this.startClosing = true
 			navigationStore.setDialog(false)
 		},
+		/**
+		 * @spec exclude Modal action plumbing — re-saves each selected object to trigger validation.
+		 */
 		async validateObjects() {
 			this.loading = true
 
