@@ -75,6 +75,8 @@ class ElasticsearchQueryExecutor
      * @param array $query Query parameters
      *
      * @return array Search results
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — builds ES query DSL and POSTs /_search
      */
     public function search(array $query): array
     {
@@ -167,6 +169,8 @@ class ElasticsearchQueryExecutor
      * Get document count.
      *
      * @return int Number of documents
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — GETs /_count
      */
     public function getDocumentCount(): int
     {

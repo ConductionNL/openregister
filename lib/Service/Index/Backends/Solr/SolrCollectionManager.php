@@ -110,6 +110,8 @@ class SolrCollectionManager
      * Returns tenant-specific collection if it exists, otherwise null.
      *
      * @return string|null Collection name or null
+     *
+     * @spec exclude boilerplate accessor — resolves active collection via existence check
      */
     public function getActiveCollectionName(): ?string
     {
@@ -146,6 +148,8 @@ class SolrCollectionManager
      * @psalm-return array{success: true,
      *     message: 'Collection created successfully', collection: string,
      *     configSet: 'openregister_configset'|mixed}
+     *
+     * @spec exclude thin delegation to Solr Collections API — CREATE action HTTP call
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -214,6 +218,8 @@ class SolrCollectionManager
      * @return (bool|string)[]
      *
      * @psalm-return array{success: bool, message: string, exception?: string, collection?: string}
+     *
+     * @spec exclude thin delegation to Solr Collections API — DELETE action HTTP call
      */
     public function deleteCollection(?string $collectionName=null): array
     {
@@ -295,6 +301,8 @@ class SolrCollectionManager
      * List all Solr collections.
      *
      * @return array List of collections
+     *
+     * @spec exclude thin delegation to Solr Collections API — LIST action HTTP call
      */
     public function listCollections(): array
     {
@@ -320,6 +328,8 @@ class SolrCollectionManager
      * List all ConfigSets.
      *
      * @return array List of ConfigSets
+     *
+     * @spec exclude thin delegation to Solr Configs API — LIST action HTTP call
      */
     public function listConfigSets(): array
     {
@@ -353,6 +363,8 @@ class SolrCollectionManager
      *     message: 'ConfigSet created successfully'|
      *     'Exception during ConfigSet creation'|
      *     'Failed to create ConfigSet'|mixed, exception?: string, name?: string}
+     *
+     * @spec exclude thin delegation to Solr Configs API — CREATE action HTTP call
      */
     public function createConfigSet(string $name, string $baseConfigSet='_default'): array
     {
@@ -412,6 +424,8 @@ class SolrCollectionManager
      *     message: 'ConfigSet deleted successfully'|
      *     'Exception during ConfigSet deletion'|
      *     'Failed to delete ConfigSet'|mixed, exception?: string, name?: string}
+     *
+     * @spec exclude thin delegation to Solr Configs API — DELETE action HTTP call
      */
     public function deleteConfigSet(string $name): array
     {

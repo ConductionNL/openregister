@@ -236,6 +236,8 @@ class DocumentBuilder
      * @psalm-return list<mixed|string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Files flattening requires handling multiple data formats
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function flattenFilesForSolr($files): array
     {
@@ -273,6 +275,8 @@ class DocumentBuilder
      * @param array $object Object/array to extract ID from
      *
      * @return string|null Extracted ID or null if not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function extractIdFromObject(array $object): ?string
     {
@@ -305,6 +309,8 @@ class DocumentBuilder
      * @psalm-return array<string, array<int, mixed>>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dot-notation parsing requires handling multiple scenarios
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function extractArraysFromRelations(array $relations): array
     {
@@ -380,6 +386,8 @@ class DocumentBuilder
      * @psalm-return list<string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Value extraction requires handling multiple data types
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function extractIndexableArrayValues(array $arrayValue, string $fieldName): array
     {
@@ -636,6 +644,8 @@ class DocumentBuilder
      * @return bool True if field is safe to index
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field validation requires handling multiple type scenarios
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function validateFieldForSolr(string $fieldName, $fieldValue, array $solrFieldTypes): bool
     {
@@ -706,6 +716,8 @@ class DocumentBuilder
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type compatibility check requires handling multiple SOLR types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple type combinations create many execution paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function isValueCompatibleWithSolrType($value, string $solrFieldType): bool
     {
@@ -764,6 +776,8 @@ class DocumentBuilder
      * @return int The resolved register ID
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register resolution requires handling multiple input formats
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register=null): int
     {
@@ -823,6 +837,8 @@ class DocumentBuilder
      * @return int The resolved schema ID
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema resolution requires handling multiple input formats
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-1
      */
     public function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema=null): int
     {
