@@ -158,6 +158,8 @@ class AgentsController extends Controller
      * @return TemplateResponse Template response for agents SPA
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
+     *
+     * @spec exclude SPA-mount stub — returns the Vue `index` template; client-side router owns navigation. No HTTP contract beyond the shell.
      */
     public function page(): TemplateResponse
     {

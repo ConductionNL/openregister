@@ -131,6 +131,8 @@ class AggregationController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-15
      */
     public function timeseries(string $register, string $schema): JSONResponse
     {

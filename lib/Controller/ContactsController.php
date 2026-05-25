@@ -250,6 +250,8 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-16
      */
     public function createNew(string $register, string $schema, string $id): JSONResponse
     {

@@ -63,6 +63,8 @@ class MetricsController extends Controller
      * @NoCSRFRequired
      *
      * @return TextPlainResponse Prometheus-formatted metrics
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-18
      */
     public function index(): TextPlainResponse
     {

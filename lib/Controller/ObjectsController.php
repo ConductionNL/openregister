@@ -2325,6 +2325,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-13
      */
     public function postPatch(
         string $register,
@@ -2495,6 +2497,8 @@ class ObjectsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-14
      */
     public function canDelete(
         string $id,

@@ -154,6 +154,8 @@ class SchemasController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function index(): JSONResponse
     {
@@ -264,6 +266,8 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @PublicPage
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function show($id): JSONResponse
     {
@@ -337,6 +341,8 @@ class SchemasController extends Controller
      * @psalm-return JSONResponse<201, Schema,
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function create(): JSONResponse
     {
@@ -462,6 +468,8 @@ class SchemasController extends Controller
      * @psalm-return JSONResponse<200, Schema,
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function update(int $id): JSONResponse
     {
@@ -603,6 +611,8 @@ class SchemasController extends Controller
      * @psalm-return JSONResponse<200, Schema,
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function patch(int $id): JSONResponse
     {
@@ -625,6 +635,8 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|409|500, array{error?: string}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function destroy(int $id): JSONResponse
     {
@@ -712,6 +724,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function uploadUpdate(?int $id=null): JSONResponse
     {
@@ -739,6 +753,8 @@ class SchemasController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function upload(?int $id=null): JSONResponse
     {
@@ -866,6 +882,8 @@ class SchemasController extends Controller
      * @psalm-return JSONResponse<200, Schema,
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Schema not found'}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function download(int $id): JSONResponse
     {
@@ -895,6 +913,8 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with related schemas
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function related(int|string $id): JSONResponse
     {
@@ -956,6 +976,8 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with schema statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     public function stats(int $id): JSONResponse
     {
@@ -1012,6 +1034,8 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with exploration results
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function explore(int $id): JSONResponse
     {
@@ -1051,6 +1075,8 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated schema
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function updateFromExploration(int $id): JSONResponse
     {
@@ -1124,6 +1150,8 @@ class SchemasController extends Controller
      *     published?: null|string, depublished?: null|string,
      *     configuration?: array|null|string, allOf?: array|null,
      *     oneOf?: array|null, anyOf?: array|null}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
      */
     public function publish(int $id): JSONResponse
     {
@@ -1208,6 +1236,8 @@ class SchemasController extends Controller
      *     published?: null|string, depublished?: null|string,
      *     configuration?: array|null|string, allOf?: array|null,
      *     oneOf?: array|null, anyOf?: array|null}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
      */
     public function depublish(int $id): JSONResponse
     {

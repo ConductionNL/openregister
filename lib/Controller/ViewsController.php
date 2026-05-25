@@ -105,6 +105,8 @@ class ViewsController extends Controller
      * @return JSONResponse JSON response with views or error
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
      */
     public function index(): JSONResponse
     {
@@ -195,6 +197,8 @@ class ViewsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with view or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
      */
     public function show(string $id): JSONResponse
     {
@@ -258,6 +262,8 @@ class ViewsController extends Controller
      * @return JSONResponse JSON response with created view or error
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
      */
     public function create(): JSONResponse
     {
@@ -372,6 +378,8 @@ class ViewsController extends Controller
      * @return JSONResponse JSON response with updated view or error
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
      */
     public function update(string $id): JSONResponse
     {
@@ -497,6 +505,8 @@ class ViewsController extends Controller
      * @return JSONResponse JSON response with patched view or error
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
      */
     public function patch(string $id): JSONResponse
     {
@@ -606,6 +616,8 @@ class ViewsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with delete confirmation or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
      */
     public function destroy(string $id): JSONResponse
     {

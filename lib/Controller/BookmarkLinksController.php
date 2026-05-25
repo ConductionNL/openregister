@@ -72,6 +72,8 @@ class BookmarkLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -111,6 +113,8 @@ class BookmarkLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
@@ -162,6 +166,8 @@ class BookmarkLinksController extends Controller
      * @NoCSRFRequired
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function createNew(string $register, string $schema, string $id): JSONResponse
     {
@@ -230,6 +236,8 @@ class BookmarkLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function destroy(string $register, string $schema, string $id, string $bookmarkId): JSONResponse
     {
@@ -266,6 +274,8 @@ class BookmarkLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function available(): JSONResponse
     {

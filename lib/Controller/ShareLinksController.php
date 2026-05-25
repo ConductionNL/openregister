@@ -79,6 +79,8 @@ class ShareLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -113,6 +115,8 @@ class ShareLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -172,6 +176,8 @@ class ShareLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function destroy(string $register, string $schema, string $id, string $shareId): JSONResponse
     {
@@ -202,6 +208,8 @@ class ShareLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function files(string $register, string $schema, string $id): JSONResponse
     {
