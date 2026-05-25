@@ -148,12 +148,21 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		search(newVal) {
 			this.localSearch = newVal
 		},
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		type(newVal) {
 			this.selectedType = newVal
 		},
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		category(newVal) {
 			this.selectedCategory = newVal
 		},

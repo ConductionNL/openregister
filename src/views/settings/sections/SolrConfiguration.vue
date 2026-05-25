@@ -1262,9 +1262,15 @@ export default {
 
 		// Computed property for SOLR enabled toggle with auto-save
 		solrEnabled: {
+			/**
+			 * @spec exclude computed v-model accessor
+			 */
 			get() {
 				return Boolean(this.solrOptions?.enabled)
 			},
+			/**
+			 * @spec exclude computed v-model accessor
+			 */
 			async set(newValue) {
 				// Update the store
 				this.solrOptions.enabled = newValue

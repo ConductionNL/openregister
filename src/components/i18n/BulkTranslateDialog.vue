@@ -131,6 +131,9 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * @spec exclude UI handler/computed dialog-open trigger
+		 */
 		open(opened) {
 			if (opened) {
 				// Reset form state on open.

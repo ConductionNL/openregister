@@ -280,6 +280,9 @@ export default {
 		selectedItems() {
 			this.updateCounts()
 		},
+		/**
+		 * @spec exclude list-view watcher re-emitting counts when filtered items change
+		 */
 		filteredItems() {
 			this.updateCounts()
 		},
