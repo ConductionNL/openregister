@@ -165,6 +165,8 @@ class PhotoLinkService
      *
      * @throws Exception On missing user (401), missing album (404),
      *                   duplicate (409), Photos unavailable (503).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-album contract is owned by the integration-photos capability.
      */
     public function linkAlbum(string $objectUuid, int $registerId, int $schemaId, int $albumId): PhotoLink
     {
@@ -211,6 +213,8 @@ class PhotoLinkService
      *
      * @throws Exception On missing user (401), empty name (400),
      *                   Photos unavailable (503).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-album contract is owned by the integration-photos capability.
      */
     public function createAndLinkAlbum(string $objectUuid, int $registerId, int $schemaId, string $name): PhotoLink
     {
@@ -261,6 +265,8 @@ class PhotoLinkService
      * @return void
      *
      * @throws Exception On missing user (401) or no matching link (404).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-album contract is owned by the integration-photos capability.
      */
     public function unlinkAlbum(string $objectUuid, int $albumId): void
     {
@@ -279,6 +285,8 @@ class PhotoLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the linked-albums listing contract is owned by the integration-photos capability.
      */
     public function getLinkedAlbums(string $objectUuid): array
     {
@@ -309,6 +317,8 @@ class PhotoLinkService
      * @param string|null $search Optional name-substring filter.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the picker-source contract is owned by the integration-photos capability.
      */
     public function getAvailableAlbums(?string $search=null): array
     {

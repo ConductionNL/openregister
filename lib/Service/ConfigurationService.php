@@ -311,6 +311,8 @@ class ConfigurationService
      *
      * @return bool True if the OpenConnector service is available, false otherwise.
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+     *
+     * @spec exclude Facade plumbing: peer-app presence probe (installed-apps check + container resolve), no standalone behavioral contract.
      */
     public function hasOpenConnector(): bool
     {
@@ -920,6 +922,8 @@ class ConfigurationService
      * @throws Exception If search fails
      *
      * @return array Search results with total count, results array, page, and per_page.
+     *
+     * @spec exclude Facade plumbing: thin delegation to GitHubHandler::searchConfigurations, no standalone behavioral contract.
      */
     public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
     {
@@ -942,6 +946,8 @@ class ConfigurationService
      * @throws Exception If search fails
      *
      * @return array Search results with total count, results array, page, and per_page.
+     *
+     * @spec exclude Facade plumbing: thin delegation to GitLabHandler::searchConfigurations, no standalone behavioral contract.
      */
     public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
     {

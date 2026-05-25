@@ -445,6 +445,8 @@ class RetentionService
      * @param ObjectEntity $object The object to check
      *
      * @return string|null Error code if immutable, null if mutable
+     *
+     * @spec exclude Archival-status immutability guard (vernietigd/overgebracht → error code); sibling of the already-annotated archival methods, owned by archival-destruction-workflow. No distinct contract.
      */
     public function validateNotImmutable(ObjectEntity $object): ?string
     {

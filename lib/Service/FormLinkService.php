@@ -150,6 +150,8 @@ class FormLinkService
      * @param string $objectUuid The OR object UUID.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the linked-forms listing contract is owned by the integration-forms capability.
      */
     public function getLinkedForms(string $objectUuid): array
     {
@@ -214,6 +216,8 @@ class FormLinkService
      * @return FormLink The created (or existing) link row.
      *
      * @throws Exception If no user is logged in.
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the form-link contract is owned by the integration-forms capability.
      */
     public function linkForm(
         string $objectUuid,
@@ -262,6 +266,8 @@ class FormLinkService
      * @return FormLink The created (or existing) link row.
      *
      * @throws Exception If no user is logged in.
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the submission-link contract is owned by the integration-forms capability.
      */
     public function linkFormSubmission(
         string $objectUuid,
@@ -310,6 +316,8 @@ class FormLinkService
      * @param integer $formId     The NC Forms form id.
      *
      * @return integer Number of rows removed.
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-form contract is owned by the integration-forms capability.
      */
     public function unlinkForm(string $objectUuid, int $formId): int
     {
@@ -327,6 +335,8 @@ class FormLinkService
      * @param integer $submissionId The submission id.
      *
      * @return boolean True when a row was removed, false when none existed.
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-submission contract is owned by the integration-forms capability.
      */
     public function unlinkSubmission(string $objectUuid, int $formId, int $submissionId): bool
     {
@@ -363,6 +373,8 @@ class FormLinkService
      * @return FormLink The link row pointing at the freshly-created form.
      *
      * @throws Exception When the Forms app is missing or the create fails.
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-forms capability.
      */
     public function createAndLinkForm(
         string $objectUuid,
@@ -447,6 +459,8 @@ class FormLinkService
      *                                the `linked` flag against.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the picker-source contract is owned by the integration-forms capability.
      */
     public function getAvailableForms(?string $objectUuid=null): array
     {
@@ -523,6 +537,8 @@ class FormLinkService
      * @param integer $formId     The NC Forms form id.
      *
      * @return array<string,mixed>|null
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the single-form view contract is owned by the integration-forms capability.
      */
     public function getLinkedForm(string $objectUuid, int $formId): ?array
     {

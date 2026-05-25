@@ -402,6 +402,8 @@ class ChatService
      * @param string $_testMessage Optional test message to send.
      *
      * @return array Test result with success status, message, and optional error.
+     *
+     * @spec exclude Facade plumbing: simplified stub returning a static result; real testing goes through ResponseGenerationHandler (chat-ai). No standalone contract.
      */
     public function testChat(
         string $provider,

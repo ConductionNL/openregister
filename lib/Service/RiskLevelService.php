@@ -132,6 +132,8 @@ class RiskLevelService
      * @param int $fileId Nextcloud file ID from oc_filecache
      *
      * @return string Risk level constant (RISK_NONE through RISK_VERY_HIGH)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-3
      */
     public function computeRiskLevel(int $fileId): string
     {
@@ -168,6 +170,8 @@ class RiskLevelService
      * @param int $fileId Nextcloud file ID from oc_filecache
      *
      * @return string The computed risk level
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-4
      */
     public function updateRiskLevel(int $fileId): string
     {
@@ -199,6 +203,8 @@ class RiskLevelService
      * @param int $fileId Nextcloud file ID from oc_filecache
      *
      * @return string Risk level constant
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-4
      */
     public function getRiskLevel(int $fileId): string
     {
@@ -226,6 +232,8 @@ class RiskLevelService
      * This must be called from a repair step (not during app boot).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-4
      */
     public function initMetadataKey(): void
     {
@@ -243,6 +251,8 @@ class RiskLevelService
      * Useful for API documentation and frontend dropdowns.
      *
      * @return array<string, string> Map of risk level value to human-readable label
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-4
      */
     public static function getAllRiskLevels(): array
     {
