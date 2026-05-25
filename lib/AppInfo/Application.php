@@ -1223,18 +1223,19 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // BookmarksProvider needs the container (for late-bound NC
-        // Bookmarks classes — they're only on the classpath when the
-        // Bookmarks app is installed) plus IUserSession to scope the
-        // bookmark query to the current user.
+        // BookmarksProvider — Tier-2: backed by the BookmarkLinkMapper.
+        // Replaces the original `or:{uuid}` tag-marker convention with a
+        // proper persistence layer; the wrapping BookmarkLinkService owns
+        // the late-bound NC Bookmarks reads/writes. Needs the container
+        // (NC Bookmarks classes are only on the classpath when that app is
+        // installed) plus IUserSession to scope the query to the user.
         // @spec openspec/changes/integration-bookmarks/tasks.md.
         $context->registerService(
             BookmarksProvider::class,
             function (ContainerInterface $container) {
                 return new BookmarksProvider(
-                    container: $container,
+                    bookmarkLinkMapper: $container->get(\OCA\OpenRegister\Db\BookmarkLinkMapper::class),
                     appManager: $container->get('OCP\App\IAppManager'),
-                    userSession: $container->get('OCP\IUserSession'),
                     l10n: $container->get('OCP\IL10N'),
                 );
             }

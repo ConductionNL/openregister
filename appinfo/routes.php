@@ -371,6 +371,16 @@ return [
         ['name' => 'pollLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/polls/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'pollLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/polls/{pollId}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pollId' => '[0-9]+']],
 
+        // Bookmarks — Tier-2 link table + picker UX. Specific routes
+        // (`/new`) MUST precede the wildcard `{bookmarkId}` route so they
+        // aren't grabbed as bookmarkId='new'. Available-bookmarks picker
+        // is app-global.
+        ['name' => 'bookmarkLinks#available', 'url' => '/api/integrations/bookmarks/available',                       'verb' => 'GET'],
+        ['name' => 'bookmarkLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/bookmarks',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'bookmarkLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/bookmarks',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'bookmarkLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/bookmarks/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'bookmarkLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/bookmarks/{bookmarkId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'bookmarkId' => '[0-9]+']],
+
         // Shares — Tier-2: NO link table, NO cache. Every endpoint wraps
         // OCP\Share\IManager (NC core sharing is the single source of
         // truth). The shareable-files picker source is app-global but
