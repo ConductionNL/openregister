@@ -1,8 +1,10 @@
 # Search Index (delta)
 
-## Why
+## Purpose
 
 The `search-index` capability spec (REQ-1..5) covers the high-level facade and the major orchestration flows but leaves the backend value-transformation, schema-mirroring conflict logic, and file-chunk indexing paths undocumented. The 2026-05-25 Bucket-Wide scan flagged these as uncovered. These three requirements capture observed behavior in `DocumentBuilder`, `SchemaHandler`, and `FileHandler` so future changes to the coercion/conflict/chunking logic are recognised as behavior changes. No production code changes.
+
+**Source**: Reverse-spec retrofit of shipped code — `lib/Service/Index/` backend handlers. Behavior is documented as observed, not changed.
 
 ## ADDED Requirements
 
@@ -103,3 +105,14 @@ Text extraction (OCR, PDF parsing) is expensive and runs on its own schedule, wr
 - **THEN** each chunk MUST become a document carrying `file_id`, `chunk_index`, `total_chunks`, `chunk_text`, owner/organisation/language, and created/updated timestamps
 - **AND** the documents MUST be submitted via `SearchBackendInterface::index()`
 - **AND** the result MUST report `success` and an `indexed` count equal to the document count on success
+
+## Non-Functional
+
+- **i18n (ADR-007)**: No user-facing strings (ADR-007 n/a) — all three behaviors are backend index plumbing; SOLR field names, document keys, and the `...[TRUNCATED]` marker are machine-facing.
+- **Performance**: Byte-limit truncation and per-property coercion run at document-build time to keep one malformed property from failing an entire batch index; chunk indexing is decoupled from text extraction so the index can be (re)built without re-parsing files.
+- **Backward compatibility**: Reverse-spec of already-shipped `DocumentBuilder`/`SchemaHandler`/`FileHandler` code; no production behavior change.
+
+## Acceptance Criteria
+
+- The reverse-spec'd methods (`DocumentBuilder` coercion/validation/truncation/array-reconstruction/ID-resolution, `SchemaHandler::mirrorSchemas`/`ensureVectorFieldType`, `FileHandler::processUnindexedChunks`/`indexFileChunks`) carry `@spec` annotations to REQ-6/REQ-7/REQ-8.
+- The scenarios above hold for the shipped implementation.

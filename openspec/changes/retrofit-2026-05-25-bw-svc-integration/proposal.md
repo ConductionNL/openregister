@@ -1,5 +1,7 @@
 # Retrofit — backend coverage: Service/Integration (annotation-only)
 
+## Why
+
 Annotation-only (Bucket 1 style) coverage pass over the
 `lib/Service/Integration/` cluster (ADR-019 pluggable integration
 registry). The scanner flagged 93 uncovered methods across the provider
@@ -31,6 +33,17 @@ flagged methods are retroactively annotated to the change/task that
 already owns them, the single genuinely-uncovered behavior
 (`PaginatedResult`) gets one new REQ, and the repetitive per-provider
 boilerplate is `@spec exclude`d with a reason.
+
+## What Changes
+
+- **ADD** one REQ to the merged `generic-integrations` spec — the
+  "canonical pagination envelope" requirement reverse-specifying
+  `PaginatedResult` envelope normalisation.
+- **ANNOTATE** 55 behavioral methods with `@spec` pointers to the
+  change/task that already owns them (`pluggable-integration-registry`,
+  the per-leaf `integration-*` changes, `retrofit-2026-05-24-activity-provider`).
+- **EXCLUDE** 37 boilerplate methods (`@spec exclude <reason>`).
+- No production code changes — docblock-only edits.
 
 ## Outcome
 
@@ -114,6 +127,12 @@ helper) and `SharesProvider`'s anonymous PSR-11 adapter `get` / `has`
 (NC `\OCP\Server::get` shim).
 
 The full per-method classification is in `tasks.md`.
+
+## Impact
+
+- **Specs**: `generic-integrations` gains one REQ (canonical pagination envelope); no other spec changes.
+- **Code**: docblock-only `@spec`/`@spec exclude` edits across the `lib/Service/Integration/` cluster (provider contract, registry, router, helpers, 23 providers); no runtime behavior changes.
+- **Risk**: none — annotation retrofit.
 
 Source: `/tmp/or-scan/bw-svc-integration.json` (93 methods,
 `lib/Service/Integration/`). See [retrofit playbook](../../../.github/docs/claude/retrofit.md).
