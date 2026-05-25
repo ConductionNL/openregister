@@ -1141,12 +1141,10 @@ class Application extends App implements IBootstrap
         $greenfieldProviders = [
             // @spec openspec/changes/integration-activity/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-            // NB: AnalyticsProvider + CollectivesProvider were Tier-1
-            // greenfield until Tier-2; each now takes its own link mapper
-            // (AnalyticsLinkMapper / CollectiveLinkMapper) and is registered
-            // separately below.
-            // @spec openspec/changes/integration-cospend/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
+            // NB: AnalyticsProvider + CollectivesProvider + CospendProvider
+            // were Tier-1 greenfield until Tier-2; each now takes its own
+            // link mapper (AnalyticsLinkMapper / CollectiveLinkMapper /
+            // CospendLinkMapper) and is registered separately below.
             // NB: FormsProvider is NO LONGER greenfield — it has a Tier-2
             // link-table dep (FormLinkMapper) that doesn't fit the (db,
             // appManager, l10n) signature shared by the rest of this list.
@@ -1452,6 +1450,45 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                     analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+                );
+            }
+        );
+
+        // CospendProvider — Tier-2: backed by the CospendLinkMapper. The
+        // provider still gracefully degrades to the legacy `[or:{uuid}]`
+        // name-marker scan (projects + bills) when the link table is empty
+        // (entities that pre-date the Tier-2 link table; wave-2.3
+        // marker-on-name convention).
+        // @spec openspec/changes/integration-cospend/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\CospendProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    cospendLinkMapper: $container->get(\OCA\OpenRegister\Db\CospendLinkMapper::class),
+                );
+            }
+        );
+
+        // CospendLinkService — Tier-2 link/create/unlink/picker service
+        // backing the CospendLinksController. NC Cospend projects are
+        // user-scoped; the ProjectService is resolved lazily via the
+        // container (behind a class_exists guard) and bills/projects are
+        // read directly from the cospend_* tables, so the service loads
+        // even when Cospend is absent.
+        // @spec openspec/changes/integration-cospend/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\CospendLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\CospendLinkService(
+                    cospendLinkMapper: $container->get(\OCA\OpenRegister\Db\CospendLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    db: $container->get('OCP\IDBConnection'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
