@@ -420,6 +420,8 @@ class CalendarEventTransformer
      * @param array $calendarConfig The calendar configuration
      *
      * @return string The VEVENT STATUS value (CONFIRMED, CANCELLED, TENTATIVE)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-3
      */
     private function resolveStatus(array $objectData, array $calendarConfig): string
     {

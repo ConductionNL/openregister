@@ -371,6 +371,27 @@ return [
         ['name' => 'pollLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/polls/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'pollLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/polls/{pollId}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pollId' => '[0-9]+']],
 
+        // Bookmarks — Tier-2 link table + picker UX. Specific routes
+        // (`/new`) MUST precede the wildcard `{bookmarkId}` route so they
+        // aren't grabbed as bookmarkId='new'. Available-bookmarks picker
+        // is app-global.
+        ['name' => 'bookmarkLinks#available', 'url' => '/api/integrations/bookmarks/available',                       'verb' => 'GET'],
+        ['name' => 'bookmarkLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/bookmarks',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'bookmarkLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/bookmarks',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'bookmarkLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/bookmarks/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'bookmarkLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/bookmarks/{bookmarkId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'bookmarkId' => '[0-9]+']],
+
+        // Shares — Tier-2: NO link table, NO cache. Every endpoint wraps
+        // OCP\Share\IManager (NC core sharing is the single source of
+        // truth). The shareable-files picker source is app-global but
+        // object-scoped (it lists files inside the object's folder), so
+        // the specific `/api/integrations/shares/files/...` route is
+        // declared before the per-object wildcard `{shareId}` route.
+        ['name' => 'shareLinks#files',   'url' => '/api/integrations/shares/files/{register}/{schema}/{id}', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#index',   'url' => '/api/objects/{register}/{schema}/{id}/shares',            'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#create',  'url' => '/api/objects/{register}/{schema}/{id}/shares',            'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/shares/{shareId}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'shareId' => '[^/]+']],
+
         // Flow (workflowengine) — Tier-2 link-table API. Admin-gated:
         // POST/DELETE return 403 for non-admins; GET is read-only for
         // everyone. NC Flow operations are configured globally in the
@@ -380,6 +401,110 @@ return [
         ['name' => 'flowLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'flowLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'flowLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/flow/{operationId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'operationId' => '[0-9]+']],
+
+        // Photos (NC Photos) — Tier-2 link-table API. User-scoped (no
+        // admin gate). The specific `/photos/new` (create + link) route
+        // MUST precede the wildcard `/photos/{albumId}` unlink route.
+        ['name' => 'photoLinks#available',    'url' => '/api/integrations/photos/available',                   'verb' => 'GET'],
+        ['name' => 'photoLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/photos',         'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'photoLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/photos/new',     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'photoLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/photos',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'photoLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/photos/{albumId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'albumId' => '[0-9]+']],
+
+        // Collectives (NC Knowledge) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The specific `/collectives/new` (create + link)
+        // route MUST precede the wildcard `/collectives/{pageId}` unlink
+        // route, and the app-global `available`/`list` routes precede the
+        // object-scoped routes.
+        ['name' => 'collectiveLinks#available',    'url' => '/api/integrations/collectives/available',                  'verb' => 'GET'],
+        ['name' => 'collectiveLinks#collectives',  'url' => '/api/integrations/collectives/list',                       'verb' => 'GET'],
+        ['name' => 'collectiveLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/collectives',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'collectiveLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/collectives/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'collectiveLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/collectives',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'collectiveLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/collectives/{pageId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageId' => '[0-9]+']],
+
+        // xWiki (remote, OpenConnector-routed) — Tier-2 link-table API.
+        // External: no NC app gate; the OpenConnector `xwiki` source carries
+        // credentials. The specific `/xwiki/new` (create + link) route MUST
+        // precede the wildcard `/xwiki/{pageRef}` unlink route, and the
+        // app-global `available` route precedes the object-scoped routes.
+        // pageRef is a url-encoded canonical page reference (`%2F` not `/`),
+        // so the `[^/]+` requirement matches the whole segment.
+        ['name' => 'xwikiLinks#available',    'url' => '/api/integrations/xwiki/available',                  'verb' => 'GET'],
+        ['name' => 'xwikiLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'xwikiLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/xwiki/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'xwikiLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'xwikiLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/xwiki/{pageRef}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageRef' => '[^/]+']],
+        // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
+        // admin gate). The specific `/cospend/new` (create + link) route
+        // MUST precede the wildcard `/cospend/{entryId}` unlink route, and
+        // the app-global `available` route precedes the object-scoped
+        // routes. The link POST handles BOTH project and bill rows
+        // (discriminated by a `billId`/`entryType` in the body).
+        ['name' => 'cospendLinks#available',    'url' => '/api/integrations/cospend/available',                  'verb' => 'GET'],
+        ['name' => 'cospendLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/cospend',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'cospendLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/cospend/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'cospendLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/cospend',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'cospendLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/cospend/{entryId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'entryId' => '[0-9]+']],
+
+        // OpenProject (external / OpenConnector-routed) — Tier-2 link-table
+        // API. The picker source `available` is reached through the
+        // OpenConnector `openproject` source. The specific
+        // `/openproject/new` (create + link) route MUST precede the
+        // wildcard `/openproject/{wpId}` unlink route, and the app-global
+        // `available` route precedes the object-scoped routes.
+        ['name' => 'openProjectLinks#available',    'url' => '/api/integrations/openproject/available',                  'verb' => 'GET'],
+        ['name' => 'openProjectLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/openproject',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'openProjectLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/openproject/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'openProjectLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/openproject',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'openProjectLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/openproject/{wpId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'wpId' => '[0-9]+']],
+
+        // Maps (NC Maps / Location) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The specific `/maps/new` (create + link) route
+        // MUST precede the wildcard `/maps/{favoriteId}` unlink route.
+        ['name' => 'mapLinks#available',    'url' => '/api/integrations/maps/available',                       'verb' => 'GET'],
+        ['name' => 'mapLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/maps',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'mapLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/maps/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'mapLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/maps',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'mapLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/maps/{favoriteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'favoriteId' => '[0-9]+']],
+
+        // Time-tracker (NC TimeManager) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The leaf slug is `time-tracker` (hyphen); the NC
+        // app id is `timemanager`. The specific `/time-tracker/new` (create +
+        // link client) route MUST precede the wildcard
+        // `/time-tracker/{entryId}` unlink route, and the app-global
+        // `available` route precedes the object-scoped routes. entryId is a
+        // TimeManager uuid (not numeric), so it matches `[^/]+`.
+        ['name' => 'timeTrackerLinks#available',    'url' => '/api/integrations/time-tracker/available',                    'verb' => 'GET'],
+        ['name' => 'timeTrackerLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/time-tracker',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timeTrackerLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/time-tracker/new',      'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timeTrackerLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/time-tracker',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timeTrackerLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/time-tracker/{entryId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+
+        // Analytics (NC Analytics) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The specific `/analytics/new` (create + link)
+        // route MUST precede the wildcard `/analytics/{reportId}` unlink
+        // route, and the app-global `available` picker route MUST precede
+        // the per-object wildcard routes.
+        // @spec openspec/changes/integration-analytics/tasks.md.
+        ['name' => 'analyticsLinks#available',    'url' => '/api/integrations/analytics/available',                  'verb' => 'GET'],
+        ['name' => 'analyticsLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/analytics',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'analyticsLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/analytics/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'analyticsLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/analytics',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'analyticsLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/analytics/{reportId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'reportId' => '[0-9]+']],
+
+        // Activity — Tier-2 read-only API. NC Activity entries are
+        // core-generated (no link/create/delete verbs); this surface
+        // only filters + cursor-paginates the entries linked to an OR
+        // object via the `[or:{uuid}]` marker in `activity.subject`
+        // (wave-5.3 MarkerLookupTrait carve-out, preserved). The
+        // app-global `types`/`actors` dropdown routes MUST precede the
+        // per-object wildcard route so they aren't grabbed as register
+        // slugs.
+        // @spec openspec/changes/integration-activity/tasks.md.
+        ['name' => 'activityLinks#types',  'url' => '/api/integrations/activity/types',                  'verb' => 'GET'],
+        ['name' => 'activityLinks#actors', 'url' => '/api/integrations/activity/actors',                 'verb' => 'GET'],
+        ['name' => 'activityLinks#index',  'url' => '/api/objects/{register}/{schema}/{id}/activity',    'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
         // Forms — Tier-2 link-table API. Specific routes (`/new`, `/submissions/{id}`)
         // MUST precede the wildcard `{formId}` route so they aren't grabbed as

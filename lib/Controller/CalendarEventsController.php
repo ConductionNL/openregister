@@ -136,6 +136,8 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -276,6 +278,8 @@ class CalendarEventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function destroy(string $register, string $schema, string $id, string $eventId): JSONResponse
     {

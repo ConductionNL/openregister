@@ -108,6 +108,8 @@ class SolrHttpClient
      * Initialize HTTP client for Solr requests.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     private function initializeHttpClient(): void
     {

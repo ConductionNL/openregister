@@ -179,6 +179,12 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch the unified relations payload (view=timeline) for the current object.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-3
+		 * @return {Promise<void>}
+		 */
 		async fetchRelations() {
 			this.loading = true
 			this.error = false

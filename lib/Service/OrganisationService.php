@@ -52,6 +52,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple Nextcloud services for user and group management
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
  */
 class OrganisationService
 {
@@ -232,6 +234,8 @@ class OrganisationService
      * Uses static application-level caching for performance optimization
      *
      * @return Organisation The default organisation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function ensureDefaultOrganisation(): Organisation
     {
@@ -460,6 +464,8 @@ class OrganisationService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag controls caching behavior
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getUserOrganisations(bool $_useCache=true): array
     {
@@ -497,6 +503,8 @@ class OrganisationService
      * @param array|null $preloadedOrgs Pre-loaded organisations to avoid extra queries.
      *
      * @return Organisation|null The active organisation or null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getActiveOrganisation(?array $preloadedOrgs=null): ?Organisation
     {
@@ -542,6 +550,8 @@ class OrganisationService
      * @return true True if successfully set, false otherwise
      *
      * @throws Exception If user doesn't belong to the organisation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function setActiveOrganisation(string $organisationUuid): bool
     {
@@ -647,6 +657,8 @@ class OrganisationService
      * @return true True if successfully removed
      *
      * @throws Exception If organisation not found, user not logged in, or trying to leave last organisation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function leaveOrganisation(string $organisationUuid, ?string $targetUserId=null): bool
     {
@@ -732,6 +744,8 @@ class OrganisationService
      * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls whether to add current user to organisation
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Organisation creation requires multiple validation steps
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function createOrganisation(
         string $name,
@@ -852,6 +866,8 @@ class OrganisationService
      * @param string $organisationUuid The organisation UUID to check
      *
      * @return bool True if user has access
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function hasAccessToOrganisation(string $organisationUuid): bool
     {
@@ -1276,6 +1292,8 @@ class OrganisationService
      * @param string       $userId       The user ID to cache for
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     private function cacheActiveOrganisation(Organisation $organisation, string $userId): void
     {
@@ -1319,6 +1337,8 @@ class OrganisationService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache reconstruction requires branches for each organisation property
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional properties create many reconstruction paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     private function reconstructOrganisationFromCache(array $cachedData): Organisation
     {
@@ -1577,6 +1597,8 @@ class OrganisationService
      * @return (mixed|null|string)[]
      *
      * @psalm-return list{0?: null|string,...}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getUserActiveOrganisations(): array
     {

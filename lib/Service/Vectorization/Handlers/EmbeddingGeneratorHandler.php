@@ -82,6 +82,8 @@ class EmbeddingGeneratorHandler
      * @throws \Exception If configuration is invalid or generator cannot be created
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple provider configurations require separate conditions
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
      */
     public function getGenerator(array $config): EmbeddingGeneratorInterface
     {
@@ -131,6 +133,8 @@ class EmbeddingGeneratorHandler
      * @return int Default dimensions
      *
      * @psalm-return 384|1536|3072
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
      */
     public function getDefaultDimensions(string $model): int
     {
@@ -148,6 +152,8 @@ class EmbeddingGeneratorHandler
      *     |OpenAI3LargeEmbeddingGenerator Generator instance
      *
      * @throws \Exception If model is not supported
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
      */
     private function createOpenAIGenerator(
         string $model,
@@ -185,6 +191,8 @@ class EmbeddingGeneratorHandler
      * @throws \Exception If model is not supported
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Anonymous class requires complete implementation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
      */
     private function createFireworksGenerator(string $model, array $config): object
     {
@@ -357,6 +365,8 @@ class EmbeddingGeneratorHandler
      * @param array  $config Configuration array with base_url
      *
      * @return OllamaEmbeddingGenerator Generator instance
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
      */
     private function createOllamaGenerator(string $model, array $config): OllamaEmbeddingGenerator
     {

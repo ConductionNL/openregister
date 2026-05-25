@@ -43,6 +43,8 @@ interface VectorizationStrategyInterface
      * @param array $options Strategy-specific options
      *
      * @return array Array of entities to vectorize
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     public function fetchEntities(array $options): array;
 
@@ -60,6 +62,8 @@ interface VectorizationStrategyInterface
      * @param mixed $entity Entity to extract items from
      *
      * @return array Array of items, each with 'text' and other data
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     public function extractVectorizationItems($entity): array;
 
@@ -78,6 +82,8 @@ interface VectorizationStrategyInterface
      * @param array $item   Vectorization item (from extractVectorizationItems)
      *
      * @return array Metadata for vector storage
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     public function prepareVectorMetadata($entity, array $item): array;
 
@@ -87,6 +93,8 @@ interface VectorizationStrategyInterface
      * @param mixed $entity Entity
      *
      * @return string|int Identifier
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     public function getEntityIdentifier($entity);
 }//end interface

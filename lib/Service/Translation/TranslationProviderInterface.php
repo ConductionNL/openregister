@@ -44,6 +44,8 @@ interface TranslationProviderInterface
      * @param string $toLang   BCP 47 target language code.
      *
      * @return string|null The translated text, or null on miss/error.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-10
      */
     public function translate(string $text, string $fromLang, string $toLang): ?string;
 
@@ -55,6 +57,8 @@ interface TranslationProviderInterface
      * vs human translations.
      *
      * @return string The provider identifier slug.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-11
      */
     public function getIdentifier(): string;
 }//end interface

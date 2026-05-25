@@ -57,6 +57,8 @@ class JsonType extends ScalarType
      * @param mixed $value The value to serialize
      *
      * @return mixed The serialized value
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-2
      */
     public function serialize(mixed $value): mixed
     {

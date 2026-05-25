@@ -401,6 +401,9 @@ export default {
 		this.initializeMigration()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 */
 		initializeMigration() {
 			// Get selected objects from the store or navigation context
 			this.selectedObjects = objectStore.selectedObjects || []

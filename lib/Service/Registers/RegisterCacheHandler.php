@@ -99,6 +99,8 @@ class RegisterCacheHandler
      * @param int $registerId The register ID to invalidate.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-5
      */
     public function invalidate(int $registerId): void
     {

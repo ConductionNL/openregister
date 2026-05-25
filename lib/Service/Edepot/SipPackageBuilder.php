@@ -137,6 +137,8 @@ class SipPackageBuilder
      * @param int   $maxSize          Maximum package size in bytes.
      *
      * @return array<int, array> Array of batches.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
      */
     private function splitIntoBatches(array $objectsWithFiles, int $maxSize): array
     {
@@ -176,6 +178,8 @@ class SipPackageBuilder
      * @param int    $totalPackages    Total number of packages.
      *
      * @return string Path to the generated ZIP file.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
      */
     private function buildSinglePackage(
         string $transferId,
@@ -271,6 +275,8 @@ class SipPackageBuilder
      * @param string $content The file content.
      *
      * @return array{path: string, size: int, checksum: string} The manifest entry.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
      */
     private function createManifestEntry(string $path, string $content): array
     {

@@ -52,6 +52,9 @@ export default {
 	emits: ['close', 'switch'],
 	methods: {
 		t,
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		isActive(org) {
 			return this.activeOrganisationUuid != null
 				&& this.activeOrganisationUuid === org.uuid

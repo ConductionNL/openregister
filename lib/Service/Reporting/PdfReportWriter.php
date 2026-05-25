@@ -53,6 +53,8 @@ class PdfReportWriter
      * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
      *
      * @return string Rendered PDF bytes.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-4
      */
     public function write(array $dashboard, array $resolvedWidgets): string
     {

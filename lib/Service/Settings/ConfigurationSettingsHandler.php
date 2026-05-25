@@ -211,6 +211,8 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration defaults and overrides create multiple execution paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSettings(): array
     {
@@ -528,6 +530,8 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration sections are independently optional
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateSettings(array $data): array
     {

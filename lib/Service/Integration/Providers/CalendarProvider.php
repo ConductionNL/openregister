@@ -84,36 +84,85 @@ class CalendarProvider extends AbstractIntegrationProvider
     ) {
     }//end __construct()
 
+    /**
+     * Provider identity used by the IntegrationProvider registry.
+     *
+     * @return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     */
     public function getId(): string
     {
         return 'calendar';
     }//end getId()
 
+    /**
+     * Localised label rendered on the sidebar tab.
+     *
+     * @return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     */
     public function getLabel(): string
     {
         return $this->l10n->t('Meetings');
     }//end getLabel()
 
+    /**
+     * Icon name resolved by the frontend icon registry.
+     *
+     * @return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     */
     public function getIcon(): string
     {
         return 'Calendar';
     }//end getIcon()
 
+    /**
+     * Sidebar grouping bucket.
+     *
+     * @return string|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     */
     public function getGroup(): ?string
     {
         return 'comms';
     }//end getGroup()
 
+    /**
+     * Nextcloud app that must be installed for this integration.
+     *
+     * @return string|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     */
     public function getRequiredApp(): ?string
     {
         return self::REQUIRED_APP;
     }//end getRequiredApp()
 
+    /**
+     * Registry routing classification (not literal physical storage — see class docblock).
+     *
+     * @return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     */
     public function getStorageStrategy(): string
     {
         return 'link-table';
     }//end getStorageStrategy()
 
+    /**
+     * Whether the required NC app is installed.
+     *
+     * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     */
     public function isEnabled(): bool
     {
         return $this->appManager->isInstalled(self::REQUIRED_APP);
@@ -148,6 +197,8 @@ class CalendarProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional filters (currently ignored).
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -190,6 +241,8 @@ class CalendarProvider extends AbstractIntegrationProvider
      * @param string $entityId Composite `"calendarId/eventUri"`.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
@@ -216,6 +269,8 @@ class CalendarProvider extends AbstractIntegrationProvider
      * useful runtime signal at registry resolution time.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
      */
     public function health(): array
     {

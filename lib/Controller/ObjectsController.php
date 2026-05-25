@@ -1473,6 +1473,8 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-1
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
@@ -1657,6 +1659,8 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-2
      */
     public function show(
         string $id,
@@ -2135,6 +2139,8 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-3
      */
     public function patch(
         string $register,
@@ -2545,6 +2551,8 @@ class ObjectsController extends Controller
      *     page: float|int<1, max>, pages: 1|float, limit: int<1, max>,
      *     offset: int<0, max>, next?: string, prev?: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
      */
     public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2621,6 +2629,8 @@ class ObjectsController extends Controller
      *     array{results: list<ObjectEntity>, total: int<0, max>,
      *     limit: 30|mixed, offset: 0|mixed},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2668,6 +2678,8 @@ class ObjectsController extends Controller
      *     array{results: array<never, never>, total: 0, limit: 30|mixed,
      *     offset: 0|mixed, message?: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
      */
     public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2719,6 +2731,8 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-7
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2822,6 +2836,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
      */
     public function lock(string $register, string $schema, string $id): JSONResponse
     {
@@ -2869,6 +2885,8 @@ class ObjectsController extends Controller
      * @psalm-return JSONResponse<200, array{
      *     message: 'Object unlocked successfully', locked: false, uuid: string
      * }, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
@@ -2906,6 +2924,7 @@ class ObjectsController extends Controller
      * @psalm-suppress NoValue
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-11
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
     {
@@ -2982,6 +3001,7 @@ class ObjectsController extends Controller
      * @psalm-suppress NoValue
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-11
      */
     public function import(int $register): JSONResponse
     {
@@ -3047,6 +3067,8 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with merge result or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-5
      */
     public function merge(
         string $id,
@@ -3104,6 +3126,8 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with migration result or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-12
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {
@@ -3178,6 +3202,8 @@ class ObjectsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-10
      */
     public function downloadFiles(
         string $id,
@@ -3274,6 +3300,8 @@ class ObjectsController extends Controller
      * @psalm-suppress NoValue
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: mixed}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
      */
     public function vectorizeBatch(): JSONResponse
     {
@@ -3317,6 +3345,8 @@ class ObjectsController extends Controller
      * @psalm-suppress NoValue
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: mixed}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
      */
     public function getObjectVectorizationStats(): JSONResponse
     {
@@ -3359,6 +3389,8 @@ class ObjectsController extends Controller
      * @psalm-suppress NoValue
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, count?: mixed}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
      */
     public function getObjectVectorizationCount(): JSONResponse
     {
@@ -3401,6 +3433,8 @@ class ObjectsController extends Controller
      * @return JSONResponse JSON response with validation results
      *
      * @psalm-return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-8
      */
     public function validate(): JSONResponse
     {
@@ -3619,6 +3653,8 @@ class ObjectsController extends Controller
      * @psalm-return JSONResponse
      *
      * @deprecated Blob storage has been retired; this endpoint is a no-op.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-8
      */
     public function clearBlob(): JSONResponse
     {

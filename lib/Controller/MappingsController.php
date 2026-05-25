@@ -56,6 +56,8 @@ use Psr\Log\LoggerInterface;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class MappingsController extends Controller
 {

@@ -104,6 +104,8 @@ class TaskService
      * @return array{results: array, total: int} Task results with total count
      *
      * @throws Exception If no user is logged in
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
      */
     public function getAllUserTasks(
         ?string $status=null,
@@ -402,6 +404,8 @@ class TaskService
      * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
      *
      * @throws Exception If the task is not found or update fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
      */
     public function updateTask(string $calendarId, string $taskUri, array $data): ?array
     {
@@ -465,6 +469,8 @@ class TaskService
      * @return void
      *
      * @throws Exception If the task is not found or deletion fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
      */
     public function deleteTask(string $calendarId, string $taskUri): void
     {

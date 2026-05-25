@@ -76,6 +76,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
      */
     private function makeSpaResponse(): TemplateResponse
     {
@@ -265,6 +267,8 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
      */
     public function integrationsView(): TemplateResponse
     {
@@ -468,6 +472,8 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
      */
     public function avg(): TemplateResponse
     {

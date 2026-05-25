@@ -168,6 +168,8 @@ class BulkIndexer
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-3
      */
     public function bulkIndexFromDatabase(
         int $batchSize=1000,

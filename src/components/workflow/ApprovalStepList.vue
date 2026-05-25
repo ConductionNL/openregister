@@ -30,6 +30,9 @@ import { generateUrl } from '@nextcloud/router'
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
+ */
 export default {
 	name: 'ApprovalStepList',
 	components: { NcButton },
@@ -46,6 +49,9 @@ export default {
 		this.fetchSteps()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
+		 */
 		async fetchSteps() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-steps')

@@ -226,6 +226,8 @@ class ToolManagementHandler
      *
      * @psalm-return list<FunctionInfo>
      *
+     * @spec openspec/changes/retrofit-2026-05-24-chat-ai/tasks.md#task-1
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Function conversion requires handling multiple parameter types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Function conversion requires handling multiple parameter types
      */

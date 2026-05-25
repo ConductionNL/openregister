@@ -80,6 +80,8 @@ class TablesController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-8
      */
     public function sync(int|string $registerId, int|string $schemaId): JSONResponse
     {
@@ -210,6 +212,8 @@ class TablesController extends Controller
      * @return JSONResponse
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-8
      */
     public function syncAll(): JSONResponse
     {

@@ -103,6 +103,8 @@ class SecurityService
      * @return array Result with 'allowed' boolean and optional 'delay' or 'lockout_until'
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
     public function checkLoginRateLimit(string $username, string $ipAddress): array
     {
@@ -189,6 +191,8 @@ class SecurityService
      * @param string $reason    The reason for login failure
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
     public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason='invalid_credentials'): void
     {
@@ -254,6 +258,8 @@ class SecurityService
      * @param string $ipAddress The IP address of the successful attempt
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
     public function recordSuccessfulLogin(string $username, string $ipAddress): void
     {
@@ -296,6 +302,8 @@ class SecurityService
      * @param string $ipAddress The IP address to unblock
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
     public function clearIpRateLimits(string $ipAddress): void
     {
@@ -322,6 +330,8 @@ class SecurityService
      * @param string $username The username to unblock
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
     public function clearUserRateLimits(string $username): void
     {
@@ -348,6 +358,8 @@ class SecurityService
      * @return mixed Sanitized input
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-4
      */
     public function sanitizeInput(mixed $input, int $maxLength=255): mixed
     {
@@ -392,6 +404,8 @@ class SecurityService
      * @param array $credentials The login credentials to validate
      *
      * @return array Validated and sanitized credentials or error information
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-4
      */
     public function validateLoginCredentials(array $credentials): array
     {
@@ -441,6 +455,8 @@ class SecurityService
      * @param JSONResponse $response The response to add headers to
      *
      * @return JSONResponse The response with added security headers
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
      */
     public function addSecurityHeaders(JSONResponse $response): JSONResponse
     {
@@ -464,6 +480,8 @@ class SecurityService
      * @return string The client IP address
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
      */
     public function getClientIpAddress(IRequest $request): string
     {

@@ -272,6 +272,8 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with schema delete result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
      */
     public function deleteSchema(string $register, string $schema): JSONResponse
     {
@@ -331,6 +333,8 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
      */
     public function deleteSchemaObjects(string $register, string $schema): JSONResponse
     {
@@ -389,6 +393,8 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with register delete result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
      */
     public function deleteRegister(string $register): JSONResponse
     {

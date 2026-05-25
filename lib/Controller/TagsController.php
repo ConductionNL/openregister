@@ -88,6 +88,8 @@ class TagsController extends Controller
      * @return JSONResponse JSON response with all tags
      *
      * @psalm-return JSONResponse<200, list<string>, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function getAllTags(): JSONResponse
     {
@@ -107,6 +109,8 @@ class TagsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function index(
         string $register,
@@ -144,6 +148,8 @@ class TagsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function add(
         string $register,
@@ -192,6 +198,8 @@ class TagsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function remove(
         string $register,

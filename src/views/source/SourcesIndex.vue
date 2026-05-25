@@ -310,6 +310,13 @@ export default {
 		sourceStore.refreshSourceList(null, true)
 	},
 	methods: {
+		/**
+		 * Toggle selection state for every source in the current list.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-1
+		 * @param {boolean} checked - true selects all, false clears the selection
+		 * @return {void}
+		 */
 		toggleSelectAll(checked) {
 			if (checked) {
 				this.selectedSources = sourceStore.sourceList.map(source => source.id)

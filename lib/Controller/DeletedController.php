@@ -265,6 +265,8 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-16
      */
     public function statistics(): JSONResponse
     {
@@ -321,6 +323,8 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with top deleters data
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-16
      */
     public function topDeleters(): JSONResponse
     {

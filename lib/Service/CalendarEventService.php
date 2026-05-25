@@ -339,6 +339,8 @@ class CalendarEventService
      * @param string $objectUuid The object UUID.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function unlinkEventsForObject(string $objectUuid): void
     {

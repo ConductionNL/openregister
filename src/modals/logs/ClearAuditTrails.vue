@@ -120,6 +120,8 @@ export default {
 		/**
 		 * Close the dialog and reset state
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-3
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -133,6 +135,8 @@ export default {
 		/**
 		 * Clear the filtered audit trails
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-3
 		 */
 		async clearAuditTrails() {
 			this.loading = true

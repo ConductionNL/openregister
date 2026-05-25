@@ -72,6 +72,8 @@ class TransportResult
      * @param string|null                                                                      $transferReference Transfer reference.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-2
      */
     public function __construct(
         bool $success=false,
@@ -152,6 +154,8 @@ class TransportResult
      * Get the transfer reference.
      *
      * @return string|null The e-Depot transfer reference.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-2
      */
     public function getTransferReference(): ?string
     {
