@@ -47,6 +47,8 @@ class RealtimeEventListener implements IEventListener
      * @param RealtimeService $realtimeService Service that persists realtime events.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-11
      */
     public function __construct(
         private readonly RealtimeService $realtimeService
@@ -59,6 +61,8 @@ class RealtimeEventListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-12
      */
     public function handle(Event $event): void
     {
