@@ -58,6 +58,8 @@ class AnnotationNotificationListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec exclude Dispatch-only event router that delegates verbatim to AnnotationNotificationDispatcher; the dispatcher carries the notification behaviour.
      */
     public function handle(Event $event): void
     {

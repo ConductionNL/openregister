@@ -97,6 +97,8 @@ class BatchNotificationJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-1
      */
     protected function run(mixed $argument): void
     {

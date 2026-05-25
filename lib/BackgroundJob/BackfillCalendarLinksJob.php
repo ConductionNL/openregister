@@ -94,6 +94,8 @@ class BackfillCalendarLinksJob extends QueuedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec exclude Disabled-by-default one-time Tier-2 migration backfill, gated behind the `backfill_calendar_links` app-config flag; not a production capability surface.
      */
     protected function run($argument): void
     {

@@ -96,6 +96,8 @@ final class ScheduledNotificationJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-2
      */
     protected function run($argument): void
     {
