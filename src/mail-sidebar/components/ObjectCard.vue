@@ -57,15 +57,24 @@ export default {
 		},
 	},
 	computed: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		objectTitle() {
 			return this.object.objectTitle || this.object.objectUuid || ''
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		deepLink() {
 			const registerId = this.object.registerId || ''
 			const schemaId = this.object.schemaId || ''
 			const objectUuid = this.object.objectUuid || ''
 			return `/apps/openregister/registers/${registerId}/${schemaId}/${objectUuid}`
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		cardAriaLabel() {
 			const parts = [this.objectTitle]
 			if (this.object.schemaTitle) {

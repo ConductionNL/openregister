@@ -37,10 +37,16 @@ export default {
 		DeleteApplication,
 	},
 	methods: {
+		/**
+		 * @spec exclude $root event re-emit plumbing: forwards a configset-updated bus event; no standalone behavioural contract.
+		 */
 		onConfigSetCreated() {
 			// Emit event to reload ConfigSets list if needed
 			this.$root.$emit('configset-updated')
 		},
+		/**
+		 * @spec exclude $root event re-emit plumbing: forwards a configset-updated bus event; no standalone behavioural contract.
+		 */
 		onConfigSetDeleted() {
 			// Emit event to reload ConfigSets list if needed
 			this.$root.$emit('configset-updated')

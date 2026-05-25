@@ -192,6 +192,9 @@ export default {
 		 *
 		 * @return {string} The active organisation name or a fallback
 		 */
+		/**
+		 * @spec exclude App-navigation plumbing: reads the active organisation name with a fallback label; no standalone behavioural contract.
+		 */
 		activeOrganisationName() {
 			const activeOrg = organisationStore.activeOrganisation
 			if (activeOrg && activeOrg.name) {
@@ -203,9 +206,15 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec exclude App-navigation plumbing: $router.push wrapper; no standalone behavioural contract.
+		 */
 		handleNavigate(path) {
 			this.$router.push(path)
 		},
+		/**
+		 * @spec exclude App-navigation plumbing: window.open wrapper; no standalone behavioural contract.
+		 */
 		openLink(url, type = '') {
 			window.open(url, type)
 		},

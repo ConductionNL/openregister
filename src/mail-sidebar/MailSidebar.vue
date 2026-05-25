@@ -98,6 +98,9 @@ export default {
 		Plus,
 		AccountMultiple,
 	},
+	/**
+	 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+	 */
 	setup() {
 		const mailObserver = useMailObserver({ debounceMs: 300 })
 		useAttachmentDrag()
@@ -110,9 +113,15 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		sidebarTitle() {
 			return t('openregister', 'OpenRegister')
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-4
+		 */
 		sidebarSubname() {
 			if (!this.isMessageView) {
 				return ''
@@ -120,6 +129,9 @@ export default {
 			return t('openregister', 'Mail Integration')
 		},
 	},
+	/**
+	 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+	 */
 	created() {
 		const stored = localStorage.getItem(COLLAPSED_STORAGE_KEY)
 		if (stored === 'true') {
@@ -135,6 +147,9 @@ export default {
 			this.collapsed = !this.collapsed
 			localStorage.setItem(COLLAPSED_STORAGE_KEY, String(this.collapsed))
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		switchTab(tabId) {
 			this.activeTab = tabId
 		},
