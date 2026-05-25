@@ -118,6 +118,8 @@ class SolrSettingsHandler
      * @throws \RuntimeException if SOLR settings retrieval fails
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) SOLR configuration requires many default settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSolrSettings(): array
     {
@@ -529,6 +531,8 @@ class SolrSettingsHandler
      *     fileCollection: mixed|null}
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) SOLR configuration requires many settings fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateSolrSettingsOnly(array $solrData): array
     {
