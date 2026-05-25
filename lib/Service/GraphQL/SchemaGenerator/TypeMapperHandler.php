@@ -217,6 +217,8 @@ class TypeMapperHandler
      *
      * @return Type The GraphQL type
      *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function mapPropertyToGraphQLType(array $property): Type
@@ -268,6 +270,8 @@ class TypeMapperHandler
      *
      * @return Type The GraphQL input type
      *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function mapPropertyToInputType(array $property): Type
@@ -314,6 +318,8 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return InputObjectType The filter input type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     public function getFilterInputType(RegisterSchema $schema): InputObjectType
     {
@@ -374,6 +380,8 @@ class TypeMapperHandler
      *
      * @return InputObjectType The create input type
      *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function getCreateInputType(RegisterSchema $schema): InputObjectType
@@ -429,6 +437,8 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return InputObjectType The update input type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     public function getUpdateInputType(RegisterSchema $schema): InputObjectType
     {
@@ -468,6 +478,8 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return array<string, Type|array<string,mixed>> The input fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     private function buildInputFields(RegisterSchema $schema): array
     {
@@ -495,6 +507,8 @@ class TypeMapperHandler
      * @param ObjectType     $objectType The object type for the schema
      *
      * @return ObjectType The connection type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-5
      */
     public function getConnectionType(RegisterSchema $schema, ObjectType $objectType): ObjectType
     {
@@ -689,6 +703,8 @@ class TypeMapperHandler
      * Get the shared PageInfo type.
      *
      * @return ObjectType The PageInfo type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-5
      */
     private function getPageInfoType(): ObjectType
     {
@@ -782,6 +798,8 @@ class TypeMapperHandler
      * Get the shared sort input type.
      *
      * @return InputObjectType The sort input type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     private function getSortInputType(): InputObjectType
     {
@@ -811,6 +829,8 @@ class TypeMapperHandler
      * Get the shared self-filter input type for metadata columns.
      *
      * @return InputObjectType The self-filter input type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
      */
     private function getSelfFilterType(): InputObjectType
     {
@@ -841,6 +861,8 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return array<string, string> Map of property name to auth description
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-6
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
