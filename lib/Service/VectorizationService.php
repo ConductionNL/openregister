@@ -92,6 +92,8 @@ class VectorizationService
      * @param VectorizationStrategyInterface $strategy   Strategy implementation
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     public function registerStrategy(string $entityType, VectorizationStrategyInterface $strategy): void
     {
@@ -123,6 +125,8 @@ class VectorizationService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch processing with error handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple processing paths with exceptions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive batch processing with progress tracking
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -263,6 +267,8 @@ class VectorizationService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch vs serial processing logic
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple embedding and error handling paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity vectorization with error handling
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     private function vectorizeEntity($entity, VectorizationStrategyInterface $strategy, array $options): array
     {
@@ -382,6 +388,8 @@ class VectorizationService
      * @param VectorizationStrategyInterface $strategy      Strategy
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     private function storeVector($entity, array $item, array $embeddingData, VectorizationStrategyInterface $strategy): void
     {
@@ -408,6 +416,8 @@ class VectorizationService
      * @return VectorizationStrategyInterface
      *
      * @throws \Exception If strategy not registered
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     private function getStrategy(string $entityType): VectorizationStrategyInterface
     {
@@ -439,6 +449,8 @@ class VectorizationService
      * @throws \Exception If embedding generation fails
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
@@ -505,6 +517,8 @@ class VectorizationService
      * Delegates to VectorEmbeddings.
      *
      * @return array Vector statistics with totals and breakdowns by type and model.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
      */
     public function getVectorStats(): array
     {
@@ -526,6 +540,8 @@ class VectorizationService
      *     data?: array{provider: string, model: 'unknown'|mixed,
      *     vectorLength: int<0, max>, sampleValues: array<float>,
      *     testText: string}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -543,6 +559,8 @@ class VectorizationService
      *     message?: string, current_model?: mixed,
      *     existing_models?: list{0?: mixed,...}, total_vectors?: int,
      *     null_model_count?: int, mismatched_models?: list<mixed>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -557,6 +575,8 @@ class VectorizationService
      * @return (bool|int|string)[] Deletion results
      *
      * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
      */
     public function clearAllEmbeddings(): array
     {
