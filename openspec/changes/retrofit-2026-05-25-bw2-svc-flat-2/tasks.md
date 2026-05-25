@@ -7,11 +7,11 @@ capabilities/changes), 36 tagged `@spec exclude`.
 
 ## New requirements (this change)
 
-- [x] task-1: activity-provider#REQ-A1 — Tier-2 filtered + cursor-paginated activity read surface (`ActivityFilterService::getActivityEntries`)
-- [x] task-2: generic-integrations#REQ-G1 — Tier-2 entity link-service contract (link/create-and-link/unlink/list/picker across 5 link services, 26 methods)
-- [x] task-3: search-index#REQ-S1 — Adaptive post-import Solr warmup scheduling (`ImportService::scheduleSolrWarmup`, `scheduleSmartSolrWarmup`, `getRecommendedWarmupMode`)
-- [x] task-4: audit-trail-immutable#REQ-L1 — Audit-trail access, export, and admin deletion surface (`LogService::getLogs`, `count`, `exportLogs`, `deleteLog`, `deleteLogs`)
-- [x] task-5: text-extraction#REQ-001 — File→chunk extraction lifecycle (`TextExtractionService::extractFile`, `extractObject`, `chunkDocument`, `discoverUntrackedFiles`, `extractPendingFiles`, `retryFailedExtractions`, `getStats`)
+- [x] task-1: activity-provider "Tier-2 Object Activity Read Surface" — Tier-2 filtered + cursor-paginated activity read surface (`ActivityFilterService::getActivityEntries`)
+- [x] task-2: generic-integrations "Tier-2 Remote-Entity Link Service Contract" — link/create-and-link/unlink/list/picker across 5 link services, 26 methods
+- [x] task-3: search-index "Adaptive Post-Import Search-Index Warmup Scheduling" — `ImportService::scheduleSolrWarmup`, `scheduleSmartSolrWarmup`, `getRecommendedWarmupMode`
+- [x] task-4: audit-trail-immutable "Audit-Trail Access, Export, and Administrative Deletion Surface" — `LogService::getLogs`, `count`, `exportLogs`, `deleteLog`, `deleteLogs`
+- [x] task-5: text-extraction "File and Object Chunk-Extraction Lifecycle" — `TextExtractionService::extractFile`, `extractObject`, `chunkDocument`, `discoverUntrackedFiles`, `extractPendingFiles`, `retryFailedExtractions`, `getStats`
 
 ## Annotated against existing capabilities (no new REQ)
 

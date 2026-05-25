@@ -16,7 +16,7 @@ change anchors it so all five services (and future link leaves) conform.
 
 ## ADDED Requirements
 
-### Requirement: REQ-G1 Tier-2 entity link services MUST share a uniform link/create/unlink/list/picker contract with graceful degradation
+### Requirement: Tier-2 Remote-Entity Link Service Contract
 A Tier-2 link service MUST persist object↔remote-entity bindings in its own local link table, resolve its provider/router lazily so the service loads even when the backing app is absent, and expose five operations — link an existing remote entity, create-and-link a new one, unlink (binding only, never deleting the remote), list linked entities with stale-cache refresh, and browse available entities for the picker — each degrading gracefully when the backing app or upstream is unavailable.
 
 Each link service (`XwikiLinkService`, `TalkLinkService`, `OpenProjectLinkService`, `BookmarkLinkService`, `CollectiveLinkService`) MUST:

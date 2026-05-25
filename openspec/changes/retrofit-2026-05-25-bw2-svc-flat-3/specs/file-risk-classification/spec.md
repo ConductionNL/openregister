@@ -1,3 +1,20 @@
+---
+retrofit: true
+---
+
+# File Risk Classification
+
+## Why
+
+`RiskLevelService` turns the PII entities that text-extraction detects on a
+file into a single, persisted risk tier and exposes it through Nextcloud's
+files-metadata system for use in the UI and API. This classification concern
+is distinct from entity detection (text-extraction), GDPR processing-register
+bookkeeping (`avg-verwerkingsregister`), and anonymisation: it is the scoring
++ metadata-persistence layer that sits between them, and no existing
+capability owns it. This new capability anchors the observed behaviour. Code
+already exists in production; this is an annotation-only reverse-spec.
+
 ## ADDED Requirements
 
 ### Requirement: RiskLevelService MUST classify a file's PII risk from its detected entities

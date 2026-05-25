@@ -1,3 +1,22 @@
+---
+retrofit: true
+---
+
+# Schema Property Exploration
+
+## Why
+
+`SchemaService` carries two methods — `exploreSchemaProperties` and
+`updateSchemaFromExploration` — that implement a schema-authoring aid: they
+analyse the JSON payloads actually stored under a schema to surface
+undeclared or under-specified properties, and apply confirmed suggestions
+back onto the schema. This is a distinct concern from schema CRUD,
+validation, or facet configuration (those are owned by their own
+capabilities), and no existing capability spec captures the
+data-driven discovery loop. This new capability anchors the observed
+behaviour of that loop. Code already exists in production; this is an
+annotation-only reverse-spec.
+
 ## ADDED Requirements
 
 ### Requirement: SchemaService MUST discover undeclared properties by analysing a schema's stored objects

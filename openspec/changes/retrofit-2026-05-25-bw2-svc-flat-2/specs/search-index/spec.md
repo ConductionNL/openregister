@@ -15,7 +15,7 @@ anchors that adaptive scheduling behavior.
 
 ## ADDED Requirements
 
-### Requirement: REQ-S1 A completed import MUST schedule an adaptive background search-index warmup sized to the import volume
+### Requirement: Adaptive Post-Import Search-Index Warmup Scheduling
 On import completion the service MUST schedule a one-time background Solr warmup job whose warmup mode and maximum-object cap are derived from the number of objects imported, MUST skip scheduling entirely when nothing was imported, and MUST treat a scheduling failure as non-fatal to the import.
 
 `ImportService::scheduleSolrWarmup()` MUST compute the total objects imported across all sheets and MUST return `false` without scheduling when that total is zero. `ImportService::getRecommendedWarmupMode()` MUST select a warmup mode by import-size tier (large imports get the fastest mode, medium imports a balanced mode, small imports the safe mode). `ImportService::scheduleSmartSolrWarmup()` MUST use the recommended mode and a size-derived object cap (bounded by a hard maximum), MUST default to a delayed schedule with an immediate-run override, and MUST delegate to `scheduleSolrWarmup()`. A failure to enqueue the job MUST be logged and MUST NOT abort or roll back the completed import.

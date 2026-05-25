@@ -17,7 +17,7 @@ surface.
 
 ## ADDED Requirements
 
-### Requirement: REQ-L1 The audit-trail access surface MUST support object-scoped retrieval tolerant of soft-deleted scope, multi-format export, and administrative deletion
+### Requirement: Audit-Trail Access, Export, and Administrative Deletion Surface
 The service MUST expose audit-trail retrieval scoped to a single object with register/schema membership validation that still succeeds when the register or schema has been soft-deleted, MUST count and list entries with the same filters/pagination, MUST export entries in CSV, JSON, XML, and TXT formats, and MUST support single and filtered bulk deletion as an administrative retention operation.
 
 `LogService::getLogs()` and `LogService::count()` MUST resolve the object across all sources including soft-deleted objects, MUST validate the object belongs to the requested register/schema by comparing stored IDs while tolerating a soft-deleted (unresolvable) register or schema, and MUST restrict results to the object's UUID. `LogService::exportLogs()` MUST emit `{ content, filename, contentType }` for each of the `csv`, `json`, `xml`, and `txt` formats and MUST reject an unsupported format with `InvalidArgumentException`. `LogService::deleteLog()` MUST delete one entry by id (or surface a not-found error), and `LogService::deleteLogs()` MUST delete a filter/id-selected set and MUST report `{ deleted, failed, total }`. Deletion is an administrative retention action and does not relax the per-entry immutability guarantee enforced elsewhere in this capability.

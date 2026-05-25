@@ -39,9 +39,13 @@ Five new requirements, each in its owning capability:
   object-scoped log retrieval with soft-deleted register/schema
   tolerance, multi-format export, and admin-only deletion.
 - **text-extraction** (new capability) — the file→chunk extraction
-  lifecycle (`TextExtractionService`): extract a file/object into chunks
-  with modified-since re-extraction detection, discover untracked files,
-  drain a pending queue, retry failures, and report stats.
+  *orchestration* lifecycle (`TextExtractionService`): extract a
+  file/object into chunks with modified-since re-extraction detection,
+  discover untracked files, drain a pending queue, retry failures, and
+  report stats. This sits above the per-source handler contract in the
+  sibling `text-extraction-sources` cap (bw-svc-mid2) and below
+  `vector-embeddings`; the two text-extraction caps are complementary
+  layers, not duplicates.
 
 Everything else is tagged `@spec exclude` or annotated against an
 existing capability spec / change.
@@ -86,7 +90,8 @@ they are annotated in-place against that capability rather than re-spec'd:
   → `file-actions` REQ-001/004/005.
 - `TextExtractionService::extractFile` / `extractObject` / `chunkDocument` /
   `discoverUntrackedFiles` / `extractPendingFiles` / `retryFailedExtractions` /
-  `getStats` → the new `text-extraction` capability (REQ-001 below).
+  `getStats` → the new `text-extraction` capability ("File and Object
+  Chunk-Extraction Lifecycle" below).
 
 ## Source
 
