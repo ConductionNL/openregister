@@ -1065,7 +1065,9 @@ class Application extends App implements IBootstrap
 
         // Leaf provider: OpenProject (external, OpenConnector-backed) —
         // mirrors the XwikiProvider pattern (AD-4 / AD-22). Credentials
-        // on the OpenConnector `openproject` source.
+        // on the OpenConnector `openproject` source. Tier-2: the
+        // OpenProjectLinkMapper backs the linked list so it renders from
+        // the cached link rows even when the source is temporarily down.
         // @spec openspec/changes/integration-openproject/tasks.md.
         $context->registerService(
             OpenProjectProvider::class,
@@ -1074,6 +1076,29 @@ class Application extends App implements IBootstrap
                     router: $container->get(ExternalIntegrationRouter::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                    openProjectLinkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
+                );
+            }
+        );
+
+        // OpenProjectLinkService — Tier-2 link/create/unlink/picker
+        // service backing the OpenProjectLinksController. OpenProject is
+        // external; the service composes the link mapper with the
+        // OpenProjectProvider + ExternalIntegrationRouter so picker /
+        // create / refresh flows go through the OpenConnector
+        // `openproject` source, degrading to a 503-with-cause when the
+        // source is missing or the upstream is unreachable (wave-5.2).
+        // @spec openspec/changes/integration-openproject/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\OpenProjectLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\OpenProjectLinkService(
+                    openProjectLinkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
+                    provider: $container->get(OpenProjectProvider::class),
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
