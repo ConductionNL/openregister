@@ -14,8 +14,10 @@ mapped to one new requirement, or `@spec exclude`d as boilerplate.
 
 ## What Changes
 
-- **ADD** capability `text-extraction-sources` with three requirements
-  (REQ-001..003) covering the generic per-source extraction layer:
+- **ADD** the per-source handler requirements to the `text-extraction`
+  capability (consolidated from the former `text-extraction-sources` name) —
+  three requirements (REQ-001..003) covering the generic per-source extraction
+  layer:
   - REQ-001 — common extraction contract (`TextExtractionHandlerInterface::extractText`,
     `FileHandler::getSourceMetadata`, `ObjectHandler::getSourceMetadata`).
   - REQ-002 — normalised extraction + SHA-256 checksum (`FileHandler::extractText`,
@@ -50,15 +52,17 @@ mapped to one new requirement, or `@spec exclude`d as boilerplate.
 ## Counts
 
 - Methods in batch: 52
-- Spec'd against a new requirement: 9 (3 new REQs, `text-extraction-sources`)
+- Spec'd against a new requirement: 9 (3 new REQs, `text-extraction`)
 - Annotated against existing requirements: 40
 - Excluded as boilerplate: 3
-- New capabilities: 1 (`text-extraction-sources`)
+- New capabilities: 1 (`text-extraction`, consolidated from the former
+  `text-extraction-sources` name)
 - New requirements: 3 (well under the ≤5 cap)
 
 ## Impact
 
-- Affected specs: `text-extraction-sources` (new capability, 3 requirements).
+- Affected specs: `text-extraction` (per-source handler requirements, 3
+  requirements; consolidated from the former `text-extraction-sources` name).
 - Capabilities referenced for annotation (no spec change): `mcp-discovery`,
   `oas-validation`, `object-lifecycle`, `faceting-configuration`,
   `avg-verwerkingsregister`.
@@ -76,17 +80,18 @@ mapped to one new requirement, or `@spec exclude`d as boilerplate.
 
 - No cohort frontmatter is added to the five existing capabilities — the cohort
   flag tracks REQ provenance, not annotation provenance (per the retrofit
-  playbook). Only the new `text-extraction-sources` master spec carries
+  playbook). Only the new `text-extraction` master spec carries
   `retrofit: true`.
 - `object-lifecycle#REQ-010` and the `oas-validation` API-46 / request-validation /
   ETag requirements live in active (un-archived) changes; `@spec` is a textual
   reference and remains valid after those changes archive.
-- **Dedup flag:** the sibling change `retrofit-2026-05-25-bw2-svc-flat-2` mints a
-  capability literally named `text-extraction` for the `TextExtractionService`
-  orchestration layer (extractFile/extractObject/chunkDocument/queue). That layer
-  delegates to the per-source handlers this capability specifies. The two are
-  adjacent layers of the same subsystem and are candidates to be unified under one
-  `text-extraction` capability. Reconciliation is deferred to a central owner — not
-  resolved here.
+- **Unified (2026-05-25):** the sibling change `retrofit-2026-05-25-bw2-svc-flat-2`
+  carries the `text-extraction` capability for the `TextExtractionService`
+  orchestration layer (extractFile/extractObject/chunkDocument/queue), which
+  delegates to the per-source handlers this delta specifies. The two were adjacent
+  layers of the same subsystem, so they have been unified: this delta was renamed
+  from `text-extraction-sources` to `text-extraction` and both changes now archive
+  into one `text-extraction` capability (handler REQs from here, orchestrator REQs
+  from the sibling).
 
 See [retrofit playbook](../../../../.github/docs/claude/retrofit.md).

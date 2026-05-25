@@ -56,3 +56,24 @@ entries across tenants.
 - **THEN** the response MUST return that endpoint's delivery-log entries
 - **AND** `GET /api/endpoints/logs` MUST return entries across all endpoints
 - **AND** `GET /api/endpoints/{id}/logs/stats` MUST return aggregate statistics over the endpoint's log
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: These are operator-facing statistics/log JSON REST
+  endpoints. The only app-authored strings are `{error}` diagnostics on unknown
+  ids, which are operator copy and exempt from translation. Statistics envelopes
+  and delivery-log entries carry counts and recorded call data, not localisable
+  UI copy. (ADR-007 n/a.)
+- **REST/error contract (ADR-002)**: Follows OpenRegister REST conventions —
+  `404` with an `{error}` body for unknown ids and a consistent statistics
+  envelope. The statistics and log endpoints MUST respect the same RBAC +
+  multi-tenancy filters as the underlying mappers so counts and log entries
+  cannot be enumerated across tenants.
+
+## Acceptance Criteria
+
+- [x] `RegistersController::stats`, `SchemasController::stats`, and the `EndpointsController` log verbs carry `@spec production-observability#...` annotations.
+- [x] Register/schema `stats` return the aggregate envelope (object counts incl. total/invalid/deleted/locked/size + audit-log stats) scoped to the entity; unknown ids return `404`.
+- [x] `logs`/`logStats`/`allLogs` return per-endpoint and cross-endpoint delivery-log data as specified.
+- [x] Statistics and log endpoints respect RBAC + multi-tenancy (no cross-tenant enumeration).
+- [x] `openspec validate retrofit-2026-05-25-bw2-ctrl-2 --strict` passes.

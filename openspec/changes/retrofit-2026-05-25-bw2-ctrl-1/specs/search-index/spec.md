@@ -71,3 +71,26 @@ anonymised or have no detected entities.
 - **GIVEN** a file whose name already contains `_anonymized`
 - **WHEN** the anonymise endpoint is invoked
 - **THEN** the response MUST be HTTP `400` and no new anonymised copy MUST be created
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: These are JSON REST endpoints for the Files UI and
+  administrators. The status/error strings they emit (`"Text extraction
+  disabled"`, `"Query parameter is required"`) are operator-facing diagnostics
+  paired with a stable `success:false` flag and HTTP status, and are exempt from
+  translation. Search results echo file content and metadata, not app-authored
+  user-facing copy, so nl+en localisation does not apply here. (ADR-007 n/a.)
+- **REST/error contract (ADR-002)**: Responses follow OpenRegister REST
+  conventions — the `{success, query, total, results, search_type}` search
+  envelope, HTTP-status-by-meaning (`400` empty query, `501` extraction
+  disabled), and bounded bulk operations (batch cap ≤ 500). Disabled-feature and
+  validation failures are reported with HTTP status plus a `{success:false,
+  message}` body rather than the full RFC 7807 shape.
+
+## Acceptance Criteria
+
+- [x] `FileTextController`, `FileSearchController`, `FileSidebarController`, and `FileSettingsController` carry `@spec search-index#...` annotations.
+- [x] Per-file and bounded bulk extraction work; extraction returns `501` when file management/extraction is disabled.
+- [x] Semantic/hybrid file search returns the `{success, query, total, results, search_type}` envelope and rejects an empty `query` with `400`.
+- [x] Anonymisation creates a new copy and guards already-anonymised / no-entity files.
+- [x] `openspec validate retrofit-2026-05-25-bw2-ctrl-1 --strict` passes.

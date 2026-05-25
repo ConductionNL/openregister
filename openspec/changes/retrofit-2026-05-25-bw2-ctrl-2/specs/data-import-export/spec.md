@@ -63,3 +63,25 @@ register portability" requirement and are not redefined here.
 - **WHEN** `GET /api/configurations/github/files` is called for a repository
 - **THEN** the response MUST list the configuration files in that repository
 - **AND** repositories or files the caller cannot access MUST NOT be returned
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: These are administrator-facing configuration/Git-sync JSON
+  REST endpoints. The only app-authored strings are `{error}` diagnostics on
+  unknown ids and failures, which are operator copy and exempt from translation.
+  Configuration payloads and remote file listings carry external/portability
+  data, not localisable UI copy. (ADR-007 n/a.)
+- **REST/error contract (ADR-002)**: Follows OpenRegister REST conventions —
+  resource CRUD with `404` for unknown ids and `201` on explicit create. The
+  Git-discovery endpoints MUST resolve the caller's credentials from
+  configuration and MUST NOT leak repositories/files the caller cannot access
+  (no cross-account enumeration). The portability file format itself remains
+  governed by the existing register-portability requirement.
+
+## Acceptance Criteria
+
+- [x] `ConfigurationController` and `ConfigurationsController` carry `@spec data-import-export#...` annotations pointing at this requirement.
+- [x] Configuration CRUD returns `404` for unknown ids and `201` on explicit create; `patch` applies a partial update via the `update` write path.
+- [x] `checkVersion`/`preview`/`enrichDetails` operate against the configured remote source; the GitHub/GitLab discovery endpoints list only files the caller can access.
+- [x] `export`/`import` continue to defer to the existing register-portability requirement (not redefined here).
+- [x] `openspec validate retrofit-2026-05-25-bw2-ctrl-2 --strict` passes.

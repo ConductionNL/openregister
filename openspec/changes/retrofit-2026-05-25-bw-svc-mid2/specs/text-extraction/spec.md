@@ -3,7 +3,14 @@ status: implemented
 retrofit: true
 ---
 
-# Text Extraction Sources
+# Text Extraction
+
+> **Consolidation note:** this delta adds the per-source HANDLER requirements
+> (`FileHandler`, `ObjectHandler`, `TextExtractionHandlerInterface`) of the
+> `text-extraction` capability, while the sibling `retrofit-2026-05-25-bw2-svc-flat-2`
+> change adds the orchestrator (`TextExtractionService`) requirements — both
+> archive into one `text-extraction` capability. This delta was consolidated
+> from the former `text-extraction-sources` name.
 
 ## Purpose
 Provides a generic, source-type-agnostic text-extraction layer that turns

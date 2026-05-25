@@ -86,3 +86,27 @@ inherit this contract's session-only default.
 - **WHEN** the controller catches it via its `mapException()` helper
 - **THEN** the response status MUST be `409`
 - **AND** an exception code outside `{400,401,404,409,503}` MUST default to HTTP `400`
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: These are JSON REST endpoints. The error bodies they emit
+  (`{error: "Object not found"}`, `{error, code: "APP_NOT_AVAILABLE"}`) are
+  machine-readable diagnostics keyed by a stable `code`; the human-readable
+  `error` text is developer/operator copy and is exempt from translation.
+  Resource payloads carry only provider-supplied data, no app-authored
+  user-facing strings, so nl+en localisation does not apply here. (ADR-007 n/a.)
+- **REST/error contract (ADR-002)**: The contract follows the OpenRegister REST
+  conventions — the `{results, total}` list envelope, HTTP-status-by-meaning
+  (`201` create, `404` unresolved object, `409` conflict, `501`
+  `APP_NOT_AVAILABLE`), and a stable `code` on degraded responses so callers can
+  branch without parsing prose. The richer RFC 7807 problem-details shape is
+  governed by the separate `oas-validation` requirement and is not redefined
+  here.
+
+## Acceptance Criteria
+
+- [x] All eight object-scoped link controllers carry `@spec generic-integrations#...` annotations pointing at this requirement.
+- [x] List/picker endpoints return the `{results, total}` envelope; link and create-and-link return `201`; unlink returns `{success: true}`.
+- [x] A missing backing app yields `501` with `{error, code: "APP_NOT_AVAILABLE"}`; an unresolvable object yields `404` with `{error: "Object not found"}`.
+- [x] Service exception codes map to HTTP status (`400/401/404/409/503`), defaulting to `400`.
+- [x] `openspec validate retrofit-2026-05-25-bw2-ctrl-1 --strict` passes.

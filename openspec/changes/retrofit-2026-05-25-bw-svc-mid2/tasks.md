@@ -1,10 +1,14 @@
 # Tasks
 
-## New capability: text-extraction-sources (reverse-spec)
+## Capability: text-extraction — per-source handler layer (reverse-spec)
 
-- [x] task-1: text-extraction-sources#REQ-001 — Common extraction contract (`TextExtractionHandlerInterface::extractText`, `FileHandler::getSourceMetadata`, `ObjectHandler::getSourceMetadata`) (retroactive annotation)
-- [x] task-2: text-extraction-sources#REQ-002 — Normalised extraction + SHA-256 checksum (`FileHandler::extractText`, `ObjectHandler::extractText`) (retroactive annotation)
-- [x] task-3: text-extraction-sources#REQ-003 — Freshness-gated re-extraction (`FileHandler::needsExtraction`, `FileHandler::getSourceTimestamp`, `ObjectHandler::needsExtraction`, `ObjectHandler::getSourceTimestamp`) (retroactive annotation)
+> Consolidated from the former `text-extraction-sources` name; the handler REQs
+> below archive into the shared `text-extraction` capability alongside the
+> orchestrator REQs from `retrofit-2026-05-25-bw2-svc-flat-2`.
+
+- [x] task-1: text-extraction#REQ-001 — Common extraction contract (`TextExtractionHandlerInterface::extractText`, `FileHandler::getSourceMetadata`, `ObjectHandler::getSourceMetadata`) (retroactive annotation)
+- [x] task-2: text-extraction#REQ-002 — Normalised extraction + SHA-256 checksum (`FileHandler::extractText`, `ObjectHandler::extractText`) (retroactive annotation)
+- [x] task-3: text-extraction#REQ-003 — Freshness-gated re-extraction (`FileHandler::needsExtraction`, `FileHandler::getSourceTimestamp`, `ObjectHandler::needsExtraction`, `ObjectHandler::getSourceTimestamp`) (retroactive annotation)
 
 ## Cross-capability annotations to existing requirements
 
