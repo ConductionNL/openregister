@@ -122,6 +122,8 @@ class ActionsController extends Controller
      * silently re-adds `@NoAdminRequired` does not open the surface.
      *
      * @return JSONResponse|null 403 response when not admin, null when allowed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-1
      */
     private function requireAdmin(): ?JSONResponse
     {
@@ -157,6 +159,7 @@ class ActionsController extends Controller
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -448,6 +451,8 @@ class ActionsController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-2
      */
     #[NoCSRFRequired]
     public function test(int $id): JSONResponse
@@ -491,6 +496,8 @@ class ActionsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-4
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -542,6 +549,8 @@ class ActionsController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-3
      */
     #[NoCSRFRequired]
     public function migrateFromHooks(int $schemaId): JSONResponse
