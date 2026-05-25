@@ -99,6 +99,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with array of mappings
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function index(): JSONResponse
     {
@@ -153,6 +155,8 @@ class MappingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function show(int|string $id): JSONResponse
     {
@@ -176,6 +180,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created mapping
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function create(): JSONResponse
     {
@@ -226,6 +232,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated mapping
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function update(int $id): JSONResponse
     {
@@ -285,6 +293,8 @@ class MappingsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function patch(int $id): JSONResponse
     {
@@ -302,6 +312,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Empty JSON response on success
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function destroy(int $id): JSONResponse
     {
@@ -330,6 +342,8 @@ class MappingsController extends Controller
      * @return JSONResponse JSON response with test results
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function test(): JSONResponse
     {

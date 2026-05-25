@@ -242,6 +242,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @PublicPage
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function show(
         string $register,
@@ -424,6 +426,8 @@ class FilesController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function save(
         string $register,
@@ -520,6 +524,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: string, 0?: array<string, mixed>,...}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function createMultipart(
         string $register,
@@ -835,6 +841,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function update(
         string $register,
@@ -992,6 +1000,8 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<200|400|404,
      *     array{error?: mixed|string, labels?: list<string>,...},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function depublish(
         string $register,
@@ -1051,6 +1061,8 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<404|500, array{error: string},
      *     array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200,
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse
     {
@@ -1634,6 +1646,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function batch(string $register, string $schema, string $id): JSONResponse
     {
@@ -1746,6 +1760,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function updateLabels(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1790,6 +1806,8 @@ class FilesController extends Controller
      * @return TemplateResponse
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
+     *
+     * @spec exclude SPA-mount stub — returns the Vue `index` template; client-side router owns navigation. No HTTP contract beyond the shell.
      */
     public function page(): TemplateResponse
     {

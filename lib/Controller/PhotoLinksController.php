@@ -78,6 +78,8 @@ class PhotoLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -122,6 +124,8 @@ class PhotoLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
@@ -171,6 +175,8 @@ class PhotoLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function createAndLink(string $register, string $schema, string $id): JSONResponse
     {
@@ -219,6 +225,8 @@ class PhotoLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function destroy(string $register, string $schema, string $id, string $albumId): JSONResponse
     {
@@ -254,6 +262,8 @@ class PhotoLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function available(): JSONResponse
     {

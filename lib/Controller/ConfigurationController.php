@@ -152,6 +152,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array<'Failed to fetch configurations'|Configuration>, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function index(): JSONResponse
     {
@@ -187,6 +189,8 @@ class ConfigurationController extends Controller
      *     array<never, never>>|JSONResponse<404|500,
      *     array{error: 'Configuration not found'|'Failed to fetch configuration'},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function show(int $id): JSONResponse
     {
@@ -217,6 +221,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with enriched configuration details
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function enrichDetails(): JSONResponse
     {
@@ -298,6 +304,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created configuration
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function create(): JSONResponse
     {
@@ -365,6 +373,8 @@ class ConfigurationController extends Controller
      * @return JSONResponse JSON response with updated configuration
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) Already refactored — NPath from try/catch + field mapping
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function update(int $id): JSONResponse
     {
@@ -468,6 +478,8 @@ class ConfigurationController extends Controller
      * @psalm-return JSONResponse<200|404|500,
      *     array{error?: 'Configuration not found'|'Failed to delete configuration',
      *     success?: true}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function destroy(int $id): JSONResponse
     {
@@ -509,6 +521,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with version comparison
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function checkVersion(int $id): JSONResponse
     {
@@ -564,6 +578,8 @@ class ConfigurationController extends Controller
      * @psalm-suppress InvalidReturnType
      *
      * @return JSONResponse JSON response with configuration preview
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function preview(int $id): JSONResponse
     {
@@ -846,6 +862,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with repositories list
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function getGitHubRepositories(): JSONResponse
     {
@@ -897,6 +915,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with configuration files
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function getGitHubConfigurations(): JSONResponse
     {
@@ -996,6 +1016,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with configuration files
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function getGitLabConfigurations(): JSONResponse
     {

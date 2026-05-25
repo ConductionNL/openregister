@@ -245,6 +245,8 @@ class RegistersController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function index(): JSONResponse
     {
@@ -395,6 +397,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function show($id): JSONResponse
     {
@@ -433,6 +437,8 @@ class RegistersController extends Controller
      * @psalm-return JSONResponse<201, Register,
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function create(): JSONResponse
     {
@@ -504,6 +510,8 @@ class RegistersController extends Controller
      * @psalm-return JSONResponse<200, Register,
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function update(int $id): JSONResponse
     {
@@ -617,6 +625,8 @@ class RegistersController extends Controller
      * @psalm-return JSONResponse<200, Register,
      *     array<never, never>>|JSONResponse<int, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function patch(int $id): JSONResponse
     {
@@ -642,6 +652,8 @@ class RegistersController extends Controller
      *
      * @psalm-return JSONResponse<int, array{error?: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function destroy(int $id): JSONResponse
     {
@@ -720,6 +732,8 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with schemas or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function schemas(int|string $id): JSONResponse
     {
@@ -762,6 +776,8 @@ class RegistersController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with objects
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -790,6 +806,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
      */
     public function export(int $id): JSONResponse|DataDownloadResponse
     {
@@ -879,6 +897,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
      */
     public function importTemplate(int|string $id, int|string $schema): JSONResponse|DataDownloadResponse
     {
@@ -949,6 +969,8 @@ class RegistersController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -1115,6 +1137,8 @@ class RegistersController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
      */
     public function import(int $id, bool $force=false): JSONResponse
     {
@@ -1318,6 +1342,8 @@ class RegistersController extends Controller
      * @return JSONResponse Report with counts and per-object outcomes.
      *
      * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
      */
     public function rollbackImport(): JSONResponse
     {
@@ -1433,6 +1459,8 @@ class RegistersController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     public function stats(int $id): JSONResponse
     {
@@ -1550,6 +1578,8 @@ class RegistersController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
      */
     public function publish(int $id): JSONResponse
     {
@@ -1652,6 +1682,8 @@ class RegistersController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
      */
     public function depublish(int $id): JSONResponse
     {

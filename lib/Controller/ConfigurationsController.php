@@ -89,6 +89,8 @@ class ConfigurationsController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array{results: array<\OCA\OpenRegister\Db\Configuration>}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function index(): JSONResponse
     {
@@ -131,6 +133,8 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Configuration not found'}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function show(int $id): JSONResponse
     {
@@ -159,6 +163,8 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function create(): JSONResponse
     {
@@ -218,6 +224,8 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function update(int $id): JSONResponse
     {
@@ -268,6 +276,8 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function patch(int $id): JSONResponse
     {
@@ -288,6 +298,8 @@ class ConfigurationsController extends Controller
      * @psalm-return JSONResponse<204, null,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function destroy(int $id): JSONResponse
     {

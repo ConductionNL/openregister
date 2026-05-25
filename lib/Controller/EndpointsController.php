@@ -152,6 +152,8 @@ class EndpointsController extends Controller
      *     array{error?: 'Failed to list endpoints',
      *     results?: array<\OCA\OpenRegister\Db\Endpoint>, total?: int<0, max>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -208,6 +210,8 @@ class EndpointsController extends Controller
      *     array<never, never>>|JSONResponse<404|500,
      *     array{error: 'Endpoint not found'|'Failed to retrieve endpoint'},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -265,6 +269,8 @@ class EndpointsController extends Controller
      * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Endpoint,
      *     array<never, never>>|JSONResponse<400|500, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -341,6 +347,8 @@ class EndpointsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Endpoint,
      *     array<never, never>>|JSONResponse<404|500, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -435,6 +443,8 @@ class EndpointsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -450,6 +460,8 @@ class EndpointsController extends Controller
      * @param int $id The endpoint ID to delete.
      *
      * @return JSONResponse Empty response on success or error response on failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -527,6 +539,8 @@ class EndpointsController extends Controller
      *     array{error?: string, success?: bool, message?: string,
      *     statusCode?: int, response?: mixed},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -612,6 +626,8 @@ class EndpointsController extends Controller
      *     array{error?: 'Endpoint not found'|'Failed to retrieve endpoint logs',
      *     results?: list<\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -685,6 +701,8 @@ class EndpointsController extends Controller
      *     array{error?: 'Endpoint not found'|
      *     'Failed to retrieve endpoint log statistics', total?: int,
      *     success?: int, failed?: int}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -748,6 +766,8 @@ class EndpointsController extends Controller
      *     array{error?: string, results?: array<\OCA\OpenRegister\Db\EndpointLog>,
      *     total?: int<0, max>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
