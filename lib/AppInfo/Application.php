@@ -1141,8 +1141,8 @@ class Application extends App implements IBootstrap
         $greenfieldProviders = [
             // @spec openspec/changes/integration-activity/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-            // @spec openspec/changes/integration-analytics/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
+            // NB: AnalyticsProvider was Tier-1 greenfield until Tier-2; it
+            // now takes an AnalyticsLinkMapper. Registered separately below.
             // @spec openspec/changes/integration-collectives/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
             // @spec openspec/changes/integration-cospend/tasks.md.
@@ -1416,6 +1416,42 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // AnalyticsProvider — Tier-2: backed by the AnalyticsLinkMapper.
+        // The provider still gracefully degrades to the legacy
+        // `[or:{uuid}]` report-name marker scan when the link table is
+        // empty (reports that pre-date the Tier-2 link table; wave-2.2
+        // marker-on-name convention).
+        // @spec openspec/changes/integration-analytics/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+                );
+            }
+        );
+
+        // AnalyticsLinkService — Tier-2 link/create/unlink/picker service
+        // backing the AnalyticsLinksController. NC Analytics reports are
+        // user-scoped; the ReportService is resolved lazily via
+        // `\OCP\Server::get()` behind a class_exists guard so the service
+        // loads even when Analytics is absent.
+        // @spec openspec/changes/integration-analytics/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\AnalyticsLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\AnalyticsLinkService(
+                    analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
