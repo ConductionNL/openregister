@@ -38,6 +38,8 @@ class GraphQLErrorFormatter
      * @param Error $error The GraphQL error
      *
      * @return array<string, mixed> The formatted error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-8
      */
     public function format(Error $error): array
     {

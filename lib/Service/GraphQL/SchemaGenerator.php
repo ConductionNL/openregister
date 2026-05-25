@@ -220,6 +220,8 @@ class SchemaGenerator
      * @param array<string, mixed> $mutationFields Mutation fields accumulator
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
      */
     private function buildSchemaFields(
         RegisterSchema $schema,
@@ -316,6 +318,8 @@ class SchemaGenerator
      * @param array<string, mixed> $mutationFields Mutation fields accumulator
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
      */
     private function buildMutationFields(
         RegisterSchema $schema,
@@ -365,6 +369,8 @@ class SchemaGenerator
      * Initialize custom scalar types.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-2
      */
     private function initScalars(): void
     {
@@ -382,6 +388,8 @@ class SchemaGenerator
      * Initialize handler classes with callback dependencies.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
      */
     private function initHandlers(): void
     {
@@ -416,6 +424,8 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return ObjectType The GraphQL object type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
      */
     public function getObjectType(RegisterSchema $schema): ObjectType
     {
@@ -457,6 +467,8 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return array<string, array<string, mixed>> The field configuration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) JSON Schema composition (allOf/oneOf/anyOf) requires deep branching
      * @SuppressWarnings(PHPMD.NPathComplexity)      Composition + property mapping creates high path count
@@ -536,6 +548,8 @@ class SchemaGenerator
      * @param string $ref The reference string (slug, ID, or URI)
      *
      * @return RegisterSchema|null The resolved schema or null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
      */
     private function resolveRef(string $ref): ?RegisterSchema
     {
@@ -562,6 +576,8 @@ class SchemaGenerator
      * @param int|null $schemaId Schema ID for deduplication (optional)
      *
      * @return string The PascalCase type name
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
      */
     private function toTypeName(string $slug, ?int $schemaId=null): string
     {
@@ -599,6 +615,8 @@ class SchemaGenerator
      * @param string $slug The slug to convert
      *
      * @return string A valid GraphQL field name
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
      */
     private function toFieldName(string $slug): string
     {
@@ -630,6 +648,8 @@ class SchemaGenerator
      * @param string $plural The plural form
      *
      * @return string The singular form
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-1
      */
     private function singularize(string $plural): string
     {
@@ -669,6 +689,8 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return callable The resolver function
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
      */
     private function createSingleResolverPlaceholder(RegisterSchema $schema): callable
     {
@@ -689,6 +711,8 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return callable The resolver function
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
      */
     private function createListResolverPlaceholder(RegisterSchema $schema): callable
     {
@@ -710,6 +734,8 @@ class SchemaGenerator
      * @param string         $action The mutation action (create, update, delete)
      *
      * @return callable The resolver function
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
      */
     private function createMutationResolverPlaceholder(RegisterSchema $schema, string $action): callable
     {
