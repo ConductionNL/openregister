@@ -156,6 +156,9 @@ export default {
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
+			/**
+			 * @spec exclude watcher reloading object count on schema change
+			 */
 			handler(newSchemaItem) {
 				console.info('Schema item changed in DeleteSchemaObjects:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
@@ -166,6 +169,9 @@ export default {
 		},
 		// Watch for dialog state changes to load count when dialog becomes visible
 		'navigationStore.dialog': {
+			/**
+			 * @spec exclude watcher loading object count when dialog opens
+			 */
 			handler(newDialog) {
 				console.info('Dialog changed to:', newDialog)
 				if (newDialog === 'deleteSchemaObjects' && schemaStore.schemaItem?.id) {
@@ -176,11 +182,17 @@ export default {
 			immediate: true,
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook loading object count
+	 */
 	async mounted() {
 		console.info('DeleteSchemaObjects dialog mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
+		/**
+		 * @spec exclude form-state loader for schema object count via schemaStore
+		 */
 		async loadObjectCount() {
 			console.info('DeleteSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
 			try {
@@ -203,6 +215,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude modal submit handler for bulk schema-object deletion
+		 */
 		async confirmDeletion() {
 			this.loading = true
 			this.error = false
@@ -256,6 +271,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude modal close + form-state reset handler
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			this.loading = false

@@ -157,6 +157,9 @@ export default {
 			// Clear selection after closing
 			objectStore.selectedObjects = []
 		},
+		/**
+		 * @spec exclude computed display helper for copy-name preview
+		 */
 		getPreviewName(object) {
 			if (!object) return 'Preview Name'
 
@@ -173,10 +176,16 @@ export default {
 				.replace('{name}', originalName)
 				.replace('{id}', object['@self']?.id || object.id || 'ID')
 		},
+		/**
+		 * @spec exclude form-state UI helper to refresh preview
+		 */
 		updateCustomPreview() {
 			// Trigger reactivity for preview update
 			this.$forceUpdate()
 		},
+		/**
+		 * @spec exclude modal bulk-submit handler delegating to objectStore.saveObject
+		 */
 		async copyObjects() {
 			this.loading = true
 			this.error = false

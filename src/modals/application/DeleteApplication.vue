@@ -41,6 +41,9 @@ export default {
 		TrashCanOutline,
 	},
 	computed: {
+		/**
+		 * @spec exclude computed display helper for confirmation message
+		 */
 		deleteMessage() {
 			return t('openregister', 'Are you sure you want to delete the application "{name}"? This action cannot be undone.', {
 				name: applicationStore.applicationItem?.name || t('openregister', 'this application'),
@@ -59,6 +62,9 @@ export default {
 				console.error('Error deleting application:', error)
 			}
 		},
+		/**
+		 * @spec exclude modal open/close UI handler
+		 */
 		handleDialogClose(open) {
 			if (!open) {
 				navigationStore.setDialog(false)

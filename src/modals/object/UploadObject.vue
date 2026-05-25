@@ -155,6 +155,9 @@ export default {
 			hasUpdated: false,
 		}
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook initializing modal data
+	 */
 	mounted() {
 		this.initializeMappings()
 		this.initializeSchemas()
@@ -183,6 +186,9 @@ export default {
 					this.mappingsLoading = false
 				})
 		},
+		/**
+		 * @spec exclude form-state loader populating schema select options
+		 */
 		initializeSchemas() {
 			this.schemasLoading = true
 
@@ -202,6 +208,9 @@ export default {
 					this.schemasLoading = false
 				})
 		},
+		/**
+		 * @spec exclude form-state loader populating register select options
+		 */
 		initializeRegisters() {
 			this.registersLoading = true
 
@@ -221,6 +230,9 @@ export default {
 					this.registersLoading = false
 				})
 		},
+		/**
+		 * @spec exclude modal close + form-state reset handler
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.success = null
@@ -232,6 +244,9 @@ export default {
 				url: '',
 			}
 		},
+		/**
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 */
 		async uploadObject() {
 			this.loading = true
 
@@ -257,9 +272,15 @@ export default {
 					this.loading = false
 				})
 		},
+		/**
+		 * @spec exclude JSON formatting UI helper
+		 */
 		prettifyJson() {
 			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
 		},
+		/**
+		 * @spec exclude client-side JSON validation helper
+		 */
 		validateJson(json) {
 			try {
 				JSON.parse(json)

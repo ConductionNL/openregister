@@ -66,6 +66,9 @@ export default {
 			this.deleting = false
 		},
 
+		/**
+		 * @spec exclude modal submit handler deleting a config set via API
+		 */
 		async deleteConfigSet() {
 			const configSet = navigationStore.transferData
 			if (!configSet) return
