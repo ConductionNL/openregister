@@ -341,6 +341,13 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Apply a new register selection and reset the dependent schema state.
+		 *
+		 * @param {object|null} option - The selected register (or null to clear)
+		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-2
+		 */
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)

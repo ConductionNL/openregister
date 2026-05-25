@@ -20,6 +20,8 @@ import axios from '@nextcloud/axios'
  * can render an empty state instead of an error.
  *
  * Spec: openspec/changes/nextcloud-entity-relations/specs/deck-relations/spec.md
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
  */
 export const useDeckRelationsStore = defineStore('deckRelations', {
 	state: () => ({

@@ -13,6 +13,9 @@
  * URL) is scoped to task 1.15 (follow-up); this skeleton implementation builds the
  * prefix from the raw values returned by IUserManager + IURLGenerator.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *

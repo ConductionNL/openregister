@@ -476,6 +476,9 @@ export default {
 		this.fetchUsers()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 */
 		initializeAgent() {
 			if (agentStore.agentItem) {
 				// Deep copy to avoid reactivity issues

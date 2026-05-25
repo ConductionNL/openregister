@@ -6,6 +6,9 @@
  * Periodic background job that scans for objects eligible for destruction
  * and generates destruction lists for archivist review.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *

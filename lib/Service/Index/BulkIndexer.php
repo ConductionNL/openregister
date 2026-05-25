@@ -6,6 +6,9 @@
  * Handles bulk indexing business logic (batching, parallel processing, optimization).
  * Does NOT contain backend-specific I/O - delegates to SearchBackendInterface.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -165,6 +168,8 @@ class BulkIndexer
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-3
      */
     public function bulkIndexFromDatabase(
         int $batchSize=1000,

@@ -5,6 +5,9 @@
  *
  * Strategy for vectorizing OpenRegister objects.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *
@@ -84,6 +87,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @return \OCA\OpenRegister\Db\ObjectEntity[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
      */
     public function fetchEntities(array $options): array
     {
@@ -141,6 +146,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @return (int|string)[][] Array with single item containing serialized object
      *
      * @psalm-return list{array{text: string, index: 0}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
      */
     public function extractVectorizationItems($entity): array
     {
@@ -193,6 +200,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction with multiple fallbacks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
@@ -267,6 +276,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param array $objectData Object data
      *
      * @return array<string> Array of @self keys
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
      */
     private function extractSelfKeys(array $objectData): array
     {
@@ -289,6 +300,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field type checks required
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field validation paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
      */
     private function extractFirstStringField(array $objectData): ?string
     {
@@ -321,6 +334,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param mixed $entity ObjectEntity
      *
      * @return string|int Object ID
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
      */
     public function getEntityIdentifier($entity)
     {
@@ -340,6 +355,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param array $config Vectorization configuration
      *
      * @return false|string Serialized text
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
      */
     private function serializeObject(array $object, array $config): string|false
     {

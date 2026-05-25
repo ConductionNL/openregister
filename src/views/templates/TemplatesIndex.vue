@@ -208,6 +208,7 @@ export default {
 		/**
 		 * Toggle sidebar visibility
 		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-2
 		 * @return {void}
 		 */
 		toggleSidebar() {

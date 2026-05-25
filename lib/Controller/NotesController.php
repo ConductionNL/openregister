@@ -6,6 +6,9 @@
  * REST controller for note operations on OpenRegister objects.
  * Follows the FilesController pattern for sub-resource endpoints.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -179,6 +182,8 @@ class NotesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function update(
         string $register,
@@ -262,6 +267,8 @@ class NotesController extends Controller
      * @param string $id       The object ID
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     private function validateObject(
         string $register,

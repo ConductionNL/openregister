@@ -8,6 +8,9 @@
  * implementation under a DI tag; the schema's notification annotation
  * references the tag via `{kind: "expression", resolver: "<tag>"}`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *

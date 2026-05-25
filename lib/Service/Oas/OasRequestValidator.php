@@ -12,6 +12,9 @@
  * Validation errors are emitted in a flat list of `{ path, message }`
  * tuples ready to be wrapped by `ProblemDetailsBuilder::validationFailed`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Oas
  *

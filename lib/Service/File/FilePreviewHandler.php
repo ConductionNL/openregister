@@ -5,6 +5,9 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
@@ -77,6 +80,8 @@ class FilePreviewHandler
      * @return ISimpleFile The preview image file.
      *
      * @throws Exception If preview cannot be generated.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
      */
     public function getPreview(File $file, ?int $width=null, ?int $height=null): ISimpleFile
     {

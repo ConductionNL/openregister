@@ -13,6 +13,9 @@
  * (notification_slug, resolved_idempotency_key) over a configurable
  * window (default 24 h)."
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *

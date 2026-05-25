@@ -133,6 +133,8 @@ class DsarService
      * @param string      $mode    `exact` (default) or `ilike`.
      *
      * @return array<int, array{object: array, gdprEntities: array}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
      */
     public function findObjectsForSubject(string $subject, ?string $type=null, string $mode='exact'): array
     {
@@ -217,6 +219,8 @@ class DsarService
      * @return array<string, mixed>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
      */
     public function eraseObjectsForSubject(string $subject, ?string $type=null, bool $dryRun=false): array
     {
@@ -362,6 +366,8 @@ class DsarService
      * @param array<string, mixed> $changes  Property → new value map.
      *
      * @return array<string, mixed>|null Updated object envelope or null on miss.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-12
      */
     public function rectifyObjectForSubject(int $objectId, array $changes): ?array
     {
@@ -408,6 +414,8 @@ class DsarService
      * defaults in that case.
      *
      * @return string|null Resolved activity uuid, or null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
      */
     public function getDsarProcessingActivityUuid(): ?string
     {

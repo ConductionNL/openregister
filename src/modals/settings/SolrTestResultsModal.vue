@@ -129,6 +129,9 @@ export default {
 	emits: ['close', 'retry'],
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
+		 */
 		formatComponentName(name) {
 			return name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1')
 		},

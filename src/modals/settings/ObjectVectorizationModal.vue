@@ -247,6 +247,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		async loadConfiguration() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings/objects/vectorize'))

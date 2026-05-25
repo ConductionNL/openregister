@@ -6,6 +6,9 @@
  * This file contains the background job for cleaning up expired audit trail logs
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Cron
  * @package   OCA\OpenRegister\Cron
  * @author    Conduction Development Team <dev@conduction.nl>

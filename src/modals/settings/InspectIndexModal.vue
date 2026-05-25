@@ -309,6 +309,8 @@ export default {
 	methods: {
 		/**
 		 * Load available fields from SOLR schema
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
 		 */
 		async loadAvailableFields() {
 			try {

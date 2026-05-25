@@ -7,6 +7,9 @@
  * This listener uses the standard Nextcloud pattern for loading scripts
  * into the Files app context via LoadAdditionalScriptsEvent.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *

@@ -6,6 +6,9 @@
  * Tracks per-organisation resource usage (requests, bandwidth, storage)
  * for quota enforcement and dashboard display.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *

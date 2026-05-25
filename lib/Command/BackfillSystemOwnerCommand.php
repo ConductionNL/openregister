@@ -21,6 +21,8 @@
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -55,6 +57,8 @@ class BackfillSystemOwnerCommand extends Command
      * @param IDBConnection  $db             Database connection for native UPDATE.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-1
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
@@ -69,6 +73,8 @@ class BackfillSystemOwnerCommand extends Command
      * Define command name, description, and options.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-1
      */
     protected function configure(): void
     {
@@ -92,6 +98,8 @@ class BackfillSystemOwnerCommand extends Command
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-1
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -199,6 +207,8 @@ class BackfillSystemOwnerCommand extends Command
      * @param string|null $registerRef Optional register slug, uuid or id.
      *
      * @return Register[]
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-1
      */
     private function resolveRegisters(?string $registerRef): array
     {
@@ -215,6 +225,8 @@ class BackfillSystemOwnerCommand extends Command
      * @param string|null $schemaRef Optional schema slug, uuid or id.
      *
      * @return Schema[]
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-1
      */
     private function resolveSchemas(?string $schemaRef): array
     {
@@ -232,6 +244,8 @@ class BackfillSystemOwnerCommand extends Command
      * @param bool   $dryRun    When true, only count rows.
      *
      * @return array{0:int,1:int} Tuple of [scanned, updated].
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-1
      */
     private function backfillTable(string $tableName, bool $dryRun): array
     {

@@ -6,6 +6,9 @@
  * This file contains examples demonstrating the new faceting system
  * that has replaced the legacy getFacets approach.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Example
  * @package  OCA\OpenRegister\Service\Objects
  *

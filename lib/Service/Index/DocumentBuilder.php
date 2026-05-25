@@ -6,6 +6,9 @@
  * Handles building Solr documents from ObjectEntity instances.
  * Extracted from SolrBackend to separate document creation logic.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -154,6 +157,8 @@ class DocumentBuilder
      * @psalm-return list<string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Relations flattening requires handling multiple data formats
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     public function flattenRelationsForSolr($relations): array
     {

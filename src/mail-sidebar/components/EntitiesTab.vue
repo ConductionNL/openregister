@@ -31,6 +31,13 @@
 </template>
 
 <script>
+/**
+ * Entities tab — surfaces NLP-extracted entities (PERSON / ORGANIZATION /
+ * EMAIL / PHONE / LOCATION / ADDRESS / DATE / IBAN) from the email body via
+ * /apps/openregister/api/entities?emailId={messageId}.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-4
+ */
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'

@@ -38,6 +38,8 @@ class HtmlReportWriter
      * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
      *
      * @return string Rendered HTML bytes.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-3
      */
     public function write(array $dashboard, array $resolvedWidgets): string
     {

@@ -7,6 +7,9 @@
  * ObjectTransitionedEvent and asks the dispatcher to fire any matching
  * notifications declared on the schema.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *

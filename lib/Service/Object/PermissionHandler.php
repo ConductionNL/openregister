@@ -7,6 +7,9 @@
  * This handler centralizes authorization logic that was previously scattered
  * throughout ObjectService, making security policies more maintainable.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *

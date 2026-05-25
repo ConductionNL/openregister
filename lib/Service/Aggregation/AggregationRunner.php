@@ -10,6 +10,9 @@
  * v1 trades performance for simplicity: backend-native aggregation
  * (Postgres GROUP BY / Solr facets / ES aggs) ships in a follow-up.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *
@@ -24,6 +27,8 @@
  * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-3
  * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */
 
 declare(strict_types=1);
@@ -89,6 +94,8 @@ class AggregationRunner
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
@@ -142,6 +149,8 @@ class AggregationRunner
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.StaticAccess)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Internal-mode toggle, intentional.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     public function run(
         string $registerRef,
@@ -441,6 +450,8 @@ class AggregationRunner
      *   cache semantics.
      * @SuppressWarnings(PHPMD.StaticAccess)
      *   `AggregationQuery::create()` is a fail-fast static factory.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     public function runAdhoc(
         Register $register,
@@ -620,6 +631,8 @@ class AggregationRunner
      *   The branching mirrors the Postgres SQL path: dateBucket vs.
      *   groupBy vs. ungrouped, each with the metric / filter pipeline.
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function bucketInPhp(
         Register $register,
@@ -764,6 +777,8 @@ class AggregationRunner
      * @param mixed                            $field  Field name to aggregate over (ignored for count).
      *
      * @return int|float|null The metric result, or null when no rows match.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function computeMetric(array $rows, string $metric, mixed $field): int|float|null
     {
@@ -813,6 +828,8 @@ class AggregationRunner
      * @param string                           $groupField Field used as the bucket key.
      *
      * @return array<int, array{key: mixed, value: int|float|null}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function computeGrouped(array $rows, string $metric, mixed $field, string $groupField): array
     {
@@ -1016,6 +1033,8 @@ class AggregationRunner
      *   for both the soft-delete predicate and the aggregate-cast block,
      *   mysql vs sqlite for the bucket expression). Else clauses make
      *   the mutual-exclusion read at the call site.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function tryNativeAggregation(
         Register $register,
@@ -1370,6 +1389,8 @@ class AggregationRunner
      * @param string $gap    Validated gap unit.
      *
      * @return string The full bucket SQL expression (without the `AS bucket` alias).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function mysqlBucketExpression(string $column, string $gap): string
     {
@@ -1414,6 +1435,8 @@ class AggregationRunner
      * @param string $gap    Validated gap unit.
      *
      * @return string The full bucket SQL expression (without the `AS bucket` alias).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function sqliteBucketExpression(string $column, string $gap): string
     {
@@ -1835,6 +1858,8 @@ class AggregationRunner
      * @param Schema $schema The schema to read.
      *
      * @return array<string, mixed>|null The annotation map, or null when absent.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      */
     private function getAnnotation(Schema $schema): ?array
     {

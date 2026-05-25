@@ -318,8 +318,13 @@ export default {
 	},
 	methods: {
 		/**
-		 * Apply filters and emit to parent components
+		 * Apply filters and emit to parent components.
+		 *
+		 * Delegates to {@link updateRouteQueryFromState} which serialises the current
+		 * sidebar state into the `/deleted` route query (with path + equality guards).
+		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-3
 		 */
 		applyFilters() {
 			this.updateRouteQueryFromState()

@@ -84,6 +84,8 @@ class CustomScopeEvaluatingEvent extends Event
      * Schema being checked.
      *
      * @return Schema The schema involved in this evaluation.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
      */
     public function getSchema(): Schema
     {
@@ -94,6 +96,8 @@ class CustomScopeEvaluatingEvent extends Event
      * The custom action verb being evaluated.
      *
      * @return string The custom action verb.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
      */
     public function getAction(): string
     {
@@ -104,6 +108,8 @@ class CustomScopeEvaluatingEvent extends Event
      * User ID under evaluation (null for anonymous requests).
      *
      * @return string|null The user ID, or null when anonymous.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
      */
     public function getUserId(): ?string
     {
@@ -114,6 +120,8 @@ class CustomScopeEvaluatingEvent extends Event
      * Group memberships of the user at evaluation time.
      *
      * @return string[]
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
      */
     public function getUserGroups(): array
     {
@@ -124,6 +132,8 @@ class CustomScopeEvaluatingEvent extends Event
      * Object the action is targeting, when one is supplied.
      *
      * @return ObjectEntity|null Target object, or null when none was supplied.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
      */
     public function getObject(): ?ObjectEntity
     {
@@ -136,6 +146,8 @@ class CustomScopeEvaluatingEvent extends Event
      * deterministic regardless of listener registration order.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
      */
     public function allow(): void
     {
@@ -148,6 +160,8 @@ class CustomScopeEvaluatingEvent extends Event
      * Vote deny. See `allow()` for verdict-order semantics.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
      */
     public function deny(): void
     {
@@ -160,6 +174,8 @@ class CustomScopeEvaluatingEvent extends Event
      * Resolved verdict, or null when no listener voted.
      *
      * @return bool|null The verdict, or null when no listener has voted.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
      */
     public function getVerdict(): ?bool
     {
@@ -170,6 +186,8 @@ class CustomScopeEvaluatingEvent extends Event
      * Whether any listener has cast a verdict.
      *
      * @return bool True when at least one listener has voted.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
      */
     public function hasVerdict(): bool
     {

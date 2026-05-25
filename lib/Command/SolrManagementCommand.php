@@ -8,6 +8,9 @@
  * This command provides comprehensive SOLR management operations including
  * setup, schema validation, optimization, warming, and maintenance tasks.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Command
  * @package  OCA\OpenRegister\Command
  *

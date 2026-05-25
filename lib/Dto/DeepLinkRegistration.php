@@ -5,6 +5,9 @@
  *
  * Value object representing a deep link registration from a consuming app.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Dto
  * @package  OCA\OpenRegister\Dto
  *

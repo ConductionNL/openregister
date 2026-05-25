@@ -6,6 +6,9 @@
  * This file contains the GitHubHandler class for interacting with the GitHub API
  * to discover, fetch, and manage OpenRegister configurations stored in GitHub repositories.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Configuration
  * @author    Conduction Development Team <info@conduction.nl>

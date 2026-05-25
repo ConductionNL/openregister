@@ -35,6 +35,7 @@
  * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
  * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */
 
 declare(strict_types=1);
@@ -88,6 +89,8 @@ class AggregationController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     public function aggregate(string $register, string $schema, string $name): JSONResponse
     {

@@ -6,6 +6,9 @@
  * Nextcloud Contacts Menu provider that bridges Contacts/CardDAV
  * with OpenRegister entity data.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Contacts
  * @package  OCA\OpenRegister\Contacts
  *

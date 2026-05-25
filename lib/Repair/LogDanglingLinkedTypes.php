@@ -30,6 +30,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -71,6 +72,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * Human-readable step name surfaced in occ + admin UI.
      *
      * @return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
      */
     public function getName(): string
     {
@@ -83,6 +86,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * @param IOutput $output Migration output handle.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
      */
     public function run(IOutput $output): void
     {
@@ -125,6 +130,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * isn't wired yet). Callers treat null as "scan skipped".
      *
      * @return array<int, mixed>|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
      */
     private function loadSchemas(): ?array
     {
@@ -153,6 +160,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * @param array<int,string> $registeredIds Ids known to the registry.
      *
      * @return array<int, array{slug: string, id: string, danglingType: string}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
      */
     private function scan(array $schemas, array $registeredIds): array
     {
@@ -193,6 +202,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * @param mixed $schema Schema entity.
      *
      * @return array<int, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
      */
     private function extractLinkedTypes($schema): array
     {
@@ -232,6 +243,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * @param array<string> $accessors Ordered list of method names to try.
      *
      * @return string|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
      */
     private function safeStringAccessor($schema, array $accessors): ?string
     {
