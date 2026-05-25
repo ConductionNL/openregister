@@ -2038,7 +2038,10 @@ class ControllersIntegrationTest2 extends TestCase
             \OC::$server->get(GdprEntityMapper::class),
             \OC::$server->get(EntityRelationMapper::class),
             $this->db,
-            $this->logger
+            $this->logger,
+            \OC::$server->get(\OCP\IUserSession::class),
+            \OC::$server->get(\OCP\IGroupManager::class),
+            \OC::$server->get(OrganisationService::class)
         );
     }//end buildGdprEntitiesController()
 

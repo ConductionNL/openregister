@@ -45,8 +45,10 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Data-Subject Access Request orchestrator.
@@ -95,8 +97,13 @@ class DsarService
      * @param IAppConfig                  $appConfig    App-config reader.
      * @param IUserSession                $userSession  Current user (for
      *                                                  soft-delete
-     *                                                  metadata).
+     *                                                  metadata + the
+     *                                                  in-service
+     *                                                  privilege guard).
      * @param LoggerInterface             $logger       Logger.
+     * @param IGroupManager               $groupManager Group manager used
+     *                                                  by the in-service
+     *                                                  admin guard.
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -104,10 +111,49 @@ class DsarService
         private readonly VerwerkingsactiviteitMapper $vrwMapper,
         private readonly IAppConfig $appConfig,
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IGroupManager $groupManager
     ) {
 
     }//end __construct()
+
+    /**
+     * Fail-closed privilege guard for all DSAR composition entry points.
+     *
+     * DSAR flows load + mutate objects across the entire register
+     * surface with `_rbac:false` and `_multitenancy:false`, deliberately
+     * bypassing per-object access control because a privacy officer must
+     * be able to reach every object referencing a data subject. That
+     * makes this service a cross-tenant amplifier: any caller able to
+     * invoke it can read or erase PII for arbitrary subjects regardless
+     * of tenant.
+     *
+     * `DsarController` already admin-gates every endpoint, but a service
+     * this powerful must not rely solely on its callers. This guard is
+     * defense-in-depth: it throws unless the active user is an admin, so
+     * a future caller that forgets to gate (or a mis-wired route) cannot
+     * silently expose the bypass. Authorized (admin) callers are
+     * unaffected — the response shape is unchanged for them.
+     *
+     * @return void
+     *
+     * @throws RuntimeException When the active user is not an admin.
+     */
+    private function assertPrivileged(): void
+    {
+        $user = $this->userSession->getUser();
+        if ($user !== null && $this->groupManager->isAdmin($user->getUID()) === true) {
+            return;
+        }
+
+        $this->logger->warning(
+            message: '[DSAR] Blocked unprivileged DSAR composition call',
+            context: ['user' => $user?->getUID() ?? 'anonymous']
+        );
+
+        throw new RuntimeException('DSAR operations require administrator privileges');
+
+    }//end assertPrivileged()
 
     /**
      * Find every object that contains personal data for the given subject.
@@ -138,6 +184,8 @@ class DsarService
      */
     public function findObjectsForSubject(string $subject, ?string $type=null, string $mode='exact'): array
     {
+        $this->assertPrivileged();
+
         $subject = trim($subject);
         if ($subject === '') {
             return [];
@@ -224,6 +272,8 @@ class DsarService
      */
     public function eraseObjectsForSubject(string $subject, ?string $type=null, bool $dryRun=false): array
     {
+        $this->assertPrivileged();
+
         $hits = $this->matchEntities(subject: $subject, type: $type, mode: 'exact');
 
         // Dedupe by canonical key — uuid (preferred) or int id (legacy).
@@ -331,7 +381,11 @@ class DsarService
      */
     private function loadObjectByEntry(array $entry): ?ObjectEntity
     {
-        $identifier = ($entry['object_uuid'] !== '') ? $entry['object_uuid'] : $entry['object_id'];
+        $identifier = $entry['object_id'];
+        if ($entry['object_uuid'] !== '') {
+            $identifier = $entry['object_uuid'];
+        }
+
         if ($identifier === 0 || $identifier === '') {
             return null;
         }
@@ -371,6 +425,8 @@ class DsarService
      */
     public function rectifyObjectForSubject(int $objectId, array $changes): ?array
     {
+        $this->assertPrivileged();
+
         try {
             $object = $this->objectMapper->find(
                 $objectId,
