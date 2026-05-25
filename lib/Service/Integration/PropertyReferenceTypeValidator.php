@@ -73,6 +73,8 @@ class PropertyReferenceTypeValidator
      *
      * @throws InvalidArgumentException When referenceType is non-string
      *                                  or refers to an unregistered id.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
      */
     public function validate(array $property, ?string $propertyName=null): void
     {
@@ -123,6 +125,8 @@ class PropertyReferenceTypeValidator
      * @return void
      *
      * @throws InvalidArgumentException On the first invalid property.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
      */
     public function validateAll(array $properties): void
     {

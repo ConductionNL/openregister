@@ -141,6 +141,8 @@ class FormsProvider extends AbstractIntegrationProvider
      * @param array  $filters  Optional registry filters (unused).
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/integration-forms/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -178,6 +180,13 @@ class FormsProvider extends AbstractIntegrationProvider
 
     }//end list()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $available = $this->isEnabled();

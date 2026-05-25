@@ -129,6 +129,8 @@ class TalkProvider extends AbstractIntegrationProvider
      *     optional Talk API calls behind method_exists guards; splitting would
      *     hide the leaf-row contract.
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/integration-talk/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -406,6 +408,13 @@ class TalkProvider extends AbstractIntegrationProvider
         return $out;
     }//end mapLinks()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);

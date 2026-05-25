@@ -148,6 +148,8 @@ class TasksProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Reserved.
      *
      * @return array<int,array<string,mixed>> Tasks rows.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -184,6 +186,8 @@ class TasksProvider extends AbstractIntegrationProvider
      *
      * @throws \RuntimeException When the register/schema can't be resolved
      *                           or the underlying VTODO write fails.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -236,6 +240,8 @@ class TasksProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Update payload.
      *
      * @return array<string,mixed> Updated task row.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -258,6 +264,8 @@ class TasksProvider extends AbstractIntegrationProvider
      * @param string $entityId Composite calendar/task id.
      *
      * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {

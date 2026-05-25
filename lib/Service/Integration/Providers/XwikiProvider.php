@@ -191,6 +191,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * to configure it.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md
      */
     public function authRequirements(): array
     {
@@ -221,6 +223,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional: `_search`, `_limit`, `_page`.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -309,6 +313,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param string $entityId Canonical XWiki page reference (e.g. `Space.Page`).
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md
      */
     public function get(string $register, string $schema, string $objectId, string $entityId): array
     {
@@ -337,6 +343,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  At least `reference` (URL or `space.page`).
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -365,6 +373,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Fields to update (e.g. `reference`).
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -393,6 +403,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param string $entityId Canonical XWiki page reference.
      *
      * @return void
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
@@ -414,6 +426,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * ok).
      *
      * @return array{status: string, authStatus: string, message: ?string}
+     *
+     * @spec exclude Thin delegation to ExternalIntegrationRouter::probe (annotated to pluggable-integration-registry task-4); carries no provider-specific health behaviour.
      */
     public function health(): array
     {
