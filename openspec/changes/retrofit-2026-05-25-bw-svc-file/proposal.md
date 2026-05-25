@@ -1,17 +1,33 @@
 # Retrofit — backend coverage, Service/File (bw-svc-file, 2026-05-25)
 
-Reverse-specs the next behavioral slice of OpenRegister's shipped file-action
-surface (`lib/Service/File/*Handler`) by **extending the existing `file-actions`
-capability** with 5 new REQs (REQ-006 … REQ-010). Code already exists and is in
-production — this change retroactively specifies it. Every one of the 45 methods
-in the batch ends tagged either with an `@spec` pointer (annotated to a new or
-existing REQ) or with `@spec exclude <reason>` for boilerplate.
+## Why
 
-This is a follow-up to `retrofit-2026-05-24-file-actions` (REQ-001 … REQ-005),
-which covered CRUD/lock/preview/folder/object-tagging. That change's
-`## DROP — future-pass:next` section listed the publishing/upload/update/read/
-ownership/validation surface as deferred — this change picks up exactly that
-deferred slice for `Service/File/`.
+OpenRegister's shipped per-object file surface (`lib/Service/File/*Handler`)
+includes creation/upsert, retrieval, content+metadata update, publishing/ZIP
+export, sharing, and upload-security validation that the prior
+`retrofit-2026-05-24-file-actions` pass (REQ-001…REQ-005) explicitly deferred to
+a follow-up in its `## DROP — future-pass:next` section. That deferred slice is
+in production but has no `@spec` coverage, so it is invisible to spec-to-test
+mapping (ADR-008) and a maintainer cannot distinguish intended behaviour from
+incidental implementation — including security-relevant behaviour like the
+executable-upload blocklist and the system-user ownership/share model. This
+change closes the gap by reverse-speccing exactly that deferred `Service/File/`
+slice.
+
+## What Changes
+
+- **5 new REQs** added to the existing `file-actions` capability covering: create/upsert pipeline, retrieval + node→metadata projection, content/metadata update, publishing/sharing/batch, and upload security validation.
+- **28 methods** annotated to the 5 new REQs; **8 methods** annotated to existing REQ-004 (folder management) and REQ-005 (object tagging) from the prior pass.
+- **9 boilerplate methods excluded** via `@spec exclude <reason>` (8 `FileCrudHandler` Phase-1B stubs + 1 `FileAuditHandler` no-op).
+- Observed quirks (heuristic base64 detection, all-digit-filename-as-id, `object:`-tag preservation, `FileMapper`-direct share writes, broad executable blocklist, asymmetric file-vs-folder share failure contracts) captured as-is in the REQ text — not silently "fixed".
+- No production code behaviour changes — annotations and spec text only.
+
+## Impact
+
+- **Capability touched**: `file-actions` (extended with REQ-006…REQ-010); existing REQ-004/REQ-005 extended by annotation.
+- **Code**: method-level `@spec` tags added across `lib/Service/File/*Handler.php`.
+- **Risk**: low — reverse-spec, no runtime change. Surfaced-but-not-fixed deviations (notably the `FileMapper`-direct share write bypassing `IManager`, and the un-translated service-layer exception messages) are documented in Notes for a follow-up functional pass.
+- **Coexistence**: the `file-actions` capability is still unarchived (`openspec/changes/file-actions/`, status draft) plus the 2026-05-24 delta; when finalised, REQ-001…REQ-010 should be folded together, biasing toward the retrofit-derived REQs since they describe observed, shipped behaviour.
 
 ## Coexistence with the original `file-actions` change
 
@@ -38,20 +54,20 @@ shipped behavior.
 
 ## New REQs (extend `file-actions`)
 
-### REQ-006 — File creation & upsert pipeline
+### File creation and upsert pipeline
 - `lib/Service/File/CreateFileHandler.php::addFile`
 - `lib/Service/File/CreateFileHandler.php::saveFile`
 
-### REQ-007 — File retrieval (by id, by name/path, per-object listing)
+### File retrieval (by id, by name/path, per-object listing)
 - `lib/Service/File/ReadFileHandler.php::getFile`
 - `lib/Service/File/ReadFileHandler.php::getFileById`
 - `lib/Service/File/ReadFileHandler.php::getFiles`
 
-### REQ-008 — File content & OR-side metadata updates
+### File content and OR-side metadata updates
 - `lib/Service/File/UpdateFileHandler.php::updateFile`
 - `lib/Service/File/UpdateFileHandler.php::updateFileMetadata`
 
-### REQ-009 — File publishing, ZIP export & user/folder sharing
+### File publishing, ZIP export and user/folder sharing
 - `lib/Service/File/FilePublishingHandler.php::publishFile`
 - `lib/Service/File/FilePublishingHandler.php::unpublishFile`
 - `lib/Service/File/FilePublishingHandler.php::createObjectFilesZip`
@@ -60,7 +76,7 @@ shipped behavior.
 - `lib/Service/File/FileSharingHandler.php::shareFileWithUser`
 - `lib/Service/File/FileSharingHandler.php::shareFolderWithUser`
 
-### REQ-010 — Upload security validation (executable blocking, ownership repair)
+### Upload security validation (executable blocking, ownership repair)
 - `lib/Service/File/FileValidationHandler.php::blockExecutableFile`
 - `lib/Service/File/FileValidationHandler.php::detectExecutableMagicBytes`
 - `lib/Service/File/FileValidationHandler.php::checkOwnership`
