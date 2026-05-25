@@ -1030,6 +1030,9 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new TasksProvider(
                     taskService: $container->get(\OCA\OpenRegister\Service\TaskService::class),
+                    registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
                     l10n: $container->get('OCP\IL10N'),
                 );
             }
@@ -1143,6 +1146,7 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new CalendarProvider(
                     calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
+                    calendarLinkService: $container->get(\OCA\OpenRegister\Service\CalendarLinkService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                     logger: $container->get(\Psr\Log\LoggerInterface::class),
@@ -1180,6 +1184,7 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new EmailProvider(
                     emailService: $container->get(\OCA\OpenRegister\Service\EmailService::class),
+                    emailLinkService: $container->get(\OCA\OpenRegister\Service\EmailLinkService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                 );
@@ -2021,15 +2026,37 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
         ];
 
+        // Resolve a logger up-front so a mis-wired factory closure or an
+        // absent wrapped service is visible in the logs instead of a
+        // silently-missing tab. Guarded so a logger-less build still boots.
+        try {
+            $logger = $server->get(\Psr\Log\LoggerInterface::class);
+        } catch (\Throwable $e) {
+            $logger = null;
+        }
+
         foreach ($providerClasses as $providerClass) {
             try {
                 $provider = $server->get($providerClass);
                 $integrationRegistry->addProvider($provider);
             } catch (\Throwable $e) {
                 // Provider construction can fail if a wrapped service
-                // is missing on this NC build — don't take the whole
-                // app down for one absent provider. The user-facing
-                // surface will simply not show the failing tab.
+                // is missing on this NC build, or — as the live-NC E2E
+                // surfaced — if the DI factory closure was not updated
+                // for a Tier-2 constructor arg. Don't take the whole app
+                // down for one absent provider; the failing tab simply
+                // won't render. But log loudly so a mis-wired factory is
+                // diagnosable rather than silently swallowed.
+                if ($logger !== null) {
+                    $logger->warning(
+                        'OpenRegister: integration provider failed to construct and was dropped from the registry: {provider} — {message}',
+                        [
+                            'provider'  => $providerClass,
+                            'message'   => $e->getMessage(),
+                            'exception' => $e,
+                        ]
+                    );
+                }
             }
         }
     }//end bootBuiltinIntegrationProviders()

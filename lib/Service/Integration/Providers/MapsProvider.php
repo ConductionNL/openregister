@@ -64,7 +64,7 @@ class MapsProvider extends AbstractIntegrationProvider
 
     public function getLabel(): string
     {
-        return $this->l10n->t('Location');
+        return $this->l10n->t('Locations');
     }//end getLabel()
 
     public function getIcon(): string
