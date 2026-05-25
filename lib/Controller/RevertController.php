@@ -19,6 +19,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-11
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -73,6 +75,8 @@ class RevertController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with reverted object or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-11
      */
     public function revert(string $register, string $schema, string $id): JSONResponse
     {
