@@ -245,6 +245,8 @@ class EmbeddingGeneratorHandler
              * @return array<float> Embedding vector
              *
              * @throws \Exception If API call fails
+             *
+             * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
              */
             public function embedText(string $text): array
             {
@@ -314,6 +316,8 @@ class EmbeddingGeneratorHandler
              * @return int Embedding length
              *
              * @psalm-return 768|1024
+             *
+             * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
              */
             public function getEmbeddingLength(): int
             {
@@ -333,6 +337,8 @@ class EmbeddingGeneratorHandler
              * @param \LLPhant\Embeddings\Document $document Document to embed
              *
              * @return \LLPhant\Embeddings\Document Embedded document
+             *
+             * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
              */
             public function embedDocument(\LLPhant\Embeddings\Document $document): \LLPhant\Embeddings\Document
             {
@@ -346,6 +352,8 @@ class EmbeddingGeneratorHandler
              * @param array<int,\LLPhant\Embeddings\Document> $documents Documents to embed
              *
              * @return array<int,\LLPhant\Embeddings\Document> Embedded documents
+             *
+             * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
              */
             public function embedDocuments(array $documents): array
             {

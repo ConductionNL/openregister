@@ -20,6 +20,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -62,6 +64,8 @@ final class PlaceholderResolver
      *
      * @return mixed Resolved value: DateTimeImmutable for date placeholders,
      *               string for $currentUser, original value otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-3
      */
     public function resolve(mixed $value): mixed
     {
@@ -82,6 +86,8 @@ final class PlaceholderResolver
      * @param array<string, mixed> $values The array whose leaf values may contain placeholders.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-3
      */
     public function resolveArray(array $values): array
     {

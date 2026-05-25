@@ -54,6 +54,8 @@ class SolrAggregationQueryBuilder
      * @param AggregationQuery $query The cross-backend request.
      *
      * @return array<string, mixed> The Solr request parameter map.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
      */
     public function build(AggregationQuery $query): array
     {

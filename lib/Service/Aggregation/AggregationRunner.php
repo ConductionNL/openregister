@@ -571,6 +571,8 @@ class AggregationRunner
      *
      * @throws RuntimeException        When the register or schema cannot be resolved.
      * @throws NotAuthorizedException  When the caller lacks list-permission.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
      */
     public function runAdhocByRef(
         string $registerRef,
@@ -596,6 +598,8 @@ class AggregationRunner
      * @return Schema The loaded schema.
      *
      * @throws RuntimeException When the schema can't be found.
+     *
+     * @spec exclude Thin public convenience wrapper over the private loadSchema mapper lookup; exposed only so the REST controller can validate field allow-lists before building an AggregationQuery. No business logic of its own.
      */
     public function findSchema(string $schemaRef): Schema
     {

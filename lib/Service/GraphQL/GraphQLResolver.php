@@ -545,6 +545,8 @@ class GraphQLResolver
      * @param array  $path         The field path for error reporting
      *
      * @return Deferred A deferred value that resolves after batching
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-20
      */
     public function resolveRelation(string $uuid, Schema $parentSchema, array $path): Deferred
     {

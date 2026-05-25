@@ -18,6 +18,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
  */
 
 namespace OCA\OpenRegister\Service\Vectorization\Strategies;
@@ -88,6 +90,8 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      * @return \OCA\OpenRegister\Db\Chunk[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     public function fetchEntities(array $options): array
     {
@@ -150,6 +154,8 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      * @return ((int|string)|mixed|null)[][] Array of items with 'text' and chunk data
      *
      * @psalm-return list<array{end_offset: mixed|null, index: array-key, start_offset: mixed|null, text: mixed}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     public function extractVectorizationItems($entity): array
     {
@@ -184,6 +190,8 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      *         end_offset: mixed
      *     }
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
      */
     public function prepareVectorMetadata($entity, array $item): array
     {

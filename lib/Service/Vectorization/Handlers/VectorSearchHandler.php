@@ -78,6 +78,8 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-backend search requires multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)       Complex search path handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive semantic search with multiple backends
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
      */
     public function semanticSearch(
         array $queryEmbedding,
@@ -373,6 +375,8 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Hybrid search combines multiple result sets
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple search path combinations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive hybrid search with result fusion
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
      */
     public function hybridSearch(
         array $queryEmbedding,
