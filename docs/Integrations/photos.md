@@ -24,7 +24,7 @@ import {LeafCard, Pair} from '@conduction/docusaurus-preset/components';
   status="stub"
   description="Filter the object's linked files to image MIME types and enrich with EXIF / taken-at / camera / dimensions via NC Photos. Provider stub today." />
 
-Build on the [Files leaf](../features/files): pick only the image attachments and enrich them with NC Photos metadata (EXIF, taken-at, camera, dimensions). The Photos tab will render a gallery view; the detail-page widget shows a hero image. Provider registers today; the wrapping `PhotoService` lands in a follow-up.
+Build on the [Files leaf](../features/object-storage.md): pick only the image attachments and enrich them with NC Photos metadata (EXIF, taken-at, camera, dimensions). The Photos tab will render a gallery view; the detail-page widget shows a hero image. Provider registers today; the wrapping `PhotoService` lands in a follow-up.
 
 <Pair
   leftLabel="Open Register"
@@ -45,7 +45,7 @@ Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://github.com/Conduction
 
 ## What it will do
 
-- Reads the object's [linked files](../features/files), filters to image MIME types.
+- Reads the object's [linked files](../features/object-storage.md), filters to image MIME types.
 - Enriches each image with NC Photos metadata: EXIF, taken-at, camera, dimensions, location (when present).
 - Lists images on the **Photos** sidebar tab in a gallery layout.
 - Renders a hero image (the first or a chosen one) on the detail-page widget.
@@ -131,6 +131,6 @@ Provider registered. Wrapping service + link table tracked under [openspec/chang
 
 ## Related
 
-- **[Files leaf](../features/files)** — the base file attachments.
+- **[Files leaf](../features/object-storage.md)** — the base file attachments.
 - **[Leaf integration system](./leaf-system.md)** — how every leaf wires the same way.
 - **[Pluggable integration registry](./pluggable-integration-registry.md)** — the full ADR-019 contract.

@@ -118,6 +118,6 @@ The provider is registered: the admin row appears, the JS sidebar tab renders, t
 
 ## Related
 
-- **[Audit trail leaf](./audit-trail)** — Open Register's own change log; ships today.
+- **[Audit trail](../features/versioning-and-audit.md)** — Open Register's own change log; ships today.
 - **[Leaf integration system](./leaf-system.md)** — how every leaf wires the same way.
 - **[Pluggable integration registry](./pluggable-integration-registry.md)** — the full ADR-019 contract.
