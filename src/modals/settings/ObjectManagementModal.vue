@@ -278,11 +278,17 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed count of selected views
+		 */
 		selectedViewsCount() {
 			return this.config.enabledViews.length
 		},
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook loading initial modal data
+	 */
 	mounted() {
 		this.loadConfiguration()
 		this.loadViews()
@@ -309,6 +315,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude form-state loader for views via API
+		 */
 		async loadViews() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/views'))
@@ -319,6 +328,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude form-state loader for embedding-provider info via API
+		 */
 		async loadEmbeddingProviderInfo() {
 			try {
 				// Load current LLM configuration to show embedding provider info
@@ -333,6 +345,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude modal submit handler persisting vectorization config via API
+		 */
 		async saveConfiguration() {
 			this.saving = true
 

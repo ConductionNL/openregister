@@ -269,6 +269,7 @@ export default {
 	computed: {
 		/**
 		 * Get preview fields to show in collapsed view
+		 * @spec exclude computed display helper for document preview fields
 		 */
 		getPreviewFields() {
 			return (document) => {
@@ -298,6 +299,9 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * @spec exclude watcher loading fields / resetting modal on open change
+		 */
 		show(newVal) {
 			if (newVal) {
 				this.loadAvailableFields()
@@ -329,6 +333,7 @@ export default {
 
 		/**
 		 * Search documents in SOLR index
+		 * @spec exclude search handler delegating to SOLR inspect API
 		 */
 		async searchDocuments() {
 			this.loading = true
@@ -371,6 +376,7 @@ export default {
 
 		/**
 		 * Go to next page
+		 * @spec exclude pagination UI handler
 		 */
 		nextPage() {
 			if (this.startIndex + this.pageSize < this.totalResults) {
@@ -381,6 +387,7 @@ export default {
 
 		/**
 		 * Go to previous page
+		 * @spec exclude pagination UI handler
 		 */
 		previousPage() {
 			if (this.startIndex > 0) {
@@ -392,6 +399,7 @@ export default {
 		/**
 		 * Toggle document expansion.
 		 * @param {number} index - The index of the document to toggle.
+		 * @spec exclude UI toggle for document expansion
 		 */
 		toggleDocument(index) {
 			const docIndex = this.expandedDocs.indexOf(index)
@@ -405,6 +413,7 @@ export default {
 		/**
 		 * Truncate long values for preview
 		 * @param {string} value - The value to truncate.
+		 * @spec exclude display helper truncating value
 		 */
 		truncateValue(value) {
 			if (typeof value !== 'string') {
@@ -416,6 +425,7 @@ export default {
 		/**
 		 * Get field type for display
 		 * @param {any} value - The value to get the field type for
+		 * @spec exclude display helper inferring field type
 		 */
 		getFieldType(value) {
 			if (Array.isArray(value)) return 'array'
@@ -442,6 +452,7 @@ export default {
 		/**
 		 * Get CSS class for field based on name and type
 		 * @param {string} fieldName - The name of the field to get the CSS class for
+		 * @spec exclude display helper mapping field name to CSS class
 		 */
 		getFieldClass(fieldName) {
 			if (fieldName === 'id' || fieldName.endsWith('_id')) return 'field-id'
@@ -453,6 +464,7 @@ export default {
 
 		/**
 		 * Open query help documentation
+		 * @spec exclude opens external query docs (UI navigation)
 		 */
 		openQueryHelp() {
 			// Open the official SOLR query documentation in a new tab
@@ -462,6 +474,7 @@ export default {
 
 		/**
 		 * Reset modal state
+		 * @spec exclude modal form-state reset handler
 		 */
 		resetModal() {
 			this.documents = []
