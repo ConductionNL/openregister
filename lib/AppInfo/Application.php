@@ -1155,8 +1155,8 @@ class Application extends App implements IBootstrap
             // takes a FlowLinkMapper. Registered separately below.
             // @spec openspec/changes/integration-maps/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
-            // @spec openspec/changes/integration-photos/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
+            // NB: PhotosProvider was Tier-1 greenfield until Tier-2; it now
+            // takes a PhotoLinkMapper. Registered separately below.
             // @spec openspec/changes/integration-time-tracker/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
         ];
@@ -1344,6 +1344,42 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // PhotosProvider — Tier-2: backed by the PhotoLinkMapper. The
+        // provider still gracefully degrades to the legacy `[or:{uuid}]`
+        // album-name marker scan when the link table is empty (albums
+        // that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-photos/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    photoLinkMapper: $container->get(\OCA\OpenRegister\Db\PhotoLinkMapper::class),
+                );
+            }
+        );
+
+        // PhotoLinkService — Tier-2 link/create/unlink/picker service
+        // backing the PhotoLinksController. NC Photos albums are
+        // user-scoped; the AlbumMapper is resolved lazily via the
+        // container so the service loads even when Photos is absent.
+        // @spec openspec/changes/integration-photos/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\PhotoLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\PhotoLinkService(
+                    photoLinkMapper: $container->get(\OCA\OpenRegister\Db\PhotoLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
@@ -1571,7 +1607,11 @@ class Application extends App implements IBootstrap
                                     break;
                                 }
 
-                                $resolvedClass = is_object($appProvider) === true ? get_class($appProvider) : gettype($appProvider);
+                                $resolvedClass = gettype($appProvider);
+                                if (is_object($appProvider) === true) {
+                                    $resolvedClass = get_class($appProvider);
+                                }
+
                                 $logger->warning(
                                     '[McpToolsService] Resolved but not IMcpToolProvider',
                                     ['appId' => $appId, 'via' => $key, 'class' => $resolvedClass]
