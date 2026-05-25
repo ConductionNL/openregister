@@ -16,6 +16,14 @@ eight link controllers implement identically. Reverse-specced from
 `OpenProjectLinksController`, `PollLinksController`, `TalkLinksController`,
 `XwikiLinksController`, and `EmailLinksController`.
 
+The remaining "leaf" link controllers
+(Activity/Bookmark/Cospend/Deck/Flow/Form/Photo/TimeTracker/Share + the
+`EmailsController` leaf) are documented by the companion REQ "Tier-2
+Integration Leaf Link Controller Contract" in the sibling controller-batch
+change `retrofit-2026-05-25-bw2-ctrl-2`. The two REQs describe the *same*
+uniform link contract and partition the controller set with no overlap; they
+were split only because the controller layer was scanned in two batches.
+
 ## ADDED Requirements
 
 ### Requirement: Object-Scoped Integration Link REST Contract
