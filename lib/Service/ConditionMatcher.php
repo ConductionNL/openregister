@@ -73,6 +73,8 @@ class ConditionMatcher
      * @param array $match  Match conditions
      *
      * @return bool True if object matches all conditions
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-conditional-scopes-with-dynamic-variables
      */
     public function objectMatchesConditions(array $object, array $match): bool
     {

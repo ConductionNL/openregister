@@ -112,6 +112,8 @@ class PollLinkService
      * @return PollLink The persisted link row.
      *
      * @throws Exception On missing user, missing poll (404), duplicate (409).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function linkPoll(string $objectUuid, int $registerId, int $schemaId, int $pollId): PollLink
     {
@@ -165,6 +167,8 @@ class PollLinkService
      * @return void
      *
      * @throws Exception When no matching link is found (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function unlinkPoll(string $objectUuid, int $pollId): void
     {
@@ -189,6 +193,8 @@ class PollLinkService
      * @return array<int,array<string,mixed>>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getLinkedPolls(string $objectUuid): array
     {
@@ -230,6 +236,8 @@ class PollLinkService
      * @param string|null $search Optional title-substring filter.
      *
      * @return array<int,array{id:int,title:string,type:string,deadline:?string,closed:bool,voterCount:int,optionCount:int}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getAvailablePolls(?string $search = null): array
     {
@@ -302,6 +310,8 @@ class PollLinkService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function createAndLinkPoll(
         string $objectUuid,

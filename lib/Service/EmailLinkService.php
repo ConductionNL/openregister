@@ -130,6 +130,8 @@ class EmailLinkService
      * Whether NC Mail is installed + enabled for the current user.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function isMailAvailable(): bool
     {
@@ -166,6 +168,8 @@ class EmailLinkService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential guard
      *     clauses for the four required preconditions (user, Mail
      *     available, message exists, upsert idempotency).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function linkEmail(
         string $objectUuid,
@@ -249,6 +253,8 @@ class EmailLinkService
      * @return void
      *
      * @throws Exception When no matching link is found (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function unlinkEmail(string $objectUuid, int $linkId): void
     {
@@ -274,6 +280,8 @@ class EmailLinkService
      * @param int         $limit      Page size (clamped to [1, MAX_LIMIT]).
      *
      * @return array{items: array<int,array<string,mixed>>, total: int, nextCursor: ?int}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getLinkedEmails(string $objectUuid, ?string $cursor = null, int $limit = self::DEFAULT_LIMIT): array
     {
@@ -318,6 +326,8 @@ class EmailLinkService
      * needs. Backed by `oc_mail_accounts.user_id = <current uid>`.
      *
      * @return array<int,array{id:int,label:string,email:string}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getAvailableAccounts(): array
     {
@@ -377,6 +387,8 @@ class EmailLinkService
      * @param int $accountId Mail account id.
      *
      * @return array<int,array{id:int,name:string,displayName:string}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getMailboxesForAccount(int $accountId): array
     {
@@ -442,6 +454,8 @@ class EmailLinkService
      *     composes several guard clauses (Mail availability, mailbox
      *     resolution, cursor parse, ownership) then a defensive
      *     try/catch around the join query.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getMessagesForMailbox(
         int $accountId,
