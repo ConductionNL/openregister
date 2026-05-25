@@ -1085,7 +1085,9 @@ class Application extends App implements IBootstrap
 
         // Leaf provider: OpenProject (external, OpenConnector-backed) —
         // mirrors the XwikiProvider pattern (AD-4 / AD-22). Credentials
-        // on the OpenConnector `openproject` source.
+        // on the OpenConnector `openproject` source. Tier-2: the
+        // OpenProjectLinkMapper backs the linked list so it renders from
+        // the cached link rows even when the source is temporarily down.
         // @spec openspec/changes/integration-openproject/tasks.md.
         $context->registerService(
             OpenProjectProvider::class,
@@ -1094,6 +1096,29 @@ class Application extends App implements IBootstrap
                     router: $container->get(ExternalIntegrationRouter::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                    openProjectLinkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
+                );
+            }
+        );
+
+        // OpenProjectLinkService — Tier-2 link/create/unlink/picker
+        // service backing the OpenProjectLinksController. OpenProject is
+        // external; the service composes the link mapper with the
+        // OpenProjectProvider + ExternalIntegrationRouter so picker /
+        // create / refresh flows go through the OpenConnector
+        // `openproject` source, degrading to a 503-with-cause when the
+        // source is missing or the upstream is unreachable (wave-5.2).
+        // @spec openspec/changes/integration-openproject/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\OpenProjectLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\OpenProjectLinkService(
+                    openProjectLinkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
+                    provider: $container->get(OpenProjectProvider::class),
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
@@ -1161,12 +1186,10 @@ class Application extends App implements IBootstrap
         $greenfieldProviders = [
             // @spec openspec/changes/integration-activity/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-            // NB: AnalyticsProvider + CollectivesProvider were Tier-1
-            // greenfield until Tier-2; each now takes its own link mapper
-            // (AnalyticsLinkMapper / CollectiveLinkMapper) and is registered
-            // separately below.
-            // @spec openspec/changes/integration-cospend/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
+            // NB: AnalyticsProvider + CollectivesProvider + CospendProvider
+            // were Tier-1 greenfield until Tier-2; each now takes its own
+            // link mapper (AnalyticsLinkMapper / CollectiveLinkMapper /
+            // CospendLinkMapper) and is registered separately below.
             // NB: FormsProvider is NO LONGER greenfield — it has a Tier-2
             // link-table dep (FormLinkMapper) that doesn't fit the (db,
             // appManager, l10n) signature shared by the rest of this list.
@@ -1177,8 +1200,8 @@ class Application extends App implements IBootstrap
             // takes a MapLinkMapper. Registered separately below.
             // NB: PhotosProvider was Tier-1 greenfield until Tier-2; it now
             // takes a PhotoLinkMapper. Registered separately below.
-            // @spec openspec/changes/integration-time-tracker/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
+            // NB: TimeProvider was Tier-1 greenfield until Tier-2; it now
+            // takes a TimeTrackerLinkMapper. Registered separately below.
         ];
         // Each greenfield provider now uses MarkerLookupTrait to query
         // its upstream app's main table directly via IDBConnection. All
@@ -1476,6 +1499,45 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // CospendProvider — Tier-2: backed by the CospendLinkMapper. The
+        // provider still gracefully degrades to the legacy `[or:{uuid}]`
+        // name-marker scan (projects + bills) when the link table is empty
+        // (entities that pre-date the Tier-2 link table; wave-2.3
+        // marker-on-name convention).
+        // @spec openspec/changes/integration-cospend/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\CospendProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    cospendLinkMapper: $container->get(\OCA\OpenRegister\Db\CospendLinkMapper::class),
+                );
+            }
+        );
+
+        // CospendLinkService — Tier-2 link/create/unlink/picker service
+        // backing the CospendLinksController. NC Cospend projects are
+        // user-scoped; the ProjectService is resolved lazily via the
+        // container (behind a class_exists guard) and bills/projects are
+        // read directly from the cospend_* tables, so the service loads
+        // even when Cospend is absent.
+        // @spec openspec/changes/integration-cospend/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\CospendLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\CospendLinkService(
+                    cospendLinkMapper: $container->get(\OCA\OpenRegister\Db\CospendLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    db: $container->get('OCP\IDBConnection'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
         // CollectiveLinkService — Tier-2 link/create/unlink/picker service
         // backing the CollectiveLinksController. NC Collectives pages are
         // user-scoped; CollectiveService + PageService are resolved lazily
@@ -1507,6 +1569,44 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new \OCA\OpenRegister\Service\AnalyticsLinkService(
                     analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // TimeProvider — Tier-2: backed by the TimeTrackerLinkMapper. The
+        // provider still gracefully degrades to the legacy
+        // `[or:{uuid}]` note/name marker scan in `timemanager_client` /
+        // `timemanager_task` when the link table is empty (entries that
+        // pre-date the Tier-2 link table; wave-2.4 marker convention). The
+        // leaf slug is `time-tracker`; the NC app id is `timemanager`.
+        // @spec openspec/changes/integration-time-tracker/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\TimeProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    timeTrackerLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                );
+            }
+        );
+
+        // TimeTrackerLinkService — Tier-2 link/create/unlink/picker service
+        // backing the TimeTrackerLinksController. NC TimeManager entries are
+        // user-scoped; ClientMapper + TaskMapper are resolved lazily via the
+        // container so the service loads even when TimeManager is absent.
+        // @spec openspec/changes/integration-time-tracker/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\TimeTrackerLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\TimeTrackerLinkService(
+                    timeTrackerLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                    db: $container->get('OCP\IDBConnection'),
+                    container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     logger: $container->get('Psr\Log\LoggerInterface'),

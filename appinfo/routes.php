@@ -435,6 +435,29 @@ return [
         ['name' => 'xwikiLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/xwiki/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'xwikiLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'xwikiLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/xwiki/{pageRef}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageRef' => '[^/]+']],
+        // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
+        // admin gate). The specific `/cospend/new` (create + link) route
+        // MUST precede the wildcard `/cospend/{entryId}` unlink route, and
+        // the app-global `available` route precedes the object-scoped
+        // routes. The link POST handles BOTH project and bill rows
+        // (discriminated by a `billId`/`entryType` in the body).
+        ['name' => 'cospendLinks#available',    'url' => '/api/integrations/cospend/available',                  'verb' => 'GET'],
+        ['name' => 'cospendLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/cospend',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'cospendLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/cospend/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'cospendLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/cospend',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'cospendLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/cospend/{entryId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'entryId' => '[0-9]+']],
+
+        // OpenProject (external / OpenConnector-routed) — Tier-2 link-table
+        // API. The picker source `available` is reached through the
+        // OpenConnector `openproject` source. The specific
+        // `/openproject/new` (create + link) route MUST precede the
+        // wildcard `/openproject/{wpId}` unlink route, and the app-global
+        // `available` route precedes the object-scoped routes.
+        ['name' => 'openProjectLinks#available',    'url' => '/api/integrations/openproject/available',                  'verb' => 'GET'],
+        ['name' => 'openProjectLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/openproject',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'openProjectLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/openproject/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'openProjectLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/openproject',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'openProjectLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/openproject/{wpId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'wpId' => '[0-9]+']],
 
         // Maps (NC Maps / Location) — Tier-2 link-table API. User-scoped
         // (no admin gate). The specific `/maps/new` (create + link) route
@@ -444,6 +467,19 @@ return [
         ['name' => 'mapLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/maps/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'mapLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/maps',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'mapLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/maps/{favoriteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'favoriteId' => '[0-9]+']],
+
+        // Time-tracker (NC TimeManager) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The leaf slug is `time-tracker` (hyphen); the NC
+        // app id is `timemanager`. The specific `/time-tracker/new` (create +
+        // link client) route MUST precede the wildcard
+        // `/time-tracker/{entryId}` unlink route, and the app-global
+        // `available` route precedes the object-scoped routes. entryId is a
+        // TimeManager uuid (not numeric), so it matches `[^/]+`.
+        ['name' => 'timeTrackerLinks#available',    'url' => '/api/integrations/time-tracker/available',                    'verb' => 'GET'],
+        ['name' => 'timeTrackerLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/time-tracker',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timeTrackerLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/time-tracker/new',      'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timeTrackerLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/time-tracker',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timeTrackerLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/time-tracker/{entryId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
 
         // Analytics (NC Analytics) — Tier-2 link-table API. User-scoped
         // (no admin gate). The specific `/analytics/new` (create + link)
