@@ -327,6 +327,13 @@ class Application extends App implements IBootstrap
         // POST/PUT/PATCH with `?_validate=true`; pass-through otherwise.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\OasValidationMiddleware::class);
 
+        // Register the RateLimitMiddleware to wire SecurityService brute-force
+        // protection into the inbound API auth path (issue #1834). Records
+        // failed Basic/Bearer/session auth on protected endpoints (keyed on
+        // identity+trusted-IP) and pre-emptively blocks locked-out callers.
+        // Fail-OPEN: any limiter error allows the request through.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
