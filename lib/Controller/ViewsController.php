@@ -42,6 +42,9 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-3
  */
 class ViewsController extends Controller
 {

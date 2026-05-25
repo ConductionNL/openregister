@@ -58,6 +58,9 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
  */
 class WebhooksController extends Controller
 {
@@ -972,6 +975,8 @@ class WebhooksController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1089,6 +1094,8 @@ class WebhooksController extends Controller
      * @NoCSRFRequired
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
