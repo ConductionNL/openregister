@@ -65,6 +65,8 @@ class SecuritySettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-8
      */
     public function clearIpRateLimits(): JSONResponse
     {
@@ -115,6 +117,8 @@ class SecuritySettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-8
      */
     public function clearUserRateLimits(): JSONResponse
     {
@@ -165,6 +169,8 @@ class SecuritySettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-8
      */
     public function clearAllRateLimits(): JSONResponse
     {
