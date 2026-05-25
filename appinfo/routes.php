@@ -411,6 +411,18 @@ return [
         ['name' => 'photoLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/photos',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'photoLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/photos/{albumId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'albumId' => '[0-9]+']],
 
+        // Collectives (NC Knowledge) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The specific `/collectives/new` (create + link)
+        // route MUST precede the wildcard `/collectives/{pageId}` unlink
+        // route, and the app-global `available`/`list` routes precede the
+        // object-scoped routes.
+        ['name' => 'collectiveLinks#available',    'url' => '/api/integrations/collectives/available',                  'verb' => 'GET'],
+        ['name' => 'collectiveLinks#collectives',  'url' => '/api/integrations/collectives/list',                       'verb' => 'GET'],
+        ['name' => 'collectiveLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/collectives',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'collectiveLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/collectives/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'collectiveLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/collectives',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'collectiveLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/collectives/{pageId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageId' => '[0-9]+']],
+
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface
         // only filters + cursor-paginates the entries linked to an OR
