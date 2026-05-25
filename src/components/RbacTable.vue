@@ -179,6 +179,7 @@ export default {
 		 * Get sorted groups (only showing groups assigned to the organisation)
 		 *
 		 * @return {Array} Sorted array of groups
+		 * @spec exclude computed sorted/filtered group list for display, RBAC contract owned by rbac capability
 		 */
 		sortedGroups() {
 			// If no organisation groups specified, show all available groups
@@ -205,6 +206,7 @@ export default {
 		 * Check if any permissions are set for this entity type
 		 *
 		 * @return {boolean} True if permissions are set
+		 * @spec exclude computed read of authorization prop presence, RBAC contract owned by rbac capability
 		 */
 		hasAnyPermissions() {
 		// For applications, authorization is flat (just {create: [], read: [], ...})
@@ -241,6 +243,7 @@ export default {
 	 * @param {string} groupId - The group ID
 	 * @param {string} action - The action (create, read, update, delete)
 	 * @return {boolean} True if group has permission
+	 * @spec exclude permission-check read helper, RBAC contract owned by rbac capability
 	 */
 		hasPermission(groupId, action) {
 		// For applications, authorization is flat (just {create: [], read: [], ...})
@@ -269,6 +272,7 @@ export default {
 		 * @param {string} action - The action (create, read, update, delete)
 		 * @param {boolean} hasPermission - Whether to grant or revoke permission
 		 * @return {void}
+		 * @spec exclude emit update event to parent, RBAC contract owned by rbac capability
 		 */
 		updatePermission(groupId, action, hasPermission) {
 			this.$emit('update', {
