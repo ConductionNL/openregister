@@ -105,6 +105,8 @@ class ViewService
      * @throws \OCP\AppFramework\Db\DoesNotExistException If view not found or access denied
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple views found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
      */
     public function find(int | string $id, string $owner): View
     {
@@ -133,6 +135,8 @@ class ViewService
      * @return View[] Array of found views accessible to the user
      *
      * @psalm-return array<View>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
      */
     public function findAll(string $owner): array
     {
@@ -156,6 +160,8 @@ class ViewService
      * @return View The created view entity
      *
      * @throws Exception If view creation fails (database error, validation error, etc.)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
      */
     public function create(
         string $name,
@@ -209,6 +215,8 @@ class ViewService
      * @return View The updated view
      *
      * @throws Exception If update fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
      */
     public function update(
         int | string $id,
@@ -258,6 +266,8 @@ class ViewService
      * @return void
      *
      * @throws Exception If deletion fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
      */
     public function delete(int | string $id, string $owner): void
     {

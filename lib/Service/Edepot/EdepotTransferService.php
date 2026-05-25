@@ -108,6 +108,7 @@ class EdepotTransferService
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-38
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
      */
     public function executeTransfer(array $transferList, TransportInterface $transport): array
     {
@@ -237,6 +238,8 @@ class EdepotTransferService
      *         isRendition: bool
      *     }>
      * }> Objects with file metadata.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
      */
     private function gatherObjectsWithFiles(array $objectRefs): array
     {
@@ -284,6 +287,7 @@ class EdepotTransferService
      * }> File metadata array.
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
      */
     private function getObjectFiles(ObjectEntity $object): array
     {
@@ -329,6 +333,8 @@ class EdepotTransferService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
      */
     private function processResults(
         array $transferList,
@@ -423,6 +429,8 @@ class EdepotTransferService
      * @param string       $timestamp The transfer timestamp.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
      */
     private function markObjectTransferred(ObjectEntity $object, string $reference, string $timestamp): void
     {
@@ -453,6 +461,8 @@ class EdepotTransferService
      * @param string       $timestamp The failure timestamp.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
      */
     private function markObjectTransferFailed(ObjectEntity $object, string $error, string $timestamp): void
     {
@@ -631,6 +641,8 @@ class EdepotTransferService
      * @param array<string,mixed> $transferList The completed transfer list.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
      */
     private function notifyTransferCompletion(array $transferList): void
     {

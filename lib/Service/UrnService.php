@@ -112,6 +112,8 @@ class UrnService
      * @param ObjectEntity $object The object to build the URN for.
      *
      * @return string|null The URN, or null when identity is incomplete.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-1
      */
     public function buildForObject(ObjectEntity $object): ?string
     {
@@ -145,6 +147,8 @@ class UrnService
      * @param string $uuid         The object UUID.
      *
      * @return string The constructed URN.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-1
      */
     public function build(string $registerSlug, string $schemaSlug, string $uuid): string
     {
@@ -169,6 +173,8 @@ class UrnService
      * @param string $urn The URN to parse.
      *
      * @return array{instance: string, register: string, schema: string, uuid: string}|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-2
      */
     public function parse(string $urn): ?array
     {
@@ -215,6 +221,8 @@ class UrnService
      * @param string $urn The URN to resolve.
      *
      * @return string|null The absolute API URL, or null when not resolvable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-2
      */
     public function resolveUrl(string $urn): ?string
     {
@@ -259,6 +267,8 @@ class UrnService
      * @param string $url The OpenRegister object URL.
      *
      * @return string|null The URN, or null when the URL is not a valid OR object reference.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-2
      */
     public function urnFromUrl(string $url): ?string
     {
@@ -323,6 +333,8 @@ class UrnService
      * @param array<int, string> $urns The list of URNs to resolve.
      *
      * @return array<string, ?string> Map of urn → url-or-null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-2
      */
     public function resolveBulk(array $urns): array
     {
@@ -347,6 +359,8 @@ class UrnService
      *   3. Fallback: `localhost`.
      *
      * @return string The instance slug.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-1
      */
     public function getInstanceSlug(): string
     {
