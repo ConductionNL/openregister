@@ -1,11 +1,6 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { dashboardStore, searchTrailStore } from '../../store/store.js'
-import { ensureIntegrationRegistry } from '../../integrations/bootstrap.js'
-
-// Make sure the integration registry singleton is installed before
-// CnIntegrationWidgetGrid renders the app-dashboard tiles. Idempotent.
-ensureIntegrationRegistry()
 </script>
 
 <template>
@@ -214,6 +209,11 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import TimerOutline from 'vue-material-design-icons/TimerOutline.vue'
 import TagMultiple from 'vue-material-design-icons/TagMultiple.vue'
+import { ensureIntegrationRegistry } from '../../integrations/bootstrap.js'
+
+// Make sure the integration registry singleton is installed before
+// CnIntegrationWidgetGrid renders the app-dashboard tiles. Idempotent.
+ensureIntegrationRegistry()
 
 const DEFAULT_LAYOUT = [
 	{ id: 1, widgetId: 'count-searches', gridX: 0, gridY: 0, gridWidth: 3, gridHeight: 2, showTitle: false },
