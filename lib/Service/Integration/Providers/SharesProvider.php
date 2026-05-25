@@ -220,6 +220,24 @@ class SharesProvider extends AbstractIntegrationProvider
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         try {
+            // Tier-2: delegate the IManager folder-walk to ShareLinkService
+            // so there is exactly ONE canonical implementation (and one
+            // copy of the Phase H-1 entity-input folder-resolve fix). The
+            // service returns the Tier-2 row contract; this provider
+            // re-maps it to the registry widget's contract (`id` / `url` /
+            // `data`) so existing consumers keep working. When the service
+            // is unavailable the original in-provider walk below is the
+            // fallback so the registry tab degrades gracefully per AD-23.
+            $service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
+            if ($service !== null && method_exists($service, 'getLinkedShares') === true) {
+                try {
+                    $serviceRows = $service->getLinkedShares($objectId);
+                    return array_map([$this, 'mapServiceRow'], $serviceRows);
+                } catch (Throwable $e) {
+                    // Fall through to the local walk below.
+                }
+            }
+
             $shareManager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
             $userId       = $this->resolveCurrentUserId();
             if ($shareManager === null || $userId === null) {
@@ -275,6 +293,44 @@ class SharesProvider extends AbstractIntegrationProvider
             return [];
         }
     }//end list()
+
+
+    /**
+     * Map a ShareLinkService row to the registry widget's row contract.
+     *
+     * The service exposes the Tier-2 shape (`shareId` / `fileId` /
+     * `shareWithDisplayName` / `createdAt`); the registry widget expects
+     * `id` / `url` / `data`. This adapter bridges the two without a
+     * second IManager walk.
+     *
+     * @param array<string,mixed> $row Service row.
+     *
+     * @return array<string,mixed> Widget row.
+     */
+    private function mapServiceRow(array $row): array
+    {
+        $fileId = (int) ($row['fileId'] ?? 0);
+
+        return [
+            'id'                   => (string) ($row['shareId'] ?? ''),
+            'shareType'            => (int) ($row['shareType'] ?? 0),
+            'shareWith'            => (string) ($row['shareWith'] ?? ''),
+            'shareWithDisplayname' => (string) ($row['shareWithDisplayName'] ?? ''),
+            'permissions'          => (int) ($row['permissions'] ?? 0),
+            'passwordProtected'    => (bool) ($row['passwordProtected'] ?? false),
+            'expiration'           => $row['expiration'] ?? null,
+            'stime'                => $row['createdAt'] ?? null,
+            'nodeName'             => (string) ($row['fileName'] ?? ''),
+            'canRevoke'            => (bool) ($row['canRevoke'] ?? false),
+            'url'                  => $fileId > 0
+                ? '/index.php/apps/files/?fileid='.$fileId
+                : '/index.php/apps/files',
+            'data'                 => [
+                'id'     => (string) ($row['shareId'] ?? ''),
+                'nodeId' => $fileId,
+            ],
+        ];
+    }//end mapServiceRow()
 
 
     /**
@@ -347,6 +403,16 @@ class SharesProvider extends AbstractIntegrationProvider
     /**
      * Resolve the object's NC folder via the FolderManagementHandler.
      *
+     * Looks up the ObjectEntity via ObjectEntityMapper::find() first so
+     * `FolderManagementHandler::getObjectFolder()` is invoked on its
+     * entity-input branch (which knows how to resolve the register from
+     * the entity itself). The string-input branch in the handler routes
+     * to `createObjectFolderById(string, registerId: null)` which throws
+     * `"Failed to create file because no objectEntity or registerId
+     * given"` — that throw used to be swallowed by the Throwable catch
+     * below, so the leaf returned `[]` for every object regardless of
+     * how many real shares existed.
+     *
      * @param string $objectId Owning object uuid.
      *
      * @return Folder|null
@@ -361,12 +427,44 @@ class SharesProvider extends AbstractIntegrationProvider
                 return null;
             }
 
-            $folder = $handler->getObjectFolder($objectId);
+            $entity = $this->resolveObjectEntity(objectId: $objectId);
+            $folder = $handler->getObjectFolder($entity ?? $objectId);
             return ($folder instanceof Folder) === true ? $folder : null;
         } catch (Throwable $e) {
             return null;
         }
     }//end resolveObjectFolder()
+
+
+    /**
+     * Look up an ObjectEntity by uuid via the lazy container so the
+     * handler can resolve the register from the entity.
+     *
+     * Returns null on any failure — the calling site falls back to the
+     * raw UUID string which preserves prior behaviour (folder won't
+     * resolve, leaf reports `[]`), letting the integration degrade
+     * gracefully per AD-23.
+     *
+     * @param string $objectId Object uuid.
+     *
+     * @return object|null ObjectEntity instance or null.
+     */
+    private function resolveObjectEntity(string $objectId): ?object
+    {
+        try {
+            $mapper = $this->lookup(
+                serviceName: 'OCA\\OpenRegister\\Db\\ObjectEntityMapper'
+            );
+            if ($mapper === null) {
+                return null;
+            }
+
+            $entity = $mapper->find($objectId);
+            return is_object($entity) === true ? $entity : null;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }//end resolveObjectEntity()
 
 
     /**

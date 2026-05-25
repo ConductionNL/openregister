@@ -26,7 +26,7 @@ class ContactServiceTest extends TestCase
     {
         $this->contactLinkMapper = $this->getMockBuilder(ContactLinkMapper::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['findByObjectUuid', 'findByContactUid', 'countByObjectUuid', 'deleteByObjectUuid', 'insert', 'delete'])
+            ->onlyMethods(['findByObjectUuid', 'findByContactUid', 'findByObjectAndContact', 'countByObjectUuid', 'deleteByObjectUuid', 'insert', 'update', 'delete'])
             ->addMethods(['find'])
             ->getMock();
         $this->cardDavBackend = $this->createMock(CardDavBackend::class);
@@ -236,12 +236,55 @@ class ContactServiceTest extends TestCase
         $this->cardDavBackend->method('getCard')->willReturn(['carddata' => $vcardData]);
         $this->cardDavBackend->expects($this->once())->method('updateCard');
 
+        // Tier-2: linkContact now consults findByObjectAndContact for
+        // idempotent upsert. Returning null means "no prior row" and
+        // the service falls through to the insert path.
+        $this->contactLinkMapper->method('findByObjectAndContact')->willReturn(null);
+
         $this->contactLinkMapper->expects($this->once())
             ->method('insert')
             ->willReturnCallback(function (ContactLink $link): ContactLink {
                 $this->assertSame('abc-123', $link->getObjectUuid());
                 $this->assertSame('Jan de Vries', $link->getDisplayName());
                 $this->assertSame('jan@example.nl', $link->getEmail());
+                $this->assertSame('applicant', $link->getRole());
+                return $link;
+            });
+
+        $this->service->linkContact('abc-123', 5, 1, 'jan.vcf', 'applicant');
+    }
+
+    /**
+     * Tier-2: when a row already exists for the (objectUuid, contactUid)
+     * pair, linkContact updates it in-place instead of inserting.
+     *
+     * @return void
+     */
+    public function testLinkContactUpsertsExistingRow(): void
+    {
+        $this->setupUser();
+
+        $vcardData = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:jan-uid\r\nFN:Jan de Vries\r\nEMAIL:jan@example.nl\r\nEND:VCARD\r\n";
+
+        $this->cardDavBackend->method('getCard')->willReturn(['carddata' => $vcardData]);
+        $this->cardDavBackend->expects($this->once())->method('updateCard');
+
+        $existing = new ContactLink();
+        $existing->setId(99);
+        $existing->setObjectUuid('abc-123');
+        $existing->setContactUid('jan-uid');
+        $existing->setRole('observer');
+
+        $this->contactLinkMapper->method('findByObjectAndContact')
+            ->with('abc-123', 'jan-uid')
+            ->willReturn($existing);
+
+        // Must update (not insert) and the role must be refreshed.
+        $this->contactLinkMapper->expects($this->never())->method('insert');
+        $this->contactLinkMapper->expects($this->once())
+            ->method('update')
+            ->willReturnCallback(function (ContactLink $link): ContactLink {
+                $this->assertSame(99, $link->getId());
                 $this->assertSame('applicant', $link->getRole());
                 return $link;
             });
@@ -258,6 +301,112 @@ class ContactServiceTest extends TestCase
         $this->expectExceptionMessage('Contact link not found');
 
         $this->service->unlinkContact(999);
+    }
+
+    /**
+     * Idempotency: unlinkContact must drop the link row even when the
+     * underlying vCard has been removed (CardDavBackend::getCard returns
+     * false). Phase D-2 found that the registry-path delete was
+     * returning HTTP 500 on this case, leaving orphan link rows that
+     * could only be cleaned via direct DB DELETE.
+     *
+     * @return void
+     */
+    public function testUnlinkContactToleratesMissingVcard(): void
+    {
+        $link = new ContactLink();
+        $link->setId(123);
+        $link->setObjectUuid('abc-123');
+        $link->setAddressbookId(1);
+        $link->setContactUri('gone.vcf');
+
+        $this->contactLinkMapper->method('find')->with(123)->willReturn($link);
+
+        // CardDAV reports the vCard is gone.
+        $this->cardDavBackend->method('getCard')
+            ->with(1, 'gone.vcf')
+            ->willReturn(false);
+        // Must NOT attempt updateCard on a missing vCard.
+        $this->cardDavBackend->expects($this->never())->method('updateCard');
+
+        // Link row deletion MUST still happen.
+        $this->contactLinkMapper->expects($this->once())
+            ->method('delete')
+            ->with($link);
+
+        $this->service->unlinkContact(123);
+    }
+
+    /**
+     * Idempotency: a Throwable from the CardDAV cleanup path (corrupt
+     * vCard, deserialisation failure, etc.) must NOT prevent the link
+     * row deletion. The previous catch was \Exception only; PHP 8.x
+     * Errors (TypeError etc.) bypassed it and bubbled as HTTP 500.
+     *
+     * @return void
+     */
+    public function testUnlinkContactToleratesThrowableDuringCleanup(): void
+    {
+        $link = new ContactLink();
+        $link->setId(456);
+        $link->setObjectUuid('abc-123');
+        $link->setAddressbookId(2);
+        $link->setContactUri('corrupt.vcf');
+
+        $this->contactLinkMapper->method('find')->with(456)->willReturn($link);
+
+        // CardDAV throws a Throwable that the prior \Exception catch
+        // would have missed (Error vs Exception hierarchy).
+        $this->cardDavBackend->method('getCard')
+            ->with(2, 'corrupt.vcf')
+            ->willThrowException(new \Error('vCard storage corrupted'));
+
+        // Link row deletion MUST still happen.
+        $this->contactLinkMapper->expects($this->once())
+            ->method('delete')
+            ->with($link);
+
+        $this->service->unlinkContact(456);
+    }
+
+    /**
+     * Tier-2: unlinkContactByUid resolves the link row via the
+     * (objectUuid, contactUid) composite index, then delegates to the
+     * id-based unlinkContact path.
+     */
+    public function testUnlinkContactByUidResolvesAndDelegates(): void
+    {
+        $link = new ContactLink();
+        $link->setId(42);
+        $link->setObjectUuid('abc-123');
+        $link->setContactUid('jan-uid');
+        $link->setAddressbookId(1);
+        $link->setContactUri('jan.vcf');
+
+        $this->contactLinkMapper->method('findByObjectAndContact')
+            ->with('abc-123', 'jan-uid')
+            ->willReturn($link);
+        $this->contactLinkMapper->method('find')->with(42)->willReturn($link);
+        $this->cardDavBackend->method('getCard')->willReturn(false);
+
+        $this->contactLinkMapper->expects($this->once())
+            ->method('delete')
+            ->with($link);
+
+        $this->service->unlinkContactByUid('abc-123', 'jan-uid');
+    }
+
+    /**
+     * Tier-2: unlinkContactByUid raises 404 when no row matches.
+     */
+    public function testUnlinkContactByUidThrowsWhenMissing(): void
+    {
+        $this->contactLinkMapper->method('findByObjectAndContact')->willReturn(null);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Contact link not found');
+
+        $this->service->unlinkContactByUid('abc-123', 'missing-uid');
     }
 
     public function testGetObjectsForContactReturnsLinks(): void

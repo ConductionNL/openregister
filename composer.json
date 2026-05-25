@@ -88,7 +88,7 @@
 		]
 	},
 	"require": {
-		"php": "^8.1",
+		"php": "^8.3",
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
 		"cweagans/composer-patches": "^1.7",
@@ -102,8 +102,11 @@
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
 		"smalot/pdfparser": "^2.9",
+		"symfony/console": "^6.4",
+		"symfony/http-kernel": "^6.4",
+		"symfony/process": "^6.4",
 		"symfony/uid": "^6.4",
-		"symfony/yaml": "^6.4",
+		"symfony/yaml": "^6.4 || ^7.0",
 		"theodo-group/llphant": "^0.9.3",
 		"twig/twig": "^3.18",
 		"web-token/jwt-framework": "^3",
@@ -121,6 +124,7 @@
 		"phpstan/phpstan": "^1.10",
 		"phpunit/phpunit": "^10.5.62",
 		"roave/security-advisories": "dev-latest",
+		"sabre/vobject": "^4.5",
 		"squizlabs/php_codesniffer": "^3.9",
 		"symfony/http-foundation": "^6.4",
 		"vimeo/psalm": "^5.26"
@@ -136,15 +140,14 @@
 		"optimize-autoloader": true,
 		"sort-packages": true,
 		"platform": {
-			"php": "8.1"
+			"php": "8.3"
 		}
 	},
 	"extra": {
 		"composer-exit-on-patch-failure": true,
 		"patches": {
 			"theodo-group/llphant": {
-				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) — drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch",
-				"Emit `{}` instead of `[]` for object-typed parameters with no nested properties — Ollama rejects empty arrays in the JSON-schema `properties` slot": "patches/llphant-function-formatter-empty-object.patch"
+				"Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) \u2014 drop when LLPhant adds a per-call keep_alive/think model option": "patches/llphant-ollama-think-keepalive.patch"
 			}
 		}
 	}

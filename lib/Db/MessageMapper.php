@@ -5,6 +5,9 @@
  *
  * This file contains the MessageMapper class for database operations on messages.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Mapper
  * @package  OCA\OpenRegister\Db
  *

@@ -305,32 +305,134 @@ return [
         ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
 
         // Mail sidebar — reverse lookup of OR objects linked to an email.
-        // Search + bySender are app-global (no register/schema in path); the
-        // CRUD endpoints are scoped to an object so they take register/schema/id.
+        // Search + bySender are app-global (no register/schema in path) and
+        // stay on the legacy Tier-1 controller. The per-object link/unlink
+        // surface is served by the Tier-2 `emailLinks` controller which adds
+        // idempotent upsert + composite-key uniqueness; the picker step
+        // routes (accounts/mailboxes/messages) live alongside.
         ['name' => 'emails#search',   'url' => '/api/emails/search',                                'verb' => 'GET'],
         ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender',                             'verb' => 'GET'],
-        ['name' => 'emails#index',    'url' => '/api/objects/{register}/{schema}/{id}/emails',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'emails#create',   'url' => '/api/objects/{register}/{schema}/{id}/emails',     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'emails#destroy',  'url' => '/api/objects/{register}/{schema}/{id}/emails/{emailId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'emailId' => '[0-9]+']],
+        ['name' => 'emailLinks#index',   'url' => '/api/objects/{register}/{schema}/{id}/emails',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emailLinks#link',    'url' => '/api/objects/{register}/{schema}/{id}/emails',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emailLinks#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/emails/{linkId}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'linkId' => '[0-9]+']],
+        ['name' => 'emailLinks#accounts',  'url' => '/api/integrations/email/accounts',                                       'verb' => 'GET'],
+        ['name' => 'emailLinks#mailboxes', 'url' => '/api/integrations/email/accounts/{accountId}/mailboxes',                 'verb' => 'GET',    'requirements' => ['accountId' => '[0-9]+']],
+        ['name' => 'emailLinks#messages',  'url' => '/api/integrations/email/accounts/{accountId}/messages',                  'verb' => 'GET',    'requirements' => ['accountId' => '[0-9]+']],
 
         // Contacts — object↔NC contact links + reverse lookup. Match is app-global.
-        ['name' => 'contacts#index',   'url' => '/api/objects/{register}/{schema}/{id}/contacts',                 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'contacts#create',  'url' => '/api/objects/{register}/{schema}/{id}/contacts',                 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'contacts#update',  'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
-        ['name' => 'contacts#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
-        ['name' => 'contacts#objects', 'url' => '/api/contacts/{contactUid}/objects',                              'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
+        // The explicit `/contacts/new` route is the Tier-2 create-only path
+        // surfaced to the new `CnContactCreate` dialog; the bare POST still
+        // accepts both link- and create-shaped payloads for back-compat.
+        ['name' => 'contacts#index',     'url' => '/api/objects/{register}/{schema}/{id}/contacts',                 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/new',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#create',    'url' => '/api/objects/{register}/{schema}/{id}/contacts',                 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#update',    'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
+        ['name' => 'contacts#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
+        ['name' => 'contacts#objects',   'url' => '/api/contacts/{contactUid}/objects',                              'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
 
         // Calendar events — object↔CalDAV event links via DAV principal.
-        ['name' => 'calendarEvents#index',   'url' => '/api/objects/{register}/{schema}/{id}/events',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'calendarEvents#create',  'url' => '/api/objects/{register}/{schema}/{id}/events',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'calendarEvents#link',    'url' => '/api/objects/{register}/{schema}/{id}/events/link',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'calendarEvents#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/events/{eventId}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'eventId' => '[^/]+']],
+        ['name' => 'calendarEvents#index',     'url' => '/api/objects/{register}/{schema}/{id}/events',                 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#create',    'url' => '/api/objects/{register}/{schema}/{id}/events',                 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#link',      'url' => '/api/objects/{register}/{schema}/{id}/events/link',            'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#unlink',    'url' => '/api/objects/{register}/{schema}/{id}/events/{eventUid}/link', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'eventUid' => '[^/]+']],
+        ['name' => 'calendarEvents#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/events/{eventId}',       'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'eventId' => '[^/]+']],
+        // Calendar integration — picker source endpoints (per-user CalDAV scope).
+        ['name' => 'calendarEvents#listCalendars',      'url' => '/api/integrations/calendar/calendars',                              'verb' => 'GET'],
+        ['name' => 'calendarEvents#listCalendarEvents', 'url' => '/api/integrations/calendar/calendars/{calendarUri}/events',         'verb' => 'GET',    'requirements' => ['calendarUri' => '[^/]+']],
 
-        // Deck — object↔Deck card links + reverse lookup.
-        ['name' => 'deck#index',   'url' => '/api/objects/{register}/{schema}/{id}/deck',                  'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'deck#create',  'url' => '/api/objects/{register}/{schema}/{id}/deck',                  'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckRef}',        'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckRef' => '[^/]+']],
-        ['name' => 'deck#objects', 'url' => '/api/deck/boards/{boardId}/objects',                          'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
+        // Deck — Tier-2 link table + picker UX. Replaces the Tier-1
+        // single-endpoint `deck#create` with explicit link/create
+        // verbs so the picker can drive a multi-step modal.
+        ['name' => 'deckLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/deck',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deckLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/deck',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deckLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/deck/new',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deckLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/deck/{cardId}',     'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'cardId' => '[0-9]+']],
+        ['name' => 'deckLinks#boards',    'url' => '/api/integrations/deck/boards',                           'verb' => 'GET'],
+        ['name' => 'deckLinks#stacks',    'url' => '/api/integrations/deck/boards/{boardId}/stacks',          'verb' => 'GET',    'requirements' => ['boardId' => '[0-9]+']],
+        // Reverse lookup — keep on Tier-1 controller (not in Tier-2 scope).
+        ['name' => 'deck#objects',        'url' => '/api/deck/boards/{boardId}/objects',                      'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
+
+        // Talk — Tier-2 link table + picker UX. Specific routes (`/new`)
+        // MUST precede the wildcard `{roomToken}` route so they aren't
+        // grabbed as roomToken='new'. The picker source endpoint is
+        // app-global (not per-object).
+        ['name' => 'talkLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/talk',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'talkLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/talk',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'talkLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/talk/new',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'talkLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/talk/{roomToken}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'roomToken' => '[A-Za-z0-9]+']],
+        ['name' => 'talkLinks#rooms',     'url' => '/api/integrations/talk/rooms',                            'verb' => 'GET'],
+
+        // Polls — Tier-2 link table + picker UX. Specific routes (`/new`)
+        // MUST precede the wildcard `{pollId}` route so they aren't grabbed
+        // as pollId='new'. Available-polls picker is app-global.
+        ['name' => 'pollLinks#available', 'url' => '/api/integrations/polls/available',                       'verb' => 'GET'],
+        ['name' => 'pollLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/polls',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'pollLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/polls',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'pollLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/polls/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'pollLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/polls/{pollId}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pollId' => '[0-9]+']],
+
+        // Bookmarks — Tier-2 link table + picker UX. Specific routes
+        // (`/new`) MUST precede the wildcard `{bookmarkId}` route so they
+        // aren't grabbed as bookmarkId='new'. Available-bookmarks picker
+        // is app-global.
+        ['name' => 'bookmarkLinks#available', 'url' => '/api/integrations/bookmarks/available',                       'verb' => 'GET'],
+        ['name' => 'bookmarkLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/bookmarks',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'bookmarkLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/bookmarks',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'bookmarkLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/bookmarks/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'bookmarkLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/bookmarks/{bookmarkId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'bookmarkId' => '[0-9]+']],
+
+        // Flow (workflowengine) — Tier-2 link-table API. Admin-gated:
+        // POST/DELETE return 403 for non-admins; GET is read-only for
+        // everyone. NC Flow operations are configured globally in the
+        // Workflow Settings UI; this surface only records "operation X
+        // is pinned to OR object Y" so the sidebar tab can show it.
+        ['name' => 'flowLinks#available', 'url' => '/api/integrations/flow/operations',                       'verb' => 'GET'],
+        ['name' => 'flowLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flowLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flowLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/flow/{operationId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'operationId' => '[0-9]+']],
+
+        // Forms — Tier-2 link-table API. Specific routes (`/new`, `/submissions/{id}`)
+        // MUST precede the wildcard `{formId}` route so they aren't grabbed as
+        // formId='new' / formId='submissions'. Available-forms picker is app-global.
+        [
+            'name' => 'formLinks#available',
+            'url'  => '/api/integrations/forms/available',
+            'verb' => 'GET',
+        ],
+        [
+            'name'         => 'formLinks#index',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms',
+            'verb'         => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name'         => 'formLinks#create',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms/new',
+            'verb'         => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name'         => 'formLinks#link',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms',
+            'verb'         => 'POST',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name'         => 'formLinks#destroySubmission',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms/{formId}/submissions/{submissionId}',
+            'verb'         => 'DELETE',
+            'requirements' => [
+                'id'           => '[^/]+',
+                'formId'       => '[0-9]+',
+                'submissionId' => '[0-9]+',
+            ],
+        ],
+        [
+            'name'         => 'formLinks#destroyForm',
+            'url'          => '/api/objects/{register}/{schema}/{id}/forms/{formId}',
+            'verb'         => 'DELETE',
+            'requirements' => ['id' => '[^/]+', 'formId' => '[0-9]+'],
+        ],
 
         // Unified relations endpoint — aggregates emails/contacts/calendar/deck for an object.
         ['name' => 'relations#index', 'url' => '/api/objects/{register}/{schema}/{id}/relations',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],

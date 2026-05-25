@@ -6,6 +6,9 @@
  * Represents a selectielijst entry that maps classification categories
  * to retention periods and archival actions per Dutch archival standards.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *

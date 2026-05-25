@@ -11,6 +11,9 @@
  * - Applying field filtering and selection
  * - Formatting object properties for display
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *
@@ -29,7 +32,9 @@ use Adbar\Dot;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Service\FileService;
+use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -43,6 +48,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\UrnService;
 use OCA\OpenRegister\Service\TranslationStatusService;
@@ -148,6 +154,7 @@ class RenderObject
      * @param CalculationEvaluator     $calculationEvaluator     Evaluator for derived/computed properties.
      * @param UrnService               $urnService               URN resolver for register/schema/object identifiers.
      * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
+     * @param IRequest|null            $request                  Current request, used to read `?recurrenceOccurrences=N`.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      *
@@ -171,6 +178,7 @@ class RenderObject
         private readonly CalculationEvaluator $calculationEvaluator,
         private readonly UrnService $urnService,
         private readonly TranslationStatusService $translationStatusService,
+        private readonly ?IRequest $request=null,
     ) {
     }//end __construct()
 
@@ -270,6 +278,95 @@ class RenderObject
             return null;
         }
     }//end getSchema()
+
+    /**
+     * Enrich `recurrence`-typed properties with their upcoming occurrences.
+     *
+     * For every property declared as `type: recurrence` whose value is a non-empty
+     * RRULE string, this attaches a sibling virtual field `_occurrences` listing
+     * the next N occurrences (ISO 8601). N defaults to 5 and may be overridden per
+     * request via `?recurrenceOccurrences=N` (clamped to 1..100). The RRULE string
+     * itself is preserved unchanged for round-trip integrity. When the object
+     * declares exactly one recurrence property, `_occurrences` is attached at the
+     * object root; with multiple, each is keyed as `<prop>_occurrences` to avoid
+     * collisions.
+     *
+     * @param array  $objectData The object data being rendered.
+     * @param Schema $schema     The schema for the object.
+     *
+     * @return array The object data, possibly enriched with occurrence lists.
+     *
+     * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
+     */
+    private function enrichRecurrenceOccurrences(array $objectData, Schema $schema): array
+    {
+        $properties = $schema->getProperties() ?? [];
+
+        // Collect recurrence properties present in the object with a string value.
+        $recurrenceProps = [];
+        foreach ($properties as $propertyName => $propertyConfig) {
+            $type = null;
+            if (is_array($propertyConfig) === true) {
+                $type = ($propertyConfig['type'] ?? null);
+            } else if (is_object($propertyConfig) === true) {
+                $type = ($propertyConfig->type ?? null);
+            }
+
+            if ($type !== 'recurrence') {
+                continue;
+            }
+
+            $value = ($objectData[$propertyName] ?? null);
+            if (is_string($value) === true && $value !== '') {
+                $recurrenceProps[$propertyName] = $value;
+            }
+        }//end foreach
+
+        if (empty($recurrenceProps) === true) {
+            return $objectData;
+        }
+
+        $count     = $this->resolveOccurrenceCount();
+        $validator = new ExtendedFieldTypeValidator();
+        $single    = (count($recurrenceProps) === 1);
+
+        foreach ($recurrenceProps as $propertyName => $rrule) {
+            $occurrences = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
+            $key         = $propertyName.'_occurrences';
+            if ($single === true) {
+                $key = '_occurrences';
+            }
+
+            $objectData[$key] = $occurrences;
+        }
+
+        return $objectData;
+    }//end enrichRecurrenceOccurrences()
+
+    /**
+     * Resolve the requested number of recurrence occurrences from the request.
+     *
+     * Reads the `recurrenceOccurrences` query parameter (default 5, clamped to
+     * 1..100 by the validator). Falls back to the default when no request is
+     * available (e.g. in unit-test construction without an injected IRequest).
+     *
+     * @return int The requested occurrence count.
+     *
+     * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
+     */
+    private function resolveOccurrenceCount(): int
+    {
+        if ($this->request === null) {
+            return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
+        }
+
+        $raw = $this->request->getParam('recurrenceOccurrences', null);
+        if ($raw === null || is_numeric($raw) === false) {
+            return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
+        }
+
+        return (int) $raw;
+    }//end resolveOccurrenceCount()
 
     /**
      * Check if a string looks like a UUID (using regex, not strict RFC 4122 validation).
@@ -1309,6 +1406,13 @@ class RenderObject
             $entity->setObject($objectData);
         }
 
+        // Enrich `recurrence` properties with upcoming occurrences under `_occurrences`.
+        // The base RRULE string is preserved unchanged for round-trip integrity.
+        if ($readSchema !== null) {
+            $objectData = $this->enrichRecurrenceOccurrences(objectData: $objectData, schema: $readSchema);
+            $entity->setObject($objectData);
+        }
+
         // Apply property-level RBAC filtering.
         // This filters out properties that the current user is not authorized to read.
         $schema = $readSchema ?? $this->getSchema(id: $entity->getSchema());
@@ -1400,8 +1504,79 @@ class RenderObject
             );
         }
 
+        // Annotation-driven retention block.
+        // When the schema declares `x-openregister-archival`, compute the
+        // effective retention for this row from the annotation's default +
+        // condition rules and merge it under `retention.annotation` so the
+        // records-management retention surface and the annotation surface
+        // never collide. See add-archival-annotation-support design R3 + D7.
+        $this->applyArchivalRetentionBlock(entity: $entity, schema: $renderSchema);
+
         return $entity;
     }//end renderEntity()
+
+    /**
+     * Compute + attach the annotation-driven `_retention.annotation` block.
+     *
+     * Stateless w.r.t. the row's persisted columns; pulls the annotation off
+     * the schema's `configuration` and asks `RetentionEvaluator` to produce
+     * the `{effectiveRetention, matchedRule, expiresAt}` triple for the
+     * current row + `_created` timestamp.
+     *
+     * Failures are logged + swallowed: a malformed annotation must NEVER
+     * break object rendering.
+     *
+     * @param ObjectEntity $entity The entity being rendered.
+     * @param Schema|null  $schema The resolved schema (may be null).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-6
+     */
+    private function applyArchivalRetentionBlock(ObjectEntity $entity, ?Schema $schema): void
+    {
+        if ($schema === null) {
+            return;
+        }
+
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-archival'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        try {
+            $createdAt = $entity->getCreated();
+            if ($createdAt === null) {
+                return;
+            }
+
+            $objectData = $entity->getObject();
+            if (is_array($objectData) === false) {
+                $objectData = [];
+            }
+
+            $row       = $objectData;
+            $evaluator = new RetentionEvaluator(logger: $this->logger);
+            $annotationBlock = $evaluator->evaluate(
+                annotation: $annotation,
+                row: $row,
+                createdAt: $createdAt
+            );
+
+            $existing = ($entity->getRetention() ?? []);
+            $existing['annotation'] = $annotationBlock;
+            $entity->setRetention($existing);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[RenderObject] archival retention compute failed for %s: %s',
+                    (string) $entity->getUuid(),
+                    $e->getMessage()
+                )
+            );
+        }//end try
+    }//end applyArchivalRetentionBlock()
 
     /**
      * Apply virtual (materialise:false) calculations declared on the

@@ -22,6 +22,9 @@
  * - Optimized counting and sizing operations
  * - Support for pagination and sorting
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -497,11 +500,12 @@ class MagicSearchHandler
                 if ($isPostgres === true) {
                     // ILIKE is always case-insensitive on PostgreSQL.
                     $searchConditions[] = "{$quotedCol}::text ILIKE {$likePattern}";
-                } else {
-                    // CAST + LOWER on both sides keeps MySQL case-insensitive regardless of
-                    // collation (e.g., utf8mb4_bin), matching applyFullTextSearch().
-                    $searchConditions[] = "LOWER(CAST({$quotedCol} AS CHAR)) LIKE LOWER({$likePattern})";
-                }//end if
+                    continue;
+                }
+
+                // CAST + LOWER on both sides keeps MySQL case-insensitive regardless of
+                // collation (e.g., utf8mb4_bin), matching applyFullTextSearch().
+                $searchConditions[] = "LOWER(CAST({$quotedCol} AS CHAR)) LIKE LOWER({$likePattern})";
             }//end if
         }//end foreach
 
