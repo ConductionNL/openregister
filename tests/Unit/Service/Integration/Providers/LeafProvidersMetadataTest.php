@@ -133,20 +133,42 @@ class LeafProvidersMetadataTest extends TestCase
         $appManager = $this->buildAppManager([$requiredApp]);
         $l10n       = $this->buildL10n();
 
-        // Container/session-backed providers (Bookmarks, Polls, Talk).
-        if (in_array(
-            $class,
-            [
-                BookmarksProvider::class,
-                PollsProvider::class,
-                TalkProvider::class,
-            ],
-            true
-        ) === true) {
+        // Container/session-backed provider (Talk).
+        if ($class === TalkProvider::class) {
             return new $class(
                 container: $this->createMock(ContainerInterface::class),
                 appManager: $appManager,
                 userSession: $this->createMock(IUserSession::class),
+                l10n: $l10n,
+            );
+        }
+
+        // PollsProvider — Tier-2 link-table backed (PollLinkMapper + db).
+        if ($class === PollsProvider::class) {
+            $pollLinkMapper = $this->getMockBuilder(\OCA\OpenRegister\Db\PollLinkMapper::class)
+                ->disableOriginalConstructor()
+                ->onlyMethods(['findByObjectUuid'])
+                ->getMock();
+            $pollLinkMapper->method('findByObjectUuid')->willReturn([]);
+            return new $class(
+                pollLinkMapper: $pollLinkMapper,
+                db: $this->createMock(IDBConnection::class),
+                appManager: $appManager,
+                userSession: $this->createMock(IUserSession::class),
+                l10n: $l10n,
+            );
+        }
+
+        // BookmarksProvider — Tier-2 link-table backed (BookmarkLinkMapper).
+        if ($class === BookmarksProvider::class) {
+            $bookmarkLinkMapper = $this->getMockBuilder(\OCA\OpenRegister\Db\BookmarkLinkMapper::class)
+                ->disableOriginalConstructor()
+                ->onlyMethods(['findByObjectUuid'])
+                ->getMock();
+            $bookmarkLinkMapper->method('findByObjectUuid')->willReturn([]);
+            return new $class(
+                bookmarkLinkMapper: $bookmarkLinkMapper,
+                appManager: $appManager,
                 l10n: $l10n,
             );
         }
@@ -187,19 +209,33 @@ class LeafProvidersMetadataTest extends TestCase
         $appManager = $this->buildAppManager([]);
         $l10n       = $this->buildL10n();
 
-        if (in_array(
-            $class,
-            [
-                BookmarksProvider::class,
-                PollsProvider::class,
-                TalkProvider::class,
-            ],
-            true
-        ) === true) {
+        if ($class === TalkProvider::class) {
             return new $class(
                 container: $this->createMock(ContainerInterface::class),
                 appManager: $appManager,
                 userSession: $this->createMock(IUserSession::class),
+                l10n: $l10n,
+            );
+        }
+
+        if ($class === PollsProvider::class) {
+            return new $class(
+                pollLinkMapper: $this->getMockBuilder(\OCA\OpenRegister\Db\PollLinkMapper::class)
+                    ->disableOriginalConstructor()
+                    ->getMock(),
+                db: $this->createMock(IDBConnection::class),
+                appManager: $appManager,
+                userSession: $this->createMock(IUserSession::class),
+                l10n: $l10n,
+            );
+        }
+
+        if ($class === BookmarksProvider::class) {
+            return new $class(
+                bookmarkLinkMapper: $this->getMockBuilder(\OCA\OpenRegister\Db\BookmarkLinkMapper::class)
+                    ->disableOriginalConstructor()
+                    ->getMock(),
+                appManager: $appManager,
                 l10n: $l10n,
             );
         }

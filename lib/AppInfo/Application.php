@@ -1194,8 +1194,8 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // SharesProvider — NC core (no app gate); uses MarkerLookupTrait
-        // against the `share` table's `note` column.
+        // SharesProvider — NC core (no app gate); wraps OCP\Share\IManager
+        // (query-time, no link table — IShare is first-class NC state).
         // @spec openspec/changes/integration-shares/tasks.md.
         $context->registerService(
             SharesProvider::class,
@@ -1208,18 +1208,34 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // BookmarksProvider needs the container (for late-bound NC
-        // Bookmarks classes — they're only on the classpath when the
-        // Bookmarks app is installed) plus IUserSession to scope the
-        // bookmark query to the current user.
+        // ShareLinkService — Tier-2 share create/revoke/list service
+        // backing the ShareLinksController. NO link table / NO cache:
+        // OCP\Share\IManager is the single source of truth, resolved
+        // lazily through the container (same pattern as SharesProvider).
+        // @spec openspec/changes/integration-shares/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\ShareLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\ShareLinkService(
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // BookmarksProvider — Tier-2: backed by the BookmarkLinkMapper.
+        // Replaces the original `or:{uuid}` tag-marker convention with a
+        // proper persistence layer; the wrapping BookmarkLinkService owns
+        // the late-bound NC Bookmarks reads/writes. Needs the container
+        // (NC Bookmarks classes are only on the classpath when that app is
+        // installed) plus IUserSession to scope the query to the user.
         // @spec openspec/changes/integration-bookmarks/tasks.md.
         $context->registerService(
             BookmarksProvider::class,
             function (ContainerInterface $container) {
                 return new BookmarksProvider(
-                    container: $container,
+                    bookmarkLinkMapper: $container->get(\OCA\OpenRegister\Db\BookmarkLinkMapper::class),
                     appManager: $container->get('OCP\App\IAppManager'),
-                    userSession: $container->get('OCP\IUserSession'),
                     l10n: $container->get('OCP\IL10N'),
                 );
             }
@@ -1293,6 +1309,22 @@ class Application extends App implements IBootstrap
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // ActivityFilterService — Tier-2 read-only filter/paginate
+        // service backing the ActivityLinksController. NC Activity
+        // entries are core-generated; this only wraps the wave-5.3
+        // MarkerLookupTrait carve-out query with type/actor/date
+        // filters + cursor pagination.
+        // @spec openspec/changes/integration-activity/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\ActivityFilterService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\ActivityFilterService(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
                 );
             }
         );

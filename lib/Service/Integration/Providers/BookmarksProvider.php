@@ -2,14 +2,23 @@
 
 /**
  * BookmarksProvider — exposes NC Bookmarks linked to an OpenRegister
- * object via a tag convention.
+ * object via the IntegrationProvider contract.
  *
- * Bookmarks are linked by tagging them `or:{objectUuid}` in NC
- * Bookmarks. The provider queries BookmarkMapper::findAll filtered by
- * that tag; rows are normalised into the shared leaf row contract.
+ * Tier-2: backed by the `openregister_bookmark_links` table via
+ * {@see BookmarkLinkMapper}. Replaces the original tag-marker convention
+ * (`or:{objectUuid}` tag on the bookmark in NC Bookmarks) with a proper
+ * persistence layer so links survive Bookmarks tag edits and don't
+ * pollute Bookmarks' UX.
  *
- * `link-table` storage strategy — the link lives in NC Bookmarks' own
- * tag table, not in OR.
+ * Each link row caches title/url/description/tags/added so the sidebar
+ * tab can render without a per-bookmark roundtrip to NC Bookmarks; the
+ * wrapping `BookmarkLinkService` refreshes the cache lazily. Returns an
+ * empty list when Bookmarks is uninstalled.
+ *
+ * `link-table` storage strategy — the link lives in OR's own table.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -17,9 +26,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @link https://conduction.nl
  *
@@ -32,24 +38,20 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
-use OCA\Bookmarks\QueryParameters;
+use DateTime;
+use OCA\OpenRegister\Db\BookmarkLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
-use OCP\IUserSession;
-use Psr\Container\ContainerInterface;
-use Throwable;
 
 class BookmarksProvider extends AbstractIntegrationProvider
 {
 
     private const REQUIRED_APP = 'bookmarks';
-    private const TAG_PREFIX   = 'or:';
 
     public function __construct(
-        private ContainerInterface $container,
+        private BookmarkLinkMapper $bookmarkLinkMapper,
         private IAppManager $appManager,
-        private IUserSession $userSession,
         private IL10N $l10n,
     ) {
     }//end __construct()
@@ -90,35 +92,22 @@ class BookmarksProvider extends AbstractIntegrationProvider
     }//end isEnabled()
 
     /**
-     * List bookmarks tagged with `or:{objectId}` for the current user.
+     * List bookmarks linked to an OR object.
      *
-     * BookmarkMapper::findAll honours QueryParameters::setTags; we
-     * inject the per-object tag and normalise the response rows into
-     * the registry leaf row shape (id, title, description, url, tags,
-     * added).
+     * Reads link rows from `openregister_bookmark_links` and normalises
+     * each into the registry leaf row shape consumed by CnBookmarksTab +
+     * CnBookmarksCard. Returns an empty array when Bookmarks is
+     * uninstalled.
      *
      * Payload contract per row:
-     *   id    : string — NC Bookmarks numeric id, cast to string
-     *   title : string — bookmark title (falls back to url)
+     *   id          : string — NC Bookmarks numeric id, cast to string
+     *   bookmarkId  : int    — NC Bookmarks numeric id
+     *   title       : string — bookmark title (falls back to url)
      *   description : string — user-entered description
-     *   url   : string — canonical URL
-     *   tags  : string[] — Bookmarks-side tags including the `or:*`
-     *           marker (UI filters out `or:*` prefix client-side)
-     *   added : int|null — unix timestamp (seconds) the bookmark was
-     *           saved; used by `CnBookmarksCard` for "most recent"
-     *           sort
-     *
-     * This shape matches every field `CnBookmarksTab` (favicon, title,
-     * url, description, tag chips, tag filter) and `CnBookmarksCard`
-     * (all four surfaces, including "added at" sort) consume. No
-     * widening required for Phase B-2.
-     *
-     * Favicon strategy: the UI derives the favicon URL from the
-     * bookmark's URL origin (`{origin}/favicon.ico`) and falls back
-     * to a generic Bookmark icon on load error. Bookmarks does store
-     * a `last_preview` ID for archived previews but that's not a
-     * public-facing favicon — keeping discovery client-side avoids
-     * an extra API hop per row.
+     *   url         : string — canonical URL
+     *   tags        : string[] — Bookmarks-side tags (`or:*` stripped)
+     *   added       : int|null — unix timestamp the bookmark was saved
+     *   linkId      : int    — OR link-row id
      *
      * @param string              $register Register slug or numeric id (unused).
      * @param string              $schema   Schema slug or numeric id (unused).
@@ -126,6 +115,9 @@ class BookmarksProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional filters (unused).
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/filters
+     *     are part of the IntegrationProvider::list() contract.
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -133,39 +125,29 @@ class BookmarksProvider extends AbstractIntegrationProvider
             return [];
         }
 
-        $user = $this->userSession->getUser();
-        if ($user === null) {
+        $links = $this->bookmarkLinkMapper->findByObjectUuid($objectId);
+        if ($links === []) {
             return [];
         }
 
-        $userId = $user->getUID();
-        $tag    = self::TAG_PREFIX.$objectId;
+        $out = [];
+        foreach ($links as $link) {
+            $bookmarkId = (int) $link->getBookmarkId();
+            $addedAt    = $link->getAddedAt();
 
-        try {
-            $mapper          = $this->container->get('OCA\\Bookmarks\\Db\\BookmarkMapper');
-            $queryParameters = new QueryParameters();
-            $queryParameters->setTags([$tag]);
-            $bookmarks = $mapper->findAll($userId, $queryParameters);
-        } catch (Throwable $e) {
-            // Bookmarks app schema mismatch or missing tag column on
-            // older installs degrades to an empty list — AD-23.
-            return [];
+            $out[] = [
+                'id'          => (string) $bookmarkId,
+                'bookmarkId'  => $bookmarkId,
+                'title'       => (string) ($link->getTitle() ?? ($link->getUrl() ?? '')),
+                'description' => (string) ($link->getDescription() ?? ''),
+                'url'         => (string) ($link->getUrl() ?? ''),
+                'tags'        => ($link->getTags() ?? []),
+                'added'       => ($addedAt instanceof DateTime) ? $addedAt->getTimestamp() : null,
+                'linkId'      => $link->getId(),
+            ];
         }
 
-        return array_map(
-                static function ($bookmark): array {
-                    $arr = method_exists($bookmark, 'toArray') === true ? $bookmark->toArray() : (array) $bookmark;
-                    return [
-                        'id'          => (string) ($arr['id'] ?? ''),
-                        'title'       => (string) ($arr['title'] ?? ($arr['url'] ?? '')),
-                        'description' => (string) ($arr['description'] ?? ''),
-                        'url'         => (string) ($arr['url'] ?? ''),
-                        'tags'        => $arr['tags'] ?? [],
-                        'added'       => isset($arr['added']) === true ? (int) $arr['added'] : null,
-                    ];
-                },
-                $bookmarks
-                );
+        return $out;
     }//end list()
 
     public function health(): array
