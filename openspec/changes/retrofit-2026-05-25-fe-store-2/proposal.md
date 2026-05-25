@@ -12,7 +12,7 @@ does not change runtime behaviour.
 
 ## What Changes
 
-- Mint **one new capability** `frontend-client-state-orchestration` with **3 REQs**
+- Mint **one new capability** `frontend-store-client-state` with **3 REQs**
   (REQ-001..REQ-003) describing genuinely novel client-side behaviour that no
   backend endpoint mirrors:
   - REQ-001 — client-side import heartbeat keeping the session alive during long
@@ -39,7 +39,7 @@ This is a retroactive specification. No code behaviour changes.
 
 After triage:
 
-- **4 methods → spec'd to NEW REQs** (3 REQs in `frontend-client-state-orchestration`):
+- **4 methods → spec'd to NEW REQs** (3 REQs in `frontend-store-client-state`):
   - `src/store/modules/register.js::startImportHeartbeat` → REQ-001
   - `src/store/modules/register.js::stop` (closure returned by startImportHeartbeat) → REQ-001
   - `src/store/modules/views.js::applyView` → REQ-002
@@ -63,7 +63,7 @@ After triage:
 | Excluded (with reason) | 113 |
 | **Total** | **150** |
 
-New REQs minted: **3** (`frontend-client-state-orchestration` REQ-001..REQ-003).
+New REQs minted: **3** (`frontend-store-client-state` REQ-001..REQ-003).
 
 ## Approach
 
