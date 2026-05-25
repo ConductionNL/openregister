@@ -108,6 +108,8 @@ class PollsProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional filters (unused).
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/integration-polls/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -252,6 +254,13 @@ class PollsProvider extends AbstractIntegrationProvider
         }
     }//end fetchVoterCount()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);

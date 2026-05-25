@@ -157,6 +157,8 @@ class CospendProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional registry filters (unused).
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
+     *
+     * @spec openspec/changes/integration-cospend/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -261,6 +263,13 @@ class CospendProvider extends AbstractIntegrationProvider
         return $rows;
     }//end legacyMarkerList()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $status  = 'unavailable';

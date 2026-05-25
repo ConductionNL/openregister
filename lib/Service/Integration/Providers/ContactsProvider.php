@@ -180,6 +180,13 @@ class ContactsProvider extends AbstractIntegrationProvider
         $this->contactService->unlinkContact(linkId: (int) $entityId);
     }//end delete()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);

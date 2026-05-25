@@ -131,6 +131,8 @@ class NotesProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Pagination filters (_limit / _page).
      *
      * @return array<int,array<string,mixed>> Notes rows.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -148,6 +150,8 @@ class NotesProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Note payload (message field).
      *
      * @return array<string,mixed> Created note row.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -165,6 +169,8 @@ class NotesProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Update payload (message field).
      *
      * @return array<string,mixed> Updated note row.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -181,6 +187,8 @@ class NotesProvider extends AbstractIntegrationProvider
      * @param string $entityId Note id (numeric string).
      *
      * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {

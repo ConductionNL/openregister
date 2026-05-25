@@ -97,6 +97,8 @@ class IntegrationRegistry
      *
      * @return bool True when the provider was accepted, false when
      *              rejected (duplicate or misconfigured).
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
      */
     public function addProvider(IntegrationProvider $provider): bool
     {
@@ -139,6 +141,8 @@ class IntegrationRegistry
      * @param array<int, IntegrationProvider> $providers Provider instances.
      *
      * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
      */
     public function withProviders(array $providers): void
     {
@@ -152,6 +156,8 @@ class IntegrationRegistry
      * List every registered provider, irrespective of isEnabled().
      *
      * @return array<int, IntegrationProvider>
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
      */
     public function list(): array
     {
@@ -166,6 +172,8 @@ class IntegrationRegistry
      * `VALID_LINKED_TYPES` constant.
      *
      * @return array<int, string>
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
      */
     public function listIds(): array
     {
@@ -178,6 +186,8 @@ class IntegrationRegistry
      * @param string $id Stable integration id (e.g. 'files', 'xwiki').
      *
      * @return IntegrationProvider|null Provider, or null when unknown.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
      */
     public function get(string $id): ?IntegrationProvider
     {
@@ -208,6 +218,8 @@ class IntegrationRegistry
      * providers have their OpenConnector source configured.
      *
      * @return array<int, IntegrationProvider>
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
      */
     public function getEnabled(): array
     {

@@ -128,6 +128,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * Auth requirements descriptor.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/integration-openproject/tasks.md
      */
     public function authRequirements(): array
     {
@@ -154,6 +156,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional: `_search`, `_limit`, `_page`.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/integration-openproject/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -223,6 +227,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param string $entityId Work-package id.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/integration-openproject/tasks.md
      */
     public function get(string $register, string $schema, string $objectId, string $entityId): array
     {
@@ -246,6 +252,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Reference or new-WP fields.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/integration-openproject/tasks.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -274,6 +282,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Fields to update.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/integration-openproject/tasks.md
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -301,6 +311,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param string $entityId Work-package id.
      *
      * @return void
+     *
+     * @spec openspec/changes/integration-openproject/tasks.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
@@ -315,6 +327,13 @@ class OpenProjectProvider extends AbstractIntegrationProvider
         );
     }//end delete()
 
+    /**
+     * Health descriptor — defers to the router's probe.
+     *
+     * @return array{status: string, authStatus: string, message: ?string}
+     *
+     * @spec exclude Thin delegation to ExternalIntegrationRouter::probe (annotated to pluggable-integration-registry task-4); carries no provider-specific health behaviour.
+     */
     public function health(): array
     {
         return $this->router->probe(provider: $this);
