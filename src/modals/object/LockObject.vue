@@ -97,6 +97,9 @@ export default {
 			this.process = ''
 			this.duration = 3600
 		},
+		/**
+		 * @spec exclude Lock-confirm handler delegating to objectStore.lockObject; entity lock lives in the store, this is modal orchestration plumbing.
+		 */
 		async lockObject() {
 			this.loading = true
 

@@ -283,11 +283,17 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed boolean true when any preview item is selected; UI state helper.
+		 */
 		hasSelection() {
 			return this.selectedRegisters.length > 0
 				   || this.selectedSchemas.length > 0
 				   || this.selectedObjects.length > 0
 		},
+		/**
+		 * @spec exclude Computed total count of selected preview items; UI state helper.
+		 */
 		selectionCount() {
 			return this.selectedRegisters.length
 				   + this.selectedSchemas.length
@@ -333,10 +339,16 @@ export default {
 		isSchemaSelected(slug) {
 			return this.selectedSchemas.includes(slug)
 		},
+		/**
+		 * @spec exclude Checkbox-state predicate for an object row in the preview list; UI state helper.
+		 */
 		isObjectSelected(change) {
 			const objectId = `${change.register}:${change.schema}:${change.slug}`
 			return this.selectedObjects.includes(objectId)
 		},
+		/**
+		 * @spec exclude Toggles a register slug in/out of the selection set; UI selection plumbing.
+		 */
 		toggleRegisterSelection(slug, checked) {
 			if (checked) {
 				if (!this.selectedRegisters.includes(slug)) {
@@ -346,6 +358,9 @@ export default {
 				this.selectedRegisters = this.selectedRegisters.filter(s => s !== slug)
 			}
 		},
+		/**
+		 * @spec exclude Toggles a schema slug in/out of the selection set; UI selection plumbing.
+		 */
 		toggleSchemaSelection(slug, checked) {
 			if (checked) {
 				if (!this.selectedSchemas.includes(slug)) {
@@ -355,6 +370,9 @@ export default {
 				this.selectedSchemas = this.selectedSchemas.filter(s => s !== slug)
 			}
 		},
+		/**
+		 * @spec exclude Toggles an object id in/out of the selection set; UI selection plumbing.
+		 */
 		toggleObjectSelection(change, checked) {
 			const objectId = `${change.register}:${change.schema}:${change.slug}`
 			if (checked) {
@@ -365,6 +383,9 @@ export default {
 				this.selectedObjects = this.selectedObjects.filter(id => id !== objectId)
 			}
 		},
+		/**
+		 * @spec exclude Selects all non-skip preview items; UI bulk-selection plumbing.
+		 */
 		selectAll() {
 			// Select all registers
 			if (this.preview.registers) {
@@ -385,16 +406,25 @@ export default {
 					.map(o => `${o.register}:${o.schema}:${o.slug}`)
 			}
 		},
+		/**
+		 * @spec exclude Clears all preview selections; UI bulk-selection plumbing.
+		 */
 		deselectAll() {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []
 		},
+		/**
+		 * @spec exclude Truncating/stringifying value formatter for the preview table; UI presentation helper.
+		 */
 		formatValue(value) {
 			if (value === null || value === undefined) return '-'
 			if (typeof value === 'object') return JSON.stringify(value).substring(0, 50) + '...'
 			return String(value).substring(0, 50)
 		},
+		/**
+		 * @spec exclude Posts the selected preview subset to the configurations/import endpoint and refreshes the list; UI orchestration plumbing.
+		 */
 		async importSelected() {
 			const configuration = configurationStore.configurationItem
 			if (!configuration || !configuration.id) {
@@ -442,9 +472,15 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Dialog close-event passthrough to closeModal; UI plumbing.
+		 */
 		handleDialogClose() {
 			this.closeModal()
 		},
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and preview/selection state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false

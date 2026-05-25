@@ -115,6 +115,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed passthrough exposing the selected-objects list to the template; UI state helper.
+		 */
 		objectsToRestore() {
 			return this.selectedObjects
 		},
@@ -146,6 +149,7 @@ export default {
 		 * Remove object from selection
 		 * @param {string} objectId - ID of object to remove
 		 * @return {void}
+		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
 		 */
 		removeObject(objectId) {
 			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
@@ -156,6 +160,7 @@ export default {
 		/**
 		 * Close the dialog and reset state
 		 * @return {void}
+		 * @spec exclude Modal close handler resetting navigationStore.dialog and local state; UI plumbing.
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -170,6 +175,7 @@ export default {
 		/**
 		 * Restore multiple objects
 		 * @return {Promise<void>}
+		 * @spec exclude Bulk-restore confirm handler delegating to deletedStore.restoreMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
 		async restoreMultiple() {
 			if (!this.objectsToRestore || this.objectsToRestore.length === 0) {
