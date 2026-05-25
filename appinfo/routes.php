@@ -423,6 +423,27 @@ return [
         ['name' => 'collectiveLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/collectives',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'collectiveLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/collectives/{pageId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageId' => '[0-9]+']],
 
+        // Maps (NC Maps / Location) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The specific `/maps/new` (create + link) route
+        // MUST precede the wildcard `/maps/{favoriteId}` unlink route.
+        ['name' => 'mapLinks#available',    'url' => '/api/integrations/maps/available',                       'verb' => 'GET'],
+        ['name' => 'mapLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/maps',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'mapLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/maps/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'mapLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/maps',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'mapLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/maps/{favoriteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'favoriteId' => '[0-9]+']],
+
+        // Analytics (NC Analytics) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The specific `/analytics/new` (create + link)
+        // route MUST precede the wildcard `/analytics/{reportId}` unlink
+        // route, and the app-global `available` picker route MUST precede
+        // the per-object wildcard routes.
+        // @spec openspec/changes/integration-analytics/tasks.md.
+        ['name' => 'analyticsLinks#available',    'url' => '/api/integrations/analytics/available',                  'verb' => 'GET'],
+        ['name' => 'analyticsLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/analytics',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'analyticsLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/analytics/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'analyticsLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/analytics',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'analyticsLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/analytics/{reportId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'reportId' => '[0-9]+']],
+
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface
         // only filters + cursor-paginates the entries linked to an OR

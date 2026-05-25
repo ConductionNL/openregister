@@ -1141,11 +1141,10 @@ class Application extends App implements IBootstrap
         $greenfieldProviders = [
             // @spec openspec/changes/integration-activity/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-            // @spec openspec/changes/integration-analytics/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
-            // NB: CollectivesProvider was Tier-1 greenfield until Tier-2;
-            // it now takes a CollectiveLinkMapper. Registered separately
-            // below.
+            // NB: AnalyticsProvider + CollectivesProvider were Tier-1
+            // greenfield until Tier-2; each now takes its own link mapper
+            // (AnalyticsLinkMapper / CollectiveLinkMapper) and is registered
+            // separately below.
             // @spec openspec/changes/integration-cospend/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
             // NB: FormsProvider is NO LONGER greenfield — it has a Tier-2
@@ -1154,8 +1153,8 @@ class Application extends App implements IBootstrap
             // Registered separately below.
             // NB: FlowProvider was Tier-1 greenfield until Tier-2; it now
             // takes a FlowLinkMapper. Registered separately below.
-            // @spec openspec/changes/integration-maps/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
+            // NB: MapsProvider was Tier-1 greenfield until Tier-2; it now
+            // takes a MapLinkMapper. Registered separately below.
             // NB: PhotosProvider was Tier-1 greenfield until Tier-2; it now
             // takes a PhotoLinkMapper. Registered separately below.
             // @spec openspec/changes/integration-time-tracker/tasks.md.
@@ -1350,6 +1349,42 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // MapsProvider — Tier-2: backed by the MapLinkMapper. The
+        // provider still gracefully degrades to the legacy `[or:{uuid}]`
+        // favorite-name marker scan when the link table is empty (POIs
+        // that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-maps/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\MapsProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
+                );
+            }
+        );
+
+        // MapLinkService — Tier-2 link/create/unlink/picker service
+        // backing the MapLinksController. NC Maps favorites are
+        // user-scoped; the FavoritesService is resolved lazily via the
+        // container so the service loads even when Maps is absent.
+        // @spec openspec/changes/integration-maps/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\MapLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\MapLinkService(
+                    mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
         // PhotosProvider — Tier-2: backed by the PhotoLinkMapper. The
         // provider still gracefully degrades to the legacy `[or:{uuid}]`
         // album-name marker scan when the link table is empty (albums
@@ -1403,6 +1438,24 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // AnalyticsProvider — Tier-2: backed by the AnalyticsLinkMapper.
+        // The provider still gracefully degrades to the legacy
+        // `[or:{uuid}]` report-name marker scan when the link table is
+        // empty (reports that pre-date the Tier-2 link table; wave-2.2
+        // marker-on-name convention).
+        // @spec openspec/changes/integration-analytics/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+                );
+            }
+        );
+
         // CollectiveLinkService — Tier-2 link/create/unlink/picker service
         // backing the CollectiveLinksController. NC Collectives pages are
         // user-scoped; CollectiveService + PageService are resolved lazily
@@ -1418,6 +1471,24 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // AnalyticsLinkService — Tier-2 link/create/unlink/picker service
+        // backing the AnalyticsLinksController. NC Analytics reports are
+        // user-scoped; the ReportService is resolved lazily via
+        // `\OCP\Server::get()` behind a class_exists guard so the service
+        // loads even when Analytics is absent.
+        // @spec openspec/changes/integration-analytics/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\AnalyticsLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\AnalyticsLinkService(
+                    analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
