@@ -1,17 +1,20 @@
 # file-actions
 
-## Why
+## Purpose
 
 OpenRegister's per-object file surface (`lib/Service/File/*Handler`) ships
 creation/upsert, retrieval, content+metadata update, publishing/ZIP export,
 sharing, and upload-security behavior that the `retrofit-2026-05-24-file-actions`
-pass explicitly deferred to a follow-up. This delta reverse-specs that deferred
-slice as REQ-006 … REQ-010 so the spec reflects the live, shipped system. No
-code changes — these requirements describe observed behavior.
+pass explicitly deferred to a follow-up (its `## DROP — future-pass:next`
+section). This delta reverse-specs that deferred slice as five new requirements
+so the spec reflects the live, shipped system. No code changes — these
+requirements describe observed behavior.
+
+**Cross-references**: [file-actions main spec](../../../../specs/file-actions/spec.md) (when finalised); `retrofit-2026-05-24-file-actions` (the prior REQ-001…REQ-005 pass covering CRUD/lock/preview/folder/object-tagging); [audit-trail-immutable](../../../../specs/audit-trail-immutable/spec.md).
 
 ## ADDED Requirements
 
-### Requirement: REQ-006 — File creation and upsert MUST run a fixed validate-write-own-tag pipeline
+### Requirement: File creation and upsert run a fixed validate-write-own-tag pipeline
 
 `CreateFileHandler::addFile()` MUST create a Nextcloud file under the object's
 folder following a fixed ordered pipeline, and `CreateFileHandler::saveFile()`
@@ -66,7 +69,7 @@ delegate to `addFile()`. Both methods MUST wrap failures and rethrow as
 - **WHEN** `saveFile(object, "data.json", content)` is called
 - **THEN** the handler MUST delegate to `addFile()`
 
-### Requirement: REQ-007 — File retrieval MUST resolve by id or name and project nodes to metadata
+### Requirement: File retrieval resolves by id or name and projects nodes to metadata
 
 `ReadFileHandler` MUST expose three retrieval paths and `FileFormattingHandler`
 MUST project Nextcloud nodes into the public metadata shape.
@@ -122,7 +125,7 @@ MUST project Nextcloud nodes into the public metadata shape.
 - **WHEN** `formatFile()` builds the metadata
 - **THEN** the `locked`/`lock`/`downloadCount`/`orLock` fields MUST be omitted
 
-### Requirement: REQ-008 — File update MUST guard locks, preserve object tags, and persist OR-side metadata separately
+### Requirement: File update guards locks, preserves object tags, and persists OR-side metadata separately
 
 `UpdateFileHandler::updateFile()` MUST update content and/or tags of an existing
 file resolved by ID or name/path, and `UpdateFileHandler::updateFileMetadata()`
@@ -181,7 +184,7 @@ which defensively clears malformed or expired entries and returns `null`.
 - **WHEN** the current user `alice` triggers a write and `assertCanModify(fileId)` is reached
 - **THEN** the guard MUST throw an `Exception` naming `bob`
 
-### Requirement: REQ-009 — Publishing, ZIP export, sharing and batch operations MUST follow the system-user share model
+### Requirement: Publishing, ZIP export, sharing and batch operations follow the system-user share model
 
 The system MUST expose file publishing, object-files ZIP export, user/folder
 sharing, and a bounded multi-file batch dispatcher, all anchored on the
@@ -252,7 +255,7 @@ OpenRegister system user.
 - **WHEN** `executeBatch()` runs
 - **THEN** the result MUST report `succeeded: 2, failed: 1` with a per-file error entry for the failure
 
-### Requirement: REQ-010 — Uploaded files MUST be screened for executable content and ownership repaired safely
+### Requirement: Uploaded files screened for executable content and ownership repaired safely
 
 `FileValidationHandler` MUST screen uploaded content for executables and repair
 drifted OpenRegister ownership without forcing content reads.
@@ -301,3 +304,19 @@ drifted OpenRegister ownership without forcing content reads.
 - **GIVEN** a readable node whose owner is not the system user
 - **WHEN** `checkOwnership()` runs
 - **THEN** it MUST call `ownFile()`, and a failure inside `ownFile()` MUST be logged and swallowed so the caller is not failed
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: These handlers are a service-layer file surface. The exception messages they throw (e.g. `"Failed to create file <name>"`, `"File <path> does not exist"`, the executable-rejection messages) are propagated by the calling controller as error-response bodies, so they are user-facing and SHOULD be translatable (Dutch + English). The shipped handlers throw plain English `Exception`/`NotPermittedException` messages and do not route through `IL10N`; per the reverse-spec mandate this is captured as observed behaviour, not changed here. Translation belongs to the controller layer that wraps these throws.
+- **Security (ADR-002)**: Upload screening (REQ-010) MUST reject executable content by both extension and magic-byte/shebang/`<?php` content scan of the first 1 KiB before a node is created; ownership probing uses a permission-bitmask check (`isReadable()`) that neither reads content nor acquires an NC lock, keeping it safe in hot listing loops. Lock state (REQ-008) is gated to authenticated callers only.
+- **Layering (ADR-003)**: Behaviour lives in single-responsibility `Service/File/*Handler` classes coordinated by `FileService`; OR-side metadata is persisted via `FileMapper`, NC nodes via `IRootFolder`. No controller-to-mapper shortcut is specified. The `FilePublishingHandler` writes shares directly through `FileMapper` rather than `IManager` — captured as an observed deviation in the change Notes, not endorsed as a target pattern.
+- **Resilience**: `formatFiles` emits a per-file `{id, title, error: "locked"}` stub on `LockedException` rather than failing the whole listing; batch operations continue past per-file failures and report a `{total, succeeded, failed}` summary.
+
+## Acceptance Criteria
+
+- [x] REQ-006: create/upsert runs the fixed resolve-folder → decode → block-executable → create → check-ownership → write → transfer-ownership → tag pipeline; `saveFile()` upserts (update existing same-name file, else add).
+- [x] REQ-007: retrieval resolves numeric/all-digit `$file` as a file id and other values as a name/path (bare then full path), gates lock/OR-side fields to authenticated callers, and filters listings by OR-side category when a `FileMapper` is wired.
+- [x] REQ-008: content is written only when md5 differs; `object:`-prefixed tags are preserved across tag updates; OR-side metadata fields are independently optional; document rewrites produce `_replaced`/`_anonymized` sibling nodes; writes are lock-guarded via `assertCanModify()`.
+- [x] REQ-009: publishing/unpublishing write through `FileMapper`; ZIP export skips non-file nodes; sharing follows the system-user model with the asymmetric file-vs-folder failure contract; batch rejects empty/>100 lists and continues past per-file failures.
+- [x] REQ-010: uploads are screened by extension and content signature; `checkOwnership()` refuses unreadable nodes without repair and repairs drifted ownership best-effort on readable nodes.
+- [x] All 36 in-scope methods annotated with `@spec file-actions#...` pointers; 9 boilerplate methods tagged `@spec exclude <reason>`.

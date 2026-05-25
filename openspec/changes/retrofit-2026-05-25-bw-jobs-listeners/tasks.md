@@ -33,5 +33,5 @@ Each task back-annotates one method against its target REQ (existing capability 
 
 ## object-lifecycle (new REQs)
 
-- [x] task-12: object-lifecycle#REQ-010 — Declared initial lifecycle state MUST be applied on create — `LifecycleInitialStateListener::handle` force-sets the schema's declared `initial` lifecycle value on `ObjectCreatingEvent` when the caller left it empty (new REQ)
-- [x] task-13: object-lifecycle#REQ-011 — Direct lifecycle-field edits MUST be guarded on update — `LifecycleValidationListener::handle` rejects lifecycle-field changes with no allowing transition and runs the optional `requires` guard on `ObjectUpdatingEvent`, stopping propagation with a structured error (new REQ)
+- [x] task-12: object-lifecycle#Declared initial lifecycle state applied on create — `LifecycleInitialStateListener::handle` force-sets the schema's declared `initial` lifecycle value on `ObjectCreatingEvent` when the caller left it empty (new REQ)
+- [x] task-13: object-lifecycle#Direct lifecycle-field edits guarded on update — `LifecycleValidationListener::handle` rejects lifecycle-field changes with no allowing transition and runs the optional `requires` guard on `ObjectUpdatingEvent`, stopping propagation with a structured error (new REQ)

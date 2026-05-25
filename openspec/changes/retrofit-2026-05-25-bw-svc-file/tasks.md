@@ -7,11 +7,11 @@ methods from `/tmp/or-scan/bw-svc-file.json`; every method ends tagged with an
 
 ## Covered — new REQs (annotated this run)
 
-- [x] task-1: file-actions#REQ-006 — File creation & upsert pipeline (CreateFileHandler::addFile, ::saveFile; FileOwnershipHandler::transferFileOwnershipIfNeeded)
-- [x] task-2: file-actions#REQ-007 — File retrieval + node→metadata projection (ReadFileHandler::getFile, ::getFileById, ::getFiles; FileFormattingHandler::formatFile, ::formatFiles; FileLockHandler::getLockInfo)
-- [x] task-3: file-actions#REQ-008 — Content + OR-side metadata update, doc rewrite, write-lock guard (UpdateFileHandler::updateFile, ::updateFileMetadata; DocumentProcessingHandler::replaceWords, ::anonymizeDocument; FileLockHandler::assertCanModify)
-- [x] task-4: file-actions#REQ-009 — Publishing, ZIP export, sharing, batch (FilePublishingHandler::publishFile, ::unpublishFile, ::createObjectFilesZip; FileSharingHandler::createShare, ::findShares, ::shareFileWithUser, ::shareFolderWithUser; FileBatchHandler::executeBatch; FileOwnershipHandler::getUser, ::transferFolderOwnershipIfNeeded)
-- [x] task-5: file-actions#REQ-010 — Upload security validation + ownership repair (FileValidationHandler::blockExecutableFile, ::detectExecutableMagicBytes, ::checkOwnership, ::ownFile)
+- [x] task-1: file-actions#File creation and upsert run a fixed validate-write-own-tag pipeline (CreateFileHandler::addFile, ::saveFile; FileOwnershipHandler::transferFileOwnershipIfNeeded)
+- [x] task-2: file-actions#File retrieval resolves by id or name and projects nodes to metadata (ReadFileHandler::getFile, ::getFileById, ::getFiles; FileFormattingHandler::formatFile, ::formatFiles; FileLockHandler::getLockInfo)
+- [x] task-3: file-actions#File update guards locks, preserves object tags, and persists OR-side metadata separately (UpdateFileHandler::updateFile, ::updateFileMetadata; DocumentProcessingHandler::replaceWords, ::anonymizeDocument; FileLockHandler::assertCanModify)
+- [x] task-4: file-actions#Publishing, ZIP export, sharing and batch operations follow the system-user share model (FilePublishingHandler::publishFile, ::unpublishFile, ::createObjectFilesZip; FileSharingHandler::createShare, ::findShares, ::shareFileWithUser, ::shareFolderWithUser; FileBatchHandler::executeBatch; FileOwnershipHandler::getUser, ::transferFolderOwnershipIfNeeded)
+- [x] task-5: file-actions#Uploaded files screened for executable content and ownership repaired safely (FileValidationHandler::blockExecutableFile, ::detectExecutableMagicBytes, ::checkOwnership, ::ownFile)
 
 ## Covered — existing REQs (annotated to the 2026-05-24 pass)
 

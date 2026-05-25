@@ -1,6 +1,21 @@
 # Retrofit — background jobs / listeners / cron bundle
 
-Reverse-specs a small backend cluster of uncovered background jobs, event listeners, and one cron task: 15 methods across `lib/BackgroundJob/`, `lib/Listener/`, and `lib/Cron/`. Most are the recurring / reactive half of a pipeline whose synchronous half is already specced, so the bias is `--extend` of an existing capability. The code already exists; this change retroactively specifies the observed behaviour and back-annotates each method.
+## Why
+
+A backend cluster of 15 shipped methods across `lib/BackgroundJob/`, `lib/Listener/`, and `lib/Cron/` had no `@spec` coverage, leaving the recurring/reactive half of several pipelines undocumented even though their synchronous half is already specced. Without coverage these methods are invisible to spec-to-test mapping (ADR-008) and the next maintainer cannot tell intended behaviour from incidental implementation. This change closes that gap by reverse-speccing the observed behaviour and back-annotating each method, biased toward `--extend` of existing capabilities so the recurring/reactive code lands next to its synchronous counterpart.
+
+## What Changes
+
+- **3 new REQs** drafted: 1 on `search-index` (asynchronous file text extraction) and 2 on `object-lifecycle` (initial-state listener, update-guard listener).
+- **10 methods** annotated to existing REQs across `notificatie-engine`, `faceting-configuration`, `workflow-operations`, `rapportage-bi-export`, `search-index`, and `retention-management` (no new REQ — `--extend`).
+- **2 methods excluded** via `@spec exclude <reason>` (disabled-by-default migration backfill; dispatch-only event router).
+- No production code behaviour changes — annotations and spec text only.
+
+## Impact
+
+- **Capabilities touched**: `search-index`, `object-lifecycle` (new REQs); `notificatie-engine`, `faceting-configuration`, `workflow-operations`, `rapportage-bi-export`, `retention-management` (existing REQs extended by annotation).
+- **Code**: method-level `@spec` tags added under `lib/BackgroundJob/`, `lib/Listener/`, `lib/Cron/`.
+- **Risk**: low — reverse-spec, no runtime change. Surfaced-but-not-fixed concerns (RBAC/multitenancy system-bypass, the validation listener's hardcoded-English error messages) are documented in Notes for a follow-up functional pass.
 
 Source: `/tmp/or-scan/bw-jobs-listeners.json` (cluster `jobs-listeners`, generated 2026-05-25). See [retrofit playbook](../../../.github/docs/claude/retrofit.md).
 
@@ -33,8 +48,8 @@ Source: `/tmp/or-scan/bw-jobs-listeners.json` (cluster `jobs-listeners`, generat
 | Method | Capability | New REQ |
 |---|---|---|
 | `BackgroundJob/FileTextExtractionJob::run` | `search-index` | Asynchronous file text extraction MUST run as a queued background job |
-| `Listener/LifecycleInitialStateListener::handle` | `object-lifecycle` | REQ-010 — Declared initial lifecycle state MUST be applied on create |
-| `Listener/LifecycleValidationListener::handle` | `object-lifecycle` | REQ-011 — Direct lifecycle-field edits MUST be guarded on update |
+| `Listener/LifecycleInitialStateListener::handle` | `object-lifecycle` | Declared initial lifecycle state applied on create |
+| `Listener/LifecycleValidationListener::handle` | `object-lifecycle` | Direct lifecycle-field edits guarded on update |
 
 ### Excluded (2 methods)
 
@@ -63,8 +78,8 @@ Source: `/tmp/or-scan/bw-jobs-listeners.json` (cluster `jobs-listeners`, generat
 ### object-lifecycle (2 new REQs)
 The object-lifecycle capability already specs the annotation validator (REQ-006), the named-action `TransitionEngine` (REQ-007), and the guard registry / `GuardResult` contract (REQ-008/009). The two listeners in this bundle are the **event-listener enforcement layer** that those REQs do not describe:
 
-- `LifecycleInitialStateListener::handle` force-sets the schema's declared `initial` value on `ObjectCreatingEvent` when the caller left the lifecycle field empty — so apps never have to remember the starting state. → **REQ-010**.
-- `LifecycleValidationListener::handle` guards **direct field edits** (not the named-action `TransitionEngine` path): on `ObjectUpdatingEvent` it rejects any lifecycle-field change that no declared transition allows from the current value, and runs the optional `requires` guard, stopping propagation with a structured error. This is the `saveObject()`-driven complement to REQ-007's explicit-action engine. → **REQ-011**.
+- `LifecycleInitialStateListener::handle` force-sets the schema's declared `initial` value on `ObjectCreatingEvent` when the caller left the lifecycle field empty — so apps never have to remember the starting state. → new REQ **Declared initial lifecycle state applied on create**.
+- `LifecycleValidationListener::handle` guards **direct field edits** (not the named-action `TransitionEngine` path): on `ObjectUpdatingEvent` it rejects any lifecycle-field change that no declared transition allows from the current value, and runs the optional `requires` guard, stopping propagation with a structured error. This is the `saveObject()`-driven complement to REQ-007's explicit-action engine. → new REQ **Direct lifecycle-field edits guarded on update**.
 
 ## Notes
 

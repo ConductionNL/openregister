@@ -1,8 +1,14 @@
 # Object Lifecycle
 
+## Purpose
+
+The `object-lifecycle` capability already specifies the annotation validator (REQ-006), the named-action `TransitionEngine` (REQ-007), and the guard registry / `GuardResult` contract (REQ-008/009). This delta retroactively captures the **event-listener enforcement layer** those requirements do not describe: the two listeners that apply a schema's declared initial lifecycle state on create and guard direct lifecycle-field edits on update. The code already ships in production; these requirements describe its observed behaviour so the spec reflects the live system.
+
+**Cross-references**: object-lifecycle REQ-006 (annotation validator), REQ-007 (named-action `TransitionEngine`), REQ-008/009 (guard registry / `GuardResult`); [event-driven-architecture](../../../../specs/event-driven-architecture/spec.md).
+
 ## ADDED Requirements
 
-### Requirement: REQ-010 — Declared initial lifecycle state MUST be applied on create
+### Requirement: Declared initial lifecycle state applied on create
 
 `LifecycleInitialStateListener::handle()` MUST, on `ObjectCreatingEvent`, force-set the schema's declared initial lifecycle value when the caller did not supply one. The listener reads the `x-openregister-lifecycle` annotation from the object's schema, takes the annotation's `field` and `initial` keys, and writes `initial` into the object payload under `field` ONLY when that field is currently absent, null, or an empty string. A caller-supplied non-empty value MUST be left untouched (its validity is the validator's / update-guard's concern). The listener MUST be a no-op when the event is not an `ObjectCreatingEvent`, when the schema cannot be resolved, when the schema declares no lifecycle annotation, or when the annotation's `field`/`initial` are empty.
 
@@ -33,7 +39,7 @@ Apps therefore never need to know the starting state — lifecycle is a declarat
 - `loadSchema()` resolves the object's schema via `SchemaMapper::find($ref, _multitenancy: false)` — a system-level lookup because the listener is not user-scoped. An unresolvable or empty schema reference yields a null schema and the listener returns early after logging a warning. See the change Notes for the multitenancy-boundary follow-up.
 - This is the create-time complement to REQ-006's annotation validator; it relies on the annotation already being shape-valid.
 
-### Requirement: REQ-011 — Direct lifecycle-field edits MUST be guarded on update
+### Requirement: Direct lifecycle-field edits guarded on update
 
 `LifecycleValidationListener::handle()` MUST, on `ObjectUpdatingEvent`, reject lifecycle-field edits made through the ordinary save path (`ObjectService::saveObject()`) that no declared transition allows. This is the complement to REQ-007's named-action `TransitionEngine`: it guards the case where a caller edits the lifecycle field value directly rather than invoking a named action. When the old and new value of the annotation's `field` differ, the listener MUST:
 
@@ -75,3 +81,16 @@ Each rejection MUST stamp a structured error onto the event and stop propagation
 #### Notes
 - Trust contract: this listener only fires on `ObjectUpdatingEvent`, dispatched by `ObjectService::saveObject()`. Code paths that mutate an object outside `saveObject()` (direct `MagicMapper::update`, raw SQL, import bypass) skip the listener and can persist an invalid lifecycle value. Callers MUST go through `saveObject()` for the guarantee to hold; a DB-level CHECK constraint is a future hardening step.
 - `loadSchema()` uses `_multitenancy: false` (system-level lookup). The guard receives the loaded object payload, the action name, and the caller's uid via `IUserSession`.
+
+## Non-Functional Requirements
+
+- **i18n (ADR-007)**: The validation listener emits structured rejection messages (`lifecycle-invalid-value`, `lifecycle-invalid-transition`, `lifecycle-guard-denied`) that the controller surfaces to the user as HTTP 422/403 bodies — these are user-facing and SHOULD be translatable (Dutch + English). The shipped messages are hardcoded English via `sprintf()` and do not yet route through `IL10N`; this is captured as an observed gap (see change Notes), not changed in this reverse-spec pass. The initial-state listener emits no user-facing strings (warnings are log-only).
+- **Layering (ADR-003)**: Both listeners react to domain events (`ObjectCreatingEvent`/`ObjectUpdatingEvent`) dispatched by `ObjectService::saveObject()` and resolve schemas via `SchemaMapper` — the service/listener boundary is respected; no controller-to-mapper shortcut is introduced.
+- **Trust boundary**: The update guarantee holds only for mutations that flow through `saveObject()`; out-of-band writes (direct `MagicMapper::update`, raw SQL, import bypass) skip the listener (see REQ Notes).
+
+## Acceptance Criteria
+
+- [x] On create, a declared `initial` lifecycle value is force-set only when the caller leaves the field absent/null/empty; caller-supplied values are preserved.
+- [x] On update, a lifecycle-field change with no declared allowing transition is rejected with `lifecycle-invalid-transition`, a non-string value with `lifecycle-invalid-value`, and a failed `requires` guard with `lifecycle-guard-denied`; each stops propagation.
+- [x] Both listeners are no-ops when the event type, prior state, schema, or lifecycle annotation preconditions are not met.
+- [x] Behaviour annotated in code with `@spec object-lifecycle#...` pointers on `LifecycleInitialStateListener::handle` and `LifecycleValidationListener::handle`.
