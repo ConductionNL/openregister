@@ -72,6 +72,22 @@ class SecurityService
     private const MAX_PROGRESSIVE_DELAY  = 60;
 
     /**
+     * Inbound-API brute-force configuration constants.
+     *
+     * These are intentionally MORE generous than the interactive-login
+     * constants above. Inbound API auth is wired into a middleware that
+     * sees every authenticated request, so a tight threshold risks locking
+     * out legitimate automated traffic (mis-configured token in a cron job,
+     * a single client behind a shared NAT, etc). The composite identity+IP
+     * key (see checkAuthRateLimit) keeps a single bad actor from poisoning a
+     * shared IP, so we can afford a higher per-IP fallback ceiling.
+     */
+    private const AUTH_RATE_LIMIT_ATTEMPTS    = 20;
+    private const AUTH_RATE_LIMIT_IP_ATTEMPTS = 100;
+    private const AUTH_RATE_LIMIT_WINDOW      = 900;
+    private const AUTH_LOCKOUT_DURATION       = 900;
+
+    /**
      * Cache key prefixes for different security features
      */
     private const CACHE_PREFIX_LOGIN_ATTEMPTS    = 'openregister_login_attempts_';
@@ -79,6 +95,17 @@ class SecurityService
     private const CACHE_PREFIX_USER_LOCKOUT      = 'openregister_user_lockout_';
     private const CACHE_PREFIX_IP_LOCKOUT        = 'openregister_ip_lockout_';
     private const CACHE_PREFIX_PROGRESSIVE_DELAY = 'openregister_progressive_delay_';
+
+    /**
+     * Cache key prefixes for the inbound-API brute-force path.
+     *
+     * Kept separate from the interactive-login prefixes so the two paths
+     * never share counters: locking out a brute-forced API token must not
+     * lock the same identity out of the login form, and vice-versa.
+     */
+    private const CACHE_PREFIX_AUTH_ATTEMPTS    = 'openregister_auth_attempts_';
+    private const CACHE_PREFIX_AUTH_IP_ATTEMPTS = 'openregister_auth_ip_attempts_';
+    private const CACHE_PREFIX_AUTH_LOCKOUT     = 'openregister_auth_lockout_';
 
     /**
      * Constructor for SecurityService
@@ -350,6 +377,170 @@ class SecurityService
     }//end clearUserRateLimits()
 
     /**
+     * Check whether an inbound-API authentication attempt is allowed.
+     *
+     * This powers the brute-force protection wired into the inbound auth
+     * middleware (issue #1834). It is deliberately distinct from
+     * checkLoginRateLimit():
+     *
+     * - Lockout is keyed on a COMPOSITE (identity + IP) so a single bad
+     *   actor on a shared NAT/proxy IP cannot lock out, or reset the
+     *   counter of, other legitimate clients sharing that IP (issue #1834
+     *   item 2). A much higher per-IP ceiling is kept purely as a
+     *   coarse-grained backstop against a high-volume sprayer.
+     * - Thresholds are generous (see AUTH_RATE_LIMIT_* constants) to avoid
+     *   locking out legitimate automated traffic.
+     *
+     * The caller (middleware) MUST fail OPEN: if this method throws, the
+     * request should be allowed through. A bug in the limiter must never
+     * deny service to every client.
+     *
+     * @param string $identity  The authentication identity (username/token id) or '' if unknown
+     * @param string $ipAddress The trusted client IP address of the request
+     *
+     * @return array{allowed: bool, lockout_until?: int, reason?: string} Result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     */
+    public function checkAuthRateLimit(string $identity, string $ipAddress): array
+    {
+        $compositeKey = $this->buildAuthCompositeKey(identity: $identity, ipAddress: $ipAddress);
+        $ipAddress    = $this->sanitizeForCacheKey(input: $ipAddress);
+
+        // Composite (identity+IP) lockout — the primary, narrowly-scoped gate.
+        $lockoutKey   = self::CACHE_PREFIX_AUTH_LOCKOUT.$compositeKey;
+        $lockoutUntil = $this->cache->get($lockoutKey);
+        if ($lockoutUntil !== null && $lockoutUntil > time()) {
+            return [
+                'allowed'       => false,
+                'lockout_until' => $lockoutUntil,
+                'reason'        => 'Too many failed authentication attempts. Please wait before trying again.',
+            ];
+        }
+
+        return ['allowed' => true];
+    }//end checkAuthRateLimit()
+
+    /**
+     * Record a failed inbound-API authentication attempt.
+     *
+     * Increments the composite (identity+IP) counter and a coarse per-IP
+     * counter, applying a lockout when either threshold is crossed. Callers
+     * (the middleware) MUST swallow any exception this throws (fail-open).
+     *
+     * @param string $identity  The authentication identity (username/token id) or '' if unknown
+     * @param string $ipAddress The trusted client IP address of the failed attempt
+     * @param string $reason    The reason for authentication failure
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     */
+    public function recordFailedAuthAttempt(string $identity, string $ipAddress, string $reason='inbound_auth_failed'): void
+    {
+        $compositeKey = $this->buildAuthCompositeKey(identity: $identity, ipAddress: $ipAddress);
+        $sanitizedIp  = $this->sanitizeForCacheKey(input: $ipAddress);
+
+        // Composite (identity+IP) counter — primary gate.
+        $attemptsKey = self::CACHE_PREFIX_AUTH_ATTEMPTS.$compositeKey;
+        $attempts    = ($this->cache->get($attemptsKey) ?? 0) + 1;
+        $this->cache->set($attemptsKey, $attempts, self::AUTH_RATE_LIMIT_WINDOW);
+
+        // Coarse per-IP counter — high-ceiling backstop only.
+        $ipAttemptsKey = self::CACHE_PREFIX_AUTH_IP_ATTEMPTS.$sanitizedIp;
+        $ipAttempts    = ($this->cache->get($ipAttemptsKey) ?? 0) + 1;
+        $this->cache->set($ipAttemptsKey, $ipAttempts, self::AUTH_RATE_LIMIT_WINDOW);
+
+        $lockoutTriggered = false;
+        if ($attempts >= self::AUTH_RATE_LIMIT_ATTEMPTS || $ipAttempts >= self::AUTH_RATE_LIMIT_IP_ATTEMPTS) {
+            $lockoutTriggered = true;
+            $lockoutUntil     = time() + self::AUTH_LOCKOUT_DURATION;
+            $lockoutKey       = self::CACHE_PREFIX_AUTH_LOCKOUT.$compositeKey;
+            $this->cache->set($lockoutKey, $lockoutUntil, self::AUTH_LOCKOUT_DURATION);
+
+            $this->logSecurityEvent(
+                event: 'auth_locked_out',
+                context: [
+                    'identity'      => $identity,
+                    'ip_address'    => $sanitizedIp,
+                    'attempts'      => $attempts,
+                    'ip_attempts'   => $ipAttempts,
+                    'lockout_until' => $lockoutUntil,
+                ]
+            );
+        }
+
+        $this->logSecurityEvent(
+            event: 'failed_auth_attempt',
+            context: [
+                'identity'          => $identity,
+                'ip_address'        => $sanitizedIp,
+                'reason'            => $reason,
+                'attempts'          => $attempts,
+                'ip_attempts'       => $ipAttempts,
+                'lockout_triggered' => $lockoutTriggered,
+            ]
+        );
+    }//end recordFailedAuthAttempt()
+
+    /**
+     * Clear the inbound-API auth rate-limit counters for an identity+IP.
+     *
+     * Called on a successful authenticated request so a single mistyped
+     * credential earlier in the window doesn't accumulate toward a lockout.
+     *
+     * @param string $identity  The authentication identity (username/token id)
+     * @param string $ipAddress The trusted client IP address
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     */
+    public function recordSuccessfulAuth(string $identity, string $ipAddress): void
+    {
+        $compositeKey = $this->buildAuthCompositeKey(identity: $identity, ipAddress: $ipAddress);
+
+        $this->cache->remove(self::CACHE_PREFIX_AUTH_ATTEMPTS.$compositeKey);
+        $this->cache->remove(self::CACHE_PREFIX_AUTH_LOCKOUT.$compositeKey);
+    }//end recordSuccessfulAuth()
+
+    /**
+     * Resolve the trusted client IP address for rate-limiting purposes.
+     *
+     * Unlike getClientIpAddress() — which trusts forwarding headers from
+     * ANY source and is therefore spoofable (issue #1834 item 3) — this
+     * method defers entirely to the platform's getRemoteAddress(), which
+     * only honours forwarding headers from configured `trusted_proxies`.
+     * This is the correct primitive for security decisions.
+     *
+     * @param IRequest $request The request object
+     *
+     * @return string The trusted client IP address
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
+     */
+    public function getTrustedClientIpAddress(IRequest $request): string
+    {
+        return $request->getRemoteAddress();
+    }//end getTrustedClientIpAddress()
+
+    /**
+     * Build the composite (identity + IP) cache key for inbound-API auth.
+     *
+     * @param string $identity  The authentication identity, may be empty
+     * @param string $ipAddress The trusted client IP address
+     *
+     * @return string The sanitized composite cache key
+     */
+    private function buildAuthCompositeKey(string $identity, string $ipAddress): string
+    {
+        $identity = $this->sanitizeForCacheKey(input: ($identity !== '' ? $identity : 'anonymous'));
+        $ip       = $this->sanitizeForCacheKey(input: $ipAddress);
+
+        return $identity.'_'.$ip;
+    }//end buildAuthCompositeKey()
+
+    /**
      * Sanitize input data to prevent XSS and injection attacks
      *
      * @param mixed $input     The input to sanitize
@@ -544,6 +735,7 @@ class SecurityService
         switch ($event) {
             case 'user_locked_out':
             case 'login_attempt_during_lockout':
+            case 'auth_locked_out':
                 $this->logger->warning(
                     message: "[SecurityService] Security event: {$event}",
                     context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context)
