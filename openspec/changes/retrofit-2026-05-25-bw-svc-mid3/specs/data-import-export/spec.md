@@ -46,3 +46,29 @@ Any failure MUST be logged and re-thrown wrapped as `Failed to create or update 
 - **WHEN** the new-configuration branch runs
 - **THEN** `githubRepo`/`githubBranch`/`githubPath` MUST be populated from the nested keys
 - **AND** an import using the legacy flat `githubRepo`/`githubBranch`/`githubPath` keys MUST populate the same fields
+
+## Non-Functional
+
+- **i18n (ADR-007):** This delta tracks import bookkeeping with no user-facing
+  copy of its own. The default title/description strings
+  (`"Configuration for {appId}"`) are administrative fallbacks for untitled
+  imports, not localised end-user labels; when the import data carries
+  `info.title`/`description` those caller-supplied (already-localised) values
+  take precedence. The wrapped failure message
+  (`Failed to create or update configuration: {message}`) is an
+  operator/log diagnostic and is exempt from translation.
+- **Idempotency:** re-importing the same app MUST reconcile into a single
+  tracking record and MUST NOT lose previously tracked entity IDs
+  (`array_unique(array_merge(...))`).
+
+## Acceptance Criteria
+
+- One `Configuration` per app: re-import updates the existing record (union,
+  de-duplicated IDs); first import inserts a `isLocal=true`, `syncEnabled=false`,
+  `syncStatus='never'` record.
+- Metadata resolves via the OAS `info` → `x-openregister` → top-level → default
+  fallback chain, `info.title` winning when present.
+- GitHub coordinates populate identically from the nested
+  `x-openregister.github.{repo,branch,path}` and the legacy flat shape.
+- Any failure is logged and re-thrown wrapped as
+  `Failed to create or update configuration: {message}`.

@@ -23,7 +23,7 @@ Code already exists — this change retroactively specifies observed behaviour.
 
 ## ADDED Requirements
 
-### Requirement: REQ-001 — Source handlers MUST implement a common extraction contract
+### Requirement: Source handlers MUST implement a common extraction contract (REQ-001)
 The system MUST expose a `TextExtractionHandlerInterface` that every
 source-type handler implements, so the orchestrating service can extract text
 from any registered source type without knowing its concrete type. The
@@ -50,7 +50,7 @@ be resolved.
 - **WHEN** `getSourceMetadata($sourceId)` is called
 - **THEN** the handler MUST throw `DoesNotExistException`
 
-### Requirement: REQ-002 — Handlers MUST extract normalised text and a stable checksum from their source
+### Requirement: Handlers MUST extract normalised text and a stable checksum from their source (REQ-002)
 Each handler's `extractText()` MUST load the source by ID, derive a plain-text
 projection of its content, and return the normalised result array. The `text`
 field MUST be a non-empty string — when no text can be derived the handler MUST
@@ -83,7 +83,7 @@ into `key: value` lines with a bounded recursion depth.
 - **THEN** the handler MUST throw an exception naming the source ID rather than
   returning an empty `text`
 
-### Requirement: REQ-003 — Handlers MUST gate re-extraction on source freshness
+### Requirement: Handlers MUST gate re-extraction on source freshness (REQ-003)
 Each handler MUST expose `needsExtraction(int $sourceId, int $sourceTimestamp,
 bool $force): bool` and `getSourceTimestamp(int $sourceId): int` so the
 orchestrator can skip work when previously-produced chunks are still
@@ -114,3 +114,30 @@ falling back to the current time when the source cannot be resolved.
 - **GIVEN** a source ID that does not resolve
 - **WHEN** `getSourceTimestamp($sourceId)` is called
 - **THEN** it MUST return the current Unix timestamp instead of throwing
+
+## Non-Functional
+
+- **i18n (ADR-007):** This capability is a backend extraction layer with no
+  user-facing strings of its own. The detected source `language` and
+  `language_confidence` it records are propagated to downstream search and
+  PII detection; the layer MUST NOT hardcode a language assumption and MUST
+  preserve the detected `language`/`language_level`/`detection_method` keys
+  verbatim so localised presentation remains the caller's concern.
+- **Error surfaces** raised here (`DoesNotExistException`, "no extractable
+  text" failures) are developer/operator diagnostics, not end-user copy, and
+  are exempt from translation.
+- **Determinism:** the SHA-256 `checksum` MUST be stable for identical input
+  text so freshness gating and re-extraction skipping are reproducible.
+- **Bounded work:** object flattening MUST honour a fixed recursion-depth bound
+  to keep extraction cost bounded on deeply nested payloads.
+
+## Acceptance Criteria
+
+- Every concrete handler implements `TextExtractionHandlerInterface` and returns
+  the full normalised key set from `extractText()`.
+- `getSourceMetadata` throws `DoesNotExistException` on an unresolvable source.
+- `checksum` equals `hash('sha256', $text)` for the extracted text.
+- `needsExtraction` returns `true` on force, on no existing chunks, and on stale
+  chunks; `false` only when chunks are at or newer than the source timestamp.
+- `getSourceTimestamp` falls back to the current time (never throws) on an
+  unresolvable source.

@@ -53,3 +53,29 @@ Each result entry MUST carry `vector_id`, `entity_type`, `entity_id`, `similarit
 - **WHEN** `hybridSearch(...)` normalises them
 - **THEN** the effective weights MUST be `['solr' => 0.75, 'vector' => 0.25]`
 - **AND** the returned `weights` field MUST reflect the normalised values
+
+## Non-Functional
+
+- **i18n (ADR-007):** This delta covers backend vector-query execution with no
+  user-facing copy of its own. The query string is opaque pass-through content
+  embedded by the model and is locale-agnostic; result entries carry only
+  machine fields (`vector_id`, `similarity`, `chunk_text`, etc.) and no
+  presentation labels. Error strings (`Solr service is not available`,
+  `Semantic search failed: {message}`) are operator/log diagnostics and are
+  exempt from translation.
+- **Graceful degradation:** a failing vector leg in `hybridSearch` MUST be
+  logged and tolerated; the Solr leg MUST still fuse and return results.
+- **Resilience:** an unparseable stored embedding MUST be skipped (warning),
+  never fatal, on the database path.
+
+## Acceptance Criteria
+
+- `semanticSearch` embeds the query, routes by backend, computes cosine
+  similarity on the DB path, sorts descending, and caps at `limit`; an empty
+  vector table returns `[]`.
+- Each result entry carries the full key set (`vector_id`, `entity_type`,
+  `entity_id`, `similarity`, `chunk_index`, `total_chunks`, `chunk_text`,
+  `metadata`, `model`, `dimensions`).
+- `hybridSearch` normalises weights to sum to 1, fuses via Reciprocal Rank
+  Fusion, tolerates a failing vector leg, and returns `results`, `total`,
+  `search_time_ms`, `source_breakdown`, and the normalised `weights`.
