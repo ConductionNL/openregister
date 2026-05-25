@@ -70,6 +70,8 @@ class AuthorizationAuditService
      * @param array|null $newAuthorization The new authorization value.
      *
      * @return void
+     *
+     * @spec exclude Facade plumbing: emits one structured audit log line; sibling of logRegisterAuthorizationChange (rbac-scopes REQ-002), no distinct behavioral contract.
      */
     public function logSchemaAuthorizationChange(
         int $schemaId,

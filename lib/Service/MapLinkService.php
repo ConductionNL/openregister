@@ -165,6 +165,8 @@ class MapLinkService
      *
      * @throws Exception On missing user (401), missing POI (404),
      *                   duplicate (409), Maps unavailable (503).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-POI contract is owned by the integration-maps capability.
      */
     public function linkPoi(string $objectUuid, int $registerId, int $schemaId, int $favoriteId): MapLink
     {
@@ -216,6 +218,8 @@ class MapLinkService
      *
      * @throws Exception On missing user (401), empty name (400),
      *                   Maps unavailable (503), create failure (500).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-POI contract is owned by the integration-maps capability.
      */
     public function createAndLinkPoi(
         string $objectUuid,
@@ -278,6 +282,8 @@ class MapLinkService
      * @return void
      *
      * @throws Exception On missing user (401) or no matching link (404).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-POI contract is owned by the integration-maps capability.
      */
     public function unlinkPoi(string $objectUuid, int $favoriteId): void
     {
@@ -299,6 +305,8 @@ class MapLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the linked-POIs listing contract is owned by the integration-maps capability.
      */
     public function getLinkedPois(string $objectUuid): array
     {
@@ -323,6 +331,8 @@ class MapLinkService
      * @param string|null $search Optional name-substring filter.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the picker-source contract is owned by the integration-maps capability.
      */
     public function getAvailablePois(?string $search=null): array
     {

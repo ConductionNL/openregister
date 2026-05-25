@@ -118,6 +118,8 @@ class ManifestService
      * @return array<string, mixed> Enriched manifest (original if no `currentUserSchema`).
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/manifest-user-context/tasks.md#task-1
      */
     public function getEnrichedManifest(array $manifest): array
     {

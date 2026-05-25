@@ -140,6 +140,8 @@ class ShareLinkService
      * @return array<int,array<string,mixed>> Normalised share rows.
      *
      * @throws Exception When the share subsystem is unreachable (503).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the shares-listing contract is owned by the integration-shares / generic-integrations capability.
      */
     public function getLinkedShares(string $objectUuid): array
     {
@@ -216,6 +218,8 @@ class ShareLinkService
      *                   invalid recipient (400) or share-manager failure.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-share contract is owned by the integration-shares / generic-integrations capability.
      */
     public function createShare(
         string $objectUuid,
@@ -298,6 +302,8 @@ class ShareLinkService
      *
      * @throws Exception On missing user (401), share-not-found (404),
      *                   ownership mismatch (403).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the revoke-share contract is owned by the integration-shares / generic-integrations capability.
      */
     public function revokeShare(string $objectUuid, string $shareId): void
     {
@@ -327,6 +333,8 @@ class ShareLinkService
      * @param string $objectUuid Owning object uuid.
      *
      * @return array<int,array<string,mixed>> File descriptors `{fileId, fileName, mimetype, size}`.
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the shareable-files listing contract is owned by the integration-shares / generic-integrations capability.
      */
     public function getShareableFiles(string $objectUuid): array
     {
@@ -607,6 +615,8 @@ class ShareLinkService
              * @param string $id Service id.
              *
              * @return object
+             *
+             * @spec exclude Plumbing: PSR-11 adapter method around Server::get() on an inline anonymous container; no standalone behavioral contract.
              */
             public function get(string $id): object
             {
@@ -619,6 +629,8 @@ class ShareLinkService
              * @param string $id Service id.
              *
              * @return bool
+             *
+             * @spec exclude Plumbing: PSR-11 adapter method around Server::get() on an inline anonymous container; no standalone behavioral contract.
              */
             public function has(string $id): bool
             {

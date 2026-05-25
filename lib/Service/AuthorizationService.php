@@ -164,6 +164,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If the token is expired or missing iat.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     public function validatePayload(array $payload): void
     {
@@ -205,6 +207,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If the token is invalid.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     public function authorizeJwt(string $authorization): void
     {
@@ -295,6 +299,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If credentials are invalid.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     public function authorizeBasic(string $header, array $users=[], array $groups=[]): void
     {
@@ -322,6 +328,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If the token is invalid.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     public function authorizeOAuth(string $header, array $users=[], array $groups=[]): void
     {
@@ -352,6 +360,8 @@ class AuthorizationService
      * @throws SecurityException If CSRF-unsafe headers are detected.
      *
      * @psalm-suppress UndefinedClass SecurityException is a private Nextcloud internal class
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     public function corsAfterController(IRequest $request, Response $response): Response
     {
@@ -382,6 +392,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If the API key is invalid.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
     public function authorizeApiKey(string $header, array $keys): void
     {
