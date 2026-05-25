@@ -53,6 +53,12 @@ export default {
 			canChangePassword: true,
 		}
 	},
+	/**
+	 * Detect whether the auth backend supports password changes.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook toggling form visibility; password change contract owned by account-self-service.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		try {
 			const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me'))

@@ -24,6 +24,12 @@ export default {
 		BTab,
 	},
 
+	/**
+	 * Composition entry wiring the integration registry into the view.
+	 *
+	 * @spec exclude UI plumbing — registry wiring for the screenshot harness; integration contract owned by ADR-019 / generic-integrations.
+	 * @return {object} exposed refs (providers, ready, CnIntegrationTab)
+	 */
 	setup() {
 		const { integrations } = useIntegrationRegistry()
 		const providers = computed(() => (integrations.value || []))
@@ -36,15 +42,39 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Register slug from the route.
+		 *
+		 * @spec exclude UI plumbing — route-param accessor, no observable contract.
+		 * @return {string}
+		 */
 		register() {
 			return String(this.$route.params.register || '')
 		},
+		/**
+		 * Schema slug from the route.
+		 *
+		 * @spec exclude UI plumbing — route-param accessor, no observable contract.
+		 * @return {string}
+		 */
 		schema() {
 			return String(this.$route.params.schema || '')
 		},
+		/**
+		 * Object id from the route.
+		 *
+		 * @spec exclude UI plumbing — route-param accessor, no observable contract.
+		 * @return {string}
+		 */
 		objectId() {
 			return String(this.$route.params.objectId || '')
 		},
+		/**
+		 * Whether all params + providers are present to render tabs.
+		 *
+		 * @spec exclude UI plumbing — render-guard predicate, no observable contract.
+		 * @return {boolean}
+		 */
 		ok() {
 			return this.register && this.schema && this.objectId && this.providers.length > 0
 		},
