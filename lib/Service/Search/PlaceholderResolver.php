@@ -7,6 +7,9 @@
  * annotation values. Shared by the parallel `aggregations-annotation`
  * and `calculations-annotation` changes so both write the same DSL.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Search
  *

@@ -8,6 +8,9 @@
  * This service acts as a facade for the various object handlers,
  * coordinating operations between them and maintaining state.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *
@@ -18,6 +21,10 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-26
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
  */
 
 declare(strict_types=1);
@@ -73,6 +80,8 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Exception\AppendOnlyException;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -380,6 +389,8 @@ class ObjectService
      * @param Register|string|int $register The register object or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
      */
     public function setRegister(Register | string | int $register): static
     {
@@ -439,6 +450,8 @@ class ObjectService
      * @param Schema|string|int $schema The schema object or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
      */
     public function setSchema(Schema | string | int $schema): static
     {
@@ -514,6 +527,8 @@ class ObjectService
      * @param ObjectEntity|string|int $object The object entity or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
      */
     public function setObject(ObjectEntity | string | int $object): static
     {
@@ -1076,6 +1091,8 @@ class ObjectService
      * @TODO Add property-level RBAC validation here
      * Before saving object data, check if user has permission to create/update specific properties
      * based on property-level authorization arrays in the schema.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-3
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1114,7 +1131,7 @@ class ObjectService
         // Reject UPDATE operations on append-only schemas (INSERT is still allowed).
         if ($uuid !== null && $this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
             $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-            throw new \OCA\OpenRegister\Exception\AppendOnlyException(
+            throw new AppendOnlyException(
                 schemaIdentifier: $schemaSlug,
                 operation: 'update'
             );
@@ -1245,6 +1262,8 @@ class ObjectService
      * @param string|null        $uuid   Provided UUID
      *
      * @return array{0: array, 1: string|null} [normalized object array, extracted UUID]
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
      */
     private function extractUuidAndNormalizeObject(array | ObjectEntity $object, ?string $uuid): array
     {
@@ -1489,38 +1508,112 @@ class ObjectService
     }//end ensureObjectFolder()
 
     /**
-     * Delete an object.
+     * Delete an object, optionally scoped to a (register, schema) magic table.
      *
-     * @param string $uuid          The UUID of the object to delete
-     * @param bool   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool   $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * When BOTH `$register` and `$schema` are supplied, the deletion is scoped to
+     * exactly one magic table (`oc_openregister_table_{registerId}_{schemaId}`):
+     * the lookup uses `MagicMapper::find($identifier, $register, $schema, includeDeleted: true)`
+     * which targets a single table and throws `DoesNotExistException` if the
+     * UUID is not present in that scope. A UUID that lives in a DIFFERENT
+     * `(register, schema)` magic table MUST NOT be touched. See #1638.
+     *
+     * When EITHER `$register` or `$schema` is null, the legacy unscoped
+     * cross-table lookup (`findAcrossAllSources`) is used — preserves backward
+     * compatibility for the dozens of callers passing only `$uuid`. The
+     * unscoped form is soft-deprecated: prefer the scoped signature for new
+     * call sites so the storage layer can refuse cross-scope deletes by
+     * construction.
+     *
+     * @param string                   $uuid            The UUID of the object to delete.
+     * @param Register|string|int|null $register        Optional register scope (object, ID, UUID, or slug).
+     *                                                  When non-null AND `$schema` is non-null, the lookup
+     *                                                  targets exactly that magic table.
+     * @param Schema|string|int|null   $schema          Optional schema scope (object, ID, UUID, or slug).
+     *                                                  See `$register` — both must be supplied for the
+     *                                                  scoped path.
+     * @param bool                     $_rbac           Whether to apply RBAC checks (default: true).
+     * @param bool                     $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $_retentionSweep Internal flag set by ArchivalRetentionTask
+     *                                                  to bypass the archival-immutability gate.
+     *                                                  Reachable only via PHP DI; no HTTP surface
+     *                                                  exposes it. Defaults to false.
      *
      * @return bool Whether the deletion was successful
      *
-     * @throws \Exception If user does not have delete permission
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If `$register` and `$schema` are both supplied
+     *                                                    and the UUID is not present in that scope (even
+     *                                                    if it exists in another magic table).
+     * @throws \Exception If user does not have delete permission.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
      */
-    public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
-    {
+    public function deleteObject(
+        string $uuid,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $_retentionSweep=false
+    ): bool {
+        // Resolve the explicit scope (if any) onto the service's currentRegister
+        // / currentSchema so downstream context (permission checks, audit-trail
+        // recording) sees the API-supplied scope, not a stale leftover from a
+        // previous call on this service instance.
+        $hasScope = ($register !== null && $schema !== null);
+        if ($register !== null) {
+            $this->setRegister(register: $register);
+        }
+
+        if ($schema !== null) {
+            $this->setSchema(schema: $schema);
+        }
+
         // Reject deletion of transferred objects (archiefstatus = overgebracht).
         $this->rejectIfTransferred(uuid: $uuid);
 
         // Reject DELETE operations on append-only schemas.
         if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
             $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-            throw new \OCA\OpenRegister\Exception\AppendOnlyException(
+            throw new AppendOnlyException(
+                schemaIdentifier: $schemaSlug,
+                operation: 'delete'
+            );
+        }
+
+        // Reject DELETE operations on archival-annotated schemas unless this
+        // call originates from the retention sweep cron (which alone sets
+        // $_retentionSweep true). User-driven deletes get a structured 403.
+        if ($_retentionSweep === false
+            && $this->currentSchema !== null
+            && $this->schemaHasArchivalAnnotation(schema: $this->currentSchema) === true
+        ) {
+            $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
+            throw new ArchivalImmutableException(
                 schemaIdentifier: $schemaSlug,
                 operation: 'delete'
             );
         }
 
         // Find the object to get its owner for permission check (include soft-deleted objects).
+        // When the caller supplied both register + schema, the lookup is scoped
+        // to a single magic table — a UUID in a different scope raises
+        // DoesNotExistException and never reaches the delete handler.
+        $scopedRegister = null;
+        $scopedSchema   = null;
+        if ($hasScope === true) {
+            $scopedRegister = $this->currentRegister;
+            $scopedSchema   = $this->currentSchema;
+        }
+
         try {
             $objectToDelete = $this->objectMapper->find(
                 identifier: $uuid,
-                register: null,
-                schema: null,
+                register: $scopedRegister,
+                schema: $scopedSchema,
                 includeDeleted: true
             );
 
@@ -1539,7 +1632,16 @@ class ObjectService
                 object: $objectToDelete
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Object doesn't exist, no permission check needed but let deleteHandler handle.
+            // Scoped lookup is authoritative: if the caller asked for a
+            // specific (register, schema) and the UUID is not in that scope,
+            // re-throw so the failure mode is "404 not in scope" instead of
+            // "silently look at another magic table" (the #1638 bug).
+            if ($hasScope === true) {
+                throw $e;
+            }
+
+            // Unscoped path: object doesn't exist anywhere, no permission check
+            // needed but let deleteHandler raise its own consistent error path.
             if ($this->currentSchema !== null) {
                 $this->checkPermission(
                     schema: $this->currentSchema,
@@ -1557,9 +1659,30 @@ class ObjectService
             uuid: $uuid,
             originalObjectId: null,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            scoped: $hasScope
         );
     }//end deleteObject()
+
+    /**
+     * Check whether a schema declares an `x-openregister-archival` annotation.
+     *
+     * Used by the deleteObject() immutability gate to short-circuit
+     * user-driven deletes before any DB work. Reads from the schema's
+     * `configuration` array; absence of the key (or a non-array value)
+     * means archival enforcement does NOT apply.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return bool True when the schema carries a valid archival annotation.
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
+     */
+    private function schemaHasArchivalAnnotation(Schema $schema): bool
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        return is_array($configuration['x-openregister-archival'] ?? null);
+    }//end schemaHasArchivalAnnotation()
 
     /**
      * Reject an operation if the object has been transferred to e-Depot.
@@ -1572,6 +1695,8 @@ class ObjectService
      * @return void
      *
      * @throws \OCP\AppFramework\Http\ContentSecurityPolicy
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-4
      */
     private function rejectIfTransferred(string $uuid): void
     {
@@ -2416,6 +2541,8 @@ class ObjectService
      * @param array $results Array of rendered objects or ObjectEntity instances from search.
      *
      * @return array<string, string> Map of UUID to name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-2
      */
     private function collectNamesForResults(array $results): array
     {
@@ -2729,6 +2856,8 @@ class ObjectService
      * @return array Comprehensive bulk operation results with statistics and categorized objects
      *
      * @phpstan-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */
     public function saveObjects(
         array $objects,
@@ -3252,82 +3381,6 @@ class ObjectService
     }//end buildObjectSearchQuery()
 
     // =========================================================================
-    // EXPORT/IMPORT HANDLER DELEGATION METHODS
-    // =========================================================================
-
-    /**
-     * Export objects to specified format
-     *
-     * @param \OCA\OpenRegister\Db\Register $_register    Register entity
-     * @param \OCA\OpenRegister\Db\Schema   $_schema      Schema entity
-     * @param array                         $_filters     Optional filters
-     * @param string                        $_type        Export type (csv, excel)
-     * @param \OCP\IUser|null               $_currentUser Current user
-     *
-     * @return never Export result with content, filename, and mimetype
-     *
-     * @throws \Exception If export fails
-     */
-    public function exportObjects(
-        \OCA\OpenRegister\Db\Register $_register,
-        \OCA\OpenRegister\Db\Schema $_schema,
-        array $_filters=[],
-        string $_type='excel',
-        ?\OCP\IUser $_currentUser=null
-    ) {
-        // TODO: TEMPORARILY DISABLED due to circular dependency with ExportService.
-        // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md.
-        throw new Exception('Export temporarily disabled due to circular dependency issues');
-    }//end exportObjects()
-
-    /**
-     * Import objects from file
-     *
-     * @param \OCA\OpenRegister\Db\Register    $_register     Register entity
-     * @param array                            $_uploadedFile Uploaded file data
-     * @param \OCA\OpenRegister\Db\Schema|null $_schema       Schema entity (optional)
-     * @param bool                             $_validation   Enable validation
-     * @param bool                             $_events       Enable events
-     * @param bool                             $_rbac         Apply RBAC checks
-     * @param bool                             $_multitenancy Apply multitenancy filtering
-     * @param \OCP\IUser|null                  $_currentUser  Current user
-     *
-     * @return never Import result with statistics
-     *
-     * @throws \Exception If import fails
-     */
-    public function importObjects(
-        \OCA\OpenRegister\Db\Register $_register,
-        array $_uploadedFile,
-        ?\OCA\OpenRegister\Db\Schema $_schema=null,
-        bool $_validation=false,
-        bool $_events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?\OCP\IUser $_currentUser=null
-    ) {
-        // TODO: TEMPORARILY DISABLED due to circular dependency with ImportService.
-        // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md.
-        throw new Exception('Import temporarily disabled due to circular dependency issues');
-    }//end importObjects()
-
-    /**
-     * Download files associated with an object
-     *
-     * @param string $objectId Object ID or UUID
-     *
-     * @return never Download result with file paths
-     *
-     * @throws \Exception If download fails
-     */
-    public function downloadObjectFiles(string $objectId)
-    {
-        // TODO: TEMPORARILY DISABLED - This is actually a file operation, not export.
-        // Should be refactored to use FileService directly without going through ObjectService.
-        throw new Exception('File download temporarily disabled - needs refactoring');
-    }//end downloadObjectFiles()
-
-    // =========================================================================
     // MERGE/MIGRATE HANDLER DELEGATION METHODS
     // =========================================================================
 
@@ -3354,6 +3407,8 @@ class ObjectService
      * @param int $schemaId Schema ID
      *
      * @return array Validation result with valid and invalid objects
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-26
      */
     public function validateObjectsBySchema(int $schemaId): array
     {

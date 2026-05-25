@@ -9,6 +9,9 @@
  * pipeline (retry, HMAC, dead-letter, multi-tenancy) handles
  * dispatch instead of the inline fire-and-forget POST.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *

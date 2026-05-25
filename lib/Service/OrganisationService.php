@@ -6,6 +6,9 @@
  * This file contains the service class for managing organisations and multi-tenancy.
  * Handles user-organisation relationships, session management, and organisational context.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -49,6 +52,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple Nextcloud services for user and group management
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
  */
 class OrganisationService
 {
@@ -81,6 +86,29 @@ class OrganisationService
      * Cache timeout for organisations in seconds (15 minutes)
      */
     private const CACHE_TIMEOUT = 900;
+
+    /**
+     * Configuration key for the system identifier used as `_owner` when a write
+     * happens with no active user session (cron jobs, background workers, etc.).
+     *
+     * @see self::getSystemUserId()
+     */
+    public const CONFIG_SYSTEM_USER_ID = 'systemUserId';
+
+    /**
+     * Configuration key for the comma-separated list of Nextcloud groups that
+     * are allowed to read system-owned rows in addition to the `admin` group.
+     *
+     * @see self::getSystemReaderGroups()
+     */
+    public const CONFIG_SYSTEM_READER_GROUPS = 'systemReaderGroups';
+
+    /**
+     * Default system identifier persisted as `_owner` when no user session is
+     * active. The double-underscore prefix is rejected by Nextcloud's user-ID
+     * validator, guaranteeing this identifier cannot collide with a real user.
+     */
+    public const SYSTEM_USER_ID_DEFAULT = '__system__';
 
     /**
      * Static cache for default organisation (shared across all instances)
@@ -206,6 +234,8 @@ class OrganisationService
      * Uses static application-level caching for performance optimization
      *
      * @return Organisation The default organisation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function ensureDefaultOrganisation(): Organisation
     {
@@ -434,6 +464,8 @@ class OrganisationService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag controls caching behavior
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getUserOrganisations(bool $_useCache=true): array
     {
@@ -471,6 +503,8 @@ class OrganisationService
      * @param array|null $preloadedOrgs Pre-loaded organisations to avoid extra queries.
      *
      * @return Organisation|null The active organisation or null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getActiveOrganisation(?array $preloadedOrgs=null): ?Organisation
     {
@@ -516,6 +550,8 @@ class OrganisationService
      * @return true True if successfully set, false otherwise
      *
      * @throws Exception If user doesn't belong to the organisation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function setActiveOrganisation(string $organisationUuid): bool
     {
@@ -621,6 +657,8 @@ class OrganisationService
      * @return true True if successfully removed
      *
      * @throws Exception If organisation not found, user not logged in, or trying to leave last organisation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function leaveOrganisation(string $organisationUuid, ?string $targetUserId=null): bool
     {
@@ -706,6 +744,8 @@ class OrganisationService
      * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls whether to add current user to organisation
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Organisation creation requires multiple validation steps
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function createOrganisation(
         string $name,
@@ -826,6 +866,8 @@ class OrganisationService
      * @param string $organisationUuid The organisation UUID to check
      *
      * @return bool True if user has access
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function hasAccessToOrganisation(string $organisationUuid): bool
     {
@@ -1250,6 +1292,8 @@ class OrganisationService
      * @param string       $userId       The user ID to cache for
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     private function cacheActiveOrganisation(Organisation $organisation, string $userId): void
     {
@@ -1293,6 +1337,8 @@ class OrganisationService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache reconstruction requires branches for each organisation property
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional properties create many reconstruction paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     private function reconstructOrganisationFromCache(array $cachedData): Organisation
     {
@@ -1420,6 +1466,72 @@ class OrganisationService
     }//end getDefaultOrganisationId()
 
     /**
+     * Get the system identifier used as `_owner` for writes without an active
+     * user session (cron jobs, background workers, internal service calls).
+     *
+     * Reads `openregister.systemUserId` from app-config; falls back to
+     * {@see self::SYSTEM_USER_ID_DEFAULT} when the key is unset or empty.
+     *
+     * The default identifier (`__system__`) cannot collide with a real user
+     * because Nextcloud's user-ID validator rejects identifiers starting with
+     * a double-underscore.
+     *
+     * @return string The system identifier (never empty).
+     *
+     * @spec openspec/changes/system-context-owner-attribution/tasks.md#task-1
+     */
+    public function getSystemUserId(): string
+    {
+        $configured = $this->appConfig->getValueString(
+            self::APP_NAME,
+            self::CONFIG_SYSTEM_USER_ID,
+            ''
+        );
+
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        return self::SYSTEM_USER_ID_DEFAULT;
+    }//end getSystemUserId()
+
+    /**
+     * Get the Nextcloud groups (beyond `admin`) that are allowed to read
+     * system-owned rows.
+     *
+     * Reads `openregister.systemReaderGroups` from app-config as a
+     * comma-separated string, trims each entry, and drops empties. Returns
+     * an empty array when the key is unset.
+     *
+     * @return string[] Normalised list of group IDs (may be empty).
+     *
+     * @spec openspec/changes/system-context-owner-attribution/tasks.md#task-1
+     */
+    public function getSystemReaderGroups(): array
+    {
+        $configured = $this->appConfig->getValueString(
+            self::APP_NAME,
+            self::CONFIG_SYSTEM_READER_GROUPS,
+            ''
+        );
+
+        if ($configured === '') {
+            return [];
+        }
+
+        $parts  = explode(',', $configured);
+        $groups = [];
+        foreach ($parts as $part) {
+            $trimmed = trim($part);
+            if ($trimmed !== '') {
+                $groups[] = $trimmed;
+            }
+        }
+
+        return $groups;
+    }//end getSystemReaderGroups()
+
+    /**
      * Format created date for JSON serialization
      *
      * @param Organisation $organisation Organisation object
@@ -1485,6 +1597,8 @@ class OrganisationService
      * @return (mixed|null|string)[]
      *
      * @psalm-return list{0?: null|string,...}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getUserActiveOrganisations(): array
     {

@@ -4,9 +4,19 @@
  * PollsProvider — exposes NC Polls linked to an OR object via the
  * IntegrationProvider contract.
  *
- * `link-table` storage (a future `openregister_poll_links` pairs
- * object ↔ poll); the wrapping PollsService lands in a follow-up —
- * this provider registers the registry surface today.
+ * Tier-2: backed by the `openregister_poll_links` table via
+ * {@see PollLinkMapper}. Replaces the original title-marker convention
+ * (`[or:{uuid}]` embedded in poll title) with a proper persistence
+ * layer so links survive title edits and don't pollute Polls' UX.
+ *
+ * Reads each linked poll's current title/type/expire/voter count/option
+ * tallies directly from `oc_polls_polls` / `oc_polls_options` /
+ * `oc_polls_votes` (Phase B-3 session-workaround pattern: Polls' own
+ * services need Polls' UserSession populated, which it isn't when OR
+ * serves the sub-resource).
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -26,21 +36,23 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Db\PollLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\IUserSession;
-use Psr\Container\ContainerInterface;
 use Throwable;
 
 class PollsProvider extends AbstractIntegrationProvider
 {
 
     private const REQUIRED_APP = 'polls';
-    private const TITLE_TAG    = '[or:';
 
     public function __construct(
-        private ContainerInterface $container,
+        private PollLinkMapper $pollLinkMapper,
+        private IDBConnection $db,
         private IAppManager $appManager,
         private IUserSession $userSession,
         private IL10N $l10n,
@@ -85,10 +97,10 @@ class PollsProvider extends AbstractIntegrationProvider
     /**
      * List polls linked to an OR object.
      *
-     * Linking convention: polls whose title contains the marker
-     * `[or:{objectUuid}]`. The provider asks Polls' PollService for
-     * the current user's polls, filters by marker, and normalises the
-     * rows into the registry's leaf row shape.
+     * Reads link rows from `openregister_poll_links`, then hydrates
+     * each row with current title/type/deadline + the per-option vote
+     * tallies (used by CnPollsTab to render progress bars). Returns
+     * an empty array when Polls is uninstalled.
      *
      * @param string              $register Register slug or numeric id (unused).
      * @param string              $schema   Schema slug or numeric id (unused).
@@ -103,54 +115,36 @@ class PollsProvider extends AbstractIntegrationProvider
             return [];
         }
 
-        $marker = self::TITLE_TAG.$objectId.']';
-
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return [];
-        }
-
-        // Query the polls table directly. Polls' PollMapper::buildQuery
-        // depends on Polls' own UserSession service for joins / detail
-        // expansion; when OR's controller serves the sub-resource with
-        // Basic auth the Polls session isn't populated, so listByOwner
-        // returns Poll entities with empty title/description fields.
-        // Going through the raw DB row sidesteps that and is sufficient
-        // for the marker-based link filter.
-        try {
-            $db = $this->container->get('OCP\\IDBConnection');
-            $qb = $db->getQueryBuilder();
-            $qb->select('*')->from('polls_polls')->where(
-                $qb->expr()->eq('owner', $qb->createNamedParameter($user->getUID()))
-            );
-            $rows = $qb->executeQuery()->fetchAll();
-        } catch (Throwable $e) {
+        $links = $this->pollLinkMapper->findByObjectUuid($objectId);
+        if ($links === []) {
             return [];
         }
 
         $out = [];
-        foreach ($rows as $row) {
-            $title = (string) ($row['title'] ?? '');
-            if (str_contains($title, $marker) === false) {
-                continue;
-            }
+        foreach ($links as $link) {
+            $pollId  = (int) $link->getPollId();
+            $pollRow = $this->fetchPollRow($pollId);
 
-            $id      = (string) ($row['id'] ?? '');
-            $pollId  = (int) ($row['id'] ?? 0);
-            $expire  = (int) ($row['expire'] ?? 0);
-            $options = $this->fetchOptionsWithCounts($db, $pollId);
-            $voters  = $this->fetchVoterCount($db, $pollId);
+            $title       = (string) ($pollRow['title'] ?? $link->getPollTitle() ?? '');
+            $description = (string) ($pollRow['description'] ?? '');
+            $type        = (string) ($pollRow['type'] ?? $link->getPollType() ?? '');
+            $expire      = (int) ($pollRow['expire'] ?? 0);
+
+            $options = $this->fetchOptionsWithCounts($pollId);
+            $voters  = $this->fetchVoterCount($pollId);
 
             $out[] = [
-                'id'          => $id,
+                'id'          => (string) $pollId,
+                'pollId'      => $pollId,
                 'title'       => $title,
-                'description' => (string) ($row['description'] ?? ''),
-                'type'        => (string) ($row['type'] ?? ''),
-                'url'         => '/index.php/apps/polls/vote/'.$id,
+                'description' => $description,
+                'type'        => $type,
+                'url'         => '/index.php/apps/polls/vote/'.$pollId,
                 'deadline'    => $expire > 0 ? $expire : null,
                 'closed'      => ($expire > 0 && $expire <= time()),
                 'voterCount'  => $voters,
                 'options'     => $options,
+                'linkId'      => $link->getId(),
             ];
         }
 
@@ -158,27 +152,51 @@ class PollsProvider extends AbstractIntegrationProvider
     }//end list()
 
     /**
+     * Fetch a poll row from `oc_polls_polls`.
+     *
+     * @param int $pollId Poll id.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function fetchPollRow(int $pollId): ?array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('id', 'title', 'description', 'type', 'expire')
+                ->from('polls_polls')
+                ->where($qb->expr()->eq('id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
+                ->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
+
+            $row = $qb->executeQuery()->fetch();
+            if ($row === false) {
+                return null;
+            }
+
+            return $row;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }//end fetchPollRow()
+
+    /**
      * Fetch poll options with their yes-vote tallies.
      *
-     * Returns a list of `{id, text, votes}` rows, ordered by the poll's
-     * stored option order. Vote counts only include rows where
-     * `vote_answer = 'yes'` and the option/vote are not soft-deleted —
-     * mirrors Polls' own tally surface. Returns an empty array on any
-     * DB failure to keep the leaf row degradation-safe.
+     * Returns `[{id, text, votes}, ...]`, ordered by stored option
+     * order. Vote counts only include `vote_answer = 'yes'` /
+     * non-deleted rows. Returns an empty array on any DB failure.
      *
-     * @param \OCP\IDBConnection $db     OR's lazy-resolved DB handle.
-     * @param int                $pollId Poll primary key.
+     * @param int $pollId Poll primary key.
      *
      * @return array<int,array{id:int,text:string,votes:int}>
      */
-    private function fetchOptionsWithCounts(\OCP\IDBConnection $db, int $pollId): array
+    private function fetchOptionsWithCounts(int $pollId): array
     {
         try {
-            $qb = $db->getQueryBuilder();
+            $qb = $this->db->getQueryBuilder();
             $qb->select('id', 'poll_option_text', 'poll_option_hash')
                 ->from('polls_options')
-                ->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
-                ->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+                ->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
+                ->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
                 ->orderBy('order', 'ASC');
             $optionRows = $qb->executeQuery()->fetchAll();
         } catch (Throwable $e) {
@@ -187,16 +205,16 @@ class PollsProvider extends AbstractIntegrationProvider
 
         $out = [];
         foreach ($optionRows as $opt) {
-            $hash = (string) ($opt['poll_option_hash'] ?? '');
+            $hash  = (string) ($opt['poll_option_hash'] ?? '');
             $votes = 0;
             try {
-                $vq = $db->getQueryBuilder();
+                $vq = $this->db->getQueryBuilder();
                 $vq->select($vq->func()->count('*', 'cnt'))
                     ->from('polls_votes')
-                    ->where($vq->expr()->eq('poll_id', $vq->createNamedParameter($pollId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+                    ->where($vq->expr()->eq('poll_id', $vq->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
                     ->andWhere($vq->expr()->eq('vote_option_hash', $vq->createNamedParameter($hash)))
                     ->andWhere($vq->expr()->eq('vote_answer', $vq->createNamedParameter('yes')))
-                    ->andWhere($vq->expr()->eq('deleted', $vq->createNamedParameter(0, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)));
+                    ->andWhere($vq->expr()->eq('deleted', $vq->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
                 $votes = (int) ($vq->executeQuery()->fetchOne() ?: 0);
             } catch (Throwable $e) {
                 $votes = 0;
@@ -207,7 +225,7 @@ class PollsProvider extends AbstractIntegrationProvider
                 'text'  => (string) ($opt['poll_option_text'] ?? ''),
                 'votes' => $votes,
             ];
-        }
+        }//end foreach
 
         return $out;
     }//end fetchOptionsWithCounts()
@@ -215,19 +233,18 @@ class PollsProvider extends AbstractIntegrationProvider
     /**
      * Distinct user count that has cast at least one non-deleted vote.
      *
-     * @param \OCP\IDBConnection $db     OR's lazy-resolved DB handle.
-     * @param int                $pollId Poll primary key.
+     * @param int $pollId Poll primary key.
      *
      * @return int
      */
-    private function fetchVoterCount(\OCP\IDBConnection $db, int $pollId): int
+    private function fetchVoterCount(int $pollId): int
     {
         try {
-            $qb = $db->getQueryBuilder();
+            $qb = $this->db->getQueryBuilder();
             $qb->selectDistinct('user_id')
                 ->from('polls_votes')
-                ->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
-                ->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)));
+                ->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
+                ->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
             $rows = $qb->executeQuery()->fetchAll();
             return count($rows);
         } catch (Throwable $e) {

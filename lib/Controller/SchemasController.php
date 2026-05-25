@@ -7,6 +7,9 @@
  * Provides endpoints for CRUD operations, schema exploration, caching,
  * import/export, and statistics.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -27,7 +30,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -72,6 +74,8 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class SchemasController extends Controller
 {
@@ -86,7 +90,6 @@ class SchemasController extends Controller
      * @param IAppConfig          $config              App configuration for settings
      * @param SchemaMapper        $schemaMapper        Schema mapper for database operations
      * @param MagicMapper         $objectEntityMapper  Object entity mapper for object queries
-     * @param DownloadService     $downloadService     Download service for file downloads
      * @param UploadService       $uploadService       Upload service for file uploads
      * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for log statistics
      * @param OrganisationService $organisationService Organisation service for multi-tenancy
@@ -106,7 +109,6 @@ class SchemasController extends Controller
         private readonly IAppConfig $config,
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $objectEntityMapper,
-        private readonly DownloadService $downloadService,
         private readonly UploadService $uploadService,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly OrganisationService $organisationService,

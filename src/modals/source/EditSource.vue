@@ -115,6 +115,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 */
 		initializeSourceItem() {
 			if (sourceStore.sourceItem?.id) {
 				this.sourceItem = {

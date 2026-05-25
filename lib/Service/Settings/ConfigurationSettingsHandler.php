@@ -5,6 +5,9 @@
  *
  * This file contains the handler class for managing general configuration settings.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -208,6 +211,8 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration defaults and overrides create multiple execution paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSettings(): array
     {
@@ -525,6 +530,8 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration sections are independently optional
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateSettings(array $data): array
     {
@@ -1158,13 +1165,13 @@ class ConfigurationSettingsHandler
                     ],
                     'ocrEnabled'               => false,
                     'maxFileSizeMB'            => 100,
-                // Text extraction settings (for FileConfiguration component).
+                    // Text extraction settings (for FileConfiguration component).
                     'extractionScope'          => 'objects',
-                // None, all, folders, objects.
+                    // None, all, folders, objects.
                     'textExtractor'            => 'llphant',
-                // Llphant, dolphin.
+                    // Llphant, dolphin.
                     'extractionMode'           => 'background',
-                // Background, immediate, manual.
+                    // Background, immediate, manual.
                     'maxFileSize'              => 100,
                     'batchSize'                => 10,
                     'dolphinApiEndpoint'       => '',
@@ -1228,13 +1235,13 @@ class ConfigurationSettingsHandler
                 ],
                 'ocrEnabled'               => $fileData['ocrEnabled'] ?? false,
                 'maxFileSizeMB'            => $fileData['maxFileSizeMB'] ?? 100,
-            // Text extraction settings (from FileConfiguration component).
+                // Text extraction settings (from FileConfiguration component).
                 'extractionScope'          => $fileData['extractionScope'] ?? 'objects',
-            // None, all, folders, objects.
+                // None, all, folders, objects.
                 'textExtractor'            => $fileData['textExtractor'] ?? 'llphant',
-            // Llphant, dolphin.
+                // Llphant, dolphin.
                 'extractionMode'           => $fileData['extractionMode'] ?? 'background',
-            // Background, immediate, manual.
+                // Background, immediate, manual.
                 'maxFileSize'              => $fileData['maxFileSize'] ?? 100,
                 'batchSize'                => $fileData['batchSize'] ?? 10,
                 'dolphinApiEndpoint'       => $fileData['dolphinApiEndpoint'] ?? '',

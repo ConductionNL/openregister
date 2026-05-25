@@ -5,6 +5,9 @@
  *
  * This file contains the controller class for handling configuration-related API requests.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -598,6 +601,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with import result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function import(int $id): JSONResponse
     {
@@ -658,6 +663,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|404|500, array, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function export(int $id): JSONResponse
     {
@@ -707,6 +714,8 @@ class ConfigurationController extends Controller
      *     type: 'User'|mixed, url: ''|mixed}, config: array,
      *     project_id?: mixed, ref?: 'main'|mixed}|mixed,...},
      *     page?: int, per_page?: int}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function discover(): JSONResponse
     {
@@ -792,6 +801,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with branches list
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function getGitHubBranches(): JSONResponse
     {
@@ -933,6 +944,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with branches list
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function getGitLabBranches(): JSONResponse
     {
@@ -1321,6 +1334,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with import result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function importFromGitHub(): JSONResponse
     {
@@ -1343,6 +1358,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with import result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function importFromGitLab(): JSONResponse
     {
@@ -1365,6 +1382,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with import result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function importFromUrl(): JSONResponse
     {
@@ -1391,6 +1410,8 @@ class ConfigurationController extends Controller
      * @psalm-suppress InvalidReturnStatement
      *
      * @return JSONResponse JSON response with publish result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
      */
     public function publishToGitHub(int $id): JSONResponse
     {

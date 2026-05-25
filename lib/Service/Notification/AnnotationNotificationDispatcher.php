@@ -8,6 +8,9 @@
  * matches. v1 supports trigger types created/updated/transition,
  * recipient kinds users/field, channel `nc-notification`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *
@@ -818,10 +821,9 @@ class AnnotationNotificationDispatcher
             // dependency is preferred; the server container fallback
             // exists for callers that constructed the dispatcher with
             // the legacy (no-IConfig) signature.
+            $base = (string) $this->serverContainer->get(\OCP\IConfig::class)->getSystemValue('overwrite.cli.url', 'http://localhost');
             if ($this->config !== null) {
                 $base = (string) $this->config->getSystemValue('overwrite.cli.url', 'http://localhost');
-            } else {
-                $base = (string) $this->serverContainer->get(\OCP\IConfig::class)->getSystemValue('overwrite.cli.url', 'http://localhost');
             }
 
             $base = rtrim($base, '/');

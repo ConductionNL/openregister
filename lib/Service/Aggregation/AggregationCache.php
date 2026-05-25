@@ -7,6 +7,9 @@
  * schema + name + resolved-filters hash + RBAC scope hash. Evicted
  * by the existing object-write event listeners.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *
@@ -17,6 +20,9 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -64,6 +70,8 @@ class AggregationCache
      * @param LoggerInterface $logger       Logger for backend-unavailable warnings.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function __construct(
         ICacheFactory $cacheFactory,
@@ -92,6 +100,8 @@ class AggregationCache
      * @param array<string, mixed> $filter       Resolved filter (placeholders concrete).
      *
      * @return array<string, mixed>|null Cached result or null on miss.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function get(string $registerSlug, string $schemaSlug, string $name, array $filter): ?array
     {
@@ -153,6 +163,76 @@ class AggregationCache
     }//end set()
 
     /**
+     * Look up a cached ad-hoc aggregation result.
+     *
+     * Mirrors {@see get()} but derives the name slot from the query value
+     * object. The literal `adhoc:` prefix keeps ad-hoc entries visually
+     * distinct from named-aggregation entries in cache dumps.
+     *
+     * @param string           $registerSlug Register slug component of the cache key.
+     * @param string           $schemaSlug   Schema slug component of the cache key.
+     * @param AggregationQuery $query        Query value object hashed into the cache key.
+     *
+     * @return array<string, mixed>|null Cached envelope or null on miss.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
+     */
+    public function getAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query): ?array
+    {
+        return $this->get(
+            registerSlug: $registerSlug,
+            schemaSlug: $schemaSlug,
+            name: $this->adhocName(query: $query),
+            filter: $query->filter
+        );
+
+    }//end getAdhoc()
+
+    /**
+     * Store an ad-hoc aggregation result.
+     *
+     * Mirrors {@see set()} for the ad-hoc path. The stored envelope is
+     * rewritten on read (`cached: true`) by callers — see
+     * {@see \OCA\OpenRegister\Service\Aggregation\AggregationRunner::runAdhoc()}.
+     *
+     * @param string               $registerSlug Register slug component of the cache key.
+     * @param string               $schemaSlug   Schema slug component of the cache key.
+     * @param AggregationQuery     $query        Query value object hashed into the cache key.
+     * @param array<string, mixed> $result       Result envelope to store.
+     *
+     * @return void
+     */
+    public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void
+    {
+        $this->set(
+            registerSlug: $registerSlug,
+            schemaSlug: $schemaSlug,
+            name: $this->adhocName(query: $query),
+            filter: $query->filter,
+            result: $result
+        );
+
+    }//end setAdhoc()
+
+    /**
+     * Derive the cache name slot for an ad-hoc query.
+     *
+     * Computes `'adhoc:'.sha1(json_encode($query->toArray()))`. The
+     * `AggregationQuery::toArray()` output is ksort-stable so two
+     * structurally-equivalent queries produce identical hashes.
+     *
+     * @param AggregationQuery $query The ad-hoc query value object.
+     *
+     * @return string The cache name slot, prefixed with `adhoc:`.
+     */
+    private function adhocName(AggregationQuery $query): string
+    {
+        $encoded = json_encode($query->toArray());
+        return 'adhoc:'.sha1($encoded === false ? '' : $encoded);
+
+    }//end adhocName()
+
+    /**
      * Evict every cached aggregation for a (register, schema). Called by
      * the object-write listeners.
      *
@@ -198,6 +278,8 @@ class AggregationCache
      * @param array<string, mixed> $filter       Resolved filter map.
      *
      * @return string The cache key string.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     private function key(string $registerSlug, string $schemaSlug, string $name, array $filter): string
     {

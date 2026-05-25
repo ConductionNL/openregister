@@ -65,6 +65,14 @@
 </template>
 
 <script>
+/**
+ * Objects tab — linked-objects list inside the three-tab sidebar; also acts
+ * as the drop target for Mail attachments (drops upload the file to the
+ * linked OR object via /api/objects/{r}/{s}/{id}/filesMultipart).
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-3
+ */
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'

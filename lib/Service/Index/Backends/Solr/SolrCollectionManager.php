@@ -6,6 +6,9 @@
  * Manages Solr collections and ConfigSets.
  * Handles creation, deletion, and existence checks for collections.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -77,6 +80,8 @@ class SolrCollectionManager
      * @param string $collectionName Collection name
      *
      * @return bool True if exists
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function collectionExists(string $collectionName): bool
     {

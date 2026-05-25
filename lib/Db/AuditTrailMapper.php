@@ -6,6 +6,9 @@
  * This file contains the class for handling audit trail related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -160,8 +163,6 @@ class AuditTrailMapper extends QBMapper
         return $this->findEntities(query: $qb);
     }//end findByImportJobId()
 
-
-
     /**
      * Finds an audit trail by id
      *
@@ -181,7 +182,6 @@ class AuditTrailMapper extends QBMapper
 
         return $this->findEntity(query: $qb);
     }//end find()
-
 
     /**
      * Find all audit trails with filters and sorting
@@ -323,9 +323,6 @@ class AuditTrailMapper extends QBMapper
 
         return $this->findEntities(query: $qb);
     }//end findAll()
-
-
-
 
     /**
      * Creates an audit trail for object changes
@@ -632,7 +629,6 @@ class AuditTrailMapper extends QBMapper
 
     }//end readProcessingActivityFromRegister()
 
-
     /**
      * Get audit trails for an object until a specific point or version
      *
@@ -703,7 +699,6 @@ class AuditTrailMapper extends QBMapper
         return $this->findEntities(query: $qb);
     }//end findByObjectUntil()
 
-
     /**
      * Check if a string is a semantic version
      *
@@ -715,7 +710,6 @@ class AuditTrailMapper extends QBMapper
     {
         return (preg_match('/^\d+\.\d+\.\d+$/', $version) === 1);
     }//end isSemanticVersion()
-
 
     /**
      * Revert an object to a previous state
@@ -766,7 +760,6 @@ class AuditTrailMapper extends QBMapper
         return $revertedObject;
     }//end revertObject()
 
-
     /**
      * Helper function to revert changes from an audit trail entry
      *
@@ -791,7 +784,6 @@ class AuditTrailMapper extends QBMapper
             }
         }
     }//end revertChanges()
-
 
     /**
      * Get statistics for audit trails with optional filtering
@@ -885,7 +877,6 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end getStatistics()
 
-
     /**
      * Updates an entity in the database
      *
@@ -906,7 +897,6 @@ class AuditTrailMapper extends QBMapper
 
         return parent::update(entity: $entity);
     }//end update()
-
 
     /**
      * Get chart data for audit trail actions over time
@@ -1012,7 +1002,6 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end getActionChartData()
 
-
     /**
      * Get detailed statistics for audit trails including action counts within timeframe
      *
@@ -1113,7 +1102,6 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end getDetailedStatistics()
 
-
     /**
      * Get action distribution data with percentages
      *
@@ -1192,7 +1180,6 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end getActionDistribution()
 
-
     /**
      * Get most active objects based on audit trail activity
      *
@@ -1268,7 +1255,6 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end getMostActiveObjects()
 
-
     /**
      * Clear expired logs from the database
      *
@@ -1317,7 +1303,6 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end clearLogs()
 
-
     /**
      * Clear all audit trail logs (not just expired ones)
      *
@@ -1357,9 +1342,6 @@ class AuditTrailMapper extends QBMapper
             throw $e;
         }//end try
     }//end clearAllLogs()
-
-
-
 
     /**
      * Set expiry dates for audit trails based on retention period in milliseconds
@@ -1410,7 +1392,6 @@ class AuditTrailMapper extends QBMapper
             throw $e;
         }//end try
     }//end setExpiryDate()
-
 
     /**
      * Get audit trail statistics grouped by schema for multiple schemas in a single query
@@ -1479,7 +1460,6 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end getStatisticsGroupedBySchema()
 
-
     /**
      * Create a custom audit trail entry for archival operations.
      *
@@ -1521,7 +1501,6 @@ class AuditTrailMapper extends QBMapper
 
         return $this->insert(entity: $auditTrail);
     }//end createAuditTrailEntry()
-
 
     /**
      * Get processing activities from audit trail entries.
@@ -1577,7 +1556,6 @@ class AuditTrailMapper extends QBMapper
         return array_values($activities);
     }//end getProcessingActivities()
 
-
     /**
      * Find audit trail entries by identifier.
      *
@@ -1615,7 +1593,6 @@ class AuditTrailMapper extends QBMapper
 
         return $grouped;
     }//end findByIdentifier()
-
 
     /**
      * Find audit trail entries by the actor (user UID) that produced them.
@@ -1693,6 +1670,4 @@ class AuditTrailMapper extends QBMapper
             'total'   => (int) ($row['total_count'] ?? 0),
         ];
     }//end findByActor()
-
-
 }//end class

@@ -15,6 +15,9 @@
  * - Object-specific file operations
  * - Audit trails and data aggregation
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -23,6 +26,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
 
 declare(strict_types=1);
@@ -813,6 +819,8 @@ class FileService
      *
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
@@ -1245,6 +1253,8 @@ class FileService
      *
      * @psalm-return   string
      * @phpstan-return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
@@ -1274,6 +1284,8 @@ class FileService
      * @psalm-param   array<int, string> $tags
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
      */
     public function addFile(
         ObjectEntity | string $objectEntity,
@@ -1345,6 +1357,8 @@ class FileService
      *
      * @psalm-return   list<string>
      * @phpstan-return array<int, string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function getAllTags(): array
     {
@@ -1481,6 +1495,8 @@ class FileService
      * @phpstan-return \OCP\AppFramework\Http\StreamResponse
      *
      * @psalm-return \OCP\AppFramework\Http\StreamResponse<200, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
      */
     public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse
     {
@@ -1766,6 +1782,8 @@ class FileService
      * Get the file versioning handler.
      *
      * @return FileVersioningHandler The versioning handler.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
      */
     public function getVersioningHandler(): FileVersioningHandler
     {
@@ -1822,6 +1840,8 @@ class FileService
      * @return File The renamed file.
      *
      * @throws Exception If the rename fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function renameFile(ObjectEntity $object, int $fileId, string $newName): File
     {
@@ -1875,6 +1895,8 @@ class FileService
      * @return File The new file copy.
      *
      * @throws Exception If the copy fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
@@ -1978,6 +2000,8 @@ class FileService
      * @return File The moved file.
      *
      * @throws Exception If the move fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {

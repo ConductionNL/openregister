@@ -6,6 +6,9 @@
  * Handles HTTP client configuration and basic HTTP operations for Solr.
  * Responsible for building URLs, managing HTTP client, and making requests.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -105,6 +108,8 @@ class SolrHttpClient
      * Initialize HTTP client for Solr requests.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     private function initializeHttpClient(): void
     {

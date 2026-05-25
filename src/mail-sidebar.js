@@ -7,6 +7,7 @@
  * @package OpenRegister
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-51
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-5
  */
 
 import Vue from 'vue'
@@ -18,6 +19,9 @@ import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 // singleton even when the user lands directly on the Mail app.
 // Idempotent. See ADR-019.
 ensureIntegrationRegistry()
+
+console.info('[OpenRegister] mail-sidebar.js loaded')
+console.info('[OpenRegister] Vue and MailSidebar imported successfully')
 
 const MOUNT_RETRY_INTERVAL = 1000
 const MOUNT_MAX_RETRIES = 30
@@ -33,6 +37,7 @@ const SIDEBAR_ROOT_ID = 'openregister-mail-sidebar'
  * @return {boolean} True if the Mail app is initialising.
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-51
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-5
  */
 function isMailAppPage() {
 	return !!document.getElementById('initial-state-mail-accounts')
@@ -44,6 +49,8 @@ function isMailAppPage() {
  * We MUST NOT mount inside any Vue-managed container (#content, #content-vue,
  * #app-content-vue) because the parent Vue app destroys its DOM children on
  * re-renders, taking our sidebar with it.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-5
  */
 function mountSidebar() {
 	let retries = 0
@@ -55,20 +62,24 @@ function mountSidebar() {
 				setTimeout(tryMount, MOUNT_RETRY_INTERVAL)
 				return
 			}
+			console.debug('[OpenRegister] Not a Mail page, skipping sidebar injection')
 			return
 		}
 
 		// Check if already mounted (works for both expanded and collapsed sidebar).
 		if (document.getElementById(SIDEBAR_ROOT_ID)) {
+			console.debug('[OpenRegister] Sidebar already mounted')
 			return
 		}
 
 		try {
+			console.info('[OpenRegister] Mounting mail sidebar')
 			const app = new Vue({
 				render: (h) => h(MailSidebar),
 			}).$mount()
 			app.$el.id = SIDEBAR_ROOT_ID
 			document.body.appendChild(app.$el)
+			console.info('[OpenRegister] Mail sidebar mounted successfully')
 			return app
 		} catch (err) {
 			console.error('[OpenRegister] Mail sidebar mount failed:', err)

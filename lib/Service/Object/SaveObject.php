@@ -12,6 +12,9 @@
  * - Maintaining audit trails (user tracking)
  * - Setting default values and properties
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *
@@ -3414,11 +3417,10 @@ class SaveObject
         // Populate TMLO archival metadata defaults if register has TMLO enabled.
         $this->populateTmloDefaults(objectEntity: $objectEntity, schema: $schema, selfData: $selfData);
 
-        // Set user information if available.
-        $user = $this->userSession->getUser();
-        if ($user !== null) {
-            $objectEntity->setOwner($user->getUID());
-        }
+        // Set owner from the active user session, or fall back to the system
+        // identifier when no session is active. See applyOwnerAttribution()
+        // for the system-context contract (openregister#1617).
+        $this->applyOwnerAttribution(objectEntity: $objectEntity);
 
         // Set organisation from active organisation if not already set.
         // Always respect user's active organisation regardless of multitenancy settings.
@@ -3445,6 +3447,43 @@ class SaveObject
 
         return $objectEntity;
     }//end prepareObjectForCreation()
+
+    /**
+     * Attribute owner on a freshly created object entity.
+     *
+     * When an `IUserSession` user is active, owner is set to the user's UID
+     * (legacy behaviour, unchanged for logged-in writes).
+     *
+     * When no user session is active — cron jobs, background workers, internal
+     * service calls like openconnector's `CallService::call()` — owner is set
+     * to the configured system identifier instead of being left empty.
+     * Rows persisted with empty `_owner` are invisible to the REST list path's
+     * RBAC filter even for admins, which is the bug fixed by openregister#1617.
+     *
+     * A pre-existing non-empty `_owner` value (e.g. set explicitly by the
+     * caller via @self metadata) is honoured and not overwritten by the
+     * system-context fallback.
+     *
+     * @param ObjectEntity $objectEntity Entity being prepared for creation.
+     *
+     * @return void
+     */
+    private function applyOwnerAttribution(ObjectEntity $objectEntity): void
+    {
+        $user = $this->userSession->getUser();
+        if ($user !== null) {
+            $objectEntity->setOwner($user->getUID());
+            return;
+        }
+
+        // No user session — only fall back to the system identifier when
+        // owner is genuinely missing (empty or null). An explicit non-empty
+        // owner (e.g. set by the caller) is preserved.
+        $currentOwner = $objectEntity->getOwner();
+        if ($currentOwner === null || $currentOwner === '') {
+            $objectEntity->setOwner($this->organisationService->getSystemUserId());
+        }
+    }//end applyOwnerAttribution()
 
     /**
      * Prepares an object for update by applying all necessary transformations.

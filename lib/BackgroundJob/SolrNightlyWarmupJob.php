@@ -6,6 +6,9 @@
  * Recurring background job that runs every night at 00:00 to warm up the SOLR index.
  * This ensures optimal search performance by keeping the index warm and ready for queries.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *

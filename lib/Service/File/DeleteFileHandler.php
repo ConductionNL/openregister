@@ -5,6 +5,9 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
@@ -78,6 +81,8 @@ class DeleteFileHandler
      * @throws Exception If deleting the file is not permitted or file operations fail.
      *
      * @psalm-param Node|string|int $file
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
     {
@@ -132,6 +137,8 @@ class DeleteFileHandler
      * @return (Node|bool|int|mixed|string)[][] Array of deletion results.
      *
      * @psalm-return list<array{error?: string, file: Node|int|mixed|string, success: bool}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function deleteFiles(array $files, ?ObjectEntity $object=null): array
     {

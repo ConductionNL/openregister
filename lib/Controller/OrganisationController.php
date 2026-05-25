@@ -7,6 +7,9 @@
  * Provides API endpoints for organisation management, user-organisation relationships,
  * and session management for active organisations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -1169,10 +1172,10 @@ class OrganisationController extends Controller
             if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
                 $userId = \OC::$server->get(\OCP\IUserSession::class)->getUser()?->getUID() ?? 'admin';
                 $result = $this->tenantLifecycleService->provision($organisation, $userId);
-            } else {
-                $result = $this->tenantLifecycleService->reactivate($organisation);
+                return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
             }
 
+            $result = $this->tenantLifecycleService->reactivate($organisation);
             return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
             $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;

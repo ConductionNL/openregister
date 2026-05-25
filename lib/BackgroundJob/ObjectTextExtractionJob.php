@@ -7,6 +7,9 @@
  * This job is queued automatically when objects are created or modified to avoid
  * blocking user requests with potentially slow text extraction operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  BackgroundJob
  * @package   OCA\OpenRegister\BackgroundJob
  * @author    Conduction Development Team <info@conduction.nl>

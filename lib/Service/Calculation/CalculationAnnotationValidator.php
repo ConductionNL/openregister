@@ -5,6 +5,9 @@
  *
  * Schema-save validation for the `x-openregister-calculations` annotation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Calculation
  *
@@ -33,6 +36,8 @@ namespace OCA\OpenRegister\Service\Calculation;
  *
  * Cross-calculation:
  * - Cycle detection across {prop:calcA, prop:calcB} dependency graph.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
  */
 final class CalculationAnnotationValidator
 {
@@ -84,6 +89,8 @@ final class CalculationAnnotationValidator
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
      */
     public function validate(array $schema): array
     {
@@ -336,6 +343,8 @@ final class CalculationAnnotationValidator
      * @param array<string, array<int, string>> $deps Dependency map.
      *
      * @return array<int, string>|null A cycle path if found, else null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
      */
     private function findCycle(array $deps): ?array
     {

@@ -9,6 +9,9 @@
  * Since facets are determined by schema properties, they can be cached and
  * invalidated when schemas change, providing significant performance benefits.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

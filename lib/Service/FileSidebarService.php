@@ -7,6 +7,9 @@
  * OpenRegister objects that reference a given file ID and aggregating
  * extraction / entity-recognition metadata for the Extraction tab.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

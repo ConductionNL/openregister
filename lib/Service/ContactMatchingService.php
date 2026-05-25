@@ -6,6 +6,9 @@
  * Shared service for matching contact metadata (email, name, organization)
  * to OpenRegister entities with APCu caching.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -441,6 +444,8 @@ class ContactMatchingService
      * @param array $matches The match results from matchContact()
      *
      * @return array Associative array of schema title => count
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     public function getRelatedObjectCounts(array $matches): array
     {
@@ -463,6 +468,8 @@ class ContactMatchingService
      * @param string $email The email address to invalidate
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     public function invalidateCache(string $email): void
     {
@@ -485,6 +492,8 @@ class ContactMatchingService
      * @param array $object The object data array
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     public function invalidateCacheForObject(array $object): void
     {

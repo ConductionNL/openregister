@@ -115,6 +115,7 @@ export default {
 		 *
 		 * @param {string} value - The search value
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-1
 		 */
 		handleSearchInput(value) {
 			clearTimeout(this.searchTimeout)

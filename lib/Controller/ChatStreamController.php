@@ -15,6 +15,9 @@
  * already accommodates this degradation, so no client change is needed
  * when token streaming lands later.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -27,6 +30,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 declare(strict_types=1);
@@ -411,9 +415,10 @@ class ChatStreamController extends Controller
             if ($this->db->inTransaction() === true) {
                 if ($rollback === true) {
                     $this->db->rollBack();
-                } else {
-                    $this->db->commit();
+                    return;
                 }
+
+                $this->db->commit();
             }
         } catch (Throwable $e) {
             $this->logger->warning(
@@ -571,6 +576,8 @@ class ChatStreamController extends Controller
      *                          (message === self::ERROR_FORBIDDEN); the
      *                          stream() entry point translates this into the
      *                          `forbidden` SSE error.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function resolveConversation(string $conversationUuid, string $agentUuid, string $userId): Conversation
     {

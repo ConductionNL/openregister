@@ -10,6 +10,9 @@
  * size. When a token isn't available the dispatch is dropped and
  * logged at info level — operators who care can grep for it.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *

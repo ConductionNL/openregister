@@ -3,11 +3,14 @@
 /**
  * Mapper for deck link entities.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conduction.nl>
- * @copyright 2024 Conduction B.V.
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
@@ -17,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -92,7 +96,7 @@ class DeckLinkMapper extends QBMapper
 
         try {
             return $this->findEntity(query: $qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+        } catch (DoesNotExistException $e) {
             return null;
         }
     }//end findByObjectAndCard()
@@ -112,4 +116,25 @@ class DeckLinkMapper extends QBMapper
 
         return $qb->executeStatement();
     }//end deleteByObjectUuid()
+
+    /**
+     * Delete a deck link by object UUID + card ID (Tier-2 unlink path).
+     *
+     * Returns the number of rows actually deleted so callers can
+     * distinguish "no such link" (0) from "ok" (>=1).
+     *
+     * @param string $objectUuid The object UUID.
+     * @param int    $cardId     The Deck card ID.
+     *
+     * @return int Number of deleted rows.
+     */
+    public function deleteByObjectAndCard(string $objectUuid, int $cardId): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->delete($this->getTableName())
+            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+            ->andWhere($qb->expr()->eq('card_id', $qb->createNamedParameter($cardId, IQueryBuilder::PARAM_INT)));
+
+        return $qb->executeStatement();
+    }//end deleteByObjectAndCard()
 }//end class

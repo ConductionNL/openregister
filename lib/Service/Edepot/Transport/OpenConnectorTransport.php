@@ -5,6 +5,9 @@
  *
  * Transmits SIP packages to e-Depot systems via OpenConnector synchronization.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -40,6 +43,8 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @param Client          $httpClient The HTTP client.
      * @param LoggerInterface $logger     Logger.
+     *
+     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
      */
     public function __construct(
         private readonly Client $httpClient,

@@ -10,6 +10,9 @@
  * v1 trades performance for simplicity: backend-native aggregation
  * (Postgres GROUP BY / Solr facets / ES aggs) ships in a follow-up.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *
@@ -20,6 +23,12 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */
 
 declare(strict_types=1);
@@ -49,6 +58,12 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ *   The runner orchestrates four execution paths (named / cross-schema /
+ *   ad-hoc / cached) across three backends (Postgres / MySQL / SQLite +
+ *   PHP fallback). The method count rises with each platform-specific
+ *   helper; extracting them into a separate class would require passing
+ *   the full constructor dependency graph through.
  */
 class AggregationRunner
 {
@@ -79,6 +94,8 @@ class AggregationRunner
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
@@ -132,6 +149,8 @@ class AggregationRunner
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.StaticAccess)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Internal-mode toggle, intentional.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     public function run(
         string $registerRef,
@@ -343,7 +362,9 @@ class AggregationRunner
 
         $rows = [];
         foreach ($objects as $entity) {
-            $rows[] = $entity instanceof \OCA\OpenRegister\Db\ObjectEntity ? $entity->getObject() : (array) $entity;
+            // The findAllInRegisterSchemaTable mapper returns ObjectEntity[];
+            // getObject() resolves each row to the inner data array.
+            $rows[] = $entity->getObject();
         }
 
         // Apply post-filter for operator shapes the underlying mapper
@@ -383,6 +404,372 @@ class AggregationRunner
     }//end run()
 
     /**
+     * Execute an ad-hoc aggregation query — REST + GraphQL entry point.
+     *
+     * Where {@see run()} loads a named aggregation from the schema's
+     * `x-openregister-aggregations` annotation and executes it, this
+     * method takes a fully-built `AggregationQuery` value object from
+     * the caller (the REST `/aggregate/timeseries` controller or the
+     * GraphQL `groupBy` resolver) and runs it directly against the
+     * register/schema's magic table.
+     *
+     * The execution pipeline is the same as `run()`:
+     *
+     * 1. RBAC gate via `PermissionHandler::hasPermission(list)`.
+     * 2. Read-through cache lookup via `AggregationCache::getAdhoc()` —
+     *    cache key derives from `sha1(json_encode($query->toArray()))`
+     *    prefixed with `adhoc:`. 60 s TTL. Invalidated on every
+     *    object lifecycle event by `AggregationCacheInvalidationListener`.
+     * 3. Postgres / MySQL / SQLite native fast path via
+     *    `tryNativeAggregation()` — picks the matching bucketing
+     *    expression (`date_trunc` / `DATE_FORMAT` / `strftime`).
+     * 4. PHP fallback bucketing when the native path returns null
+     *    (unrecognised engine, table miss, etc).
+     *
+     * Field allow-listing (only declared schema properties + the
+     * `_created/_updated/_deleted_at` magic-table metadata cols) is
+     * the caller's responsibility (REST controller / GraphQL resolver)
+     * because the relevant 400-error message lives at that layer.
+     *
+     * @param Register         $register The register the schema belongs to.
+     * @param Schema           $schema   The schema being aggregated.
+     * @param AggregationQuery $query    The fully-validated query value object.
+     *
+     * @return array<string, mixed> Either `{value, backend, cached}` (ungrouped)
+     *                              or `{groups, backend, cached}` (grouped /
+     *                              time-bucketed). `cached` flips to `true`
+     *                              on the second identical request within
+     *                              the 60 s TTL window.
+     *
+     * @throws NotAuthorizedException When the caller lacks list-permission on the schema.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *   RBAC + placeholder-resolve + cache-read + native-or-fallback dispatch +
+     *   cache-write. Splitting each step into its own helper would obscure
+     *   the order of operations that matters for the security gate and
+     *   cache semantics.
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     *   `AggregationQuery::create()` is a fail-fast static factory.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     */
+    public function runAdhoc(
+        Register $register,
+        Schema $schema,
+        AggregationQuery $query
+    ): array {
+        // RBAC gate — identical predicate to run().
+        $userId = $this->userSession->getUser()?->getUID();
+        if ($this->permissionHandler->hasPermission(
+            schema: $schema,
+            action: 'list',
+            userId: $userId,
+            objectOwner: null,
+            _rbac: true,
+            object: null
+        ) === false
+        ) {
+            throw new NotAuthorizedException(
+                message: sprintf(
+                    'You do not have permission to aggregate schema "%s".',
+                    (string) $schema->getSlug()
+                )
+            );
+        }
+
+        // Resolve placeholders inside the filter (e.g. $now, $startOfMonth)
+        // so the native SQL path can bind concrete values. The resolved
+        // filter feeds both the cache key and the SQL bindings.
+        $resolvedFilter = $this->placeholders->resolveArray($query->filter);
+        $resolvedQuery  = AggregationQuery::create(
+            metric: $query->metric,
+            field: $query->field,
+            filter: $resolvedFilter,
+            groupBy: $query->groupBy,
+            dateBucket: $query->dateBucket
+        );
+
+        // Read-through cache. Identical query + filter + RBAC scope →
+        // same cache key → 60 s TTL hit. Cache miss falls through to the
+        // native-or-fallback dispatch below and the result is stored on
+        // the way out. Invalidation is event-driven via
+        // AggregationCacheInvalidationListener which evicts the entire
+        // `openregister_aggregations` cache on every object-write event.
+        $cached = $this->cache->getAdhoc(
+            registerSlug: (string) $register->getSlug(),
+            schemaSlug: (string) $schema->getSlug(),
+            query: $resolvedQuery
+        );
+        if ($cached !== null) {
+            $cached['cached'] = true;
+            return $cached;
+        }
+
+        // Try the Postgres / MySQL / SQLite native fast path. The runner
+        // detects the database platform and emits the matching native
+        // bucketing expression (date_trunc / DATE_FORMAT / strftime).
+        // Returns null on unsupported query shapes or unrecognised
+        // engines, signaling fall-through to the PHP bucketer below.
+        $native = $this->tryNativeAggregation(
+            register: $register,
+            schema: $schema,
+            metric: $query->metric,
+            field: $query->field,
+            filter: $resolvedFilter,
+            groupBy: $query->groupBy,
+            dateBucket: $query->dateBucket
+        );
+
+        if ($native !== null) {
+            $envelope = [
+                'backend' => $this->detectDatabasePlatform(),
+                'cached'  => false,
+            ] + $native;
+            $this->cache->setAdhoc(
+                registerSlug: (string) $register->getSlug(),
+                schemaSlug: (string) $schema->getSlug(),
+                query: $resolvedQuery,
+                result: $envelope
+            );
+            return $envelope;
+        }
+
+        // PHP fallback path. Pull the RBAC-filtered row set + bucket in
+        // PHP. Correctness path; the native paths above are the
+        // production target.
+        $envelope = $this->bucketInPhp(
+            register: $register,
+            schema: $schema,
+            metric: $query->metric,
+            field: $query->field,
+            filter: $resolvedFilter,
+            groupBy: $query->groupBy,
+            dateBucket: $query->dateBucket
+        );
+        $this->cache->setAdhoc(
+            registerSlug: (string) $register->getSlug(),
+            schemaSlug: (string) $schema->getSlug(),
+            query: $resolvedQuery,
+            result: $envelope
+        );
+        return $envelope;
+
+    }//end runAdhoc()
+
+    /**
+     * Convenience: run an ad-hoc aggregation by register/schema ref.
+     *
+     * Mirrors {@see run()}'s ref-based call shape but for the ad-hoc
+     * path. Lets the REST controller call without re-implementing the
+     * mapper-lookup glue.
+     *
+     * @param string           $registerRef Register slug/uuid/id.
+     * @param string           $schemaRef   Schema slug/uuid/id.
+     * @param AggregationQuery $query       The fully-validated query.
+     *
+     * @return array<string, mixed> Result envelope (see runAdhoc()).
+     *
+     * @throws RuntimeException        When the register or schema cannot be resolved.
+     * @throws NotAuthorizedException  When the caller lacks list-permission.
+     */
+    public function runAdhocByRef(
+        string $registerRef,
+        string $schemaRef,
+        AggregationQuery $query
+    ): array {
+        $schema   = $this->loadSchema(schemaRef: $schemaRef);
+        $register = $this->loadRegister(registerRef: $registerRef);
+
+        return $this->runAdhoc(register: $register, schema: $schema, query: $query);
+
+    }//end runAdhocByRef()
+
+    /**
+     * Convenience: load a schema by ref. Public surface to let the
+     * REST controller validate field allow-lists against
+     * `Schema::getProperties()` before constructing the AggregationQuery
+     * (we want a 400 from the validation layer, not a 404 from inside
+     * runAdhocByRef()).
+     *
+     * @param string $schemaRef Schema slug/uuid/id.
+     *
+     * @return Schema The loaded schema.
+     *
+     * @throws RuntimeException When the schema can't be found.
+     */
+    public function findSchema(string $schemaRef): Schema
+    {
+        return $this->loadSchema(schemaRef: $schemaRef);
+
+    }//end findSchema()
+
+    /**
+     * PHP fallback bucketer for non-Postgres databases (SQLite tests,
+     * MySQL dev boxes).
+     *
+     * Pulls the RBAC-filtered row set via MagicMapper, applies the
+     * filter clauses the native path would emit as SQL, then groups in
+     * PHP using either the categorical groupBy field OR the dateBucket
+     * gap polyfill (`strtotime` + `gmdate`).
+     *
+     * Marked `backend: "php-fallback"` in the response so callers know
+     * the query did not hit a native engine.
+     *
+     * @param Register                  $register   Register.
+     * @param Schema                    $schema     Schema.
+     * @param string                    $metric     One of count/sum/avg/min/max.
+     * @param string|null               $field      Metric field (null for count).
+     * @param array<string, mixed>      $filter     Already placeholder-resolved filter map.
+     * @param array<string, mixed>|null $groupBy    Optional categorical groupBy spec.
+     * @param array<string, mixed>|null $dateBucket Optional time-bucket spec.
+     *
+     * @return array<string, mixed> Either `{value, backend, cached}` or
+     *                              `{groups, backend, cached}` mirroring the
+     *                              Postgres native-path shape.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *   The branching mirrors the Postgres SQL path: dateBucket vs.
+     *   groupBy vs. ungrouped, each with the metric / filter pipeline.
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     */
+    private function bucketInPhp(
+        Register $register,
+        Schema $schema,
+        string $metric,
+        ?string $field,
+        array $filter,
+        ?array $groupBy,
+        ?array $dateBucket
+    ): array {
+        $objects = $this->magicMapper->findAllInRegisterSchemaTable(
+            register: $register,
+            schema: $schema,
+            limit: self::PHP_FALLBACK_ROW_CAP
+        );
+
+        $rows = [];
+        foreach ($objects as $entity) {
+            // The findAllInRegisterSchemaTable mapper returns ObjectEntity[];
+            // getObject() resolves each row to the inner data array.
+            $rows[] = $entity->getObject();
+        }
+
+        // Apply the filter clauses in PHP — same operator vocabulary
+        // (in / gt / gte / lt / lte / ne) as the SQL path.
+        $rows = $this->applyFilter(rows: $rows, filter: $filter);
+
+        if ($dateBucket !== null) {
+            // Restrict to rows whose bucket field falls in [start, end).
+            $bucketField = (string) $dateBucket['field'];
+            $start       = strtotime((string) $dateBucket['start']);
+            $end         = strtotime((string) $dateBucket['end']);
+            $gap         = (string) $dateBucket['gap'];
+            $buckets     = [];
+
+            foreach ($rows as $row) {
+                $raw = ($row[$bucketField] ?? null);
+                if ($raw === null) {
+                    continue;
+                }
+
+                $stamp = is_numeric($raw) === true ? (int) $raw : strtotime((string) $raw);
+                if ($stamp === false || $stamp < $start || $stamp >= $end) {
+                    continue;
+                }
+
+                $key = $this->truncateTimestamp(timestamp: $stamp, gap: $gap);
+                $buckets[$key] ??= [];
+                $buckets[$key][] = $row;
+            }
+
+            // Compute the metric per bucket.
+            $groups = [];
+            ksort($buckets);
+            foreach ($buckets as $key => $bucketRows) {
+                $groups[] = [
+                    'key'   => $key,
+                    'value' => $this->computeMetric(rows: $bucketRows, metric: $metric, field: $field),
+                ];
+            }
+
+            return [
+                'groups'  => $groups,
+                'backend' => 'php-fallback',
+                'cached'  => false,
+            ];
+        }//end if
+
+        if ($groupBy !== null && isset($groupBy['field']) === true) {
+            $groups = $this->computeGrouped(
+                rows: $rows,
+                metric: $metric,
+                field: $field,
+                groupField: (string) $groupBy['field']
+            );
+
+            return [
+                'groups'  => $groups,
+                'backend' => 'php-fallback',
+                'cached'  => false,
+            ];
+        }
+
+        return [
+            'value'   => $this->computeMetric(rows: $rows, metric: $metric, field: $field),
+            'backend' => 'php-fallback',
+            'cached'  => false,
+        ];
+
+    }//end bucketInPhp()
+
+    /**
+     * Polyfill for Postgres `date_trunc($gap, ts)::text` over a Unix
+     * timestamp. Returns an ISO-8601-UTC `Y-m-d\TH:i:s\Z` bucket label
+     * keyed at the start of the gap.
+     *
+     * @param int    $timestamp Unix timestamp.
+     * @param string $gap       One of AggregationQuery::DATE_BUCKET_GAPS.
+     *
+     * @return string ISO-8601-UTC bucket label at the gap-start.
+     */
+    private function truncateTimestamp(int $timestamp, string $gap): string
+    {
+        // `week` and `quarter` need bespoke handling below — the rest
+        // map directly to a gmdate format string.
+        $format = match ($gap) {
+            'minute'  => 'Y-m-d\TH:i:00\Z',
+            'hour'    => 'Y-m-d\TH:00:00\Z',
+            'day'     => 'Y-m-d\T00:00:00\Z',
+            'week'    => null,
+            'month'   => 'Y-m-01\T00:00:00\Z',
+            'quarter' => null,
+            'year'    => 'Y-01-01\T00:00:00\Z',
+            default   => 'Y-m-d\T00:00:00\Z',
+        };
+
+        if ($gap === 'week') {
+            // ISO week starts Monday. Use gmdate('N') to find the day of
+            // the week then back-shift.
+            $dayOfWeek   = (int) gmdate('N', $timestamp);
+            $weekStartTs = ($timestamp - (($dayOfWeek - 1) * 86400));
+            return gmdate('Y-m-d\T00:00:00\Z', $weekStartTs);
+        }
+
+        if ($gap === 'quarter') {
+            // Truncate to the first month of the quarter.
+            $month  = (int) gmdate('n', $timestamp);
+            $qStart = ((int) (($month - 1) / 3) * 3) + 1;
+            $year   = (int) gmdate('Y', $timestamp);
+            return sprintf('%04d-%02d-01T00:00:00Z', $year, $qStart);
+        }
+
+        return gmdate($format, $timestamp);
+
+    }//end truncateTimestamp()
+
+    /**
      * Compute a single scalar metric over the given rows.
      *
      * @param array<int, array<string, mixed>> $rows   Already-filtered rows.
@@ -390,6 +777,8 @@ class AggregationRunner
      * @param mixed                            $field  Field name to aggregate over (ignored for count).
      *
      * @return int|float|null The metric result, or null when no rows match.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function computeMetric(array $rows, string $metric, mixed $field): int|float|null
     {
@@ -439,6 +828,8 @@ class AggregationRunner
      * @param string                           $groupField Field used as the bucket key.
      *
      * @return array<int, array{key: mixed, value: int|float|null}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function computeGrouped(array $rows, string $metric, mixed $field, string $groupField): array
     {
@@ -620,18 +1011,30 @@ class AggregationRunner
      * Returns the result fragment ('value' or 'groups') on success, null
      * to signal the caller should fall back to PHP-side aggregation.
      *
-     * @param Register                  $register Register the schema belongs to.
-     * @param Schema                    $schema   Schema being aggregated.
-     * @param string                    $metric   Metric name (count/sum/avg/min/max).
-     * @param string|null               $field    Field to aggregate over (ignored for count).
-     * @param array<string, mixed>      $filter   Already placeholder-resolved filter map.
-     * @param array<string, mixed>|null $groupBy  Optional group spec ({field: ...}).
+     * @param Register                  $register   Register the schema belongs to.
+     * @param Schema                    $schema     Schema being aggregated.
+     * @param string                    $metric     Metric name (count/sum/avg/min/max).
+     * @param string|null               $field      Field to aggregate over (ignored for count).
+     * @param array<string, mixed>      $filter     Already placeholder-resolved filter map.
+     * @param array<string, mixed>|null $groupBy    Optional group spec ({field: ...}).
+     * @param array<string, mixed>|null $dateBucket Optional time-bucket spec ({field, start, end, gap}).
+     *                                              When supplied, the query becomes a `date_trunc`-bucketed
+     *                                              series with explicit `WHERE field >= start AND field < end`
+     *                                              bounds. Mutually exclusive with $groupBy (validated by
+     *                                              AggregationQuery::create() upstream).
      *
      * @return array{value: int|float|null}|array{groups: array<int, array{key: mixed, value: int|float|null}>}|null
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.ElseExpression)
+     *   The platform-branch is genuinely binary (postgres vs non-postgres
+     *   for both the soft-delete predicate and the aggregate-cast block,
+     *   mysql vs sqlite for the bucket expression). Else clauses make
+     *   the mutual-exclusion read at the call site.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function tryNativeAggregation(
         Register $register,
@@ -639,10 +1042,21 @@ class AggregationRunner
         string $metric,
         ?string $field,
         array $filter,
-        ?array $groupBy
+        ?array $groupBy,
+        ?array $dateBucket=null
     ): ?array {
-        $platform = $this->db->getDatabasePlatform();
-        if (stripos($platform::class, 'PostgreSQL') === false) {
+        $platformName = $this->detectDatabasePlatform();
+
+        // Postgres handles every query shape natively. MySQL and SQLite
+        // currently support only the time-bucket path; the categorical
+        // groupBy + ungrouped paths still depend on Postgres-specific
+        // operators (`::jsonb`, `::numeric`) and fall through to the PHP
+        // fallback on non-Postgres engines.
+        if ($platformName === 'unknown') {
+            return null;
+        }
+
+        if ($platformName !== 'postgres' && $dateBucket === null) {
             return null;
         }
 
@@ -674,10 +1088,19 @@ class AggregationRunner
             return null;
         }
 
-        $fullTable = '"oc_'.$tableName.'"';
-
-        $whereParts = ["(_deleted IS NULL OR _deleted = 'null'::jsonb)"];
+        $quote      = $this->identifierQuote(platform: $platformName);
+        $fullTable  = $quote.'oc_'.$tableName.$quote;
+        $whereParts = [];
         $bindings   = [];
+
+        // Soft-delete predicate. Postgres uses jsonb; MySQL/SQLite store
+        // the metadata cols as JSON-string text where the empty/null marker
+        // is the literal string 'null' or actual NULL.
+        if ($platformName === 'postgres') {
+            $whereParts[] = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
+        } else {
+            $whereParts[] = "(_deleted IS NULL OR _deleted = 'null' OR _deleted = '')";
+        }
 
         // SECURITY: mirror MagicRbacHandler's multi-tenancy predicate. The
         // native fast path bypasses MagicMapper entirely, so without this
@@ -686,13 +1109,13 @@ class AggregationRunner
         // Column is `_organisation` — magic tables prefix metadata cols
         // with `_` (see MagicMapper::METADATA_PREFIX).
         $activeOrg    = $this->organisationService->getActiveOrganisation();
-        $whereParts[] = '"_organisation" = ?';
+        $whereParts[] = $quote.'_organisation'.$quote.' = ?';
         $bindings[]   = $activeOrg?->getUuid() ?? '__no_active_org__';
 
         foreach ($filter as $f => $v) {
             $col = $this->sanitizeColumnName(name: (string) $f);
             if (is_array($v) === false) {
-                $whereParts[] = '"'.$col.'" = ?';
+                $whereParts[] = $quote.$col.$quote.' = ?';
                 $bindings[]   = $this->bindValue(value: $v);
                 continue;
             }
@@ -708,7 +1131,7 @@ class AggregationRunner
                     }
 
                     $placeholders = implode(', ', array_fill(0, count($list), '?'));
-                    $whereParts[] = '"'.$col.'" IN ('.$placeholders.')';
+                    $whereParts[] = $quote.$col.$quote.' IN ('.$placeholders.')';
                     foreach ($list as $item) {
                         $bindings[] = $this->bindValue(value: $item);
                     }
@@ -729,24 +1152,102 @@ class AggregationRunner
                     continue;
                 }
 
-                $whereParts[] = '"'.$col.'" '.$sqlOp.' ?';
+                $whereParts[] = $quote.$col.$quote.' '.$sqlOp.' ?';
                 $bindings[]   = $this->bindValue(value: $opValue);
             }//end foreach
         }//end foreach
 
         $whereSql = implode(' AND ', $whereParts);
 
-        // Aggregate clause.
-        $aggCol = $field !== null ? '"'.$this->sanitizeColumnName(name: $field).'"' : null;
-        $aggSql = match ($metric) {
-            'count' => 'COUNT(*)',
-            'sum'   => 'SUM(NULLIF('.$aggCol.'::text, \'\')::numeric)',
-            'avg'   => 'AVG(NULLIF('.$aggCol.'::text, \'\')::numeric)',
-            'min'   => 'MIN(NULLIF('.$aggCol.'::text, \'\')::numeric)',
-            'max'   => 'MAX(NULLIF('.$aggCol.'::text, \'\')::numeric)',
-        };
+        // Aggregate clause. Postgres needs explicit `::numeric` casts because
+        // magic-table data columns are jsonb-shaped. MySQL/SQLite handle the
+        // implicit conversion in the engine. NULLIF guards against empty
+        // strings produced by jsonb-to-text casts.
+        $aggCol = null;
+        if ($field !== null) {
+            $aggCol = $quote.$this->sanitizeColumnName(name: $field).$quote;
+        }
+
+        if ($platformName === 'postgres') {
+            $aggSql = match ($metric) {
+                'count' => 'COUNT(*)',
+                'sum'   => 'SUM(NULLIF('.$aggCol.'::text, \'\')::numeric)',
+                'avg'   => 'AVG(NULLIF('.$aggCol.'::text, \'\')::numeric)',
+                'min'   => 'MIN(NULLIF('.$aggCol.'::text, \'\')::numeric)',
+                'max'   => 'MAX(NULLIF('.$aggCol.'::text, \'\')::numeric)',
+            };
+        } else {
+            $aggSql = match ($metric) {
+                'count' => 'COUNT(*)',
+                'sum'   => 'SUM(NULLIF('.$aggCol.', \'\') + 0)',
+                'avg'   => 'AVG(NULLIF('.$aggCol.', \'\') + 0)',
+                'min'   => 'MIN(NULLIF('.$aggCol.', \'\') + 0)',
+                'max'   => 'MAX(NULLIF('.$aggCol.', \'\') + 0)',
+            };
+        }
 
         try {
+            // Time-bucket path: emit a platform-specific bucketing
+            // expression (date_trunc / DATE_FORMAT / strftime), add
+            // `WHERE "$field" >= ? AND "$field" < ?` bounds from the
+            // dateBucket spec, and group on the bucket. Mutual exclusion
+            // with $groupBy is guaranteed by AggregationQuery::create()
+            // upstream.
+            if ($dateBucket !== null) {
+                $bucketField = (string) $dateBucket['field'];
+                $bucketCol   = $quote.$this->sanitizeColumnName(name: $bucketField).$quote;
+                $gap         = (string) $dateBucket['gap'];
+
+                $boundedWhere = $whereSql.' AND '.$bucketCol.' >= ? AND '.$bucketCol.' < ?';
+
+                if ($platformName === 'postgres') {
+                    // Prepend the bucket bounds to the binding list so
+                    // they appear in placeholder order: first the gap
+                    // (for the Postgres date_trunc call), then the
+                    // existing WHERE clause bindings, then the dateBucket
+                    // bounds.
+                    $bindings[] = $this->bindValue(value: $dateBucket['start']);
+                    $bindings[] = $this->bindValue(value: $dateBucket['end']);
+                    array_unshift($bindings, $gap);
+                    $bucketExpr = 'date_trunc(?, '.$bucketCol.')::text';
+                } else {
+                    // MySQL / SQLite emit literal format strings — the
+                    // gap vocabulary is closed (seven entries) and
+                    // validated upstream by AggregationQuery::create().
+                    $bindings[] = $this->bindValue(value: $dateBucket['start']);
+                    $bindings[] = $this->bindValue(value: $dateBucket['end']);
+                    if ($platformName === 'mysql') {
+                        $bucketExpr = $this->mysqlBucketExpression(column: $bucketCol, gap: $gap);
+                    } else {
+                        $bucketExpr = $this->sqliteBucketExpression(column: $bucketCol, gap: $gap);
+                    }
+                }//end if
+
+                $sql  = "SELECT {$bucketExpr} AS bucket, {$aggSql} AS agg
+                         FROM {$fullTable}
+                         WHERE {$boundedWhere}
+                         GROUP BY bucket
+                         ORDER BY bucket";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute($bindings);
+                $groups = [];
+                while (($row = $stmt->fetch()) !== false) {
+                    $value = $row['agg'];
+                    if ($metric !== 'count' && is_string($value) === true) {
+                        $value = (float) $value;
+                    } else if ($value !== null) {
+                        $value = (int) $value;
+                    }
+
+                    $groups[] = [
+                        'key'   => $this->coerceBucketKey(raw: $row['bucket']),
+                        'value' => $value,
+                    ];
+                }
+
+                return ['groups' => $groups];
+            }//end if
+
             if ($groupBy !== null && isset($groupBy['field']) === true) {
                 $groupCol = '"'.$this->sanitizeColumnName(name: (string) $groupBy['field']).'"';
                 $sql      = "SELECT {$groupCol} AS bucket, {$aggSql} AS agg
@@ -790,6 +1291,183 @@ class AggregationRunner
             return null;
         }//end try
     }//end tryNativeAggregation()
+
+    /**
+     * Coerce a Postgres date_trunc bucket label to a stable
+     * ISO-8601-UTC string (`Y-m-d\TH:i:s\Z`).
+     *
+     * The Postgres `date_trunc()::text` cast returns values like
+     * `2026-05-21 00:00:00+00`,
+     * `2026-05-21 00:00:00` (depending on the column timezone), or
+     * `2026-05-21 13:00:00`. We need a stable wire format that the
+     * client can parse identically across Postgres versions / timezone
+     * settings AND across the PHP-fallback path on non-Postgres
+     * databases. Mirrors the behaviour the
+     * `SolrAggregationQueryBuilder` and
+     * `ElasticsearchAggregationQueryBuilder` produce.
+     *
+     * @param mixed $raw Raw bucket value from the DB row (typically a string).
+     *
+     * @return string ISO-8601-UTC `Y-m-d\TH:i:s\Z` bucket label, or the
+     *                original string when it can't be parsed (defensive).
+     */
+    private function coerceBucketKey(mixed $raw): string
+    {
+        if ($raw instanceof DateTimeInterface) {
+            return $raw->format('Y-m-d\TH:i:s\Z');
+        }
+
+        if (is_string($raw) === false) {
+            return (string) $raw;
+        }
+
+        // Try strtotime then format — defensive but covers every Postgres
+        // text-cast shape we'll see.
+        $stamp = strtotime($raw);
+        if ($stamp === false) {
+            return $raw;
+        }
+
+        return gmdate('Y-m-d\TH:i:s\Z', $stamp);
+
+    }//end coerceBucketKey()
+
+    /**
+     * Detect the active database platform short name.
+     *
+     * Returns one of `postgres`, `mysql`, `sqlite`, or `unknown`. Used to
+     * pick the matching native-bucketing path in
+     * {@see tryNativeAggregation()} and to annotate the response
+     * `backend` field in {@see runAdhoc()}.
+     *
+     * @return string Lower-case platform short name.
+     */
+    private function detectDatabasePlatform(): string
+    {
+        $platformClass = $this->db->getDatabasePlatform()::class;
+        if (stripos($platformClass, 'PostgreSQL') !== false) {
+            return 'postgres';
+        }
+
+        if (stripos($platformClass, 'MySQL') !== false || stripos($platformClass, 'MariaDB') !== false) {
+            return 'mysql';
+        }
+
+        if (stripos($platformClass, 'SQLite') !== false) {
+            return 'sqlite';
+        }
+
+        return 'unknown';
+
+    }//end detectDatabasePlatform()
+
+    /**
+     * Identifier-quoting character for the given platform.
+     *
+     * Postgres and SQLite use double-quotes; MySQL uses backticks.
+     *
+     * @param string $platform Platform short name from {@see detectDatabasePlatform()}.
+     *
+     * @return string The quoting character to wrap identifiers.
+     */
+    private function identifierQuote(string $platform): string
+    {
+        return $platform === 'mysql' ? '`' : '"';
+
+    }//end identifierQuote()
+
+    /**
+     * Emit a MySQL `DATE_FORMAT`-based bucket expression for the given gap.
+     *
+     * The gap vocabulary is closed (seven entries) and validated upstream
+     * by {@see AggregationQuery::create()}. The format strings produce
+     * the canonical `Y-m-d\TH:i:s\Z` wire shape so the round-trip
+     * through {@see coerceBucketKey()} is an identity transform on
+     * MySQL output.
+     *
+     * @param string $column Identifier-quoted column reference.
+     * @param string $gap    Validated gap unit.
+     *
+     * @return string The full bucket SQL expression (without the `AS bucket` alias).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     */
+    private function mysqlBucketExpression(string $column, string $gap): string
+    {
+        if ($gap === 'week') {
+            // ISO-Monday week-start: back-shift by ((DAYOFWEEK - 1 - 1) % 7)
+            // days, but MySQL's DAYOFWEEK starts on Sunday=1 so the actual
+            // expression is `((DAYOFWEEK(field) + 5) MOD 7)` which produces
+            // 0 for Monday, 6 for Sunday — exactly the shift we need to
+            // reach the previous (or current) Monday.
+            return 'DATE_FORMAT('.$column.' - INTERVAL ((DAYOFWEEK('.$column.') + 5) MOD 7) DAY, \'%Y-%m-%dT00:00:00Z\')';
+        }
+
+        if ($gap === 'quarter') {
+            return sprintf(
+                'CONCAT(YEAR(%1$s), \'-\', LPAD(((QUARTER(%1$s) - 1) * 3 + 1), 2, \'0\'), \'-01T00:00:00Z\')',
+                $column
+            );
+        }
+
+        $format = match ($gap) {
+            'minute' => '%Y-%m-%dT%H:%i:00Z',
+            'hour'   => '%Y-%m-%dT%H:00:00Z',
+            'day'    => '%Y-%m-%dT00:00:00Z',
+            'month'  => '%Y-%m-01T00:00:00Z',
+            'year'   => '%Y-01-01T00:00:00Z',
+            default  => '%Y-%m-%dT00:00:00Z',
+        };
+
+        return 'DATE_FORMAT('.$column.', \''.$format.'\')';
+
+    }//end mysqlBucketExpression()
+
+    /**
+     * Emit a SQLite `strftime`-based bucket expression for the given gap.
+     *
+     * Mirrors {@see mysqlBucketExpression()} for the SQLite strftime
+     * vocabulary. The `weekday 0` modifier in SQLite jumps forward to
+     * the next Sunday (UTC); subtracting six days yields the previous
+     * Monday — matching ISO-week-start semantics.
+     *
+     * @param string $column Identifier-quoted column reference.
+     * @param string $gap    Validated gap unit.
+     *
+     * @return string The full bucket SQL expression (without the `AS bucket` alias).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     */
+    private function sqliteBucketExpression(string $column, string $gap): string
+    {
+        if ($gap === 'week') {
+            return 'strftime(\'%Y-%m-%dT00:00:00Z\', '.$column.', \'weekday 0\', \'-6 days\')';
+        }
+
+        if ($gap === 'quarter') {
+            $parts   = [];
+            $parts[] = sprintf('CASE WHEN CAST(strftime(\'%%m\', %1$s) AS INTEGER) <= 3', $column);
+            $parts[] = sprintf('THEN strftime(\'%%Y-01-01T00:00:00Z\', %1$s)', $column);
+            $parts[] = sprintf('WHEN CAST(strftime(\'%%m\', %1$s) AS INTEGER) <= 6', $column);
+            $parts[] = sprintf('THEN strftime(\'%%Y-04-01T00:00:00Z\', %1$s)', $column);
+            $parts[] = sprintf('WHEN CAST(strftime(\'%%m\', %1$s) AS INTEGER) <= 9', $column);
+            $parts[] = sprintf('THEN strftime(\'%%Y-07-01T00:00:00Z\', %1$s)', $column);
+            $parts[] = sprintf('ELSE strftime(\'%%Y-10-01T00:00:00Z\', %1$s) END', $column);
+            return implode(' ', $parts);
+        }
+
+        $format = match ($gap) {
+            'minute' => '%Y-%m-%dT%H:%M:00Z',
+            'hour'   => '%Y-%m-%dT%H:00:00Z',
+            'day'    => '%Y-%m-%dT00:00:00Z',
+            'month'  => '%Y-%m-01T00:00:00Z',
+            'year'   => '%Y-01-01T00:00:00Z',
+            default  => '%Y-%m-%dT00:00:00Z',
+        };
+
+        return 'strftime(\''.$format.'\', '.$column.')';
+
+    }//end sqliteBucketExpression()
 
     /**
      * Convert a value to its SQL bind shape.
@@ -1006,7 +1684,9 @@ class AggregationRunner
 
         $rows = [];
         foreach ($objects as $entity) {
-            $rows[] = $entity instanceof \OCA\OpenRegister\Db\ObjectEntity ? $entity->getObject() : (array) $entity;
+            // The findAllInRegisterSchemaTable mapper returns ObjectEntity[];
+            // getObject() resolves each row to the inner data array.
+            $rows[] = $entity->getObject();
         }
 
         $rows = $this->applyFilter(rows: $rows, filter: $resolvedWhere);
@@ -1178,6 +1858,8 @@ class AggregationRunner
      * @param Schema $schema The schema to read.
      *
      * @return array<string, mixed>|null The annotation map, or null when absent.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      */
     private function getAnnotation(Schema $schema): ?array
     {

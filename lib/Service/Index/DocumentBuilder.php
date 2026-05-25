@@ -6,6 +6,9 @@
  * Handles building Solr documents from ObjectEntity instances.
  * Extracted from SolrBackend to separate document creation logic.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -93,6 +96,8 @@ class DocumentBuilder
      * @psalm-return array{_text: false|string,...}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Document creation requires handling multiple data types
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-6
      */
     public function createDocument(
         ObjectEntity $object,
@@ -154,6 +159,8 @@ class DocumentBuilder
      * @psalm-return list<string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Relations flattening requires handling multiple data formats
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     public function flattenRelationsForSolr($relations): array
     {
@@ -423,6 +430,8 @@ class DocumentBuilder
      * @return string|null SOLR field name or null if should be skipped
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function mapFieldToSolrType(string $fieldName, string $_fieldType, $_fieldValue): ?string
     {
@@ -448,6 +457,8 @@ class DocumentBuilder
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         DateTime::createFromFormat is standard PHP date pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function convertValueForSolr($value, string $fieldType)
     {
@@ -535,6 +546,8 @@ class DocumentBuilder
      * @param string $fieldName Field name for logging
      *
      * @return mixed Truncated value or original if within limits
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function truncateFieldValue($value, string $fieldName=''): mixed
     {
@@ -582,6 +595,8 @@ class DocumentBuilder
      * @param array  $fieldDefinition Schema field definition (if available)
      *
      * @return bool True if field should be truncated
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function shouldTruncateField(string $fieldName, array $fieldDefinition=[]): bool
     {

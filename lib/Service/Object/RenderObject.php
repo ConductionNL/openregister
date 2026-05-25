@@ -11,6 +11,9 @@
  * - Applying field filtering and selection
  * - Formatting object properties for display
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *
@@ -43,6 +46,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\UrnService;
 use OCA\OpenRegister\Service\TranslationStatusService;
@@ -1400,8 +1404,79 @@ class RenderObject
             );
         }
 
+        // Annotation-driven retention block.
+        // When the schema declares `x-openregister-archival`, compute the
+        // effective retention for this row from the annotation's default +
+        // condition rules and merge it under `retention.annotation` so the
+        // records-management retention surface and the annotation surface
+        // never collide. See add-archival-annotation-support design R3 + D7.
+        $this->applyArchivalRetentionBlock(entity: $entity, schema: $renderSchema);
+
         return $entity;
     }//end renderEntity()
+
+    /**
+     * Compute + attach the annotation-driven `_retention.annotation` block.
+     *
+     * Stateless w.r.t. the row's persisted columns; pulls the annotation off
+     * the schema's `configuration` and asks `RetentionEvaluator` to produce
+     * the `{effectiveRetention, matchedRule, expiresAt}` triple for the
+     * current row + `_created` timestamp.
+     *
+     * Failures are logged + swallowed: a malformed annotation must NEVER
+     * break object rendering.
+     *
+     * @param ObjectEntity $entity The entity being rendered.
+     * @param Schema|null  $schema The resolved schema (may be null).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-6
+     */
+    private function applyArchivalRetentionBlock(ObjectEntity $entity, ?Schema $schema): void
+    {
+        if ($schema === null) {
+            return;
+        }
+
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-archival'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        try {
+            $createdAt = $entity->getCreated();
+            if ($createdAt === null) {
+                return;
+            }
+
+            $objectData = $entity->getObject();
+            if (is_array($objectData) === false) {
+                $objectData = [];
+            }
+
+            $row       = $objectData;
+            $evaluator = new RetentionEvaluator(logger: $this->logger);
+            $annotationBlock = $evaluator->evaluate(
+                annotation: $annotation,
+                row: $row,
+                createdAt: $createdAt
+            );
+
+            $existing = ($entity->getRetention() ?? []);
+            $existing['annotation'] = $annotationBlock;
+            $entity->setRetention($existing);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[RenderObject] archival retention compute failed for %s: %s',
+                    (string) $entity->getUuid(),
+                    $e->getMessage()
+                )
+            );
+        }//end try
+    }//end applyArchivalRetentionBlock()
 
     /**
      * Apply virtual (materialise:false) calculations declared on the

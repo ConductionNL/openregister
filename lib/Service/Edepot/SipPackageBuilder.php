@@ -6,6 +6,9 @@
  * Assembles SIP (Submission Information Package) archives conforming to the
  * OAIS reference model (ISO 14721) for e-Depot transfer.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot
  *
@@ -134,6 +137,8 @@ class SipPackageBuilder
      * @param int   $maxSize          Maximum package size in bytes.
      *
      * @return array<int, array> Array of batches.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
      */
     private function splitIntoBatches(array $objectsWithFiles, int $maxSize): array
     {
@@ -173,6 +178,8 @@ class SipPackageBuilder
      * @param int    $totalPackages    Total number of packages.
      *
      * @return string Path to the generated ZIP file.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
      */
     private function buildSinglePackage(
         string $transferId,
@@ -268,6 +275,8 @@ class SipPackageBuilder
      * @param string $content The file content.
      *
      * @return array{path: string, size: int, checksum: string} The manifest entry.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
      */
     private function createManifestEntry(string $path, string $content): array
     {

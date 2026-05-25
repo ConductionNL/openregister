@@ -6,6 +6,9 @@
  * Controller for TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden)
  * metadata operations including MDTO XML export and archival status summary.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -57,6 +60,8 @@ class TmloController extends Controller
      * @param RegisterMapper  $registerMapper Register mapper
      * @param SchemaMapper    $schemaMapper   Schema mapper
      * @param LoggerInterface $logger         Logger interface
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
      */
     public function __construct(
         string $appName,
@@ -81,6 +86,8 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -125,6 +132,8 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -177,6 +186,8 @@ class TmloController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

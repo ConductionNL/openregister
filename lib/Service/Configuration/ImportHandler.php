@@ -6,6 +6,9 @@
  * This file contains the handler class for importing configurations
  * from various sources in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -22,6 +25,8 @@
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-86
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
 
 namespace OCA\OpenRegister\Service\Configuration;
@@ -2695,7 +2700,9 @@ class ImportHandler
                     'unionSchemaIds' => $unionSchemaIds,
                 ]
             );
-        } else {
+        }//end if
+
+        if ($register === null) {
             // Fresh insert: derive a new Register entity.
             $register = $this->registerMapper->createFromArray(
                 object: [
@@ -2743,6 +2750,47 @@ class ImportHandler
             $configRegisterIds[] = $register->getId();
             $configuration->setRegisters($configRegisterIds);
             $this->configurationMapper->update($configuration);
+        }
+
+        // EAGER MAGIC-TABLE CREATION (fixes #1615): provision the per-schema
+        // magic table for EVERY imported schema, not just those that ship
+        // seed data. Without this, log-style schemas (call_log, job_log,
+        // synchronization_log, …) — which typically have no seed data —
+        // never get their `oc_openregister_table_{registerId}_{schemaId}`
+        // table created on `occ app:enable`, and the first runtime write
+        // from a service like CallService throws "relation does not exist".
+        //
+        // Idempotent on re-import: ensureTableForRegisterSchema short-
+        // circuits when the table already exists (see MagicTableHandler
+        // line 109-112). The seed-objects loop further down still calls
+        // the same method as a defensive no-op.
+        if ($this->magicMapper !== null && $register !== null) {
+            foreach ($schemas as $schema) {
+                if ($schema instanceof Schema === false) {
+                    continue;
+                }
+
+                try {
+                    $this->magicMapper->ensureTableForRegisterSchema(
+                        register: $register,
+                        schema: $schema
+                    );
+                } catch (\Exception $e) {
+                    // Non-fatal: surfaced via logger so the rest of the
+                    // import (other schemas, seed data) still completes.
+                    $this->logger->warning(
+                        message: '[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create',
+                        context: [
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
+                            'schema_id'   => $schema->getId(),
+                            'schema_slug' => $schema->getSlug(),
+                            'register_id' => $register->getId(),
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
         }
     }//end autoCreateRegisterIfApplication()
 
@@ -3039,6 +3087,10 @@ class ImportHandler
      * @param array         $result        The result array to append object IDs to.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-5
      */
     private function importSeedData(
         array $configData,
@@ -3506,6 +3558,11 @@ class ImportHandler
      * @param array<string, mixed> $result         Result accumulator updated in place with related-item counts.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-5
      */
     private function processRelatedItems(
         ObjectEntity $object,

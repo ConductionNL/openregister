@@ -6,6 +6,9 @@
  * Handles facet processing operations for Solr.
  * Manages facet discovery, building, and formatting.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -176,6 +179,8 @@ class SolrFacetProcessor
      * @return (array[]|mixed)[][] Processed facets
      *
      * @psalm-return array<array{field: mixed, items: non-empty-list<array{count: mixed, value: mixed}>}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function processFacetResponse(array $solrResponse): array
     {

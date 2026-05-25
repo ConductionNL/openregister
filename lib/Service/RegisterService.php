@@ -8,6 +8,9 @@
  * This service acts as a facade for register operations,
  * coordinating between RegisterMapper and FileService.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -419,10 +422,9 @@ class RegisterService
                 }
 
                 $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+                $schemaIdExpr    = "CAST({$schemaId} AS CHAR)";
                 if ($isPostgres === true) {
                     $schemaIdExpr = "{$schemaId}::text";
-                } else {
-                    $schemaIdExpr = "CAST({$schemaId} AS CHAR)";
                 }
 
                 $unionQueries[] = "

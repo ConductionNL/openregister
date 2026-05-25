@@ -7,6 +7,9 @@
  * This listener responds to object creation, update, and deletion events by
  * maintaining the corresponding Solr index entries.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category EventListener
  * @package  OCA\OpenRegister\EventListener
  *

@@ -16,6 +16,9 @@
  * - Register/schema pair discovery from database table names
  * - Row-to-ObjectEntity conversion for magic table rows
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>

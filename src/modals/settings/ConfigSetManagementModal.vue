@@ -181,6 +181,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		async loadConfigSets() {
 			this.loading = true
 			this.error = false

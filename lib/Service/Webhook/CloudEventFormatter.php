@@ -5,6 +5,9 @@
  *
  * Formatter for creating CloudEvents specification compliant webhook payloads.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Webhook
  *
@@ -277,6 +280,8 @@ class CloudEventFormatter
      * @param IRequest $request Request object with getHeader method
      *
      * @return string Content type header value
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-26
      */
     private function getContentTypeHeader(IRequest $request): string
     {

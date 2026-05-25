@@ -7,6 +7,9 @@
  * (oc_openregister_objects) to schema-specific magic tables. Runs every 5 minutes
  * and processes up to 100 objects per execution, grouped by register+schema pair.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *

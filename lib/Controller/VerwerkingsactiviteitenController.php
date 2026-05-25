@@ -82,6 +82,8 @@ class VerwerkingsactiviteitenController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
      */
     public function index(): JSONResponse
     {
@@ -114,6 +116,8 @@ class VerwerkingsactiviteitenController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
      */
     public function show(string $id): JSONResponse
     {
@@ -137,6 +141,8 @@ class VerwerkingsactiviteitenController extends Controller
      * @return JSONResponse The persisted activity (201) or a 422 envelope.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
      */
     public function create(): JSONResponse
     {
@@ -173,6 +179,8 @@ class VerwerkingsactiviteitenController extends Controller
      * @return JSONResponse The updated activity, 404, 403, or 422.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
      */
     public function update(string $id): JSONResponse
     {
@@ -217,6 +225,8 @@ class VerwerkingsactiviteitenController extends Controller
      * @return JSONResponse 204 on success, 404, or 403.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
      */
     public function destroy(string $id): JSONResponse
     {
@@ -266,6 +276,8 @@ class VerwerkingsactiviteitenController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-5
      */
     public function verantwoording(): JSONResponse
     {

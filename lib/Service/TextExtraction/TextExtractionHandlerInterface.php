@@ -7,6 +7,9 @@
  * This allows the TextExtractionService to be generic and extensible
  * for future source types (agenda, email, etc.).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *

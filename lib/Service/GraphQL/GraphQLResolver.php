@@ -6,6 +6,9 @@
  * Resolves GraphQL queries, mutations, and fields by delegating
  * to OpenRegister services with RBAC enforcement and DataLoader batching.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  * @author   Conduction B.V. <info@conduction.nl>
@@ -22,6 +25,7 @@ namespace OCA\OpenRegister\Service\GraphQL;
 
 use GraphQL\Deferred;
 use GraphQL\Error\Error;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -29,6 +33,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -80,15 +86,17 @@ class GraphQLResolver
     /**
      * Constructor.
      *
-     * @param GetObject                                           $getObject          Object finder
-     * @param ObjectService                                       $objectService      Object service
-     * @param PermissionHandler                                   $permissionHandler  Permission handler
-     * @param PropertyRbacHandler                                 $propertyRbac       Property RBAC handler
-     * @param RelationHandler                                     $relationHandler    Relation handler
-     * @param AuditTrailMapper                                    $auditTrailMapper   Audit trail mapper
-     * @param RegisterMapper                                      $registerMapper     Register mapper
-     * @param LoggerInterface                                     $logger             Logger
-     * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
+     * @param GetObject                                           $getObject           Object finder
+     * @param ObjectService                                       $objectService       Object service
+     * @param PermissionHandler                                   $permissionHandler   Permission handler
+     * @param PropertyRbacHandler                                 $propertyRbac        Property RBAC handler
+     * @param RelationHandler                                     $relationHandler     Relation handler
+     * @param AuditTrailMapper                                    $auditTrailMapper    Audit trail mapper
+     * @param RegisterMapper                                      $registerMapper      Register mapper
+     * @param LoggerInterface                                     $logger              Logger
+     * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler  Translation handler
+     * @param AggregationRunner                                   $aggregationRunner   Ad-hoc aggregation dispatcher.
+     * @param TimeseriesRequestValidator                          $timeseriesValidator Validator for `groupBy` arg.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
@@ -102,6 +110,8 @@ class GraphQLResolver
         private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger,
         private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
+        private readonly AggregationRunner $aggregationRunner,
+        private readonly TimeseriesRequestValidator $timeseriesValidator,
     ) {
     }//end __construct()
 
@@ -168,6 +178,12 @@ class GraphQLResolver
      * @return array<string, mixed> The connection result
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *   The connection-build pipeline is intentionally inline:
+     *   each section (RBAC, search, filter, cursor, page-info, optional
+     *   groupBy) is a single responsibility but extracting them adds
+     *   indirection without reducing complexity.
      */
     public function resolveList(Schema $schema, mixed $root, array $args): array
     {
@@ -248,7 +264,7 @@ class GraphQLResolver
             $endCursor   = $lastEdge['cursor'];
         }
 
-        return [
+        $connection = [
             'edges'      => $edges,
             'pageInfo'   => [
                 'hasNextPage'     => $hasNextPage,
@@ -259,9 +275,96 @@ class GraphQLResolver
             'totalCount' => $totalCount,
             'facets'     => ($result['facets'] ?? null),
             'facetable'  => ($result['facetable'] ?? null),
+            'groups'     => null,
         ];
 
+        // Optional ad-hoc aggregation: client supplied `groupBy` on the
+        // list query. Run through the same validator the REST endpoint
+        // uses so allow-list + sub-day-interval rules stay consistent.
+        // Validation errors surface as GraphQL field-errors (the
+        // `groups` field is null, the rest of the connection is intact).
+        $groupBy = ($args['groupBy'] ?? null);
+        if (is_array($groupBy) === true && ($groupBy['field'] ?? '') !== '') {
+            $connection['groups'] = $this->resolveGroupBy(
+                schema: $schema,
+                register: $register,
+                rawArgs: $groupBy
+            );
+        }
+
+        return $connection;
+
     }//end resolveList()
+
+    /**
+     * Resolve the optional `groupBy` argument by dispatching to
+     * `AggregationRunner::runAdhoc()`.
+     *
+     * Returns the `groups` array on success. On validation / RBAC
+     * failure, throws a GraphQL `Error` so the field-level error
+     * surface picks it up (the rest of the connection still resolves).
+     *
+     * @param Schema        $schema   The schema being aggregated.
+     * @param Register|null $register The register (may be null if the schema isn't bound — defensive).
+     * @param array         $rawArgs  The raw groupBy arg map from the GraphQL request.
+     *
+     * @return array<int, array{key: string, value: int|float}>|null Bucket array, or null when register/runner missing.
+     *
+     * @throws Error When validation fails or RBAC denies the request.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-19
+     */
+    private function resolveGroupBy(Schema $schema, ?Register $register, array $rawArgs): ?array
+    {
+        if ($register === null) {
+            // Defensive: a schema without a register has nothing to
+            // aggregate against. Return null so the field stays
+            // queryable but empty.
+            return null;
+        }
+
+        // Normalise the GraphQL arg shape into the validator's input
+        // shape. The validator returns a fully-built AggregationQuery
+        // (or throws InvalidArgumentException with a 400-grade message).
+        $input = [
+            'field'       => (string) ($rawArgs['field'] ?? ''),
+            'interval'    => ($rawArgs['interval'] ?? null),
+            'from'        => ($rawArgs['from'] ?? null),
+            'to'          => ($rawArgs['to'] ?? null),
+            'metric'      => strtolower((string) ($rawArgs['metric'] ?? 'count')),
+            'metricField' => ($rawArgs['metricField'] ?? null),
+            'filter'      => [],
+        ];
+
+        try {
+            $query = $this->timeseriesValidator->validate(input: $input, schema: $schema);
+        } catch (InvalidArgumentException $e) {
+            throw new Error($e->getMessage());
+        }
+
+        try {
+            $result = $this->aggregationRunner->runAdhoc(
+                register: $register,
+                schema: $schema,
+                query: $query
+            );
+        } catch (NotAuthorizedException $e) {
+            throw new Error($e->getMessage());
+        }
+
+        $groups = ($result['groups'] ?? []);
+        // Coerce values to float to match the GraphQL `value: Float!` type.
+        $normalised = [];
+        foreach ($groups as $bucket) {
+            $normalised[] = [
+                'key'   => (string) ($bucket['key'] ?? ''),
+                'value' => (float) ($bucket['value'] ?? 0),
+            ];
+        }
+
+        return $normalised;
+
+    }//end resolveGroupBy()
 
     /**
      * Resolve a create mutation.
@@ -507,6 +610,8 @@ class GraphQLResolver
      * Flush the DataLoader buffer — batch-load all buffered relation UUIDs.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-20
      */
     private function flushRelationBuffer(): void
     {
@@ -746,6 +851,8 @@ class GraphQLResolver
      * @param int|string $offset The offset position
      *
      * @return string The encoded cursor
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-21
      */
     private function encodeCursor(string $uuid, int|string $offset): string
     {

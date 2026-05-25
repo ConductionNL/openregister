@@ -7,6 +7,9 @@
  * multi-layered approach to faceting that eliminates performance bottlenecks
  * through intelligent caching, statistical approximation, and parallel processing.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Db\ObjectHandlers
  *
