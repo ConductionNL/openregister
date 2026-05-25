@@ -432,6 +432,19 @@ return [
         ['name' => 'mapLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/maps',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'mapLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/maps/{favoriteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'favoriteId' => '[0-9]+']],
 
+        // Time-tracker (NC TimeManager) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The leaf slug is `time-tracker` (hyphen); the NC
+        // app id is `timemanager`. The specific `/time-tracker/new` (create +
+        // link client) route MUST precede the wildcard
+        // `/time-tracker/{entryId}` unlink route, and the app-global
+        // `available` route precedes the object-scoped routes. entryId is a
+        // TimeManager uuid (not numeric), so it matches `[^/]+`.
+        ['name' => 'timeTrackerLinks#available',    'url' => '/api/integrations/time-tracker/available',                    'verb' => 'GET'],
+        ['name' => 'timeTrackerLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/time-tracker',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timeTrackerLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/time-tracker/new',      'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timeTrackerLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/time-tracker',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timeTrackerLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/time-tracker/{entryId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
+
         // Analytics (NC Analytics) — Tier-2 link-table API. User-scoped
         // (no admin gate). The specific `/analytics/new` (create + link)
         // route MUST precede the wildcard `/analytics/{reportId}` unlink
