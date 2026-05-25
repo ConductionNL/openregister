@@ -1736,6 +1736,16 @@ class Application extends App implements IBootstrap
             MailAppScriptListener::class
         );
 
+        // IntegrationGlobalScriptListener loads the shared integration-registry
+        // bootstrap on EVERY full-page render so the registry is installed +
+        // populated universally — letting leaves render inside any consuming
+        // app's object detail page (e.g. an OpenCatalogi publication) without
+        // that app bootstrapping the registry itself (universal-shared-integration-registry).
+        $context->registerEventListener(
+            \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+            \OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
+        );
+
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
         $context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);
 
