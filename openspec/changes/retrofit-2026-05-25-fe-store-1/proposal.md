@@ -10,6 +10,21 @@ getters/setters that mirror an already-specified backend capability; those are
 mutation, per-key cache invalidation, memoised data-source fetching) that has no
 backend equivalent — those are captured by **one new capability** with **3 REQs**.
 
+## What Changes
+
+- Mint one new capability `frontend-store-client-state` with 3 REQs covering the
+  browser-only client-state contracts: cross-store coordination + preload gating
+  (REQ-001), optimistic per-key cache mutation with an app-unavailable fallback
+  (REQ-002), and memoised widget-data fetching by data-source identity (REQ-003).
+- Annotate the 20 store methods that carry real client-state behaviour to those REQs.
+- Carry the remaining 133 store methods as reasoned `@spec exclude` tags (thin API
+  passthroughs, getters/setters, dialog toggles, download helpers).
+
+This is a retroactive specification of behaviour that already exists; no code changes.
+The sibling change `retrofit-2026-05-25-fe-store-2` adds three further REQs (import
+heartbeat, saved-view apply/capture) to the same `frontend-store-client-state`
+capability — the two sets are disjoint and coherent as one capability.
+
 ## Counts
 
 - Methods in batch: **153**
@@ -64,6 +79,13 @@ client-state-management concerns that are not visible server-side:
 - `settings.js` is a 1.6k-line admin store; every action is a 1:1 wrapper over a
   `/api/settings/*` or `/api/solr/*` endpoint already specified server-side, or a
   pure local dialog-visibility toggle. All 67 batch methods are excluded.
+
+## Impact
+
+- **New capability**: `frontend-store-client-state` (REQ-001..REQ-003) — shared with the
+  sibling `retrofit-2026-05-25-fe-store-2` change (disjoint REQ sets, one archive home).
+- **Specs touched**: `specs/frontend-store-client-state/spec.md` (ADDED only).
+- **Code**: none — annotation-only retrofit across the ten `src/store/` files listed above.
 
 Source: `/tmp/or-scan/fw-fe-store-1.json`, generated 2026-05-25. Retrofit
 playbook (ADR-003 two-tool approach).

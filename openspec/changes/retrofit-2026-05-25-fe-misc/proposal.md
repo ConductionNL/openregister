@@ -1,15 +1,24 @@
 # Retrofit — frontend coverage: misc (services / entities / dialogs / nav) (2026-05-25)
 
+## Why
+
 Retrofit triage over the `fe-misc` bundle: 93 uncovered frontend methods across the
 remaining `src/` directories that no earlier frontend pass claimed — `mail-sidebar/`,
 `services/`, `entities/`, `dialogs/`, `reference/`, `navigation/`, `composables/`, and
 `App.vue`. The bundle is a mixed bag: API-client wrappers and a couple of dialog/widget
 contracts carry real behaviour, while the bulk of `entities/`, `dialogs/`, `navigation/`
-and the generic format helpers are UI/model plumbing.
+and the generic format helpers are UI/model plumbing. Until every method is either
+annotated to a capability REQ or carries a reasoned `@spec exclude`, the coverage scanner
+keeps flagging the bundle as a gap under ADR-003.
+
+## What Changes
 
 Every method ends tagged: either annotated to an existing-or-newly-minted capability REQ
 via this change's `tasks.md`, or carried as an `@spec exclude <reason>` with a required
-reason. No code logic changes.
+reason. Three new REQs are minted in a new `frontend-app-bootstrap` capability for the
+genuine frontend contracts that have no live capability home (app-startup hot-loading,
+the Nextcloud app install/uninstall client, the object file-metadata client). This is a
+retroactive specification of behaviour that already exists; no code logic changes.
 
 ## Counts
 
@@ -73,6 +82,18 @@ These are genuine frontend contracts with no live capability home:
   (`stringToDate`/`dateToString`, schema-format date round-trip for the native picker),
   `services/formatBytes.js`, `services/getTheme.js`, `services/getValidISOstring.js`.
   Pure pure-function utilities with no domain contract.
+
+## Impact
+
+- **New capability**: `frontend-app-bootstrap` (3 REQs) — the canonical home for
+  app-bootstrap and non-feature-specific client service contracts.
+- **Specs touched**: `specs/frontend-app-bootstrap/spec.md` (ADDED only).
+- **Code**: none — annotation-only retrofit. Existing `src/services/`, `src/App.vue`,
+  `src/mail-sidebar/`, `src/reference/`, and `src/dialogs/avg/` methods gain `@spec`
+  pointers or reasoned `@spec exclude` tags.
+- **Cross-references**: methods mapped to existing capabilities (`mail-sidebar`,
+  `notificatie-engine`, `mail-smart-picker`, `avg-verwerkingsregister`) gain pointers
+  to those owners; no requirement text in those capabilities changes.
 
 ## Future reverse-spec passes
 

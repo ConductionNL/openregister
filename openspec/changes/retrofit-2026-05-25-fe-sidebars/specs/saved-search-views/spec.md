@@ -4,6 +4,10 @@ retrofit: true
 
 # Saved Search Views — Spec Delta
 
+## Purpose
+
+Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent.
+
 ## ADDED Requirements
 
 ### Requirement: REQ-001 — Saved view lifecycle through the views store and /api/views
@@ -56,3 +60,15 @@ The search sidebar MUST let a signed-in user favorite a view, automatically appl
 - **WHEN** `filteredViews` recomputes
 - **THEN** only views whose name or description contains the query (case-insensitive) MUST be returned
 - **AND** favorited views MUST sort before non-favorited views, alphabetically by name within each group
+
+## Non-Functional Requirements
+
+- **Internationalisation (ADR-007):** The saved-view surface is user-facing — view names/descriptions are user content, while the surrounding UI labels and the "must be logged in" notification (REQ-002) MUST be available in both Dutch and English per the platform's i18n requirement.
+- **Authorisation:** Favoriting (REQ-002) MUST require an authenticated user; an unauthenticated favorite attempt MUST notify and make no request rather than mutating shared view state.
+- **State hygiene:** Persisted view configuration (REQ-001) MUST exclude transient UI state (pagination, sorting, visible columns) so a re-applied view restores only the query context.
+
+## Acceptance Criteria
+
+- [ ] `@spec` annotations on the `SearchSideBar.vue` view-management and favorite/filter members point at this change's `tasks.md` REQs.
+- [ ] `openspec validate retrofit-2026-05-25-fe-sidebars --strict` passes.
+- [ ] Coverage scan re-run after archive resolves the annotated view methods to REQ-001/REQ-002 (no longer uncovered).

@@ -108,3 +108,15 @@ It MUST support a `forceRefresh` flag that bypasses the cache and a
 - **GIVEN** a widget's data is already memoised
 - **WHEN** `fetchWidgetData(widget, true)` is called
 - **THEN** the store MUST re-fetch from the server and overwrite the cached entry
+
+## Non-Functional Requirements
+
+- **Resilience:** The HTTP 501 app-unavailable fallback (REQ-002) MUST render an empty state instead of an error so a missing optional Nextcloud app (Deck, Mail) never breaks the host view.
+- **Cache correctness:** Per-key cache invalidation (REQ-002) and data-source memoisation (REQ-003) MUST be keyed so refreshing one object or widget never invalidates an unrelated one.
+- **Internationalisation (ADR-007):** REQ-001..REQ-003 govern store-internal caching, coordination, and memoisation and carry no user-facing strings; locale does not affect their behaviour. Any user-facing copy lives in the consuming Vue components, which already meet the platform's Dutch + English requirement.
+
+## Acceptance Criteria
+
+- [ ] `@spec` annotations on the 20 in-scope store methods (`dashboard.js`, `deck.js`, `emails.js`, `translations.js`, `deleted.js`, `reports.js`) point at this change's `tasks.md` REQs.
+- [ ] `openspec validate retrofit-2026-05-25-fe-store-1 --strict` passes.
+- [ ] Coverage scan re-run after archive resolves the 20 annotated methods to REQ-001..REQ-003 and the 133 excluded methods to reasoned `@spec exclude` tags (no longer uncovered).
