@@ -58,6 +58,8 @@ class TranslationCsvCodec
      *
      * @return array<string, scalar|null>
      *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-12
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function flattenForCsv(array $data, Schema $schema): array
@@ -121,6 +123,8 @@ class TranslationCsvCodec
      * @param Schema               $schema The schema describing translatable properties.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-13
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */

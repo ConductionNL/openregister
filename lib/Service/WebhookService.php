@@ -143,6 +143,8 @@ class WebhookService
      * Allows self-signed certificates and configures timeouts appropriately.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-22
      */
     private function initializeHttpClient(): void
     {
@@ -450,6 +452,8 @@ class WebhookService
      * @param string $key   Dot-notated key
      *
      * @return mixed
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-23
      */
     private function getNestedValue(array $array, string $key)
     {
@@ -624,6 +628,8 @@ class WebhookService
      * @param string $eventName Fully qualified event class name
      *
      * @return string Short class name (e.g., "ObjectCreatedEvent")
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-24
      */
     private function getShortEventName(string $eventName): string
     {
@@ -963,6 +969,8 @@ class WebhookService
      * @param string $eventType Event type (e.g., 'object.creating')
      *
      * @return string Event class name (e.g., 'OCA\OpenRegister\Event\ObjectCreatingEvent')
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-25
      */
     private function eventTypeToEventClass(string $eventType): string
     {
