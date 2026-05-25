@@ -79,6 +79,15 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'main.js'),
 		filename: appId + '-main.js',
 	},
+	// Global registry bootstrap (universal-shared-integration-registry).
+	// Loaded on EVERY page via \OCP\Util::addInitScript so the shared
+	// integration registry is installed + populated everywhere, letting
+	// leaves render inside any consuming app's detail page without that
+	// app bootstrapping the registry itself. Kept separate + tiny.
+	integrationGlobal: {
+		import: path.join(__dirname, 'src', 'integration-global.js'),
+		filename: appId + '-integration-global.js',
+	},
 	adminSettings: {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
