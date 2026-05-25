@@ -108,6 +108,8 @@ class NamesController extends Controller
      * @throws \Exception If name lookup fails
      *
      * @return JSONResponse JSON response with object names or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -248,6 +250,8 @@ class NamesController extends Controller
      * @throws \Exception If name lookup fails
      *
      * @return JSONResponse JSON response with object names or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -351,6 +355,8 @@ class NamesController extends Controller
      * @throws \Exception If name lookup fails
      *
      * @return JSONResponse JSON response with object name or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -446,6 +452,8 @@ class NamesController extends Controller
      *     performance_metrics?: array{name_cache_enabled: true,
      *     distributed_cache_available: true, warmup_available: true}},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -492,6 +500,8 @@ class NamesController extends Controller
      * for improved performance after system maintenance.
      *
      * @return JSONResponse JSON response with warmup result or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

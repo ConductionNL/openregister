@@ -87,6 +87,8 @@ class HeartbeatController extends Controller
      *     array{status: 'alive', timestamp: int<1, max>,
      *     message: 'Heartbeat successful - connection kept alive'},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-5
      */
     public function heartbeat(): JSONResponse
     {

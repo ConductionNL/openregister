@@ -108,6 +108,8 @@ class N8nSettingsController extends Controller
      * @return JSONResponse The n8n settings.
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-9
      */
     public function getN8nSettings(): JSONResponse
     {
@@ -140,6 +142,8 @@ class N8nSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated n8n settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-9
      */
     public function updateN8nSettings(): JSONResponse
     {
@@ -187,6 +191,8 @@ class N8nSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with connection test result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-9
      */
     public function testN8nConnection(): JSONResponse
     {
@@ -269,6 +275,8 @@ class N8nSettingsController extends Controller
      * @return JSONResponse JSON response with initialization result
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-9
      */
     public function initializeN8n(): JSONResponse
     {
@@ -411,6 +419,8 @@ class N8nSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with workflows list
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-9
      */
     public function getWorkflows(): JSONResponse
     {
