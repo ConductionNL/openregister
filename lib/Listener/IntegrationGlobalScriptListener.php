@@ -51,16 +51,19 @@ use OCP\Util;
  * @template-implements IEventListener<Event>
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/universal-shared-integration-registry/tasks.md
  */
 class IntegrationGlobalScriptListener implements IEventListener
 {
-
     /**
      * Handle the template-rendered event by injecting the bootstrap script.
      *
      * @param Event $event The dispatched event.
      *
      * @return void
+     *
+     * @spec openspec/changes/universal-shared-integration-registry/tasks.md
      */
     public function handle(Event $event): void
     {
