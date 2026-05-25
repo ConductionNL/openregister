@@ -20,6 +20,8 @@ import axios from '@nextcloud/axios'
  * triple, 501-graceful when the Calendar app is missing.
  *
  * Spec: openspec/changes/nextcloud-entity-relations/specs/event-relations/spec.md
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
  */
 export const useEventRelationsStore = defineStore('eventRelations', {
 	state: () => ({
