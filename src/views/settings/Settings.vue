@@ -143,6 +143,8 @@ export default {
 	/**
 	 * Component created lifecycle hook
 	 * Initializes the settings store and loads all data
+	 * @spec exclude UI plumbing — view-creation data fetch for display only
+	 * @return {Promise<void>}
 	 */
 	async created() {
 		console.log('🔧 Settings component created - loading data from store')
