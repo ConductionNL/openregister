@@ -160,6 +160,8 @@ class IndexService
      * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, start: 0|mixed}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags required for flexible API filtering
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-9
      */
     public function searchObjects(
         array $query=[],
@@ -181,6 +183,8 @@ class IndexService
      * Delegates to ObjectHandler.
      *
      * @return bool Success status
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
      */
     public function commit(): bool
     {
@@ -468,6 +472,8 @@ class IndexService
      * Optimize the search backend.
      *
      * @return bool Success status
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-8
      */
     public function optimize(): bool
     {
