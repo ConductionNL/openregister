@@ -319,6 +319,8 @@ class ConfigurationsController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
     {
@@ -370,6 +372,8 @@ class ConfigurationsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
      */
     public function import(): JSONResponse
     {
