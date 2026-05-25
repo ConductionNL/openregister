@@ -558,6 +558,7 @@ export default {
 		 * Groups are preloaded on the index page for better performance
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
 		 */
 		loadNextcloudGroupsFromStore() {
 			// If groups are already cached in store, use them immediately

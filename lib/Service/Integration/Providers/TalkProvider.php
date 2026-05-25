@@ -4,12 +4,19 @@
  * TalkProvider — exposes NC Talk (spreed) conversations linked to an OR
  * object via the IntegrationProvider contract.
  *
- * `link-table` storage (a future `openregister_talk_links` pairs
- * object ↔ conversation token); the wrapping TalkService lands in a
- * follow-up — this provider registers the registry surface today.
+ * Tier-2 storage: the `openregister_talk_links` table pairs
+ * object ↔ room token. When the table contains rows for the object
+ * we return them via the {@see TalkLinkMapper} (cheap, no Talk API
+ * roundtrip needed for the leaf-row shape — the cache already has
+ * subtitle/participantCount/lastMessage). When it's empty we fall
+ * back to the legacy marker scan (`[or:{uuid}]` substring in the
+ * room display name) so rooms linked before Tier-2 still surface.
  *
  * NB: NC Talk's internal app id is `spreed`, not `talk` — that's what
  * IAppManager resolves against.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -29,6 +36,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -47,6 +55,7 @@ class TalkProvider extends AbstractIntegrationProvider
         private IAppManager $appManager,
         private IUserSession $userSession,
         private IL10N $l10n,
+        private ?TalkLinkMapper $talkLinkMapper = null,
     ) {
     }//end __construct()
 
@@ -130,6 +139,21 @@ class TalkProvider extends AbstractIntegrationProvider
         $user = $this->userSession->getUser();
         if ($user === null) {
             return [];
+        }
+
+        // Tier-2 preferred path — query the link table directly. Each row
+        // already carries the widened Phase B-1 payload (subtitle,
+        // participantCount, lastMessage, lastActivity) so we don't need
+        // to hit Talk for the leaf-row shape.
+        if ($this->talkLinkMapper !== null) {
+            try {
+                $links = $this->talkLinkMapper->findByObjectUuid($objectId);
+                if (count($links) > 0) {
+                    return $this->mapLinks($links);
+                }
+            } catch (Throwable $e) {
+                // Fall through to legacy marker scan.
+            }
         }
 
         $marker = self::ROOM_TAG.$objectId.']';
@@ -336,6 +360,51 @@ class TalkProvider extends AbstractIntegrationProvider
             'timestamp' => $timestamp,
         ];
     }//end buildLastMessage()
+
+    /**
+     * Map a list of {@see \OCA\OpenRegister\Db\TalkLink} entities to the
+     * registry leaf-row contract (same shape as the legacy marker-scan
+     * path so callers don't see a regression).
+     *
+     * @param array<int, \OCA\OpenRegister\Db\TalkLink> $links Persisted rows.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function mapLinks(array $links): array
+    {
+        $out = [];
+        foreach ($links as $link) {
+            $serialized = $link->jsonSerialize();
+
+            $lastMessage = $serialized['lastMessage'] ?? null;
+            $lastActivityIso = $serialized['lastActivity'] ?? null;
+            $lastActivityTs  = null;
+            if ($lastActivityIso !== null) {
+                try {
+                    $lastActivityTs = (new \DateTime($lastActivityIso))->getTimestamp();
+                } catch (Throwable $e) {
+                    $lastActivityTs = null;
+                }
+            }
+
+            $token = (string) ($serialized['roomToken'] ?? '');
+
+            $out[] = [
+                'id'               => $token,
+                'title'            => $serialized['roomName'] ?? $token,
+                'type'             => $serialized['roomType'] ?? null,
+                'subtitle'         => $serialized['subtitle'] ?? null,
+                'participantCount' => $serialized['participantCount'] ?? null,
+                'lastMessage'      => $lastMessage,
+                // `unreadMessages` left null — see legacy list() docblock.
+                'unreadMessages'   => null,
+                'lastActivity'     => $lastActivityTs,
+                'url'              => $serialized['url'] ?? ($token !== '' ? '/index.php/call/'.$token : null),
+            ];
+        }
+
+        return $out;
+    }//end mapLinks()
 
     public function health(): array
     {

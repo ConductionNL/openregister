@@ -69,6 +69,7 @@
 <script>
 /**
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-49
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
  */
 import { translate as t } from '@nextcloud/l10n'
 import NcAppSidebar from '@nextcloud/vue/dist/Components/NcAppSidebar.js'
@@ -127,6 +128,9 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+		 */
 		toggleCollapsed() {
 			this.collapsed = !this.collapsed
 			localStorage.setItem(COLLAPSED_STORAGE_KEY, String(this.collapsed))

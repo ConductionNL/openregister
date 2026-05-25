@@ -9,6 +9,9 @@
  * computed properties like facetable fields, validation rules, and configuration.
  * It automatically invalidates cache when schemas are updated.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Schemas
  *
@@ -195,6 +198,8 @@ class SchemaCacheHandler
      * @return Schema|null The cached schema object or null if not found
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-5
      */
     public function getSchema(int $schemaId): ?Schema
     {
@@ -359,6 +364,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-5
      */
     public function invalidate(int $schemaId): void
     {

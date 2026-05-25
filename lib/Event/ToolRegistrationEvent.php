@@ -5,6 +5,9 @@
  *
  * Event dispatched to allow apps to register their tools with the ToolRegistry.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *

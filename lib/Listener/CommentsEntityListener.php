@@ -6,6 +6,9 @@
  * Registers the "openregister" objectType with Nextcloud's Comments system.
  * This allows comments to be stored against OpenRegister object UUIDs.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Listener
  * @package   OCA\OpenRegister\Listener
  * @author    Conduction Development Team <dev@conduction.nl>

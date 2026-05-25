@@ -7,6 +7,9 @@
  * from text chunks for GDPR compliance and data classification.
  * This handler is invoked after chunks are created to detect and store entities.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *

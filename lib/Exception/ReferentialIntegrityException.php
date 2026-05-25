@@ -6,6 +6,9 @@
  * Exception thrown when an object deletion is blocked by referential integrity constraints.
  * Contains the full DeletionAnalysis with blocker details for structured API error responses.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *

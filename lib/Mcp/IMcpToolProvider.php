@@ -8,6 +8,9 @@
  * container. OpenRegister's McpToolsService enumerates every registered
  * implementation in-process per turn without issuing extra HTTP requests.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp
  *

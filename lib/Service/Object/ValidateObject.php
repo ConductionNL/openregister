@@ -12,6 +12,9 @@
  * - Support for external schema references
  * - Format validation (e.g., BSN numbers)
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *

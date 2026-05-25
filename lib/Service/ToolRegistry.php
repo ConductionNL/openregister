@@ -6,6 +6,9 @@
  * Central registry for managing LLphant function tools from all apps.
  * Allows other Nextcloud apps to register their own tools for agents to use.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-10
  */
 
 namespace OCA\OpenRegister\Service;
@@ -232,6 +237,7 @@ class ToolRegistry
      * @return array Array of tool IDs and their metadata
      *
      * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-10
      */
     public function getAllTools(): array
     {

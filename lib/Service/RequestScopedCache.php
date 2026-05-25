@@ -7,6 +7,9 @@
  * HTTP request. Nextcloud DI registers services as shared by default, so all
  * service injections within one request receive the same instance.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

@@ -5,6 +5,9 @@
  *
  * Exception thrown when a schema hook stops event propagation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *

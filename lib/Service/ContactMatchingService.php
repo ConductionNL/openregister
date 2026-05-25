@@ -6,6 +6,9 @@
  * Shared service for matching contact metadata (email, name, organization)
  * to OpenRegister entities with APCu caching.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

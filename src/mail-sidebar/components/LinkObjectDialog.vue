@@ -67,6 +67,11 @@
 </template>
 
 <script>
+/**
+ * Link-object search dialog — drives the three-tab sidebar's Link tab.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+ */
 import { translate as t } from '@nextcloud/l10n'
 import { searchObjects } from '../api/emailLinks.js'
 

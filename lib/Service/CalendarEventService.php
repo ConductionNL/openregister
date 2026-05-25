@@ -7,6 +7,9 @@
  * Events are stored as standard VEVENT items in the user's Nextcloud calendar with
  * X-OPENREGISTER-* properties for linking and an RFC 9253 LINK property.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -336,6 +339,8 @@ class CalendarEventService
      * @param string $objectUuid The object UUID.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function unlinkEventsForObject(string $objectUuid): void
     {

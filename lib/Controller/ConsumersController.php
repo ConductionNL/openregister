@@ -3,6 +3,9 @@
 /**
  * ConsumersController handles REST API endpoints for consumer management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -30,6 +33,8 @@ use OCP\IRequest;
  * Provides REST API endpoints for managing API consumers.
  *
  * @package OCA\OpenRegister\Controller
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class ConsumersController extends Controller
 {

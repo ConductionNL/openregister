@@ -6,6 +6,9 @@
  * This service handles all text extraction logic for files in the system.
  * It consolidates extraction workflows, file tracking, and re-extraction detection.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -14,6 +17,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
  */
 
 declare(strict_types=1);
@@ -1652,6 +1657,8 @@ class TextExtractionService
      * @param \OCP\Files\File $file The EML file.
      *
      * @return string|null Flat plain-text, or null when the file cannot be parsed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     private function extractEml(\OCP\Files\File $file): ?string
     {
@@ -1689,6 +1696,8 @@ class TextExtractionService
      * @return \OCA\OpenRegister\Service\TextExtraction\EmlStructure
      *
      * @throws \OCA\OpenRegister\Exception\EmlParseException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     public function parseEmlStructured(\OCP\Files\File $file): \OCA\OpenRegister\Service\TextExtraction\EmlStructure
     {

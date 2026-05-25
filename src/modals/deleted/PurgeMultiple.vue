@@ -133,6 +133,7 @@ export default {
 		/**
 		 * Initialize selection from transfer data
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
 		 */
 		initializeSelection() {
 			const data = deletedStore.selectedForBulkAction || []

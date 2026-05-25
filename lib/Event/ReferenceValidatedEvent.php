@@ -62,6 +62,8 @@ class ReferenceValidatedEvent extends Event
      * Schema property name that holds the validated reference.
      *
      * @return string Property name as declared on the schema.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-5
      */
     public function getPropertyName(): string
     {
@@ -73,6 +75,8 @@ class ReferenceValidatedEvent extends Event
      * UUID that successfully resolved during validation.
      *
      * @return string The resolved UUID.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-5
      */
     public function getReferencedUuid(): string
     {
@@ -84,6 +88,8 @@ class ReferenceValidatedEvent extends Event
      * Slug (or raw `$ref`) of the schema the reference targets.
      *
      * @return string Target schema slug or raw `$ref`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-5
      */
     public function getTargetSchemaSlug(): string
     {
@@ -96,6 +102,8 @@ class ReferenceValidatedEvent extends Event
      *
      * @return string|null Register identifier or null when no register
      *                     context applied to the lookup.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-5
      */
     public function getTargetRegister(): ?string
     {

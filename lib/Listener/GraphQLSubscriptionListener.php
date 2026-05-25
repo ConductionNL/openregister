@@ -6,6 +6,9 @@
  * Listens for object CRUD events and pushes them to the
  * GraphQL subscription buffer for SSE delivery.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *

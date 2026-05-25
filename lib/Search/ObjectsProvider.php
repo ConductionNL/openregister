@@ -5,6 +5,9 @@
  *
  * This file contains the provider class for the objects search.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Search
  * @package  OCA\OpenRegister\Search
  *

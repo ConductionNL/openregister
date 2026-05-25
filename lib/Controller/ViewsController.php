@@ -6,6 +6,9 @@
  * Controller for managing saved search views across multiple registers and schemas.
  * Provides CRUD operations for views that store search configurations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -39,6 +42,9 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-3
  */
 class ViewsController extends Controller
 {

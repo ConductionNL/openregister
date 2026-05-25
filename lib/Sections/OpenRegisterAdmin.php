@@ -5,6 +5,9 @@
  *
  * Provides admin settings section for OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Section
  * @package  OCA\OpenRegister\Sections
  *

@@ -24,6 +24,9 @@
  *   2. the algorithmic correctness has unit-test coverage independent of
  *      the Twig stack.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *

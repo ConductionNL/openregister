@@ -3,6 +3,9 @@
 /**
  * UiController
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  OpenRegister
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction b.v. <info@conduction.nl>
@@ -73,6 +76,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
      */
     private function makeSpaResponse(): TemplateResponse
     {
@@ -262,6 +267,8 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
      */
     public function integrationsView(): TemplateResponse
     {
@@ -465,6 +472,8 @@ class UiController extends Controller
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
      * @return TemplateResponse The SPA template response
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
      */
     public function avg(): TemplateResponse
     {

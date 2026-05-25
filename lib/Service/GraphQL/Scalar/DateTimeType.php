@@ -5,6 +5,9 @@
  *
  * Handles serialization and parsing of ISO 8601 date-time strings.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL\Scalar
  *

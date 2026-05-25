@@ -167,6 +167,12 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch linked Deck cards for the current object via the per-object store.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+		 * @return {Promise<void>}
+		 */
 		async fetchCards() {
 			this.error = false
 			this.errorMessage = ''

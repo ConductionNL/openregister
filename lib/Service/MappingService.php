@@ -6,6 +6,9 @@
  * Service for executing data mappings using Twig templating and dot notation.
  * Provides data transformation capabilities between different formats.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

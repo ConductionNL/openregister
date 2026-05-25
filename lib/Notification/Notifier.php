@@ -6,6 +6,9 @@
  * This file contains the notifier class for displaying notifications
  * in the Nextcloud notification center.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Notification
  * @package  OCA\OpenRegister\Notification
  *

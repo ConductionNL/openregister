@@ -48,6 +48,8 @@ class CircularReferenceException extends ValidationException
      * @param string|null    $message          Optional override for the human-readable message.
      * @param int            $code             HTTP status code (default 422).
      * @param Throwable|null $previous         Previous exception in the chain.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function __construct(
         private readonly string $referencedUuid,
@@ -77,6 +79,8 @@ class CircularReferenceException extends ValidationException
      * The UUID whose re-entry triggered the cycle detection.
      *
      * @return string The UUID at the closing edge of the cycle.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function getReferencedUuid(): string
     {
@@ -88,6 +92,8 @@ class CircularReferenceException extends ValidationException
      * Slug (or raw `$ref`) of the schema involved in the cycle.
      *
      * @return string Target schema slug or raw `$ref`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function getTargetSchemaSlug(): string
     {
@@ -99,6 +105,8 @@ class CircularReferenceException extends ValidationException
      * The cycle chain that triggered the detection.
      *
      * @return array<int, array{register?:string|null,schema:string,uuid:string}> Visited stack.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function getCycle(): array
     {
@@ -116,6 +124,8 @@ class CircularReferenceException extends ValidationException
      *     message: string,
      *     code: int
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function toArray(): array
     {

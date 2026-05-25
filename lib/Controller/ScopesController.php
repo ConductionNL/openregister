@@ -11,6 +11,9 @@
  * (register, schema, action) tuples the current user is permitted to
  * perform without having to probe every endpoint.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -112,6 +115,8 @@ class ScopesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
      */
     public function index(?string $register=null, ?string $schema=null): JSONResponse
     {
@@ -169,6 +174,8 @@ class ScopesController extends Controller
      * @param string|null $filter Optional register filter (id|uuid|slug).
      *
      * @return Register[] Registers that should be reported on.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
      */
     private function resolveRegisters(?string $filter): array
     {
@@ -210,6 +217,8 @@ class ScopesController extends Controller
      * @param string|null $filter Optional schema filter (id|uuid|slug).
      *
      * @return Schema[] Schemas that should be reported on.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
      */
     private function resolveSchemas(?string $filter): array
     {
@@ -253,6 +262,8 @@ class ScopesController extends Controller
      *                             group.
      *
      * @return array<int, string> Permitted action vocabulary.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
      */
     private function collectActionsForUser(Schema $schema, ?string $userId, bool $isAdmin): array
     {

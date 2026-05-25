@@ -44,6 +44,8 @@ class SpreadsheetReportWriter
      * @param string                                             $format          csv|xlsx|ods.
      *
      * @return string Rendered bytes.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-5
      */
     public function write(array $dashboard, array $resolvedWidgets, string $format): string
     {

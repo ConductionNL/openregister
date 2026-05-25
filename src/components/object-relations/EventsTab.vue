@@ -178,6 +178,12 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch linked calendar events for the current object via the per-object store.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 * @return {Promise<void>}
+		 */
 		async fetchEvents() {
 			this.error = false
 			this.errorMessage = ''

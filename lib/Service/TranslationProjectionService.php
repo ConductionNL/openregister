@@ -11,6 +11,9 @@
  * is a derived projection optimised for per-language search,
  * completeness queries, and workflow status tracking.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -75,6 +78,8 @@ class TranslationProjectionService
      * @param ObjectEntity $object The object to project.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-1
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -181,6 +186,8 @@ class TranslationProjectionService
      * @param ObjectEntity $object The object to purge translations for.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-2
      */
     public function purge(ObjectEntity $object): void
     {
