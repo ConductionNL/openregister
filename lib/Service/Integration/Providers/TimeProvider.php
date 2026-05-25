@@ -82,7 +82,7 @@ class TimeProvider extends AbstractIntegrationProvider
 
     public function getLabel(): string
     {
-        return $this->l10n->t('Time');
+        return $this->l10n->t('Time tracker');
     }//end getLabel()
 
     public function getIcon(): string
