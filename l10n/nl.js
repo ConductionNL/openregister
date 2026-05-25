@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openregister",
     {
+    "Object \"%1$s\" created in register \"%2$s\"" : "Object \"%1$s\" aangemaakt in register \"%2$s\"",
+    "Object \"%1$s\" updated in register \"%2$s\"" : "Object \"%1$s\" bijgewerkt in register \"%2$s\"",
+    "Object \"%1$s\" assigned to you in register \"%2$s\"" : "Object \"%1$s\" aan je toegewezen in register \"%2$s\"",
+    "object" : "object",
     "📄 Object Serialization" : "📄 Objectserialisatie",
     "🔢 Vectorization Settings" : "🔢 Vectorisatie-instellingen",
     "💰 View Selection (Cost Optimization)" : "💰 Weergaveselectie (kostenoptimalisatie)",

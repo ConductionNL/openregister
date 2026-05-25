@@ -1,0 +1,226 @@
+<?php
+
+/**
+ * MigrateNotificationSubscriptionsToUserConfig — one-shot, idempotent
+ * migration of the DEPRECATED per-user notification subscription rows into
+ * the override-only Nextcloud user-config model.
+ *
+ * The legacy `openregister_notification_subscriptions` table stored a
+ * per-user opt-in to a (register, schema). The notification engine now
+ * sources rules ONLY from the schema annotation `x-openregister-notifications`
+ * and stores per-user preferences as override-only user-config values. To
+ * preserve a subscriber's intent ("I want this schema's notifications"), this
+ * step writes an explicit `enabled: true` override for every notification key
+ * the subscribed schema declares — for the subscribing user only.
+ *
+ * Idempotent: writing the same user-config value repeatedly is a no-op, so the
+ * step can run on every upgrade during the deprecation window. The original
+ * subscription rows are LEFT IN PLACE (the controller still responds while
+ * deprecated); a later change drops the table.
+ *
+ * Strictly defensive — never throws, never deletes. On a fresh install (table
+ * absent, mappers unresolvable) it logs "skipped" and returns.
+ *
+ * @category Repair
+ * @package  OCA\OpenRegister\Repair
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/changes/notification-schema-rules-and-userconfig-prefs/tasks.md#task-5
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Repair;
+
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
+use OCP\IDBConnection;
+use OCP\Migration\IOutput;
+use OCP\Migration\IRepairStep;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Repair step: migrate legacy notification subscriptions to user-config overrides.
+ */
+class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
+{
+    /**
+     * Legacy subscription table (without the oc_ prefix).
+     */
+    private const TABLE = 'openregister_notification_subscriptions';
+
+    /**
+     * Constructor.
+     *
+     * @param ContainerInterface $container DI container — used to lazily resolve
+     *                                      SchemaMapper / NotificationPreferenceService /
+     *                                      IDBConnection so the step never blocks app boot.
+     * @param LoggerInterface    $logger    Logger.
+     */
+    public function __construct(
+        private readonly ContainerInterface $container,
+        private readonly LoggerInterface $logger
+    ) {
+    }//end __construct()
+
+    /**
+     * Human-readable step name surfaced in occ + admin UI.
+     *
+     * @return string
+     */
+    public function getName(): string
+    {
+        return 'Migrate deprecated notification subscriptions to user-config overrides';
+    }//end getName()
+
+    /**
+     * Run the migration.
+     *
+     * @param IOutput $output Migration output handle.
+     *
+     * @return void
+     */
+    public function run(IOutput $output): void
+    {
+        $output->info('[OpenRegister] Migrating legacy notification subscriptions to user-config...');
+
+        $rows = $this->loadSubscriptionRows();
+        if ($rows === null) {
+            $output->info('[OpenRegister] Subscription table unavailable — migration skipped (normal on first install).');
+            return;
+        }
+
+        if ($rows === []) {
+            $output->info('[OpenRegister] No notification subscriptions to migrate.');
+            return;
+        }
+
+        $prefs        = $this->resolvePreferenceService();
+        $schemaMapper = $this->resolveSchemaMapper();
+        if ($prefs === null || $schemaMapper === null) {
+            $output->warning('[OpenRegister] Preference service / schema mapper unavailable — migration skipped.');
+            return;
+        }
+
+        $migrated = 0;
+        foreach ($rows as $row) {
+            $userId   = (string) ($row['user_id'] ?? '');
+            $schemaId = ($row['schema_id'] ?? null);
+            if ($userId === '' || $schemaId === null) {
+                // Register-wide (schema_id NULL) subscriptions don't map to a
+                // single schema's keys; leave them for manual review.
+                continue;
+            }
+
+            try {
+                $schema = $schemaMapper->find((int) $schemaId);
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            if (($schema instanceof Schema) === false) {
+                continue;
+            }
+
+            $config        = ($schema->getConfiguration() ?? []);
+            $notifications = ($config['x-openregister-notifications'] ?? null);
+            if (is_array($notifications) === false) {
+                continue;
+            }
+
+            $slug = (string) ($schema->getSlug() ?? $schema->getId());
+            foreach (array_keys($notifications) as $key) {
+                $prefs->setOverride(
+                    userId: $userId,
+                    schemaSlug: $slug,
+                    notificationKey: (string) $key,
+                    override: ['enabled' => true]
+                );
+                $migrated++;
+            }
+        }//end foreach
+
+        $output->info(sprintf('[OpenRegister] Migrated %d notification subscription override(s).', $migrated));
+    }//end run()
+
+    /**
+     * Read the legacy subscription rows directly. Returns null when the
+     * table cannot be queried (e.g. fresh install before schema creation).
+     *
+     * @return array<int, array<string, mixed>>|null
+     */
+    private function loadSubscriptionRows(): ?array
+    {
+        try {
+            $db = $this->container->get(IDBConnection::class);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        try {
+            $qb = $db->getQueryBuilder();
+            $qb->select('user_id', 'schema_id')->from(self::TABLE);
+            $result = $qb->executeQuery();
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
+            if (is_array($rows) === false) {
+                return [];
+            }
+
+            return $rows;
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                '[OpenRegister] MigrateNotificationSubscriptions could not read table — skipping',
+                ['exception' => $e]
+            );
+            return null;
+        }
+    }//end loadSubscriptionRows()
+
+    /**
+     * Lazily resolve the preference service.
+     *
+     * @return NotificationPreferenceService|null
+     */
+    private function resolvePreferenceService(): ?NotificationPreferenceService
+    {
+        try {
+            $service = $this->container->get(NotificationPreferenceService::class);
+            if ($service instanceof NotificationPreferenceService) {
+                return $service;
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolvePreferenceService()
+
+    /**
+     * Lazily resolve the schema mapper.
+     *
+     * @return mixed The SchemaMapper, or null when unresolvable.
+     */
+    private function resolveSchemaMapper(): mixed
+    {
+        try {
+            $mapper = $this->container->get('OCA\\OpenRegister\\Db\\SchemaMapper');
+            if (method_exists($mapper, 'find') === true) {
+                return $mapper;
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolveSchemaMapper()
+}//end class
