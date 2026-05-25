@@ -125,46 +125,57 @@ class EmailProvider extends AbstractIntegrationProvider
      *
      * This shape matches every field `CnEmailTab` and `CnEmailCard`
      * consume (subject, sender, mailDate, mailAccountId,
-     * mailMessageId — used for the deep-link into NC Mail). No
-     * widening required for Phase B-2.
+     * mailMessageId — used for the deep-link into NC Mail).
      *
-     * Paging total: the inner `EmailService::getEmailsForObject()` does
-     * return `['results' => [...], 'total' => int]`, but the
-     * IntegrationProvider contract is `array<int,array>` (flat list),
-     * so the total is dropped at this layer. The
-     * `ObjectIntegrationsController` wraps the result in
-     * `{items: [...]}` with no `total`. UI load-more (which expects
-     * `data.total`) therefore relies on `messages.length === total`
-     * fallback. Tracked as a fleet-wide contract widening — out of
-     * scope for Phase B-2 (would change the IntegrationProvider return
-     * type and ripple to all 19 providers).
+     * Paging: the inner `EmailService::getEmailsForObject()` returns
+     * `['results' => [...], 'total' => int]`. Per the Tier-3 contract
+     * widening this provider now returns the full paginated envelope
+     * `{items, total, nextCursor}` so the generic
+     * `ObjectIntegrationsController` can pass the real `total` (and a
+     * next-page cursor) through to the frontend, which restores
+     * `CnEmailTab` load-more. The `nextCursor` is the zero-indexed next
+     * page number, present only while more rows remain.
      *
      * @param string              $register Register slug or numeric id (unused).
      * @param string              $schema   Schema slug or numeric id (unused).
      * @param string              $objectId Object uuid.
      * @param array<string,mixed> $filters  Optional `_limit` / `_page` (page zero-indexed).
      *
-     * @return array<int,array<string,mixed>>
+     * @return array{items:array<int,array<string,mixed>>,total:int,nextCursor:?string}
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         $limit  = isset($filters['_limit']) === true ? (int) $filters['_limit'] : null;
-        $offset = null;
-        if ($limit !== null && isset($filters['_page']) === true) {
-            $offset = max(0, ((int) $filters['_page'])) * $limit;
-        }
+        $page   = isset($filters['_page']) === true ? max(0, (int) $filters['_page']) : 0;
+        $offset = ($limit !== null) ? ($page * $limit) : 0;
 
         try {
             $result = $this->emailService->getEmailsForObject(
                 objectUuid: $objectId,
                 limit: $limit,
-                offset: $offset
+                offset: ($limit !== null ? $offset : null)
             );
         } catch (Throwable $e) {
-            return [];
+            return ['items' => [], 'total' => 0, 'nextCursor' => null];
         }
 
-        return $result['results'] ?? [];
+        $items = $result['results'];
+        $total = (int) $result['total'];
+
+        // A further page exists when the rows seen so far (offset + this
+        // batch) is still short of the total. The cursor is the next
+        // zero-indexed page number consumed by `_page`. Paging only
+        // applies when a limit (and therefore a concrete offset) is set.
+        $nextCursor = null;
+        if ($limit !== null && (($offset + count($items)) < $total)) {
+            $nextCursor = (string) ($page + 1);
+        }
+
+        return [
+            'items'      => $items,
+            'total'      => $total,
+            'nextCursor' => $nextCursor,
+        ];
     }//end list()
 
     /**

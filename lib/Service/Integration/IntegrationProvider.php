@@ -175,12 +175,27 @@ interface IntegrationProvider
      * are `_limit` (int), `_page` (int), `_search` (string). Unknown
      * filters MUST be ignored, not rejected.
      *
+     * Return shape: implementations MAY return either
+     *   - a flat list `array<int,array<string,mixed>>`, or
+     *   - the paginated envelope `{items|results: array, total: int,
+     *     nextCursor: ?string}` (a `PaginatedResult` or its array form)
+     *     when the provider knows the cross-page total and/or can
+     *     produce a cursor for the next page.
+     *
+     * Either shape is accepted: `ObjectIntegrationsController` runs the
+     * value through {@see PaginatedResult::fromMixed()} and always emits
+     * the canonical `{items, total, nextCursor}` envelope to the client.
+     * Returning the envelope is preferred for providers backed by a
+     * counted/paged store, because the flat-list fallback sets
+     * `total = count(items)`, which disables frontend load-more.
+     *
      * @param string              $register Register slug or numeric id.
      * @param string              $schema   Schema slug or numeric id.
      * @param string              $objectId Object uuid.
      * @param array<string,mixed> $filters  Optional list filters.
      *
-     * @return array<int,array<string,mixed>> List of linked things.
+     * @return array<int,array<string,mixed>>|array<string,mixed> Flat list
+     *         of linked things, or a `{items, total, nextCursor}` envelope.
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array;
 
