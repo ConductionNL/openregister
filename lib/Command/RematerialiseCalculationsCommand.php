@@ -21,6 +21,11 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -57,6 +62,8 @@ class RematerialiseCalculationsCommand extends Command
      * @param CalculationEvaluator $evaluator      Expression evaluator.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
@@ -72,6 +79,8 @@ class RematerialiseCalculationsCommand extends Command
      * Define command name, description, and arguments.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     protected function configure(): void
     {
@@ -95,6 +104,8 @@ class RematerialiseCalculationsCommand extends Command
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -226,6 +237,8 @@ class RematerialiseCalculationsCommand extends Command
      * @param \OCA\OpenRegister\Db\ObjectEntity $entity Object entity providing metadata.
      *
      * @return array<string, mixed> Payload with `@self` injected.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array
     {
@@ -249,6 +262,8 @@ class RematerialiseCalculationsCommand extends Command
      * @param Schema $schema Schema to inspect.
      *
      * @return array<string, mixed>|null Calculations map, or null when absent.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     private function getCalculations(Schema $schema): ?array
     {
