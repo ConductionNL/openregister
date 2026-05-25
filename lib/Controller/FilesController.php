@@ -1177,6 +1177,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function rename(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1238,6 +1240,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1324,6 +1328,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function move(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1517,6 +1523,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
      */
     public function lock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1567,6 +1575,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
      */
     public function unlock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1671,6 +1681,8 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
      */
     public function preview(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse
     {

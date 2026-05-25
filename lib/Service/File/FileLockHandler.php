@@ -118,6 +118,8 @@ class FileLockHandler
      * @return array Lock metadata.
      *
      * @throws Exception If the file is already locked by another user.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
      */
     public function lockFile(int $fileId, ?int $ttlMinutes=null): array
     {
@@ -152,6 +154,8 @@ class FileLockHandler
      * @throws Exception If the current user is not the lock owner and not admin.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
      */
     public function unlockFile(int $fileId, bool $force=false): array
     {

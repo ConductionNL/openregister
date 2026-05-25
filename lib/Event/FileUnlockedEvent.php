@@ -33,6 +33,8 @@ class FileUnlockedEvent extends Event
      * @param array  $data       Additional event data.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
      */
     public function __construct(
         private readonly string $objectUuid,
