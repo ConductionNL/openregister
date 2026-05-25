@@ -1153,8 +1153,8 @@ class Application extends App implements IBootstrap
             // Registered separately below.
             // NB: FlowProvider was Tier-1 greenfield until Tier-2; it now
             // takes a FlowLinkMapper. Registered separately below.
-            // @spec openspec/changes/integration-maps/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
+            // NB: MapsProvider was Tier-1 greenfield until Tier-2; it now
+            // takes a MapLinkMapper. Registered separately below.
             // NB: PhotosProvider was Tier-1 greenfield until Tier-2; it now
             // takes a PhotoLinkMapper. Registered separately below.
             // @spec openspec/changes/integration-time-tracker/tasks.md.
@@ -1344,6 +1344,42 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // MapsProvider — Tier-2: backed by the MapLinkMapper. The
+        // provider still gracefully degrades to the legacy `[or:{uuid}]`
+        // favorite-name marker scan when the link table is empty (POIs
+        // that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-maps/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\MapsProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
+                );
+            }
+        );
+
+        // MapLinkService — Tier-2 link/create/unlink/picker service
+        // backing the MapLinksController. NC Maps favorites are
+        // user-scoped; the FavoritesService is resolved lazily via the
+        // container so the service loads even when Maps is absent.
+        // @spec openspec/changes/integration-maps/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\MapLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\MapLinkService(
+                    mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }

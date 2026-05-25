@@ -411,6 +411,15 @@ return [
         ['name' => 'photoLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/photos',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'photoLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/photos/{albumId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'albumId' => '[0-9]+']],
 
+        // Maps (NC Maps / Location) — Tier-2 link-table API. User-scoped
+        // (no admin gate). The specific `/maps/new` (create + link) route
+        // MUST precede the wildcard `/maps/{favoriteId}` unlink route.
+        ['name' => 'mapLinks#available',    'url' => '/api/integrations/maps/available',                       'verb' => 'GET'],
+        ['name' => 'mapLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/maps',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'mapLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/maps/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'mapLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/maps',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'mapLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/maps/{favoriteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'favoriteId' => '[0-9]+']],
+
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface
         // only filters + cursor-paginates the entries linked to an OR
