@@ -129,6 +129,8 @@ class DeckCardService
      * @param string $objectUuid The object UUID.
      *
      * @return array{results: array, total: int}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-8
      */
     public function getCardsForObject(string $objectUuid): array
     {
@@ -349,6 +351,8 @@ class DeckCardService
      * @throws Exception If parameters are missing or Deck operations fail.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-8
      */
     public function linkOrCreateCard(string $objectUuid, int $registerId, array $data): DeckLink
     {
@@ -427,6 +431,8 @@ class DeckCardService
      * @return void
      *
      * @throws Exception If link not found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-8
      */
     public function unlinkCard(int $linkId): void
     {
@@ -444,6 +450,8 @@ class DeckCardService
      * @param int $boardId The Deck board ID.
      *
      * @return array Array of deck links.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-8
      */
     public function getObjectsForBoard(int $boardId): array
     {
@@ -463,6 +471,8 @@ class DeckCardService
      * @param string $objectUuid The object UUID.
      *
      * @return int Number of deleted links.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-8
      */
     public function deleteLinksForObject(string $objectUuid): int
     {

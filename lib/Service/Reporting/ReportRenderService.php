@@ -89,6 +89,8 @@ class ReportRenderService
      *
      * @throws InvalidArgumentException When the format is unsupported
      *                                  or the dashboard is malformed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-1
      */
     public function render($dashboard, string $format='xlsx'): array
     {
@@ -159,6 +161,8 @@ class ReportRenderService
      * @param array<string, mixed> $widget Widget descriptor with `dataSource`.
      *
      * @return array<string, mixed>|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-2
      */
     private function resolveWidgetData(array $widget): ?array
     {

@@ -345,6 +345,8 @@ class ConfigurationService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Toggle to include/exclude objects in export
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input types
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
      */
     public function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
     {
@@ -374,6 +376,8 @@ class ConfigurationService
      *
      * @throws Exception
      * @throws GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
      */
     public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse
     {
@@ -514,6 +518,8 @@ class ConfigurationService
      * }
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -555,6 +561,8 @@ class ConfigurationService
      * }
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -578,6 +586,8 @@ class ConfigurationService
      * @throws GuzzleException If HTTP request fails
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version check has multiple error and validation conditions
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
      */
     public function checkRemoteVersion(Configuration $configuration): ?string
     {
@@ -692,6 +702,8 @@ class ConfigurationService
      * }
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version comparison has multiple null and comparison checks
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
      */
     public function compareVersions(Configuration $configuration): array
     {
@@ -759,6 +771,8 @@ class ConfigurationService
      * @throws GuzzleException If HTTP request fails.
      *
      * @psalm-return JSONResponse<400|500, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
      */
     public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
@@ -778,6 +792,8 @@ class ConfigurationService
      * @throws GuzzleException If fetching remote configuration fails
      *
      * @return array|JSONResponse Preview data with registers, schemas, objects, endpoints, and metadata.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
@@ -793,6 +809,8 @@ class ConfigurationService
      * @param string $appId The app ID to get the version for.
      *
      * @return null|string The configured version or null if not set.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
      */
     public function getConfiguredAppVersion(string $appId): string|null
     {
@@ -850,6 +868,8 @@ class ConfigurationService
      * @param string $version The version to store.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
      */
     public function setConfiguredAppVersion(string $appId, string $version): void
     {
@@ -973,6 +993,8 @@ class ConfigurationService
      * @return array Import results
      *
      * @psalm-return array<never, never>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {
