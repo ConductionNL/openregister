@@ -253,6 +253,8 @@ class SchemaCacheHandler
      * @param int $schemaId The schema ID to remove from cache
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
      */
     public function clearSchemaCache(int $schemaId): void
     {
@@ -293,6 +295,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
      */
     public function cacheSchema(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -319,6 +323,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
      */
     public function cacheSchemaConfiguration(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -340,6 +346,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
      */
     public function cacheSchemaProperties(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -393,6 +401,8 @@ class SchemaCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {
@@ -455,6 +465,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
      */
     public function clearAllCaches(): void
     {
@@ -494,6 +506,8 @@ class SchemaCacheHandler
      * @return int
      *
      * @psalm-return int<min, max>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
      */
     public function cleanExpiredEntries(): int
     {
@@ -529,6 +543,8 @@ class SchemaCacheHandler
      * @return array Cache statistics with total entries, TTL info, memory size, and timing.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
      */
     public function getCacheStatistics(): array
     {
