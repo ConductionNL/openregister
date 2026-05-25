@@ -1141,10 +1141,10 @@ class Application extends App implements IBootstrap
         $greenfieldProviders = [
             // @spec openspec/changes/integration-activity/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-            // NB: AnalyticsProvider was Tier-1 greenfield until Tier-2; it
-            // now takes an AnalyticsLinkMapper. Registered separately below.
-            // @spec openspec/changes/integration-collectives/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
+            // NB: AnalyticsProvider + CollectivesProvider were Tier-1
+            // greenfield until Tier-2; each now takes its own link mapper
+            // (AnalyticsLinkMapper / CollectiveLinkMapper) and is registered
+            // separately below.
             // @spec openspec/changes/integration-cospend/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
             // NB: FormsProvider is NO LONGER greenfield — it has a Tier-2
@@ -1421,6 +1421,23 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // CollectivesProvider — Tier-2: backed by the CollectiveLinkMapper.
+        // The provider still gracefully degrades to the legacy
+        // `[or:{uuid}]` slug-marker scan when the link table is empty
+        // (pages that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-collectives/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    collectiveLinkMapper: $container->get(\OCA\OpenRegister\Db\CollectiveLinkMapper::class),
+                );
+            }
+        );
+
         // AnalyticsProvider — Tier-2: backed by the AnalyticsLinkMapper.
         // The provider still gracefully degrades to the legacy
         // `[or:{uuid}]` report-name marker scan when the link table is
@@ -1435,6 +1452,26 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                     analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+                );
+            }
+        );
+
+        // CollectiveLinkService — Tier-2 link/create/unlink/picker service
+        // backing the CollectiveLinksController. NC Collectives pages are
+        // user-scoped; CollectiveService + PageService are resolved lazily
+        // via the container so the service loads even when Collectives is
+        // absent.
+        // @spec openspec/changes/integration-collectives/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\CollectiveLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\CollectiveLinkService(
+                    collectiveLinkMapper: $container->get(\OCA\OpenRegister\Db\CollectiveLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
