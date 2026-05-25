@@ -423,6 +423,18 @@ return [
         ['name' => 'collectiveLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/collectives',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'collectiveLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/collectives/{pageId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageId' => '[0-9]+']],
 
+        // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
+        // admin gate). The specific `/cospend/new` (create + link) route
+        // MUST precede the wildcard `/cospend/{entryId}` unlink route, and
+        // the app-global `available` route precedes the object-scoped
+        // routes. The link POST handles BOTH project and bill rows
+        // (discriminated by a `billId`/`entryType` in the body).
+        ['name' => 'cospendLinks#available',    'url' => '/api/integrations/cospend/available',                  'verb' => 'GET'],
+        ['name' => 'cospendLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/cospend',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'cospendLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/cospend/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'cospendLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/cospend',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'cospendLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/cospend/{entryId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'entryId' => '[0-9]+']],
+
         // OpenProject (external / OpenConnector-routed) — Tier-2 link-table
         // API. The picker source `available` is reached through the
         // OpenConnector `openproject` source. The specific
