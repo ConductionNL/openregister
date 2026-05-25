@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
+use OCA\OpenRegister\Db\XwikiLink;
+use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCP\App\IAppManager;
@@ -265,6 +267,68 @@ class XwikiProviderTest extends TestCase
 
         $this->provider->delete('r', 's', 'o', 'Space.Page');
     }//end testDeleteCallsRouterWithDeleteAndContext()
+
+    public function testListReadsLinkTableFirstWhenMapperWiredAndObjectContext(): void
+    {
+        // Tier-2: with a link mapper + object context, list() reads the
+        // local link rows (so the tab survives an upstream outage) and
+        // enriches each from xWiki best-effort.
+        $link = new XwikiLink();
+        $link->setPageReference('Sales.Pitch');
+        $link->setTitle('Cached Pitch');
+        $link->setSpace('Sales');
+        $link->setUrl('https://wiki/cached');
+
+        $mapper = $this->getMockBuilder(XwikiLinkMapper::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findByObjectUuid'])
+            ->getMock();
+        $mapper->method('findByObjectUuid')->with('obj-1')->willReturn([$link]);
+
+        $l10n = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnArgument(0);
+
+        // Enrichment GET returns live values that override the cache.
+        $this->router->method('call')->willReturn(
+            ['reference' => 'Sales.Pitch', 'title' => 'Live Pitch', 'space' => 'Sales', 'url' => 'https://wiki/live']
+        );
+
+        $provider = new XwikiProvider($this->router, $this->appManager, $l10n, $mapper);
+        $rows     = $provider->list('decidesk', 'meeting', 'obj-1');
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('Sales.Pitch', $rows[0]['reference']);
+        $this->assertSame('Live Pitch', $rows[0]['title']);
+        $this->assertSame('https://wiki/live', $rows[0]['url']);
+    }//end testListReadsLinkTableFirstWhenMapperWiredAndObjectContext()
+
+    public function testListFallsBackToCachedRowWhenUpstreamFails(): void
+    {
+        $link = new XwikiLink();
+        $link->setPageReference('Sales.Pitch');
+        $link->setTitle('Cached Pitch');
+        $link->setSpace('Sales');
+        $link->setUrl('https://wiki/cached');
+
+        $mapper = $this->getMockBuilder(XwikiLinkMapper::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findByObjectUuid'])
+            ->getMock();
+        $mapper->method('findByObjectUuid')->with('obj-1')->willReturn([$link]);
+
+        $l10n = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnArgument(0);
+
+        $this->router->method('call')->willThrowException(new \RuntimeException('upstream down'));
+
+        $provider = new XwikiProvider($this->router, $this->appManager, $l10n, $mapper);
+        $rows     = $provider->list('decidesk', 'meeting', 'obj-1');
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('Sales.Pitch', $rows[0]['reference']);
+        // Cached title is retained when the upstream is unreachable.
+        $this->assertSame('Cached Pitch', $rows[0]['title']);
+    }//end testListFallsBackToCachedRowWhenUpstreamFails()
 
     public function testHealthDefersToRouterProbe(): void
     {

@@ -423,6 +423,19 @@ return [
         ['name' => 'collectiveLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/collectives',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'collectiveLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/collectives/{pageId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageId' => '[0-9]+']],
 
+        // xWiki (remote, OpenConnector-routed) — Tier-2 link-table API.
+        // External: no NC app gate; the OpenConnector `xwiki` source carries
+        // credentials. The specific `/xwiki/new` (create + link) route MUST
+        // precede the wildcard `/xwiki/{pageRef}` unlink route, and the
+        // app-global `available` route precedes the object-scoped routes.
+        // pageRef is a url-encoded canonical page reference (`%2F` not `/`),
+        // so the `[^/]+` requirement matches the whole segment.
+        ['name' => 'xwikiLinks#available',    'url' => '/api/integrations/xwiki/available',                  'verb' => 'GET'],
+        ['name' => 'xwikiLinks#index',        'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'xwikiLinks#createAndLink','url' => '/api/objects/{register}/{schema}/{id}/xwiki/new',    'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'xwikiLinks#link',         'url' => '/api/objects/{register}/{schema}/{id}/xwiki',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'xwikiLinks#destroy',      'url' => '/api/objects/{register}/{schema}/{id}/xwiki/{pageRef}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'pageRef' => '[^/]+']],
+
         // Maps (NC Maps / Location) — Tier-2 link-table API. User-scoped
         // (no admin gate). The specific `/maps/new` (create + link) route
         // MUST precede the wildcard `/maps/{favoriteId}` unlink route.
