@@ -226,6 +226,7 @@ use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
@@ -971,7 +972,8 @@ class Application extends App implements IBootstrap
                 return new IntegrationsCapability(
                     registry: $container->get(IntegrationRegistry::class),
                     userSession: $container->get('OCP\IUserSession'),
-                    groupManager: $container->get('OCP\IGroupManager')
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appManager: $container->get('OCP\App\IAppManager')
                 );
             }
         );
@@ -1744,7 +1746,7 @@ class Application extends App implements IBootstrap
     /**
      * Register MCP tool providers (built-ins first).
      *
-     * Wires the three built-in IMcpToolProvider implementations into
+     * Wires the four built-in IMcpToolProvider implementations into
      * McpToolsService. External apps may call addProvider() after boot
      * or override the McpToolsService binding to prepend their own providers.
      *
@@ -1764,6 +1766,7 @@ class Application extends App implements IBootstrap
                     $container->get(RegistersToolProvider::class),
                     $container->get(SchemasToolProvider::class),
                     $container->get(ObjectsToolProvider::class),
+                    $container->get(IntegrationsToolProvider::class),
                 ];
 
                 // Per-app tool providers: try two discovery paths for each
