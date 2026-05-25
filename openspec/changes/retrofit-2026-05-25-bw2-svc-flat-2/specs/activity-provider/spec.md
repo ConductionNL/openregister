@@ -16,7 +16,7 @@ which this change anchors.
 
 ## ADDED Requirements
 
-### Requirement: REQ-A1 The Tier-2 activity read surface MUST return filtered, cursor-paginated entries linked to an object and MUST degrade to empty when the Activity app is absent
+### Requirement: Tier-2 Object Activity Read Surface
 The service MUST resolve NC Activity entries linked to an OR object via the `[or:{objectUuid}]` subject marker, apply optional type / actor / date-range filters, return a bounded cursor-paginated page ordered newest-first, and return an empty result set (never throw) when the NC Activity app is not installed or a query fails.
 
 `ActivityFilterService::getActivityEntries()` MUST match entries by the `[or:{objectUuid}]` marker in the `activity.subject` column, MUST apply the optional exact `type`, exact `actor` (`affecteduser`), and `after` (Unix-timestamp lower bound) filters when supplied, MUST clamp the requested page size into `[1, MAX_LIMIT]` defaulting to `DEFAULT_LIMIT`, MUST page descending by `timestamp` then `activity_id` using a strict-less-than cursor, and MUST return `{ results, total, nextCursor }` where `total` is the filter-set count ignoring the cursor and `nextCursor` is null on the last page. When the Activity app is unavailable the result MUST be `{ results: [], total: 0, nextCursor: null }`, and any DB error MUST be logged and degraded to an empty result rather than propagated.
