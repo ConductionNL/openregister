@@ -133,6 +133,8 @@ class ContactService
      * @param string $objectUuid The object UUID.
      *
      * @return array{results: array, total: int}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function getContactsForObject(string $objectUuid): array
     {
@@ -357,6 +359,8 @@ class ContactService
      *
      * @throws Exception If the contact does not exist.
      *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Single switch on upsert state — extracting a sub-method
      *                                                doesn't add clarity and would split the vCard hydration
      *                                                from the DB write that consumes it.
@@ -477,6 +481,8 @@ class ContactService
      * @return ContactLink The created link.
      *
      * @throws Exception If no user or addressbook.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function createAndLinkContact(
         string $objectUuid,
@@ -567,6 +573,8 @@ class ContactService
      * @return ContactLink The updated link.
      *
      * @throws Exception If link not found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function updateRole(int $linkId, string $role): ContactLink
     {
@@ -612,6 +620,8 @@ class ContactService
      * @return void
      *
      * @throws Exception If the link row itself isn't found (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function unlinkContact(int $linkId): void
     {
@@ -684,6 +694,8 @@ class ContactService
      * @param string $contactUid The contact UID.
      *
      * @return array Array of contact links with object UUIDs and roles.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-2
      */
     public function getObjectsForContact(string $contactUid): array
     {
@@ -703,6 +715,8 @@ class ContactService
      * @param string $objectUuid The object UUID.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function deleteLinksForObject(string $objectUuid): void
     {
@@ -736,6 +750,8 @@ class ContactService
      * Find the user's default addressbook.
      *
      * @return array|null Addressbook data or null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     private function findUserAddressbook(): ?array
     {

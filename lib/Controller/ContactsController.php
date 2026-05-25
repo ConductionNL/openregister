@@ -129,6 +129,8 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -169,6 +171,8 @@ class ContactsController extends Controller
      * @NoCSRFRequired
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -336,6 +340,8 @@ class ContactsController extends Controller
      * @NoCSRFRequired
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Route-bound; method 501 pending role updates.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function update(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
@@ -379,6 +385,8 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
      */
     public function destroy(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
@@ -421,6 +429,8 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-2
      */
     public function objects(string $contactUid): JSONResponse
     {
@@ -461,6 +471,8 @@ class ContactsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     public function match(): JSONResponse
     {
@@ -500,6 +512,8 @@ class ContactsController extends Controller
      * @param array $matches The raw matches
      *
      * @return array Enriched matches
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     private function enrichMatches(array $matches): array
     {
