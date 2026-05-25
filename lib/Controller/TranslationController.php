@@ -9,6 +9,9 @@
  *   GET  /api/translations/object/{uuid}      — list slots + completeness
  *   POST /api/translations/object/{uuid}/{property}/{language}/status
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -82,6 +85,8 @@ class TranslationController extends Controller
      * @return JSONResponse JSON response with results and count.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-8
      */
     public function search(
         ?string $query=null,
@@ -118,6 +123,8 @@ class TranslationController extends Controller
      * @return JSONResponse JSON response with translations and completeness.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-8
      */
     public function showByObject(string $uuid, ?string $schema=null): JSONResponse
     {
@@ -153,6 +160,8 @@ class TranslationController extends Controller
      * @return JSONResponse JSON response with the updated row.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-8
      */
     public function setStatus(string $uuid, string $property, string $language, ?string $status=null): JSONResponse
     {
@@ -192,6 +201,8 @@ class TranslationController extends Controller
      * @return JSONResponse JSON response with translation result.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-8
      */
     public function bulkTranslate(
         string $uuid,

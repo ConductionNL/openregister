@@ -55,6 +55,14 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * Open the native file picker by programmatically clicking the hidden
+		 * file input. Avatar upload itself runs from the input's `change` handler
+		 * (`uploadAvatar`), not from this method.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-5
+		 * @return {void}
+		 */
 		triggerUpload() {
 			this.$refs.fileInput.click()
 		},

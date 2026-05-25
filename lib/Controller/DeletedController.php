@@ -6,6 +6,9 @@
  * Controller for managing soft deleted objects in the OpenRegister app.
  * Provides functionality for listing, filtering, restoring, and permanently deleting objects.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -262,6 +265,8 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-16
      */
     public function statistics(): JSONResponse
     {
@@ -318,6 +323,8 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with top deleters data
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-16
      */
     public function topDeleters(): JSONResponse
     {

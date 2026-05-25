@@ -5,6 +5,9 @@
  *
  * Extracted from SchemaGenerator to reduce class complexity.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL\SchemaGenerator
  * @author   Conduction B.V. <info@conduction.nl>
@@ -90,6 +93,8 @@ class CompositionHandler
      * @param array<string, mixed> $fields The fields array to modify in-place
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
      */
     public function applyComposition(RegisterSchema $schema, array &$fields): void
     {
@@ -106,6 +111,8 @@ class CompositionHandler
      * @param array<string, mixed> $fields The fields array to modify in-place
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
      */
     private function applyAllOf(RegisterSchema $schema, array &$fields): void
     {
@@ -146,6 +153,8 @@ class CompositionHandler
      * @param array<string, mixed> $fields The fields array to modify in-place
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
      */
     private function applyOneOf(RegisterSchema $schema, array &$fields): void
     {
@@ -189,6 +198,8 @@ class CompositionHandler
      * @param array<string, mixed> $fields The fields array to modify in-place
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
      */
     private function applyAnyOf(RegisterSchema $schema, array &$fields): void
     {
@@ -237,6 +248,8 @@ class CompositionHandler
      * @param array<mixed> $refs The composition references
      *
      * @return ObjectType[] The resolved object types
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
      */
     private function resolveCompositionRefs(array $refs): array
     {
@@ -269,6 +282,8 @@ class CompositionHandler
      * @param ObjectType[] $types The object types to intersect
      *
      * @return array<string, array<string, mixed>> Shared field configs
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
      */
     private function extractSharedFields(array $types): array
     {

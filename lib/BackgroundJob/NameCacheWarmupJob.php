@@ -7,6 +7,9 @@
  * This ensures optimal facet label resolution performance by pre-populating the
  * distributed name cache with all object names.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *

@@ -8,6 +8,9 @@
  * This service acts as a facade for the various object handlers,
  * coordinating operations between them and maintaining state.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *
@@ -18,6 +21,10 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-26
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
  */
 
 declare(strict_types=1);
@@ -382,6 +389,8 @@ class ObjectService
      * @param Register|string|int $register The register object or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
      */
     public function setRegister(Register | string | int $register): static
     {
@@ -441,6 +450,8 @@ class ObjectService
      * @param Schema|string|int $schema The schema object or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
      */
     public function setSchema(Schema | string | int $schema): static
     {
@@ -516,6 +527,8 @@ class ObjectService
      * @param ObjectEntity|string|int $object The object entity or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
      */
     public function setObject(ObjectEntity | string | int $object): static
     {
@@ -1078,6 +1091,8 @@ class ObjectService
      * @TODO Add property-level RBAC validation here
      * Before saving object data, check if user has permission to create/update specific properties
      * based on property-level authorization arrays in the schema.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-3
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1247,6 +1262,8 @@ class ObjectService
      * @param string|null        $uuid   Provided UUID
      *
      * @return array{0: array, 1: string|null} [normalized object array, extracted UUID]
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
      */
     private function extractUuidAndNormalizeObject(array | ObjectEntity $object, ?string $uuid): array
     {
@@ -1678,6 +1695,8 @@ class ObjectService
      * @return void
      *
      * @throws \OCP\AppFramework\Http\ContentSecurityPolicy
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-4
      */
     private function rejectIfTransferred(string $uuid): void
     {
@@ -2522,6 +2541,8 @@ class ObjectService
      * @param array $results Array of rendered objects or ObjectEntity instances from search.
      *
      * @return array<string, string> Map of UUID to name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-2
      */
     private function collectNamesForResults(array $results): array
     {
@@ -2835,6 +2856,8 @@ class ObjectService
      * @return array Comprehensive bulk operation results with statistics and categorized objects
      *
      * @phpstan-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */
     public function saveObjects(
         array $objects,
@@ -3460,6 +3483,8 @@ class ObjectService
      * @param int $schemaId Schema ID
      *
      * @return array Validation result with valid and invalid objects
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-26
      */
     public function validateObjectsBySchema(int $schemaId): array
     {

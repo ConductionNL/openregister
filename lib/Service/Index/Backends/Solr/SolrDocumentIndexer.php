@@ -6,6 +6,9 @@
  * Handles document indexing operations to Solr.
  * Manages single and bulk indexing, deletions, and commits.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -244,6 +247,8 @@ class SolrDocumentIndexer
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-1
      */
     public function indexDocuments(array $documents, bool $commit=false): bool
     {

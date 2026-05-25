@@ -5,6 +5,9 @@
  *
  * This file contains the handler class for managing LLM provider configuration.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -85,6 +88,8 @@ class LlmSettingsHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Default configuration structure requires comprehensive initialization
      *     Nested else branches handle optional vector config backward compatibility
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function getLLMSettingsOnly(): array
     {
@@ -166,6 +171,8 @@ class LlmSettingsHandler
      * @throws \RuntimeException If LLM settings update fails.
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) PATCH behavior requires merging multiple nested configuration structures
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {

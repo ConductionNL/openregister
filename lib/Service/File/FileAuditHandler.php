@@ -5,6 +5,9 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
@@ -123,6 +126,8 @@ class FileAuditHandler
      * @return AuditTrail|null The persisted audit row, or null on failure.
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-4
      */
     public function logBulkDownload(
         ObjectEntity $object,
@@ -200,6 +205,8 @@ class FileAuditHandler
      * @return AuditTrail|null The persisted audit row, or null on failure.
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-4
      */
     public function logFileAction(
         ObjectEntity $object,

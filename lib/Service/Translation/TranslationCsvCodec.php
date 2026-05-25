@@ -9,6 +9,9 @@
  * `ExportService::exportToCsv` once they're updated to be
  * translation-aware (Phase 2.3 wire-in).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Translation
  *
@@ -54,6 +57,8 @@ class TranslationCsvCodec
      * @param Schema               $schema The schema describing translatable properties.
      *
      * @return array<string, scalar|null>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-12
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -118,6 +123,8 @@ class TranslationCsvCodec
      * @param Schema               $schema The schema describing translatable properties.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-13
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */

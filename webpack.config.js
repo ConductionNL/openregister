@@ -43,8 +43,11 @@ webpackConfig.resolve.extensions = [
 // THESE MAKE THE DEVELOPMENT ENVIRONMENT FUNCTIONAL
 // ==================================================
 // Use local source when available (monorepo dev), otherwise fall back to npm package
+// Set OR_SKIP_LOCAL_NCVUE=1 in the env to bypass this alias when the
+// apps-extra/nextcloud-vue submodule is on an unrelated branch (e.g. during
+// dist-based verification of feature/integration-leaves-consolidated).
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-const useLocalLib = fs.existsSync(localLib)
+const useLocalLib = fs.existsSync(localLib) && !process.env.OR_SKIP_LOCAL_NCVUE
 
 webpackConfig.resolve.alias = {
 	...(webpackConfig.resolve.alias || {}),
@@ -87,6 +90,13 @@ webpackConfig.entry = {
 	mailSidebar: {
 		import: path.join(__dirname, 'src', 'mail-sidebar.js'),
 		filename: appId + '-mail-sidebar.js',
+	},
+	// ADR-019 Phase E (Option B): umbrella widget for NC user-dashboard.
+	// Loaded by `OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::load()`
+	// which calls `Util::addScript('openregister', 'openregister-user-dashboard')`.
+	userDashboard: {
+		import: path.join(__dirname, 'src', 'user-dashboard.js'),
+		filename: appId + '-user-dashboard.js',
 	},
 }
 

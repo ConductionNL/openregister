@@ -5,6 +5,9 @@
  *
  * Handles HTTP client configuration and basic HTTP operations for Elasticsearch.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Elasticsearch
  * @author    Conduction Development Team <dev@conduction.nl>

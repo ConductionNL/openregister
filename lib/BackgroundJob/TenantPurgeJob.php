@@ -6,6 +6,9 @@
  * Permanently deletes archived organisations and their data after the
  * configured retention period (default: 90 days).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *

@@ -5,8 +5,10 @@
  * object via a `[or:{objectUuid}]` marker in the entity's `subject`
  * field.
  *
- * Storage strategy is `link-table` — the marker lives in the upstream
- * app's own table (`activity`), not in OR.
+ * Storage strategy is `query-time` — the marker lives in the upstream
+ * app's own table (`activity`), not in OR. Every `list()` call runs a
+ * live LIKE query against the upstream `activity` table; OpenRegister
+ * persists nothing about the link itself.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -113,12 +115,18 @@ class ActivityProvider extends AbstractIntegrationProvider
      * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
      * rows are normalised into the registry leaf row shape.
      *
+     * Tier-2 narrowing: optional `type` / `actor` / `after` filters may
+     * be passed in `$filters`. They are applied in PHP over the rows the
+     * MarkerLookupTrait returns — the marker LIKE query itself is left
+     * untouched so the wave-5.3 carve-out (NC Activity's single string
+     * `subject` column as the marker target) stays canonical.
+     *
      * @param string $register Register slug for the parent object.
      * @param string $schema   Schema slug for the parent object.
      * @param string $objectId UUID of the OR object whose rows we want.
-     * @param array  $filters  Optional registry filters (unused).
+     * @param array  $filters  Optional filters: `type`, `actor`, `after` (Unix ts).
      *
-     * @return array List of registry leaf rows.
+     * @return array<int,array<string,mixed>> List of registry leaf rows.
      *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-3
      */
@@ -138,13 +146,25 @@ class ActivityProvider extends AbstractIntegrationProvider
             idColumn: 'activity_id',
         );
 
+        $rows = $this->applyFilters(rows: $rows, filters: $filters);
+
         return array_map(
                 static function (array $row): array {
+                    // Flatten the activity event so CnActivityTab can read
+                    // type / timestamp / actor at the row root without
+                    // hand-walking `data.*`. `data` is retained for any
+                    // generic consumer that still wants the raw row.
                     return [
-                        'id'    => (string) ($row['activity_id'] ?? ''),
-                        'title' => (string) ($row['subject'] ?? ''),
-                        'url'   => '/index.php/apps/activity/'.(string) ($row['activity_id'] ?? ''),
-                        'data'  => $row,
+                        'id'           => (string) ($row['activity_id'] ?? ''),
+                        'title'        => (string) ($row['subject'] ?? ''),
+                        'subject'      => (string) ($row['subject'] ?? ''),
+                        'type'         => (string) ($row['type'] ?? ''),
+                        'timestamp'    => (int) ($row['timestamp'] ?? 0),
+                        'affecteduser' => (string) ($row['affecteduser'] ?? ''),
+                        'actor_id'     => (string) ($row['affecteduser'] ?? ''),
+                        'object_id'    => (string) ($row['object_id'] ?? ''),
+                        'url'          => '/index.php/apps/activity/'.(string) ($row['activity_id'] ?? ''),
+                        'data'         => $row,
                     ];
                 },
                 $rows
@@ -152,15 +172,81 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end list()
 
     /**
+     * Apply Tier-2 type/actor/after filters over marker-matched rows.
+     *
+     * Filtering is done in PHP (not in the marker query) to preserve the
+     * wave-5.3 MarkerLookupTrait carve-out intact.
+     *
+     * @param array $rows    Rows returned by the marker lookup.
+     * @param array $filters Optional `type` / `actor` / `after` filters.
+     *
+     * @return array Filtered rows.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) — three independent
+     * predicate filters short-circuit; splitting them would only add
+     * indirection.
+     */
+    private function applyFilters(array $rows, array $filters): array
+    {
+        $type  = '';
+        $actor = '';
+        $after = 0;
+        if (isset($filters['type']) === true) {
+            $type = (string) $filters['type'];
+        }
+
+        if (isset($filters['actor']) === true) {
+            $actor = (string) $filters['actor'];
+        }
+
+        if (isset($filters['after']) === true) {
+            $after = (int) $filters['after'];
+        }
+
+        if ($type === '' && $actor === '' && $after === 0) {
+            return $rows;
+        }
+
+        return array_values(
+            array_filter(
+                $rows,
+                static function (array $row) use ($type, $actor, $after): bool {
+                    if ($type !== '' && (string) ($row['type'] ?? '') !== $type) {
+                        return false;
+                    }
+
+                    if ($actor !== '' && (string) ($row['affecteduser'] ?? '') !== $actor) {
+                        return false;
+                    }
+
+                    if ($after > 0 && (int) ($row['timestamp'] ?? 0) < $after) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            )
+        );
+    }//end applyFilters()
+
+
+    /**
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-4
      */
     public function health(): array
     {
         $available = $this->isEnabled();
+        $status    = 'unavailable';
+        $message   = 'NC Activity app is not installed';
+        if ($available === true) {
+            $status  = 'ok';
+            $message = null;
+        }
+
         return [
-            'status'     => $available === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $available === true ? null : 'NC Activity app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

@@ -5,6 +5,9 @@
  *
  * This file contains the controller for managing applications.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -47,6 +50,8 @@ use Exception;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class ApplicationsController extends Controller
 {

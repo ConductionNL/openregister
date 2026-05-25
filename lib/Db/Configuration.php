@@ -5,6 +5,9 @@
  *
  * This file contains the Configuration entity class for the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Entity
  * @package  OCA\OpenRegister\Db
  *

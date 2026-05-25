@@ -5,6 +5,9 @@
  *
  * This file contains the controller class for handling settings in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <info@conduction.nl>
@@ -220,6 +223,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with settings data
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
      */
     public function index(): JSONResponse
     {
@@ -237,6 +242,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
      */
     public function update(): JSONResponse
     {
@@ -255,6 +262,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with loaded settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
      */
     public function load(): JSONResponse
     {
@@ -272,6 +281,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated publishing options
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
      */
     public function updatePublishingOptions(): JSONResponse
     {
@@ -293,6 +304,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with rebase result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-11
      */
     public function rebase(): JSONResponse
     {
@@ -313,6 +326,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-2
      */
     public function stats(): JSONResponse
     {
@@ -333,6 +348,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-2
      */
     public function getStatistics(): JSONResponse
     {
@@ -345,6 +362,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The SOLR setup test results
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
      */
     public function testSetupHandler(): JSONResponse
     {
@@ -414,6 +433,8 @@ class SettingsController extends Controller
      * @psalm-return JSONResponse<200|400|422,
      *     array{success: bool, message: mixed|string, collection: string,
      *     stats?: array<never, never>|mixed}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
      */
     public function reindexSpecificCollection(string $name): JSONResponse
     {
@@ -492,6 +513,8 @@ class SettingsController extends Controller
      * @return JSONResponse Backend configuration
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
      */
     public function getSearchBackend(): JSONResponse
     {
@@ -511,6 +534,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated backend config
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
      */
     public function updateSearchBackend(): JSONResponse
     {
@@ -555,6 +580,8 @@ class SettingsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-3
      */
     public function getDatabaseInfo(): JSONResponse
     {
@@ -730,6 +757,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with refreshed database info
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-3
      */
     public function refreshDatabaseInfo(): JSONResponse
     {
@@ -746,6 +775,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with version info
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-4
      */
     public function getVersionInfo(): JSONResponse
     {
@@ -986,6 +1017,8 @@ class SettingsController extends Controller
      *     results?: array<int, array<string, mixed>>, total?: int<0, max>,
      *     limit?: int, filters?: array, timestamp?: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-20
      */
     public function semanticSearch(string $query, int $limit=10, array $filters=[], ?string $provider=null): JSONResponse
     {
@@ -1041,6 +1074,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with hybrid search results
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-20
      */
     public function hybridSearch(
         string $query,

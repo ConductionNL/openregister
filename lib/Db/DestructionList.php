@@ -6,6 +6,9 @@
  * Represents a destruction list containing objects that are due for
  * permanent deletion as part of the archival destruction workflow.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *

@@ -6,6 +6,9 @@
  * Resolves GraphQL queries, mutations, and fields by delegating
  * to OpenRegister services with RBAC enforcement and DataLoader batching.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  * @author   Conduction B.V. <info@conduction.nl>
@@ -308,6 +311,8 @@ class GraphQLResolver
      * @return array<int, array{key: string, value: int|float}>|null Bucket array, or null when register/runner missing.
      *
      * @throws Error When validation fails or RBAC denies the request.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-19
      */
     private function resolveGroupBy(Schema $schema, ?Register $register, array $rawArgs): ?array
     {
@@ -605,6 +610,8 @@ class GraphQLResolver
      * Flush the DataLoader buffer — batch-load all buffered relation UUIDs.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-20
      */
     private function flushRelationBuffer(): void
     {
@@ -844,6 +851,8 @@ class GraphQLResolver
      * @param int|string $offset The offset position
      *
      * @return string The encoded cursor
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-21
      */
     private function encodeCursor(string $uuid, int|string $offset): string
     {

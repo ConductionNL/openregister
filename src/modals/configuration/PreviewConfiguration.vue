@@ -298,6 +298,9 @@ export default {
 		await this.loadPreview()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		async loadPreview() {
 			const configuration = configurationStore.configurationItem
 			if (!configuration || !configuration.id) {

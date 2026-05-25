@@ -41,6 +41,8 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/text-extraction-eml/specs/text-extraction-eml/spec.md
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-31
  */
 
 declare(strict_types=1);
@@ -100,6 +102,8 @@ class EmlParser
      * @return EmlStructure The parsed structure.
      *
      * @throws EmlParseException When the input is irrecoverably malformed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     public function parse(File $file, int $depth=0): EmlStructure
     {
@@ -133,6 +137,8 @@ class EmlParser
      * @param int      $depth   Current recursion depth.
      *
      * @return EmlStructure
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     public function parseMessage(IMessage $message, int $depth=0): EmlStructure
     {
@@ -159,6 +165,8 @@ class EmlParser
      * @return string Flat plain-text output.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Mostly attachment-loop branching
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     public function flatten(EmlStructure $structure, int $depth=0): string
     {
@@ -224,6 +232,8 @@ class EmlParser
      * @param IMessage $message Parsed message.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     private function extractHeaders(IMessage $message): array
     {
@@ -319,6 +329,8 @@ class EmlParser
      * @param IMessage $message Parsed message.
      *
      * @return EmlBody
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-31
      */
     private function extractBody(IMessage $message): EmlBody
     {
@@ -338,6 +350,8 @@ class EmlParser
      * @param int      $depth   Current recursion depth (root = 0).
      *
      * @return array<int, EmlAttachment>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     private function extractAttachments(IMessage $message, int $depth): array
     {
@@ -365,6 +379,8 @@ class EmlParser
      * @param int          $depth    Current recursion depth.
      *
      * @return EmlAttachment
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     private function buildAttachment(IMessagePart $part, int $position, int $depth): EmlAttachment
     {
@@ -493,6 +509,8 @@ class EmlParser
      * @return EmlStructure|null Null on parse failure (the outer parse
      *                           tolerates a malformed nested EML so the
      *                           rest of the structure is still usable).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     private function parseNestedEml(string $bytes, int $depth): ?EmlStructure
     {
@@ -539,6 +557,8 @@ class EmlParser
      * @param string|null $raw Raw header value.
      *
      * @return DateTimeImmutable|null Null when the header is missing or unparseable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     private function parseDate(?string $raw): ?DateTimeImmutable
     {
@@ -581,6 +601,8 @@ class EmlParser
      * @param string $html HTML source.
      *
      * @return string Plain text.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     private function htmlToText(string $html): string
     {
@@ -620,6 +642,8 @@ class EmlParser
      * @param string $value Possibly-non-UTF-8 string.
      *
      * @return string UTF-8 string (or the raw input when detection fails).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-31
      */
     private function ensureUtf8(string $value): string
     {
@@ -670,6 +694,8 @@ class EmlParser
      * @param string $message Potentially PII-bearing string.
      *
      * @return string Sanitised string safe to log.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     public static function sanitisePiiForLogging(string $message): string
     {

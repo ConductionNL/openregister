@@ -6,6 +6,9 @@
  * This file contains the GitLabHandler class for interacting with the GitLab API
  * to discover, fetch, and manage OpenRegister configurations stored in GitLab repositories.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *

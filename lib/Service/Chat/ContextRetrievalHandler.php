@@ -6,6 +6,9 @@
  * Handler for RAG (Retrieval Augmented Generation) context retrieval.
  * Manages semantic search, keyword search, and source extraction for chat context.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -16,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -73,6 +78,8 @@ class ContextRetrievalHandler
      * @param LoggerInterface  $logger        Logger.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function __construct(
         VectorEmbeddings $vectorService,
@@ -100,6 +107,8 @@ class ContextRetrievalHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  RAG context retrieval requires many search strategies
      * @SuppressWarnings(PHPMD.NPathComplexity)       RAG context retrieval requires many search strategies
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex RAG logic cannot be easily split
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function retrieveContext(
         string $query,
@@ -399,6 +408,8 @@ class ContextRetrievalHandler
      * @psalm-return list<array{entity_id: mixed, entity_type: string, text: string, score: float}>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function searchKeywordOnly(string $query, int $_limit): array
     {
@@ -436,6 +447,8 @@ class ContextRetrievalHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Name extraction requires checking many possible fields
      * @SuppressWarnings(PHPMD.NPathComplexity)      Name extraction requires checking many possible fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function extractSourceName(array $result): string
     {

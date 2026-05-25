@@ -14,6 +14,9 @@
  * 4. Logged-in user, profile found → `runtime.user` populated with every
  *    `x-openregister-calculations.*` field evaluated against the profile object.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *

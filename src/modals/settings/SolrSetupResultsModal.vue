@@ -265,6 +265,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
+		 */
 		getStepStatus(step) {
 			// Handle both step.success (boolean) and step.status (string) formats
 			if (step.success === true || step.status === 'completed') return 'success'

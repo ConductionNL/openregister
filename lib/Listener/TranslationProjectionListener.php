@@ -8,6 +8,9 @@
  * JSONB property data on the object. Same pattern as the realtime
  * event listener — derived-projection-by-event.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -46,6 +49,8 @@ class TranslationProjectionListener implements IEventListener
      * @param TranslationProjectionService $projection Projection service.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-13
      */
     public function __construct(
         private readonly TranslationProjectionService $projection
@@ -58,6 +63,8 @@ class TranslationProjectionListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-14
      */
     public function handle(Event $event): void
     {

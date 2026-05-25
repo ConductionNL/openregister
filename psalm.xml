@@ -76,6 +76,11 @@
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>
                 <referencedClass name="OCA\OpenRegister\Service\CalendarEventService"/>
                 <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
+                <!-- OCA\Bookmarks optional peer app (lazy-resolved at runtime) -->
+                <referencedClass name="OCA\Bookmarks\QueryParameters"/>
+                <referencedClass name="OCA\Bookmarks\Db\Bookmark"/>
+                <referencedClass name="OCA\Bookmarks\Db\BookmarkMapper"/>
+                <referencedClass name="OCA\Bookmarks\Db\TagMapper"/>
                 <!-- Additional OCP infrastructure types used across the fleet -->
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IRegistrationContext"/>

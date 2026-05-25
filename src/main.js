@@ -7,12 +7,10 @@ import App from './App.vue'
 import router from './router/index.js'
 import {
 	registerIcons,
-	installIntegrationRegistry,
-	registerBuiltinIntegrations,
-	registerLeafIntegrations,
 } from '@conduction/nextcloud-vue'
 import '@conduction/nextcloud-vue/css/index.css'
 import { Fragment } from 'vue-frag'
+import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 
 import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -25,9 +23,11 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 // consumer app's bootstrap reaches into the same singleton — so registering
 // the defaults here means object-detail surfaces inside OR itself exercise
 // the full set without depending on a consumer app's wiring.
-installIntegrationRegistry(window)
-registerBuiltinIntegrations()
-registerLeafIntegrations()
+//
+// Idempotent — the same helper is also invoked from settings.js,
+// files-sidebar.js and mail-sidebar.js so the registry is consistently
+// populated regardless of which entry bundle loaded first on the page.
+ensureIntegrationRegistry()
 // xwiki is intentionally NOT in nc-vue's leafIntegrations[] — it ships with
 // a richer dedicated tab (CnXwikiTab) that consumer apps register separately.
 // For the per-leaf verification harness we want all 24 advertised providers

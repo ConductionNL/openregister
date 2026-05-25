@@ -6,6 +6,9 @@
  * Manages Solr schema operations.
  * Handles field types, field management, and schema synchronization.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Solr
  * @author    Conduction Development Team <dev@conduction.nl>

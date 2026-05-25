@@ -5,6 +5,9 @@
  *
  * Wraps an `oc_openregister_notification_subscriptions` row.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *

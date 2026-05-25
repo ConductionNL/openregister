@@ -5,6 +5,9 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
@@ -166,6 +169,8 @@ class FolderManagementHandler
      * @phpstan-return Node
      *
      * @psalm-return Node
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function createRegisterFolderById(Register $register, ?IUser $currentUser=null): Node
     {
@@ -294,6 +299,8 @@ class FolderManagementHandler
      *
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getRegisterFolderById(Register $register): ?Folder
     {
@@ -474,6 +481,8 @@ class FolderManagementHandler
      * @phpstan-return Node
      * @return         Node The folder node.
      * @throws         Exception If folder creation fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function createFolderPath(string $folderPath): Node
     {
@@ -561,6 +570,8 @@ class FolderManagementHandler
      *
      * @psalm-return   string|null
      * @phpstan-return string|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getRegisterFolderName(Register $register): string|null
     {
@@ -584,6 +595,8 @@ class FolderManagementHandler
      *
      * @psalm-return   string
      * @phpstan-return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
@@ -612,6 +625,8 @@ class FolderManagementHandler
      *
      * @psalm-return   Folder
      * @phpstan-return Folder
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getOpenRegisterUserFolder(): Folder
     {
@@ -637,6 +652,8 @@ class FolderManagementHandler
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getNodeById(int $nodeId): ?Node
     {

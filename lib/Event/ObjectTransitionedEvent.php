@@ -7,6 +7,9 @@
  * the existing event-driven-architecture family — listeners subscribe via
  * `IEventDispatcher` like every other Object*Event in OpenRegister.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
@@ -120,6 +123,8 @@ class ObjectTransitionedEvent extends Event
      * Read the object after the transition.
      *
      * @return ObjectEntity Object whose lifecycle just changed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
      */
     public function getObject(): ObjectEntity
     {
@@ -130,6 +135,8 @@ class ObjectTransitionedEvent extends Event
      * Read the action name from the transition table.
      *
      * @return string Action name (e.g. "publish").
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
      */
     public function getAction(): string
     {
@@ -140,6 +147,8 @@ class ObjectTransitionedEvent extends Event
      * Read the lifecycle value before the transition.
      *
      * @return string Originating state value.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
      */
     public function getFrom(): string
     {
@@ -150,6 +159,8 @@ class ObjectTransitionedEvent extends Event
      * Read the lifecycle value after the transition.
      *
      * @return string Destination state value.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
      */
     public function getTo(): string
     {
@@ -160,6 +171,8 @@ class ObjectTransitionedEvent extends Event
      * Read the caller uid that triggered the transition.
      *
      * @return string|null Caller uid, or null for system transitions.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
      */
     public function getUserId(): ?string
     {
@@ -170,6 +183,8 @@ class ObjectTransitionedEvent extends Event
      * Read the register slug the object belongs to.
      *
      * @return string Register slug.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
      */
     public function getRegister(): string
     {
@@ -180,6 +195,8 @@ class ObjectTransitionedEvent extends Event
      * Read the schema slug the object belongs to.
      *
      * @return string Schema slug.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
      */
     public function getSchema(): string
     {

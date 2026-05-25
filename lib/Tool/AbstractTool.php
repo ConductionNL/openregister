@@ -6,6 +6,9 @@
  * Base class for LLphant function tools providing common functionality
  * for user context management, view filtering, and error handling.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  *

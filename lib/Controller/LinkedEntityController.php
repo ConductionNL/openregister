@@ -3,6 +3,9 @@
 /**
  * LinkedEntityController
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
@@ -36,6 +39,8 @@ use Psr\Log\LoggerInterface;
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
  */
 class LinkedEntityController extends Controller
 {

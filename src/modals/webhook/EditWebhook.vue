@@ -434,6 +434,9 @@ export default {
 		this.initializeWebhook()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 */
 		initializeWebhook() {
 			// Get webhook item from navigation store transferData or initialize new one.
 			const transferData = navigationStore.getTransferData()

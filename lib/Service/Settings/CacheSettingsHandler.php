@@ -5,6 +5,9 @@
  *
  * This file contains the handler class for managing cache operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -140,6 +143,8 @@ class CacheSettingsHandler
      * @return array Cache stats with overview, services, names, distributed, performance, and lastUpdated.
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex statistics aggregation requires comprehensive data structure
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
      */
     public function getCacheStats(): array
     {
@@ -402,6 +407,8 @@ class CacheSettingsHandler
       *
       * @SuppressWarnings(PHPMD.UnusedFormalParameter)
       * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple cache types require switch-based routing
+      *
+      * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
       */
     public function clearCache(string $type='all', ?string $userId=null, array $_options=[]): array
     {
@@ -589,6 +596,8 @@ class CacheSettingsHandler
       *
       * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache warmup with fallback logic requires multiple branches
       * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional branches for cache service resolution
+      *
+      * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
       */
     public function warmupNamesCache(): array
     {

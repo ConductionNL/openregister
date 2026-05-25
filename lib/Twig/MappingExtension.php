@@ -5,6 +5,9 @@
  *
  * Registers Twig functions and filters for the mapping engine.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *

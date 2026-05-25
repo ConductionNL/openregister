@@ -6,6 +6,9 @@
  * This file contains comprehensive examples demonstrating the new faceting
  * capabilities integrated into the ObjectService, showing both new and legacy approaches.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Example
  * @package  OCA\OpenRegister\Service\Objects
  *

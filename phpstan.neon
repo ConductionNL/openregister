@@ -30,6 +30,14 @@ parameters:
         # OCA\DAV is server-internal and not in nextcloud/ocp stubs
         - '#unknown class OCA\\DAV\\#'
         - '#Class OCA\\DAV\\#'
+        # OCA\Bookmarks is an optional peer app (lazy-resolved via
+        # \OCP\Server::get() behind a class_exists guard) — not a
+        # composer dependency, so its classes are absent during analysis.
+        - '#unknown class OCA\\Bookmarks\\#'
+        - '#OCA\\Bookmarks\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCA\\Bookmarks\\#'
+        - '#has invalid return type OCA\\Bookmarks\\#'
+        - '#Instantiated class OCA\\Bookmarks\\#'
         # OCA classes from other apps (OpenRegister) not available during static analysis
         - '#unknown class OCA\\OpenRegister\\#'
         - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
