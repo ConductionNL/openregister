@@ -1,5 +1,7 @@
 ---
 status: implemented
+retrofit_extensions:
+  - search-trail-analytics-dashboard
 ---
 # Zoeken en Filteren
 
