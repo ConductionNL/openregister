@@ -58,6 +58,7 @@ class ObjectUnlockedEvent extends Event
      * @return ObjectEntity The object that has been unlocked
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-3
      */
     public function getObject(): ObjectEntity
     {

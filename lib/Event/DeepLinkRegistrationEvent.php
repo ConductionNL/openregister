@@ -54,6 +54,8 @@ class DeepLinkRegistrationEvent extends Event
      * Get the deep link registry service to register URL patterns.
      *
      * @return DeepLinkRegistryService The registry service
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-9
      */
     public function getRegistry(): DeepLinkRegistryService
     {
