@@ -253,19 +253,34 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Resolve the active register (with stats) from the dashboard store.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @return {object|undefined} The active register record
+		 */
 		register() {
 			// Find the register in the dashboard store using the ID from register store
 			const registerId = registerStore.getRegisterItem?.id
 			return dashboardStore.registers.find(r => r.id === registerId)
 		},
 		activeTab: {
+			/**
+			 * @spec exclude Tab-switch state accessor; proxies the active tab to/from the register store, no domain behavior.
+			 */
 			get() {
 				return registerStore.getActiveTab
 			},
+			/**
+			 * @spec exclude Tab-switch state mutator; proxies the active tab to the register store, no domain behavior.
+			 */
 			set(value) {
 				registerStore.setActiveTab(value)
 			},
 		},
+		/**
+		 * @spec exclude Presentation-only formatter; builds the object stats breakdown (size/invalid/deleted/locked) for display.
+		 * @return {object} Breakdown descriptor for the objects stats block
+		 */
 		objectsBreakdown() {
 			const stats = this.register?.stats?.objects
 			const breakdown = {
@@ -276,6 +291,11 @@ export default {
 			}
 			return breakdown
 		},
+		/**
+		 * Build the schema definition used by the inline register-edit form dialog.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @return {object} JSON-schema-like definition for the edit form
+		 */
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -291,6 +311,12 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * Load schema options when the register-edit dialog opens.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @param {boolean} val - Whether the edit dialog is open
+		 * @return {void}
+		 */
 		showEditDialog(val) {
 			if (val) {
 				this.loadSchemaOptions()
@@ -298,11 +324,21 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec exclude Presentation-only formatter; renders a byte size as a stats breakdown descriptor.
+		 * @param {number} size - Byte size
+		 * @return {object|null} Breakdown descriptor or null
+		 */
 		sizeBreakdown(size) {
 			if (!size) return null
 			return { size: formatBytes(size) }
 		},
 
+		/**
+		 * Load the schema list and build select options for the register-edit form.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @return {Promise<void>}
+		 */
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
@@ -315,6 +351,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Resolve persisted schema references into select-option shape for the edit form.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @param {Array} schemas - Schema ids or objects
+		 * @return {Array} Select options
+		 */
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
 			return schemas.map(s => {
@@ -324,6 +366,12 @@ export default {
 			})
 		},
 
+		/**
+		 * Submit the register-edit form through the register store and refresh dashboard stats.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @param {object} formData - Edited register fields
+		 * @return {Promise<void>}
+		 */
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
@@ -337,6 +385,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Trigger a server-side size recalculation for the register and refresh stats.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Promise<void>}
+		 */
 		async calculateSizes() {
 			if (!this.register) return
 
@@ -349,6 +402,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Fetch the register's generated OpenAPI spec and download it as a JSON file.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-10
+		 * @return {Promise<void>}
+		 */
 		async downloadOas() {
 			if (!this.register) return
 
@@ -370,6 +428,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Open the register's generated OpenAPI spec in an interactive ReDoc viewer.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-10
+		 * @return {void}
+		 */
 		viewOasDoc() {
 			if (!this.register) return
 
@@ -378,6 +441,12 @@ export default {
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 
+		/**
+		 * Stage a schema for editing and open the schema-edit modal.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
+		 * @param {object} schema - The schema to edit
+		 * @return {void}
+		 */
 		editSchema(schema) {
 			registerStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')
