@@ -44,6 +44,18 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IUserSession;
 
+/**
+ * DEPRECATED per-user (register, schema) notification subscription surface.
+ *
+ * Superseded by the override-only model: rules live in the schema annotation
+ * `x-openregister-notifications` and per-user preferences are override-only
+ * Nextcloud user-config values served by NotificationPreferencesController.
+ * Existing rows are migrated by the MigrateNotificationSubscriptionsToUserConfig
+ * repair step; this controller keeps responding during the deprecation window
+ * and is scheduled for removal.
+ *
+ * @deprecated Use NotificationPreferencesController (override-only user-config).
+ */
 class NotificationSubscriptionsController extends Controller
 {
     /**

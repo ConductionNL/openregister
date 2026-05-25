@@ -71,8 +71,9 @@ class AnnotationNotificationDispatcher
      * @param IConfig|null                                             $config              Optional config service for runtime tunables.
      * @param NotificationHistoryMapper|null                           $historyMapper       Optional history mapper for delivery audit rows.
      * @param NotificationCoalescer|null                               $coalescer           Optional coalescer for burst suppression.
-     * @param \OCA\OpenRegister\Db\NotificationSubscriptionMapper|null $subscriptionMapper  Optional subscription mapper for opt-in filtering.
+     * @param \OCA\OpenRegister\Db\NotificationSubscriptionMapper|null $subscriptionMapper  Optional subscription mapper (DEPRECATED).
      * @param NotificationDispatchLogMapper|null                       $dispatchLogMapper   Optional dispatch-log mapper for idempotency-key dedup.
+     * @param NotificationPreferenceService|null                       $preferenceService   Override-only preference resolver (delivery gate).
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
      */
@@ -91,7 +92,8 @@ class AnnotationNotificationDispatcher
         private readonly ?NotificationHistoryMapper $historyMapper=null,
         private readonly ?NotificationCoalescer $coalescer=null,
         private readonly ?\OCA\OpenRegister\Db\NotificationSubscriptionMapper $subscriptionMapper=null,
-        private readonly ?NotificationDispatchLogMapper $dispatchLogMapper=null
+        private readonly ?NotificationDispatchLogMapper $dispatchLogMapper=null,
+        private readonly ?NotificationPreferenceService $preferenceService=null
     ) {
     }//end __construct()
 
@@ -124,6 +126,15 @@ class AnnotationNotificationDispatcher
         }
 
         $data = $object->getObject() ?? [];
+
+        // Canonical INotification subject derived from the trigger. The
+        // Notifier renders these (object_created / object_updated /
+        // object_transitioned) with localised text + an object-detail
+        // action link — decoupling rendering from how the schema author
+        // happened to name the rule, so EVERY schema-declared in-app
+        // notification renders rather than throwing "Unknown subject".
+        $subjectKey = $this->canonicalSubject(trigger: $trigger);
+        $schemaSlug = (string) ($schema->getSlug() ?? $schema->getId());
 
         foreach ($notifications as $name => $spec) {
             if (is_array($spec) === false) {
@@ -227,9 +238,17 @@ class AnnotationNotificationDispatcher
             );
             $channels         = (array) ($spec['channels'] ?? ['nc-notification']);
 
-            $rateLimit = is_array($spec['rateLimit'] ?? null) === true ? $spec['rateLimit'] : null;
-            $coalesce  = is_array($spec['coalesce'] ?? null) === true ? $spec['coalesce'] : null;
-            $ruleId    = (string) $name;
+            $rateLimit = null;
+            if (is_array($spec['rateLimit'] ?? null) === true) {
+                $rateLimit = $spec['rateLimit'];
+            }
+
+            $coalesce = null;
+            if (is_array($spec['coalesce'] ?? null) === true) {
+                $coalesce = $spec['coalesce'];
+            }
+
+            $ruleId = (string) $name;
 
             // Webhook is fired once per dispatch, not once per recipient,
             // and includes the recipient list in the payload.
@@ -316,13 +335,46 @@ class AnnotationNotificationDispatcher
                     continue;
                 }
 
-                if (in_array('nc-notification', $channels, true) === true) {
+                // Per-recipient preference gate (override-only). The schema
+                // declares the default on/off + channels; a stored user
+                // override flips it. Absence of an override falls through to
+                // the schema default (zero-migration). Webhook/talk are
+                // broadcast (fired once above) and intentionally unaffected.
+                $effectiveChannels = $channels;
+                if ($this->preferenceService !== null) {
+                    $pref = $this->preferenceService->resolveEffective(
+                        schemaDefault: $spec,
+                        userId: $uid,
+                        schemaSlug: $schemaSlug,
+                        notificationKey: (string) $name
+                    );
+                    if ($pref['enabled'] === false) {
+                        $this->recordHistoryAcrossChannels(
+                            ruleId: $ruleId,
+                            recipient: $uid,
+                            channels: $channels,
+                            broadcastChannels: ['webhook', 'talk'],
+                            status: 'preference-off',
+                            object: $object,
+                            subject: $recipientSubject,
+                            locale: $recipientLocale
+                        );
+                        continue;
+                    }
+
+                    if ($pref['channels'] !== null) {
+                        $effectiveChannels = array_values(array_intersect($channels, $pref['channels']));
+                    }
+                }//end if
+
+                if (in_array('nc-notification', $effectiveChannels, true) === true) {
                     $this->emitNotification(
                         uid: $uid,
-                        objectId: (string) ($object->getUuid() ?? ''),
+                        object: $object,
+                        subjectKey: $subjectKey,
                         name: (string) $name,
                         subject: $recipientSubject,
-                        parameters: $context
+                        context: $context
                     );
                     $this->recordHistory(
                         ruleId: $ruleId,
@@ -335,7 +387,7 @@ class AnnotationNotificationDispatcher
                     );
                 }
 
-                if (in_array('email', $channels, true) === true) {
+                if (in_array('email', $effectiveChannels, true) === true) {
                     $this->emitEmail(
                         uid: $uid,
                         subject: $recipientSubject,
@@ -352,7 +404,7 @@ class AnnotationNotificationDispatcher
                     );
                 }
 
-                if (in_array('activity', $channels, true) === true) {
+                if (in_array('activity', $effectiveChannels, true) === true) {
                     $this->emitActivity(
                         uid: $uid,
                         objectId: (string) ($object->getUuid() ?? ''),
@@ -659,15 +711,30 @@ class AnnotationNotificationDispatcher
             return;
         }
 
+        $historySchemaId = null;
+        if ($object->getSchema() !== null && $object->getSchema() !== '') {
+            $historySchemaId = (string) $object->getSchema();
+        }
+
+        $historyRegisterId = null;
+        if ($object->getRegister() !== null && $object->getRegister() !== '') {
+            $historyRegisterId = (string) $object->getRegister();
+        }
+
+        $historyObjectUuid = null;
+        if ($object->getUuid() !== null && $object->getUuid() !== '') {
+            $historyObjectUuid = (string) $object->getUuid();
+        }
+
         try {
             $this->historyMapper->record(
                 ruleId: $ruleId,
                 channel: $channel,
                 recipient: $recipient,
                 status: $status,
-                schemaId: ($object->getSchema() !== null && $object->getSchema() !== '') ? (string) $object->getSchema() : null,
-                registerId: ($object->getRegister() !== null && $object->getRegister() !== '') ? (string) $object->getRegister() : null,
-                objectUuid: ($object->getUuid() !== null && $object->getUuid() !== '') ? (string) $object->getUuid() : null,
+                schemaId: $historySchemaId,
+                registerId: $historyRegisterId,
+                objectUuid: $historyObjectUuid,
                 subject: $subject,
                 errorMessage: null,
                 locale: $locale
@@ -894,7 +961,10 @@ class AnnotationNotificationDispatcher
         }
 
         $method  = strtoupper((string) ($hook['method'] ?? 'POST'));
-        $headers = is_array($hook['headers'] ?? null) === true ? $hook['headers'] : [];
+        $headers = [];
+        if (is_array($hook['headers'] ?? null) === true) {
+            $headers = $hook['headers'];
+        }
 
         $payload = [
             'notification' => $notificationName,
@@ -961,6 +1031,26 @@ class AnnotationNotificationDispatcher
             } else if ((string) $expected !== (string) $actual) {
                 return false;
             }
+        }
+
+        // Optional non-numeric field-change `condition` for `updated` triggers.
+        // Engages ONLY when the trigger declares a `condition`; condition-less
+        // `updated` rules match on type alone (back-compat). Reads the old/new
+        // object data the listener forwards; fail-closed when either is absent
+        // (mirrors the `calculatedChange` guard below).
+        if ($trigger === 'updated' && isset($triggerSpec['condition']) === true) {
+            $condition = $triggerSpec['condition'];
+            if (is_array($condition) === false) {
+                return false;
+            }
+
+            $newData = ($context['_newData'] ?? null);
+            $oldData = ($context['_oldData'] ?? null);
+            if (is_array($newData) === false || is_array($oldData) === false) {
+                return false;
+            }
+
+            return $this->fieldChangeConditionMatches(condition: $condition, oldData: $oldData, newData: $newData);
         }
 
         // `calculatedChange` boundary-crossing check.
@@ -1044,6 +1134,65 @@ class AnnotationNotificationDispatcher
 
         return true;
     }//end numericConditionMatches()
+
+    /**
+     * Evaluate a non-numeric field-change condition for an `updated` trigger.
+     *
+     * Compares one field's value between the old and new object data:
+     *   - `changed`            — matches when old != new.
+     *   - `equals` (+ `value`) — matches when new == value; when optional
+     *                            `from` is present, also requires old == from
+     *                            (i.e. a specific `from` -> `value` transition).
+     *
+     * Comparison is string-normalised (scalars cast to string, non-scalars to
+     * the empty string), consistent with the `eq`/`ne` handling in
+     * `numericConditionMatches()`. An empty/missing `field` returns false.
+     *
+     * @param array<string, mixed> $condition The `condition` sub-document (`field`, `operator`, `value`, `from`).
+     * @param array<string, mixed> $oldData   The object's data before the update.
+     * @param array<string, mixed> $newData   The object's data after the update.
+     *
+     * @return bool True when the declared change occurred.
+     */
+    private function fieldChangeConditionMatches(array $condition, array $oldData, array $newData): bool
+    {
+        $field = (string) ($condition['field'] ?? '');
+        if ($field === '') {
+            return false;
+        }
+
+        $operator = (string) ($condition['operator'] ?? 'changed');
+        $oldValue = ($oldData[$field] ?? null);
+        $newValue = ($newData[$field] ?? null);
+
+        $oldStr = '';
+        if (is_scalar($oldValue) === true) {
+            $oldStr = (string) $oldValue;
+        }
+
+        $newStr = '';
+        if (is_scalar($newValue) === true) {
+            $newStr = (string) $newValue;
+        }
+
+        if ($operator === 'changed') {
+            return $oldStr !== $newStr;
+        }
+
+        if ($operator === 'equals') {
+            if ($newStr !== (string) ($condition['value'] ?? '')) {
+                return false;
+            }
+
+            if (isset($condition['from']) === true) {
+                return $oldStr === (string) $condition['from'];
+            }
+
+            return true;
+        }
+
+        return false;
+    }//end fieldChangeConditionMatches()
 
     /**
      * Resolve a `recipients` block to a flat list of UIDs.
@@ -1432,7 +1581,10 @@ class AnnotationNotificationDispatcher
 
         if (is_array($template) === true) {
             $declared      = isset($template['defaultLocale']) === true && is_string($template['defaultLocale']) === true;
-            $defaultLocale = $declared === true ? $template['defaultLocale'] : 'nl';
+            $defaultLocale = 'nl';
+            if ($declared === true) {
+                $defaultLocale = $template['defaultLocale'];
+            }
 
             // Recipient locale wins when declared.
             if ($locale !== null && isset($template[$locale]) === true && is_string($template[$locale]) === true) {
@@ -1562,26 +1714,77 @@ class AnnotationNotificationDispatcher
     }//end interpolate()
 
     /**
+     * Map a trigger to the canonical INotification subject the Notifier
+     * renders. Decouples the displayed subject from the schema author's
+     * rule name so every schema-declared in-app notification renders.
+     *
+     * @param string $trigger 'created' | 'updated' | 'transition' | 'calculatedChange'.
+     *
+     * @return string The canonical subject identifier.
+     */
+    private function canonicalSubject(string $trigger): string
+    {
+        return match ($trigger) {
+            'created'    => 'object_created',
+            'transition' => 'object_transitioned',
+            default      => 'object_updated',
+        };
+    }//end canonicalSubject()
+
+    /**
      * Persist + dispatch a single in-app Nextcloud notification row.
      *
+     * The INotification carries the canonical `$subjectKey` (which the
+     * Notifier switches on to render localised text + an object-detail
+     * action link), the routing parameters the action link needs
+     * (`objectTitle`, `registerId`, `schemaId`, `objectUuid`), the rule's
+     * own name under `notificationType`, and the pre-rendered subject text
+     * under `_text` (so a schema's custom per-locale subject still wins).
+     *
+     * Push delivery needs no extra code: `notify_push` auto-intercepts this
+     * same `IManager::notify()` call and relays it to connected devices.
+     *
      * @param string               $uid        Recipient user UID.
-     * @param string               $objectId   The owning object's UUID (or rule name fallback).
-     * @param string               $name       Annotation name (notification type identifier).
+     * @param ObjectEntity         $object     The object the event happened on.
+     * @param string               $subjectKey Canonical subject identifier (object_created/_updated/_transitioned).
+     * @param string               $name       Annotation rule name (notification type identifier).
      * @param string               $subject    Pre-interpolated subject text.
-     * @param array<string, mixed> $parameters Extra notification parameters.
+     * @param array<string, mixed> $context    Trigger context (action, from, to).
      *
      * @return void
      */
-    private function emitNotification(string $uid, string $objectId, string $name, string $subject, array $parameters): void
-    {
+    private function emitNotification(
+        string $uid,
+        ObjectEntity $object,
+        string $subjectKey,
+        string $name,
+        string $subject,
+        array $context
+    ): void {
+        $objectUuid = (string) ($object->getUuid() ?? '');
+        $linkParams = [
+            'objectTitle' => (string) ($object->getName() ?? $objectUuid),
+            'registerId'  => $object->getRegister(),
+            'schemaId'    => $object->getSchema(),
+            'objectUuid'  => $objectUuid,
+        ];
+
+        $objectRef = $name;
+        if ($objectUuid !== '') {
+            $objectRef = $objectUuid;
+        }
+
         try {
             $notification = $this->notificationManager->createNotification();
             $notification
                 ->setApp('openregister')
                 ->setUser($uid)
                 ->setDateTime(new DateTime())
-                ->setObject('object', $objectId !== '' ? $objectId : $name)
-                ->setSubject($name, array_merge($parameters, ['_text' => $subject]));
+                ->setObject('object', $objectRef)
+                ->setSubject(
+                    $subjectKey,
+                    array_merge($context, $linkParams, ['_text' => $subject, 'notificationType' => $name])
+                );
             $this->notificationManager->notify($notification);
         } catch (\Throwable $e) {
             $this->logger->warning(
@@ -1642,6 +1845,11 @@ class AnnotationNotificationDispatcher
      */
     private function emitActivity(string $uid, string $objectId, string $name, string $subject): void
     {
+        $objectRef = $name;
+        if ($objectId !== '') {
+            $objectRef = $objectId;
+        }
+
         try {
             $event = $this->activityManager->generateEvent();
             $event
@@ -1649,7 +1857,7 @@ class AnnotationNotificationDispatcher
                 ->setType('openregister_objects')
                 ->setAffectedUser($uid)
                 ->setSubject($name, ['_text' => $subject])
-                ->setObject('object', 0, $objectId !== '' ? $objectId : $name)
+                ->setObject('object', 0, $objectRef)
                 ->setTimestamp(time());
             $this->activityManager->publish($event);
         } catch (\Throwable $e) {
@@ -1691,7 +1899,11 @@ class AnnotationNotificationDispatcher
     {
         $config = ($schema->getConfiguration() ?? []);
         $value  = ($config['x-openregister-notifications'] ?? null);
-        return is_array($value) === true ? $value : null;
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return null;
     }//end getAnnotation()
 
     /**

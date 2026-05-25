@@ -3,9 +3,21 @@
 /**
  * OpenRegister AnnotationNotifier
  *
- * Renders annotation-driven notifications. The dispatcher stores the
- * already-interpolated subject under the `_text` parameter; this notifier
- * surfaces it as the notification's parsed subject.
+ * Renders annotation-driven, object-lifecycle notifications fired by
+ * AnnotationNotificationDispatcher. The dispatcher emits a canonical
+ * subject (object_created / object_updated / object_transitioned), the
+ * routing parameters for the object-detail action link (registerId,
+ * schemaId, objectUuid, objectTitle), and — when the schema declared a
+ * custom per-locale `subject` — the already-interpolated text under the
+ * `_text` parameter.
+ *
+ * This notifier renders the recipient-localised subject (the schema's
+ * custom `_text` wins; otherwise a canonical localised string from the
+ * openregister l10n files), sets the OpenRegister icon, and adds a primary
+ * "View" action deep-linking to the object. Subjects it does not own (no
+ * `_text` and not a canonical object subject — e.g. configuration_update_available,
+ * which lib/Notification/Notifier.php renders) raise UnknownNotificationException
+ * so the manager passes the notification on to the next notifier untouched.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,6 +38,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notification;
 
+use OCP\IURLGenerator;
+use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
 use OCP\Notification\UnknownNotificationException;
@@ -33,12 +47,28 @@ use OCP\Notification\UnknownNotificationException;
 class AnnotationNotifier implements INotifier
 {
     /**
-     * No-op constructor, kept explicit so DI can resolve the notifier.
+     * Canonical object-lifecycle subjects mapped to their English source
+     * string (Dutch comes from l10n/nl.json via IFactory). Used to render a
+     * localised subject when the schema declared no custom `subject`.
      *
-     * @return void
+     * @var array<string, string>
      */
-    public function __construct()
-    {
+    private const SUBJECT_TEMPLATES = [
+        'object_created'      => 'Object "%1$s" created in register "%2$s"',
+        'object_updated'      => 'Object "%1$s" updated in register "%2$s"',
+        'object_transitioned' => 'Object "%1$s" assigned to you in register "%2$s"',
+    ];
+
+    /**
+     * Constructor.
+     *
+     * @param IFactory      $factory      L10N factory for localised subjects.
+     * @param IURLGenerator $urlGenerator URL generator for the icon and action link.
+     */
+    public function __construct(
+        private readonly IFactory $factory,
+        private readonly IURLGenerator $urlGenerator
+    ) {
     }//end __construct()
 
     /**
@@ -62,16 +92,16 @@ class AnnotationNotifier implements INotifier
     }//end getName()
 
     /**
-     * Render the notification subject for the given language.
+     * Render the notification subject and action for the given language.
      *
      * @param INotification $notification Notification to prepare.
      * @param string        $languageCode Active language code.
      *
      * @return INotification Prepared notification.
      *
-     * @throws UnknownNotificationException When the notification does not belong to OpenRegister.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @throws UnknownNotificationException When the notification is not an
+     *                                      annotation/object notification this
+     *                                      notifier owns.
      */
     public function prepare(INotification $notification, string $languageCode): INotification
     {
@@ -79,15 +109,52 @@ class AnnotationNotifier implements INotifier
             throw new UnknownNotificationException();
         }
 
-        $params        = $notification->getSubjectParameters();
-        $text          = ($params['_text'] ?? null);
-        $parsedSubject = $notification->getSubject();
+        $subject  = $notification->getSubject();
+        $params   = $notification->getSubjectParameters();
+        $text     = ($params['_text'] ?? null);
+        $hasText  = (is_string($text) === true && $text !== '');
+        $isObject = array_key_exists($subject, self::SUBJECT_TEMPLATES);
 
-        if (is_string($text) === true && $text !== '') {
-            $parsedSubject = $text;
+        // Subjects this notifier does not own (e.g. configuration_update_available,
+        // rendered by Notifier) are passed on untouched.
+        if ($isObject === false && $hasText === false) {
+            throw new UnknownNotificationException();
         }
 
-        $notification->setParsedSubject($parsedSubject);
+        $l = $this->factory->get('openregister', $languageCode);
+
+        // The schema's custom per-locale subject (already interpolated by the
+        // dispatcher for this recipient) wins; otherwise render the canonical
+        // localised string with the object title + register name substituted.
+        if ($hasText === true) {
+            $notification->setParsedSubject($text);
+        } else {
+            $objectTitle  = (string) ($params['objectTitle'] ?? $l->t('object'));
+            $registerName = (string) ($params['registerName'] ?? ($params['registerId'] ?? ''));
+            $notification->setParsedSubject(
+                $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName])
+            );
+        }
+
+        $notification->setIcon(
+            $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+        );
+
+        // Deep-link to the object detail view when routing params are present.
+        $registerId = ($params['registerId'] ?? null);
+        $schemaId   = ($params['schemaId'] ?? null);
+        $objectUuid = ($params['objectUuid'] ?? null);
+        if ($registerId !== null && $schemaId !== null && $objectUuid !== null && (string) $objectUuid !== '') {
+            $action = $notification->createAction();
+            $action->setLabel($l->t('View'))
+                ->setPrimary(true)
+                ->setLink(
+                    $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
+                    .sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid),
+                    'GET'
+                );
+            $notification->addAction($action);
+        }
 
         return $notification;
     }//end prepare()
