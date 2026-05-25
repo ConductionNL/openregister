@@ -51,6 +51,8 @@ use Throwable;
  * resolved via the shared PlaceholderResolver.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
  */
 class CalculationEvaluator
 {
@@ -75,6 +77,8 @@ class CalculationEvaluator
      * @return mixed The computed value.
      *
      * @throws EvaluationException When the expression is malformed or references unknown properties/operators.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
      */
     public function evaluate(array $object, mixed $expression): mixed
     {
@@ -123,6 +127,8 @@ class CalculationEvaluator
      * @return mixed The resolved value, or null when the path is missing.
      *
      * @throws EvaluationException When the property name is empty.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
      */
     private function propValue(array $object, mixed $args): mixed
     {
@@ -518,6 +524,8 @@ class CalculationEvaluator
      * @return int|null The signed integer difference, or null when a date is unparseable.
      *
      * @throws EvaluationException When the args dict is missing required keys or the unit is unknown.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
      */
     private function dateDiff(array $object, mixed $args): ?int
     {

@@ -60,6 +60,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
  */
 class UserService
 {
@@ -174,6 +176,8 @@ class UserService
      * @return array The comprehensive user data array
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function buildUserDataArray(IUser $user): array
     {
@@ -914,6 +918,8 @@ class UserService
      *
      * @throws InvalidArgumentException If inputs are invalid
      * @throws RuntimeException         If password change fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function changePassword(IUser $user, string $currentPassword, string $newPassword): array
     {
@@ -959,6 +965,8 @@ class UserService
      * @return array Result array with success status and avatar URL
      *
      * @throws RuntimeException If upload fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function uploadAvatar(IUser $user, string $data, string $mimeType, int $size): array
     {
@@ -1034,6 +1042,8 @@ class UserService
      * @return array The export data structure
      *
      * @throws RuntimeException If rate limited
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function exportPersonalData(IUser $user): array
     {
@@ -1088,6 +1098,8 @@ class UserService
      * @param IUser $user The user to get preferences for
      *
      * @return array The notification preferences
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function getNotificationPreferences(IUser $user): array
     {
@@ -1164,6 +1176,8 @@ class UserService
      * @param string|null $to     Optional end date (Y-m-d)
      *
      * @return array Activity results with total count
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function getUserActivity(
         IUser $user,
@@ -1216,6 +1230,8 @@ class UserService
      * @return array The created token data (full value shown only once)
      *
      * @throws RuntimeException If maximum tokens reached
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function createApiToken(IUser $user, string $name, ?string $expiresIn=null): array
     {
@@ -1338,6 +1354,8 @@ class UserService
      * @return array Result array with status
      *
      * @throws RuntimeException If duplicate request exists
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function requestDeactivation(IUser $user, string $reason=''): array
     {
