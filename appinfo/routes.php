@@ -381,6 +381,17 @@ return [
         ['name' => 'bookmarkLinks#createNew', 'url' => '/api/objects/{register}/{schema}/{id}/bookmarks/new',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'bookmarkLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/bookmarks/{bookmarkId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'bookmarkId' => '[0-9]+']],
 
+        // Shares — Tier-2: NO link table, NO cache. Every endpoint wraps
+        // OCP\Share\IManager (NC core sharing is the single source of
+        // truth). The shareable-files picker source is app-global but
+        // object-scoped (it lists files inside the object's folder), so
+        // the specific `/api/integrations/shares/files/...` route is
+        // declared before the per-object wildcard `{shareId}` route.
+        ['name' => 'shareLinks#files',   'url' => '/api/integrations/shares/files/{register}/{schema}/{id}', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#index',   'url' => '/api/objects/{register}/{schema}/{id}/shares',            'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#create',  'url' => '/api/objects/{register}/{schema}/{id}/shares',            'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'shareLinks#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/shares/{shareId}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'shareId' => '[^/]+']],
+
         // Flow (workflowengine) — Tier-2 link-table API. Admin-gated:
         // POST/DELETE return 403 for non-admins; GET is read-only for
         // everyone. NC Flow operations are configured globally in the
@@ -390,6 +401,19 @@ return [
         ['name' => 'flowLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'flowLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'flowLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/flow/{operationId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'operationId' => '[0-9]+']],
+
+        // Activity — Tier-2 read-only API. NC Activity entries are
+        // core-generated (no link/create/delete verbs); this surface
+        // only filters + cursor-paginates the entries linked to an OR
+        // object via the `[or:{uuid}]` marker in `activity.subject`
+        // (wave-5.3 MarkerLookupTrait carve-out, preserved). The
+        // app-global `types`/`actors` dropdown routes MUST precede the
+        // per-object wildcard route so they aren't grabbed as register
+        // slugs.
+        // @spec openspec/changes/integration-activity/tasks.md.
+        ['name' => 'activityLinks#types',  'url' => '/api/integrations/activity/types',                  'verb' => 'GET'],
+        ['name' => 'activityLinks#actors', 'url' => '/api/integrations/activity/actors',                 'verb' => 'GET'],
+        ['name' => 'activityLinks#index',  'url' => '/api/objects/{register}/{schema}/{id}/activity',    'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
         // Forms — Tier-2 link-table API. Specific routes (`/new`, `/submissions/{id}`)
         // MUST precede the wildcard `{formId}` route so they aren't grabbed as
