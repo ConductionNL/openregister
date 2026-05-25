@@ -36,6 +36,11 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 	},
 
 	actions: {
+		/**
+		 * Build the email-link endpoint URL for an object.
+		 *
+		 * @spec exclude private URL-builder helper (no client state)
+		 */
 		_url(register, schema, id, suffix = '') {
 			return generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/emails' + suffix, {
 				register,
@@ -44,6 +49,12 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 			})
 		},
 
+		/**
+		 * Fetch and cache email links for an object, falling back to an empty
+		 * state when the Mail app is unavailable (HTTP 501).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 */
 		async fetch(register, schema, id) {
 			const k = `${register}:${schema}:${id}`
 			this.loading = { ...this.loading, [k]: true }
@@ -69,6 +80,12 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 			}
 		},
 
+		/**
+		 * Unlink an email, optimistically pruning it from the cached list for
+		 * that object key without refetching.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 */
 		async unlink(register, schema, id, emailId) {
 			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(emailId)))
 			const k = `${register}:${schema}:${id}`
@@ -77,6 +94,11 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 			return next
 		},
 
+		/**
+		 * Read the cached email links for an object key.
+		 *
+		 * @spec exclude store getter (reads local per-key cache)
+		 */
 		get(register, schema, id) {
 			return this.byObject[`${register}:${schema}:${id}`] || []
 		},

@@ -9,10 +9,22 @@ export const useSourceStore = defineStore(
 			sourceList: [],
 		}),
 		actions: {
+			/**
+			 * Set the active source item.
+			 *
+			 * @param {object|null} sourceItem - The source item to set
+			 * @spec exclude store setter (wraps Source entity construction)
+			 */
 			setSourceItem(sourceItem) {
 				this.sourceItem = sourceItem && new Source(sourceItem)
 				console.log('Active source item set to ' + sourceItem)
 			},
+			/**
+			 * Set the source list.
+			 *
+			 * @param {Array} sourceList - Array of source objects
+			 * @spec exclude store setter (maps to Source entities)
+			 */
 			setSourceList(sourceList) {
 				this.sourceList = sourceList.map(
 					(sourceItem) => new Source(sourceItem),
@@ -25,6 +37,7 @@ export const useSourceStore = defineStore(
 			 * @param {string|null} search - Optional search term
 			 * @param {boolean} soft - If true, don't show loading state (default: false)
 			 * @return {Promise} Promise with source list
+			 * @spec exclude API passthrough to GET /api/sources (list)
 			 */
 			/* istanbul ignore next */ // ignore this for Jest until moved into a service
 			async refreshSourceList(search = null, soft = false) {
@@ -49,7 +62,13 @@ export const useSourceStore = defineStore(
 						throw err // Re-throw the error to be caught by the caller
 					})
 			},
-			// New function to get a single source
+			/**
+			 * Get a single source by id.
+			 *
+			 * @param {number|string} id - Source id
+			 * @return {Promise} Promise with source data
+			 * @spec exclude API passthrough to GET /api/sources/{id}
+			 */
 			async getSource(id) {
 				const endpoint = `/index.php/apps/openregister/api/sources/${id}`
 				try {
@@ -64,7 +83,13 @@ export const useSourceStore = defineStore(
 					throw err
 				}
 			},
-			// Delete a source
+			/**
+			 * Delete a source.
+			 *
+			 * @param {object} sourceItem - The source to delete
+			 * @return {Promise} Promise with response and data
+			 * @spec exclude API passthrough to DELETE /api/sources/{id}
+			 */
 			async deleteSource(sourceItem) {
 				if (!sourceItem.id) {
 					throw new Error('No source item to delete')
@@ -94,7 +119,13 @@ export const useSourceStore = defineStore(
 				return { response, data: responseData }
 
 			},
-			// Create or save a source from store
+			/**
+			 * Create or save a source from store.
+			 *
+			 * @param {object} sourceItem - The source to save
+			 * @return {Promise} Promise with response and data
+			 * @spec exclude API passthrough to POST/PUT /api/sources
+			 */
 			async saveSource(sourceItem) {
 				if (!sourceItem) {
 					throw new Error('No source item to save')
