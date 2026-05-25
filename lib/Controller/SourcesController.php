@@ -74,6 +74,8 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array{results: array<Source>}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function index(): JSONResponse
     {
@@ -117,6 +119,8 @@ class SourcesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function show(string $id): JSONResponse
     {
@@ -141,6 +145,8 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function create(): JSONResponse
     {
@@ -177,6 +183,8 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function update(int $id): JSONResponse
     {
@@ -213,6 +221,8 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Source, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function patch(int $id): JSONResponse
     {
@@ -235,6 +245,8 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array<never, never>, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function destroy(int $id): JSONResponse
     {
@@ -252,6 +264,8 @@ class SourcesController extends Controller
      * @param string               $key    Parameter key
      *
      * @return int|null Integer value or null
+     *
+     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
      */
     private function getIntParam(array $params, string $key): ?int
     {

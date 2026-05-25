@@ -75,6 +75,8 @@ class NotificationSubscriptionsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/notificatie-engine/tasks.md "Users MUST be able to manage their notification preferences"
      */
     public function index(): JSONResponse
     {
@@ -102,6 +104,8 @@ class NotificationSubscriptionsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/notificatie-engine/tasks.md "Users MUST be able to manage their notification preferences"
      */
     public function create(): JSONResponse
     {
@@ -165,6 +169,8 @@ class NotificationSubscriptionsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/notificatie-engine/tasks.md "Users MUST be able to manage their notification preferences"
      */
     public function destroy(): JSONResponse
     {
@@ -190,6 +196,8 @@ class NotificationSubscriptionsController extends Controller
      * Resolve the current user's UID, or null when anonymous.
      *
      * @return ?string
+     *
+     * @spec exclude Private helper: resolves the session UID (null when anonymous); the subscription endpoints are owned by notificatie-engine/tasks.md.
      */
     private function resolveUserId(): ?string
     {
@@ -209,6 +217,8 @@ class NotificationSubscriptionsController extends Controller
      * @param mixed $value Input.
      *
      * @return ?int
+     *
+     * @spec exclude Private helper: coerces a request value to a nullable int; the subscription endpoints are owned by notificatie-engine/tasks.md.
      */
     private function coerceNullableInt(mixed $value): ?int
     {

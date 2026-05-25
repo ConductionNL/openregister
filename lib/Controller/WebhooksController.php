@@ -252,6 +252,8 @@ class WebhooksController extends Controller
      *     array{error: 'Failed to retrieve webhook'|'Webhook not found'},
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-4
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1040,6 +1042,8 @@ class WebhooksController extends Controller
      *     array{error?: 'Failed to retrieve webhook log statistics'|
      *     'Webhook not found', total?: int, successful?: int, failed?: int,
      *     pendingRetries?: int<0, max>}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

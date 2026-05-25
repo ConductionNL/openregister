@@ -197,6 +197,8 @@ class ChatStreamController extends Controller
      * @NoAdminRequired
      *
      * @return Response Never returned — emitAndExit() always terminates.
+     *
+     * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream
      */
     #[NoAdminRequired]
     public function stream(): Response
@@ -386,6 +388,8 @@ class ChatStreamController extends Controller
      * @param array<string, mixed> $payload   JSON-encodable payload.
      *
      * @return never
+     *
+     * @spec exclude SSE-framing helper: emits one frame, finalises the DB transaction, and exits; the streaming endpoint contract is owned by ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function emitAndExit(string $eventType, array $payload): never
     {
@@ -442,6 +446,8 @@ class ChatStreamController extends Controller
      * @param array<string, mixed> $payload   JSON-encodable payload.
      *
      * @return void
+     *
+     * @spec exclude SSE-framing helper: writes one `event:`/`data:` frame and flushes; the streaming endpoint contract is owned by ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function emitSseEvent(string $eventType, array $payload): void
     {
@@ -455,6 +461,8 @@ class ChatStreamController extends Controller
      * `microtime(true)`; tests override to drive a fake clock.
      *
      * @return float Seconds since the Unix epoch.
+     *
+     * @spec exclude SSE-framing helper: test-overridable wall-clock used by the heartbeat interleave; the streaming endpoint contract is owned by ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function now(): float
     {
@@ -479,6 +487,8 @@ class ChatStreamController extends Controller
      * @param array<string, mixed> $payload   Frame payload.
      *
      * @return void
+     *
+     * @spec exclude SSE-framing helper: interleaves a heartbeat frame before forwarding when >15s elapsed; the streaming endpoint contract is owned by ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function forwardWithHeartbeat(string $eventType, array $payload): void
     {
@@ -499,6 +509,8 @@ class ChatStreamController extends Controller
      * buffer trips its "risky" detector.
      *
      * @return void
+     *
+     * @spec exclude SSE-framing helper: clears output buffers so the first frame flushes immediately; the streaming endpoint contract is owned by ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function clearOutputBuffers(): void
     {
@@ -513,6 +525,8 @@ class ChatStreamController extends Controller
      * because the test runner has already written output).
      *
      * @return void
+     *
+     * @spec exclude SSE-framing helper: emits the three text/event-stream response headers; the streaming endpoint contract is owned by ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function emitSseHeaders(): void
     {
