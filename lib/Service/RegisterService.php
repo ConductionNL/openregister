@@ -166,6 +166,8 @@ class RegisterService
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
+     *
+     * @spec exclude Pure pass-through to RegisterMapper::find; no business logic.
      */
     public function find(int | string $id, array $_extend=[], bool $_multitenancy=true): Register
     {
@@ -193,6 +195,8 @@ class RegisterService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Optional parameters use null defaults for flexibility
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple optional filter parameters for flexibility
+     *
+     * @spec exclude Pure pass-through to RegisterMapper::findAll; no business logic.
      */
     public function findAll(
         ?int $limit=null,
@@ -223,6 +227,8 @@ class RegisterService
      * @return Register The created register
      *
      * @throws Exception If register creation fails
+     *
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management (after mapper create, assigns the active/default organisation for multi-tenancy and provisions the register's backing folder)
      */
     public function createFromArray(array $data): Register
     {
@@ -280,6 +286,8 @@ class RegisterService
      * @return Register The updated register
      *
      * @throws Exception If register update fails
+     *
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management (after mapper update, ensures the register's backing folder exists, healing legacy null/string folder properties)
      */
     public function updateFromArray(int $id, array $data): Register
     {
@@ -302,6 +310,8 @@ class RegisterService
      * @throws Exception If register has attached objects or deletion fails
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @spec exclude Pure pass-through to RegisterMapper::delete; no business logic.
      */
     public function delete(Register $register): Register
     {
@@ -376,6 +386,8 @@ class RegisterService
      * @return array<int, array{total: int}> Associative array mapping schema IDs to counts
      *
      * @psalm-return array<int, array{total: int}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function getSchemaObjectCounts(int $registerId, array $schemas): array
     {

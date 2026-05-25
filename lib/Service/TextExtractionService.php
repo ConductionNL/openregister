@@ -172,6 +172,8 @@ class TextExtractionService
      * @throws Exception If extraction fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for force re-extraction behavior
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
@@ -313,6 +315,8 @@ class TextExtractionService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive object extraction requires detailed processing
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
@@ -1017,6 +1021,8 @@ class TextExtractionService
      * @return (int|string)[] Statistics about discovery: {discovered, failed, total}
      *
      * @psalm-return array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function discoverUntrackedFiles(int $limit=100): array
     {
@@ -1100,6 +1106,8 @@ class TextExtractionService
      * @return int[] Statistics about the extraction process: {processed, failed, total}
      *
      * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function extractPendingFiles(int $limit=100): array
     {
@@ -1179,6 +1187,8 @@ class TextExtractionService
      * @return int[] Statistics about the retry process
      *
      * @psalm-return array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function retryFailedExtractions(int $limit=50): array
     {
@@ -1229,6 +1239,8 @@ class TextExtractionService
      *     totalObjects: int,
      *     totalEntities: int
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function getStats(): array
     {
@@ -1716,6 +1728,8 @@ class TextExtractionService
      * @return (int|mixed|string)[][] Array of text chunks
      *
      * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function chunkDocument(string $text, array $options=[]): array
     {

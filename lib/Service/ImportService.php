@@ -206,6 +206,8 @@ class ImportService
      *     softDeleted: list<string>,
      *     errors: list<array{uuid: string, error: string}>
      * }
+     *
+     * @spec openspec/specs/data-import-export/spec.md#import-rollback-on-critical-failure (rolls back an import unit: finds every create-audited object for the import job UUID and soft-deletes them, reporting per-object outcomes)
      */
     public function softDeleteByImportJobId(string $importJobId): array
     {
@@ -1642,6 +1644,8 @@ class ImportService
      * Clear all internal caches to prevent issues between imports
      *
      * @return void
+     *
+     * @spec exclude One-line reset of the internal schema-properties cache; no business logic.
      */
     public function clearCaches(): void
     {
@@ -1686,6 +1690,8 @@ class ImportService
      * @param int    $maxObjects    Maximum objects to index during warmup (default: 5000)
      *
      * @return bool True if job was scheduled successfully
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-3
      */
     public function scheduleSolrWarmup(
         array $importSummary,
@@ -1787,6 +1793,8 @@ class ImportService
      * @return string Recommended warmup mode
      *
      * @psalm-return 'balanced'|'fast'|'safe'
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-3
      */
     public function getRecommendedWarmupMode(int $totalImported): string
     {
@@ -1818,6 +1826,8 @@ class ImportService
      * @psalm-suppress PossiblyUnusedReturnValue
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Immediate flag controls scheduling timing
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-3
      */
     public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate=false): bool
     {
