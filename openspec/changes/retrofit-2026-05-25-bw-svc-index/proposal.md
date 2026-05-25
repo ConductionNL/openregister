@@ -6,7 +6,7 @@ The Bucket-Wide coverage scan (`/tmp/or-scan/bw-svc-index.json`, 2026-05-25) fla
 
 Per ADR-003 (the two-tool approach, just merged), each method ends with EITHER an `@spec` pointer to a real behavior OR an `@spec exclude <reason>` for boilerplate. The overwhelming majority of these 127 methods are backend plumbing: Guzzle HTTP verb wrappers, facade delegations to extracted primitives, interface method declarations, and simplified stubs (`reindexAll`/`warmupIndex`/`fixMismatchedFields` that defer to `IndexService` or return empty). Those are excluded with reasons. A small set of genuinely novel value-transformation and schema-mirroring behaviors — not already in REQ-1..5 — are reverse-spec'd into three new REQs.
 
-## What changes
+## What Changes
 
 - Extend the existing `search-index` capability spec with **three new REQs** (REQ-6, REQ-7, REQ-8):
   - **REQ-6** — `DocumentBuilder` SOLR value coercion, type-compatibility validation, byte-limit truncation, dot-notation array reconstruction, and register/schema ID resolution.
