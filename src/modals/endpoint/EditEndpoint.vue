@@ -104,6 +104,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 */
 		saveEndpoint() {
 			if (endpointStore.endpointItem.id) {
 				endpointStore.updateEndpoint(endpointStore.endpointItem)

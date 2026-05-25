@@ -680,6 +680,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 */
 		updateTitle(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
