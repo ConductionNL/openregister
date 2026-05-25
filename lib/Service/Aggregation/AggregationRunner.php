@@ -24,6 +24,9 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-4
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */

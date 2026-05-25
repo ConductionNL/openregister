@@ -36,6 +36,8 @@ class RegisterSetting extends ActivitySettings
      * Constructor.
      *
      * @param IL10N $l The localization service.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function __construct(
         private IL10N $l,
@@ -46,6 +48,8 @@ class RegisterSetting extends ActivitySettings
      * Get the identifier for this setting.
      *
      * @return string The setting identifier.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function getIdentifier(): string
     {
@@ -56,6 +60,8 @@ class RegisterSetting extends ActivitySettings
      * Get the name for this setting.
      *
      * @return string The setting name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function getName(): string
     {
@@ -66,6 +72,8 @@ class RegisterSetting extends ActivitySettings
      * Get the group identifier for this setting.
      *
      * @return string The group identifier.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function getGroupIdentifier(): string
     {
@@ -76,6 +84,8 @@ class RegisterSetting extends ActivitySettings
      * Get the group name for this setting.
      *
      * @return string The group name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function getGroupName(): string
     {
@@ -86,6 +96,8 @@ class RegisterSetting extends ActivitySettings
      * Get the priority for this setting.
      *
      * @return int The priority.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function getPriority(): int
     {
@@ -96,6 +108,8 @@ class RegisterSetting extends ActivitySettings
      * Whether the user can change the stream setting.
      *
      * @return bool True if changeable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function canChangeStream(): bool
     {
@@ -106,6 +120,8 @@ class RegisterSetting extends ActivitySettings
      * Whether the stream is enabled by default.
      *
      * @return bool True if enabled by default.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function isDefaultEnabledStream(): bool
     {
@@ -116,6 +132,8 @@ class RegisterSetting extends ActivitySettings
      * Whether the user can change the mail setting.
      *
      * @return bool True if changeable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function canChangeMail(): bool
     {
@@ -126,6 +144,8 @@ class RegisterSetting extends ActivitySettings
      * Whether mail is enabled by default.
      *
      * @return bool True if enabled by default.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-1
      */
     public function isDefaultEnabledMail(): bool
     {
