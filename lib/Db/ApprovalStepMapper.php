@@ -148,6 +148,8 @@ class ApprovalStepMapper extends QBMapper
      * @param int|null             $offset  Pagination offset
      *
      * @return array<int, ApprovalStep>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-1
      */
     public function findAllFiltered(array $filters=[], ?int $limit=null, ?int $offset=null): array
     {

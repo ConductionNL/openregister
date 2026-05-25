@@ -3089,6 +3089,8 @@ class ImportHandler
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-5
      */
     private function importSeedData(
         array $configData,
@@ -3558,6 +3560,9 @@ class ImportHandler
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-5
      */
     private function processRelatedItems(
         ObjectEntity $object,
