@@ -13,10 +13,16 @@ export const useConfigurationStore = defineStore('configuration', {
 		},
 	}),
 	actions: {
+		/**
+		 * @spec exclude Client state mutator — wraps the active configuration in an entity. No backend contract.
+		 */
 		setConfigurationItem(configurationItem) {
 			this.configurationItem = configurationItem ? new ConfigurationEntity(configurationItem) : null
 			console.log('Active configuration item set to ' + (configurationItem?.title || 'null'))
 		},
+		/**
+		 * @spec exclude Client state mutator — maps the configuration list to entities. No backend contract.
+		 */
 		setConfigurationList(configurationList) {
 			this.configurationList = configurationList.map(
 				(configurationItem) => new ConfigurationEntity(configurationItem),
@@ -27,6 +33,8 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * Set pagination details
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
+		 *
+		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
 		 */
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
@@ -35,6 +43,8 @@ export const useConfigurationStore = defineStore('configuration', {
 		/**
 		 * Set query filters for configuration list
 		 * @param {object} filters - The filter criteria to apply to the configuration list
+		 *
+		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
@@ -46,6 +56,8 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * @param {string|null} search - Optional search term
 		 * @param {boolean} soft - If true, don't show loading state (default: false)
 		 * @return {Promise} Promise with response and data
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/configurations list; observable contract owned by data-import-export.
 		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshConfigurationList(search = null, soft = false) {
@@ -66,6 +78,9 @@ export const useConfigurationStore = defineStore('configuration', {
 
 			return { response, data }
 		},
+		/**
+		 * @spec exclude Thin API passthrough — GET /api/configurations/{id}; observable contract owned by data-import-export.
+		 */
 		async getConfiguration(id) {
 			const endpoint = `/index.php/apps/openregister/api/configurations/${id}`
 			try {
@@ -80,6 +95,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw err
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — DELETE /api/configurations/{id}; observable contract owned by data-import-export.
+		 */
 		async deleteConfiguration(configurationItem) {
 			if (!configurationItem.id) {
 				throw new Error('No configuration item to delete')
@@ -107,6 +125,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw new Error(`Failed to delete configuration: ${error.message}`)
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — POST/PUT /api/configurations; observable contract owned by data-import-export.
+		 */
 		async saveConfiguration(configurationItem) {
 			if (!configurationItem) {
 				throw new Error('No configuration item to save')
@@ -157,6 +178,9 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		// Clean configuration data for saving - remove read-only fields
+		/**
+		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
+		 */
 		cleanConfigurationForSave(configurationItem) {
 			const cleaned = { ...configurationItem }
 
@@ -168,6 +192,9 @@ export const useConfigurationStore = defineStore('configuration', {
 
 			return cleaned
 		},
+		/**
+		 * @spec exclude Thin API passthrough — POST/PUT /api/configurations/upload; observable contract owned by data-import-export.
+		 */
 		async uploadConfiguration(configuration) {
 			if (!configuration) {
 				throw new Error('No configuration item to upload')
@@ -214,6 +241,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw new Error(`Failed to upload configuration: ${error.message}`)
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — POST /api/configurations/import; observable contract owned by data-import-export.
+		 */
 		async importConfiguration(file, includeObjects = false) {
 			if (!file) {
 				throw new Error('No file to import')
@@ -257,6 +287,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw error // Pass through the original error message
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — GET /api/configurations/discover; observable contract owned by data-import-export.
+		 */
 		async discoverConfigurations(source, search = '') {
 			console.log(`ConfigurationStore: Discovering configurations on ${source}`)
 			const endpoint = '/index.php/apps/openregister/api/configurations/discover'
@@ -285,6 +318,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw error
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — GET /api/configurations/{source}/branches; observable contract owned by data-import-export.
+		 */
 		async getBranches(source, params) {
 			console.log(`ConfigurationStore: Fetching branches from ${source}`)
 			const endpoint = `/index.php/apps/openregister/api/configurations/${source}/branches`
@@ -306,6 +342,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw error
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — GET /api/configurations/{source}/files; observable contract owned by data-import-export.
+		 */
 		async getConfigurationFiles(source, params) {
 			console.log(`ConfigurationStore: Fetching configuration files from ${source}`)
 			const endpoint = `/index.php/apps/openregister/api/configurations/${source}/files`
@@ -327,6 +366,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw error
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — POST /api/configurations/import/github; observable contract owned by data-import-export.
+		 */
 		async importFromGitHub(params) {
 			console.log('ConfigurationStore: Importing from GitHub')
 			const endpoint = '/index.php/apps/openregister/api/configurations/import/github'
@@ -353,6 +395,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw error
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — POST /api/configurations/import/gitlab; observable contract owned by data-import-export.
+		 */
 		async importFromGitLab(params) {
 			console.log('ConfigurationStore: Importing from GitLab')
 			const endpoint = '/index.php/apps/openregister/api/configurations/import/gitlab'
@@ -379,6 +424,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				throw error
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — POST /api/configurations/import/url; observable contract owned by data-import-export.
+		 */
 		async importFromUrl(params) {
 			console.log('ConfigurationStore: Importing from URL')
 			const endpoint = '/index.php/apps/openregister/api/configurations/import/url'

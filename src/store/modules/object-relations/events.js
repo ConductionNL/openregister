@@ -32,6 +32,9 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 	}),
 
 	actions: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		_url(register, schema, id, suffix = '') {
 			return generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/events' + suffix, {
 				register,
@@ -40,6 +43,9 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 			})
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		async fetch(register, schema, id) {
 			const k = `${register}:${schema}:${id}`
 			this.loading = { ...this.loading, [k]: true }
@@ -65,18 +71,27 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 			}
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		async create(register, schema, id, payload) {
 			const response = await axios.post(this._url(register, schema, id), payload)
 			await this.fetch(register, schema, id)
 			return response.data
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		async link(register, schema, id, payload) {
 			const response = await axios.post(this._url(register, schema, id, '/link'), payload)
 			await this.fetch(register, schema, id)
 			return response.data
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		async unlink(register, schema, id, eventId) {
 			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(eventId)))
 			const k = `${register}:${schema}:${id}`
@@ -85,6 +100,9 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 			return next
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		get(register, schema, id) {
 			return this.byObject[`${register}:${schema}:${id}`] || []
 		},

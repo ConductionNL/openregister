@@ -43,10 +43,16 @@ function openregisterObjectPlugin() {
 		}),
 
 		getters: {
+			/**
+			 * @spec exclude Derived client-state getter — composes a type slug from the register/schema stores. No backend contract.
+			 */
 			currentType() {
 				return getCurrentType(getActivePinia())
 			},
 
+			/**
+			 * @spec exclude Derived client-state getter — proxies the active schema from the schema store. No backend contract.
+			 */
 			activeSchema() {
 				const pinia = getActivePinia()
 				if (!pinia) return null
@@ -58,6 +64,8 @@ function openregisterObjectPlugin() {
 			/**
 			 * Ensure the current register/schema type is registered in the package store, then fetch collection.
 			 * @param options
+			 *
+			 * @spec exclude Adapter delegating to the @conduction/nextcloud-vue package object store (fetchCollection); the data-fetch contract is owned by the shared library, not this app.
 			 */
 			async refreshObjectList(options = {}) {
 				const pinia = getActivePinia()
@@ -106,6 +114,9 @@ function openregisterObjectPlugin() {
 			// A no-op stub lets the SPA finish mounting; the original
 			// behaviour (per-column filter init) is now handled inline by
 			// the filter components themselves.
+			/**
+			 * @spec exclude Intentional no-op compatibility stub — keeps stale call sites safe; behaviour moved into the filter components.
+			 */
 			initializeColumnFilters() {
 				// Intentionally empty.
 			},
@@ -114,6 +125,9 @@ function openregisterObjectPlugin() {
 			// the same code paths in DashboardSideBar.vue when a schema
 			// becomes available. The new schema-aware property store
 			// handles this elsewhere; a no-op keeps the call site safe.
+			/**
+			 * @spec exclude Intentional no-op compatibility stub — keeps stale call sites safe; behaviour moved into the schema-aware property store.
+			 */
 			initializeProperties(_schema) {
 				// Intentionally empty.
 			},
