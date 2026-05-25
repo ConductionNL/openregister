@@ -364,6 +364,9 @@ export default {
 			deep: true,
 		},
 		labelOptions: {
+			/**
+			 * @spec exclude UI handler/computed reactive label-options sync
+			 */
 			handler() {
 				setTags(this.getLabels())
 			},

@@ -455,6 +455,7 @@ class RequestError extends Error {
 	 * @param {string} message - Error message
 	 * @param {Response} response - The fetch Response object
 	 * @param {any} [data] - The parsed response body (if available)
+	 * @spec exclude DI constructor
 	 */
 	constructor(message, response, data) {
 		super(message)

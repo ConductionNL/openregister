@@ -105,9 +105,15 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		search(newVal) {
 			this.localSearch = newVal
 		},
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		enabled(newVal) {
 			this.selectedEnabled = newVal
 		},

@@ -534,6 +534,9 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * @spec exclude UI handler/computed dialog-open trigger
+		 */
 		showEditRegisterDialog(val) {
 			if (val) {
 				this.loadSchemaOptions()

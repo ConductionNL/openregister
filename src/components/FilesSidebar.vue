@@ -176,12 +176,21 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		search(newVal) {
 			this.localSearch = newVal
 		},
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		status(newVal) {
 			this.selectedStatus = newVal
 		},
+		/**
+		 * @spec exclude computed filter-state binding
+		 */
 		riskLevel(newVal) {
 			this.selectedRiskLevel = newVal
 		},
