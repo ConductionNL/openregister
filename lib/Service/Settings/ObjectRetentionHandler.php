@@ -363,6 +363,8 @@ class ObjectRetentionHandler
      * @throws \RuntimeException If version information retrieval fails
      *
      * @psalm-return array{appName: 'Open Register', appVersion: '0.2.3'}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-3
      */
     public function getVersionInfoOnly(): array
     {
@@ -382,6 +384,8 @@ class ObjectRetentionHandler
      * @param mixed $value The value to convert to boolean
      *
      * @return bool The boolean representation
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-3
      */
     private function convertToBoolean($value): bool
     {
