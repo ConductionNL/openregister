@@ -129,6 +129,8 @@ class FolderManagementHandler
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function createEntityFolder(Register | ObjectEntity $entity): ?Node
     {
@@ -232,6 +234,8 @@ class FolderManagementHandler
      * @throws NotPermittedException If folder creation is not permitted.
      *
      * @return Folder The created or existing folder for the object.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function createObjectFolderById(
         ObjectEntity|string $objectEntity,
@@ -357,6 +361,8 @@ class FolderManagementHandler
      *
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
@@ -417,6 +423,8 @@ class FolderManagementHandler
      * @psalm-return   int
      * @phpstan-return int
      * @return         int The folder ID.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
@@ -553,6 +561,8 @@ class FolderManagementHandler
      *
      * @psalm-return   Node
      * @phpstan-return Node
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function createFolder(string $folderPath): Node
     {
@@ -697,6 +707,8 @@ class FolderManagementHandler
      *
      * @psalm-return   'file'|'folder'|'unknown'
      * @phpstan-return 'file'|'folder'|'unknown'
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
      */
     public function getNodeTypeFromFolder(Node $node): string
     {

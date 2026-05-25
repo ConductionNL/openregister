@@ -107,6 +107,8 @@ class DocumentProcessingHandler
      * @phpstan-return File
      *
      * @psalm-return File
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
      */
     public function replaceWords(Node $node, array $replacements, ?string $outputName=null): File
     {
@@ -151,6 +153,8 @@ class DocumentProcessingHandler
      * @psalm-param array<int, array{text?: string, entityType?: string, key?: string}> $entities
      *
      * @return File The anonymized document file.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
      */
     public function anonymizeDocument(Node $node, array $entities): File
     {

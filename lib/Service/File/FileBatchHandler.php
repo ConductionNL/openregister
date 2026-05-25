@@ -100,6 +100,8 @@ class FileBatchHandler
      * @return array{results: array, summary: array{total: int, succeeded: int, failed: int}} Batch results.
      *
      * @throws Exception If validation fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
      */
     public function executeBatch(
         ObjectEntity $object,
