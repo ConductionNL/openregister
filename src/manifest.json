@@ -1,0 +1,177 @@
+{
+	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+	"version": "1.0.0",
+	"nav": {
+		"includePersonalSettings": false
+	},
+	"menu": [
+		{
+			"id": "Chat",
+			"label": "AI Chat",
+			"icon": "MessageTextOutline",
+			"route": "chat",
+			"section": "main",
+			"order": 10
+		},
+		{
+			"id": "Registers",
+			"label": "Registers",
+			"icon": "DatabaseOutline",
+			"route": "registers",
+			"section": "main",
+			"order": 20
+		},
+		{
+			"id": "Schemas",
+			"label": "Schemas",
+			"icon": "FileTreeOutline",
+			"route": "schemas",
+			"section": "main",
+			"order": 30
+		},
+		{
+			"id": "Templates",
+			"label": "Templates",
+			"icon": "FileOutline",
+			"route": "templates",
+			"section": "main",
+			"order": 40
+		},
+		{
+			"id": "Tables",
+			"label": "Search / views",
+			"icon": "Magnify",
+			"route": "tables",
+			"section": "main",
+			"order": 50
+		},
+		{
+			"id": "Files",
+			"label": "Files",
+			"icon": "FileDocumentMultipleOutline",
+			"route": "files",
+			"section": "main",
+			"order": 60
+		},
+		{
+			"id": "Agents",
+			"label": "Agents",
+			"icon": "RobotOutline",
+			"route": "agents",
+			"section": "main",
+			"order": 70
+		},
+		{
+			"id": "Documentation",
+			"label": "Documentation",
+			"icon": "InformationOutline",
+			"href": "https://openregister.conduction.nl",
+			"section": "footer",
+			"order": 1
+		},
+		{
+			"id": "FeaturesRoadmapMenu",
+			"label": "Features & roadmap",
+			"icon": "MapMarkerPath",
+			"route": "features-roadmap",
+			"section": "footer",
+			"order": 2
+		},
+		{
+			"id": "Organisations",
+			"label": "Organisations",
+			"icon": "OfficeBuildingOutline",
+			"route": "organisation",
+			"section": "settings",
+			"order": 91
+		},
+		{
+			"id": "Applications",
+			"label": "Applications",
+			"icon": "ApplicationOutline",
+			"route": "applications",
+			"section": "settings",
+			"order": 92
+		},
+		{
+			"id": "Sources",
+			"label": "Data sources",
+			"icon": "DatabaseArrowRightOutline",
+			"route": "sources",
+			"section": "settings",
+			"order": 93
+		},
+		{
+			"id": "Configurations",
+			"label": "Configurations",
+			"icon": "CogOutline",
+			"route": "configurations",
+			"section": "settings",
+			"order": 94
+		},
+		{
+			"id": "Entities",
+			"label": "Entities",
+			"icon": "AccountOutline",
+			"route": "entities",
+			"section": "settings",
+			"order": 95
+		},
+		{
+			"id": "Deleted",
+			"label": "Deleted",
+			"icon": "DeleteRestore",
+			"route": "deleted",
+			"section": "settings",
+			"order": 96
+		},
+		{
+			"id": "AuditTrails",
+			"label": "Audit Trails",
+			"icon": "TextBoxOutline",
+			"route": "audit-trails",
+			"section": "settings",
+			"order": 97
+		},
+		{
+			"id": "SearchTrails",
+			"label": "Search Trails",
+			"icon": "MagnifyPlus",
+			"route": "search-trails",
+			"section": "settings",
+			"order": 98
+		},
+		{
+			"id": "Webhooks",
+			"label": "Webhooks",
+			"icon": "Webhook",
+			"route": "webhooks",
+			"section": "settings",
+			"order": 99
+		},
+		{
+			"id": "Avg",
+			"label": "AVG / Verwerkingsregister",
+			"icon": "ShieldLockOutline",
+			"route": "avg",
+			"section": "settings",
+			"order": 100
+		},
+		{
+			"id": "Reports",
+			"label": "Reports",
+			"icon": "ChartBoxOutline",
+			"route": "reports",
+			"section": "settings",
+			"order": 101
+		},
+		{
+			"id": "Endpoints",
+			"label": "Endpoints",
+			"icon": "Api",
+			"route": "endpoints",
+			"section": "settings",
+			"order": 102
+		}
+	]
+}

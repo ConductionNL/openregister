@@ -17,6 +17,29 @@ import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.v
 import Cog from 'vue-material-design-icons/Cog.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 
+// Navigation icons — registered by name so CnAppNav (manifest-driven
+// MainMenu) can resolve each menu item's `icon` against ICON_MAP.
+import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
+import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
+import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
+import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
+import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
+import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
+import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
+import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
+import Webhook from 'vue-material-design-icons/Webhook.vue'
+import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
+import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
+import Api from 'vue-material-design-icons/Api.vue'
+
 // Install the in-page integration registry on window.OCA.OpenRegister and
 // pre-register the 5 always-on built-ins (files/notes/tags/tasks/audit) plus
 // the 18 leaf descriptors. OR is the producer of this registry — every
@@ -61,6 +84,27 @@ registerIcons({
 	FileDocumentOutline,
 	Cog,
 	CogOutline,
+	// Navigation icons (manifest menu items resolve these by name)
+	MessageTextOutline,
+	DatabaseOutline,
+	FileTreeOutline,
+	FileOutline,
+	Magnify,
+	FileDocumentMultipleOutline,
+	RobotOutline,
+	InformationOutline,
+	MapMarkerPath,
+	OfficeBuildingOutline,
+	ApplicationOutline,
+	DatabaseArrowRightOutline,
+	AccountOutline,
+	DeleteRestore,
+	TextBoxOutline,
+	MagnifyPlus,
+	Webhook,
+	ShieldLockOutline,
+	ChartBoxOutline,
+	Api,
 })
 
 Vue.mixin({ methods: { t, n } })
