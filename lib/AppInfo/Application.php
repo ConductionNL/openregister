@@ -1059,6 +1059,26 @@ class Application extends App implements IBootstrap
                     router: $container->get(ExternalIntegrationRouter::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                    xwikiLinkMapper: $container->get(\OCA\OpenRegister\Db\XwikiLinkMapper::class),
+                );
+            }
+        );
+
+        // XwikiLinkService — Tier-2 link/create/unlink/picker service
+        // backing the XwikiLinksController. xWiki is external: the provider
+        // + router are resolved lazily so the service loads even when
+        // OpenConnector is absent, mirroring the unconfigured-source
+        // 503-with-cause pattern.
+        // @spec openspec/changes/integration-xwiki/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\XwikiLinkService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\XwikiLinkService(
+                    xwikiLinkMapper: $container->get(\OCA\OpenRegister\Db\XwikiLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
