@@ -44,6 +44,8 @@ interface LifecycleGuardInterface
      * @param string               $userId The uid of the caller.
      *
      * @return GuardResult Allow or deny + optional message.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-4
      */
     public function check(array $object, string $action, string $userId): GuardResult;
 }//end interface
