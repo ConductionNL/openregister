@@ -151,6 +151,8 @@ class SolrQueryExecutor
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Paginated search requires handling multiple filter conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter combinations create many execution paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-10
      */
     public function searchPaginated(
         array $query=[],
@@ -224,6 +226,8 @@ class SolrQueryExecutor
      * @param array|string $order Sort specification
      *
      * @return string Solr sort string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-10
      */
     private function translateSortField(array|string $order): string
     {
@@ -251,6 +255,8 @@ class SolrQueryExecutor
      * @param array $query      Original query
      *
      * @return array Paginated format with results and pagination info.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-10
      */
     private function convertToPaginatedFormat(array $solrResult, array $query): array
     {
@@ -286,6 +292,8 @@ class SolrQueryExecutor
      * @param string $fields Fields to return
      *
      * @return array Inspection results
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-10
      */
     public function inspectIndex(
         string $query='*:*',

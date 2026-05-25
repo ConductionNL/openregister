@@ -96,6 +96,8 @@ class DocumentBuilder
      * @psalm-return array{_text: false|string,...}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Document creation requires handling multiple data types
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-6
      */
     public function createDocument(
         ObjectEntity $object,
@@ -426,6 +428,8 @@ class DocumentBuilder
      * @return string|null SOLR field name or null if should be skipped
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function mapFieldToSolrType(string $fieldName, string $_fieldType, $_fieldValue): ?string
     {
@@ -451,6 +455,8 @@ class DocumentBuilder
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         DateTime::createFromFormat is standard PHP date pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function convertValueForSolr($value, string $fieldType)
     {
@@ -538,6 +544,8 @@ class DocumentBuilder
      * @param string $fieldName Field name for logging
      *
      * @return mixed Truncated value or original if within limits
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function truncateFieldValue($value, string $fieldName=''): mixed
     {
@@ -585,6 +593,8 @@ class DocumentBuilder
      * @param array  $fieldDefinition Schema field definition (if available)
      *
      * @return bool True if field should be truncated
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-search-index-backend/tasks.md#task-7
      */
     public function shouldTruncateField(string $fieldName, array $fieldDefinition=[]): bool
     {
