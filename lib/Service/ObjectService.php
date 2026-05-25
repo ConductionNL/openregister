@@ -389,6 +389,8 @@ class ObjectService
      * @param Register|string|int $register The register object or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
      */
     public function setRegister(Register | string | int $register): static
     {
@@ -448,6 +450,8 @@ class ObjectService
      * @param Schema|string|int $schema The schema object or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
      */
     public function setSchema(Schema | string | int $schema): static
     {
@@ -523,6 +527,8 @@ class ObjectService
      * @param ObjectEntity|string|int $object The object entity or its ID/UUID
      *
      * @return static Returns self for method chaining
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-1
      */
     public function setObject(ObjectEntity | string | int $object): static
     {
@@ -1085,6 +1091,8 @@ class ObjectService
      * @TODO Add property-level RBAC validation here
      * Before saving object data, check if user has permission to create/update specific properties
      * based on property-level authorization arrays in the schema.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-3
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1687,6 +1695,8 @@ class ObjectService
      * @return void
      *
      * @throws \OCP\AppFramework\Http\ContentSecurityPolicy
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-4
      */
     private function rejectIfTransferred(string $uuid): void
     {
@@ -2531,6 +2541,8 @@ class ObjectService
      * @param array $results Array of rendered objects or ObjectEntity instances from search.
      *
      * @return array<string, string> Map of UUID to name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-2
      */
     private function collectNamesForResults(array $results): array
     {
