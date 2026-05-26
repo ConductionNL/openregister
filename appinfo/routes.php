@@ -893,6 +893,8 @@ return [
 		// Rapportage on-demand render endpoints (Phase 2).
 		['name' => 'reports#render',  'url' => '/api/reports/{id}/render',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'reports#preview', 'url' => '/api/reports/{id}/preview', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+		['name' => 'ui#templates', 'url' => '/templates', 'verb' => 'GET'],
+		['name' => 'ui#featuresRoadmap', 'url' => '/features-roadmap', 'verb' => 'GET'],
 		['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
 		// User - Profile management and authentication.
