@@ -47,7 +47,6 @@ use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -206,6 +205,23 @@ class SchemasController extends Controller
             _multitenancy: false
         );
 
+        // Read-visibility guard: this endpoint is @PublicPage so it stays
+        // reachable when OpenRegister is restricted to a user group. Anonymous
+        // callers may only see PUBLISHED schemas; authenticated users are
+        // unaffected. Visibility is derived from server-side published/
+        // depublished entity state, never from client-supplied parameters.
+        if ($this->isAnonymousRequest() === true) {
+            $schemas = array_values(
+                array_filter(
+                    $schemas,
+                    fn($schema) => $this->isPublishedEntity(
+                        published: $schema->getPublished(),
+                        depublished: $schema->getDepublished()
+                    )
+                )
+            );
+        }
+
         // Serialize schemas to arrays.
         $schemasArr = array_map(
             function ($schema) {
@@ -277,7 +293,20 @@ class SchemasController extends Controller
                 $extend = [$extend];
             }
 
-            $schema    = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
+            $schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
+
+            // Read-visibility guard (@PublicPage): an anonymous caller may only
+            // view a PUBLISHED schema. Derived from server-side published/
+            // depublished entity state, never from client-supplied parameters.
+            if ($this->isAnonymousRequest() === true
+                && $this->isPublishedEntity(
+                    published: $schema->getPublished(),
+                    depublished: $schema->getDepublished()
+                ) === false
+            ) {
+                return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+            }
+
             $schemaArr = $schema->jsonSerialize();
 
             // Add extendedBy property showing UUIDs of schemas that extend this schema.
@@ -1309,6 +1338,44 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
     }//end depublish()
+
+    /**
+     * Whether the current request has no resolved Nextcloud user (anonymous).
+     *
+     * Read endpoints are @PublicPage so they survive an app-group restriction;
+     * this lets the read-visibility guard distinguish anonymous callers (who may
+     * only see published resources) from authenticated users (unaffected). The
+     * user session is resolved lazily from the container.
+     *
+     * @return bool True if no user is signed in.
+     */
+    private function isAnonymousRequest(): bool
+    {
+        try {
+            return $this->container->get(\OCP\IUserSession::class)->getUser() === null;
+        } catch (\Throwable $e) {
+            // If the session service is unavailable, treat the caller as anonymous (fail closed).
+            return true;
+        }
+
+    }//end isAnonymousRequest()
+
+    /**
+     * Whether an entity is currently published.
+     *
+     * A resource is published when its `published` timestamp is set and it has
+     * not since been depublished. Both values come from persisted entity state.
+     *
+     * @param \DateTime|null $published   The published timestamp, or null.
+     * @param \DateTime|null $depublished The depublished timestamp, or null.
+     *
+     * @return bool True if the entity is published and not depublished.
+     */
+    private function isPublishedEntity(?\DateTime $published, ?\DateTime $depublished): bool
+    {
+        return $published !== null && $depublished === null;
+
+    }//end isPublishedEntity()
 
     /**
      * Check whether the currently authenticated user is a Nextcloud administrator.
