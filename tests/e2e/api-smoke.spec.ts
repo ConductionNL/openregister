@@ -39,15 +39,27 @@ test.describe('Notification subscriptions — REST CRUD', () => {
 		expect(initialBody).toHaveProperty('results')
 		expect(initialBody).toHaveProperty('total')
 
-		// Subscribe to a synthetic register (id=999999 is fine — the
-		// store doesn't FK against register table).
+		// Find a real register id to subscribe to — the endpoint now validates
+		// that the register exists, so a synthetic 999999 id is rejected with 404.
+		const registersResp = await request.get('/index.php/apps/openregister/api/registers?_limit=1', {
+			headers: { Accept: 'application/json' },
+		})
+		expect(registersResp.status()).toBe(200)
+		const registersBody = await registersResp.json()
+		const firstRegister = (registersBody.results ?? [])[0]
+		if (!firstRegister) {
+			test.skip(true, 'no registers available for subscription test')
+		}
+		const registerId: number = firstRegister.id
+
+		// Subscribe to the real register.
 		const created = await request.post('/index.php/apps/openregister/api/notification-subscriptions', {
 			headers: { 'Content-Type': 'application/json' },
-			data: { registerId: 999999 },
+			data: { registerId },
 		})
 		expect(created.status()).toBe(201)
 		const createdBody = await created.json()
-		expect(createdBody.registerId).toBe(999999)
+		expect(createdBody.registerId).toBe(registerId)
 		expect(createdBody.userId).toBeTruthy()
 
 		// Empty body should be rejected with 422.
@@ -60,14 +72,14 @@ test.describe('Notification subscriptions — REST CRUD', () => {
 		// Idempotency: second subscribe returns the same row.
 		const idempotent = await request.post('/index.php/apps/openregister/api/notification-subscriptions', {
 			headers: { 'Content-Type': 'application/json' },
-			data: { registerId: 999999 },
+			data: { registerId },
 		})
 		const idempotentBody = await idempotent.json()
 		expect(idempotentBody.id).toBe(createdBody.id)
 
 		// Tear down.
 		const deleted = await request.delete(
-			'/index.php/apps/openregister/api/notification-subscriptions?registerId=999999',
+			`/index.php/apps/openregister/api/notification-subscriptions?registerId=${registerId}`,
 		)
 		expect(deleted.status()).toBe(200)
 		const deletedBody = await deleted.json()
@@ -77,14 +89,29 @@ test.describe('Notification subscriptions — REST CRUD', () => {
 		const final = await request.get('/index.php/apps/openregister/api/notification-subscriptions')
 		const finalBody = await final.json()
 		const stillThere = (finalBody.results as Array<{ registerId: number }>)
-			.some(s => s.registerId === 999999)
+			.some(s => s.registerId === registerId)
 		expect(stillThere, 'cleanup left no trace').toBe(false)
 	})
 })
 
 test.describe('Object listing — envelope shape', () => {
 	test('GET listing on register/schema returns the standard envelope', async ({ request }) => {
-		const response = await request.get('/index.php/apps/openregister/api/objects/1/1?_limit=1')
+		// Resolve a real register + schema to avoid 404 when register id 1 doesn't exist.
+		const regResp = await request.get('/index.php/apps/openregister/api/registers?_limit=1', {
+			headers: { Accept: 'application/json' },
+		})
+		expect(regResp.status()).toBe(200)
+		const regBody = await regResp.json()
+		const reg = (regBody.results ?? [])[0]
+		if (!reg || !reg.schemas?.[0]) {
+			test.skip(true, 'no register+schema available for listing test')
+		}
+		const registerId: number = reg.id
+		const schemaId: number = reg.schemas[0]
+
+		const response = await request.get(
+			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}?_limit=1`,
+		)
 		expect(response.status()).toBe(200)
 		const body = await response.json()
 		expect(body).toHaveProperty('results')
@@ -94,8 +121,20 @@ test.describe('Object listing — envelope shape', () => {
 	})
 
 	test('Geo bbox parameter is accepted on the listing path', async ({ request }) => {
+		// Resolve real register + schema for the geo bbox test.
+		const regResp = await request.get('/index.php/apps/openregister/api/registers?_limit=1', {
+			headers: { Accept: 'application/json' },
+		})
+		const regBody = await regResp.json()
+		const reg = (regBody.results ?? [])[0]
+		if (!reg || !reg.schemas?.[0]) {
+			test.skip(true, 'no register+schema for geo bbox test')
+		}
+		const registerId: number = reg.id
+		const schemaId: number = reg.schemas[0]
+
 		const response = await request.get(
-			'/index.php/apps/openregister/api/objects/1/1?geo.bbox=5.10,52.05,5.15,52.10&_limit=1',
+			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}?geo.bbox=5.10,52.05,5.15,52.10&_limit=1`,
 		)
 		// 200 (filter applied or no-op) or 4xx (validation rejection) —
 		// both are valid wire-level outcomes; we MUST NOT 5xx.
