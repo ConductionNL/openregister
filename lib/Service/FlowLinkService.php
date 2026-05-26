@@ -243,10 +243,10 @@ class FlowLinkService
                     // The flow_operations row doesn't carry an `enabled`
                     // flag (operations are always "live" once configured);
                     // we just surface that the row still exists.
-                    $row['enabled']        = true;
-                    $row['events']         = $this->decodeJsonField($opRow['events'] ?? null);
-                    $row['checks']         = $this->decodeJsonField($opRow['checks'] ?? null);
-                    $row['operation']      = (string) ($opRow['operation'] ?? '');
+                    $row['enabled']   = true;
+                    $row['events']    = $this->decodeJsonField($opRow['events'] ?? null);
+                    $row['checks']    = $this->decodeJsonField($opRow['checks'] ?? null);
+                    $row['operation'] = (string) ($opRow['operation'] ?? '');
                 } else {
                     // Operation deleted in NC Flow — flag the link as
                     // stale by setting enabled=false.
@@ -254,8 +254,8 @@ class FlowLinkService
                 }
             }
 
-            $row['url']  = '/index.php/settings/admin/workflow#'.($row['operationId'] ?? '');
-            $results[]   = $row;
+            $row['url'] = '/index.php/settings/admin/workflow#'.($row['operationId'] ?? '');
+            $results[]  = $row;
         }//end foreach
 
         return $results;
@@ -274,7 +274,7 @@ class FlowLinkService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
-    public function getAvailableOperations(?string $search = null): array
+    public function getAvailableOperations(?string $search=null): array
     {
         if ($this->isCurrentUserAdmin() === false) {
             return [];
@@ -305,14 +305,14 @@ class FlowLinkService
         $out = [];
         foreach ($rows as $row) {
             $out[] = [
-                'id'         => (int) ($row['id'] ?? 0),
-                'name'       => (string) ($row['name'] ?? ''),
-                'class'      => (string) ($row['class'] ?? ''),
-                'entity'     => (string) ($row['entity'] ?? ''),
-                'operation'  => (string) ($row['operation'] ?? ''),
-                'events'     => $this->decodeJsonField($row['events'] ?? null),
-                'checks'     => $this->decodeJsonField($row['checks'] ?? null),
-                'enabled'    => true,
+                'id'        => (int) ($row['id'] ?? 0),
+                'name'      => (string) ($row['name'] ?? ''),
+                'class'     => (string) ($row['class'] ?? ''),
+                'entity'    => (string) ($row['entity'] ?? ''),
+                'operation' => (string) ($row['operation'] ?? ''),
+                'events'    => $this->decodeJsonField($row['events'] ?? null),
+                'checks'    => $this->decodeJsonField($row['checks'] ?? null),
+                'enabled'   => true,
             ];
         }
 

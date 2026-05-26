@@ -54,7 +54,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes mapper +
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes mapper +
  *     Deck's CardService/BoardService/StackService + user mgmt. Each
  *     dependency is required.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Defensive try/catch

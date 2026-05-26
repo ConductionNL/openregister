@@ -68,7 +68,7 @@ class FilesSidebarListener implements IEventListener
             return;
         }
 
-        $jsPath = __DIR__ . '/../../js/openregister-filesSidebar.js';
+        $jsPath = __DIR__.'/../../js/openregister-filesSidebar.js';
         if (file_exists($jsPath) === true) {
             Util::addScript('openregister', 'openregister-filesSidebar');
         }

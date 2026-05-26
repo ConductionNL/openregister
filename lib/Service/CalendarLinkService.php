@@ -49,11 +49,10 @@ use Throwable;
  */
 class CalendarLinkService
 {
-
     /**
      * Constructor.
      *
-     * @param CalendarLinkMapper   $linkMapper          Link-table mapper.
+     * @param CalendarLinkMapper   $linkMapper           Link-table mapper.
      * @param CalendarEventService $calendarEventService Legacy CalDAV-property service.
      * @param CalDavBackend        $calDavBackend        CalDAV backend for direct picker queries.
      * @param IUserSession         $userSession          User session.
@@ -138,10 +137,10 @@ class CalendarLinkService
      * to {@see CalendarEventService::createEvent()} then mirrors the
      * linkage in the link table with `taggedWithXor=true`.
      *
-     * @param string             $objectUuid Object UUID.
-     * @param int                $registerId Register id.
-     * @param int                $schemaId   Schema id.
-     * @param array<string,mixed> $eventData Event data (summary, dtstart, dtend, location, ...).
+     * @param string              $objectUuid Object UUID.
+     * @param int                 $registerId Register id.
+     * @param int                 $schemaId   Schema id.
+     * @param array<string,mixed> $eventData  Event data (summary, dtstart, dtend, location, ...).
      *
      * @return CalendarLink The persisted link row.
      *
@@ -284,7 +283,7 @@ class CalendarLinkService
                     'Legacy X-OR unlink fallback failed for event '.$eventUid.': '.$e->getMessage()
                 );
             }
-        }
+        }//end if
     }//end unlinkEvent()
 
     /**
@@ -312,8 +311,8 @@ class CalendarLinkService
 
         // 1. Link-table rows
         foreach ($this->linkMapper->findByObjectUuid(objectUuid: $objectUuid) as $link) {
-            $key          = $link->getCalendarUri().'|'.$link->getEventUid();
-            $payload      = $link->jsonSerialize();
+            $key     = $link->getCalendarUri().'|'.$link->getEventUid();
+            $payload = $link->jsonSerialize();
             $payload['source'] = 'link-table';
             $merged[$key]      = $payload;
         }
@@ -328,14 +327,14 @@ class CalendarLinkService
             $xorEvents = [];
         }
 
-        $userId       = $this->userSession->getUser()?->getUID();
-        $calendarMap  = [];
+        $userId      = $this->userSession->getUser()?->getUID();
+        $calendarMap = [];
         if ($userId !== null) {
             $calendarMap = $this->buildCalendarMapForUser(userId: $userId);
         }
 
         foreach ($xorEvents as $event) {
-            $eventUid    = (string) ($event['uid'] ?? '');
+            $eventUid = (string) ($event['uid'] ?? '');
             if ($eventUid === '') {
                 continue;
             }
@@ -354,6 +353,7 @@ class CalendarLinkService
                         $merged[$key][$field] = $event[$field];
                     }
                 }
+
                 continue;
             }
 
@@ -365,16 +365,17 @@ class CalendarLinkService
                     break;
                 }
             }
+
             if ($fallbackKey !== null) {
                 $merged[$fallbackKey]['source'] = 'both';
                 continue;
             }
 
-            $payload                = $event;
-            $payload['source']      = 'xor-only';
+            $payload           = $event;
+            $payload['source'] = 'xor-only';
             $payload['calendarUri'] = $calendarUri;
             $merged[$key]           = $payload;
-        }
+        }//end foreach
 
         return array_values($merged);
     }//end getLinkedEvents()
@@ -408,9 +409,7 @@ class CalendarLinkService
                 'id'          => (int) $calendar['id'],
                 'uri'         => (string) $calendar['uri'],
                 'displayName' => (string) ($calendar['{DAV:}displayname'] ?? $calendar['uri']),
-                'color'       => isset($calendar['{http://apple.com/ns/ical/}calendar-color'])
-                    ? (string) $calendar['{http://apple.com/ns/ical/}calendar-color']
-                    : null,
+                'color'       => isset($calendar['{http://apple.com/ns/ical/}calendar-color']) ? (string) $calendar['{http://apple.com/ns/ical/}calendar-color'] : null,
             ];
         }
 
@@ -430,7 +429,7 @@ class CalendarLinkService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
-    public function getEventsForCalendar(string $calendarUri, ?int $limit = 100, ?DateTimeInterface $after = null): array
+    public function getEventsForCalendar(string $calendarUri, ?int $limit=100, ?DateTimeInterface $after=null): array
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -475,7 +474,7 @@ class CalendarLinkService
                     continue;
                 }
 
-                $uid    = isset($vevent->UID) ? (string) $vevent->UID : null;
+                $uid = isset($vevent->UID) ? (string) $vevent->UID : null;
                 if ($uid === null) {
                     continue;
                 }
@@ -504,15 +503,18 @@ class CalendarLinkService
                     'Failed to parse calendar event for picker: '.$e->getMessage(),
                     ['uri' => $object['uri']]
                 );
-            }
+            }//end try
         }//end foreach
 
         // Sort ascending by dtstart, nulls last.
-        usort($results, static function (array $a, array $b): int {
-            $ta = $a['dtstart'] !== null ? strtotime((string) $a['dtstart']) : PHP_INT_MAX;
-            $tb = $b['dtstart'] !== null ? strtotime((string) $b['dtstart']) : PHP_INT_MAX;
-            return $ta <=> $tb;
-        });
+        usort(
+                $results,
+                static function (array $a, array $b): int {
+                    $ta = $a['dtstart'] !== null ? strtotime((string) $a['dtstart']) : PHP_INT_MAX;
+                    $tb = $b['dtstart'] !== null ? strtotime((string) $b['dtstart']) : PHP_INT_MAX;
+                    return $ta <=> $tb;
+                }
+                );
 
         if ($limit !== null && $limit > 0) {
             $results = array_slice($results, 0, $limit);
@@ -563,6 +565,7 @@ class CalendarLinkService
                 if ($vevent === null) {
                     continue;
                 }
+
                 if (isset($vevent->UID) === false || (string) $vevent->UID !== $eventUid) {
                     continue;
                 }
@@ -571,6 +574,7 @@ class CalendarLinkService
                 if (isset($vevent->DTSTART) === true) {
                     $dtstart = DateTime::createFromInterface($vevent->DTSTART->getDateTime());
                 }
+
                 $dtend = null;
                 if (isset($vevent->DTEND) === true) {
                     $dtend = DateTime::createFromInterface($vevent->DTEND->getDateTime());
@@ -588,8 +592,8 @@ class CalendarLinkService
                 $this->logger->warning(
                     'Failed to parse VEVENT while locating event '.$eventUid.': '.$e->getMessage()
                 );
-            }
-        }
+            }//end try
+        }//end foreach
 
         return null;
     }//end locateEventOnCalendar()
@@ -654,6 +658,7 @@ class CalendarLinkService
                     return true;
                 }
             }
+
             return false;
         }
 

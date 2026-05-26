@@ -225,7 +225,7 @@ class CalendarProvider extends AbstractIntegrationProvider
                 ]
             );
             return [];
-        }
+        }//end try
     }//end list()
 
     /**

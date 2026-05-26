@@ -202,7 +202,7 @@ class PollLinksController extends Controller
                 foreach ($rawOptions as $option) {
                     if (is_string($option) === true) {
                         $options[] = $option;
-                    } elseif (is_array($option) === true) {
+                    } else if (is_array($option) === true) {
                         $options[] = (string) ($option['text'] ?? $option['label'] ?? '');
                     }
                 }

@@ -55,7 +55,7 @@ class TalkProvider extends AbstractIntegrationProvider
         private IAppManager $appManager,
         private IUserSession $userSession,
         private IL10N $l10n,
-        private ?TalkLinkMapper $talkLinkMapper = null,
+        private ?TalkLinkMapper $talkLinkMapper=null,
     ) {
     }//end __construct()
 
@@ -201,10 +201,10 @@ class TalkProvider extends AbstractIntegrationProvider
                 $lastActivity = $room->getLastActivity()->getTimestamp();
             }
 
-            $type             = method_exists($room, 'getType') === true ? (int) $room->getType() : null;
-            $token            = method_exists($room, 'getToken') === true ? (string) $room->getToken() : '';
-            $title            = $this->stripMarker($name, $marker);
-            $subtitle         = $this->buildSubtitle($room, $type);
+            $type     = method_exists($room, 'getType') === true ? (int) $room->getType() : null;
+            $token    = method_exists($room, 'getToken') === true ? (string) $room->getToken() : '';
+            $title    = $this->stripMarker($name, $marker);
+            $subtitle = $this->buildSubtitle($room, $type);
             $participantCount = $this->resolveParticipantCount($participantService, $room);
             $lastMessage      = $this->buildLastMessage($room);
 
@@ -378,7 +378,7 @@ class TalkProvider extends AbstractIntegrationProvider
         foreach ($links as $link) {
             $serialized = $link->jsonSerialize();
 
-            $lastMessage = $serialized['lastMessage'] ?? null;
+            $lastMessage     = $serialized['lastMessage'] ?? null;
             $lastActivityIso = $serialized['lastActivity'] ?? null;
             $lastActivityTs  = null;
             if ($lastActivityIso !== null) {
@@ -403,7 +403,7 @@ class TalkProvider extends AbstractIntegrationProvider
                 'lastActivity'     => $lastActivityTs,
                 'url'              => $serialized['url'] ?? ($token !== '' ? '/index.php/call/'.$token : null),
             ];
-        }
+        }//end foreach
 
         return $out;
     }//end mapLinks()

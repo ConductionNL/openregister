@@ -154,7 +154,7 @@ class CalendarLink extends Entity implements JsonSerializable
     /**
      * Whether the VEVENT also carries X-OPENREGISTER-* properties.
      *
-     * @var bool|null
+     * @var boolean|null
      */
     protected ?bool $taggedWithXor = false;
 

@@ -229,7 +229,6 @@ class ActivityProvider extends AbstractIntegrationProvider
         );
     }//end applyFilters()
 
-
     /**
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-4
      */

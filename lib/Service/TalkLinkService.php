@@ -58,7 +58,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes mapper +
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes mapper +
  *     Talk's Manager/RoomService/ParticipantService + user session +
  *     l10n + container. Each dependency is required for one of the
  *     Tier-2 flows (link, create, refresh, subtitle).
@@ -72,7 +72,8 @@ class TalkLinkService
 {
     private const REQUIRED_APP = 'spreed';
     private const ROOM_TAG     = '[or:';
-    private const STALE_AFTER  = 300; // 5 minutes in seconds.
+    private const STALE_AFTER  = 300;
+    // 5 minutes in seconds.
 
     /**
      * Constructor.
@@ -240,10 +241,10 @@ class TalkLinkService
                     // Stale link — keep cached row as-is.
                     $this->logger->debug('Stale talk link for room '.$link->getRoomToken().': '.$e->getMessage());
                 }
-            }
+            }//end if
 
             $results[] = $row;
-        }
+        }//end foreach
 
         return $results;
     }//end getLinkedRooms()
@@ -284,7 +285,7 @@ class TalkLinkService
         int $schemaId,
         string $roomName,
         ?string $description,
-        int $roomType = 2
+        int $roomType=2
     ): TalkLink {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -398,7 +399,7 @@ class TalkLinkService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
-    public function getAvailableRoomsForUser(?string $search = null): array
+    public function getAvailableRoomsForUser(?string $search=null): array
     {
         if ($this->isTalkAvailable() === false) {
             return [];
@@ -426,7 +427,7 @@ class TalkLinkService
         }
 
         $participantService = $this->resolveParticipantService();
-        $needle             = $search !== null ? mb_strtolower(trim($search)) : null;
+        $needle = $search !== null ? mb_strtolower(trim($search)) : null;
 
         $out = [];
         foreach ($rooms as $room) {
@@ -690,7 +691,7 @@ class TalkLinkService
 
         $subtitle = $this->buildSubtitle($room, $type);
 
-        $participantCount = null;
+        $participantCount   = null;
         $participantService = $this->resolveParticipantService();
         if ($participantService !== null && method_exists($participantService, 'getNumberOfActors') === true) {
             try {

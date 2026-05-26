@@ -51,7 +51,6 @@ use OCP\IRequest;
  */
 class EmailLinksController extends Controller
 {
-
     /**
      * Constructor.
      *

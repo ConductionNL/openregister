@@ -60,7 +60,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20260525100000 extends SimpleMigrationStep
 {
-
     /**
      * Change the database schema.
      *

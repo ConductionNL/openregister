@@ -61,7 +61,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes mapper + DB
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes mapper + DB
  *     + IAppManager + IUserSession + logger. Each dependency is
  *     required.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Direct table writes
@@ -210,7 +210,7 @@ class PollLinkService
                 $pollRow = $this->fetchPollRow($pollId);
 
                 if ($pollRow !== null) {
-                    $deadline = $this->expireToDateTime((int) ($pollRow['expire'] ?? 0));
+                    $deadline           = $this->expireToDateTime((int) ($pollRow['expire'] ?? 0));
                     $row['pollTitle']   = (string) ($pollRow['title'] ?? $row['pollTitle']);
                     $row['pollType']    = (string) ($pollRow['type'] ?? $row['pollType']);
                     $row['deadline']    = $deadline?->format(DateTime::ATOM);
@@ -221,7 +221,7 @@ class PollLinkService
             }
 
             $row['url'] = '/index.php/apps/polls/vote/'.($row['pollId'] ?? '');
-            $results[] = $row;
+            $results[]  = $row;
         }//end foreach
 
         return $results;
@@ -239,7 +239,7 @@ class PollLinkService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
-    public function getAvailablePolls(?string $search = null): array
+    public function getAvailablePolls(?string $search=null): array
     {
         if ($this->isPollsAvailable() === false) {
             return [];
@@ -339,32 +339,34 @@ class PollLinkService
         // Normalise the type — accept legacy short forms.
         $normalisedType = $this->normalisePollType($type);
 
-        $uid     = $user->getUID();
-        $now     = time();
-        $expire  = ($deadline !== null) ? $deadline->getTimestamp() : 0;
+        $uid    = $user->getUID();
+        $now    = time();
+        $expire = ($deadline !== null) ? $deadline->getTimestamp() : 0;
 
         try {
             $insert = $this->db->getQueryBuilder();
             $insert->insert('polls_polls')
-                ->values([
-                    'type'            => $insert->createNamedParameter($normalisedType),
-                    'title'           => $insert->createNamedParameter(mb_substr($title, 0, 128)),
-                    'description'     => $insert->createNamedParameter($description),
-                    'owner'           => $insert->createNamedParameter($uid),
-                    'created'         => $insert->createNamedParameter($now, IQueryBuilder::PARAM_INT),
-                    'expire'          => $insert->createNamedParameter($expire, IQueryBuilder::PARAM_INT),
-                    'deleted'         => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                    'access'          => $insert->createNamedParameter('private'),
-                    'anonymous'       => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                    'allow_maybe'     => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-                    'allow_proposals' => $insert->createNamedParameter('disallow'),
-                    'show_results'    => $insert->createNamedParameter('always'),
-                    'admin_access'    => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                    'allow_comment'   => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-                    'hide_booked_up'  => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-                    'use_no'          => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-                    'voting_variant'  => $insert->createNamedParameter('simple'),
-                ]);
+                ->values(
+                        [
+                            'type'            => $insert->createNamedParameter($normalisedType),
+                            'title'           => $insert->createNamedParameter(mb_substr($title, 0, 128)),
+                            'description'     => $insert->createNamedParameter($description),
+                            'owner'           => $insert->createNamedParameter($uid),
+                            'created'         => $insert->createNamedParameter($now, IQueryBuilder::PARAM_INT),
+                            'expire'          => $insert->createNamedParameter($expire, IQueryBuilder::PARAM_INT),
+                            'deleted'         => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                            'access'          => $insert->createNamedParameter('private'),
+                            'anonymous'       => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                            'allow_maybe'     => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
+                            'allow_proposals' => $insert->createNamedParameter('disallow'),
+                            'show_results'    => $insert->createNamedParameter('always'),
+                            'admin_access'    => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                            'allow_comment'   => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
+                            'hide_booked_up'  => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
+                            'use_no'          => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
+                            'voting_variant'  => $insert->createNamedParameter('simple'),
+                        ]
+                        );
             $insert->executeStatement();
 
             $pollId = (int) $this->db->lastInsertId('oc_polls_polls_id_seq');
@@ -435,19 +437,21 @@ class PollLinkService
             $timestamp = ($type === 'datePoll' ? strtotime($text) ?: 0 : 0);
 
             $qb = $this->db->getQueryBuilder();
-            $qb->insert('polls_options')->values([
-                'poll_id'          => $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT),
-                'poll_option_text' => $qb->createNamedParameter(mb_substr($text, 0, 1024)),
-                'poll_option_hash' => $qb->createNamedParameter($hash),
-                'order'            => $qb->createNamedParameter($order, IQueryBuilder::PARAM_INT),
-                'timestamp'        => $qb->createNamedParameter($timestamp, IQueryBuilder::PARAM_INT),
-                'duration'         => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                'confirmed'        => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                'owner'            => $qb->createNamedParameter($owner),
-                'released'         => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                'deleted'          => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                'created'          => $qb->createNamedParameter($now, IQueryBuilder::PARAM_INT),
-            ]);
+            $qb->insert('polls_options')->values(
+                    [
+                        'poll_id'          => $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT),
+                        'poll_option_text' => $qb->createNamedParameter(mb_substr($text, 0, 1024)),
+                        'poll_option_hash' => $qb->createNamedParameter($hash),
+                        'order'            => $qb->createNamedParameter($order, IQueryBuilder::PARAM_INT),
+                        'timestamp'        => $qb->createNamedParameter($timestamp, IQueryBuilder::PARAM_INT),
+                        'duration'         => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                        'confirmed'        => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                        'owner'            => $qb->createNamedParameter($owner),
+                        'released'         => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                        'deleted'          => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                        'created'          => $qb->createNamedParameter($now, IQueryBuilder::PARAM_INT),
+                    ]
+                    );
             $qb->executeStatement();
         }//end foreach
     }//end insertPollOptions()
