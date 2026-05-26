@@ -6,6 +6,12 @@
     "docsUrl": "openspec/specs/activity-provider/spec.md"
   },
   {
+    "slug": "ai-mcp",
+    "title": "AI MCP — LLPhant Tool Bridge",
+    "summary": "OpenRegister exposes Model Context Protocol (MCP) tools to LLPhant-driven chat agents through two cooperating mechanisms: (1) an event-driven `ToolRegistry` that lets every installed Nextcloud app contribute LLPhant `ToolInterface` instances to the chat agent's tool-loop, and (2) an `McpProviderBridge` adapter that lifts `IMcpToolProvider` implementations (the per-app MCP plugin contract) into LLPhant function descriptors. The bridge handles the impedance mismatch between MCP's dot-namespaced tool ids and LLPhant/OpenAI/Ollama function-name constraints (no dots), and collapses JSON-Schema nullable types into the scalar strings LLPhant's `Parameter` accepts.",
+    "docsUrl": "openspec/specs/ai-mcp/spec.md"
+  },
+  {
     "slug": "approval-workflow",
     "title": "Approval Workflow",
     "summary": "Approval Workflow provides multi-step, role-gated approval chains for OpenRegister objects. Administrators configure named chains with ordered steps, each bound to a Nextcloud group (the \"role\"). When an object enters a chain, one `ApprovalStep` record per chain step is created — step 1 starts as `pending`, all others as `waiting`. Authorised users approve or reject the pending step; on approval the next waiting step is automatically advanced to `pending`. Each decision is persisted to the workflow execution history.",
@@ -72,10 +78,22 @@
     "docsUrl": "openspec/specs/deprecate-published-metadata/spec.md"
   },
   {
+    "slug": "entity-management-modals",
+    "title": "Entity Management Modals",
+    "summary": "Describes the user-facing modal dialog components that mediate create / read / update / delete and bulk operations on first-class register entities (registers, schemas, objects, agents, applications, organisations, configurations, endpoints, sources, views, webhooks, soft-deleted records, audit-trail entries, files). Every register entity in the OpenRegister UI is mutated through a small family of modal Vue components (`Edit{Entity}.vue`, `Delete{Entity}.vue`, `View{Entity}.vue`, plus per-entity bulk variants) that share a consistent open / load / submit / close / error-handling lifecycle driven by the `navigationStore` dialog state and the corresponding entity store.",
+    "docsUrl": "openspec/specs/entity-management-modals/spec.md"
+  },
+  {
     "slug": "event-driven-architecture",
     "title": "Event-Driven Architecture",
     "summary": "OpenRegister implements a comprehensive event-driven architecture built on Nextcloud's `IEventDispatcher` (OCP\\EventDispatcher\\IEventDispatcher) that enables loose coupling between internal components and external systems. Every mutation across all entity types -- Objects, Registers, Schemas, Sources, Configurations, Views, Agents, Applications, Conversations, and Organisations -- dispatches a typed PHP event that can be consumed by any Nextcloud app, delivered to external systems via webhooks in CloudEvents v1.0 format, or pushed to real-time subscribers via GraphQL SSE. The architecture distinguishes between pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) that implement `StoppableEventInterface` to allow hooks to reject or modify operations, and post-mutation events (ObjectCreatedEvent, ObjectUpdatedEvent, ObjectDeletedEvent) that notify downstream systems after persistence is complete.",
     "docsUrl": "openspec/specs/event-driven-architecture/spec.md"
+  },
+  {
+    "slug": "files-sidebar-tabs",
+    "title": "Filter Sidebar Tabs",
+    "summary": "Provide a consistent filter-sidebar UX across OpenRegister's main list views (Entities, Webhooks, Dashboard, Deleted). Each filter sidebar is a Vue single-file component that owns a small set of filter controls (search input, register/schema pickers, status pickers, date ranges) and communicates its state either through `update:*` events to a parent list view (Entities, Webhooks) or through the global Pinia register/schema/deleted stores plus the router query string (Dashboard, Deleted).",
+    "docsUrl": "openspec/specs/files-sidebar-tabs/spec.md"
   },
   {
     "slug": "graphql-api",
@@ -138,6 +156,12 @@
     "docsUrl": "openspec/specs/openapi-generation/spec.md"
   },
   {
+    "slug": "platform-administration-modals",
+    "title": "Platform Administration Modals",
+    "summary": "Describes the administrator-facing modal dialogs that configure OpenRegister's platform-level infrastructure (SOLR search backend, LLM provider wiring, configuration sets, collection assignments, vectorization, faceting, file management) and that drive long-running operational tasks (cache clear, index warmup, mass validation, index inspection, SOLR setup). Unlike the entity-management modals — which mutate user data via per-entity stores — these modals read and write platform settings via `/api/settings/*` REST endpoints and dispatch background operational jobs.",
+    "docsUrl": "openspec/specs/platform-administration-modals/spec.md"
+  },
+  {
     "slug": "production-observability",
     "title": "Production Observability",
     "summary": "Provide production-grade observability for OpenRegister deployments through Prometheus metrics, structured logging, health/readiness endpoints, and audit-compliant monitoring. This capability enables operations teams to monitor application health, track SLA compliance, detect anomalies in real-time, and satisfy BIO (Baseline Informatiebeveiliging Overheid) audit logging requirements for Dutch government deployments.",
@@ -186,10 +210,28 @@
     "docsUrl": "openspec/specs/row-field-level-security/spec.md"
   },
   {
+    "slug": "saved-search-views",
+    "title": "Saved Search Views",
+    "summary": "Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent.",
+    "docsUrl": "openspec/specs/saved-search-views/spec.md"
+  },
+  {
     "slug": "schema-hooks",
     "title": "Schema Hooks",
     "summary": "Schema hooks enable per-schema configuration of workflow callbacks that fire on object lifecycle events, allowing external systems to validate, enrich, transform, or reject data before or after persistence. Hooks use CloudEvents 1.0 structured content mode for payloads, support synchronous (request-response) and asynchronous (fire-and-forget) delivery modes, and provide configurable failure behavior (reject, allow, flag, queue) so administrators can balance data integrity against availability. The hook system is engine-agnostic through the `WorkflowEngineInterface` abstraction, currently supporting n8n and Windmill adapters, and integrates deeply with Nextcloud's PSR-14 event dispatcher via `StoppableEventInterface` for pre-mutation rejection.",
     "docsUrl": "openspec/specs/schema-hooks/spec.md"
+  },
+  {
+    "slug": "search-index",
+    "title": "Search Index",
+    "summary": "OpenRegister provides full-text search, faceted browsing, and bulk re-indexing over its object store via a pluggable search backend (Solr today, Elasticsearch in parallel, with the `SearchBackendInterface` keeping the contract backend-agnostic). The `search-index` capability covers everything from the high-level `IndexService` facade down through the Solr-specific primitives (`SolrCollectionManager`, `SolrDocumentIndexer`, `SolrQueryExecutor`, `SolrFacetProcessor`, `SolrHttpClient`), the schema/document builders (`SchemaHandler`, `DocumentBuilder`, `SchemaMapper`), the bulk-indexing driver (`BulkIndexer`), the configuration plumbing (`ConfigurationHandler`), and the tenant-collection setup orchestrator (`SetupHandler`).",
+    "docsUrl": "openspec/specs/search-index/spec.md"
+  },
+  {
+    "slug": "tmlo-metadata",
+    "title": "tmlo-metadata",
+    "summary": "Foundation capability for TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden) archival metadata on OpenRegister objects. Owns the cross-cutting contract that the sibling specs (`tmlo-metadata-schema`, `tmlo-auto-populate`, `tmlo-export`, `tmlo-query-api`) compose against:",
+    "docsUrl": "openspec/specs/tmlo-metadata/spec.md"
   },
   {
     "slug": "urn-resource-addressing",
