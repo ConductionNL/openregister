@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class CalendarProviderTest extends TestCase
 {
@@ -47,6 +48,11 @@ class CalendarProviderTest extends TestCase
         return $l10n;
     }
 
+    private function buildLogger(): LoggerInterface
+    {
+        return $this->createMock(LoggerInterface::class);
+    }
+
     public function testMetadataGetters(): void
     {
         $provider = new CalendarProvider(
@@ -54,6 +60,7 @@ class CalendarProviderTest extends TestCase
             $this->createMock(CalendarLinkService::class),
             $this->createMock(IAppManager::class),
             $this->buildL10n(),
+            $this->buildLogger(),
         );
 
         $this->assertSame('calendar', $provider->getId());
@@ -79,6 +86,7 @@ class CalendarProviderTest extends TestCase
             $link,
             $this->createMock(IAppManager::class),
             $this->buildL10n(),
+            $this->buildLogger(),
         );
 
         $result = $provider->list('r', 's', 'obj-1');
@@ -101,6 +109,7 @@ class CalendarProviderTest extends TestCase
             $linkSvc,
             $this->createMock(IAppManager::class),
             $this->buildL10n(),
+            $this->buildLogger(),
         );
 
         $provider->delete('r', 's', 'obj-1', '7/event.ics');
@@ -121,6 +130,7 @@ class CalendarProviderTest extends TestCase
             $linkSvc,
             $this->createMock(IAppManager::class),
             $this->buildL10n(),
+            $this->buildLogger(),
         );
 
         $provider->delete('r', 's', 'obj-1', 'ev-uid');
@@ -136,6 +146,7 @@ class CalendarProviderTest extends TestCase
             $this->createMock(CalendarLinkService::class),
             $appManager,
             $this->buildL10n(),
+            $this->buildLogger(),
         );
 
         $this->assertFalse($provider->isEnabled());

@@ -165,11 +165,11 @@ class NotifierTest extends TestCase
             ->with('openregister', 'en')
             ->willReturn($l10n);
 
-        try {
-            $this->notifier->prepare($notification, 'en');
-        } catch (\Error $e) {
-            // Expected: named param mismatch with IL10N mock.
-            $this->assertTrue(true);
-        }
+        // prepare() returns the same INotification instance after the
+        // configuration_update_available branch fills in parsed
+        // subject/message/icon. The mock returns self from those setters,
+        // so a successful prepare yields the same notification back.
+        $result = $this->notifier->prepare($notification, 'en');
+        $this->assertSame($notification, $result);
     }
 }

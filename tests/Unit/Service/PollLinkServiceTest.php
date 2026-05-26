@@ -153,6 +153,10 @@ class PollLinkServiceTest extends TestCase
 
     public function testGetLinkedPollsEmpty(): void
     {
+        // Polls app not enabled → getLinkedPolls short-circuits to [].
+        // isPollsAvailable() returns bool, so the mock must be stubbed
+        // (an unconfigured mock returns null and violates the type).
+        $this->appManager->method('isEnabledForUser')->with('polls')->willReturn(false);
         $this->mapper->method('findByObjectUuid')->willReturn([]);
 
         $this->assertSame([], $this->service->getLinkedPolls('nonexistent'));

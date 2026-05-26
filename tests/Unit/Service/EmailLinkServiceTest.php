@@ -173,9 +173,12 @@ class EmailLinkServiceTest extends TestCase
             ->with('uuid', 123)
             ->willReturn(1);
 
-        // Should not throw.
+        // Should not throw. The mapper ->expects($this->once()) above is
+        // the behavioural assertion (verified at tear-down); the explicit
+        // assertion below documents the "completes without exception"
+        // contract and keeps the test from being flagged as risky.
         $this->service->unlinkEmail('uuid', 123);
-        $this->addToAssertionSuccessCount(1);
+        $this->addToAssertionCount(1);
     }
 
     public function testGetLinkedEmailsReturnsPagedShape(): void

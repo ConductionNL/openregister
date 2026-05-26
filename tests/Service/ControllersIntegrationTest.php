@@ -47,7 +47,6 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\UploadService;
-use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\ViewService;
@@ -247,7 +246,6 @@ class ControllersIntegrationTest extends TestCase
             \OC::$server->get(IAppConfig::class),
             $this->schemaMapper,
             $this->objectMapper,
-            \OC::$server->get(DownloadService::class),
             \OC::$server->get(UploadService::class),
             \OC::$server->get(AuditTrailMapper::class),
             \OC::$server->get(OrganisationService::class),

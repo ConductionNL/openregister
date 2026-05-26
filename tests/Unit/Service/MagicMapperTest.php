@@ -577,7 +577,9 @@ class MagicMapperTest extends TestCase
             ],
             'object_property' => [
                 'propertyConfig' => ['type' => 'object'],
-                'expectedColumn' => ['type' => 'json', 'nullable' => true]
+                // Object-typed properties use json_ordered to preserve
+                // JSON key order on writes (see #1720 / commit 11576838a).
+                'expectedColumn' => ['type' => 'json_ordered', 'nullable' => true]
             ]
         ];
 
