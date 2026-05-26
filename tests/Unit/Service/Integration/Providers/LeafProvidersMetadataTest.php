@@ -453,7 +453,10 @@ class LeafProvidersMetadataTest extends TestCase
         $this->assertSame('email', $provider->getId());
         $this->assertSame('Email', $provider->getIcon());
         $this->assertTrue($provider->isEnabled());
-        $this->assertSame([['id' => 9]], $provider->list('r', 's', 'obj'));
+        $this->assertSame(
+            ['items' => [['id' => 9]], 'total' => 1, 'nextCursor' => null],
+            $provider->list('r', 's', 'obj')
+        );
     }//end testEmailProviderMetadataAndDelegation()
 
     /**
@@ -525,11 +528,11 @@ class LeafProvidersMetadataTest extends TestCase
             'cospend'      => [CospendProvider::class, 'cospend', 'Costs', 'CurrencyEur', 'workflow', 'cospend', 'link-table'],
             'flow'         => [FlowProvider::class, 'flow', 'Automation', 'RobotOutline', 'workflow', 'workflowengine', 'link-table'],
             'forms'        => [FormsProvider::class, 'forms', 'Forms', 'ClipboardText', 'workflow', 'forms', 'link-table'],
-            'maps'         => [MapsProvider::class, 'maps', 'Location', 'MapMarker', 'docs', 'maps', 'link-table'],
+            'maps'         => [MapsProvider::class, 'maps', 'Locations', 'MapMarker', 'docs', 'maps', 'link-table'],
             'photos'       => [PhotosProvider::class, 'photos', 'Photos', 'Image', 'docs', 'photos', 'link-table'],
             'polls'        => [PollsProvider::class, 'polls', 'Polls', 'Poll', 'workflow', 'polls', 'link-table'],
             'talk'         => [TalkProvider::class, 'talk', 'Chat', 'ChatOutline', 'comms', 'spreed', 'link-table'],
-            'time-tracker' => [TimeProvider::class, 'time-tracker', 'Time', 'Clock', 'workflow', 'timemanager', 'link-table'],
+            'time-tracker' => [TimeProvider::class, 'time-tracker', 'Time tracker', 'Clock', 'workflow', 'timemanager', 'link-table'],
         ];
     }//end greenfieldStubProvider()
 

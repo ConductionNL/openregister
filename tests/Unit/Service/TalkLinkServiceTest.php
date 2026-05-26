@@ -134,7 +134,9 @@ class TalkLinkServiceTest extends TestCase
     {
         $this->setupUser();
         $this->mapper->method('findByObjectAndRoom')->willReturn(null);
-        // appManager->isEnabledForUser('spreed') defaults to false here.
+        // Talk not enabled. isTalkAvailable() returns bool, so the mock
+        // must be stubbed (an unconfigured mock returns null → TypeError).
+        $this->appManager->method('isEnabledForUser')->with('spreed')->willReturn(false);
 
         // Either Talk isn't installed (→ 503 from the null Manager
         // guard) or the Manager throws when looking up the room
@@ -179,6 +181,9 @@ class TalkLinkServiceTest extends TestCase
         $link->setRoomName('Stub Room');
         $link->setRoomType(2);
 
+        // Talk unavailable: the serialised rows still carry the widened
+        // Tier-2 keys. Stub the bool-returning availability check.
+        $this->appManager->method('isEnabledForUser')->with('spreed')->willReturn(false);
         $this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
 
         $rows = $this->service->getLinkedRooms('abc-123');
@@ -199,6 +204,7 @@ class TalkLinkServiceTest extends TestCase
 
     public function testGetLinkedRoomsEmpty(): void
     {
+        $this->appManager->method('isEnabledForUser')->with('spreed')->willReturn(false);
         $this->mapper->method('findByObjectUuid')->willReturn([]);
 
         $this->assertSame([], $this->service->getLinkedRooms('nonexistent'));
@@ -230,6 +236,7 @@ class TalkLinkServiceTest extends TestCase
         $this->setupUser();
 
         // Talk unavailable → resolveManager returns null → 503.
+        $this->appManager->method('isEnabledForUser')->with('spreed')->willReturn(false);
         $this->expectException(Exception::class);
 
         try {
@@ -243,7 +250,8 @@ class TalkLinkServiceTest extends TestCase
 
     public function testGetAvailableRoomsForUserReturnsEmptyWhenTalkUnavailable(): void
     {
-        // appManager default false → isTalkAvailable false → empty.
+        // Talk not enabled → isTalkAvailable false → empty.
+        $this->appManager->method('isEnabledForUser')->with('spreed')->willReturn(false);
         $this->assertSame([], $this->service->getAvailableRoomsForUser());
         $this->assertSame([], $this->service->getAvailableRoomsForUser('search'));
     }

@@ -10,7 +10,6 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -42,7 +41,6 @@ class SchemasControllerTest extends TestCase
     private IAppConfig&MockObject $config;
     private SchemaMapper&MockObject $schemaMapper;
     private MagicMapper&MockObject $objectMapper;
-    private DownloadService&MockObject $downloadService;
     private UploadService&MockObject $uploadService;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private OrganisationService&MockObject $organisationService;
@@ -59,7 +57,6 @@ class SchemasControllerTest extends TestCase
         $this->config = $this->createMock(IAppConfig::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->objectMapper = $this->createMock(MagicMapper::class);
-        $this->downloadService = $this->createMock(DownloadService::class);
         $this->uploadService = $this->createMock(UploadService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
@@ -74,7 +71,6 @@ class SchemasControllerTest extends TestCase
             $this->config,
             $this->schemaMapper,
             $this->objectMapper,
-            $this->downloadService,
             $this->uploadService,
             $this->auditTrailMapper,
             $this->organisationService,

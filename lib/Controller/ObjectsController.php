@@ -3019,7 +3019,7 @@ class ObjectsController extends Controller
             // Find the register.
             $registerEntity = $this->registerMapper->find($register);
 
-            // Get optional schema for CSV (can be null, handler will auto-resolve).
+            // Get optional schema for CSV (can be null, Excel auto-resolves per sheet).
             $schemaId = $this->request->getParam(key: 'schema');
             $schema   = null;
             if ($schemaId !== null && $schemaId !== '') {
@@ -3031,18 +3031,49 @@ class ObjectsController extends Controller
             $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
             $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
             $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
+            $publish    = filter_var($this->request->getParam(key: 'publish', default: false), FILTER_VALIDATE_BOOLEAN);
+            $enrich     = filter_var($this->request->getParam(key: 'enrich', default: true), FILTER_VALIDATE_BOOLEAN);
 
-            // Use ObjectService delegation to ExportHandler.
-            $result = $this->objectService->importObjects(
-                _register: $registerEntity,
-                _uploadedFile: $uploadedFile,
-                _schema: $schema,
-                _validation: $validation,
-                _events: $events,
-                _rbac: $rbac,
-                _multitenancy: $multi,
-                _currentUser: $this->userSession->getUser()
-            );
+            // Determine the import type from the uploaded file extension.
+            $filename  = ($uploadedFile['name'] ?? '');
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+            // Route to the real ImportService. CSV requires a specific schema;
+            // Excel auto-resolves schemas per sheet.
+            if ($extension === 'csv') {
+                if ($schema === null) {
+                    return new JSONResponse(
+                        data: ['error' => 'Schema parameter is required for CSV imports.'],
+                        statusCode: 400
+                    );
+                }
+
+                $result = $this->importService->importFromCsv(
+                    filePath: $uploadedFile['tmp_name'],
+                    register: $registerEntity,
+                    schema: $schema,
+                    validation: $validation,
+                    events: $events,
+                    _rbac: $rbac,
+                    _multitenancy: $multi,
+                    publish: $publish,
+                    currentUser: $this->userSession->getUser(),
+                    enrich: $enrich
+                );
+            } else {
+                $result = $this->importService->importFromExcel(
+                    filePath: $uploadedFile['tmp_name'],
+                    register: $registerEntity,
+                    schema: $schema,
+                    validation: $validation,
+                    events: $events,
+                    _rbac: $rbac,
+                    _multitenancy: $multi,
+                    publish: $publish,
+                    currentUser: $this->userSession->getUser(),
+                    enrich: $enrich
+                );
+            }//end if
 
             return new JSONResponse(
                 data: [

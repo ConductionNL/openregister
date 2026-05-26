@@ -768,15 +768,17 @@ class ObjectsControllerTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue($register, 1);
 
+        // Excel upload routes through ImportService::importFromExcel
+        // (no schema param required — Excel auto-resolves per sheet).
         $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'import.csv',
-            'tmp_name' => '/tmp/import.csv',
+            'name' => 'import.xlsx',
+            'tmp_name' => '/tmp/import.xlsx',
             'size' => 1024,
         ]);
         $this->request->method('getParam')->willReturn(null);
 
         $this->registerMapper->method('find')->willReturn($register);
-        $this->objectService->method('importObjects')->willReturn([
+        $this->importService->expects($this->once())->method('importFromExcel')->willReturn([
             'imported' => 10,
             'failed' => 0,
         ]);
@@ -1130,7 +1132,10 @@ class ObjectsControllerTest extends TestCase
             'size' => 1024,
             'error' => 0,
         ]);
-        $this->request->method('getParam')->willReturn(null);
+        // CSV import requires a schema; provide one so the import proceeds.
+        $this->request->method('getParam')->willReturnMap([
+            ['schema', null, '5'],
+        ]);
 
         $register = new \OCA\OpenRegister\Db\Register();
         $ref = new \ReflectionClass($register);
@@ -1139,8 +1144,11 @@ class ObjectsControllerTest extends TestCase
         $prop->setValue($register, 1);
         $register->setTitle('Test Register');
 
+        $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
+
         $this->registerMapper->method('find')->willReturn($register);
-        $this->objectService->method('importObjects')->willReturn([
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->importService->expects($this->once())->method('importFromCsv')->willReturn([
             'created' => 5,
             'updated' => 2,
             'errors' => 0,
@@ -2653,9 +2661,16 @@ class ObjectsControllerTest extends TestCase
 
         $this->registerMapper->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
-        $this->objectService->method('importObjects')->willReturn([
-            'imported' => 8,
-        ]);
+        // CSV upload with explicit schema routes through importFromCsv,
+        // forwarding the resolved register + schema.
+        $this->importService->expects($this->once())
+            ->method('importFromCsv')
+            ->with(
+                $this->equalTo('/tmp/data.csv'),
+                $this->identicalTo($register),
+                $this->identicalTo($schema)
+            )
+            ->willReturn(['imported' => 8]);
 
         $user = $this->createMock(\OCP\IUser::class);
         $this->userSession->method('getUser')->willReturn($user);
@@ -5306,9 +5321,12 @@ class ObjectsControllerTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue($register, 1);
 
+        // Excel upload (no schema needed) so we can assert that the
+        // request's boolean params are parsed and forwarded verbatim to
+        // ImportService::importFromExcel.
         $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.csv',
-            'tmp_name' => '/tmp/data.csv',
+            'name' => 'data.xlsx',
+            'tmp_name' => '/tmp/data.xlsx',
             'size' => 1024,
         ]);
         $this->request->method('getParam')->willReturnMap([
@@ -5321,9 +5339,21 @@ class ObjectsControllerTest extends TestCase
         ]);
 
         $this->registerMapper->method('find')->willReturn($register);
-        $this->objectService->method('importObjects')->willReturn([
-            'imported' => 3,
-        ]);
+        // Signature: (filePath, register, schema, validation, events,
+        // _rbac, _multitenancy, publish, currentUser, enrich).
+        $this->importService->expects($this->once())
+            ->method('importFromExcel')
+            ->with(
+                $this->equalTo('/tmp/data.xlsx'),
+                $this->identicalTo($register),
+                $this->isNull(),
+                $this->isTrue(),   // validation
+                $this->isTrue(),   // events
+                $this->isFalse(),  // _rbac
+                $this->isFalse(),  // _multitenancy
+                $this->isTrue()    // publish
+            )
+            ->willReturn(['imported' => 3]);
 
         $user = $this->createMock(\OCP\IUser::class);
         $this->userSession->method('getUser')->willReturn($user);

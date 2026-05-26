@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -95,7 +94,6 @@ class SchemasDestroySafetyTest extends TestCase
             $this->createMock(IAppConfig::class),
             $this->schemaMapper,
             $this->objectMapper,
-            $this->createMock(DownloadService::class),
             $this->createMock(UploadService::class),
             $this->createMock(AuditTrailMapper::class),
             $this->createMock(OrganisationService::class),
