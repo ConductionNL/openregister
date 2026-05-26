@@ -599,4 +599,50 @@ class UiController extends Controller
     {
         return $this->makeSpaResponse();
     }//end endpointLogs()
+
+    /**
+     * Render templates UI
+     *
+     * Serves the Single Page Application template for the templates management interface.
+     * This route is used when users navigate to the templates section of the application.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function templates(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end templates()
+
+    /**
+     * Render features & roadmap UI
+     *
+     * Serves the Single Page Application template for the features and roadmap interface.
+     * This route is used when users navigate to the features & roadmap section of the application.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function featuresRoadmap(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end featuresRoadmap()
 }//end class
