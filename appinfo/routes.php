@@ -621,10 +621,14 @@ return [
         ['name' => 'auditTrail#destroyMultiple', 'url' => '/api/audit-trails', 'verb' => 'DELETE'],
         // Notification History — read-only audit trail of every dispatch.
         ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
-        // Notification Subscriptions — per-user (register, schema) opt-in surface.
+        // Notification Subscriptions — DEPRECATED per-user (register, schema) opt-in surface.
+        // Superseded by override-only Notification Preferences below; kept during the deprecation window.
         ['name' => 'notificationSubscriptions#index',   'url' => '/api/notification-subscriptions', 'verb' => 'GET'],
         ['name' => 'notificationSubscriptions#create',  'url' => '/api/notification-subscriptions', 'verb' => 'POST'],
         ['name' => 'notificationSubscriptions#destroy', 'url' => '/api/notification-subscriptions', 'verb' => 'DELETE'],
+        // Notification Preferences — override-only, per-(schema, notification) user preferences.
+        ['name' => 'notificationPreferences#index',  'url' => '/api/notification-preferences', 'verb' => 'GET'],
+        ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
         // Search Trails - specific routes first, then general ones.
         ['name' => 'searchTrail#index', 'url' => '/api/search-trails', 'verb' => 'GET'],
         ['name' => 'searchTrail#statistics', 'url' => '/api/search-trails/statistics', 'verb' => 'GET'],

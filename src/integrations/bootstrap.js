@@ -15,7 +15,7 @@
  * @see ADR-019 — Pluggable Integration Registry
  */
 import {
-	installIntegrationRegistry,
+	getSharedRegistry,
 	registerBuiltinIntegrations,
 	registerLeafIntegrations,
 } from '@conduction/nextcloud-vue'
@@ -25,13 +25,19 @@ let bootstrapped = false
 /**
  * Idempotent — safe to call from every entry bundle. Subsequent calls
  * after the first are no-ops, so consumers don't need to coordinate.
+ *
+ * Resolves the SHARED registry (window-global) via getSharedRegistry and
+ * registers builtins + leaves into THAT instance, so every consuming
+ * app's useIntegrationRegistry (which reads the same shared instance)
+ * sees them — including when this bootstrap runs from the global
+ * init-script on a foreign app's page (e.g. an OpenCatalogi publication).
  */
 export function ensureIntegrationRegistry() {
 	if (bootstrapped) {
 		return
 	}
-	installIntegrationRegistry(window)
-	registerBuiltinIntegrations()
-	registerLeafIntegrations()
+	const registry = getSharedRegistry(window)
+	registerBuiltinIntegrations(registry)
+	registerLeafIntegrations(registry)
 	bootstrapped = true
 }

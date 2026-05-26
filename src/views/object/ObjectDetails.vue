@@ -241,35 +241,28 @@
 						</BTab>
 						<BTab v-if="relationContext && (integrationProviders?.length || 0) > 0" :title="t('openregister', 'Integrations')">
 							<!--
-								Registry-driven integration surface. One inner tab per advertised
-								IntegrationProvider (5 built-ins + xwiki + 18 leaves). OR dogfoods
-								the registry on its own object-detail page so every leaf becomes a
-								deterministic Playwright target — no consumer-app wiring needed
-								to verify a provider end-to-end.
+								Registry-driven integration surface. Renders the tabbed
+								CnIntegrationWidget (nc-vue, ADR-019/024) — one app-faithful
+								tab per advertised IntegrationProvider, with the app icon +
+								brand accent on the active tab, the bespoke per-leaf content
+								(provider.tab) in the active panel, and an NcEmptyContent
+								set-up state (app icon + "{App} not available" + docs link)
+								for any integration whose backing app is missing or
+								unconfigured (Phase J-B availability capability).
+
+								This SUPERSEDES the previous hand-rolled BTabs pills +
+								`provider.tab || CnIntegrationTab` dispatch, which rendered a
+								flat generic surface that erased each app's visual identity.
+								The widget reads the same useIntegrationRegistry() singleton
+								that OR's bootstrap (main.js) populates, so every registered
+								leaf (5 built-ins + xwiki + 18 leaves) still becomes a
+								deterministic Playwright target with no consumer-app wiring.
 							-->
-							<BTabs content-class="mt-2" pills small>
-								<BTab v-for="provider in integrationProviders"
-									:key="provider.id"
-									:title="provider.label || provider.id"
-									:title-attr="`${provider.id} (${provider.group || 'integration'})`">
-									<!--
-										Dispatch to a provider-supplied bespoke Vue component
-										(provider.tab) when one is registered (e.g. CnTalkTab,
-										CnCalendarTab, CnDeckTab from the integration-leaves work).
-										Falls back to the generic CnIntegrationTab when the
-										provider only advertised metadata. Without this dispatch,
-										the 11 bespoke Cn<X>Tab components shipped in nc-vue
-										would be unreachable at runtime — see ADR-019.
-									-->
-									<component :is="provider.tab || CnIntegrationTab"
-										:provider="provider"
-										:integration-id="provider.id"
-										:register="String(relationContext.register)"
-										:schema="String(relationContext.schema)"
-										:object-id="String(relationContext.id)"
-										v-bind="provider.tabProps || {}" />
-								</BTab>
-							</BTabs>
+							<CnIntegrationWidget
+								:register="String(relationContext.register)"
+								:schema="String(relationContext.schema)"
+								:object-id="String(relationContext.id)"
+								surface="detail-page" />
 						</BTab>
 						<BTab v-if="objectStore.auditTrails" :title="t('openregister', 'Audit Trails')">
 							<div v-if="objectStore.auditTrails?.results?.length">
@@ -343,7 +336,7 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { computed } from 'vue'
-import { CnIntegrationTab, useIntegrationRegistry } from '@conduction/nextcloud-vue'
+import { CnIntegrationWidget, useIntegrationRegistry } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore } from '../../store/store.js'
 
@@ -373,15 +366,23 @@ export default {
 		ContactsTab,
 		DeckTab,
 		RelationsTab,
-		CnIntegrationTab,
+		CnIntegrationWidget,
 	},
+	/**
+	 * Composition-API setup: expose the integration-provider registry and
+	 * template helpers to the Options-API template.
+	 *
+	 * @spec exclude UI plumbing — registry snapshot and template helper exposure
+	 * @return {object}
+	 */
 	setup() {
 		// Reactive snapshot of every IntegrationProvider registered through
 		// nc-vue's in-page registry — drained from window.OCA.OpenRegister
 		// once main.js has called installIntegrationRegistry() +
 		// registerBuiltinIntegrations() + registerLeafIntegrations(). Used
-		// by the "Integrations" BTab below to render one inner sub-tab per
-		// advertised provider.
+		// ONLY by the "Integrations" BTab's v-if guard, so the tab is hidden
+		// when no provider is registered; CnIntegrationWidget reads the same
+		// singleton itself to render the tab strip + per-leaf panels.
 		//
 		// IMPORTANT: This setup() block lives in the Options-API <script>
 		// block. A previous version of this file also had a leading
@@ -395,11 +396,6 @@ export default {
 		const integrationProviders = computed(() => integrations.value || [])
 		return {
 			integrationProviders,
-			// Re-export the fallback tab component so the template's
-			// <component :is="provider.tab || CnIntegrationTab" /> dispatch
-			// can resolve it as a JS identifier (Options API templates can't
-			// reference module-scope imports directly).
-			CnIntegrationTab,
 			t,
 			objectStore,
 			navigationStore,
@@ -447,6 +443,7 @@ export default {
 		 * any of the three is missing, so the tabs only render once a saved
 		 * object is being viewed.
 		 *
+		 * @spec exclude UI plumbing — derived view state gating relation tabs
 		 * @return {{register:(string|number), schema:(string|number), id:string}|null}
 		 */
 		relationContext() {
@@ -468,21 +465,45 @@ export default {
 	},
 	watch: {
 		'pagination.files.currentPage': {
+			/**
+			 * Reload files when the files page changes.
+			 *
+			 * @spec exclude UI plumbing — pagination watch handler
+			 * @return {void}
+			 */
 			handler() {
 				this.getFiles()
 			},
 		},
 		'pagination.auditTrails.currentPage': {
+			/**
+			 * Reload audit trails when the audit-trails page changes.
+			 *
+			 * @spec exclude UI plumbing — pagination watch handler
+			 * @return {void}
+			 */
 			handler() {
 				this.getAuditTrails()
 			},
 		},
 		'pagination.relations.currentPage': {
+			/**
+			 * Reload relations when the relations page changes.
+			 *
+			 * @spec exclude UI plumbing — pagination watch handler
+			 * @return {void}
+			 */
 			handler() {
 				this.getRelations()
 			},
 		},
 	},
+	/**
+	 * Lifecycle hook: load files, audit trails and relations on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {void}
+	 */
 	mounted() {
 		if (objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
@@ -491,6 +512,12 @@ export default {
 			this.getRelations()
 		}
 	},
+	/**
+	 * Lifecycle hook: reload sub-resources when the viewed object changes.
+	 *
+	 * @spec exclude UI plumbing — re-fetch on active-object change
+	 * @return {void}
+	 */
 	updated() {
 		if (this.currentActiveObject !== objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
@@ -506,6 +533,12 @@ export default {
 		// relationsPlugin) have installed them. Calling a method that
 		// doesn't exist on the store throws TypeError mid-mount and
 		// aborts the whole render — guard each call.
+		/**
+		 * Fetch the object's attached files for display (race-safe).
+		 *
+		 * @spec exclude UI plumbing — delegates to the object store fetch
+		 * @return {void}
+		 */
 		getFiles() {
 			if (!objectStore.objectItem?.id || typeof objectStore.getFiles !== 'function') {
 				return
@@ -519,6 +552,12 @@ export default {
 				this.fileLoading = false
 			})
 		},
+		/**
+		 * Fetch the object's audit trails for display (race-safe).
+		 *
+		 * @spec exclude UI plumbing — delegates to the object store fetch
+		 * @return {void}
+		 */
 		getAuditTrails() {
 			if (!objectStore.objectItem?.id || typeof objectStore.getAuditTrails !== 'function') {
 				return
@@ -537,6 +576,12 @@ export default {
 					this.auditTrailLoading = false
 				})
 		},
+		/**
+		 * Fetch the object's relations for display (race-safe).
+		 *
+		 * @spec exclude UI plumbing — delegates to the object store fetch
+		 * @return {void}
+		 */
 		getRelations() {
 			if (!objectStore.objectItem?.id || typeof objectStore.getRelations !== 'function') {
 				return
@@ -558,6 +603,7 @@ export default {
 		/**
 		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
 		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
+		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
 		 */
 		openFolder(url) {
 			// Parse the encoded URL by replacing escaped characters
@@ -576,6 +622,7 @@ export default {
 		/**
 		 * Opens a file in the Nextcloud Files app
 		 * @param {object} file - The file object containing id, path, and other metadata
+		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
 		 */
 		openFile(file) {
 			// Extract the directory path without the filename
@@ -593,6 +640,7 @@ export default {
 		/**
 		 * Formats a file size in bytes to a human readable string
 		 * @param {number} bytes - The file size in bytes
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted file size (e.g. "1.5 MB")
 		 */
 		 formatFileSize(bytes) {

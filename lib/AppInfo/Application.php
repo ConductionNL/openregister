@@ -1030,6 +1030,9 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new TasksProvider(
                     taskService: $container->get(\OCA\OpenRegister\Service\TaskService::class),
+                    registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
                     l10n: $container->get('OCP\IL10N'),
                 );
             }
@@ -1143,6 +1146,7 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new CalendarProvider(
                     calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
+                    calendarLinkService: $container->get(\OCA\OpenRegister\Service\CalendarLinkService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                     logger: $container->get(\Psr\Log\LoggerInterface::class),
@@ -1180,6 +1184,7 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new EmailProvider(
                     emailService: $container->get(\OCA\OpenRegister\Service\EmailService::class),
+                    emailLinkService: $container->get(\OCA\OpenRegister\Service\EmailLinkService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                 );
@@ -1729,6 +1734,16 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(
             \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
             MailAppScriptListener::class
+        );
+
+        // IntegrationGlobalScriptListener loads the shared integration-registry
+        // bootstrap on EVERY full-page render so the registry is installed +
+        // populated universally — letting leaves render inside any consuming
+        // app's object detail page (e.g. an OpenCatalogi publication) without
+        // that app bootstrapping the registry itself (universal-shared-integration-registry).
+        $context->registerEventListener(
+            \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+            \OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
         );
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.

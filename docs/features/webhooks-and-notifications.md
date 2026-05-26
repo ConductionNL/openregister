@@ -174,6 +174,23 @@ Rules live on the schema under `configuration['x-openregister-notifications']`. 
 }
 ```
 
+#### Rendering
+
+In-app subjects are rendered by `AnnotationNotifier` (`object_created` / `object_updated` / `object_transitioned`), localised nl/en, with a primary action linking to the object detail view. A schema's per-locale `subject` wins; otherwise a canonical localised string is used. `Notifier` keeps `configuration_update_available` — the two notifiers are mutually exclusive by subject. Push needs no extra code: `notify_push` auto-intercepts the same `INotificationManager::notify()` call.
+
+### User Notification Preferences
+
+Notification **rules** live ONLY in the schema annotation (no rule table) — the dispatcher evaluates them from the already-loaded schema at dispatch time. Per-user **preferences** are stored as **override-only** values in Nextcloud per-user app config under the `openregister` app, keyed `notification_pref/<schema>/<notification>`. An override only flips the schema-declared default (on/off, optionally narrowing channels) for one `(schema, notification)` pair; when a user has no override the schema default applies. This gives a **zero-migration** property: adding a schema — or a notification to an existing schema — works immediately with no per-user backfill.
+
+Before delivering the in-app/push channel, the dispatcher resolves `schema-default ⊕ user-override` **per recipient** and skips recipients whose effective value is off (one user's override never affects another's delivery).
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/notification-preferences` | Effective notifications for the current user (every notification their accessible schemas declare, merged with their overrides, each tagged `schema-default` or `user-override`). |
+| `PUT /api/notification-preferences` | Record (`{schema, notification, enabled, channels?}`) or clear (`{schema, notification, reset: true}`) a single override for the current user only. |
+
+> The earlier per-`(register, schema)` `NotificationSubscription` table + controller are **deprecated**; existing rows are migrated to user-config overrides by a one-shot repair step and the table is scheduled for removal.
+
 ### VNG Notificaties API Compliance
 
 For Dutch government interoperability, webhook payloads can be formatted according to the VNG Notificaties API standard via a Twig mapping configuration. This enables OpenRegister to act as a notificatiecomponent in a ZGW API landscape.

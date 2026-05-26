@@ -27,6 +27,11 @@
  * @spec openspec/changes/notificatie-engine/tasks.md "Users MUST be able to manage their notification preferences"
  *
  * @template-extends QBMapper<NotificationSubscription>
+ *
+ * @deprecated Superseded by override-only user-config notification preferences
+ *             (NotificationPreferenceService). Rows are migrated by the
+ *             MigrateNotificationSubscriptionsToUserConfig repair step and the
+ *             table is scheduled for removal.
  */
 
 declare(strict_types=1);

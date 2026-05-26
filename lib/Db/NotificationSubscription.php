@@ -35,6 +35,10 @@ use OCP\AppFramework\Db\Entity;
  * @method int|null       getSchemaId()
  * @method void           setCreated(\DateTime $created)
  * @method \DateTime|null getCreated()
+ *
+ * @deprecated Superseded by override-only user-config notification preferences
+ *             (NotificationPreferenceService). Rows are migrated by the
+ *             MigrateNotificationSubscriptionsToUserConfig repair step.
  */
 class NotificationSubscription extends Entity
 {
