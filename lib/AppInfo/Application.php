@@ -2067,7 +2067,7 @@ class Application extends App implements IBootstrap
                         ]
                     );
                 }
-            }
-        }
+            }//end try
+        }//end foreach
     }//end bootBuiltinIntegrationProviders()
 }//end class

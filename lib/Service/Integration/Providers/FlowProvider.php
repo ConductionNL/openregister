@@ -145,7 +145,7 @@ class FlowProvider extends AbstractIntegrationProvider
                 'linkId'    => $link->getId(),
                 'data'      => $opRow ?? [],
             ];
-        }
+        }//end foreach
 
         return $out;
     }//end list()

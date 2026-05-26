@@ -103,7 +103,6 @@ class SharesProvider extends AbstractIntegrationProvider
      */
     private ?ContainerInterface $container;
 
-
     /**
      * Constructor.
      *
@@ -133,42 +132,35 @@ class SharesProvider extends AbstractIntegrationProvider
         $this->container = $container;
     }//end __construct()
 
-
     public function getId(): string
     {
         return 'shares';
     }//end getId()
-
 
     public function getLabel(): string
     {
         return $this->l10n->t('Shares');
     }//end getLabel()
 
-
     public function getIcon(): string
     {
         return 'Share';
     }//end getIcon()
-
 
     public function getGroup(): ?string
     {
         return 'core';
     }//end getGroup()
 
-
     public function getRequiredApp(): ?string
     {
         return null;
     }//end getRequiredApp()
 
-
     public function getStorageStrategy(): string
     {
         return 'query-time';
     }//end getStorageStrategy()
-
 
     /**
      * Whether the integration is available — NC core sharing is always on.
@@ -185,7 +177,6 @@ class SharesProvider extends AbstractIntegrationProvider
         // empty list (see `list()` + `health()`).
         return true;
     }//end isEnabled()
-
 
     /**
      * List shares linked to an OR object.
@@ -292,17 +283,16 @@ class SharesProvider extends AbstractIntegrationProvider
                         $seen[$id] = true;
                         $rows[]    = $row;
                     }
-                }
-            }
+                }//end foreach
+            }//end foreach
 
             return $rows;
         } catch (Throwable $e) {
             // Share subsystem unreachable; degrade to empty list per
             // AD-23 graceful-degradation contract.
             return [];
-        }
+        }//end try
     }//end list()
-
 
     /**
      * Map a ShareLinkService row to the registry widget's row contract.
@@ -331,16 +321,13 @@ class SharesProvider extends AbstractIntegrationProvider
             'stime'                => $row['createdAt'] ?? null,
             'nodeName'             => (string) ($row['fileName'] ?? ''),
             'canRevoke'            => (bool) ($row['canRevoke'] ?? false),
-            'url'                  => $fileId > 0
-                ? '/index.php/apps/files/?fileid='.$fileId
-                : '/index.php/apps/files',
+            'url'                  => $fileId > 0 ? '/index.php/apps/files/?fileid='.$fileId : '/index.php/apps/files',
             'data'                 => [
                 'id'     => (string) ($row['shareId'] ?? ''),
                 'nodeId' => $fileId,
             ],
         ];
     }//end mapServiceRow()
-
 
     /**
      * Revoke / unlink a share by id.
@@ -373,7 +360,6 @@ class SharesProvider extends AbstractIntegrationProvider
             parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
         }
     }//end delete()
-
 
     /**
      * Provider health descriptor.
@@ -409,9 +395,8 @@ class SharesProvider extends AbstractIntegrationProvider
                 'authStatus' => 'configured',
                 'message'    => 'NC share manager is unreachable',
             ];
-        }
+        }//end try
     }//end health()
-
 
     /**
      * Resolve the object's NC folder via the FolderManagementHandler.
@@ -448,7 +433,6 @@ class SharesProvider extends AbstractIntegrationProvider
         }
     }//end resolveObjectFolder()
 
-
     /**
      * Look up an ObjectEntity by uuid via the lazy container so the
      * handler can resolve the register from the entity.
@@ -479,7 +463,6 @@ class SharesProvider extends AbstractIntegrationProvider
         }
     }//end resolveObjectEntity()
 
-
     /**
      * Resolve the current user's UID via IUserSession.
      *
@@ -504,7 +487,6 @@ class SharesProvider extends AbstractIntegrationProvider
         }
     }//end resolveCurrentUserId()
 
-
     /**
      * Normalise an `IShare` into the leaf-row contract.
      *
@@ -528,10 +510,10 @@ class SharesProvider extends AbstractIntegrationProvider
                 $expiration = $expDate->format(\DateTimeInterface::ATOM);
             }
 
-            $stime   = $share->getShareTime();
-            $stimeTs = $stime !== null ? $stime->getTimestamp() : 0;
-            $owner   = (string) ($share->getSharedBy() ?? '');
-            $node    = $share->getNode();
+            $stime    = $share->getShareTime();
+            $stimeTs  = $stime !== null ? $stime->getTimestamp() : 0;
+            $owner    = (string) ($share->getSharedBy() ?? '');
+            $node     = $share->getNode();
             $nodeName = $node !== null ? (string) $node->getName() : '';
             $nodeId   = $node !== null ? (int) $node->getId() : 0;
 
@@ -546,9 +528,7 @@ class SharesProvider extends AbstractIntegrationProvider
                 'stime'                => $stimeTs,
                 'nodeName'             => $nodeName,
                 'canRevoke'            => $owner === $userId,
-                'url'                  => $nodeId > 0
-                    ? '/index.php/apps/files/?fileid='.$nodeId
-                    : '/index.php/apps/files',
+                'url'                  => $nodeId > 0 ? '/index.php/apps/files/?fileid='.$nodeId : '/index.php/apps/files',
                 'data'                 => [
                     'id'     => $id,
                     'token'  => (string) ($share->getToken() ?? ''),
@@ -558,9 +538,8 @@ class SharesProvider extends AbstractIntegrationProvider
             ];
         } catch (Throwable $e) {
             return null;
-        }
+        }//end try
     }//end normaliseShare()
-
 
     /**
      * Resolve a service from the container.
@@ -580,7 +559,6 @@ class SharesProvider extends AbstractIntegrationProvider
         }
     }//end lookup()
 
-
     /**
      * Resolve the active container — the test override if injected,
      * otherwise NC's global server container.
@@ -596,8 +574,6 @@ class SharesProvider extends AbstractIntegrationProvider
         // Thin PSR-11 adapter around `\OCP\Server::get()` so the rest
         // of the provider can treat container lookups uniformly.
         return new class implements ContainerInterface {
-
-
             /**
              * Resolve a service from NC's global server container.
              *
@@ -611,7 +587,6 @@ class SharesProvider extends AbstractIntegrationProvider
             {
                 return Server::get($id);
             }//end get()
-
 
             /**
              * Whether NC's global server container can resolve the id.
@@ -631,10 +606,6 @@ class SharesProvider extends AbstractIntegrationProvider
                     return false;
                 }
             }//end has()
-
-
         };
     }//end resolveContainer()
-
-
 }//end class

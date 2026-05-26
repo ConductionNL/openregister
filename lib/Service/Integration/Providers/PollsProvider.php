@@ -148,7 +148,7 @@ class PollsProvider extends AbstractIntegrationProvider
                 'options'     => $options,
                 'linkId'      => $link->getId(),
             ];
-        }
+        }//end foreach
 
         return $out;
     }//end list()

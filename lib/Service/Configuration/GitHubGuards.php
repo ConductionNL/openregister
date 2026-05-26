@@ -157,9 +157,9 @@ class GitHubGuards
             return new JSONResponse(['error' => 'github_repo_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
         }
 
-        $owner          = explode('/', $repo, 2)[0];
-        $ownerLower     = strtolower($owner);
-        $allowedLower   = array_map('strtolower', $allowed);
+        $owner        = explode('/', $repo, 2)[0];
+        $ownerLower   = strtolower($owner);
+        $allowedLower = array_map('strtolower', $allowed);
         if (in_array($ownerLower, $allowedLower, true) === true) {
             return null;
         }

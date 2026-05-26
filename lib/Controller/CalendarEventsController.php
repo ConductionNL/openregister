@@ -375,6 +375,7 @@ class CalendarEventsController extends Controller
                     $after = null;
                 }
             }
+
             if ($after === null) {
                 // Default: now − 1 week.
                 $after = (new DateTime())->modify('-1 week');
@@ -389,7 +390,7 @@ class CalendarEventsController extends Controller
             return new JSONResponse(['results' => $events, 'total' => count($events)]);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
+        }//end try
     }//end listCalendarEvents()
 
     /**

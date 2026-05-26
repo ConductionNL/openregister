@@ -2790,8 +2790,8 @@ class ImportHandler
                         ]
                     );
                 }
-            }
-        }
+            }//end foreach
+        }//end if
     }//end autoCreateRegisterIfApplication()
 
     /**

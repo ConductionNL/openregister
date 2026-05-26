@@ -151,8 +151,8 @@ class ContactService
                 // without any cached values is always refreshed; a stale
                 // link (older than ENRICHMENT_TTL_SECONDS) is refreshed
                 // and the updated values are persisted opportunistically.
-                $linkedAt = $link->getLinkedAt();
-                $isStale  = (
+                $linkedAt        = $link->getLinkedAt();
+                $isStale         = (
                     $linkedAt === null
                     || ($now->getTimestamp() - $linkedAt->getTimestamp()) > self::ENRICHMENT_TTL_SECONDS
                 );
@@ -186,7 +186,7 @@ class ContactService
                     $row['phone']     = $vfields['phone'];
                     $row['org']       = $vfields['org'];
                     $row['avatarUrl'] = $vfields['avatarUrl'];
-                }
+                }//end if
 
                 return $row;
             },
@@ -265,7 +265,7 @@ class ContactService
                     $phone = $value;
                 }
             }
-        }
+        }//end if
 
         $org = null;
         if (isset($vcard->ORG) === true) {
@@ -320,7 +320,7 @@ class ContactService
                         $avatarUrl = 'data:'.$mediaType.';base64,'.$rawValue;
                     }
                 }
-            }
+            }//end if
         }//end if
 
         // Fallback to the Contacts app's per-uid avatar route when no

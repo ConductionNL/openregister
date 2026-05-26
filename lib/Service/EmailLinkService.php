@@ -153,12 +153,12 @@ class EmailLinkService
      * harvested from Mail's tables at link-time so the list path can
      * render without a join.
      *
-     * @param string $objectUuid     Parent OR object uuid.
-     * @param int    $registerId     OR register id.
-     * @param int    $schemaId       OR schema id (nullable in storage).
-     * @param int    $mailAccountId  Mail account id.
-     * @param string $messageId      Mail message id (numeric string).
-     * @param string $messageUid     Mail message UID (IMAP UID, opaque).
+     * @param string $objectUuid    Parent OR object uuid.
+     * @param int    $registerId    OR register id.
+     * @param int    $schemaId      OR schema id (nullable in storage).
+     * @param int    $mailAccountId Mail account id.
+     * @param string $messageId     Mail message id (numeric string).
+     * @param string $messageUid    Mail message UID (IMAP UID, opaque).
      *
      * @return EmailLink The persisted link row.
      *
@@ -283,7 +283,7 @@ class EmailLinkService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
-    public function getLinkedEmails(string $objectUuid, ?string $cursor = null, int $limit = self::DEFAULT_LIMIT): array
+    public function getLinkedEmails(string $objectUuid, ?string $cursor=null, int $limit=self::DEFAULT_LIMIT): array
     {
         $limit = max(1, min($limit, self::MAX_LIMIT));
 
@@ -461,7 +461,7 @@ class EmailLinkService
         int $accountId,
         string $mailbox,
         ?string $afterCursor,
-        int $limit = self::DEFAULT_LIMIT
+        int $limit=self::DEFAULT_LIMIT
     ): array {
         if ($this->isMailAvailable() === false || $accountId <= 0 || $mailbox === '') {
             return ['items' => [], 'nextCursor' => null];
@@ -594,7 +594,7 @@ class EmailLinkService
         } catch (Throwable $e) {
             $this->logger->warning('[EmailLinkService] resolveMailboxId failed: '.$e->getMessage());
             return 0;
-        }
+        }//end try
     }//end resolveMailboxId()
 
     /**

@@ -473,7 +473,6 @@ class CalendarEventService
         ];
     }//end findUserCalendar()
 
-
     /**
      * Inspect a calendar row from CalDavBackend and decide whether it
      * supports VEVENT.

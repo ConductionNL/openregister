@@ -100,11 +100,13 @@ class FlowLinksController extends Controller
 
             $results = $this->flowLinkService->getLinkedOperations($object->getUuid());
 
-            return new JSONResponse([
-                'results' => $results,
-                'total'   => count($results),
-                'isAdmin' => $this->flowLinkService->isCurrentUserAdmin(),
-            ]);
+            return new JSONResponse(
+                    [
+                        'results' => $results,
+                        'total'   => count($results),
+                        'isAdmin' => $this->flowLinkService->isCurrentUserAdmin(),
+                    ]
+                    );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {

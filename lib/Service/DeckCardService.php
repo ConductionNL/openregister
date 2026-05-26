@@ -516,7 +516,7 @@ class DeckCardService
             }
         } catch (Exception $e) {
             $this->logger->debug('Deck CardService not available, card lookup skipped: '.$e->getMessage());
-        }
+        }//end try
 
         return null;
     }//end getDeckCardInfo()
@@ -555,7 +555,7 @@ class DeckCardService
                 $userUid = $this->userSession->getUser()->getUID();
                 $card    = $cardService->create($title, $stackId, 'plain', 0, $userUid);
                 // Deck CardService::update signature is:
-                //   update($id, $title, $stackId, $type, $owner, $description = '', $order = 0, ...)
+                // update($id, $title, $stackId, $type, $owner, $description = '', $order = 0, ...)
                 // The owner argument is required and must be a string user UID;
                 // a previous version of this call passed 0 (zero) for owner and
                 // mis-aligned every subsequent arg by one slot. Restore the
@@ -564,10 +564,10 @@ class DeckCardService
                 $cardService->update($card->getId(), $title, $stackId, 'plain', $userUid, $fullDescription, 0);
 
                 return $card->getId();
-            }
+            }//end if
         } catch (Exception $e) {
             $this->logger->warning('Failed to create Deck card: '.$e->getMessage());
-        }
+        }//end try
 
         return null;
     }//end createDeckCard()

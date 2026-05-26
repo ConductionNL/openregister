@@ -184,7 +184,7 @@ class ContactsController extends Controller
 
             $data = $this->request->getParams();
 
-            $hasLinkData   = (empty($data['addressbookId']) === false && empty($data['contactUri']) === false);
+            $hasLinkData = (empty($data['addressbookId']) === false && empty($data['contactUri']) === false);
             // Accept `displayName` (Tier-2 dialog field) alongside `fullName`.
             $hasCreateData = (empty($data['fullName']) === false || empty($data['displayName']) === false);
 
