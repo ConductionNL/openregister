@@ -442,6 +442,16 @@ class RegistersController extends Controller
      */
     public function create(): JSONResponse
     {
+        // Authorization: creating a register defines a new data model and is
+        // restricted to administrators. Reading register metadata stays open so
+        // frontends can build their UIs; only create/update/delete are gated.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Only administrators may create registers'],
+                statusCode: 403
+            );
+        }
+
         // Get request parameters.
         $data = $this->request->getParams();
 
@@ -531,26 +541,27 @@ class RegistersController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
-        // Check manage permission if authorization or roles configuration is being modified.
-        $oldRegisterAuth  = null;
-        $oldRegisterRoles = null;
-        if (isset($data['authorization']) === true || isset($data['configuration']['roles']) === true) {
-            try {
-                $existingRegister = $this->registerMapper->find($id);
-                $oldRegisterAuth  = $existingRegister->getAuthorization();
-                $oldConfig        = $existingRegister->getConfiguration();
-                $oldRegisterRoles = $oldConfig['roles'] ?? null;
-                $manageAllowed    = $this->checkRegisterManagePermission(register: $existingRegister);
-                if ($manageAllowed === false) {
-                    return new JSONResponse(
-                        data: ['error' => 'User does not have permission to manage authorization for this register'],
-                        statusCode: 403
-                    );
-                }
-            } catch (DoesNotExistException $e) {
-                return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
-            }
+        // Authorization: modifying a register's definition requires manage
+        // permission (manage-group membership, or administrator when no manage
+        // rules are configured). This gates ALL updates, not just authorization
+        // changes — reading register metadata stays open for frontends.
+        try {
+            $existingRegister = $this->registerMapper->find($id);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         }
+
+        if ($this->checkRegisterManagePermission(register: $existingRegister) === false) {
+            return new JSONResponse(
+                data: ['error' => 'User does not have permission to manage this register'],
+                statusCode: 403
+            );
+        }
+
+        // Capture prior authorization / roles so changes can be audit-logged below.
+        $oldRegisterAuth  = $existingRegister->getAuthorization();
+        $oldConfig        = $existingRegister->getConfiguration();
+        $oldRegisterRoles = $oldConfig['roles'] ?? null;
 
         try {
             // Update the register with the provided data.
@@ -667,6 +678,15 @@ class RegistersController extends Controller
         try {
             // Find the register first (validates existence + access).
             $register = $this->registerService->find($id);
+
+            // Authorization: deleting a register requires manage permission
+            // (manage-group membership, or administrator). Reading stays open.
+            if ($this->checkRegisterManagePermission(register: $register) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this register'],
+                    statusCode: 403
+                );
+            }
 
             // Count objects still referencing this register across all schemas.
             // Use getStatistics() (single-axis registerId path) — countSearchObjects()
@@ -1729,6 +1749,25 @@ class RegistersController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
     }//end depublish()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * Used to gate register creation, where there is no existing entity whose
+     * manage-authorization block could be consulted.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+
+    }//end isCurrentUserAdmin()
 
     /**
      * Check if the current user has 'manage' permission on a register.

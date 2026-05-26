@@ -346,6 +346,16 @@ class SchemasController extends Controller
      */
     public function create(): JSONResponse
     {
+        // Authorization: creating a schema defines a new data model and is
+        // restricted to administrators. Reading schema metadata stays open so
+        // frontends can build their UIs; only create/update/delete are gated.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Only administrators may create schemas'],
+                statusCode: 403
+            );
+        }
+
         // Get request parameters.
         $data = $this->request->getParams();
 
@@ -489,27 +499,24 @@ class SchemasController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
-        // Check manage permission if authorization field is being modified.
-        $oldSchemaAuth = null;
-        if (isset($data['authorization']) === true) {
-            try {
-                $existingSchema    = $this->schemaMapper->find($id);
-                $oldSchemaAuth     = $existingSchema->getAuthorization();
-                $permissionHandler = $this->container->get(PermissionHandler::class);
-                if ($permissionHandler->hasPermission(
-                    $existingSchema,
-                    'manage'
-                ) === false
-                ) {
-                    return new JSONResponse(
-                        data: ['error' => 'User does not have permission to manage authorization for this schema'],
-                        statusCode: 403
-                    );
-                }
-            } catch (DoesNotExistException $e) {
-                return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-            }
+        // Authorization: modifying a schema's definition requires manage
+        // permission. This gates ALL updates, not just authorization changes —
+        // reading schema metadata stays open for frontends.
+        try {
+            $existingSchema = $this->schemaMapper->find($id);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
         }
+
+        if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
+            return new JSONResponse(
+                data: ['error' => 'User does not have permission to manage this schema'],
+                statusCode: 403
+            );
+        }
+
+        // Capture prior authorization so a change can be audit-logged below.
+        $oldSchemaAuth = $existingSchema->getAuthorization();
 
         try {
             // Update the schema with the provided data.
@@ -651,6 +658,15 @@ class SchemasController extends Controller
         try {
             // Find the schema first (also validates existence and access).
             $schemaToDelete = $this->schemaMapper->find(id: $id);
+
+            // Authorization: deleting a schema requires manage permission.
+            // Reading schema metadata stays open for frontends.
+            if ($this->checkSchemaManagePermission(schema: $schemaToDelete) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this schema'],
+                    statusCode: 403
+                );
+            }
 
             // Count objects still referencing this schema across all registers.
             // Use getStatistics() (single-axis schemaId path) — countSearchObjects()
@@ -1293,4 +1309,89 @@ class SchemasController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
     }//end depublish()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * Used to gate schema creation, where there is no existing entity whose
+     * manage-authorization block could be consulted. User session and group
+     * manager are resolved lazily from the container to avoid widening the
+     * constructor signature.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        try {
+            $user = $this->container->get(\OCP\IUserSession::class)->getUser();
+            if ($user === null) {
+                return false;
+            }
+
+            return $this->container->get(\OCP\IGroupManager::class)->isAdmin($user->getUID());
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+    }//end isCurrentUserAdmin()
+
+    /**
+     * Check if the current user has 'manage' permission on a schema.
+     *
+     * Default-SECURE: a schema with no `manage` authorization rule can only be
+     * managed by administrators. When manage rules are present, membership of
+     * one of the listed groups grants permission (admins always pass). This is
+     * deliberately NOT PermissionHandler::hasPermission(), which is default-OPEN
+     * for object data RBAC and therefore unsuitable for gating schema-definition
+     * writes. Reading schema metadata is unaffected and stays open.
+     *
+     * @param Schema $schema The schema to check manage permission for.
+     *
+     * @return bool True if the current user may manage this schema.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function checkSchemaManagePermission(Schema $schema): bool
+    {
+        try {
+            $user = $this->container->get(\OCP\IUserSession::class)->getUser();
+            if ($user === null) {
+                return false;
+            }
+
+            $groupManager = $this->container->get(\OCP\IGroupManager::class);
+
+            // Admins always pass.
+            if ($groupManager->isAdmin($user->getUID()) === true) {
+                return true;
+            }
+
+            $authorization = $schema->getAuthorization();
+
+            // Default-secure: no manage rule defined → admin-only (already failed above).
+            if (empty($authorization) === true || isset($authorization['manage']) === false) {
+                return false;
+            }
+
+            $userGroups  = $groupManager->getUserGroupIds($user);
+            $manageRules = $authorization['manage'];
+            foreach ($userGroups as $groupId) {
+                foreach ($manageRules as $entry) {
+                    if (is_string($entry) === true && $entry === $groupId) {
+                        return true;
+                    }
+
+                    if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
+                        return true;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            return false;
+        }//end try
+
+        return false;
+
+    }//end checkSchemaManagePermission()
 }//end class
