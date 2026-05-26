@@ -1578,6 +1578,10 @@ class Schema extends Entity implements JsonSerializable
      *   Example: 'profile.avatar' (should contain base64 encoded image data)
      * - 'allowFiles': (bool) Whether this schema allows file attachments
      * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
+     * - 'defaultAutoShare': (bool) Default value for the "Automatically publish"
+     *   toggle on the attachment upload dialog. true seeds the toggle on; absent
+     *   or false keeps it off. Users can always override per upload.
+     *   See: ConductionNL/opencatalogi#577
      *
      * @param array|string|null $configuration The configuration array/string to validate and set
      *
@@ -1648,7 +1652,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields      = ['allowFiles', 'autoPublish'];
+        $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
         $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
 
         foreach ($configuration as $key => $value) {
