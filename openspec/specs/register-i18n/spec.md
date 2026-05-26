@@ -17,24 +17,36 @@ Implement multi-language content management for register objects so that transla
 Schema property definitions MUST accept a `translatable: true` attribute indicating the field supports multiple language versions. Properties without the flag (or with `translatable: false`) SHALL store a single value regardless of language context. The `translatable` attribute MUST be stored as part of the property definition in the schema's `properties` JSON and MUST be inspectable by `TranslationHandler::getTranslatableProperties()`.
 
 #### Scenario: Define a translatable property
+
+@e2e exclude backend schema property storage — covered by PHPUnit
+
 - **GIVEN** a schema `producten` with property `omschrijving` of type `string`
 - **WHEN** the admin sets `translatable: true` on the `omschrijving` property definition
 - **THEN** the schema's `properties` JSON SHALL contain `{"omschrijving": {"type": "string", "translatable": true}}`
 - **AND** `TranslationHandler::getTranslatableProperties()` SHALL return `["omschrijving"]`
 
 #### Scenario: Non-translatable property remains unaffected
+
+@e2e exclude backend property behavior — covered by PHPUnit
+
 - **GIVEN** property `code` on schema `producten` with `translatable` not set (defaults to `false`)
 - **WHEN** an object is created or rendered
 - **THEN** the `code` property SHALL have a single value regardless of language
 - **AND** `TranslationHandler` SHALL skip this property during normalization and resolution
 
 #### Scenario: Mark multiple properties as translatable
+
+@e2e exclude backend schema property batch — covered by PHPUnit
+
 - **GIVEN** schema `producten` with properties `naam`, `omschrijving`, `categorie`, and `prijs`
 - **WHEN** the admin marks `naam` and `omschrijving` as `translatable: true` but leaves `categorie` and `prijs` as non-translatable
 - **THEN** `TranslationHandler::getTranslatableProperties()` SHALL return `["naam", "omschrijving"]`
 - **AND** `categorie` and `prijs` SHALL behave as single-value properties
 
 #### Scenario: Translatable flag on nested object properties
+
+@e2e exclude backend nested property handling — covered by PHPUnit
+
 - **GIVEN** schema `producten` with a property `details` of type `object` containing sub-properties
 - **WHEN** the admin marks `details` as `translatable: true`
 - **THEN** the entire `details` object SHALL be stored per language as `{"nl": {...}, "en": {...}}`
@@ -46,7 +58,7 @@ Schema property definitions MUST accept a `translatable: true` attribute indicat
 - **THEN** a toggle labeled `t('openregister', 'Translatable')` SHALL be visible
 - **AND** toggling it SHALL set `translatable: true` in the property definition
 
-### Requirement: Objects MUST store translations per translatable property as language-keyed JSON
+### Requirement: Objects MUST store translations per translatable property as language-keyed JSON @e2e exclude backend storage format — covered by PHPUnit
 
 Each translatable property MUST store its values as a JSON object keyed by BCP 47 language codes (e.g., `{"nl": "Paspoort aanvragen", "en": "Passport application"}`). This structure SHALL be stored within the existing `object` JSON column on the `ObjectEntity`, requiring no database schema changes. The `TranslationHandler::normalizeTranslationsForSave()` method SHALL wrap simple (non-array) values under the register's default language before persisting.
 
@@ -79,7 +91,7 @@ Each translatable property MUST store its values as a JSON object keyed by BCP 4
 - **THEN** the value SHALL be stored as-is (treated as a regular object, not a translation map)
 - **AND** `TranslationHandler` SHALL not modify this property
 
-### Requirement: The API MUST support language negotiation via Accept-Language header
+### Requirement: The API MUST support language negotiation via Accept-Language header @e2e exclude REST API language negotiation — covered by Newman
 
 API responses MUST return translatable property values in the language requested via the `Accept-Language` header (RFC 9110, Section 12.5.4). The `LanguageMiddleware` SHALL parse the header before any controller action and store the resolved language in the request-scoped `LanguageService`. The response SHALL include a `Content-Language` header indicating the served language. If the requested language is unavailable, the system SHALL follow the fallback chain and add an `X-Content-Language-Fallback: true` header.
 
@@ -116,7 +128,7 @@ API responses MUST return translatable property values in the language requested
 - **THEN** every object in the response array SHALL have its translatable properties resolved to English (or fallback)
 - **AND** the `Content-Language` header SHALL reflect the primary language served
 
-### Requirement: Fallback language chain MUST be configurable per register
+### Requirement: Fallback language chain MUST be configurable per register @e2e exclude backend language fallback chain — covered by PHPUnit
 
 Each register MUST define an ordered fallback chain for language resolution. When the requested language is unavailable for a property, the system SHALL try each language in the chain until a value is found. The default chain SHALL be: requested language, then register default language (`nl`), then first available translation. The register's `languages` array determines the available languages and the first element is the default.
 
@@ -151,7 +163,7 @@ Each register MUST define an ordered fallback chain for language resolution. Whe
 - **THEN** each language code MUST conform to BCP 47 / RFC 5646 pattern (`/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/`)
 - **AND** invalid codes SHALL be rejected with a `400 Bad Request` response
 
-### Requirement: Nextcloud IL10N integration MUST translate app UI independently from object content
+### Requirement: Nextcloud IL10N integration MUST translate app UI independently from object content @e2e exclude Nextcloud IL10N backend integration — covered by PHPUnit
 
 The app UI (labels, buttons, error messages, navigation) MUST use Nextcloud's `IL10N` / `@nextcloud/l10n` translation system per ADR-005. This is entirely separate from data-level i18n. UI strings follow the user's Nextcloud locale preference; object content follows the `Accept-Language` header or the language selected in the object editor.
 
@@ -221,33 +233,46 @@ The object edit form MUST display language tabs for translatable properties, all
 Each translatable property per language MUST support a translation status to enable review workflows. Statuses SHALL be: `draft`, `needs_review`, `approved`, `outdated`. When the source (default language) text changes, all other language statuses SHALL automatically transition to `outdated`.
 
 #### Scenario: New translation starts as draft
+
+@e2e exclude backend status initialization — covered by PHPUnit
+
 - **GIVEN** an object with translatable property `omschrijving` and a user adding an English translation
 - **WHEN** the English value is saved for the first time
 - **THEN** the translation status for `omschrijving.en` SHALL be set to `draft`
 
 #### Scenario: Source text change marks translations as outdated
+
+@e2e exclude backend status transition — covered by PHPUnit
+
 - **GIVEN** an object with `omschrijving`: `{"nl": "Paspoort aanvragen", "en": "Passport application"}` and English status `approved`
 - **WHEN** the Dutch (source) text is updated to `"Nieuw paspoort aanvragen"`
 - **THEN** the English translation status SHALL automatically change to `outdated`
 - **AND** the UI SHALL display a visual indicator on the English tab showing the translation needs updating
 
 #### Scenario: Mark translation as approved
+
+@e2e exclude REST API status update — covered by Newman
+
 - **GIVEN** a user with translation review permissions
 - **WHEN** they review the English translation and click "Approve"
 - **THEN** the translation status for `omschrijving.en` SHALL change to `approved`
 
 #### Scenario: Filter objects by translation status
+
+@e2e exclude REST API filter — covered by Newman
+
 - **GIVEN** a register with 100 objects with translatable properties
 - **WHEN** a user filters the object list by `_translationStatus=outdated&_translationLanguage=en`
 - **THEN** only objects with at least one English property marked `outdated` SHALL be returned
 
 #### Scenario: Translation status stored in object metadata
+@e2e exclude backend persistence format — covered by PHPUnit
 - **GIVEN** an object with translatable properties
 - **WHEN** the object is persisted
 - **THEN** translation statuses SHALL be stored in the object JSON under a `_translationMeta` key: `{"_translationMeta": {"omschrijving": {"en": {"status": "approved", "updatedAt": "2026-03-19T10:00:00Z"}}}}`
 - **AND** the `_translationMeta` key SHALL NOT appear in regular API responses unless `_translations=all` is requested
 
-### Requirement: Bulk translation operations MUST be supported
+### Requirement: Bulk translation operations MUST be supported @e2e exclude REST API bulk translation — covered by Newman
 
 The system MUST support translating multiple objects or multiple properties in a single operation, enabling efficient batch workflows for translators.
 
@@ -268,7 +293,7 @@ The system MUST support translating multiple objects or multiple properties in a
 - **WHEN** a user sends `PATCH /api/objects/{register}/{schema}/bulk` with `{"_bulkAction": "approveTranslations", "language": "en", "ids": ["uuid-1", "uuid-2", ...]}`
 - **THEN** all 20 objects SHALL have their English translation statuses set to `approved`
 
-### Requirement: Import and export MUST preserve translations
+### Requirement: Import and export MUST preserve translations @e2e exclude backend import/export translation preservation — covered by PHPUnit
 
 Data import and export operations (CSV, Excel, JSON, XML) MUST handle translatable properties correctly, preserving language variants. This cross-references the `data-import-export` spec.
 
@@ -301,7 +326,7 @@ Data import and export operations (CSV, Excel, JSON, XML) MUST handle translatab
 - **THEN** the CSV SHALL contain a single `omschrijving` column with the English value (or Dutch fallback)
 - **AND** the export behavior SHALL be consistent with the API language negotiation
 
-### Requirement: Search MUST support cross-language and language-specific queries
+### Requirement: Search MUST support cross-language and language-specific queries @e2e exclude backend search language filtering — covered by PHPUnit
 
 Full-text search MUST be able to search across all language variants of translatable properties, or within a specific language. The search index MUST use language-appropriate analyzers (stemmers, tokenizers) per language.
 
@@ -362,6 +387,9 @@ When a register includes RTL (right-to-left) languages such as Arabic (`ar`) or 
 The system MUST track and expose translation completeness metrics at both the object level and the register level, enabling administrators to monitor translation progress.
 
 #### Scenario: Object-level translation completeness
+
+@e2e exclude backend computation — covered by PHPUnit
+
 - **GIVEN** an object with 4 translatable properties and register languages `["nl", "en", "de"]`
 - **AND** all 4 properties have Dutch values, 3 have English values, and 1 has a German value
 - **WHEN** the object completeness is calculated
@@ -380,11 +408,17 @@ The system MUST track and expose translation completeness metrics at both the ob
 - **AND** the list SHALL be sortable by translation completeness
 
 #### Scenario: API endpoint for translation statistics
+
+@e2e exclude REST API statistics — covered by Newman
+
 - **GIVEN** register `producten` with schema `producten`
 - **WHEN** the admin calls `GET /api/registers/{id}/translation-stats`
 - **THEN** the response SHALL include `{"languages": {"nl": {"total": 300, "translated": 300, "percentage": 100}, "en": {"total": 300, "translated": 240, "percentage": 80}}}`
 
 #### Scenario: Completeness excludes non-translatable properties
+
+@e2e exclude backend computation rule — covered by PHPUnit
+
 - **GIVEN** a schema with 5 properties, 3 of which are translatable
 - **WHEN** completeness is calculated
 - **THEN** only the 3 translatable properties SHALL be counted in the metric
@@ -402,6 +436,7 @@ The system MUST maintain a clear separation between the user's Nextcloud interfa
 - **AND** the "Save" button text SHALL be `"Opslaan"` (Dutch UI) regardless of the content language
 
 #### Scenario: API response separates concerns
+@e2e exclude REST API language separation — covered by Newman
 - **GIVEN** a request with `Accept-Language: en` from a user with Nextcloud locale `nl`
 - **WHEN** the API returns an object with a validation error
 - **THEN** the object's translatable properties SHALL be resolved to English (content language)
@@ -447,7 +482,7 @@ The register settings page MUST include a language configuration section where a
 - **THEN** each language SHALL be displayed with its native name and code: "Nederlands (nl)", "English (en)", "Deutsch (de)", "Francais (fr)"
 - **AND** the list SHALL include all ISO 639-1 languages
 
-### Requirement: GraphQL API MUST support language negotiation
+### Requirement: GraphQL API MUST support language negotiation @e2e exclude GraphQL backend — covered by PHPUnit
 
 The GraphQL endpoint MUST support the same language negotiation as the REST API, using either the `Accept-Language` header or a `language` query argument on translatable fields.
 
@@ -467,7 +502,7 @@ The GraphQL endpoint MUST support the same language negotiation as the REST API,
 - **WHEN** the query is executed
 - **THEN** `naam` SHALL return the full language-keyed object: `{"nl": "...", "en": "..."}`
 
-### Requirement: Translations MUST interact correctly with $ref properties and relations
+### Requirement: Translations MUST interact correctly with $ref properties and relations @e2e exclude backend $ref/relation handling — covered by PHPUnit
 
 Properties that use `$ref` to reference other objects SHALL NOT be translatable themselves (the reference ID is language-independent). However, when a referenced object is resolved inline, its translatable properties SHALL be resolved according to the current language context.
 

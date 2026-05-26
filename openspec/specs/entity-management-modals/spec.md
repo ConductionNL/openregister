@@ -80,6 +80,7 @@ Bulk-operation modals (`MassDeleteObject.vue`, `MassCopyObjects.vue`, `MassValid
 - **AND** if the staged selection is empty the modal MUST close immediately
 
 #### Scenario: Bulk delete reports partial success
+@e2e exclude bulk partial-failure (mixed deleted/failed result) needs an orchestrated backend failure — covered by PHPUnit; not deterministically reproducible via the UI
 - **GIVEN** the user submits a mass-delete over 50 objects and the backend returns `{deleted: 47, failed: 3}`
 - **WHEN** the bulk modal resolves
 - **THEN** the success banner MUST report both the success count (47) and the failure count (3)

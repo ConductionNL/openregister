@@ -5,6 +5,8 @@ status: implemented
 ---
 
 ## Purpose
+
+@e2e exclude backend audit trail — covered by PHPUnit
 Implement an immutable audit trail with cryptographic hash chaining for all register operations. Every create, read (of sensitive data), update, and delete MUST be recorded in a tamper-evident log with minimum 10-year retention. The audit trail MUST be independently verifiable and exportable for compliance auditing.
 
 **Tender demand**: 56% of analyzed government tenders require immutable audit trail capabilities.

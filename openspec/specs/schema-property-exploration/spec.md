@@ -1,6 +1,8 @@
 # schema-property-exploration Specification
 
 ## Purpose
+
+@e2e exclude backend schema introspection service — covered by PHPUnit
 TBD - created by archiving change retrofit-2026-05-25-bw2-svc-flat-3. Update Purpose after archive.
 ## Requirements
 ### Requirement: SchemaService MUST discover undeclared properties by analysing a schema's stored objects

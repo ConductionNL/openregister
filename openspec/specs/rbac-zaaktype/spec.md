@@ -1,6 +1,8 @@
 # rbac-zaaktype Specification
 
 ## Purpose
+
+@e2e exclude backend RBAC enforcement — covered by PHPUnit
 Implement role-based access control (RBAC) at the zaaktype (case type) and objecttype level. Users and groups MUST only access records belonging to types they are authorized for. This covers read, write, and delete permissions scoped to specific register schema combinations, enabling fine-grained data compartmentalization across departments.
 
 **Tender demand**: 86% of analyzed government tenders require RBAC per zaaktype.

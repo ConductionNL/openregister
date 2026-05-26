@@ -10,6 +10,8 @@ retrofit_extensions:
 
 ## Purpose
 
+@e2e exclude backend workflow/archival — covered by PHPUnit
+
 Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen. This capability builds on the archivering-vernietiging spec and integrates with the immutable audit trail and deletion audit trail for legally required evidence trails.
 
 ## Requirements

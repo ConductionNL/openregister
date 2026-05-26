@@ -8,6 +8,8 @@ retrofit_extensions:
 
 ## Purpose
 
+@e2e exclude backend schema property type extension — covered by PHPUnit
+
 Unified system for linking Nextcloud entities (mail, contacts, calendar events, notes, todos, Talk conversations, Deck cards) to OpenRegister objects and entities. Provides schema-level `configuration.linkedTypes` declarations, Nc\* property types for typed field-level references, lean `_` metadata columns on both magic and entity tables, a generic API for ad-hoc linking and reverse lookups, read-time enrichment via `_extend`, and sidebar injection based on linkedTypes.
 
 **Standards**: JSON Schema (custom type extensions), Nextcloud Mail/CardDAV/CalDAV/Talk/Deck APIs

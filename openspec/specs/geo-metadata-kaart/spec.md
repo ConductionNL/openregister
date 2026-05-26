@@ -5,6 +5,8 @@ status: draft
 # geo-metadata-kaart Specification
 
 ## Purpose
+
+@e2e exclude feature not yet implemented — no UI surface exists
 Add geospatial metadata support and map visualization to register objects. Objects MUST support storing coordinates (point), polygons, and references to BAG/BGT base registrations. A map widget using Leaflet MUST visualize object locations, support clustering, and enable spatial queries for filtering objects by geographic area.
 
 **Tender demand**: 35% of analyzed government tenders require geo/map capabilities.

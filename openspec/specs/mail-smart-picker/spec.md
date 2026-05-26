@@ -6,6 +6,8 @@ status: implemented
 
 ## Purpose
 
+@e2e exclude Nextcloud Smart Picker IReference backend — covered by PHPUnit
+
 Enable OpenRegister objects to be discovered, searched, and inserted as rich references via Nextcloud's Smart Picker in any app that supports the `@nextcloud/vue-richtext` component (Mail, Text, Talk, Collectives, etc.). When a user pastes or picks an OpenRegister object URL, it SHALL render as an inline rich preview card showing the object's title, schema, register, key properties, and a direct link. This integration uses the standard `OCP\Collaboration\Reference` API and the existing `ObjectsProvider` search provider.
 
 **Source**: Users working with OpenCatalogi, Procest, and other Conduction apps need to reference register objects in email and collaborative documents. Without a reference provider, pasted URLs render as plain text with no preview.

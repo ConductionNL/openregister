@@ -6,6 +6,8 @@ status: implemented
 
 ## Purpose
 
+@e2e exclude backend OAS generation service — covered by PHPUnit
+
 OAS Generation provides on-demand OpenAPI Specification (OAS 3.x) documents derived from the live register and schema configuration. Callers can retrieve a combined specification covering all registers, or a scoped specification for a single register. The endpoint is publicly accessible without authentication — OAS is treated as self-describing public API documentation.
 ## Requirements
 

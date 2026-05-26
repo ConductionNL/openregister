@@ -4,6 +4,8 @@ status: redirect
 # Built-in Dashboards
 
 ## Purpose
+
+@e2e exclude redirect stub — no scenarios
 This spec is a redirect stub. The canonical specification for built-in dashboards lives in the root openspec (cross-app pattern). This stub exists to preserve the spec slug locally and MUST NOT be treated as authoritative.
 
 ## Requirements

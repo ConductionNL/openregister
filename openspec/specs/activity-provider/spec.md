@@ -6,6 +6,8 @@ status: implemented
 
 ## Purpose
 
+@e2e exclude Nextcloud activity provider — backend-only, covered by PHPUnit
+
 Integrate OpenRegister with Nextcloud's Activity app so that all CRUD operations on Objects, Registers, and Schemas are visible in the standard Nextcloud activity stream, dashboard activity widget, and (optionally) email notifications. This gives users and administrators a clear, auditable timeline of who changed what and when, using the standard `OCP\Activity` API (IManager, IProvider, IFilter, ActivitySettings).
 
 **Source**: OpenRegister is a multi-user data registration platform where multiple people collaborate on structured data. Without Activity integration, users have no Nextcloud-native visibility into changes made by others. The existing internal event system (`ObjectCreatedEvent`, etc.) already dispatches events but they are not surfaced to end users.

@@ -5,6 +5,8 @@ status: in-progress
 # Schema-Driven Read Coercion
 
 ## Purpose
+
+@e2e exclude backend type coercion service — covered by PHPUnit
 Defines how OpenRegister coerces database column values to JSON-Schema-typed PHP values when reconstructing an `ObjectEntity` from a magic-table row. Establishes a single canonical converter (`SchemaTypeConverter`) that all read paths delegate to, eliminating the class of bugs where the schema declares one type but the API returns another — `boolean` properties arriving as `int 0`/`1` from MariaDB, or `string` properties whose values look like JSON literals being silently decoded back into the original primitive.
 
 **OpenSpec changes**

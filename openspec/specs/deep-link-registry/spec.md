@@ -7,6 +7,8 @@ reviewed_date: 2026-02-28
 
 ## Purpose
 
+@e2e exclude backend deep-link registration service — covered by PHPUnit
+
 The Deep Link Registry enables consuming Nextcloud apps (Procest, Pipelinq, OpenCatalogi, etc.) to claim ownership of specific OpenRegister (register, schema) combinations by registering URL templates at boot time. When Nextcloud's unified search returns objects belonging to a claimed combination, results link directly to the consuming app's detail view instead of OpenRegister's generic object view. This decouples object storage (OpenRegister) from object presentation (consuming apps), allowing each app to own its user experience while sharing a common data layer.
 
 The registry is event-driven and in-memory only: OpenRegister dispatches a `DeepLinkRegistrationEvent` during `Application::boot()`, consuming apps listen and call `register()`, and the resulting mappings are used by `ObjectsProvider` (the unified search provider) to resolve URLs and icons for the current request cycle.

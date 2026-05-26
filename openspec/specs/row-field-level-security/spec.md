@@ -5,6 +5,8 @@ status: implemented
 # Row and Field Level Security
 
 ## Purpose
+
+@e2e exclude backend RLS/FLS enforcement — covered by PHPUnit
 Implement dynamic per-record access rules based on field values (row-level security / RLS) and per-field visibility and editability rules based on user roles (field-level security / FLS). Beyond schema-level RBAC that controls access to entire object types, the system MUST support row-level security where access to individual objects depends on the object's own properties (e.g., department, classification level, owner), and field-level security where different users see different fields of the same object. Both security layers MUST be enforced consistently across REST, GraphQL, search, export, and MCP access methods, evaluated at the database query level where possible for performance, and composable with schema-level RBAC and multi-tenancy isolation.
 
 **Source**: Gap identified in cross-platform analysis; Directus implements comprehensive row/field-level security with filter-based permissions and dynamic variables ($CURRENT_USER, $CURRENT_ROLE, $NOW). NocoDB provides view-level permissions. 86% of analyzed government tenders require RBAC per zaaktype; 67% require SSO/identity integration with fine-grained data compartmentalization.

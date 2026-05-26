@@ -46,12 +46,14 @@ The search sidebar MUST let a signed-in user favorite a view, automatically appl
 - **AND** after a successful response `viewsStore.fetchViews` MUST refresh the list and a confirmation notification MUST be shown
 
 #### Scenario: Favoriting requires an authenticated user
+@e2e exclude unauthenticated context redirects to /login before the SPA mounts — not reachable in a browser session; covered by Jest unit tests
 - **GIVEN** no current user is available from `OC.getCurrentUser()`
 - **WHEN** `toggleFavorite(view)` runs
 - **THEN** a "must be logged in" notification MUST be shown
 - **AND** no PATCH request MUST be issued
 
 #### Scenario: The default view is applied on mount
+@e2e exclude blocked by ViewService::create() not persisting `organisation` (backend bug — views vanish on reload); default-view-on-mount not reachable in the UI until fixed
 - **GIVEN** `viewsStore.getDefaultView` returns a view
 - **WHEN** the sidebar's `mounted()` hook runs
 - **THEN** `applyViewConfiguration(defaultView)` MUST be invoked

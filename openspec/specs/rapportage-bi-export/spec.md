@@ -4,6 +4,8 @@ status: implemented
 # Rapportage en BI Export
 
 ## Purpose
+
+@e2e exclude backend BI export/reporting service — covered by PHPUnit
 Provide a comprehensive reporting and business intelligence export layer for OpenRegister that enables government organisations to generate management reports, perform data aggregation queries, connect external BI tools, and satisfy Dutch public accountability requirements (WOO, jaarverslag, verantwoording). The system exposes a general-purpose aggregation API (count, sum, avg, min, max, count_distinct, group by) on top of the existing `MagicMapper` and `MagicStatisticsHandler` infrastructure, supports scheduled report generation via the `ReportRenderJob` daily TimedJob, produces exports in CSV, XLSX, ODS, HTML, and PDF formats via `ReportRenderService` (PhpSpreadsheet for spreadsheets, Dompdf for PDF), and provides GraphQL as the primary external-BI integration surface (Power BI, Tableau, Looker, Metabase all speak it via existing connectors). All reporting operations enforce RBAC via `PermissionHandler`, `MagicRbacHandler`, and `PropertyRbacHandler`, and respect multi-tenancy boundaries to guarantee data isolation between organisations.
 
 **Tender demand**: 89% of analyzed government tenders require reporting and BI export capabilities. Key recurring requirements include management dashboards, KPI tracking, periodic status reports (wekelijkse voortgangsrapportage), WOO transparency reporting, and integration with existing BI tooling (Power BI, Tableau, QlikView).

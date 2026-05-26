@@ -5,6 +5,8 @@ status: in-progress
 # Datetime Input Handling
 
 ## Purpose
+
+@e2e exclude backend datetime normalization — covered by PHPUnit
 Defines how OpenRegister converts user-supplied datetime input at every stage of the object lifecycle — write, read, bulk, and search — so that empty, null, and whitespace-only values consistently normalize to `null` rather than being silently interpreted as the current date-time. Establishes a single canonical normalization helper that all code paths delegate to, eliminating the class of bug where PHP's `new DateTime('')` / `new DateTime(null)` silently produces "now" for user-cleared fields.
 
 **OpenSpec changes**

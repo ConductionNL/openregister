@@ -1,6 +1,8 @@
 # generic-integrations Specification
 
 ## Purpose
+
+@e2e exclude Nextcloud shares provider backend — covered by PHPUnit
 TBD - created by archiving change integration-shares. Update Purpose after archive.
 ## Requirements
 ### Requirement: Shares Provider Registration

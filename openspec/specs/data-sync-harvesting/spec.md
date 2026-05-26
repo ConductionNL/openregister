@@ -1,6 +1,8 @@
 # data-sync-harvesting Specification
 
 ## Purpose
+
+@e2e exclude backend sync/harvesting service — covered by PHPUnit
 TBD - created by archiving change data-sync-harvesting. Update Purpose after archive.
 ## Requirements
 ### Requirement: The system MUST support configurable sync source definitions with connection details, authentication, and scheduling

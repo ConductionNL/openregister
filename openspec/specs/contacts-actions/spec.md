@@ -9,6 +9,8 @@ retrofit_extensions:
 # contacts-actions Specification
 
 ## Purpose
+
+@e2e exclude Nextcloud Contacts IContactsMenuProvider backend — covered by PHPUnit
 TBD - created by archiving change contacts-actions. Update Purpose after archive.
 
 The capability now also covers the inbound+management surface added by `retrofit-2026-05-24-contacts-actions` (REQ-010..REQ-014): per-object contact-link CRUD via dual storage, reverse lookup, match-API deep-link enrichment, the `ContactsProvider` integration-registry adapter, and the `ContactsTab` frontend tab with graceful 501 degradation.

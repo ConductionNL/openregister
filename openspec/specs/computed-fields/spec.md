@@ -7,6 +7,8 @@ retrofit_extensions:
 # Computed Fields
 
 ## Purpose
+
+@e2e exclude server-side Twig expression engine — covered by PHPUnit
 Computed fields enable schema properties whose values are derived automatically from expressions evaluated against object data, cross-referenced objects, and aggregation functions. This capability eliminates redundant data entry, ensures consistency of derived values (full names, totals, expiry dates), and brings spreadsheet-like formula power to OpenRegister without requiring external workflow engines for simple calculations. Computed fields use Twig expressions evaluated server-side, leveraging the existing Twig infrastructure already integrated into OpenRegister for mapping and transformation.
 
 ## Requirements

@@ -6,6 +6,8 @@ retrofit: true
 
 ## Purpose
 
+@e2e exclude REST API + LLPhant adapter backend — covered by PHPUnit
+
 Provides a conversational AI interface for OpenRegister users. Users interact with AI agents through persistent conversations that carry a history of messages. Each message exchange retrieves relevant context from registered objects and files (RAG) before querying the configured LLM. Agents are configurable AI personalities that can be scoped to an organisation and optionally restricted to their owner. This capability covers the full lifecycle: agent management, conversation management, message exchange, history retrieval, user feedback, and usage analytics.
 
 ## Requirements

@@ -1,6 +1,8 @@
 # frontend-store-client-state Specification
 
 ## Purpose
+
+@e2e exclude Pinia store unit patterns — covered by unit tests, not Playwright
 TBD - created by archiving change retrofit-2026-05-25-fe-store-1. Update Purpose after archive.
 ## Requirements
 ### Requirement: Coordination stores SHALL gate expensive preloads and refresh derived data when their dependency stores change
