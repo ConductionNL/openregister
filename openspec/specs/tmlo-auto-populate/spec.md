@@ -1,6 +1,8 @@
 # tmlo-auto-populate Specification
 
 ## Purpose
+
+@e2e exclude backend TMLO auto-populate handler — covered by PHPUnit
 TBD - created by archiving change tmlo-metadata. Update Purpose after archive.
 ## Requirements
 ### Requirement: Auto-populate TMLO metadata on object creation

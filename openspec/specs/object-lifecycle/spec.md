@@ -6,6 +6,8 @@ retrofit: true
 
 ## Purpose
 
+@e2e exclude internal object pipeline backend — covered by PHPUnit
+
 Describes the internal pipeline that governs how OpenRegister objects are created, read, updated, and deleted. This capability covers the layered handler pattern used to decompose the save, validate, cache, metadata-hydration, and bulk processing concerns, and is the foundation on which all higher-level capabilities (schema hooks, RBAC, retention, audit trail) attach their side effects.
 ## Requirements
 

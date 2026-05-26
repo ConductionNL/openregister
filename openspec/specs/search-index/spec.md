@@ -7,6 +7,8 @@ retrofit: true
 
 ## Purpose
 
+@e2e exclude backend Solr/search index service — covered by PHPUnit
+
 OpenRegister provides full-text search, faceted browsing, and bulk re-indexing over its object store via a pluggable search backend (Solr today, Elasticsearch in parallel, with the `SearchBackendInterface` keeping the contract backend-agnostic). The `search-index` capability covers everything from the high-level `IndexService` facade down through the Solr-specific primitives (`SolrCollectionManager`, `SolrDocumentIndexer`, `SolrQueryExecutor`, `SolrFacetProcessor`, `SolrHttpClient`), the schema/document builders (`SchemaHandler`, `DocumentBuilder`, `SchemaMapper`), the bulk-indexing driver (`BulkIndexer`), the configuration plumbing (`ConfigurationHandler`), and the tenant-collection setup orchestrator (`SetupHandler`).
 
 This spec was reverse-engineered from code under `lib/Service/IndexService.php` and `lib/Service/Index/**` by the `retrofit-2026-05-24-search-index` ghost change after the Bucket 2a coverage scan flagged the layer as having zero spec coverage. Code already exists — requirements describe **what the code does**, not what we wish it did. See **Notes** for the stub/drift observations.

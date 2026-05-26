@@ -37,7 +37,7 @@ Without debouncing every keystroke would trigger a network round-trip on the par
 - **AND** only one `update:search` event MUST fire 500ms after the last keystroke, with payload `"foo"`
 
 #### Scenario: Component owns a single search timeout handle
-
+@e2e exclude internal Vue component state — covered by unit tests
 - **GIVEN** the sidebar component is mounted
 - **WHEN** any debounced method runs
 - **THEN** the timeout handle MUST be stored on `this.searchTimeout` (not a module-level variable)
@@ -96,14 +96,14 @@ Using the route query as the canonical filter store makes the filter state share
 - **THEN** `updateRouteQueryFromState()` MUST call `$router.replace` with query `{ register: "5", schema: "12", dateFrom: "2026-05-01T00:00:00.000Z" }`
 
 #### Scenario: applyFilters is a no-op outside /deleted
-
+@e2e exclude internal component teardown guard — covered by unit tests
 - **GIVEN** the user has navigated away to `/dashboard` but the DeletedSideBar component is still mounted (or being torn down)
 - **WHEN** a residual watcher fires `applyFilters()`
 - **THEN** `updateRouteQueryFromState()` MUST detect `this.$route.path !== '/deleted'` and return immediately
 - **AND** no `$router.replace` call MUST be issued
 
 #### Scenario: applyFilters skips redundant navigation
-
+@e2e exclude internal router guard — covered by unit tests
 - **GIVEN** the current `$route.query` already equals the query built from sidebar state
 - **WHEN** `applyFilters()` runs (for example after `applyQueryParamsFromRoute` already synchronised both directions)
 - **THEN** `queriesEqual` MUST return true
@@ -111,7 +111,7 @@ Using the route query as the canonical filter store makes the filter state share
 
 ---
 
-### Requirement: Backend File Reverse-Lookup and Extraction Status
+### Requirement: Backend File Reverse-Lookup and Extraction Status @e2e exclude backend service — covered by PHPUnit
 
 The system MUST provide a `FileSidebarService` that backs the OpenRegister tab in the
 Nextcloud Files app sidebar. `getObjectsForFile(int $fileId): array` MUST find every

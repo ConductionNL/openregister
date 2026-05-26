@@ -1,6 +1,8 @@
 # integration-shares Specification
 
 ## Purpose
+
+@e2e exclude redirect/duplicate of generic-integrations — backend-only
 TBD - created by archiving change integration-shares. Update Purpose after archive.
 ## Requirements
 ### Requirement: Shares Provider Registration

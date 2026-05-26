@@ -1,6 +1,8 @@
 # text-extraction Specification
 
 ## Purpose
+
+@e2e exclude backend text extraction service — covered by PHPUnit
 TBD - created by archiving change retrofit-2026-05-25-bw-svc-mid2. Update Purpose after archive.
 ## Requirements
 ### Requirement: Source handlers MUST implement a common extraction contract (REQ-001)

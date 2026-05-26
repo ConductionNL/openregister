@@ -1,6 +1,8 @@
 # file-actions Specification
 
 ## Purpose
+
+@e2e exclude backend file pipeline — covered by PHPUnit
 TBD - created by archiving change retrofit-2026-05-25-bw-svc-file. Update Purpose after archive.
 ## Requirements
 ### Requirement: File creation and upsert run a fixed validate-write-own-tag pipeline

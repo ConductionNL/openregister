@@ -1,6 +1,8 @@
 # frontend-app-bootstrap Specification
 
 ## Purpose
+
+@e2e exclude Vue app bootstrap/JS unit patterns — covered by unit tests, not Playwright
 TBD - created by archiving change retrofit-2026-05-25-fe-misc. Update Purpose after archive.
 ## Requirements
 ### Requirement: REQ-001 — Application data MUST be hot-loaded once at startup

@@ -5,6 +5,8 @@ status: draft
 # besluiten-management Specification
 
 ## Purpose
+
+@e2e exclude ZGW decision REST API — covered by Newman
 Implement formal decision management (besluiten) conforming to the ZGW BRC (Besluiten Registratie Component) standard. Decisions MUST be first-class entities with decision types from the catalog, publication dates, appeal periods (bezwaartermijn), withdrawal support, and linked documents. Every case (zaak) MUST be able to have one or more formal decisions associated with it.
 
 **Source**: ZGW API standard requirement; gap identified in cross-platform analysis.

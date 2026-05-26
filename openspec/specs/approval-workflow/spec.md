@@ -6,6 +6,8 @@ status: implemented
 
 ## Purpose
 
+@e2e exclude REST API CRUD — covered by Newman; no dedicated OR UI surface
+
 Approval Workflow provides multi-step, role-gated approval chains for OpenRegister objects. Administrators configure named chains with ordered steps, each bound to a Nextcloud group (the "role"). When an object enters a chain, one `ApprovalStep` record per chain step is created — step 1 starts as `pending`, all others as `waiting`. Authorised users approve or reject the pending step; on approval the next waiting step is automatically advanced to `pending`. Each decision is persisted to the workflow execution history.
 
 ## Requirements

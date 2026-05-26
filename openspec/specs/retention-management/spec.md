@@ -5,6 +5,8 @@ status: implemented
 # Retention Management
 
 ## Purpose
+
+@e2e exclude backend MDTO retention lifecycle — covered by PHPUnit
 Implement retention lifecycle management for register objects: MDTO-compliant archival metadata, selectielijsten, archiefactiedatum calculation, destruction scheduling with approval workflows, legal holds, and notifications per Archiefwet 1995.
 
 ## Requirements

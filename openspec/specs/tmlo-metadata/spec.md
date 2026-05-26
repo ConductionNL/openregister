@@ -7,6 +7,8 @@ retrofit: true
 
 ## Purpose
 
+@e2e exclude backend TMLO metadata foundation — covered by PHPUnit
+
 Foundation capability for TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden) archival metadata on OpenRegister objects. Owns the cross-cutting contract that the sibling specs (`tmlo-metadata-schema`, `tmlo-auto-populate`, `tmlo-export`, `tmlo-query-api`) compose against:
 
 - The canonical `TmloService` surface and its constants/enums (archiefnominatie, archiefstatus, MDTO namespace, allowed status transitions).

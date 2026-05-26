@@ -6,6 +6,8 @@ status: implemented
 
 ## Purpose
 
+@e2e exclude REST API endpoint contracts — covered by Newman
+
 Extend the OpenRegister user profile system with self-service account management actions. The current profile API (`/api/user/me`) supports reading and updating basic profile fields, but lacks password change, avatar management, personal data export (GDPR Article 20 data portability), notification preferences, personal activity history, API token management, and account deactivation requests. This spec defines REST endpoints and frontend UI for each action, all respecting Nextcloud backend capabilities and organisation-level policies. Every action is scoped to the authenticated user (no admin elevation required) and integrates with existing `UserService`, `SecurityService`, and `OrganisationService`.
 
 **Standards**: GDPR Articles 17 and 20 (erasure and data portability), Nextcloud OCS User API conventions, NL Design System (NLDS) theming tokens, WCAG 2.1 AA accessibility.

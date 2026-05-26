@@ -4,6 +4,8 @@ status: redirect
 # No-Code App Builder
 
 ## Purpose
+
+@e2e exclude redirect stub — no scenarios in OR
 This spec is a redirect stub. The canonical specification for the no-code app builder is owned by the root openspec (cross-app capability). This stub exists to preserve the spec slug locally and MUST NOT be treated as authoritative.
 
 ## Requirements

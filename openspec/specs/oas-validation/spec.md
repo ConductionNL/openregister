@@ -1,6 +1,8 @@
 # OAS Validation Specification
 
 ## Purpose
+
+@e2e exclude backend OAS validation — covered by PHPUnit
 Ensure that `OasService::createOas()` produces valid OpenAPI 3.1.0 JSON that passes Redocly CLI lint without errors. The current output may contain invalid property structures, broken `$ref` references, or non-compliant schema compositions that cause tools like Redocly, Swagger UI, and Swagger Editor to fail.
 
 ## ADDED Requirements

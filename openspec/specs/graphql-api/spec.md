@@ -7,6 +7,8 @@ status: implemented
 # GraphQL API
 ## Purpose
 
+@e2e exclude GraphQL backend/schema generation — covered by PHPUnit and Newman
+
 Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE).
 
 The GraphQL layer MUST reuse existing OpenRegister services -- `PermissionHandler` for schema-level RBAC, `PropertyRbacHandler` for field-level security, `RelationHandler` for nested resolution and DataLoader batching, `AuditTrailMapper` for change logging, `SecurityService` for rate limiting, `MagicMapper` for cross-register queries, and `MultiTenancyTrait` for organisation scoping -- rather than reimplementing any of these concerns. The implementation is built on the `webonyx/graphql-php` library, with the full service stack comprising `GraphQLService` (orchestrator), `SchemaGenerator` (type generation), `GraphQLResolver` (query/mutation resolution), `QueryComplexityAnalyzer` (abuse prevention), `GraphQLErrorFormatter` (structured errors), `SubscriptionService` (SSE event buffer), and `GraphQLSubscriptionListener` (event bridge).

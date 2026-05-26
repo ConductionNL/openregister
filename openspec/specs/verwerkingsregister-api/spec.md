@@ -5,6 +5,8 @@ status: implemented
 ---
 
 ## Purpose
+
+@e2e exclude GDPR verwerkingsregister REST API — covered by Newman
 GDPR Art 30 processing register API for querying processing activities, generating data subject access reports (inzageverzoek), and exporting the verwerkingsregister. Enables compliance auditing for Dutch government organisations.
 
 ## Requirements

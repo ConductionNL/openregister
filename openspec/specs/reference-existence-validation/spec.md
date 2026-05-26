@@ -1,6 +1,8 @@
 # reference-existence-validation Specification
 
 ## Purpose
+
+@e2e exclude backend schema property validation — covered by PHPUnit
 TBD - created by archiving change reference-existence-validation. Update Purpose after archive.
 ## Requirements
 ### Requirement: Schema properties MUST support a validateReference configuration

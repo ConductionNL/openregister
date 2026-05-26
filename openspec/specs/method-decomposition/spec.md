@@ -6,6 +6,8 @@ estimated_effort: large
 
 # Method Decomposition — OpenRegister
 
+@e2e exclude internal refactoring spec — no UI surface, covered by PHPUnit
+
 ## Goal
 Eliminate 1,045 PHPMD complexity suppressions by decomposing complex methods into smaller, focused units. Each suppression represents a method or class that exceeds PHPMD's strict thresholds (CC>10, NPath>200, MethodLength>100, ClassLength>1000).
 

@@ -4,6 +4,8 @@ status: active
 
 # Unit Test Coverage to 100%
 
+@e2e exclude test infrastructure spec — no UI surface, covered by PHPUnit
+
 Achieve 100% unit test code coverage for all PHP source files in `lib/` (excluding `Migration/` and `AppInfo/Application.php`). Tests SHALL exercise every code path — not just the happy flow, but all branches, error paths, edge cases, and boundary conditions.
 
 ## Current State

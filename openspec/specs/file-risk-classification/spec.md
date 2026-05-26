@@ -1,6 +1,8 @@
 # file-risk-classification Specification
 
 ## Purpose
+
+@e2e exclude backend PII/risk classifier — covered by PHPUnit
 TBD - created by archiving change retrofit-2026-05-25-bw2-svc-flat-3. Update Purpose after archive.
 ## Requirements
 ### Requirement: RiskLevelService MUST classify a file's PII risk from its detected entities

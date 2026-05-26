@@ -6,6 +6,8 @@ retrofit_extensions:
 # Tenant Quotas
 
 ## Purpose
+
+@e2e exclude backend quota enforcement service — covered by PHPUnit
 Define enforcement of per-organisation resource quotas (storage, bandwidth, API requests) to prevent any single tenant from monopolizing shared resources in a SaaS deployment. The Organisation entity already has `storageQuota`, `bandwidthQuota`, and `requestQuota` fields; this spec defines their enforcement, tracking, and overage handling.
 
 **Source**: SaaS resource management; BIO availability requirements; fair-use policies for shared government platforms.

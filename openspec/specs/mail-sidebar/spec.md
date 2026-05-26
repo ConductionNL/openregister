@@ -12,6 +12,8 @@ retrofit_extensions:
 
 ## Purpose
 
+@e2e exclude Nextcloud Mail IMailProvider backend — covered by PHPUnit
+
 Provide a sidebar panel inside the Nextcloud Mail app that displays OpenRegister objects related to the currently viewed email. This enables case handlers to see at a glance which cases, applications, or records are associated with an email -- and to create new associations -- without leaving the Mail app. The integration builds on the `openregister_email_links` table and `EmailService` established by the nextcloud-entity-relations spec.
 
 **Standards**: Nextcloud App Framework (script injection via `OCP\Util::addScript()`), REST API conventions (JSON responses, standard HTTP status codes), WCAG AA accessibility

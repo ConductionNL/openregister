@@ -6,6 +6,8 @@ retrofit_extensions:
 # Tenant Lifecycle
 
 ## Purpose
+
+@e2e exclude backend Organisation state machine — covered by PHPUnit
 Define the provisioning, suspension, and deprovisioning workflow for tenant organisations in a SaaS multi-tenant OpenRegister deployment. Each tenant maps to an Organisation entity with a lifecycle state machine that governs API access, data retention, and administrative operations.
 
 **Source**: SaaS deployment requirements; BIO/ISO 27001 tenant management; 67% of government tenders require demonstrable tenant isolation with controlled provisioning.

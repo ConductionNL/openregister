@@ -1,6 +1,8 @@
 # aggregations-backend-native Specification
 
 ## Purpose
+
+@e2e exclude backend aggregation service — covered by PHPUnit
 TBD - created by archiving change retrofit-2026-05-25-bw-svc-mid3. Update Purpose after archive.
 ## Requirements
 ### Requirement: The system MUST validate aggregation-API request shapes and widget annotations before execution

@@ -5,6 +5,8 @@ status: draft
 # archivering-vernietiging Specification
 
 ## Purpose
+
+@e2e exclude backend archival/MDTO — covered by PHPUnit
 Implement archiving and destruction lifecycle management for register objects, conforming to MDTO (Metagegevens Duurzaam Toegankelijke Overheidsinformatie), NEN 2082 records management, and e-Depot export standards. Objects MUST support retention schedules, automated destruction workflows, and transfer to digital archival systems.
 
 **Tender demand**: 77% of analyzed government tenders require archiving and destruction capabilities.
