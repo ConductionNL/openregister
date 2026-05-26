@@ -136,10 +136,16 @@ export default {
 			return name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1')
 		},
 
+		/**
+		 * @spec exclude display helper formatting detail label
+		 */
 		formatDetailLabel(key) {
 			return key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/^\w/, c => c.toUpperCase())
 		},
 
+		/**
+		 * @spec exclude display helper formatting detail value
+		 */
 		formatDetailValue(value) {
 			if (typeof value === 'object') {
 				return JSON.stringify(value)

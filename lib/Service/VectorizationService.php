@@ -470,6 +470,8 @@ class VectorizationService
      * @return array<int,array<string,mixed>> Search results
      *
      * @throws \Exception If search fails
+     *
+     * @spec exclude One-line facade delegation to VectorEmbeddings::semanticSearch; no logic of its own.
      */
     public function semanticSearch(
         string $query,
@@ -494,6 +496,8 @@ class VectorizationService
      * @return array Hybrid search results with combined scores and source breakdown.
      *
      * @throws \Exception If hybrid search fails.
+     *
+     * @spec exclude One-line facade delegation to VectorEmbeddings::hybridSearch; no logic of its own.
      */
     public function hybridSearch(
         string $query,

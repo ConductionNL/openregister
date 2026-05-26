@@ -58,6 +58,8 @@ class NotificationReadState
      * @param string $notificationId The notification id.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-7
      */
     public function markRead(string $userId, string $notificationId): void
     {
@@ -72,6 +74,8 @@ class NotificationReadState
      * @param string $notificationId The notification id.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-7
      */
     public function markUnread(string $userId, string $notificationId): void
     {
@@ -97,6 +101,8 @@ class NotificationReadState
      * Number of "read" rows currently tracked across all users.
      *
      * @return int
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-7
      */
     public function readCount(): int
     {

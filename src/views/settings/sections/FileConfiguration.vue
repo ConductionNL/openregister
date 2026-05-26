@@ -758,6 +758,8 @@ export default {
 
 		/**
 		 * Check if any file operation is currently running
+		 *
+		 * @spec exclude UI plumbing — derived busy-state for disabling buttons.
 		 */
 		isProcessing() {
 			return this.discoveringFiles || this.extractingFiles || this.retryingFiles
@@ -765,6 +767,8 @@ export default {
 
 		/**
 		 * Show Presidio config when presidio or hybrid is selected
+		 *
+		 * @spec exclude UI plumbing — conditional-render predicate for a settings block.
 		 */
 		showPresidioConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
@@ -773,6 +777,8 @@ export default {
 
 		/**
 		 * Show OpenAnonymiser config when openanonymiser is selected
+		 *
+		 * @spec exclude UI plumbing — conditional-render predicate for a settings block.
 		 */
 		showOpenAnonymiserConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
@@ -780,6 +786,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Load settings and extraction stats on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to loaders.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		await this.loadSettings()
 		await this.loadExtractionStats()
@@ -788,6 +800,8 @@ export default {
 	methods: {
 		/**
 		 * Load file configuration settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local form state.
 		 */
 		async loadSettings() {
 			try {
@@ -858,6 +872,8 @@ export default {
 
 		/**
 		 * Load object text extraction settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local form state.
 		 */
 		async loadObjectSettings() {
 			try {
@@ -876,6 +892,8 @@ export default {
 
 		/**
 		 * Save file configuration settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings save delegating to the store.
 		 */
 		async saveSettings() {
 			try {
@@ -909,6 +927,8 @@ export default {
 
 		/**
 		 * Save object text extraction settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings save delegating to the store.
 		 */
 		async saveObjectSettings() {
 			try {
@@ -925,6 +945,8 @@ export default {
 
 		/**
 		 * Test Dolphin API connection
+		 *
+		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testDolphinConnection() {
 			try {
@@ -958,6 +980,8 @@ export default {
 
 		/**
 		 * Test Presidio API connection
+		 *
+		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testPresidioConnection() {
 			try {
@@ -992,6 +1016,8 @@ export default {
 
 		/**
 		 * Test OpenAnonymiser API connection
+		 *
+		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testOpenAnonymiserConnection() {
 			try {
@@ -1026,6 +1052,8 @@ export default {
 
 		/**
 		 * Load extraction statistics
+		 *
+		 * @spec exclude UI plumbing — admin-settings stats load hydrating local display state.
 		 */
 		async loadExtractionStats() {
 			try {
@@ -1049,6 +1077,8 @@ export default {
 
 		/**
 		 * Discover files in Nextcloud that aren't tracked yet
+		 *
+		 * @spec exclude UI plumbing — store-delegated action trigger + feedback message.
 		 */
 		async discoverFiles() {
 			this.discoveringFiles = true
@@ -1077,6 +1107,8 @@ export default {
 
 		/**
 		 * Extract pending files (files already staged with status='pending')
+		 *
+		 * @spec exclude UI plumbing — store-delegated action trigger + feedback message.
 		 */
 		async extractAllPendingFiles() {
 			this.extractingFiles = true
@@ -1105,6 +1137,8 @@ export default {
 
 		/**
 		 * Retry failed file extractions
+		 *
+		 * @spec exclude UI plumbing — store-delegated action trigger + feedback message.
 		 */
 		async reprocessFailedFiles() {
 			this.retryingFiles = true
@@ -1133,6 +1167,8 @@ export default {
 
 		/**
 		 * Show save message
+		 *
+		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
 		 * @param {string} message - The message to show
 		 * @param {string} type - The type of message to show
 		 */
@@ -1146,6 +1182,8 @@ export default {
 
 		/**
 		 * Format number with thousands separator
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {number} num - The number to format
 		 */
 		formatNumber(num) {

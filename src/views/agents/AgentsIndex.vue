@@ -283,17 +283,29 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude list-view client-side pagination slice (computed)
+		 */
 		paginatedAgents() {
 			const start = ((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
 			const end = start + (this.pagination.limit || 20)
 			return agentStore.agentList.slice(start, end)
 		},
+		/**
+		 * @spec exclude list-view select-all checkbox state (computed)
+		 */
 		allSelected() {
 			return agentStore.agentList.length > 0 && agentStore.agentList.every(agent => this.selectedAgents.includes(agent.id))
 		},
+		/**
+		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
+		 */
 		someSelected() {
 			return this.selectedAgents.length > 0 && !this.allSelected
 		},
+		/**
+		 * @spec exclude list-view empty-state title text helper (computed)
+		 */
 		emptyContentName() {
 			if (agentStore.loading) {
 				return t('openregister', 'Loading agents...')
@@ -304,6 +316,9 @@ export default {
 			}
 			return ''
 		},
+		/**
+		 * @spec exclude list-view empty-state description text helper (computed)
+		 */
 		emptyContentDescription() {
 			if (agentStore.loading) {
 				return t('openregister', 'Please wait while we fetch your agents.')
@@ -315,6 +330,9 @@ export default {
 			return ''
 		},
 	},
+	/**
+	 * @spec exclude list-view lifecycle soft-refresh of the agent list on mount
+	 */
 	mounted() {
 		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
 		agentStore.refreshAgentList(null, true)
@@ -334,6 +352,9 @@ export default {
 				this.selectedAgents = []
 			}
 		},
+		/**
+		 * @spec exclude list-view single-row selection toggle plumbing
+		 */
 		toggleAgentSelection(agentId, checked) {
 			if (checked) {
 				this.selectedAgents.push(agentId)
@@ -341,9 +362,15 @@ export default {
 				this.selectedAgents = this.selectedAgents.filter(id => id !== agentId)
 			}
 		},
+		/**
+		 * @spec exclude list-view pagination page-change handler
+		 */
 		onPageChanged(page) {
 			this.pagination.page = page
 		},
+		/**
+		 * @spec exclude list-view pagination page-size-change handler
+		 */
 		onPageSizeChanged(pageSize) {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize

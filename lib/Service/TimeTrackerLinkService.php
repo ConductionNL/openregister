@@ -199,6 +199,8 @@ class TimeTrackerLinkService
      * @throws Exception On missing user (401), bad type (400), missing
      *                   entry (404), duplicate (409), TimeManager
      *                   unavailable (503).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-entry contract is owned by the integration-time-tracker capability.
      */
     public function linkEntry(
         string $objectUuid,
@@ -262,6 +264,8 @@ class TimeTrackerLinkService
      *
      * @throws Exception On missing user (401), empty name (400),
      *                   TimeManager unavailable (503), create failure (500).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-client contract is owned by the integration-time-tracker capability.
      */
     public function createAndLinkClient(
         string $objectUuid,
@@ -428,6 +432,8 @@ class TimeTrackerLinkService
      * @return void
      *
      * @throws Exception On missing user (401) or no matching link (404).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink contract is owned by the integration-time-tracker capability.
      */
     public function unlink(string $objectUuid, string $entryId): void
     {
@@ -447,6 +453,8 @@ class TimeTrackerLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the linked-entries listing contract is owned by the integration-time-tracker capability.
      */
     public function getLinkedEntries(string $objectUuid): array
     {
@@ -523,6 +531,8 @@ class TimeTrackerLinkService
      * @param string|null $search Optional name-substring filter.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the picker-source contract is owned by the integration-time-tracker capability.
      */
     public function getAvailableClients(?string $search=null): array
     {

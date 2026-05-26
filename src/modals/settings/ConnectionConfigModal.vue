@@ -393,6 +393,9 @@ export default {
 		config: {
 			immediate: true,
 			deep: true,
+			/**
+			 * @spec exclude watcher syncing local config copy from prop
+			 */
 			handler(newConfig) {
 				this.localConfig = { ...newConfig }
 			},
@@ -413,6 +416,7 @@ export default {
 
 		/**
 		 * Handle save button click
+		 * @spec exclude modal save handler emitting config to parent
 		 */
 		handleSave() {
 			this.$emit('save', this.localConfig)
@@ -420,6 +424,7 @@ export default {
 
 		/**
 		 * Test connection with current settings
+		 * @spec exclude connection-test handler delegating to API
 		 */
 		async handleTestConnection() {
 			this.testing = true

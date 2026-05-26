@@ -3,7 +3,6 @@ status: implemented
 ---
 # Webhook Payload Mapping
 
-
 # Webhook Payload Mapping
 ## Purpose
 Extend OpenRegister's existing CloudEvent-based event and webhook infrastructure with configurable payload mapping. The core webhook delivery (WebhookService, WebhookDeliveryJob, CloudEventFormatter) is already implemented. This spec focuses on the Mapping entity integration for payload transformation, advanced filtering, and delivery management. It documents the complete webhook lifecycle as already implemented: registration with URL/events/secret, payload format selection (standard, CloudEvents, Twig-mapped), delivery retry with exponential backoff, delivery logging, HMAC authentication, event filtering by register/schema/conditions, webhook management API, testing/dry-run, async delivery via background jobs, health monitoring through statistics, multi-tenant webhook isolation via organisation scoping, and request interception for pre-event webhooks. The Mapping entity reference allows any subscriber to receive events in whatever format they require (ZGW notifications, FHIR events, CloudEvents, VNG Notificaties API, custom formats) without any hardcoded format knowledge in OpenRegister.
@@ -21,9 +20,7 @@ This spec documents an already-implemented system and validates its behavior:
 - **Multi-tenancy (fully implemented)**: Organisation scoping via `MultiTenancyTrait` on WebhookMapper.
 - **Database migration (fully implemented)**: `Version1Date20260308120000` adds nullable `mapping` column.
 - **What could be extended**: Batch delivery (multiple events per HTTP request), dead-letter queue with admin UI, payload format versioning.
-
 ## Requirements
-
 ### Requirement: Webhook registration MUST capture URL, events, secret, and delivery configuration
 The Webhook entity MUST store all information needed to deliver events to a subscriber, including the target URL, subscribed event classes, optional HMAC secret, HTTP method, custom headers, timeout, and retry policy.
 
@@ -495,6 +492,48 @@ All existing webhook delivery features (signing, retry, logging, filtering) MUST
 #### Scenario: Webhook logging records mapped payload
 - **GIVEN** a mapped webhook is delivered
 - **THEN** the `WebhookLog.payload` MUST contain the mapped payload (what was actually sent to the subscriber)
+
+### Requirement: Mapping Transformation Engine Semantics
+
+The system MUST transform an input array into an output array according to a `Mapping`
+entity's declarative rules via `MappingService::executeMapping(Mapping $mapping, array
+$input, bool $list = false): array`, independent of any caller (webhook delivery, sync,
+enrichment). The engine MUST support the following semantics:
+
+- **Dot-notation source lookup**: each mapping rule's value is first looked up against the
+  input using dot-notation (`adbario/php-dot-notation`); when the input contains that path,
+  the resolved value is copied to the rule's key.
+- **Twig rendering**: when the rule value is not a present input path, it MUST be rendered
+  as a Twig template against the original input, with HTML entities decoded; a render
+  failure MUST throw an `Exception` naming the mapping, key, and value.
+- **Pass-through**: when the mapping's `passThrough` flag is true, the full input MUST seed
+  the output before rules are applied; otherwise the output starts empty.
+- **Key encoding**: input keys MUST have `.` encoded to a safe token before dot-notation
+  processing so literal dots in keys are not misread as path separators.
+- **List mode**: when `$list` is true, the engine MUST apply the mapping to each element of
+  the input, supporting a `listInput` envelope that carries extra shared values merged into
+  every element.
+
+#### Scenario: Source path is copied via dot-notation
+- **GIVEN** a mapping rule whose value matches a dot-notation path present in the input
+- **WHEN** `executeMapping()` runs
+- **THEN** the input value at that path MUST be copied to the rule's output key
+
+#### Scenario: Missing source path is rendered as Twig
+- **GIVEN** a mapping rule whose value is not a present input path
+- **WHEN** `executeMapping()` runs
+- **THEN** the value MUST be rendered as a Twig template against the original input
+- **AND** a Twig render failure MUST throw an exception naming the mapping, key, and value
+
+#### Scenario: Pass-through seeds the output
+- **GIVEN** a mapping with `passThrough` true
+- **WHEN** `executeMapping()` runs
+- **THEN** the full input MUST be present in the output before the rules overwrite mapped keys
+
+#### Scenario: List mode maps each element
+- **GIVEN** `$list` is true and the input is a collection
+- **WHEN** `executeMapping()` runs
+- **THEN** the mapping MUST be applied to each element and the results returned keyed as the input
 
 ## Current Implementation Status
 

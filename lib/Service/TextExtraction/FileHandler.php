@@ -16,6 +16,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
  */
 
 namespace OCA\OpenRegister\Service\TextExtraction;
@@ -88,6 +90,8 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force parameter follows interface contract
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-2
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -157,6 +161,8 @@ class FileHandler implements TextExtractionHandlerInterface
      * @return bool True if extraction is needed.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter follows interface contract
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
      */
     public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool
     {
@@ -190,6 +196,8 @@ class FileHandler implements TextExtractionHandlerInterface
      *     permissions: int, checksum: string, share_token: null|string,
      *     share_stime: int|null, storage_id: null|string, owner: null|string,
      *     accessUrl: null|string, downloadUrl: null|string, published: null|string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
      */
     public function getSourceMetadata(int $sourceId): array
     {
@@ -207,6 +215,8 @@ class FileHandler implements TextExtractionHandlerInterface
      * @param int $sourceId File ID.
      *
      * @return int Unix timestamp.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
      */
     public function getSourceTimestamp(int $sourceId): int
     {

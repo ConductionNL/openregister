@@ -74,6 +74,12 @@ export default {
 			isError: false,
 		}
 	},
+	/**
+	 * Prime username + deactivation status on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook hydrating local display state; account self-service contract owned by account-self-service.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		try {
 			const [userRes, statusRes] = await Promise.all([
@@ -113,6 +119,12 @@ export default {
 				this.isError = true
 			}
 		},
+		/**
+		 * Cancel a pending deactivation request.
+		 *
+		 * @spec exclude UI plumbing — inverse of the requestDeactivation contract (account-self-service); thin DELETE + local state reset.
+		 * @return {Promise<void>}
+		 */
 		async cancelDeactivation() {
 			try {
 				await axios.delete(generateUrl('/apps/openregister/api/user/me/deactivate'))
@@ -125,6 +137,13 @@ export default {
 				this.isError = true
 			}
 		},
+		/**
+		 * Format a date string for display.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {string} dateStr - ISO date string
+		 * @return {string} localized date/time
+		 */
 		formatDate(dateStr) {
 			if (!dateStr) return ''
 			return new Date(dateStr).toLocaleString()

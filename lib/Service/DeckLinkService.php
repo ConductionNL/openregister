@@ -117,6 +117,8 @@ class DeckLinkService
      *     blocks around every getter on Deck's Card entity (which uses
      *     OCP\AppFramework\Db\Entity::__call magic) — required to
      *     tolerate missing fields without burying the call site.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function linkCard(string $objectUuid, int $registerId, int $schemaId, int $cardId): DeckLink
     {
@@ -188,6 +190,8 @@ class DeckLinkService
      * @return void
      *
      * @throws Exception When no matching link is found (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function unlinkCard(string $objectUuid, int $cardId): void
     {
@@ -208,6 +212,8 @@ class DeckLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getLinkedCards(string $objectUuid): array
     {
@@ -260,6 +266,8 @@ class DeckLinkService
      * @return DeckLink The persisted link row.
      *
      * @throws Exception On missing user, Deck unavailable, or create failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function createAndLinkCard(
         string $objectUuid,
@@ -352,6 +360,8 @@ class DeckLinkService
      * Each row is `{id, title}` — the minimum the picker needs.
      *
      * @return array<int,array{id:int,title:string}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getAvailableBoards(): array
     {
@@ -408,6 +418,8 @@ class DeckLinkService
      * @param int $boardId Deck board id.
      *
      * @return array<int,array{id:int,title:string,boardId:int}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getStacksForBoard(int $boardId): array
     {

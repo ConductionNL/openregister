@@ -70,6 +70,8 @@ class UrnController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
      */
     public function resolve(?string $urn=null): JSONResponse
     {
@@ -114,6 +116,8 @@ class UrnController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
      */
     public function lookup(?string $url=null): JSONResponse
     {
@@ -150,6 +154,8 @@ class UrnController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
      */
     public function bulk(?array $urns=null): JSONResponse
     {

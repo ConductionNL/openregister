@@ -129,6 +129,8 @@ class RateLimiter
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-8
      */
     public function tryConsume(string $ruleId, string $recipient, ?array $perRuleOverride=null): bool
     {

@@ -305,6 +305,7 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude list-view pagination total-pages helper (computed)
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -314,6 +315,7 @@ export default {
 		/**
 		 * Get paginated entities for current page
 		 *
+		 * @spec exclude list-view client-side pagination slice (computed)
 		 * @return {Array} Paginated entities
 		 */
 		paginatedEntities() {
@@ -325,6 +327,7 @@ export default {
 		/**
 		 * Check if all entities are selected
 		 *
+		 * @spec exclude list-view select-all checkbox state (computed)
 		 * @return {boolean} True if all selected
 		 */
 		allSelected() {
@@ -334,6 +337,7 @@ export default {
 		/**
 		 * Check if some entities are selected
 		 *
+		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
 		 * @return {boolean} True if some selected
 		 */
 		someSelected() {
@@ -359,6 +363,7 @@ export default {
 		/**
 		 * Handle search query update
 		 *
+		 * @spec exclude list-view search-input handler; resets page and reloads (linked-entity-types contract)
 		 * @param {string} query - Search query
 		 * @return {void}
 		 */
@@ -371,6 +376,7 @@ export default {
 		/**
 		 * Handle type filter update
 		 *
+		 * @spec exclude list-view filter-input handler; resets page and reloads
 		 * @param {string|null} type - Type filter
 		 * @return {void}
 		 */
@@ -383,6 +389,7 @@ export default {
 		/**
 		 * Handle category filter update
 		 *
+		 * @spec exclude list-view filter-input handler; resets page and reloads
 		 * @param {string|null} category - Category filter
 		 * @return {void}
 		 */
@@ -395,6 +402,7 @@ export default {
 		/**
 		 * Load entities from the API
 		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
 		 * @return {Promise<void>}
 		 */
 		async loadEntities() {
@@ -437,6 +445,7 @@ export default {
 		/**
 		 * Refresh the entities list
 		 *
+		 * @spec exclude list-view manual refresh plumbing
 		 * @return {void}
 		 */
 		refreshEntities() {
@@ -446,6 +455,7 @@ export default {
 		/**
 		 * Handle page change event
 		 *
+		 * @spec exclude list-view pagination page-change handler
 		 * @param {number} page - New page number
 		 * @return {void}
 		 */
@@ -457,6 +467,7 @@ export default {
 		/**
 		 * Handle page size change event
 		 *
+		 * @spec exclude list-view pagination page-size-change handler
 		 * @param {number} pageSize - New page size
 		 * @return {void}
 		 */
@@ -469,6 +480,7 @@ export default {
 		/**
 		 * Toggle select all entities
 		 *
+		 * @spec exclude list-view select-all checkbox plumbing
 		 * @param {boolean} checked - Whether to select all
 		 * @return {void}
 		 */
@@ -483,6 +495,7 @@ export default {
 		/**
 		 * Toggle entity selection
 		 *
+		 * @spec exclude list-view single-row selection toggle plumbing
 		 * @param {number} entityId - Entity ID
 		 * @param {boolean} checked - Whether entity is selected
 		 * @return {void}
@@ -498,6 +511,7 @@ export default {
 		/**
 		 * View entity details
 		 *
+		 * @spec exclude list-view router-navigation plumbing to the entity detail page
 		 * @param {object} entity - Entity object
 		 * @return {void}
 		 */
@@ -508,6 +522,7 @@ export default {
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude list-view date-formatting display helper
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

@@ -95,6 +95,9 @@ export default {
 			this.error = null
 			this.$emit('close')
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to viewsStore.deleteView.
+		 */
 		async deleteView() {
 			if (!this.view) return
 

@@ -175,6 +175,8 @@ class CospendLinkService
      *
      * @throws Exception On missing user (401), missing project (404),
      *                   duplicate (409), Cospend unavailable (503).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the link contract is owned by the integration-cospend capability.
      */
     public function linkProject(string $objectUuid, int $registerId, int $schemaId, string $projectId): CospendLink
     {
@@ -227,6 +229,8 @@ class CospendLinkService
      *
      * @throws Exception On missing user (401), missing bill (404),
      *                   duplicate (409), Cospend unavailable (503).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the link contract is owned by the integration-cospend capability.
      */
     public function linkBill(
         string $objectUuid,
@@ -287,6 +291,8 @@ class CospendLinkService
      *
      * @throws Exception On missing user (401), empty name (400),
      *                   Cospend unavailable (503), create failure (500).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-cospend capability.
      */
     public function createAndLinkProject(
         string $objectUuid,
@@ -444,6 +450,8 @@ class CospendLinkService
      * @return void
      *
      * @throws Exception On missing user (401) or no matching link (404).
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink contract is owned by the integration-cospend capability.
      */
     public function unlink(string $objectUuid, int $entryId): void
     {
@@ -462,6 +470,8 @@ class CospendLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the linked-entries listing contract is owned by the integration-cospend capability.
      */
     public function getLinkedEntries(string $objectUuid): array
     {
@@ -489,6 +499,8 @@ class CospendLinkService
      * @param string|null $search Optional name-substring filter.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the picker-source contract is owned by the integration-cospend capability.
      */
     public function getAvailableProjects(?string $search=null): array
     {

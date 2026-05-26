@@ -99,6 +99,8 @@ class SolrDocumentIndexer
      * @return bool True if successful
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec exclude thin delegation to SolrHttpClient — builds Solr update doc and POSTs it
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {

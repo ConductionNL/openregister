@@ -140,6 +140,8 @@ class AuditTrailProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Reserved.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-16
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

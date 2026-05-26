@@ -58,6 +58,8 @@ class ScheduledWorkflowController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-17
      */
     public function index(): JSONResponse
     {
@@ -76,6 +78,8 @@ class ScheduledWorkflowController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-17
      */
     public function show(int $id): JSONResponse
     {
@@ -92,6 +96,8 @@ class ScheduledWorkflowController extends Controller
      * Create a new scheduled workflow.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-17
      */
     public function create(): JSONResponse
     {
@@ -122,6 +128,8 @@ class ScheduledWorkflowController extends Controller
      * @param int $id Scheduled workflow ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-17
      */
     public function update(int $id): JSONResponse
     {
@@ -152,6 +160,8 @@ class ScheduledWorkflowController extends Controller
      * @param int $id Scheduled workflow ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-17
      */
     public function destroy(int $id): JSONResponse
     {

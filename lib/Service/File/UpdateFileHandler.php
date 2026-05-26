@@ -108,6 +108,8 @@ class UpdateFileHandler
      * @return \OCA\OpenRegister\Db\File The persisted entity reflecting the updated state.
      *
      * @throws Exception When the FileMapper is not wired (legacy fixtures).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
      */
     public function updateFileMetadata(
         int $fileId,
@@ -181,6 +183,8 @@ class UpdateFileHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       File update requires handling many file system scenarios
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file resolution and update paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file update with logging requires extensive code
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
      */
     public function updateFile(
         string|int $filePath,

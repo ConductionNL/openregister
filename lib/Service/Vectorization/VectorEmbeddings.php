@@ -452,6 +452,8 @@ class VectorEmbeddings
      * @return array<int,array<string,mixed>> Search results
      *
      * @throws \Exception If search fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
      */
     public function semanticSearch(
         string $query,
@@ -486,6 +488,8 @@ class VectorEmbeddings
      * @return array
      *
      * @throws \Exception If hybrid search fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
      */
     public function hybridSearch(
         string $query,

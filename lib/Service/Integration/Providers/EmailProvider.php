@@ -142,6 +142,8 @@ class EmailProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional `_limit` / `_page` (page zero-indexed).
      *
      * @return array{items:array<int,array<string,mixed>>,total:int,nextCursor:?string}
+     *
+     * @spec openspec/changes/integration-email/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -199,6 +201,8 @@ class EmailProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Picker (Tier-2) or legacy shape.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/changes/integration-email/tasks.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -231,12 +235,21 @@ class EmailProvider extends AbstractIntegrationProvider
      * @param string $entityId Numeric link id.
      *
      * @return void
+     *
+     * @spec openspec/changes/integration-email/tasks.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
         $this->emailLinkService->unlinkEmail(objectUuid: $objectId, linkId: (int) $entityId);
     }//end delete()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $available = $this->emailLinkService->isMailAvailable();

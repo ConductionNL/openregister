@@ -108,6 +108,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return bool True on success, false on failure
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec exclude facade delegation to ElasticsearchDocumentIndexer::indexObject
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -125,6 +127,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @psalm-return array{success: bool, indexed: int<0, max>, failed: int, error?: string}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec exclude facade delegation to ElasticsearchDocumentIndexer::bulkIndexObjects
      */
     public function bulkIndexObjects(array $objects, bool $commit=false): array
     {
@@ -140,6 +144,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return bool True on success, false on failure
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec exclude facade delegation to ElasticsearchDocumentIndexer::deleteObject
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -158,6 +164,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @psalm-return array{deleted: 0}|true
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec exclude simplified stub — returns success without deleting (not yet implemented)
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -225,6 +233,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * Commit changes (refresh index).
      *
      * @return bool True on success, false on failure
+     *
+     * @spec exclude facade delegation to ElasticsearchIndexManager::refreshIndex
      */
     public function commit(): bool
     {
@@ -239,6 +249,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param array $params The search parameters
      *
      * @return array Search results
+     *
+     * @spec exclude facade delegation to ElasticsearchQueryExecutor::search
      */
     public function search(array $params): array
     {
@@ -255,6 +267,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return (int|string|true)[] Reindexing results
      *
      * @psalm-return array{success: true, indexed: 0, message: 'Reindexing should be called via IndexService'}
+     *
+     * @spec exclude stub — defers reindex to IndexService; returns a static message
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
@@ -285,6 +299,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @psalm-return array{success: true, index: string, message: 'Index warmed up'}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec exclude facade — ensures the active index exists via ElasticsearchIndexManager
      */
     public function warmupIndex(
         array $schemas=[],
@@ -328,6 +344,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @psalm-return array{success: bool, error?: string, document_count?: int}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec exclude facade — probes connectivity via a document-count request
      */
     public function testConnection(bool $inclCollTests=true): array
     {
@@ -349,6 +367,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * Optimize index.
      *
      * @return true True on success
+     *
+     * @spec exclude no-op — Elasticsearch needs no manual optimization (returns true)
      */
     public function optimize(): bool
     {
@@ -364,6 +384,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return int[] Clear operation results
      *
      * @psalm-return array{deleted: 0}
+     *
+     * @spec exclude facade delegation to ElasticsearchDocumentIndexer::clearIndex
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -389,6 +411,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return (int|string)[] Backend statistics
      *
      * @psalm-return array{document_count: int, backend: 'elasticsearch'}
+     *
+     * @spec exclude boilerplate stats — returns document count and backend label
      */
     public function getStats(): array
     {
@@ -407,6 +431,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return bool[] Creation results
      *
      * @psalm-return array{success: bool}
+     *
+     * @spec exclude facade delegation to ElasticsearchIndexManager::createIndex
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -422,6 +448,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return bool[] Deletion results
      *
      * @psalm-return array{success: bool}
+     *
+     * @spec exclude facade delegation to ElasticsearchIndexManager::deleteIndex
      */
     public function deleteCollection(?string $collectionName=null): array
     {
@@ -436,6 +464,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param string $collectionName Collection name to check
      *
      * @return bool True if collection exists
+     *
+     * @spec exclude facade delegation to ElasticsearchIndexManager::indexExists
      */
     public function collectionExists(string $collectionName): bool
     {
@@ -448,6 +478,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return string[] List of collection names
      *
      * @psalm-return list{string}
+     *
+     * @spec exclude simplified stub — returns only the active index name
      */
     public function listCollections(): array
     {
@@ -461,6 +493,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param array $documents Documents to index
      *
      * @return true True on success
+     *
+     * @spec exclude simplified stub — logs document count and returns true (not yet implemented)
      */
     public function index(array $documents): bool
     {
@@ -486,6 +520,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param \OCA\OpenRegister\Service\Aggregation\AggregationQuery $query Portable aggregation request.
      *
      * @return array|null The aggregation result, or null when the backend cannot execute it.
+     *
+     * @spec exclude stub — returns null so caller falls back to PHP path (HTTP adapter not yet wired)
      */
     public function aggregate(\OCA\OpenRegister\Service\Aggregation\AggregationQuery $query): ?array
     {
@@ -517,6 +553,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param array  $fieldType  Field type configuration
      *
      * @return true True on success
+     *
+     * @spec exclude no-op stub — ES infers field types dynamically (returns true)
      */
     public function addFieldType(string $collection, array $fieldType): bool
     {
@@ -546,6 +584,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @return string Status message
      *
      * @psalm-return 'skipped'
+     *
+     * @spec exclude no-op stub — ES infers field mappings dynamically (returns 'skipped')
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {
@@ -559,6 +599,8 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Indexing results.
+     *
+     * @spec exclude stub — returns empty result shape; file indexing handled by FileHandler (REQ-8)
      */
     public function indexFiles(array $fileIds, ?string $collectionName=null): array
     {

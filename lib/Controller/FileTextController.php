@@ -87,6 +87,8 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with file text or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getFileText(int $fileId): JSONResponse
     {
@@ -133,6 +135,8 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with extraction result
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function extractFileText(int $fileId): JSONResponse
     {
@@ -190,6 +194,8 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with bulk extraction result
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function bulkExtract(): JSONResponse
     {
@@ -235,6 +241,8 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with extraction stats
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getStats(): JSONResponse
     {
@@ -277,6 +285,8 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function deleteFileText(int $fileId): JSONResponse
     {
@@ -324,6 +334,8 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with indexing stats
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
     {
@@ -374,6 +386,8 @@ class FileTextController extends Controller
      * @SuppressWarnings (PHPMD.UnusedFormalParameter) $_chunkOverlap reserved for future implementation
      *
      * @return JSONResponse JSON response with indexing result
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $_chunkOverlap=null): JSONResponse
     {
@@ -417,6 +431,8 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with chunking stats
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function getChunkingStats(): JSONResponse
     {
@@ -463,6 +479,8 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with anonymization result
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function anonymizeFile(int $fileId): JSONResponse
     {

@@ -186,6 +186,8 @@ class SettingsController extends Controller
      * @return null The OpenRegister service if available, null otherwise.
      *
      * @throws \RuntimeException If the service is not available.
+     *
+     * @spec exclude DI service accessor (not a routed endpoint): returns the OpenRegister ObjectService from the container.
      */
     public function getObjectService()
     {
@@ -203,6 +205,8 @@ class SettingsController extends Controller
      *
      * @return \OCA\OpenRegister\Service\ConfigurationService|null The Configuration service if available, null otherwise.
      * @throws \RuntimeException If the service is not available.
+     *
+     * @spec exclude DI service accessor (not a routed endpoint): returns the ConfigurationService from the container.
      */
     public function getConfigurationService(): ?\OCA\OpenRegister\Service\ConfigurationService
     {
@@ -798,6 +802,8 @@ class SettingsController extends Controller
      * @psalm-return JSONResponse<200, array<array-key, mixed>,
      *     array<never, never>>|JSONResponse<422,
      *     array{success: false, error: string}, array<never, never>>
+     *
+     * @spec exclude Debug/test scaffolding endpoint: indexes sample objects to exercise schema-aware SOLR mapping; not a product contract (see proposal Notes — routed debug surface).
      */
     public function testSchemaMapping(): JSONResponse
     {
@@ -851,6 +857,8 @@ class SettingsController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps organisation/object data; not a product contract (see proposal Notes — routed debug surface, information-disclosure risk).
      */
     public function debugTypeFiltering(): JSONResponse
     {

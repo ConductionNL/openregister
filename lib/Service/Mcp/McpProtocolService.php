@@ -104,6 +104,8 @@ class McpProtocolService
      * @param string $userId Authenticated Nextcloud user ID
      *
      * @return array{result: array, sessionId: string} Result and session ID
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
      */
     public function initialize(array $params, string $userId): array
     {
@@ -136,6 +138,8 @@ class McpProtocolService
      * Handle MCP ping request
      *
      * @return array Empty result per MCP spec
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
      */
     public function ping(): array
     {
@@ -148,6 +152,8 @@ class McpProtocolService
      * @param string $userId Nextcloud user ID to associate with session
      *
      * @return string Generated session ID (UUID v4 format)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
      */
     public function createSession(string $userId): string
     {
@@ -176,6 +182,8 @@ class McpProtocolService
      * @param string $sessionId Session ID from Mcp-Session-Id header
      *
      * @return string|null User ID if valid, null if expired/invalid
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
      */
     public function validateSession(string $sessionId): ?string
     {
@@ -198,6 +206,8 @@ class McpProtocolService
      * @param string $sessionId Session ID to destroy
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
      */
     public function destroySession(string $sessionId): void
     {

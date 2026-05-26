@@ -160,6 +160,8 @@ class TmloService
      * @param Schema $schema The schema to get defaults from
      *
      * @return array The TMLO default values
+     *
+     * @spec exclude Owned by tmlo-auto-populate spec (schema-defaults precedence is part of the auto-populate contract); not foundation behaviour.
      */
     public function getSchemaDefaults(Schema $schema): array
     {
@@ -392,6 +394,8 @@ class TmloService
      * @return string The MDTO XML string
      *
      * @throws InvalidArgumentException If the object has no TMLO metadata
+     *
+     * @spec exclude Owned by tmlo-export spec REQ "MDTO-compliant XML export" (single object); not foundation behaviour.
      */
     public function generateMdtoXml(ObjectEntity $object): string
     {
@@ -417,6 +421,8 @@ class TmloService
      * @param ObjectEntity[] $objects Array of objects to export
      *
      * @return string The MDTO XML string with multiple objects
+     *
+     * @spec exclude Owned by tmlo-export spec REQ "MDTO-compliant XML export" (batch); not foundation behaviour.
      */
     public function generateBatchMdtoXml(array $objects): string
     {

@@ -64,6 +64,8 @@ class LifecycleInitialStateListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-12
      */
     public function handle(Event $event): void
     {

@@ -55,6 +55,9 @@ export default {
 			},
 		}
 	},
+	/**
+	 * @spec exclude settings-section lifecycle fetch of notification preferences on mount
+	 */
 	async mounted() {
 		try {
 			const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me/notifications'))
@@ -67,6 +70,9 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec exclude settings-section save plumbing; PUTs notification preferences and shows a status message
+		 */
 		async save() {
 			this.message = ''
 			try {

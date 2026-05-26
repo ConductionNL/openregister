@@ -70,6 +70,9 @@ export default {
 				console.error('Failed to fetch chains:', error)
 			}
 		},
+		/**
+		 * @spec exclude API passthrough creating chain + refetch; approval-chain contract owned by approval-workflow capability
+		 */
 		async createChain() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-chains')

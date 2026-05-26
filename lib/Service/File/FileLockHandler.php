@@ -212,6 +212,8 @@ class FileLockHandler
      * @param int $fileId The file ID.
      *
      * @return array|null Lock metadata or null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
      */
     public function getLockInfo(int $fileId): ?array
     {
@@ -257,6 +259,8 @@ class FileLockHandler
      * @return void
      *
      * @throws Exception If the file is locked by another user.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
      */
     public function assertCanModify(int $fileId): void
     {

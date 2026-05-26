@@ -117,6 +117,8 @@ class DeckProvider extends AbstractIntegrationProvider
      * @return array<int,array<string,mixed>>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
+     *
+     * @spec openspec/changes/integration-deck/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -142,6 +144,8 @@ class DeckProvider extends AbstractIntegrationProvider
      * @return array<string,mixed>
      *
      * @throws Exception When payload is missing required fields.
+     *
+     * @spec openspec/changes/integration-deck/tasks.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -193,12 +197,21 @@ class DeckProvider extends AbstractIntegrationProvider
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
+     *
+     * @spec openspec/changes/integration-deck/tasks.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
         $this->deckLinkService->unlinkCard($objectId, (int) $entityId);
     }//end delete()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $available = $this->deckLinkService->isDeckAvailable();

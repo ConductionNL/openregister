@@ -100,6 +100,8 @@ class ObjectIntegrationsController extends Controller
      * @param string $integrationId Integration id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function index(string $register, string $schema, string $id, string $integrationId): JSONResponse
@@ -124,6 +126,8 @@ class ObjectIntegrationsController extends Controller
      * @param string $entityId      Linked-thing id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function show(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
@@ -145,6 +149,8 @@ class ObjectIntegrationsController extends Controller
      * @param string $integrationId Integration id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function create(string $register, string $schema, string $id, string $integrationId): JSONResponse
@@ -169,6 +175,8 @@ class ObjectIntegrationsController extends Controller
      * @param string $entityId      Linked-thing id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function update(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
@@ -192,6 +200,8 @@ class ObjectIntegrationsController extends Controller
      * @param string $entityId      Linked-thing id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse

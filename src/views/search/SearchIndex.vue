@@ -41,6 +41,12 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Normalized search result objects for table display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {Array<object>}
+		 */
 		normalizedObjects() {
 			return normalizeObjects(objectStore.searchCollection)
 		},
@@ -53,6 +59,12 @@ export default {
 		hasSelectedSchemas() {
 			return objectStore.searchParams.schema != null
 		},
+		/**
+		 * Page title derived from the selected register and schema.
+		 *
+		 * @spec exclude UI plumbing — derived header title for display
+		 * @return {string}
+		 */
 		pageTitle() {
 			if (!this.hasSelectedRegisters) return 'No register selected'
 			const reg = registerStore.registerList.find((r) => r.id === objectStore.searchParams.register)
@@ -62,13 +74,31 @@ export default {
 			const schemaTitle = schema ? (schema.label || schema.title) : 'Schema'
 			return `${regTitle} / ${schemaTitle}`
 		},
+		/**
+		 * Selected object ids for the current page, as strings.
+		 *
+		 * @spec exclude UI plumbing — derived selection view state
+		 * @return {Array<string>}
+		 */
 		selectedIdsForPage() {
 			const list = objectStore.selectedObjects
 			return Array.isArray(list) ? list.map(String) : []
 		},
+		/**
+		 * Object-type slug derived from the selected register and schema.
+		 *
+		 * @spec exclude UI plumbing — derived identifier for the index page
+		 * @return {string}
+		 */
 		computedObjectType() {
 			return objectStore.createObjectTypeSlug(objectStore.searchRegister, objectStore.searchSchema)
 		},
+		/**
+		 * Search schema with inherited (allOf) properties merged in, for columns.
+		 *
+		 * @spec exclude UI plumbing — derived schema view state for display
+		 * @return {object}
+		 */
 		normalizedSchema() {
 			const schema = objectStore.searchSchema
 			if (!schema || !schema.properties) return schema
@@ -104,6 +134,12 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Open the new-object dialog for the selected register and schema.
+		 *
+		 * @spec exclude UI plumbing — opens the create-object modal
+		 * @return {void}
+		 */
 		handleAddObject() {
 			if (!this.hasSelectedRegisters || !this.hasSelectedSchemas) return
 			this.isAddingNewObject = true
@@ -116,41 +152,112 @@ export default {
 			}
 			navigationStore.setModal('viewObject')
 		},
+		/**
+		 * Re-run the current search.
+		 *
+		 * @spec exclude UI plumbing — refresh delegates to the object store
+		 * @return {void}
+		 */
 		handleRefresh() {
 			objectStore.refetchSearchCollection()
 		},
+		/**
+		 * Apply a sort change and re-run the search.
+		 *
+		 * @param {object} root0 The sort event payload.
+		 * @param {string} root0.key The sort column key.
+		 * @param {string} root0.order The sort order.
+		 * @spec exclude UI plumbing — sort handler delegates to the store
+		 * @return {void}
+		 */
 		handleSort({ key, order }) {
 			objectStore.updateSearchParams({ sortKey: key, sortOrder: order })
 			objectStore.refetchSearchCollection()
 		},
+		/**
+		 * Apply a page change and re-run the search.
+		 *
+		 * @param {number} page The new page number.
+		 * @spec exclude UI plumbing — pagination handler delegates to the store
+		 * @return {void}
+		 */
 		handlePageChanged(page) {
 			objectStore.updateSearchParams({ page })
 			objectStore.refetchSearchCollection()
 		},
+		/**
+		 * Apply a page-size change and re-run the search.
+		 *
+		 * @param {number} limit The new page size.
+		 * @spec exclude UI plumbing — pagination handler delegates to the store
+		 * @return {void}
+		 */
 		handlePageSizeChanged(limit) {
 			objectStore.updateSearchParams({ page: 1, limit })
 			objectStore.refetchSearchCollection()
 		},
+		/**
+		 * Track the selected object ids.
+		 *
+		 * @param {Array} ids The selected ids.
+		 * @spec exclude UI plumbing — selection state delegates to the store
+		 * @return {void}
+		 */
 		handleSelect(ids) {
 			objectStore.setSelectedObjects(ids)
 		},
+		/**
+		 * Open the view-object modal for a clicked row.
+		 *
+		 * @param {object} row The clicked object row.
+		 * @spec exclude UI plumbing — opens the view-object modal
+		 * @return {void}
+		 */
 		handleRowClick(row) {
 			objectStore.setObjectItem(row)
 			navigationStore.setModal('viewObject')
 		},
+		/**
+		 * Open the copy-object dialog for a row.
+		 *
+		 * @param {object} row The object row to copy.
+		 * @spec exclude UI plumbing — opens the copy-object dialog
+		 * @return {void}
+		 */
 		handleCopyRow(row) {
 			objectStore.setObjectItem(row)
 			navigationStore.setDialog('copyObject')
 		},
+		/**
+		 * Open the delete-object dialog for a row.
+		 *
+		 * @param {object} row The object row to delete.
+		 * @spec exclude UI plumbing — opens the delete-object dialog
+		 * @return {void}
+		 */
 		handleDeleteRow(row) {
 			objectStore.setObjectItem(row)
 			navigationStore.setDialog('deleteObject')
 		},
+		/**
+		 * Open the mass-delete dialog for the selected ids.
+		 *
+		 * @param {Array} ids The selected row ids.
+		 * @spec exclude UI plumbing — opens the mass-delete dialog
+		 * @return {void}
+		 */
 		handleMassDelete(ids) {
 			const rows = this.normalizedObjects.filter((r) => ids.includes(String(r.id)))
 			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
 			navigationStore.setDialog('massDeleteObject')
 		},
+		/**
+		 * Open the mass-copy dialog for the selected ids.
+		 *
+		 * @param {object} payload The mass-copy event payload.
+		 * @spec exclude UI plumbing — opens the mass-copy dialog
+		 * @return {void}
+		 */
 		handleMassCopy(payload) {
 			const ids = payload?.ids || []
 			const rows = this.normalizedObjects.filter((r) => ids.includes(String(r.id)))

@@ -87,6 +87,8 @@ class VngNotificatiesEnvelope
      *               aanmaakdatum: string, kenmerken: array}
      *
      * @throws InvalidArgumentException When the action is not a recognised VNG actie.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-10
      */
     public function buildEnvelope(
         string $action,
@@ -127,6 +129,8 @@ class VngNotificatiesEnvelope
      * @return string The VNG actie value.
      *
      * @throws InvalidArgumentException When the action is unrecognised.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-10
      */
     public function mapAction(string $action): string
     {

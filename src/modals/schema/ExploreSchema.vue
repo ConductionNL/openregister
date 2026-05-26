@@ -557,6 +557,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI display helper — static property-type select options.
+		 */
 		typeOptions() {
 			return [
 				{ label: 'String', value: 'string', key: 'string' },
@@ -567,6 +570,9 @@ export default {
 				{ label: 'Object', value: 'object', key: 'object' },
 			]
 		},
+		/**
+		 * @spec exclude UI display helper — builds format select options including any detected format.
+		 */
 		formatOptions() {
 			return (suggestion) => {
 				const commonFormats = [
@@ -596,6 +602,9 @@ export default {
 				return commonFormats
 			}
 		},
+		/**
+		 * @spec exclude UI display helper — static confidence-filter select options.
+		 */
 		confidenceFilterOptions() {
 			return [
 				{ label: this.t('openregister', 'All Confidence Levels'), value: 'all', key: 'all' },
@@ -604,6 +613,9 @@ export default {
 				{ label: this.t('openregister', 'Low Confidence'), value: 'low', key: 'low' },
 			]
 		},
+		/**
+		 * @spec exclude UI display helper — static type-filter select options.
+		 */
 		typeFilterOptions() {
 			return [
 				{ label: this.t('openregister', 'All'), value: 'all', key: 'all' },
@@ -611,6 +623,9 @@ export default {
 				{ label: this.t('openregister', 'Existing Improvements'), value: 'existing', key: 'existing' },
 			]
 		},
+		/**
+		 * @spec exclude UI display helper — applies search/confidence/type/selection filters to suggestions.
+		 */
 		filteredSuggestions() {
 			if (!this.explorationData?.suggestions) {
 				return []
@@ -656,15 +671,24 @@ export default {
 
 			return filtered
 		},
+		/**
+		 * @spec exclude UI pagination helper — slices filtered suggestions for the current page.
+		 */
 		paginatedSuggestions() {
 			const start = (this.currentPage - 1) * this.itemsPerPage
 			const end = start + this.itemsPerPage
 			return this.filteredSuggestions.slice(start, end)
 		},
+		/**
+		 * @spec exclude UI pagination helper — computes the total page count.
+		 */
 		totalPages() {
 			return Math.ceil(this.filteredSuggestions.length / this.itemsPerPage)
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — counts objects for the schema on mount.
+	 */
 	mounted() {
 		// Initialize if we don't have schema item
 		if (!schemaStore.schemaItem) {
@@ -676,10 +700,16 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec exclude UI event handler — closes the dialog and resets its state.
+		 */
 		async handleDialogClose() {
 			navigationStore.setDialog(false)
 			this.resetDialog()
 		},
+		/**
+		 * @spec exclude Modal state plumbing — resets all local exploration state.
+		 */
 		resetDialog() {
 			this.loading = false
 			this.error = null
@@ -696,6 +726,9 @@ export default {
 			this.objectCount = 0
 			this.objectStats = null
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches object-count stats for the schema.
+		 */
 		async countObjects() {
 			try {
 				if (schemaStore.schemaItem?.id) {
@@ -711,6 +744,9 @@ export default {
 				this.objectStats = null
 			}
 		},
+		/**
+		 * @spec exclude Modal action plumbing — runs the schema-explore endpoint and seeds suggestion config.
+		 */
 		async startAnalysis() {
 			this.analysisStarted = true
 			this.loading = true
@@ -778,6 +814,9 @@ export default {
 				this.analysisStarted = false
 			}
 		},
+		/**
+		 * @spec exclude UI selection plumbing — toggles a suggested property in the selection.
+		 */
 		togglePropertySelection(propertyName) {
 			if (this.selectedProperties.includes(propertyName)) {
 				this.selectedProperties = this.selectedProperties.filter(name => name !== propertyName)
@@ -820,10 +859,16 @@ export default {
 		isPropertySelected(propertyName) {
 			return this.selectedProperties.includes(propertyName)
 		},
+		/**
+		 * @spec exclude UI selection plumbing — clears the property selection.
+		 */
 		clearSelection() {
 			this.selectedProperties = []
 			this.selectedPropertiesConfig = {}
 		},
+		/**
+		 * @spec exclude UI selection plumbing — selects all suggested properties.
+		 */
 		selectAll() {
 			this.explorationData?.suggestions?.forEach(suggestion => {
 				if (!this.selectedProperties.includes(suggestion.property_name)) {
@@ -840,6 +885,9 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @spec exclude Modal action plumbing — posts selected property updates to the schema-update endpoint.
+		 */
 		async updateSchema() {
 			this.loading = true
 			this.error = null
@@ -903,6 +951,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude UI display helper — truncates/normalizes an example value for display.
+		 */
 		formatExample(value) {
 			if (value === null || value === undefined) {
 				return 'null'
@@ -918,6 +969,9 @@ export default {
 
 			return String(value)
 		},
+		/**
+		 * @spec exclude UI pagination handler — sets the current page and scrolls to top.
+		 */
 		onPageChanged(page) {
 			this.currentPage = page
 
@@ -927,14 +981,23 @@ export default {
 				container.scrollTop = 0
 			}
 		},
+		/**
+		 * @spec exclude UI pagination handler — sets page size and resets to page one.
+		 */
 		onPageSizeChanged(pageSize) {
 			this.itemsPerPage = pageSize
 			this.currentPage = 1
 		},
+		/**
+		 * @spec exclude Modal close plumbing — closes the dialog and resets state.
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			this.resetDialog()
 		},
+		/**
+		 * @spec exclude UI display helper — maps issue-type strings to display objects.
+		 */
 		getIssueDetails(issues) {
 			// Convert issue type strings to more detailed objects
 			return issues.map(issueType => {
@@ -944,6 +1007,9 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @spec exclude UI display helper — maps an issue type to a UI category.
+		 */
 		getIssueType(issueType) {
 			// Map issue types to UI-friendly categories
 			const typeMap = {
@@ -961,6 +1027,9 @@ export default {
 			}
 			return typeMap[issueType] || 'general'
 		},
+		/**
+		 * @spec exclude UI display helper — maps an issue category to a translated label.
+		 */
 		getIssueLabel(issueType) {
 			// Get UI-friendly labels for issue types
 			const labelMap = {
@@ -974,6 +1043,9 @@ export default {
 			}
 			return labelMap[issueType] || this.t('openregister', 'Issue')
 		},
+		/**
+		 * @spec exclude UI display helper — maps an issue type to a translated description.
+		 */
 		getIssueDescription(issueType) {
 			// Get descriptions for different issue types
 			const descriptionMap = {

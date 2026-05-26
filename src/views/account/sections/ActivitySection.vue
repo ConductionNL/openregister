@@ -70,10 +70,16 @@ export default {
 			this.activities = []
 			await this.fetchActivity()
 		},
+		/**
+		 * @spec exclude list-view pagination plumbing; advances offset and re-fetches the activity feed
+		 */
 		async loadMore() {
 			this.offset += this.limit
 			await this.fetchActivity()
 		},
+		/**
+		 * @spec exclude list-view store fetch plumbing for the user activity feed (activity contract owned by activity-provider)
+		 */
 		async fetchActivity() {
 			this.loading = true
 			try {
@@ -91,6 +97,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude detail-view timestamp formatting helper for display only
+		 */
 		formatTime(timestamp) {
 			if (!timestamp) return ''
 			const date = new Date(timestamp)

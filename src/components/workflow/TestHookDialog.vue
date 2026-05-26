@@ -60,6 +60,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec exclude API passthrough running hook dry-run test; hook-test contract owned by workflow-operations capability
+		 */
 		async runTest() {
 			this.loading = true
 			this.result = null

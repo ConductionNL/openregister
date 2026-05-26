@@ -86,11 +86,17 @@ export default {
 		isEdit() {
 			return this.hook !== null
 		},
+		/**
+		 * @spec exclude computed select-option mapping from engines prop, UI plumbing
+		 */
 		engineOptions() {
 			return this.engines.map(e => e.engineType || e.name || e)
 		},
 	},
 	methods: {
+		/**
+		 * @spec exclude emit UI handler dispatching save event with form data, UI plumbing
+		 */
 		save() {
 			this.$emit('save', { ...this.form })
 		},

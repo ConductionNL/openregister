@@ -108,6 +108,8 @@ class ActivityFilterService
      *                                less than this value are returned (DESC paging).
      *
      * @return array{results: array<int,array<string,mixed>>, total: int, nextCursor: ?int}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-1
      */
     public function getActivityEntries(
         string $objectUuid,

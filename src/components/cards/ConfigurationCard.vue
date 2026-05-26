@@ -290,6 +290,7 @@ export default {
 		 * Get the app ID from configuration
 		 *
 		 * @return {string|null}
+		 * @spec exclude computed read of app id from configuration prop, UI plumbing
 		 */
 		appId() {
 			return this.configuration.app || this.configuration.config?.app || null
@@ -299,6 +300,7 @@ export default {
 		 * Uses backend-fetched data, not frontend store (which may be paginated)
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed read of import-status flag set by checkIfImported (REQ-002), UI plumbing
 		 */
 		isAlreadyImported() {
 			if (!this.isDiscovered) return false
@@ -309,6 +311,7 @@ export default {
 		 * Get the existing local configuration if it's already imported
 		 *
 		 * @return {object|null}
+		 * @spec exclude computed lookup/synthesis of local config for display, UI plumbing
 		 */
 		existingConfiguration() {
 			if (!this.importedConfigId) return null
@@ -344,6 +347,7 @@ export default {
 		 * If discovered and already imported, merge with local config
 		 *
 		 * @return {object}
+		 * @spec exclude computed merge of discovered + local config for display, UI plumbing
 		 */
 		displayConfiguration() {
 			if (this.isDiscovered && this.existingConfiguration) {
@@ -374,6 +378,7 @@ export default {
 		 * Check if this is an imported configuration
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed import-state read for display, UI plumbing
 		 */
 		isImported() {
 			// If it's a discovered config, check if it exists locally
@@ -387,6 +392,7 @@ export default {
 		 * Get description from either format
 		 *
 		 * @return {string}
+		 * @spec exclude computed description display helper, UI plumbing
 		 */
 		description() {
 			const config = this.displayConfiguration
@@ -396,6 +402,7 @@ export default {
 		 * Check if configuration is local
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed local-vs-external display flag, UI plumbing
 		 */
 		isLocalConfiguration() {
 			// Check both displayConfiguration and original configuration prop
@@ -426,6 +433,7 @@ export default {
 		 * Check if configuration is remote
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed remote-source display flag, UI plumbing
 		 */
 		isRemoteConfiguration() {
 			const result = this.isImported && this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local'
@@ -436,6 +444,7 @@ export default {
 		 * Check if update is available
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed version-comparison display flag, UI plumbing
 		 */
 		hasUpdateAvailable() {
 			const config = this.displayConfiguration
@@ -449,6 +458,7 @@ export default {
 		 * Check if configuration is published (local and has GitHub repo info)
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed published-state display flag, UI plumbing
 		 */
 		isPublished() {
 			const config = this.displayConfiguration
@@ -459,6 +469,7 @@ export default {
 		 * Get view source URL
 		 *
 		 * @return {string|null}
+		 * @spec exclude computed source-URL display helper, UI plumbing
 		 */
 		viewSourceUrl() {
 			const config = this.displayConfiguration
@@ -468,6 +479,7 @@ export default {
 		 * Check if configuration has any metadata to display in footer
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed footer-metadata presence flag, UI plumbing
 		 */
 		hasMetadata() {
 			const config = this.displayConfiguration
@@ -485,6 +497,7 @@ export default {
 		 * Get repository full name (owner/repo)
 		 *
 		 * @return {string|null}
+		 * @spec exclude computed repo-name display helper, UI plumbing
 		 */
 		repositoryFullName() {
 			const config = this.displayConfiguration
@@ -513,6 +526,7 @@ export default {
 		 * Get repository URL
 		 *
 		 * @return {string|null}
+		 * @spec exclude computed repo-URL display helper, UI plumbing
 		 */
 		repositoryUrl() {
 			if (!this.repositoryFullName) return null
@@ -536,6 +550,9 @@ export default {
 			}
 		},
 	},
+	/**
+	 * @spec exclude lifecycle hook delegating to checkIfImported (REQ-002), UI plumbing
+	 */
 	mounted() {
 		// For discovered configs, check backend to see if already imported
 		if (this.isDiscovered && this.appId) {
@@ -604,6 +621,7 @@ export default {
 		 *
 		 * @param {string} sourceType Source type
 		 * @return {string}
+		 * @spec exclude source-type label display helper, UI plumbing
 		 */
 		getSourceTypeLabel(sourceType) {
 			const labels = {
@@ -619,6 +637,7 @@ export default {
 		 *
 		 * @param {object} configuration Configuration object
 		 * @return {string}
+		 * @spec exclude sync-status display formatter, UI plumbing
 		 */
 		getSyncStatusText(configuration) {
 			if (configuration.syncStatus === 'success' && configuration.lastSyncDate) {
@@ -646,12 +665,14 @@ export default {
 		 * Open URL in new tab
 		 *
 		 * @param {string} url URL to open
+		 * @spec exclude window.open UI plumbing
 		 */
 		openInNewTab(url) {
 			window.open(url, '_blank')
 		},
 		/**
 		 * Handle view action
+		 * @spec exclude emit/store-dispatch UI handler opening view modal
 		 */
 		handleView() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -665,6 +686,7 @@ export default {
 		},
 		/**
 		 * Handle edit action
+		 * @spec exclude emit/store-dispatch UI handler opening edit modal
 		 */
 		handleEdit() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -677,6 +699,7 @@ export default {
 		},
 		/**
 		 * Handle export action
+		 * @spec exclude emit/store-dispatch UI handler opening export modal
 		 */
 		handleExport() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -689,6 +712,7 @@ export default {
 		},
 		/**
 		 * Handle publish action
+		 * @spec exclude store-dispatch UI handler opening publish modal
 		 */
 		handlePublish() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -697,6 +721,7 @@ export default {
 		},
 		/**
 		 * Handle delete action
+		 * @spec exclude emit/store-dispatch UI handler opening delete dialog
 		 */
 		handleDelete() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -709,6 +734,7 @@ export default {
 		},
 		/**
 		 * Handle check version action
+		 * @spec exclude emit UI handler dispatching check-version event
 		 */
 		handleCheckVersion() {
 			const config = this.existingConfiguration || this.displayConfiguration
@@ -716,6 +742,7 @@ export default {
 		},
 		/**
 		 * Handle preview update action
+		 * @spec exclude emit/store-dispatch UI handler opening preview modal
 		 */
 		handlePreviewUpdate() {
 			const config = this.existingConfiguration || this.displayConfiguration

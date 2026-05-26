@@ -118,6 +118,12 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * Create a personal API token and surface the one-time secret.
+		 *
+		 * @spec exclude UI plumbing — POST + reveal-modal glue around the account-self-service token list contract.
+		 * @return {Promise<void>}
+		 */
 		async createToken() {
 			try {
 				const payload = { name: this.newTokenName }
@@ -136,6 +142,13 @@ export default {
 				this.isError = true
 			}
 		},
+		/**
+		 * Revoke a personal API token by id.
+		 *
+		 * @spec exclude UI plumbing — thin DELETE + list refresh; token contract owned by account-self-service.
+		 * @param {string|number} id - token identifier
+		 * @return {Promise<void>}
+		 */
 		async revokeToken(id) {
 			try {
 				await axios.delete(generateUrl(`/apps/openregister/api/user/me/tokens/${id}`))
@@ -147,6 +160,12 @@ export default {
 				this.isError = true
 			}
 		},
+		/**
+		 * Copy the one-time token to the clipboard.
+		 *
+		 * @spec exclude UI plumbing — clipboard write + toast, no observable contract.
+		 * @return {Promise<void>}
+		 */
 		async copyToken() {
 			try {
 				await navigator.clipboard.writeText(this.createdToken)
@@ -157,6 +176,13 @@ export default {
 				this.isError = true
 			}
 		},
+		/**
+		 * Format a token expiry date for display.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {string} dateStr - ISO date string
+		 * @return {string} localized date
+		 */
 		formatDate(dateStr) {
 			if (!dateStr) return ''
 			return new Date(dateStr).toLocaleDateString()

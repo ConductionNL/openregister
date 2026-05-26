@@ -240,6 +240,8 @@ class AggregationQuery
      *   groupBy: array<string, mixed>|null,
      *   dateBucket: array<string, mixed>|null
      * } Canonical wire shape of the query.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
      */
     public function toArray(): array
     {

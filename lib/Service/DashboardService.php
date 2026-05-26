@@ -448,6 +448,8 @@ class DashboardService
      * @return int[] Array containing counts of processed and failed logs
      *
      * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function recalculateLogSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -501,6 +503,8 @@ class DashboardService
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
      * @return array Results with objects, logs, and total processed and failed counts.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function recalculateAllSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -729,6 +733,8 @@ class DashboardService
      * @return (int|mixed|string)[][] Array containing chart data for objects by register
      *
      * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     *
+     * @spec exclude Thin try/catch delegation to ObjectMapper::getRegisterChartData with degraded-empty fallback; chart shaping owned by the mapper.
      */
     public function getObjectsByRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -755,6 +761,8 @@ class DashboardService
      * @return (int|mixed|string)[][] Array containing chart data for objects by schema
      *
      * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     *
+     * @spec exclude Thin try/catch delegation to ObjectMapper::getSchemaChartData with degraded-empty fallback; chart shaping owned by the mapper.
      */
     public function getObjectsBySchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -781,6 +789,8 @@ class DashboardService
      * @return (int|string)[][] Array containing chart data for objects by size
      *
      * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
+     *
+     * @spec exclude Thin try/catch delegation to ObjectMapper::getSizeDistributionChartData with degraded-empty fallback; chart shaping owned by the mapper.
      */
     public function getObjectsBySizeChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -808,6 +818,8 @@ class DashboardService
      * @return int[]
      *
      * @psalm-return array{total: int, creates: int, updates: int, deletes: int, reads: int}
+     *
+     * @spec exclude Thin try/catch delegation to AuditTrailMapper::getDetailedStatistics with degraded-empty fallback.
      */
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -842,6 +854,8 @@ class DashboardService
      * @return (int|mixed)[][][]
      *
      * @psalm-return array{actions: list<array{count: int, name: mixed}>}
+     *
+     * @spec exclude Thin try/catch delegation to AuditTrailMapper::getActionDistribution with degraded-empty fallback.
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -873,6 +887,8 @@ class DashboardService
      * @return (int|mixed|string)[][][]
      *
      * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
+     *
+     * @spec exclude Thin try/catch delegation to AuditTrailMapper::getMostActiveObjects with degraded-empty fallback.
      */
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {

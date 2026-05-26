@@ -101,6 +101,8 @@ class SolrWarmupJob extends QueuedJob
      * @throws \Exception If warmup fails critically (job will be marked as failed)
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-9
      */
     protected function run($argument): void
     {

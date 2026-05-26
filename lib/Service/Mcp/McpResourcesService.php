@@ -68,6 +68,8 @@ class McpResourcesService
      * and one entry per register+schema pair for objects.
      *
      * @return array{resources: array} MCP resources/list response
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-5
      */
     public function listResources(): array
     {
@@ -125,6 +127,8 @@ class McpResourcesService
      * resource URIs for specific items.
      *
      * @return array{resourceTemplates: array} MCP resources/templates/list response
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-5
      */
     public function listTemplates(): array
     {
@@ -163,6 +167,8 @@ class McpResourcesService
      * @return array{contents: array} MCP resources/read response
      *
      * @throws InvalidArgumentException If URI is invalid or unsupported
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-5
      */
     public function readResource(string $uri): array
     {

@@ -226,6 +226,8 @@ class EmailService
      * @return void
      *
      * @throws Exception If the link is not found.
+     *
+     * @spec exclude Legacy link-table delete by id; email link infrastructure being removed per linked-entity-types.
      */
     public function unlinkEmail(int $linkId): void
     {
@@ -351,6 +353,8 @@ class EmailService
      * @param string $objectUuid The object UUID.
      *
      * @return int Number of deleted links.
+     *
+     * @spec exclude Legacy link-table bulk cleanup delegating to EmailLinkMapper; email link infrastructure being removed per linked-entity-types.
      */
     public function deleteLinksForObject(string $objectUuid): int
     {

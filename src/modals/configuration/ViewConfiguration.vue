@@ -161,12 +161,21 @@ export default {
 		closeModal() {
 			navigationStore.setModal(false)
 		},
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the edit-configuration modal.
+		 */
 		editConfiguration() {
 			navigationStore.setModal('editConfiguration')
 		},
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the export-configuration modal.
+		 */
 		exportConfiguration() {
 			navigationStore.setModal('exportConfiguration')
 		},
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the delete-configuration dialog.
+		 */
 		deleteConfiguration() {
 			navigationStore.setModal(false)
 			navigationStore.setDialog('deleteConfiguration')

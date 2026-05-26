@@ -94,6 +94,8 @@ class McpToolsService
      * a warning is logged per D5 of the design.
      *
      * @return array{tools: array} MCP tools/list response
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
      */
     public function listTools(): array
     {
@@ -139,6 +141,8 @@ class McpToolsService
      * @return array<string, mixed> MCP tool result with content array
      *
      * @throws InvalidArgumentException If no provider handles the tool id
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
      */
     public function callTool(string $name, array $arguments): array
     {
@@ -198,6 +202,8 @@ class McpToolsService
      * @param array<string, mixed> $arguments Tool arguments
      *
      * @return array{result: array<string, mixed>, isError: bool} Result envelope
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
      */
     public function invokeTool(string $toolId, array $arguments): array
     {
@@ -275,6 +281,8 @@ class McpToolsService
      * @param IMcpToolProvider $provider The provider to add
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
      */
     public function addProvider(IMcpToolProvider $provider): void
     {

@@ -122,6 +122,8 @@ class CalendarEventService
      * @return array Array of event arrays in JSON-friendly format
      *
      * @throws Exception If no user is logged in or no calendar found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function getEventsForObject(string $objectUuid): array
     {
@@ -179,6 +181,8 @@ class CalendarEventService
      * @return array|null The created event in JSON-friendly format
      *
      * @throws Exception If no user or calendar found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function createEvent(
         int $registerId,
@@ -260,6 +264,8 @@ class CalendarEventService
      * @return array|null The updated event
      *
      * @throws Exception If the event is not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function linkEvent(
         int $calendarId,
@@ -299,6 +305,8 @@ class CalendarEventService
      * @return void
      *
      * @throws Exception If the event is not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
      */
     public function unlinkEvent(string $calendarId, string $eventUri): void
     {

@@ -50,6 +50,8 @@ class ElasticsearchAggregationQueryBuilder
      * @param AggregationQuery $query The cross-backend request.
      *
      * @return array<string, mixed> The ES request body.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
      */
     public function build(AggregationQuery $query): array
     {

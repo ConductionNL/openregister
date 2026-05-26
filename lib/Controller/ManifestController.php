@@ -86,6 +86,8 @@ class ManifestController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
+     *
+     * @spec openspec/changes/manifest-user-context/tasks.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -126,6 +128,8 @@ class ManifestController extends Controller
      * @return array<string, mixed>|null Decoded manifest, or null if not readable.
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec exclude Private helper: loads + JSON-decodes a host app's bundled manifest.json; the manifest endpoint contract is owned by manifest-user-context/tasks.md.
      */
     private function loadBundledManifest(string $appId): ?array
     {

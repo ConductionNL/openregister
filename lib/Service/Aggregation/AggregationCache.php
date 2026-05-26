@@ -139,6 +139,8 @@ class AggregationCache
      * @param array<string, mixed> $result       Result envelope to store.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
      */
     public function set(string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void
     {
@@ -201,6 +203,8 @@ class AggregationCache
      * @param array<string, mixed> $result       Result envelope to store.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
      */
     public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void
     {
@@ -247,6 +251,8 @@ class AggregationCache
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
      */
     public function evictForSchema(string $registerSlug, string $schemaSlug): void
     {

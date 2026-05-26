@@ -392,12 +392,16 @@ export default {
 		/**
 		 * Check if the selected file type is valid
 		 * @return {boolean}
+		 * @spec exclude computed client-side file-type validation
 		 */
 		isValidFileType() {
 			if (!this.selectedFile) return false
 			const extension = this.getFileExtension(this.selectedFile.name)
 			return this.allowedFileTypes.includes(extension)
 		},
+		/**
+		 * @spec exclude computed display helper building register select options
+		 */
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -447,6 +451,9 @@ export default {
 				},
 			}
 		},
+		/**
+		 * @spec exclude computed display helper for selected register value
+		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
 			const register = registerStore.registerItem
@@ -473,6 +480,7 @@ export default {
 		/**
 		 * Check if there are any errors in the import results
 		 * @return {boolean} - Whether there are import errors
+		 * @spec exclude computed flag for import errors
 		 */
 		hasImportErrors() {
 			if (!this.importResults) return false
@@ -483,6 +491,9 @@ export default {
 			)
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook preloading registers/schemas
+	 */
 	mounted() {
 		dashboardStore.preload()
 		this.registerLoading = true
@@ -513,6 +524,7 @@ export default {
 		 * Get the file type label for display
 		 * @param {string} filename - The name of the file to get type label from
 		 * @return {string}
+		 * @spec exclude display helper mapping extension to label
 		 */
 		getFileType(filename) {
 			const extension = this.getFileExtension(filename)
@@ -531,6 +543,7 @@ export default {
 		/**
 		 * Handle file input change event
 		 * @param {Event} event - The file input change event
+		 * @spec exclude file-input UI handler with client-side validation
 		 */
 		handleFileUpload(event) {
 			const file = event.target.files[0]
@@ -552,6 +565,7 @@ export default {
 		},
 		/**
 		 * Close the import modal and reset state
+		 * @spec exclude modal close + form-state reset handler
 		 */
 		closeModal() {
 			navigationStore.setModal(false)
@@ -574,6 +588,7 @@ export default {
 		/**
 		 * Handle dialog close event from X button
 		 * @param {boolean} isOpen - Whether the dialog is open
+		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose(isOpen) {
 			if (!isOpen) {
@@ -583,6 +598,7 @@ export default {
 		/**
 		 * Import the selected register file and handle the summary
 		 * @return {Promise<void>}
+		 * @spec exclude modal submit handler delegating to registerStore.importRegister
 		 */
 		async importRegister() {
 			if (!this.selectedFile || !this.isValidFileType) {
@@ -640,6 +656,7 @@ export default {
 		 * Format file size for display
 		 * @param {number} bytes - The size in bytes
 		 * @return {string}
+		 * @spec exclude display helper formatting file size
 		 */
 		formatFileSize(bytes) {
 			if (bytes === 0) return '0 Bytes'
@@ -648,6 +665,9 @@ export default {
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
+		/**
+		 * @spec exclude select-change UI handler updating register/schema stores
+		 */
 		async handleRegisterChange(option) {
 			if (!option) {
 				registerStore.setRegisterItem(null)
@@ -686,6 +706,7 @@ export default {
 		/**
 		 * Check based on the selected file type if all the required data is selected
 		 * @return {boolean}
+		 * @spec exclude computed form-completion gate
 		 */
 		checkDataCompleted() {
 			if (!this.selectedFile) return false
@@ -704,6 +725,7 @@ export default {
 		/**
 		 * Toggle the expanded state for a sheet's details
 		 * @param {string} sheetName - The name of the sheet to toggle
+		 * @spec exclude UI toggle for sheet details
 		 */
 		toggleDetails(sheetName) {
 			// Use Vue.set to ensure reactivity for dynamic object properties
@@ -712,6 +734,7 @@ export default {
 		/**
 		 * Toggle the expanded state for a sheet's error details
 		 * @param {string} sheetName - The name of the sheet to toggle
+		 * @spec exclude UI toggle for sheet error details
 		 */
 		toggleErrorDetails(sheetName) {
 			this.$set(this.expandedErrors, sheetName, !this.expandedErrors[sheetName])
@@ -720,6 +743,7 @@ export default {
 		 * Get the count of invalid objects from validation errors
 		 * @param {object} sheetSummary - The sheet summary object
 		 * @return {number} - The number of invalid objects
+		 * @spec exclude display helper counting validation errors
 		 */
 		getInvalidCount(sheetSummary) {
 			if (!sheetSummary.errors || !Array.isArray(sheetSummary.errors)) {
@@ -733,6 +757,7 @@ export default {
 		 * Check if the error might be cache-related
 		 * @param {object} sheetSummary - The sheet summary object
 		 * @return {boolean} - Whether cache issues might be causing problems
+		 * @spec exclude display helper detecting cache-related errors
 		 */
 		isCacheRelatedError(sheetSummary) {
 			if (!sheetSummary.errors || !Array.isArray(sheetSummary.errors)) {

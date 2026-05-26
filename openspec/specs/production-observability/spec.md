@@ -6,9 +6,7 @@ status: implemented
 
 ## Purpose
 Provide production-grade observability for OpenRegister deployments through Prometheus metrics, structured logging, health/readiness endpoints, and audit-compliant monitoring. This capability enables operations teams to monitor application health, track SLA compliance, detect anomalies in real-time, and satisfy BIO (Baseline Informatiebeveiliging Overheid) audit logging requirements for Dutch government deployments.
-
 ## Requirements
-
 ### Requirement: Prometheus Metrics Endpoint
 The system SHALL expose a dedicated metrics endpoint that returns all application metrics in Prometheus text exposition format (version 0.0.4). The endpoint MUST be served at `GET /index.php/apps/openregister/api/metrics` and MUST return the `Content-Type: text/plain; version=0.0.4; charset=utf-8` header. The `MetricsController` (`lib/Controller/MetricsController.php`) already implements this endpoint with basic gauge metrics; this requirement extends it with counters, histograms, and richer labels.
 
@@ -340,6 +338,48 @@ The system SHALL register an `OCP\Dashboard\IWidget` that displays key OpenRegis
 - **GIVEN** Nextcloud exposes `/ocs/v2.php/apps/serverinfo/api/v1/info` for server monitoring
 - **WHEN** an external monitoring tool queries this endpoint
 - **THEN** OpenRegister's health status SHOULD be included in the response as an additional section
+
+### Requirement: Per-Entity Statistics and Endpoint Delivery-Log API
+
+The system MUST expose per-entity statistics read endpoints and a
+custom-endpoint delivery-log API for operational observability.
+
+`RegistersController::stats` (`GET /api/registers/{id}/stats`) and
+`SchemasController::stats` (`GET /api/schemas/{id}/stats`) MUST return an
+aggregate statistics envelope for the entity, including object counts (total,
+invalid, deleted, locked, and storage size) and audit-log statistics, scoped
+to the entity. An unknown id MUST return `404` with an `{error}` body.
+
+`EndpointsController` MUST expose the delivery-log API:
+
+- `logs` (`GET /api/endpoints/{id}/logs`) — the delivery/call log entries for a
+  single endpoint;
+- `logStats` (`GET /api/endpoints/{id}/logs/stats`) — aggregate statistics over
+  that endpoint's delivery log; and
+- `allLogs` (`GET /api/endpoints/logs`) — the delivery log across all
+  endpoints.
+
+The statistics and log endpoints MUST respect the same RBAC + multi-tenancy
+filters as the underlying mappers so they cannot enumerate counts or log
+entries across tenants.
+
+#### Scenario: Register statistics envelope
+- **GIVEN** a register with a known id containing objects across its schemas
+- **WHEN** `GET /api/registers/{id}/stats` is called
+- **THEN** the response MUST include object counts (total, invalid, deleted, locked, size) and audit-log statistics scoped to the register
+- **AND** an unknown id MUST return HTTP 404 with an `{error}` body
+
+#### Scenario: Schema statistics envelope
+- **GIVEN** a schema with a known id
+- **WHEN** `GET /api/schemas/{id}/stats` is called
+- **THEN** the response MUST include object counts and audit-log statistics scoped to the schema
+
+#### Scenario: Endpoint delivery logs
+- **GIVEN** a custom endpoint with delivery-log entries
+- **WHEN** `GET /api/endpoints/{id}/logs` is called
+- **THEN** the response MUST return that endpoint's delivery-log entries
+- **AND** `GET /api/endpoints/logs` MUST return entries across all endpoints
+- **AND** `GET /api/endpoints/{id}/logs/stats` MUST return aggregate statistics over the endpoint's log
 
 ## Current Implementation Status
 - **Implemented -- Prometheus metrics endpoint**: `MetricsController` (`lib/Controller/MetricsController.php`) exposes `/api/metrics` with `openregister_info`, `openregister_up`, `openregister_registers_total`, `openregister_schemas_total`, `openregister_objects_total` (by register/schema), and `openregister_search_requests_total` gauges. Content-Type header is correctly set to Prometheus exposition format.

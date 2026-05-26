@@ -1,11 +1,6 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { dashboardStore, searchTrailStore } from '../../store/store.js'
-import { ensureIntegrationRegistry } from '../../integrations/bootstrap.js'
-
-// Make sure the integration registry singleton is installed before
-// CnIntegrationWidgetGrid renders the app-dashboard tiles. Idempotent.
-ensureIntegrationRegistry()
 </script>
 
 <template>
@@ -214,6 +209,11 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import TimerOutline from 'vue-material-design-icons/TimerOutline.vue'
 import TagMultiple from 'vue-material-design-icons/TagMultiple.vue'
+import { ensureIntegrationRegistry } from '../../integrations/bootstrap.js'
+
+// Make sure the integration registry singleton is installed before
+// CnIntegrationWidgetGrid renders the app-dashboard tiles. Idempotent.
+ensureIntegrationRegistry()
 
 const DEFAULT_LAYOUT = [
 	{ id: 1, widgetId: 'count-searches', gridX: 0, gridY: 0, gridWidth: 3, gridHeight: 2, showTitle: false },
@@ -251,10 +251,22 @@ export default {
 		isLoading() {
 			return dashboardStore.loading || searchTrailStore.statisticsLoading
 		},
+		/**
+		 * Whether the dashboard has any data to display.
+		 *
+		 * @spec exclude UI plumbing — derived view state for empty-content gating
+		 * @return {boolean}
+		 */
 		hasData() {
 			return searchTrailStore.statistics.total > 0
 				|| this.registerData.length > 0
 		},
+		/**
+		 * Objects-by-register chart rows mapped from store chart data.
+		 *
+		 * @spec exclude UI plumbing — derived chart view state
+		 * @return {Array<object>}
+		 */
 		registerData() {
 			const chartData = dashboardStore.chartData.objectsByRegister
 			if (!chartData?.labels || !chartData?.series) return []
@@ -263,6 +275,12 @@ export default {
 				count: chartData.series[i] || 0,
 			}))
 		},
+		/**
+		 * Objects-by-schema chart rows mapped from store chart data.
+		 *
+		 * @spec exclude UI plumbing — derived chart view state
+		 * @return {Array<object>}
+		 */
 		schemaData() {
 			const chartData = dashboardStore.chartData.objectsBySchema
 			if (!chartData?.labels || !chartData?.series) return []
@@ -271,6 +289,12 @@ export default {
 				count: chartData.series[i] || 0,
 			}))
 		},
+		/**
+		 * Widget definitions for the dashboard grid.
+		 *
+		 * @spec exclude UI plumbing — static widget list for display
+		 * @return {Array<object>}
+		 */
 		widgetDefs() {
 			return [
 				{ id: 'count-searches', title: t('openregister', 'Total Searches'), type: 'custom' },
@@ -284,6 +308,12 @@ export default {
 			]
 		},
 	},
+	/**
+	 * Lifecycle hook: preload dashboard and search-trail data on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		dashboardStore.preload()
 		dashboardStore.fetchAllChartData()
@@ -295,6 +325,12 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Reset search-trail statistics to empty defaults for display.
+		 *
+		 * @spec exclude UI plumbing — empty-state seed for display
+		 * @return {void}
+		 */
 		setEmptySearchTrailData() {
 			searchTrailStore.setStatistics({
 				total_searches: 0,
@@ -310,6 +346,12 @@ export default {
 			searchTrailStore.setPopularTerms({ results: [] })
 			searchTrailStore.setActivity({ daily: { activity: [] } })
 		},
+		/**
+		 * Load search-trail statistics and popular terms from the store.
+		 *
+		 * @spec exclude UI plumbing — delegates to the search-trail store fetch
+		 * @return {Promise<void>}
+		 */
 		async loadSearchTrailData() {
 			try {
 				await searchTrailStore.fetchStatistics()
@@ -319,6 +361,12 @@ export default {
 				this.setEmptySearchTrailData()
 			}
 		},
+		/**
+		 * Reload all dashboard and search-trail data.
+		 *
+		 * @spec exclude UI plumbing — refresh button delegates to store fetches
+		 * @return {Promise<void>}
+		 */
 		async refreshDashboard() {
 			this.refreshing = true
 			try {
@@ -331,6 +379,13 @@ export default {
 				this.refreshing = false
 			}
 		},
+		/**
+		 * Update the stored dashboard grid layout when the user rearranges widgets.
+		 *
+		 * @param {Array<object>} newLayout The new widget layout.
+		 * @spec exclude UI plumbing — local layout state update
+		 * @return {void}
+		 */
 		onLayoutChange(newLayout) {
 			this.dashboardLayout = newLayout
 		},

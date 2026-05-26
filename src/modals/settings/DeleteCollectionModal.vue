@@ -211,6 +211,9 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @spec exclude Watcher resetting modal state when the show prop opens; UI reactivity plumbing.
+		 */
 		show(newValue) {
 			if (newValue) {
 				// Reset state when modal is opened
@@ -266,6 +269,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Resets the modal to the confirmation step after a failed attempt; UI plumbing.
+		 */
 		handleRetry() {
 			// Reset to confirmation state for retry
 			this.completed = false

@@ -195,6 +195,8 @@ class CollectiveLinkService
      *
      * @throws Exception On missing user (401), missing page (404),
      *                   duplicate (409), Collectives unavailable (503).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function linkPage(string $objectUuid, int $registerId, int $schemaId, int $pageId): CollectiveLink
     {
@@ -239,6 +241,8 @@ class CollectiveLinkService
      *
      * @throws Exception On missing user (401), empty title (400),
      *                   missing collective (400), Collectives unavailable (503).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function createAndLinkPage(
         string $objectUuid,
@@ -347,6 +351,8 @@ class CollectiveLinkService
      * @return void
      *
      * @throws Exception On missing user (401) or no matching link (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function unlinkPage(string $objectUuid, int $pageId): void
     {
@@ -366,6 +372,8 @@ class CollectiveLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getLinkedPages(string $objectUuid): array
     {
@@ -391,6 +399,8 @@ class CollectiveLinkService
      * Returns an empty array when Collectives is unavailable.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getAvailableCollectives(): array
     {
@@ -433,6 +443,8 @@ class CollectiveLinkService
      * @param string|null $search Optional title-substring filter.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getAvailablePages(?string $search=null): array
     {

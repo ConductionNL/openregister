@@ -170,6 +170,13 @@ class SharesProvider extends AbstractIntegrationProvider
     }//end getStorageStrategy()
 
 
+    /**
+     * Whether the integration is available — NC core sharing is always on.
+     *
+     * @return bool
+     *
+     * @spec exclude Trivial always-on predicate (`return true`) — the registry stage-1 enabled-filter contract is owned by pluggable-integration-registry task-3.
+     */
     public function isEnabled(): bool
     {
         // NC core sharing is always available; the only "disabled"
@@ -216,6 +223,8 @@ class SharesProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Reserved.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/integration-shares/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -346,6 +355,8 @@ class SharesProvider extends AbstractIntegrationProvider
      * @param string $entityId Share id to revoke.
      *
      * @return void
+     *
+     * @spec openspec/changes/integration-shares/tasks.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
@@ -372,6 +383,8 @@ class SharesProvider extends AbstractIntegrationProvider
      * resolve, in which case it reports `degraded`. Never throws.
      *
      * @return array<string,mixed>
+     *
+     * @spec exclude Static ok/degraded descriptor echoing share-manager reachability — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
@@ -585,12 +598,30 @@ class SharesProvider extends AbstractIntegrationProvider
         return new class implements ContainerInterface {
 
 
+            /**
+             * Resolve a service from NC's global server container.
+             *
+             * @param string $id Service id.
+             *
+             * @return object
+             *
+             * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
+             */
             public function get(string $id): object
             {
                 return Server::get($id);
             }//end get()
 
 
+            /**
+             * Whether NC's global server container can resolve the id.
+             *
+             * @param string $id Service id.
+             *
+             * @return bool
+             *
+             * @spec exclude Anonymous PSR-11 adapter shim around \OCP\Server::get — pure DI plumbing, no behavioural contract.
+             */
             public function has(string $id): bool
             {
                 try {

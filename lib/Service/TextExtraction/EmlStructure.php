@@ -58,6 +58,8 @@ final class EmlStructure implements JsonSerializable
      * JSON serialisation.
      *
      * @return array{headers: array, body: EmlBody, attachments: array<int, EmlAttachment>}
+     *
+     * @spec exclude Value-object serialiser: maps public readonly properties to an array; field shape specified by text-extraction-eml.
      */
     public function jsonSerialize(): array
     {

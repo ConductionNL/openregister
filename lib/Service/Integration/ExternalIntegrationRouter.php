@@ -108,6 +108,8 @@ class ExternalIntegrationRouter
      *                                      `getCause()` /
      *                                      `getDetails()` to pick
      *                                      the right user message.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-4
      */
     public function call(
         IntegrationProvider $provider,
@@ -160,6 +162,8 @@ class ExternalIntegrationRouter
      * @param IntegrationProvider $provider Provider to check.
      *
      * @return array{status: string, authStatus: string, message: ?string}
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-4
      */
     public function probe(IntegrationProvider $provider): array
     {

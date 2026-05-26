@@ -113,6 +113,8 @@ class FlowLinkService
      * mutating service methods on this flag.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function isCurrentUserAdmin(): bool
     {
@@ -138,6 +140,8 @@ class FlowLinkService
      *
      * @throws Exception On missing user, non-admin (403), missing operation (404),
      *                   duplicate (409), Flow unavailable (503).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function linkOperation(string $objectUuid, int $registerId, int $schemaId, int $operationId): FlowLink
     {
@@ -191,6 +195,8 @@ class FlowLinkService
      * @return void
      *
      * @throws Exception On non-admin (403) or no matching link (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function unlinkOperation(string $objectUuid, int $operationId): void
     {
@@ -216,6 +222,8 @@ class FlowLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getLinkedOperations(string $objectUuid): array
     {
@@ -263,6 +271,8 @@ class FlowLinkService
      * @param string|null $search Optional name-substring filter.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
     public function getAvailableOperations(?string $search = null): array
     {

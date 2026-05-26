@@ -66,6 +66,8 @@ class HealthController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Health status
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-18
      */
     public function index(): JSONResponse
     {

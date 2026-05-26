@@ -22,9 +22,7 @@ This spec primarily validates and extends an already-functional import/export sy
 - **RBAC on export (fully implemented)**: `PropertyRbacHandler::canReadProperty()` controls column visibility, admin check gates `@self.*` columns.
 - **SOLR warmup (fully implemented)**: `ImportService::scheduleSmartSolrWarmup()` via `IJobList` after import.
 - **What this spec adds**: JSON/XML/ODS/JSONL format support, interactive column mapping UI, progress tracking with polling endpoint, downloadable error report CSV, import template generation, column selection for exports, streaming for 10k+ rows, scheduled/recurring imports, i18n for headers, and import rollback on critical failure.
-
 ## Requirements
-
 ### Requirement: The system MUST support import from CSV, Excel, JSON, and XML formats
 
 Users MUST be able to upload files in CSV, XLSX, JSON, or XML format. The `ImportService` SHALL detect the file type from the extension and delegate to the appropriate reader. CSV import SHALL use `PhpOffice\PhpSpreadsheet\Reader\Csv`, Excel import SHALL use `PhpOffice\PhpSpreadsheet\Reader\Xlsx`, JSON import SHALL parse the file as a JSON array of objects, and XML import SHALL parse each child element of the root as an object record.
@@ -485,6 +483,90 @@ Administrators MUST be able to configure recurring imports from files stored in 
 - **WHEN** the import processes all rows
 - **THEN** the summary MUST show all objects as `unchanged`
 - **AND** no database writes SHALL occur for unchanged objects (deduplication optimization)
+
+### Requirement: Configuration imports MUST be tracked in a per-app Configuration entity for idempotent re-import
+
+`ImportHandler::createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner = null): Configuration` MUST find-or-create a single `Configuration` entity per `$appId` (looked up via `ConfigurationMapper::findByApp($appId)`, taking the first match) so repeated imports of the same app reconcile into one tracking record rather than accumulating duplicates.
+
+Metadata MUST be extracted via a fallback chain: title and description MUST be read from `data.info.*` (OAS) first, then `data.x-openregister.*`, then top-level `data.*`, falling back to `"Configuration for {appId}"` / `"Imported configuration for application {appId}"`; `type` MUST be read from `x-openregister.type` → `data.type` → `'imported'`. Imported entity IDs MUST be collected from `$result['registers']`, `$result['schemas']`, and `$result['objects']`, taking only `Register` / `Schema` / `ObjectEntity` instances.
+
+On an **existing** configuration the handler MUST update title/description/type/version and MUST merge the freshly imported register/schema/object IDs with the previously tracked IDs using `array_unique(array_merge(existing, new))` — so re-importing never loses previously tracked entities — then persist via `ConfigurationMapper::update()`.
+
+On a **new** configuration the handler MUST set title/description/type/app/version and the fresh ID lists, MUST mark it `isLocal = true`, `syncEnabled = false`, `syncStatus = 'never'`, MUST fold optional `x-openregister` source/version metadata (`openregister`, `sourceType`, `sourceUrl`), MUST accept GitHub coordinates in either the new nested `x-openregister.github.{repo,branch,path}` shape or the legacy flat `x-openregister.github{Repo,Branch,Path}` shape, MUST set `owner` when the `$owner` argument is provided, then persist via `ConfigurationMapper::insert()`.
+
+Any failure MUST be logged and re-thrown wrapped as `Failed to create or update configuration: {message}`.
+
+#### Scenario: Re-import merges entity IDs into the existing configuration
+- **GIVEN** an existing `Configuration` for app `myapp` tracking registers `[1]`, schemas `[10]`, objects `[100]`
+- **WHEN** `createOrUpdateConfiguration` runs with a result importing registers `[1, 2]`, schemas `[11]`, objects `[100, 101]`
+- **THEN** the existing record MUST be updated (not a new one created)
+- **AND** its registers MUST become `[1, 2]`, schemas `[10, 11]`, objects `[100, 101]` (union, de-duplicated)
+- **AND** title/description/type/version MUST be refreshed from the new import data
+
+#### Scenario: First import creates a local, sync-disabled tracking record
+- **GIVEN** no existing `Configuration` for app `freshapp`
+- **WHEN** `createOrUpdateConfiguration` runs
+- **THEN** a new `Configuration` MUST be inserted with `app = 'freshapp'`, `isLocal = true`, `syncEnabled = false`, `syncStatus = 'never'`
+- **AND** the register/schema/object ID lists MUST equal the freshly imported IDs
+
+#### Scenario: Metadata falls back through OAS → x-openregister → default
+- **GIVEN** import data with no `info.title` and no `x-openregister.title` and no top-level `title`, for app `acme`
+- **WHEN** `createOrUpdateConfiguration` runs
+- **THEN** the configuration title MUST default to `"Configuration for acme"`
+- **AND** when `info.title` IS present it MUST take precedence over both `x-openregister.title` and the default
+
+#### Scenario: GitHub coordinates accepted in nested or legacy-flat shape
+- **GIVEN** a new configuration import whose `x-openregister` carries `github: {repo, branch, path}` (nested)
+- **WHEN** the new-configuration branch runs
+- **THEN** `githubRepo`/`githubBranch`/`githubPath` MUST be populated from the nested keys
+- **AND** an import using the legacy flat `githubRepo`/`githubBranch`/`githubPath` keys MUST populate the same fields
+
+### Requirement: Configuration Management and Git-Remote Sync HTTP Surface
+
+The system MUST expose a configuration-management REST surface and a
+Git-remote synchronisation surface so administrators can manage configuration
+entities and import/sync configurations from GitHub or GitLab.
+`ConfigurationsController` MUST provide resource CRUD
+(`index`/`show`/`create`/`update`/`patch`/`destroy`) over configuration
+entities, returning `404` for unknown ids and `201` on create where set
+explicitly. `ConfigurationController` MUST additionally expose:
+
+- `checkVersion` (`POST /api/configurations/{id}/check-version`) — compare the
+  stored configuration against its remote source version;
+- `preview` (`GET /api/configurations/{id}/preview`) — return the diff/preview
+  of pending changes without applying them;
+- `enrichDetails` (`GET /api/configurations/enrich`) — fetch and attach the
+  actual remote file contents to configuration descriptors;
+- `getGitHubRepositories` (`GET /api/configurations/github/repositories`) —
+  list repositories the authenticated user can access;
+- `getGitHubConfigurations` (`GET /api/configurations/github/files`) — list
+  configuration files in a GitHub repository; and
+- `getGitLabConfigurations` (`GET /api/configurations/gitlab/files`) — the
+  GitLab equivalent.
+
+The Git-discovery endpoints MUST resolve the caller's credentials/token from
+configuration and MUST NOT leak repository contents the caller cannot access.
+The configuration `export` and `import` methods on both controllers remain
+governed by the existing "Configuration import/export MUST support full
+register portability" requirement and are not redefined here.
+
+#### Scenario: CRUD over configuration entities
+- **GIVEN** a configuration entity with a known id
+- **WHEN** `GET /api/configurations/{id}` is called
+- **THEN** the response MUST return HTTP 200 with the entity's JSON serialization
+- **AND** an unknown id MUST return HTTP 404 with an `{error}` body
+- **AND** `PATCH /api/configurations/{id}` MUST apply a partial update via the same write path as `update`
+
+#### Scenario: Check a configuration against its remote version
+- **GIVEN** a configuration with a remote source
+- **WHEN** `POST /api/configurations/{id}/check-version` is called
+- **THEN** the response MUST report whether the remote version is newer, equal, or older than the stored configuration
+
+#### Scenario: Discover GitHub configuration files
+- **GIVEN** an authenticated user with a configured GitHub token
+- **WHEN** `GET /api/configurations/github/files` is called for a repository
+- **THEN** the response MUST list the configuration files in that repository
+- **AND** repositories or files the caller cannot access MUST NOT be returned
 
 ## Current Implementation Status
 - **Implemented:**

@@ -71,6 +71,8 @@ class SchemaHandler
      * @param string $similarity Similarity function: 'cosine', 'dot_product', or 'euclidean'
      *
      * @return bool Success status
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-2
      */
     public function ensureVectorFieldType(
         string $collection,
@@ -146,6 +148,8 @@ class SchemaHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema mirroring requires handling multiple schema scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for conflict resolution and field processing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive schema mirroring requires extensive code
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-2
      */
     public function mirrorSchemas(bool $force=false): array
     {
@@ -612,6 +616,8 @@ class SchemaHandler
      * @return array Field status with collection, existing fields, missing fields, and counts.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field status requires handling multiple field comparison scenarios
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-2
      */
     public function getCollectionFieldStatus(string $collection): array
     {
@@ -667,6 +673,8 @@ class SchemaHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field creation requires handling dry run and multiple scenarios
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-2
      */
     public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {
@@ -710,6 +718,8 @@ class SchemaHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Mismatch fixing requires handling dry run and error scenarios
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-2
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {

@@ -73,6 +73,8 @@ class DeckLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -112,6 +114,8 @@ class DeckLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
@@ -167,6 +171,8 @@ class DeckLinksController extends Controller
      *     field checks, two optional-field reads, two HTTP error mappings).
      *     Each branch carries a distinct surface contract — splitting would
      *     scatter the request-handling intent across helper methods.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function createNew(string $register, string $schema, string $id): JSONResponse
     {
@@ -228,6 +234,8 @@ class DeckLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function destroy(string $register, string $schema, string $id, string $cardId): JSONResponse
     {
@@ -261,6 +269,8 @@ class DeckLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function boards(): JSONResponse
     {
@@ -284,6 +294,8 @@ class DeckLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function stacks(string $boardId): JSONResponse
     {

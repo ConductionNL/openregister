@@ -80,6 +80,8 @@ final class WidgetAnnotationValidator
      * @param array<string, mixed> $schema Full schema definition.
      *
      * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-2
      */
     public function validate(array $schema): array
     {

@@ -82,7 +82,7 @@ class TimeProvider extends AbstractIntegrationProvider
 
     public function getLabel(): string
     {
-        return $this->l10n->t('Time');
+        return $this->l10n->t('Time tracker');
     }//end getLabel()
 
     public function getIcon(): string
@@ -125,6 +125,8 @@ class TimeProvider extends AbstractIntegrationProvider
      * @param array  $filters  Optional registry filters (unused).
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
+     *
+     * @spec openspec/changes/integration-time-tracker/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -281,6 +283,13 @@ class TimeProvider extends AbstractIntegrationProvider
         return $rows;
     }//end legacyMarkerRows()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $available = $this->isEnabled();

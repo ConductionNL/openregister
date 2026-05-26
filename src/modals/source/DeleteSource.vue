@@ -82,6 +82,9 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+		/**
+		 * @spec exclude Delete-confirm handler delegating to sourceStore.deleteSource; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
 		async deleteSource() {
 			this.loading = true
 

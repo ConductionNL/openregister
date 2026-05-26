@@ -187,6 +187,8 @@ class ContactMatchingService
      * @param string $email The email address to match
      *
      * @return array The match results with confidence 1.0
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     public function matchByEmail(string $email): array
     {
@@ -249,6 +251,8 @@ class ContactMatchingService
      * @param string|null $name The display name to match
      *
      * @return array The match results
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     public function matchByName(?string $name): array
     {
@@ -311,6 +315,8 @@ class ContactMatchingService
      * @param string|null $organization The organization name to match
      *
      * @return array The match results with confidence 0.5
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     public function matchByOrganization(?string $organization): array
     {
@@ -373,6 +379,8 @@ class ContactMatchingService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
      */
     public function matchContact(
         string $email,

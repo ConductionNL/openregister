@@ -77,6 +77,8 @@ class FileValidationHandler
      * @phpstan-return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive list of dangerous extensions requires extensive code
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
      */
     public function blockExecutableFile(string $fileName, string $fileContent): void
     {
@@ -188,6 +190,8 @@ class FileValidationHandler
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
      */
     public function detectExecutableMagicBytes(string $content, string $fileName): void
     {
@@ -267,6 +271,8 @@ class FileValidationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) The method fans out across
      * readability, owner-drift detection, and best-effort repair with a nested
      * try/catch; splitting further would obscure the ownership-repair intent.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
      */
     public function checkOwnership(Node $file): void
     {
@@ -319,6 +325,8 @@ class FileValidationHandler
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
      */
     public function ownFile(Node $file): bool
     {

@@ -164,9 +164,33 @@ function main() {
 		process.exit(1)
 	}
 
-	const ajv = new Ajv({ allErrors: true, strict: false })
-	if (addFormats) addFormats(ajv)
-	const validate = ajv.compile(schema)
+	// The ajv path can fail for environment reasons unrelated to the manifest:
+	// ajv-formats@2 expects ajv@8 but a transitive ajv@6 may resolve (addFormats
+	// then throws on ajv.opts.code), and ajv@6 can't compile a draft-2020 schema.
+	// Formats are best-effort, and any ajv setup/compile failure degrades to the
+	// structural lint rather than crashing the gate.
+	let validate
+	try {
+		const ajv = new Ajv({ allErrors: true, strict: false })
+		if (addFormats) {
+			try {
+				addFormats(ajv)
+			} catch (e) {
+				console.warn(`[validate-manifest] ajv-formats unavailable (${e.message}); continuing without format validation`)
+			}
+		}
+		validate = ajv.compile(schema)
+	} catch (e) {
+		console.warn(`[validate-manifest] Ajv could not compile the schema (${e.message}); falling back to structural lint`)
+		const errors = structuralLint(manifest)
+		if (errors.length === 0) {
+			console.log('[validate-manifest] structural lint (Ajv unavailable): PASS (0 issues)')
+			process.exit(0)
+		}
+		console.error('[validate-manifest] structural lint (Ajv unavailable): FAIL')
+		for (const err of errors) console.error(`  - ${err}`)
+		process.exit(1)
+	}
 	const ok = validate(manifest)
 	if (ok) {
 		console.log('[validate-manifest] Ajv validation: PASS (0 errors)')

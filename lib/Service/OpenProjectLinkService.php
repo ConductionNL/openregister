@@ -150,6 +150,8 @@ class OpenProjectLinkService
      *
      * @throws Exception On missing user (401), duplicate (409),
      *                   OpenConnector/source unavailable (503).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function linkWorkPackage(string $objectUuid, int $registerId, int $schemaId, int $workPackageId): OpenProjectLink
     {
@@ -200,6 +202,8 @@ class OpenProjectLinkService
      *
      * @throws Exception On missing user (401), empty subject (400),
      *                   missing project (400), source unavailable (503).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function createAndLinkWorkPackage(
         string $objectUuid,
@@ -309,6 +313,8 @@ class OpenProjectLinkService
      * @return void
      *
      * @throws Exception On missing user (401) or no matching link (404).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function unlink(string $objectUuid, int $workPackageId): void
     {
@@ -328,6 +334,8 @@ class OpenProjectLinkService
      * @param string $objectUuid Parent OR object uuid.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getLinkedWorkPackages(string $objectUuid): array
     {
@@ -356,6 +364,8 @@ class OpenProjectLinkService
      * @return array<int,array<string,mixed>>
      *
      * @throws Exception When the source is unconfigured / unreachable (503).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getAvailableWorkPackages(?string $search=null): array
     {

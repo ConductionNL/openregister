@@ -304,6 +304,8 @@ class UserService
      * @param array $data The data array containing updates
      *
      * @return array Result of the update operation including organization changes
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function updateUserProperties(IUser $user, array $data): array
     {
@@ -422,6 +424,8 @@ class UserService
      * @param IUser $user The user object
      *
      * @return array Array containing name fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function getCustomNameFields(IUser $user): array
     {
@@ -456,6 +460,8 @@ class UserService
      * @param array $nameFields Array containing name field values
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function setCustomNameFields(IUser $user, array $nameFields): void
     {
@@ -1011,6 +1017,8 @@ class UserService
      * @return array Result array with success status
      *
      * @throws RuntimeException If deletion fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function deleteAvatar(IUser $user): array
     {
@@ -1135,6 +1143,8 @@ class UserService
      * @return array The complete updated preferences
      *
      * @throws InvalidArgumentException If invalid preference values
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function setNotificationPreferences(IUser $user, array $prefs): array
     {
@@ -1293,6 +1303,8 @@ class UserService
      * @param IUser $user The user to list tokens for
      *
      * @return array Array of token objects with masked values
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function listApiTokens(IUser $user): array
     {
@@ -1324,6 +1336,8 @@ class UserService
      * @return array Result array
      *
      * @throws RuntimeException If token not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function revokeApiToken(IUser $user, string $tokenId): array
     {
@@ -1399,6 +1413,8 @@ class UserService
      * @param IUser $user The user to check status for
      *
      * @return array Status information
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function getDeactivationStatus(IUser $user): array
     {
@@ -1427,6 +1443,8 @@ class UserService
      * @return array Result array
      *
      * @throws RuntimeException If no pending request
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function cancelDeactivation(IUser $user): array
     {

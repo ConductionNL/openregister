@@ -182,6 +182,8 @@ class GraphQLController extends Controller
              * Render the HTML body.
              *
              * @return string The HTML
+             *
+             * @spec exclude Framework Response::render() override on an inline anonymous class for the GraphiQL explorer; the explorer route is owned by retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2.
              */
             public function render(): string
             {

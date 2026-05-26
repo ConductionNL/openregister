@@ -273,6 +273,8 @@ class OrganisationService
      *
      * @psalm-return array{organisation: array{default_organisation: mixed|null,
      *               auto_create_default_organisation: mixed|true}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -304,6 +306,8 @@ class OrganisationService
      * Get default organisation UUID from settings
      *
      * @return string|null Default organisation UUID or null if not set
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getDefaultOrganisationUuid(): ?string
     {
@@ -612,6 +616,8 @@ class OrganisationService
      * @return true True if successfully added
      *
      * @throws Exception If organisation not found, user not logged in, or target user does not exist
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function joinOrganisation(string $organisationUuid, ?string $targetUserId=null): bool
     {
@@ -894,6 +900,8 @@ class OrganisationService
      * Get user organisation statistics
      *
      * @return array Statistics with total count, active organisation, and results list.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getUserOrganisationStats(): array
     {
@@ -921,6 +929,8 @@ class OrganisationService
      * Clear default organisation cache (public method for external use)
      *
      * @return void
+     *
+     * @spec exclude Trivial static default-org cache reset; no business logic.
      */
     public function clearDefaultOrganisationCache(): void
     {
@@ -943,6 +953,8 @@ class OrganisationService
      * @psalm-suppress PossiblyUnusedReturnValue
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag controls whether to clear persistent settings
+     *
+     * @spec exclude Cache-invalidation helper (request/session/static caches + optional persistent setting); no business logic.
      */
     public function clearCache(bool $clearPersistent=false): bool
     {
@@ -1420,6 +1432,8 @@ class OrganisationService
      * Uses the active organisation or falls back to default
      *
      * @return null|string The organisation UUID to use
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
      */
     public function getOrganisationForNewEntity(): string|null
     {
@@ -1454,6 +1468,8 @@ class OrganisationService
      * Get the default organisation UUID from config
      *
      * @return null|string The UUID of the default organisation, or null if not set
+     *
+     * @spec exclude Trivial app-config getter for the defaultOrganisation key; no business logic.
      */
     public function getDefaultOrganisationId(): string|null
     {
@@ -1571,6 +1587,8 @@ class OrganisationService
      * @param string $uuid The UUID of the organisation to set as default
      *
      * @return void
+     *
+     * @spec exclude Trivial app-config setter + cache bust; no business logic.
      */
     public function setDefaultOrganisationId(string $uuid): void
     {

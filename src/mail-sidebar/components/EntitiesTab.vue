@@ -55,6 +55,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 */
 		groupedEntities() {
 			const groups = {}
 			for (const entity of this.entities) {
@@ -68,6 +71,9 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 */
 		messageId() {
 			this.loadEntities()
 		},
@@ -77,6 +83,9 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 */
 		formatType(type) {
 			const labels = {
 				PERSON: t('openregister', 'Persons'),
@@ -91,6 +100,9 @@ export default {
 			}
 			return labels[type] || type
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 */
 		async loadEntities() {
 			if (!this.messageId) {
 				this.entities = []

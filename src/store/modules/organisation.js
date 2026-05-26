@@ -26,22 +26,37 @@ export const useOrganisationStore = defineStore('organisation', {
 		getUserOrganisations: (state) => state.userStats.list,
 	},
 	actions: {
+		/**
+		 * @spec exclude Pure client UI-state setter — list/card view-mode toggle. No backend contract.
+		 */
 		setViewMode(mode) {
 			this.viewMode = mode
 			console.log('View mode set to:', mode)
 		},
+		/**
+		 * @spec exclude Client state mutator — wraps the active organisation in an entity. No backend contract.
+		 */
 		setOrganisationItem(organisationItem) {
 			this.organisationItem = organisationItem && new Organisation(organisationItem)
 			console.log('Active organisation item set to ' + (organisationItem?.name || 'null'))
 		},
+		/**
+		 * @spec exclude Client state mutator — maps the organisation list to entities. No backend contract.
+		 */
 		setOrganisationList(organisations) {
 			this.organisationList = organisations.map(organisation => new Organisation(organisation))
 			console.log('Organisation list set to ' + organisations.length + ' items')
 		},
+		/**
+		 * @spec exclude Client state mutator — wraps the active organisation in an entity. No backend contract.
+		 */
 		setActiveOrganisation(activeOrganisation) {
 			this.activeOrganisation = activeOrganisation && new Organisation(activeOrganisation)
 			console.log('Active organisation set to ' + (activeOrganisation?.name || 'null'))
 		},
+		/**
+		 * @spec exclude Client state mutator — maps the user-org stats response into entities. No backend contract.
+		 */
 		setUserStats(stats) {
 			this.userStats = {
 				total: stats.total || 0,
@@ -54,6 +69,8 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * Set pagination details
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
+		 *
+		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
 		 */
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
@@ -62,11 +79,16 @@ export const useOrganisationStore = defineStore('organisation', {
 		/**
 		 * Set query filters for organisation list
 		 * @param {object} filters - The filter criteria to apply to the organisation list
+		 *
+		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
 			console.info('Query filters set to', this.filters)
 		},
+		/**
+		 * @spec exclude Thin API passthrough — GET /api/organisations list; observable contract owned by tenant-lifecycle.
+		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshOrganisationList() {
 			const endpoint = '/index.php/apps/openregister/api/organisations'
@@ -85,6 +107,9 @@ export const useOrganisationStore = defineStore('organisation', {
 			return { response, data }
 		},
 		// Get active organisation
+		/**
+		 * @spec exclude Thin API passthrough — GET /api/organisations/active; observable contract owned by tenant-lifecycle.
+		 */
 		async getActiveOrganisation() {
 			const endpoint = '/index.php/apps/openregister/api/organisations/active'
 			try {
@@ -104,6 +129,9 @@ export const useOrganisationStore = defineStore('organisation', {
 			}
 		},
 		// Function to get a single organisation
+		/**
+		 * @spec exclude Thin API passthrough — GET /api/organisations/{uuid}; observable contract owned by tenant-lifecycle.
+		 */
 		async getOrganisation(uuid, options = { setItem: false }) {
 			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}`
 			try {
@@ -123,6 +151,9 @@ export const useOrganisationStore = defineStore('organisation', {
 			}
 		},
 		// Set active organisation
+		/**
+		 * @spec exclude Thin API passthrough — POST /api/organisations/{uuid}/set-active; observable contract owned by tenant-lifecycle.
+		 */
 		async setActiveOrganisationById(uuid) {
 			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}/set-active`
 			try {
@@ -155,6 +186,8 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @param {string} uuid - Organisation UUID to join
 		 * @param {string|null} userId - Optional user ID to join the organisation. If null, current user joins.
 		 * @return {Promise<{response: Response, data: object}>} API response
+		 *
+		 * @spec exclude Thin API passthrough — POST /api/organisations/{uuid}/join; observable contract owned by tenant-lifecycle.
 		 */
 		async joinOrganisation(uuid, userId = null) {
 			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}/join`
@@ -186,6 +219,9 @@ export const useOrganisationStore = defineStore('organisation', {
 			}
 		},
 		// Leave an organisation
+		/**
+		 * @spec exclude Thin API passthrough — POST /api/organisations/{uuid}/leave; observable contract owned by tenant-lifecycle.
+		 */
 		async leaveOrganisation(uuid) {
 			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}/leave`
 			try {
@@ -210,6 +246,9 @@ export const useOrganisationStore = defineStore('organisation', {
 			}
 		},
 		// Delete an organisation (owner only)
+		/**
+		 * @spec exclude Thin API passthrough — DELETE /api/organisations/{uuid}; observable contract owned by tenant-lifecycle.
+		 */
 		async deleteOrganisation(organisationItem) {
 			if (!organisationItem.uuid) {
 				throw new Error('No organisation UUID to delete')
@@ -232,6 +271,9 @@ export const useOrganisationStore = defineStore('organisation', {
 			return { response }
 		},
 		// Create a new organisation
+		/**
+		 * @spec exclude Thin API passthrough — POST /api/organisations; observable contract owned by tenant-lifecycle.
+		 */
 		async createOrganisation(organisationData) {
 			console.log('Creating organisation...', organisationData)
 
@@ -269,6 +311,9 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 
 		// Update an existing organisation
+		/**
+		 * @spec exclude Thin API passthrough — PUT /api/organisations/{uuid}; observable contract owned by tenant-lifecycle.
+		 */
 		async updateOrganisation(organisationData) {
 			console.log('Updating organisation...', organisationData)
 
@@ -325,6 +370,9 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 
 		// Create or update an organisation (legacy method for backward compatibility)
+		/**
+		 * @spec exclude Client-side create/update dispatcher — delegates to createOrganisation/updateOrganisation passthroughs. No standalone backend contract.
+		 */
 		async saveOrganisation(organisationItem) {
 			const isNewOrganisation = !organisationItem.uuid && !organisationItem.id
 
@@ -335,6 +383,9 @@ export const useOrganisationStore = defineStore('organisation', {
 			}
 		},
 		// Clean organisation data for saving - remove read-only fields
+		/**
+		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
+		 */
 		cleanOrganisationForSave(organisationItem) {
 			const cleaned = { ...organisationItem }
 
@@ -371,6 +422,8 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @param {number} limit - Maximum number of results to return
 		 * @param {number} offset - Number of results to skip
 		 * @return {Promise<Array>} List of organisations
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/organisations/search; observable contract owned by tenant-lifecycle.
 		 */
 		async searchOrganisations(query = '', limit = 50, offset = 0) {
 			// Build query parameters
@@ -401,6 +454,9 @@ export const useOrganisationStore = defineStore('organisation', {
 			}
 		},
 		// Clear cache
+		/**
+		 * @spec exclude Thin API passthrough — POST /api/organisations/clear-cache; observable contract owned by tenant-lifecycle.
+		 */
 		async clearCache() {
 			const endpoint = '/index.php/apps/openregister/api/organisations/clear-cache'
 			try {
@@ -425,6 +481,8 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * This should be called on the organisations index page to preload groups
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec exclude Thin passthrough to the Nextcloud OCS groups API; observable contract owned by Nextcloud core, not OpenRegister.
 		 */
 		async loadNextcloudGroups() {
 			try {

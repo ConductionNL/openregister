@@ -512,9 +512,15 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed passthrough exposing objectStore.objectItem as the merge source; UI state helper.
+		 */
 		sourceObject() {
 			return objectStore.objectItem
 		},
+		/**
+		 * @spec exclude Computed union of source+target property keys for the merge UI; UI presentation helper.
+		 */
 		mergeableProperties() {
 			if (!this.sourceObject || !this.selectedTargetObject) {
 				return []
@@ -525,6 +531,9 @@ export default {
 
 			return [...new Set([...sourceProps, ...targetProps])]
 		},
+		/**
+		 * @spec exclude Computed enablement guard for the merge button; UI validation helper.
+		 */
 		canMerge() {
 			return Object.keys(this.mergedData).length > 0
 		},
@@ -533,6 +542,9 @@ export default {
 		this.initializeMerge()
 	},
 	methods: {
+		/**
+		 * @spec exclude Wizard bootstrap loading source data and candidate targets on open; modal init plumbing.
+		 */
 		initializeMerge() {
 			if (!this.sourceObject) {
 				this.closeModal()
@@ -541,6 +553,9 @@ export default {
 			this.loadSourceData()
 			this.searchObjects()
 		},
+		/**
+		 * @spec exclude Fetches candidate merge-target objects (excluding the source); UI search plumbing.
+		 */
 		async searchObjects() {
 			if (!registerStore.registerItem || !schemaStore.schemaItem) {
 				return
@@ -560,20 +575,32 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Records the chosen merge target in local state; UI selection plumbing.
+		 */
 		selectTargetObject(obj) {
 			this.selectedTargetObject = obj
 		},
+		/**
+		 * @spec exclude Wizard forward-navigation guard advancing to the merge step; UI step plumbing.
+		 */
 		nextStep() {
 			if (this.step === 1 && this.selectedTargetObject) {
 				this.step = 2
 				this.initializeMergeData()
 			}
 		},
+		/**
+		 * @spec exclude Wizard back-navigation to the target-selection step; UI step plumbing.
+		 */
 		previousStep() {
 			if (this.step === 2) {
 				this.step = 1
 			}
 		},
+		/**
+		 * @spec exclude Seeds per-property merge defaults and dropdown selections; UI form-init plumbing.
+		 */
 		initializeMergeData() {
 			// Initialize merge data with default values
 			this.mergedData = {}
@@ -616,6 +643,9 @@ export default {
 			// eslint-disable-next-line no-console
 			console.log('Initial propertySelections after setup:', this.propertySelections)
 		},
+		/**
+		 * @spec exclude Builds the source/target/custom option list for a property dropdown; UI presentation helper.
+		 */
 		getMergeOptions(property) {
 			const options = []
 
@@ -642,6 +672,9 @@ export default {
 			return options
 		},
 
+		/**
+		 * @spec exclude Updates merged-data state when a per-property dropdown changes; UI reactivity plumbing.
+		 */
 		onPropertySelectionChange(property, selectedOption) {
 			// eslint-disable-next-line no-console
 			console.log('Property selection change:', property, selectedOption)
@@ -658,6 +691,9 @@ export default {
 				}
 			}
 		},
+		/**
+		 * @spec exclude Stringifying/truncating value formatter for property display; UI presentation helper.
+		 */
 		displayValue(value, maxLength = 100) {
 			if (value === null || value === undefined) {
 				return 'N/A'
@@ -677,11 +713,17 @@ export default {
 
 			return displayText
 		},
+		/**
+		 * @spec exclude Simple string-truncation helper for display; UI presentation helper.
+		 */
 		truncateText(text, maxLength) {
 			if (!text) return ''
 			if (text.length <= maxLength) return text
 			return text.substring(0, maxLength) + '...'
 		},
+		/**
+		 * @spec exclude Merge-confirm handler delegating to objectStore.mergeObjects; entity merge lives in the store, this is modal orchestration plumbing.
+		 */
 		async performMerge() {
 			if (!this.canMerge) {
 				return
@@ -744,6 +786,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Navigates to the merged object's view modal; UI navigation plumbing.
+		 */
 		viewMergedObject() {
 			// Navigate to the merged object in view mode
 			if (this.selectedTargetObject) {
@@ -751,21 +796,36 @@ export default {
 				navigationStore.setModal('viewObject')
 			}
 		},
+		/**
+		 * @spec exclude Toggles the files-list disclosure; UI presentation plumbing.
+		 */
 		toggleFileList() {
 			this.showFileList = !this.showFileList
 		},
+		/**
+		 * @spec exclude Toggles the relations-list disclosure; UI presentation plumbing.
+		 */
 		toggleRelationList() {
 			this.showRelationList = !this.showRelationList
 		},
+		/**
+		 * @spec exclude Toggles the references-list disclosure; UI presentation plumbing.
+		 */
 		toggleReferenceList() {
 			this.showReferenceList = !this.showReferenceList
 		},
+		/**
+		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
+		 */
 		formatFileSize(bytes) {
 			if (!bytes) return 'N/A'
 			const sizes = ['Bytes', 'KB', 'MB', 'GB']
 			const i = Math.floor(Math.log(bytes) / Math.log(1024))
 			return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
 		},
+		/**
+		 * @spec exclude Maps a filename extension to a friendly type label; UI presentation helper.
+		 */
 		getFileType(filename) {
 			if (!filename) return 'Unknown'
 			const ext = filename.split('.').pop()?.toLowerCase()
@@ -787,6 +847,9 @@ export default {
 			}
 			return types[ext] || ext?.toUpperCase() || 'Unknown'
 		},
+		/**
+		 * @spec exclude Loads the source object's files/relations/references for the merge preview; UI form-loading plumbing.
+		 */
 		async loadSourceData() {
 			// Load files, outgoing relations, and incoming references for the source object
 			if (!this.sourceObject) return
@@ -837,6 +900,9 @@ export default {
 				this.sourceIncomingReferences = []
 			}
 		},
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 		},

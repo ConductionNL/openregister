@@ -27,6 +27,21 @@
 			@update:open="objectSidebarState.open = $event" />
 		<Modals />
 		<Dialogs />
+		<!--
+			First-open support note. OpenRegister mounts its own root
+			(not CnAppRoot yet), so the dialog is wired manually here:
+			useSupportDialog resolves the per-user "seen" flag from
+			/api/preferences/support-dialog-seen (localStorage fallback).
+			Swap to CnAppRoot's built-in auto-mount once the shell
+			migration lands and drop this block.
+		-->
+		<CnSupportDialog
+			v-if="supportVisible"
+			app-name="OpenRegister"
+			app-slug="openregister"
+			app-store-url="https://apps.nextcloud.com/apps/openregister"
+			feature-request-url="https://github.com/ConductionNL/openregister/issues/new"
+			@close="supportHide" />
 	</NcContent>
 </template>
 
@@ -34,7 +49,7 @@
 
 import Vue from 'vue'
 import { NcContent } from '@nextcloud/vue'
-import { CnObjectSidebar } from '@conduction/nextcloud-vue'
+import { CnObjectSidebar, CnSupportDialog, useSupportDialog } from '@conduction/nextcloud-vue'
 import MainMenu from './navigation/MainMenu.vue'
 import Modals from './modals/Modals.vue'
 import Dialogs from './dialogs/Dialogs.vue'
@@ -48,12 +63,30 @@ export default {
 	components: {
 		NcContent,
 		CnObjectSidebar,
+		CnSupportDialog,
 		MainMenu,
 		Modals,
 		Dialogs,
 		Views,
 		SideBars,
 	},
+	/**
+	 * Wire the first-open support note's per-user persistence (server
+	 * preferences endpoint, localStorage fallback). Manual mount because
+	 * OpenRegister does not use CnAppRoot yet.
+	 *
+	 * @return {object} `{ supportVisible, supportHide }`.
+	 */
+	setup() {
+		const { visible, hide } = useSupportDialog('openregister', { persistence: 'server' })
+		return { supportVisible: visible, supportHide: hide }
+	},
+	/**
+	 * Expose the shared object-sidebar state to descendant components.
+	 *
+	 * @return {object} The provided injectables.
+	 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
+	 */
 	provide() {
 		return {
 			objectSidebarState: this.objectSidebarState,
@@ -74,6 +107,12 @@ export default {
 			}),
 		}
 	},
+	/**
+	 * On mount, kick off application-data hot-loading and dashboard watchers.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
+	 */
 	mounted() {
 		// Initialize hot-loading of essential application data
 		// This loads registers, schemas, organisations, applications, views, agents, sources, and conversations

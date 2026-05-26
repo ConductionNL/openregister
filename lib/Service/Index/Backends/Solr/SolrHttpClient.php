@@ -131,6 +131,8 @@ class SolrHttpClient
      * Check if Solr is configured.
      *
      * @return bool True if configured
+     *
+     * @spec exclude boilerplate config getter — checks enabled/host/core presence
      */
     public function isConfigured(): bool
     {
@@ -163,6 +165,8 @@ class SolrHttpClient
      * Build base Solr URL.
      *
      * @return string Base Solr URL
+     *
+     * @spec exclude boilerplate URL builder — host/port/path string concatenation
      */
     public function buildSolrBaseUrl(): string
     {
@@ -179,6 +183,8 @@ class SolrHttpClient
      * @param string|null $collection Collection name (null = use default core)
      *
      * @return string Endpoint URL
+     *
+     * @spec exclude boilerplate URL builder — appends collection/core to base URL
      */
     public function getEndpointUrl(?string $collection=null): string
     {
@@ -197,6 +203,8 @@ class SolrHttpClient
      * @return array Response data
      *
      * @throws Exception If request fails
+     *
+     * @spec exclude thin Guzzle GET wrapper — request/json-decode/log-and-rethrow
      */
     public function get(string $url, array $opts=[]): array
     {
@@ -224,6 +232,8 @@ class SolrHttpClient
      * @return array Response data
      *
      * @throws Exception If request fails
+     *
+     * @spec exclude thin Guzzle POST wrapper — request/json-decode/log-and-rethrow
      */
     public function post(string $url, array $data=[], array $opts=[]): array
     {
@@ -250,6 +260,8 @@ class SolrHttpClient
      * @param string $baseCollectionName Base collection name
      *
      * @return string Tenant-specific collection name
+     *
+     * @spec exclude boilerplate config helper — optional tenant prefix from settings
      */
     public function getTenantSpecificCollectionName(string $baseCollectionName): string
     {
