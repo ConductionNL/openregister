@@ -48,6 +48,15 @@ class SchemasControllerTest extends TestCase
     private FacetCacheHandler&MockObject $facetCacheSvc;
     private SchemaService&MockObject $schemaService;
     private LoggerInterface&MockObject $logger;
+    private \Psr\Container\ContainerInterface&MockObject $container;
+
+    /**
+     * The user the mocked session resolves to. SchemasController resolves the
+     * session + group manager lazily via the container, so the container's
+     * get() returns mocks driven by this property. Defaults to an admin so
+     * write and authenticated-read tests pass; anonymous-read tests set it null.
+     */
+    private ?\OCP\IUser $currentUser = null;
 
     protected function setUp(): void
     {
@@ -65,6 +74,29 @@ class SchemasControllerTest extends TestCase
         $this->schemaService = $this->createMock(SchemaService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        // SchemasController resolves IUserSession + IGroupManager lazily via the
+        // container (isCurrentUserAdmin / checkSchemaManagePermission / the
+        // read-visibility guard). Default to an authenticated admin; anonymous-read
+        // tests set $this->currentUser = null.
+        $this->currentUser = $this->createMock(\OCP\IUser::class);
+        $this->currentUser->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $userSession->method('getUser')->willReturnCallback(fn() => $this->currentUser);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturnCallback(fn() => $this->currentUser !== null);
+        $groupManager->method('getUserGroupIds')->willReturn(['admin']);
+
+        $this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
+        $this->container->method('get')->willReturnCallback(function ($id) use ($userSession, $groupManager) {
+            if ($id === \OCP\IUserSession::class) {
+                return $userSession;
+            }
+            if ($id === \OCP\IGroupManager::class) {
+                return $groupManager;
+            }
+            return null;
+        });
+
         $this->controller = new SchemasController(
             'openregister',
             $this->request,
@@ -78,7 +110,7 @@ class SchemasControllerTest extends TestCase
             $this->facetCacheSvc,
             $this->schemaService,
             $this->logger,
-            $this->createMock(\Psr\Container\ContainerInterface::class)
+            $this->container
         );
     }
 
@@ -120,6 +152,67 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->show(1);
 
         $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testShowAnonymousUnpublishedSchemaReturns401(): void
+    {
+        // Anonymous (no user) + unpublished schema → 401 (read-visibility guard).
+        $this->currentUser = null;
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getPublished')->willReturn(null);
+        $schema->method('getDepublished')->willReturn(null);
+
+        $this->request->method('getParam')->willReturn([]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $result = $this->controller->show(1);
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testShowAnonymousPublishedSchemaReturns200(): void
+    {
+        // Anonymous + published schema → 200.
+        $this->currentUser = null;
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getPublished')->willReturn(new \DateTime());
+        $schema->method('getDepublished')->willReturn(null);
+        $schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
+        $this->schemaMapper->method('findExtendedBy')->willReturn([]);
+
+        $this->request->method('getParam')->willReturn([]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $result = $this->controller->show(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testIndexAnonymousFiltersUnpublishedSchemas(): void
+    {
+        // Anonymous list returns only published schemas.
+        $this->currentUser = null;
+        $published = $this->createMock(Schema::class);
+        $published->method('getPublished')->willReturn(new \DateTime());
+        $published->method('getDepublished')->willReturn(null);
+        $published->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Published']);
+
+        $unpublished = $this->createMock(Schema::class);
+        $unpublished->method('getPublished')->willReturn(null);
+        $unpublished->method('getDepublished')->willReturn(null);
+        $unpublished->method('jsonSerialize')->willReturn(['id' => 2, 'title' => 'Unpublished']);
+
+        $this->request->method('getParams')->willReturn([]);
+        $this->schemaMapper->method('findAll')->willReturn([$published, $unpublished]);
+        $this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
+
+        $result = $this->controller->index();
+        $data   = $result->getData();
+
+        $this->assertSame(200, $result->getStatus());
+        $ids = array_map(fn($s) => $s['id'], $data['results']);
+        $this->assertContains(1, $ids);
+        $this->assertNotContains(2, $ids);
     }
 
     public function testCreateReturnsCreatedSchema(): void

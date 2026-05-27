@@ -241,12 +241,14 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
      * @return JSONResponse The JSON response containing the list of registers
      *
      * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+     * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-1
      */
     public function index(): JSONResponse
     {
@@ -283,7 +285,7 @@ class RegistersController extends Controller
         // Extract filters.
         $filters = $params['filters'] ?? [];
 
-        $registers    = $this->registerService->findAll(
+        $registers = $this->registerService->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
@@ -291,6 +293,24 @@ class RegistersController extends Controller
             searchParams: [],
             _multitenancy: false
         );
+
+        // Read-visibility guard: this endpoint is @PublicPage so it stays
+        // reachable when OpenRegister is restricted to a user group. Anonymous
+        // callers may only see PUBLISHED registers; authenticated users are
+        // unaffected. Visibility is derived from server-side published/
+        // depublished entity state, never from client-supplied parameters.
+        if ($this->isAnonymousRequest() === true) {
+            $registers = array_values(
+                array_filter(
+                    $registers,
+                    fn($register) => $this->isPublishedEntity(
+                        published: $register->getPublished(),
+                        depublished: $register->getDepublished()
+                    )
+                )
+            );
+        }
+
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
 
         // If 'schemas' is requested in _extend, expand schema IDs to full schema objects.
@@ -398,7 +418,9 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+     * @PublicPage
+     *
+     * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-2
      */
     public function show($id): JSONResponse
     {
@@ -407,7 +429,20 @@ class RegistersController extends Controller
             $extend = [$extend];
         }
 
-        $register    = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
+        $register = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
+
+        // Read-visibility guard (@PublicPage): an anonymous caller may only view
+        // a PUBLISHED register. Derived from server-side published/depublished
+        // entity state, never from client-supplied parameters.
+        if ($this->isAnonymousRequest() === true
+            && $this->isPublishedEntity(
+                published: $register->getPublished(),
+                depublished: $register->getDepublished()
+            ) === false
+        ) {
+            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+        }
+
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register.
         if (in_array('@self.stats', $extend, true) === true) {
@@ -1749,6 +1784,38 @@ class RegistersController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
     }//end depublish()
+
+    /**
+     * Whether the current request has no resolved Nextcloud user (anonymous).
+     *
+     * Read endpoints are @PublicPage so they survive an app-group restriction;
+     * this lets the read-visibility guard distinguish anonymous callers (who may
+     * only see published resources) from authenticated users (unaffected).
+     *
+     * @return bool True if no user is signed in.
+     */
+    private function isAnonymousRequest(): bool
+    {
+        return $this->userSession->getUser() === null;
+
+    }//end isAnonymousRequest()
+
+    /**
+     * Whether an entity is currently published.
+     *
+     * A resource is published when its `published` timestamp is set and it has
+     * not since been depublished. Both values come from persisted entity state.
+     *
+     * @param \DateTime|null $published   The published timestamp, or null.
+     * @param \DateTime|null $depublished The depublished timestamp, or null.
+     *
+     * @return bool True if the entity is published and not depublished.
+     */
+    private function isPublishedEntity(?\DateTime $published, ?\DateTime $depublished): bool
+    {
+        return $published !== null && $depublished === null;
+
+    }//end isPublishedEntity()
 
     /**
      * Check whether the currently authenticated user is a Nextcloud administrator.
