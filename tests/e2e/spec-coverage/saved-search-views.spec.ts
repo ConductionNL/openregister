@@ -69,10 +69,11 @@ async function selectRegisterAndSchema(page: Page): Promise<boolean> {
 	if (!hasRegister) return false
 
 	// The combobox is `:disabled="registerLoading"` while the registers list
-	// is fetched (`_extend=schemas&stats` is ~5s on busy dev envs). Await the
-	// `disabled` flag clearing before clicking, otherwise the click no-ops
-	// against the disabled host until the global 30s timeout fires.
-	await expect(registerCombo).toBeEnabled({ timeout: 15_000 })
+	// is fetched (`_extend=schemas&_extend=@self.stats` can take >15s on
+	// busy dev envs with many registers). Await the `disabled` flag clearing
+	// before clicking, otherwise the click no-ops against the disabled host.
+	// 30s budget keeps under the test's global 60s budget.
+	await expect(registerCombo).toBeEnabled({ timeout: 30_000 })
 
 	await registerCombo.click()
 	// Pick LarpingApp Register (register 8).
