@@ -470,7 +470,7 @@ class RegistersController extends Controller
      * @return JSONResponse JSON response with created register or error
      *
      * @psalm-return JSONResponse<201, Register,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>|JSONResponse<403|409|500, array{error: string},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
@@ -553,7 +553,7 @@ class RegistersController extends Controller
      * @return JSONResponse JSON response with updated register or error
      *
      * @psalm-return JSONResponse<200, Register,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>|JSONResponse<403|404|409, array{error: string},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
@@ -669,7 +669,7 @@ class RegistersController extends Controller
      * @return JSONResponse JSON response with patched register or error
      *
      * @psalm-return JSONResponse<200, Register,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>|JSONResponse<403|404|409, array{error: string},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
@@ -696,7 +696,7 @@ class RegistersController extends Controller
      *
      * @return JSONResponse JSON response on success or error
      *
-     * @psalm-return JSONResponse<int, array{error?: string},
+     * @psalm-return JSONResponse<200|403|404|409|500, array{error?: string, objectCount?: int},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7

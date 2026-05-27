@@ -532,6 +532,11 @@ class EndpointsController extends Controller
      *
      * @psalm-suppress InvalidReturnType
      * @psalm-suppress InvalidReturnStatement
+     * @psalm-suppress InvalidTemplateParam The status code is the int echoed back from the
+     *     tested endpoint's response (`$result['statusCode']`), so it is genuinely the
+     *     full HTTP range — narrowing it would be a lie. The narrow-or-baseline
+     *     guidance from #1960 lands here on the "baseline" side; we use a focused
+     *     `@psalm-suppress` annotation to keep the noise scoped to this one method.
      *
      * @return JSONResponse JSON response with test result or error
      *
