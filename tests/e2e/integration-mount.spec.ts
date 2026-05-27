@@ -184,20 +184,27 @@ test.describe('Integration tabs MOUNT on the object detail page (K3 / Phase-A re
 		//    is the other half of the Phase-A bug (the dispatch was never
 		//    wired, so the bespoke tabs were dead code).
 		const mountFailures: string[] = []
+		// Scope to the CnIntegrationWidget container — the outer ObjectDetails
+		// BTabs strip ALSO has tabs named "Files" / "Emails" / "Contacts" /
+		// "Audit Trail" alongside the registry, so `role=tab[name="Files"]`
+		// would match the outer strip first and clicking it would close the
+		// Integrations panel (hiding every subsequent inner tab from the
+		// a11y tree). The widget exposes a stable per-provider data-testid
+		// (`cn-integration-widget-tab-{id}`) that we target directly.
+		const widget = page.locator('.cn-integration-widget')
 		for (const id of registeredIds) {
 			const provider = providers.find(p => p.id === id)
 			const tabName = provider?.label || id
-			const innerTab = page.locator(`role=tab[name="${tabName}"]`).first()
+			const innerTab = widget.locator(`[data-testid="cn-integration-widget-tab-${id}"]`)
 			if (await innerTab.count() === 0) {
 				mountFailures.push(`${id}: no inner tab rendered for "${tabName}"`)
 				continue
 			}
 			await innerTab.click()
-			// The active tab panel must contain a mounted child element —
-			// either the bespoke Cn<X>Tab or the generic CnIntegrationTab
-			// fallback. A wired dispatch always renders SOME element; the
-			// dead-code bug rendered an empty panel.
-			const activePanel = page.locator('[role="tabpanel"]:visible, .tab-pane.active').first()
+			// The active panel for the widget lives at `[role="tabpanel"]`
+			// inside the same `.cn-integration-widget`. Scope here too —
+			// outer BTabs panels would otherwise match first.
+			const activePanel = widget.locator('[role="tabpanel"]').first()
 			const mounted = await activePanel.evaluate((el) => {
 				// A mounted Vue component leaves at least one element child
 				// (the integration tab root). Whitespace-only / comment-only
