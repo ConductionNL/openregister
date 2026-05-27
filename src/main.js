@@ -1,16 +1,21 @@
 import Vue from 'vue'
+// eslint-disable-next-line n/no-unpublished-import
+import VueRouter from 'vue-router'
 import { PiniaVuePlugin } from 'pinia'
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip.js'
 import pinia from './pinia.js'
 import App from './App.vue'
-import router from './router/index.js'
 import {
+	CnPageRenderer,
+	defaultPageTypes,
 	registerIcons,
 } from '@conduction/nextcloud-vue'
 import '@conduction/nextcloud-vue/css/index.css'
 import { Fragment } from 'vue-frag'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+import bundledManifest from './manifest.json'
+import customComponents from './customComponents.js'
 
 import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -110,14 +115,66 @@ registerIcons({
 Vue.mixin({ methods: { t, n } })
 
 Vue.use(PiniaVuePlugin)
+Vue.use(VueRouter)
 Vue.directive('tooltip', Tooltip)
 
 Vue.component('Fragment', Fragment)
+
+// Shallow-clone CnPageRenderer because the lib's barrel exports are
+// non-extensible (webpack ESM module records). Vue 2's `Vue.extend()` adds an
+// internal `_Ctor` cache to the component definition; mutating a non-extensible
+// export throws "Cannot add property _Ctor, object is not extensible". Cloning
+// gives Vue Router an extensible component-options object without altering the
+// lib's internals.
+const RoutePageRenderer = { ...CnPageRenderer }
+
+/**
+ * Build the vue-router config from the manifest. Each manifest page becomes one
+ * route whose `name` IS `page.id` (the lib's contract — CnPageRenderer matches
+ * `$route.name === page.id`). Pages whose `route` declares a `:` parameter get
+ * `props: true` so route params reach the dispatched component.
+ *
+ * @param {object} manifest The bundled manifest (with `pages[]`).
+ * @return {Array<object>} vue-router 3 routes config.
+ */
+function routesFromManifest(manifest) {
+	const routes = manifest.pages.map((page) => ({
+		name: page.id,
+		path: page.route,
+		component: RoutePageRenderer,
+		props: page.route.includes(':'),
+	}))
+	// Catch-all redirect to the dashboard, preserving prior router behaviour.
+	routes.push({ path: '*', redirect: '/' })
+	return routes
+}
+
+const router = new VueRouter({
+	mode: 'history',
+	base: '/index.php/apps/openregister/',
+	routes: routesFromManifest(bundledManifest),
+})
+
+// Pass shallow copies of the registry maps to App.vue → CnAppRoot. The lib
+// exports `defaultPageTypes` (and the consumer's `customComponents`) as frozen
+// module objects in some bundle shapes — Vue 2's `Vue.extend()` mutates
+// component definitions to attach an internal `_Ctor` cache, which throws
+// "Cannot add property _Ctor, object is not extensible" against a frozen source
+// map. Cloning here yields extensible objects without changing the values the
+// lib resolves at render time.
+const customComponentsProp = { ...customComponents }
+const pageTypesProp = { ...defaultPageTypes }
 
 new Vue(
 	{
 		pinia,
 		router,
-		render: h => h(App),
+		render: h => h(App, {
+			props: {
+				manifest: bundledManifest,
+				customComponents: customComponentsProp,
+				pageTypes: pageTypesProp,
+			},
+		}),
 	},
 ).$mount('#content')

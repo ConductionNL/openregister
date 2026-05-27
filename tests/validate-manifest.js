@@ -35,7 +35,8 @@ const REPO_ROOT = path.resolve(__dirname, '..')
 
 const MANIFEST_PATH = path.join(REPO_ROOT, 'src', 'manifest.json')
 
-const SCHEMA_CANDIDATES = [
+// v1 schema candidates (default).
+const SCHEMA_CANDIDATES_V1 = [
 	process.env.APP_MANIFEST_SCHEMA,
 	path.join(REPO_ROOT, 'node_modules', '@conduction', 'nextcloud-vue', 'src', 'schemas', 'app-manifest.schema.json'),
 	path.join(REPO_ROOT, '..', 'nextcloud-vue', 'src', 'schemas', 'app-manifest.schema.json'),
@@ -43,8 +44,37 @@ const SCHEMA_CANDIDATES = [
 	'/tmp/worktrees/nextcloud-vue-page-type-extensions/src/schemas/app-manifest.schema.json',
 ].filter(Boolean)
 
-function findSchemaPath() {
-	for (const candidate of SCHEMA_CANDIDATES) {
+// v2 schema candidates — preferred when the manifest's `$schema` references the
+// v2 schema. The published @conduction/nextcloud-vue (beta.103) does NOT yet
+// ship the v2 schema in its package, so a synced copy is vendored at
+// tests/schemas/app-manifest-v2.schema.json for CI portability. Once the
+// package publishes the v2 schema the node_modules candidate wins automatically
+// and the vendored copy becomes the fallback.
+const SCHEMA_CANDIDATES_V2 = [
+	process.env.APP_MANIFEST_SCHEMA,
+	path.join(REPO_ROOT, 'node_modules', '@conduction', 'nextcloud-vue', 'src', 'schemas', 'app-manifest-v2.schema.json'),
+	path.join(REPO_ROOT, '..', 'nextcloud-vue', 'src', 'schemas', 'app-manifest-v2.schema.json'),
+	path.join(REPO_ROOT, 'tests', 'schemas', 'app-manifest-v2.schema.json'),
+].filter(Boolean)
+
+/**
+ * Pick the candidate list based on the manifest's declared `$schema`. A
+ * manifest whose `$schema` mentions `app-manifest-v2` is validated against the
+ * v2 schema; everything else falls back to v1.
+ *
+ * @param {object} manifest The parsed manifest.
+ * @return {Array<string>} Ordered schema-path candidates.
+ */
+function schemaCandidatesFor(manifest) {
+	const declared = (manifest && typeof manifest.$schema === 'string') ? manifest.$schema : ''
+	if (declared.includes('app-manifest-v2')) {
+		return SCHEMA_CANDIDATES_V2
+	}
+	return SCHEMA_CANDIDATES_V1
+}
+
+function findSchemaPath(candidates) {
+	for (const candidate of candidates) {
 		try {
 			if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
 				return candidate
@@ -136,7 +166,7 @@ function main() {
 	console.log(`[validate-manifest] manifest.version: ${manifest.version}`)
 	console.log(`[validate-manifest] pages: ${(manifest.pages || []).length}`)
 
-	const schemaPath = findSchemaPath()
+	const schemaPath = findSchemaPath(schemaCandidatesFor(manifest))
 	if (!schemaPath) {
 		console.warn('[validate-manifest] no schema candidate resolved; falling back to structural lint.')
 		const errors = structuralLint(manifest)
