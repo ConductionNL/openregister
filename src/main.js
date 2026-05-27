@@ -15,7 +15,7 @@ import '@conduction/nextcloud-vue/css/index.css'
 import { Fragment } from 'vue-frag'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import bundledManifest from './manifest.json'
-import customComponents from './customComponents.js'
+import registry from './registry.js'
 
 import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -156,13 +156,13 @@ const router = new VueRouter({
 })
 
 // Pass shallow copies of the registry maps to App.vue → CnAppRoot. The lib
-// exports `defaultPageTypes` (and the consumer's `customComponents`) as frozen
-// module objects in some bundle shapes — Vue 2's `Vue.extend()` mutates
-// component definitions to attach an internal `_Ctor` cache, which throws
-// "Cannot add property _Ctor, object is not extensible" against a frozen source
-// map. Cloning here yields extensible objects without changing the values the
-// lib resolves at render time.
-const customComponentsProp = { ...customComponents }
+// exports `defaultPageTypes` (and our `registry`) as frozen module objects in
+// some bundle shapes — Vue 2's `Vue.extend()` mutates component definitions to
+// attach an internal `_Ctor` cache, which throws "Cannot add property _Ctor,
+// object is not extensible" against a frozen source map. Cloning here yields
+// extensible objects without changing the values the lib resolves at render
+// time.
+const registryProp = { ...registry }
 const pageTypesProp = { ...defaultPageTypes }
 
 new Vue(
@@ -172,7 +172,7 @@ new Vue(
 		render: h => h(App, {
 			props: {
 				manifest: bundledManifest,
-				customComponents: customComponentsProp,
+				registry: registryProp,
 				pageTypes: pageTypesProp,
 			},
 		}),

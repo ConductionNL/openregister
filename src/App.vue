@@ -2,7 +2,7 @@
 	<CnAppRoot
 		app-id="openregister"
 		:manifest="manifest"
-		:custom-components="customComponents"
+		:registry="registry"
 		:page-types="pageTypes"
 		:requires-apps="[]"
 		:translate="translateForApp">
@@ -90,10 +90,13 @@ export default {
 			required: true,
 		},
 		/**
-		 * Flat registry of OpenRegister's view components, resolved by
-		 * CnPageRenderer for every `type:"custom"` page.
+		 * V2 kind-tagged registry (ADR-036) — each entry is
+		 * `{ kind: "page", component: ... }`. CnPageRenderer resolves
+		 * every `type:"custom"` page's `component` string against the
+		 * `kind: "page"` entries here. Replaces the deprecated
+		 * `customComponents` prop.
 		 */
-		customComponents: {
+		registry: {
 			type: Object,
 			default: () => ({}),
 		},
