@@ -1,5 +1,15 @@
 # OpenRegister — Adopt App Manifest (Tier 1 → Tier 2)
 
+> **SUPERSEDED (2026-05-27)** — This change was never implemented (all tasks
+> unchecked). It scoped only Tier 1–2 and explicitly deferred the full
+> `CnAppRoot` shell swap (Tier 3/4) to unbuilt successors. Reality since
+> diverged: the manifest `menu[]` + `CnAppNav` (Tier 3) were built out of
+> band, the Tier-4 `CnAppRoot` blocker was resolved upstream, and the user
+> opted for the full shell swap. Superseded by
+> **`openregister-manifest-shell-swap`**, which folds the remaining Tier-2
+> work (`pages[]` + component registry) into the Tier-4 shell migration.
+> Archived without merging its delta specs.
+
 ## Why
 
 OpenRegister is the platform foundation. Every other Conduction app (decidesk,
