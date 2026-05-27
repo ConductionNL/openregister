@@ -340,7 +340,11 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 
 		// Wait for the table to populate (search fires via route watcher).
 		// The CnDataTable tbody rows appear once the API returns results.
-		await page.waitForSelector('tbody tr, [role="row"]', { timeout: 15_000 })
+		// 45s budget: in busy dev envs the register list
+		// `_extend=schemas&_extend=@self.stats` call can take >15s; the
+		// route-watched search then takes another few seconds. Test global
+		// budget is 60s. Pairs with the SearchSideBar `registerList` watcher fix.
+		await page.waitForSelector('tbody tr, [role="row"]', { timeout: 45_000 })
 		await page.waitForTimeout(1000)
 
 		// Find the row containing our test object.
