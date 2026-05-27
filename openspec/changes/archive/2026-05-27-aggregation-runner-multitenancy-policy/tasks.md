@@ -39,4 +39,4 @@
 ## 6. Spec coverage and archival prep
 
 - [x] 6.1 Run `python .github/check_spec_coverage.py` (or the project's equivalent gate-16 invocation) to confirm new code references are spec-linked. Annotate any genuinely-plumbing helpers with `@spec exclude <reason>` per the strict-coverage policy.
-- [ ] 6.2 Re-read `openspec/specs/auth-system/spec.md` after the delta is archived (post-merge) to confirm the new requirement reads correctly inline with the existing multi-tenancy requirements.
+- [x] 6.2 Re-read `openspec/specs/auth-system/spec.md` after the delta is archived (post-merge) to confirm the new requirement reads correctly inline with the existing multi-tenancy requirements.
