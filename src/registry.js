@@ -1,9 +1,10 @@
 /**
- * OpenRegister custom-component registry.
+ * OpenRegister v2 component registry (ADR-036).
  *
- * Flat `{ ComponentName: Component }` map (decidesk convention) passed as the
- * `customComponents` prop to CnAppRoot. CnPageRenderer resolves each manifest
- * page's `component` string against this map for `type:"custom"` pages.
+ * Kind-tagged map passed as the `registry` prop to CnAppRoot. CnPageRenderer
+ * resolves each manifest page's `component` string against entries whose
+ * `kind === "page"` (with precedence over the deprecated `customComponents`
+ * prop, which OpenRegister no longer ships).
  *
  * OpenRegister is the data-platform foundation: its registers, schemas,
  * sources, applications, endpoints and entities are native foundation entities
@@ -11,7 +12,7 @@
  * library's built-in `index`/`detail` renderers (which resolve via
  * useObjectStore against a register+schema slug) cannot drive them. Every OR
  * page therefore stays a bespoke view referenced here by name — a pure shell
- * swap with no page-rendering behaviour change.
+ * dispatch with no page-rendering behaviour change.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -48,35 +49,50 @@ import ReportView from './views/reports/ReportView.vue'
 import FeaturesRoadmapIndex from './views/roadmap/FeaturesRoadmapIndex.vue'
 import IntegrationsView from './views/integration/IntegrationsView.vue'
 
+/**
+ * Wrap a Vue component into the v2 registry shape required by CnAppRoot's
+ * `registry` prop (`kind: "page"` is the discriminator CnPageRenderer keys
+ * page dispatch off — `kind: "widget"`/`"modal"`/`"form-field"`/
+ * `"cell-renderer"` entries with the same name are NOT used for page
+ * dispatch).
+ *
+ * @param {object} component Vue component options.
+ *
+ * @return {object} A `{ kind: "page", component }` registry entry.
+ */
+function page(component) {
+	return { kind: 'page', component }
+}
+
 export default {
-	Dashboard,
-	RegistersIndex,
-	RegisterDetail,
-	SchemasIndex,
-	SchemaDetails,
-	SourcesIndex,
-	OrganisationsIndex,
-	ApplicationsIndex,
-	ApplicationDetails,
-	ObjectsIndex,
-	SearchIndex,
-	ChatIndex,
-	FilesIndex,
-	AgentsIndex,
-	ConfigurationsIndex,
-	DeletedIndex,
-	AuditTrailIndex,
-	SearchTrailIndex,
-	WebhooksIndex,
-	WebhookLogsIndex,
-	EndpointsIndex,
-	EntitiesIndex,
-	EntityDetail,
-	TemplatesIndex,
-	MyAccount,
-	AvgIndex,
-	ReportsIndex,
-	ReportView,
-	FeaturesRoadmapIndex,
-	IntegrationsView,
+	Dashboard: page(Dashboard),
+	RegistersIndex: page(RegistersIndex),
+	RegisterDetail: page(RegisterDetail),
+	SchemasIndex: page(SchemasIndex),
+	SchemaDetails: page(SchemaDetails),
+	SourcesIndex: page(SourcesIndex),
+	OrganisationsIndex: page(OrganisationsIndex),
+	ApplicationsIndex: page(ApplicationsIndex),
+	ApplicationDetails: page(ApplicationDetails),
+	ObjectsIndex: page(ObjectsIndex),
+	SearchIndex: page(SearchIndex),
+	ChatIndex: page(ChatIndex),
+	FilesIndex: page(FilesIndex),
+	AgentsIndex: page(AgentsIndex),
+	ConfigurationsIndex: page(ConfigurationsIndex),
+	DeletedIndex: page(DeletedIndex),
+	AuditTrailIndex: page(AuditTrailIndex),
+	SearchTrailIndex: page(SearchTrailIndex),
+	WebhooksIndex: page(WebhooksIndex),
+	WebhookLogsIndex: page(WebhookLogsIndex),
+	EndpointsIndex: page(EndpointsIndex),
+	EntitiesIndex: page(EntitiesIndex),
+	EntityDetail: page(EntityDetail),
+	TemplatesIndex: page(TemplatesIndex),
+	MyAccount: page(MyAccount),
+	AvgIndex: page(AvgIndex),
+	ReportsIndex: page(ReportsIndex),
+	ReportView: page(ReportView),
+	FeaturesRoadmapIndex: page(FeaturesRoadmapIndex),
+	IntegrationsView: page(IntegrationsView),
 }
