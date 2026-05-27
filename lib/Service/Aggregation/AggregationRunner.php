@@ -1890,8 +1890,12 @@ class AggregationRunner
             return null;
         }
 
-        // Fetch all registers visible in the current tenant.
-        $registers = $this->registerMapper->findAll();
+        // Metadata-read bypass per auth-system "Schema and register
+        // METADATA-READ lookups MUST bypass multi-tenancy". findRegisterForSchema
+        // resolves which register contains a given schema definition — a
+        // metadata read, not an object-data scan. Catalog-wide visibility
+        // is consistent with loadSchema/loadRegister.
+        $registers = $this->registerMapper->findAll(_multitenancy: false);
         foreach ($registers as $register) {
             $schemaIds = $register->getSchemas();
             if (is_array($schemaIds) === false) {
@@ -1924,10 +1928,15 @@ class AggregationRunner
     private function loadSchema(string $schemaRef): Schema
     {
         try {
-            // SECURITY: keep multitenancy filter on so a tenant user cannot
-            // resolve schemas owned by another tenant simply by knowing
-            // the slug.
-            return $this->schemaMapper->find($schemaRef);
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy". Tenant
+            // isolation lives at the object-row level via MultiTenancyTrait
+            // on MagicMapper; schema definitions are a globally-visible
+            // catalog (precedent: SchemasController::index/show, @PublicPage
+            // + _multitenancy: false). Aggregations resolve the schema by
+            // ref to find its annotations; the subsequent object-row scan
+            // remains tenant-filtered by the existing object-row policy.
+            return $this->schemaMapper->find($schemaRef, _multitenancy: false);
         } catch (\Throwable $e) {
             throw new RuntimeException(sprintf('Schema "%s" not found.', $schemaRef), 0, $e);
         }
@@ -1945,8 +1954,11 @@ class AggregationRunner
     private function loadRegister(string $registerRef): \OCA\OpenRegister\Db\Register
     {
         try {
-            // SECURITY: keep multitenancy filter on (see loadSchema).
-            return $this->registerMapper->find($registerRef);
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy" — see the
+            // same rationale on loadSchema(). Register definitions are part
+            // of the same globally-visible catalog.
+            return $this->registerMapper->find($registerRef, _multitenancy: false);
         } catch (\Throwable $e) {
             throw new RuntimeException(sprintf('Register "%s" not found.', $registerRef), 0, $e);
         }

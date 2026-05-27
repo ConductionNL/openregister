@@ -934,8 +934,10 @@ class SchemasController extends Controller
     {
         // Note: Accept header not currently used - always returns JSON.
         try {
-            // Find the schema by ID.
-            $schema = $this->schemaMapper->find($id);
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy" — download
+            // serves the schema definition for export/consumer use.
+            $schema = $this->schemaMapper->find($id, _multitenancy: false);
         } catch (Exception $e) {
             // Return a 404 error if the schema doesn't exist.
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
@@ -969,9 +971,12 @@ class SchemasController extends Controller
             $incomingSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $incomingSchemas);
 
             // Find outgoing references: schemas that this schema refers to.
-            $targetSchema    = $this->schemaMapper->find($id);
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy" — related-schema
+            // resolution is a catalog read (no object data exposed).
+            $targetSchema    = $this->schemaMapper->find($id, _multitenancy: false);
             $properties      = $targetSchema->getProperties() ?? [];
-            $allSchemas      = $this->schemaMapper->findAll();
+            $allSchemas      = $this->schemaMapper->findAll(_multitenancy: false);
             $outgoingSchemas = [];
             foreach ($allSchemas as $schema) {
                 // Skip self.
@@ -1027,8 +1032,11 @@ class SchemasController extends Controller
     public function stats(int $id): JSONResponse
     {
         try {
-            // Get the schema.
-            $schema = $this->schemaMapper->find($id);
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy" — stats over
+            // a schema is a catalog read; the underlying object-row
+            // statistics remain tenant-scoped via MultiTenancyTrait.
+            $schema = $this->schemaMapper->find($id, _multitenancy: false);
 
             if ($schema === null) {
                 return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
@@ -1207,8 +1215,12 @@ class SchemasController extends Controller
                 $date = new DateTime($this->request->getParam('date'));
             }
 
-            // Get the schema.
-            $schema = $this->schemaMapper->find($id);
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy" — publish is a
+            // status-flag toggle on the catalog entry, not an authoring
+            // mutation that gates on tenancy. Authorisation is handled by the
+            // surrounding permission check, not by the find() filter.
+            $schema = $this->schemaMapper->find($id, _multitenancy: false);
 
             // Set published date and clear depublished date if set.
             $schema->setPublished($date);
@@ -1293,8 +1305,11 @@ class SchemasController extends Controller
                 $date = new DateTime($this->request->getParam('date'));
             }
 
-            // Get the schema.
-            $schema = $this->schemaMapper->find($id);
+            // Metadata-read bypass per auth-system "Schema and register
+            // METADATA-READ lookups MUST bypass multi-tenancy" — depublish is
+            // a status-flag toggle on the catalog entry; see publish() for
+            // the parallel rationale.
+            $schema = $this->schemaMapper->find($id, _multitenancy: false);
 
             // Set depublished date.
             $schema->setDepublished($date);
