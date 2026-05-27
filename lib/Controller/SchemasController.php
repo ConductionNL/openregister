@@ -368,7 +368,7 @@ class SchemasController extends Controller
      * @return JSONResponse JSON response with created schema or error
      *
      * @psalm-return JSONResponse<201, Schema,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>|JSONResponse<400|403|409|500, array{error: string},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
@@ -505,7 +505,7 @@ class SchemasController extends Controller
      * @return JSONResponse JSON response with updated schema or error
      *
      * @psalm-return JSONResponse<200, Schema,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
@@ -645,7 +645,7 @@ class SchemasController extends Controller
      * @return JSONResponse JSON response with patched schema or error
      *
      * @psalm-return JSONResponse<200, Schema,
-     *     array<never, never>>|JSONResponse<int, array{error: string},
+     *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
      *     array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
