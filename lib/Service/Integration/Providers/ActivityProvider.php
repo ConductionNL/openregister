@@ -43,6 +43,12 @@ class ActivityProvider extends AbstractIntegrationProvider
     private const MARKER_PREFIX = '[or:';
 
     /**
+     * Construct the provider with required dependencies.
+     *
+     * @param IDBConnection $db         Database connection.
+     * @param IAppManager   $appManager App manager for installation checks.
+     * @param IL10N         $l10n       Localisation service.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
      */
     public function __construct(
@@ -53,6 +59,10 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end __construct()
 
     /**
+     * Return the unique provider identifier.
+     *
+     * @return string Provider ID.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
      */
     public function getId(): string
@@ -61,6 +71,10 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end getId()
 
     /**
+     * Return the human-readable provider label.
+     *
+     * @return string Localised label.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
      */
     public function getLabel(): string
@@ -69,6 +83,10 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end getLabel()
 
     /**
+     * Return the icon identifier for this provider.
+     *
+     * @return string Icon name.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
      */
     public function getIcon(): string
@@ -77,6 +95,10 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end getIcon()
 
     /**
+     * Return the group this provider belongs to.
+     *
+     * @return string|null Group identifier or null if ungrouped.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
      */
     public function getGroup(): ?string
@@ -85,6 +107,10 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end getGroup()
 
     /**
+     * Return the Nextcloud app this provider requires.
+     *
+     * @return string|null Required app ID or null if none.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
      */
     public function getRequiredApp(): ?string
@@ -93,6 +119,10 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end getRequiredApp()
 
     /**
+     * Return the storage strategy for this provider.
+     *
+     * @return string Storage strategy identifier.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
      */
     public function getStorageStrategy(): string
@@ -101,6 +131,10 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end getStorageStrategy()
 
     /**
+     * Check whether this provider is currently available.
+     *
+     * @return bool True when the required NC app is installed.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
      */
     public function isEnabled(): bool
@@ -230,6 +264,10 @@ class ActivityProvider extends AbstractIntegrationProvider
     }//end applyFilters()
 
     /**
+     * Return the health descriptor for this provider.
+     *
+     * @return array<string,mixed> Health status payload.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-4
      */
     public function health(): array

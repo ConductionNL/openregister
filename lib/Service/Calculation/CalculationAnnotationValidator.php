@@ -109,9 +109,13 @@ final class CalculationAnnotationValidator
         }
 
         $properties = ($schema['properties'] ?? []);
-        $propKeys   = is_array($properties) === true ? array_keys($properties) : [];
-        $calcNames  = array_keys($calcs);
-        $allRefs    = array_merge($propKeys, $calcNames);
+        $propKeys   = [];
+        if (is_array($properties) === true) {
+            $propKeys = array_keys($properties);
+        }
+
+        $calcNames = array_keys($calcs);
+        $allRefs   = array_merge($propKeys, $calcNames);
 
         $errors = [];
         $deps   = [];
@@ -214,7 +218,13 @@ final class CalculationAnnotationValidator
 
         $args = $expr[$op];
         if ($op === 'prop') {
-            $name = is_string($args) === true ? $args : (is_array($args) === true ? (string) ($args[0] ?? '') : '');
+            $name = '';
+            if (is_string($args) === true) {
+                $name = $args;
+            } else if (is_array($args) === true) {
+                $name = (string) ($args[0] ?? '');
+            }
+
             if ($name === '') {
                 $errors[] = [
                     'code'    => 'calculation-prop-unknown',

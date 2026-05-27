@@ -54,7 +54,9 @@ class OperatorEvaluator
      *
      * @return bool True if value matches all operators
      *
-     * @spec openspec/specs/row-field-level-security/spec.md#mongodb-style-operators (evaluates $eq/$ne/$in/$nin/$exists/$gt/$gte/$lt/$lte for RLS/FLS match conditions, fail-closed on unknown operators with null-handling that mirrors SQL three-valued logic so list and find verdicts stay aligned)
+     * @spec openspec/specs/row-field-level-security/spec.md#mongodb-style-operators (evaluates $eq/$ne/$in/$nin/$exists/$gt/$gte/$lt/$lte
+     *       for RLS/FLS match conditions, fail-closed on unknown operators with null-handling that mirrors SQL
+     *       three-valued logic so list and find verdicts stay aligned)
      */
     public function valueMatchesOperator(mixed $value, array $operators): bool
     {

@@ -1993,7 +1993,10 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
-            $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
+            $testChunk = $currentChunk.$separator.$split;
+            if ($currentChunk === '') {
+                $testChunk = $split;
+            }
 
             if (strlen($testChunk) <= $chunkSize) {
                 // Can add to current chunk.

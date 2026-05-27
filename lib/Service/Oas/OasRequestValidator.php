@@ -131,9 +131,19 @@ class OasRequestValidator
             }
         }
 
+        $errorPath = '/';
+        if ($path !== '') {
+            $errorPath = $path;
+        }
+
+        $errorMessage = 'value does not validate';
+        if ($message !== '') {
+            $errorMessage = $message;
+        }
+
         $errors[] = [
-            'path'    => ($path !== '' ? $path : '/'),
-            'message' => ($message !== '' ? $message : 'value does not validate'),
+            'path'    => $errorPath,
+            'message' => $errorMessage,
         ];
 
         if (method_exists($error, 'subErrors') === true) {

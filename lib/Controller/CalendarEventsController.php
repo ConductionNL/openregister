@@ -110,7 +110,7 @@ class CalendarEventsController extends Controller
     public function index(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -144,7 +144,7 @@ class CalendarEventsController extends Controller
     public function create(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -194,7 +194,7 @@ class CalendarEventsController extends Controller
     public function link(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -203,8 +203,8 @@ class CalendarEventsController extends Controller
 
             // Prefer the new (calendarUri, eventUid) shape; fall back to the
             // legacy (calendarId, eventUri) shape for backward compatibility.
-            $calendarUri = isset($data['calendarUri']) ? (string) $data['calendarUri'] : '';
-            $eventUid    = isset($data['eventUid']) ? (string) $data['eventUid'] : '';
+            $calendarUri = (string) ($data['calendarUri'] ?? '');
+            $eventUid    = (string) ($data['eventUid'] ?? '');
 
             if ($calendarUri === '' || $eventUid === '') {
                 return new JSONResponse(['error' => 'calendarUri and eventUid are required'], 400);
@@ -248,7 +248,7 @@ class CalendarEventsController extends Controller
     public function unlink(string $register, string $schema, string $id, string $eventUid): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -290,12 +290,12 @@ class CalendarEventsController extends Controller
     public function destroy(string $register, string $schema, string $id, string $eventId): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            // Find the event in the unioned link list to recover its calendarId
+            // Find the event in the unioned link list to recover its calendarId.
             $events     = $this->calendarLinkService->getLinkedEvents($object->getUuid());
             $calendarId = null;
             $eventUid   = null;
@@ -366,7 +366,7 @@ class CalendarEventsController extends Controller
     {
         try {
             $params = $this->request->getParams();
-            $limit  = isset($params['limit']) ? (int) $params['limit'] : 100;
+            $limit  = (int) ($params['limit'] ?? 100);
             $after  = null;
             if (empty($params['after']) === false) {
                 try {
@@ -402,7 +402,8 @@ class CalendarEventsController extends Controller
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
      *
-     * @spec exclude Private helper: resolves an object from register/schema/id; the calendar link REST contract is owned by retrofit-2026-05-24-calendar-integration/tasks.md#task-1.
+     * @spec exclude Private helper: resolves an object from register/schema/id; REST contract is owned by
+     *              retrofit-2026-05-24-calendar-integration/tasks.md#task-1.
      */
     private function validateObject(
         string $register,

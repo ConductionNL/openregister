@@ -95,7 +95,8 @@ class StreamYieldChannel
      *
      * @return void
      *
-     * @spec exclude Pure pub-sub forwarder plumbing — registers a callback; carries no business logic (the class is self-documented as "pure forwarding").
+     * @spec exclude Pure pub-sub forwarder plumbing — registers a callback; carries no business logic
+     *              (the class is self-documented as "pure forwarding").
      */
     public function onToken(callable $callback): void
     {

@@ -2763,10 +2763,15 @@ class SaveObject
                 // cascade descendants can detect cycles back to
                 // ancestors via `validateReferences()`. Popped in
                 // finally regardless of success/failure.
+                $pushRegisterIdUpdate = null;
+                if ($register?->getId() !== null) {
+                    $pushRegisterIdUpdate = (string) $register->getId();
+                }
+
                 $frameKey = $this->pushSaveCallFrame(
                     schemaSlug: ((string) ($schema->getSlug() ?? $schema->getId())),
                     uuid: (string) $uuid,
-                    register: ($register?->getId() !== null ? (string) $register->getId() : null)
+                    register: $pushRegisterIdUpdate
                 );
                 try {
                     return $this->handleObjectUpdate(
@@ -2799,10 +2804,15 @@ class SaveObject
         // Push the in-flight save onto the call stack so cascade
         // descendants can detect cycles via `validateReferences()`.
         // Popped in finally regardless of success/failure.
+        $pushRegisterIdCreate = null;
+        if ($register?->getId() !== null) {
+            $pushRegisterIdCreate = (string) $register->getId();
+        }
+
         $frameKey = $this->pushSaveCallFrame(
             schemaSlug: ((string) ($schema->getSlug() ?? $schema->getId())),
             uuid: ($uuid ?? ''),
-            register: ($register?->getId() !== null ? (string) $register->getId() : null)
+            register: $pushRegisterIdCreate
         );
         try {
             // Create new object if no existing object found.
@@ -4289,10 +4299,15 @@ class SaveObject
             $cacheBefore = count($this->referenceValidationCache);
 
             try {
+                $rowData = [];
+                if (is_array($row) === true) {
+                    $rowData = $row;
+                }
+
                 $entity = $this->saveObject(
                     register: $register,
                     schema: $schema,
-                    data: (is_array($row) === true ? $row : [])
+                    data: $rowData
                 );
 
                 $uuid = ((string) $entity->getUuid());

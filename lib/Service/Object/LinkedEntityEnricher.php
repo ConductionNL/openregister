@@ -215,13 +215,17 @@ class LinkedEntityEnricher
 
         foreach ($ids as $id) {
             try {
-                $comment = $this->commentsManager->get($id);
-                $actor   = $this->userManager->get($comment->getActorId());
+                $comment    = $this->commentsManager->get($id);
+                $actor      = $this->userManager->get($comment->getActorId());
+                $authorName = $comment->getActorId();
+                if ($actor !== null) {
+                    $authorName = $actor->getDisplayName();
+                }
 
                 $results[] = [
                     'id'      => $id,
                     'message' => $comment->getMessage(),
-                    'author'  => $actor !== null ? $actor->getDisplayName() : $comment->getActorId(),
+                    'author'  => $authorName,
                     'date'    => $comment->getCreationDateTime()->format('c'),
                 ];
             } catch (\Exception $e) {

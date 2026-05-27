@@ -268,7 +268,8 @@ class CospendProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+     *              the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {

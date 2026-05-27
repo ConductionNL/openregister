@@ -694,7 +694,10 @@ class ContactMatchingService
             }
 
             // Full match = 0.7, partial = 0.4.
-            $confidence = ($matchedParts === $totalParts) ? 0.7 : 0.4;
+            $confidence = 0.4;
+            if ($matchedParts === $totalParts) {
+                $confidence = 0.7;
+            }
 
             $matches[] = $this->formatMatch(result: $result, matchType: 'name', confidence: $confidence);
         }//end foreach

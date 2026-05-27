@@ -151,6 +151,14 @@ class IntegrationsAdminSettings implements ISettings
             $configureUrl = $this->buildOpenConnectorConfigureUrl(sourceId: $openConnSource);
         }
 
+        $testConnectionUrl = null;
+        if ($isExternal === true) {
+            $testConnectionUrl = $this->urlGenerator->linkToOCSRouteAbsolute(
+                'openregister.integrations.show',
+                ['id' => $provider->getId()]
+            );
+        }
+
         return [
             'id'                  => $provider->getId(),
             'label'               => $provider->getLabel(),
@@ -165,10 +173,7 @@ class IntegrationsAdminSettings implements ISettings
             'status'              => $health['status'],
             'message'             => $health['message'],
             'configureUrl'        => $configureUrl,
-            'testConnectionUrl'   => ($isExternal === true) ? $this->urlGenerator->linkToOCSRouteAbsolute(
-                    'openregister.integrations.show',
-                    ['id' => $provider->getId()]
-                ) : null,
+            'testConnectionUrl'   => $testConnectionUrl,
         ];
     }//end describe()
 

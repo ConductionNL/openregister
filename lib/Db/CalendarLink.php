@@ -190,10 +190,15 @@ class CalendarLink extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+        $calendarIdStr = null;
+        if ($this->calendarId !== null) {
+            $calendarIdStr = (string) $this->calendarId;
+        }
+
         return [
             'id'            => $this->eventUri,
             'uid'           => $this->eventUid,
-            'calendarId'    => $this->calendarId !== null ? (string) $this->calendarId : null,
+            'calendarId'    => $calendarIdStr,
             'calendarUri'   => $this->calendarUri,
             'summary'       => $this->summary ?? '',
             'dtstart'       => $this->dtstart?->format(DateTime::ATOM),

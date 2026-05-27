@@ -332,7 +332,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      *
      * @return array{status: string, authStatus: string, message: ?string}
      *
-     * @spec exclude Thin delegation to ExternalIntegrationRouter::probe (annotated to pluggable-integration-registry task-4); carries no provider-specific health behaviour.
+     * @spec exclude Thin delegation to ExternalIntegrationRouter::probe
+     *   (annotated to pluggable-integration-registry task-4); carries no provider-specific health behaviour.
      */
     public function health(): array
     {

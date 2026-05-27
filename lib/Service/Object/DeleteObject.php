@@ -177,7 +177,11 @@ class DeleteObject
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
         // Handle array input - find object with context (searches across all magic tables).
         // @psalm-suppress UndefinedInterfaceMethod.
-        $identifier = $object instanceof ObjectEntity ? $object->getUuid() : $object['id'];
+        if ($object instanceof ObjectEntity) {
+            $identifier = $object->getUuid();
+        } else {
+            $identifier = $object['id'];
+        }
 
         $includeDeleted = ($object instanceof ObjectEntity);
         $context        = $this->objectEntityMapper->findAcrossAllSources(
@@ -214,9 +218,19 @@ class DeleteObject
             $result = true;
 
             // Cache invalidation for permanent delete.
+            $registerIdForCache = null;
+            if (is_numeric($objectEntity->getRegister()) === true) {
+                $registerIdForCache = (int) $objectEntity->getRegister();
+            }
+
+            $schemaIdForCache = null;
+            if (is_numeric($objectEntity->getSchema()) === true) {
+                $schemaIdForCache = (int) $objectEntity->getSchema();
+            }
+
             $this->cacheHandler->invalidateForObjectChange(
-                registerId: is_numeric($objectEntity->getRegister()) === true ? (int) $objectEntity->getRegister() : null,
-                schemaId: is_numeric($objectEntity->getSchema()) === true ? (int) $objectEntity->getSchema() : null,
+                registerId: $registerIdForCache,
+                schemaId: $schemaIdForCache,
                 operation: 'permanent_delete'
             );
 

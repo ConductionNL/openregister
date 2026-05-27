@@ -135,7 +135,7 @@ class ContactsController extends Controller
     public function index(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -177,7 +177,7 @@ class ContactsController extends Controller
     public function create(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -256,7 +256,7 @@ class ContactsController extends Controller
     public function createNew(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -348,7 +348,7 @@ class ContactsController extends Controller
     public function update(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -393,7 +393,7 @@ class ContactsController extends Controller
     public function destroy(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -490,10 +490,20 @@ class ContactsController extends Controller
         }
 
         try {
+            $nameValue         = null;
+            $organizationValue = null;
+            if (empty($name) === false) {
+                $nameValue = (string) $name;
+            }
+
+            if (empty($organization) === false) {
+                $organizationValue = (string) $organization;
+            }
+
             $matches         = $this->matchingService->matchContact(
                 (string) $email,
-                empty($name) === false ? (string) $name : null,
-                empty($organization) === false ? (string) $organization : null
+                $nameValue,
+                $organizationValue
             );
             $enrichedMatches = $this->enrichMatches(matches: $matches);
 
@@ -505,7 +515,7 @@ class ContactsController extends Controller
                 ['error' => $this->l10n->t('Internal server error'), 'matches' => [], 'total' => 0],
                 500
             );
-        }
+        }//end try
     }//end match()
 
     /**

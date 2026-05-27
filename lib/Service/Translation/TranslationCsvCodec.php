@@ -88,7 +88,12 @@ class TranslationCsvCodec
                         continue;
                     }
 
-                    $row[$key.'_'.$lang] = is_scalar($langValue) === true ? $langValue : null;
+                    $langScalar = null;
+                    if (is_scalar($langValue) === true) {
+                        $langScalar = $langValue;
+                    }
+
+                    $row[$key.'_'.$lang] = $langScalar;
                 }
 
                 continue;
@@ -104,7 +109,12 @@ class TranslationCsvCodec
             }
 
             // Anything else: pass through.
-            $row[$key] = is_scalar($value) === true ? $value : null;
+            $scalarValue = null;
+            if (is_scalar($value) === true) {
+                $scalarValue = $value;
+            }
+
+            $row[$key] = $scalarValue;
         }//end foreach
 
         return $row;

@@ -67,7 +67,8 @@ class SearchTrailController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec exclude Private helper: parses pagination/filter/date params; the search-trail analytics API is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
+     * @spec exclude Private helper: parses pagination/filter/date params; the search-trail analytics API is owned by
+     *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
      */
     private function extractRequestParameters(): array
     {
@@ -214,7 +215,8 @@ class SearchTrailController extends Controller
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec exclude Private helper: shared pagination-envelope builder; the search-trail analytics API is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
+     * @spec exclude Private helper: shared pagination-envelope builder; the search-trail analytics API is owned by
+     *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {

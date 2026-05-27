@@ -137,6 +137,11 @@ class BookmarksProvider extends AbstractIntegrationProvider
             $bookmarkId = (int) $link->getBookmarkId();
             $addedAt    = $link->getAddedAt();
 
+            $addedTimestamp = null;
+            if ($addedAt instanceof DateTime) {
+                $addedTimestamp = $addedAt->getTimestamp();
+            }
+
             $out[] = [
                 'id'          => (string) $bookmarkId,
                 'bookmarkId'  => $bookmarkId,
@@ -144,7 +149,7 @@ class BookmarksProvider extends AbstractIntegrationProvider
                 'description' => (string) ($link->getDescription() ?? ''),
                 'url'         => (string) ($link->getUrl() ?? ''),
                 'tags'        => ($link->getTags() ?? []),
-                'added'       => ($addedAt instanceof DateTime) ? $addedAt->getTimestamp() : null,
+                'added'       => $addedTimestamp,
                 'linkId'      => $link->getId(),
             ];
         }
@@ -157,15 +162,27 @@ class BookmarksProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health
+     *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+
+        $status = 'unavailable';
+        if ($installed === true) {
+            $status = 'ok';
+        }
+
+        $message = 'NC Bookmarks app is not installed';
+        if ($installed === true) {
+            $message = null;
+        }
+
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Bookmarks app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

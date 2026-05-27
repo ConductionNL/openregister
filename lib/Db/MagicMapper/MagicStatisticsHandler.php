@@ -592,7 +592,10 @@ class MagicStatisticsHandler
                 if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
                     if ($propertyFormat === 'date') {
                         $normalised = $this->dateTimeNormalizer->normalize($value);
-                        $value      = $normalised !== null ? $normalised->format('Y-m-d') : null;
+                        $value      = null;
+                        if ($normalised !== null) {
+                            $value = $normalised->format('Y-m-d');
+                        }
                     } else if ($propertyFormat === 'date-time') {
                         $value = $this->dateTimeNormalizer->formatForIso8601($value);
                     }

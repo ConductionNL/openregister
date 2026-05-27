@@ -735,7 +735,12 @@ class ValidationHandler
     {
         $objectsData = [];
         foreach ($objectsChunk as $object) {
-            $objectsData[] = is_array($object) === true ? $object : $object->getObject();
+            $objectData = $object->getObject();
+            if (is_array($object) === true) {
+                $objectData = $object;
+            }
+
+            $objectsData[] = $objectData;
         }
 
         return $objectsData;

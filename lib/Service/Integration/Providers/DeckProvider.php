@@ -167,9 +167,17 @@ class DeckProvider extends AbstractIntegrationProvider
         }
 
         if ($hasBoardData === true) {
-            $description = isset($payload['description']) === true ? (string) $payload['description'] : null;
-            $duedate     = isset($payload['duedate']) === true ? (string) $payload['duedate'] : null;
-            $link        = $this->deckLinkService->createAndLinkCard(
+            $description = null;
+            if (isset($payload['description']) === true) {
+                $description = (string) $payload['description'];
+            }
+
+            $duedate = null;
+            if (isset($payload['duedate']) === true) {
+                $duedate = (string) $payload['duedate'];
+            }
+
+            $link = $this->deckLinkService->createAndLinkCard(
                 $objectId,
                 $registerId,
                 $schemaId,
@@ -181,7 +189,7 @@ class DeckProvider extends AbstractIntegrationProvider
             );
 
             return $link->jsonSerialize();
-        }
+        }//end if
 
         throw new Exception('Either cardId or boardId+stackId is required', 400);
     }//end create()
@@ -210,15 +218,24 @@ class DeckProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+     *       the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
         $available = $this->deckLinkService->isDeckAvailable();
+
+        $status  = 'unavailable';
+        $message = 'NC Deck app is not installed';
+        if ($available === true) {
+            $status  = 'ok';
+            $message = null;
+        }
+
         return [
-            'status'     => $available === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $available === true ? null : 'NC Deck app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

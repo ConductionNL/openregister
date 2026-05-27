@@ -429,7 +429,11 @@ class ExternalIntegrationRouter
 
         if (is_object($response) === true && method_exists($response, 'jsonSerialize') === true) {
             $data = $response->jsonSerialize();
-            return is_array($data) === true ? $data : ['body' => $data];
+            if (is_array($data) === true) {
+                return $data;
+            }
+
+            return ['body' => $data];
         }
 
         if (is_string($response) === true) {

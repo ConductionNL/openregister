@@ -192,8 +192,12 @@ class TenantQuotaMiddleware extends Middleware
         // Estimate from headers or use 0 for non-JSON responses.
         $contentLength = 0;
         if ($response instanceof JSONResponse) {
-            $encoded       = json_encode($response->getData());
-            $content       = ($encoded !== false) ? $encoded : '';
+            $encoded = json_encode($response->getData());
+            $content = '';
+            if ($encoded !== false) {
+                $content = $encoded;
+            }
+
             $contentLength = strlen($content);
         }
 

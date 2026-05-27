@@ -266,11 +266,21 @@ class AvgRetentionService
 
             $candidates = [];
             foreach ($rows as $row) {
+                $candidateRegister = null;
+                if (isset($row['register']) === true) {
+                    $candidateRegister = (int) $row['register'];
+                }
+
+                $candidateSchema = null;
+                if (isset($row['schema']) === true) {
+                    $candidateSchema = (int) $row['schema'];
+                }
+
                 $candidates[] = [
                     'object'      => (int) ($row['object'] ?? 0),
                     'object_uuid' => ($row['object_uuid'] ?? null),
-                    'register'    => (isset($row['register']) === true) ? (int) $row['register'] : null,
-                    'schema'      => (isset($row['schema']) === true) ? (int) $row['schema'] : null,
+                    'register'    => $candidateRegister,
+                    'schema'      => $candidateSchema,
                 ];
             }
 
@@ -347,7 +357,11 @@ class AvgRetentionService
         $uuid = (string) ($candidate['object_uuid'] ?? '');
         $id   = (int) ($candidate['object'] ?? 0);
 
-        $identifier = ($uuid !== '') ? $uuid : $id;
+        $identifier = $id;
+        if ($uuid !== '') {
+            $identifier = $uuid;
+        }
+
         if ($identifier === 0 || $identifier === '') {
             return null;
         }

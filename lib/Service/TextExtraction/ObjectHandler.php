@@ -314,7 +314,10 @@ class ObjectHandler implements TextExtractionHandlerInterface
 
         foreach ($data as $key => $value) {
             // Build context path.
-            $contextKey = ($prefix !== null && $prefix !== '') ? "{$prefix}.{$key}" : (string) $key;
+            $contextKey = (string) $key;
+            if ($prefix !== null && $prefix !== '') {
+                $contextKey = "{$prefix}.{$key}";
+            }
 
             // Handle different value types.
             if (is_string($value) === true && trim($value) !== '' && trim($value) !== null) {
@@ -322,7 +325,11 @@ class ObjectHandler implements TextExtractionHandlerInterface
             } else if (is_numeric($value) === true) {
                 $textParts[] = "{$contextKey}: {$value}";
             } else if (is_bool($value) === true) {
-                $boolStr     = $value === true ? 'true' : 'false';
+                $boolStr = 'false';
+                if ($value === true) {
+                    $boolStr = 'true';
+                }
+
                 $textParts[] = "{$contextKey}: {$boolStr}";
             } else if (is_array($value) === true && empty($value) === false) {
                 // Recursively process nested arrays.

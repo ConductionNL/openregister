@@ -257,7 +257,7 @@ class CalendarProvider extends AbstractIntegrationProvider
             return;
         }
 
-        // entityId is a bare eventUid — Tier-2 link-only removal.
+        // EntityId is a bare eventUid — Tier-2 link-only removal.
         $this->calendarLinkService->unlinkEvent(objectUuid: $objectId, eventUid: $entityId);
     }//end delete()
 
@@ -275,10 +275,17 @@ class CalendarProvider extends AbstractIntegrationProvider
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+        $status    = 'unavailable';
+        $message   = 'NC Calendar app is not installed';
+        if ($installed === true) {
+            $status  = 'ok';
+            $message = null;
+        }
+
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Calendar app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

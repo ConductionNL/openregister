@@ -231,7 +231,11 @@ class ReportRenderService
     {
         if ($dashboard instanceof ObjectEntity === true) {
             $payload = $dashboard->getObject();
-            return is_array($payload) === true ? $payload : [];
+            if (is_array($payload) === true) {
+                return $payload;
+            }
+
+            return [];
         }
 
         if (is_array($dashboard) === true) {
@@ -257,7 +261,11 @@ class ReportRenderService
         $slug = strtolower(trim($value));
         $slug = preg_replace('/[^a-z0-9]+/', '-', $slug) ?? $slug;
         $slug = trim($slug, '-');
-        return $slug !== '' ? $slug : 'dashboard';
+        if ($slug !== '') {
+            return $slug;
+        }
+
+        return 'dashboard';
 
     }//end slugify()
 

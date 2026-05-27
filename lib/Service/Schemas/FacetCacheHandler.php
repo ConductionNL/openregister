@@ -501,7 +501,10 @@ class FacetCacheHandler
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
         $now     = new DateTime();
-        $expires = $ttl > 0 ? (clone $now)->add(new DateInterval("PT{$ttl}S")) : null;
+        $expires = null;
+        if ($ttl > 0) {
+            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
+        }
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE pattern.
         $qb = $this->db->getQueryBuilder();

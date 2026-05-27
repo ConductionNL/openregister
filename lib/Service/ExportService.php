@@ -271,7 +271,8 @@ class ExportService
      *
      * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
      *
-     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (builds a header-only template spreadsheet from a schema's properties, with register-context per-language column expansion)
+     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (builds a header-only
+     *       template spreadsheet from a schema's properties, with register-context per-language column expansion)
      */
     public function buildTemplateSpreadsheet(
         ?Register $register,
@@ -308,7 +309,8 @@ class ExportService
      *
      * @return string CSV content with a UTF-8 BOM prefix and a single header row
      *
-     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (renders the per-schema import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
+     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (renders the per-schema
+     *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
      */
     public function buildTemplateCsv(
         ?Register $register,
@@ -884,7 +886,11 @@ class ExportService
         }
 
         $slotValue = $value[$lang];
-        return is_scalar($slotValue) === true ? (string) $slotValue : null;
+        if (is_scalar($slotValue) === true) {
+            return (string) $slotValue;
+        }
+
+        return null;
     }//end extractLanguageSlot()
 
     /**

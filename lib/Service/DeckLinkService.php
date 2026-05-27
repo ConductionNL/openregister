@@ -173,8 +173,18 @@ class DeckLinkService
         $link->setCardId($cardId);
         $link->setCardTitle($title);
         $link->setDueDate($widened['dueDateRaw']);
-        $link->setLabels($widened['labels'] !== [] ? json_encode($widened['labels']) : null);
-        $link->setAssignees($widened['assignees'] !== [] ? json_encode($widened['assignees']) : null);
+        $labels = null;
+        if ($widened['labels'] !== []) {
+            $labels = json_encode($widened['labels']);
+        }
+
+        $assignees = null;
+        if ($widened['assignees'] !== []) {
+            $assignees = json_encode($widened['assignees']);
+        }
+
+        $link->setLabels($labels);
+        $link->setAssignees($assignees);
         $link->setLinkedBy($user->getUID());
         $link->setLinkedAt(new DateTime());
 
@@ -540,7 +550,11 @@ class DeckLinkService
         try {
             $cardMapper = \OC::$server->get('OCA\\Deck\\Db\\CardMapper');
             $boardId    = $cardMapper->findBoardId($cardId);
-            return $boardId !== null ? (int) $boardId : 0;
+            if ($boardId !== null) {
+                return (int) $boardId;
+            }
+
+            return 0;
         } catch (Throwable $e) {
             $this->logger->debug('Deck CardMapper::findBoardId('.$cardId.') failed: '.$e->getMessage());
             return 0;
@@ -625,7 +639,9 @@ class DeckLinkService
 
         try {
             $rawId = $label->getId();
-            $id    = $rawId !== null ? (int) $rawId : null;
+            if ($rawId !== null) {
+                $id = (int) $rawId;
+            }
         } catch (Throwable $e) {
             // Leave default null.
         }

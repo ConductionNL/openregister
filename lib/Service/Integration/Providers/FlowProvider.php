@@ -123,14 +123,14 @@ class FlowProvider extends AbstractIntegrationProvider
         $out = [];
         foreach ($links as $link) {
             $operationId = (int) $link->getOperationId();
-            $opRow       = $this->fetchOperationRow($operationId);
+            $opRow       = $this->fetchOperationRow(operationId: $operationId);
 
             $name      = (string) ($opRow['name'] ?? $link->getOperationName() ?? '');
             $class     = (string) ($opRow['class'] ?? $link->getOperationClass() ?? '');
             $entity    = (string) ($opRow['entity'] ?? $link->getEntityType() ?? '');
             $operation = (string) ($opRow['operation'] ?? '');
-            $events    = $this->decodeJsonField($opRow['events'] ?? null);
-            $checks    = $this->decodeJsonField($opRow['checks'] ?? null);
+            $events    = $this->decodeJsonField(value: $opRow['events'] ?? null);
+            $checks    = $this->decodeJsonField(value: $opRow['checks'] ?? null);
 
             $out[] = [
                 'id'        => (string) $operationId,
@@ -202,7 +202,7 @@ class FlowProvider extends AbstractIntegrationProvider
                 return $decoded;
             }
         } catch (Throwable $e) {
-            // fall through.
+            // Fall through.
         }
 
         return [];
@@ -213,15 +213,26 @@ class FlowProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+     *              the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
         $available = $this->isEnabled();
+        $status    = 'unavailable';
+        if ($available === true) {
+            $status = 'ok';
+        }
+
+        $message = 'NC Flow (workflowengine) app is not installed';
+        if ($available === true) {
+            $message = null;
+        }
+
         return [
-            'status'     => $available === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $available === true ? null : 'NC Flow (workflowengine) app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

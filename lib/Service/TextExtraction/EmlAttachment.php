@@ -73,7 +73,8 @@ final class EmlAttachment implements JsonSerializable
      *
      * @return array<string, mixed>
      *
-     * @spec exclude Value-object serialiser: maps public readonly properties to an array (content base64-encoded); field shape specified by text-extraction-eml.
+     * @spec exclude Value-object serialiser: maps public readonly properties to an array (content base64-encoded);
+     *              field shape specified by text-extraction-eml.
      */
     public function jsonSerialize(): array
     {

@@ -150,13 +150,23 @@ class NotificationsAnnotationInstaller implements IEventListener
             $headers  = (array) ($hookSpec['headers'] ?? []);
             $secret   = ($hookSpec['secret'] ?? null);
 
+            $headersEncoded = null;
+            if (count($headers) > 0) {
+                $headersEncoded = json_encode($headers);
+            }
+
+            $secretValue = null;
+            if (is_string($secret) === true && $secret !== '') {
+                $secretValue = $secret;
+            }
+
             $payload = [
                 'name'        => $webhookName,
                 'url'         => (string) $hookSpec['url'],
                 'method'      => strtoupper((string) ($hookSpec['method'] ?? 'POST')),
                 'events'      => json_encode($events),
-                'headers'     => count($headers) > 0 ? json_encode($headers) : null,
-                'secret'      => is_string($secret) === true && $secret !== '' ? $secret : null,
+                'headers'     => $headersEncoded,
+                'secret'      => $secretValue,
                 'enabled'     => true,
                 'retryPolicy' => 'exponential',
                 'maxRetries'  => 5,

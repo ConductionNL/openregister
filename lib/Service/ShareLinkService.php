@@ -141,7 +141,8 @@ class ShareLinkService
      *
      * @throws Exception When the share subsystem is unreachable (503).
      *
-     * @spec exclude ADR-019 Tier-2 integration link-service facade; the shares-listing contract is owned by the integration-shares / generic-integrations capability.
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the shares-listing contract is owned by the
+     *              integration-shares / generic-integrations capability.
      */
     public function getLinkedShares(string $objectUuid): array
     {
@@ -219,7 +220,8 @@ class ShareLinkService
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      *
-     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-share contract is owned by the integration-shares / generic-integrations capability.
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-share contract is owned by the
+     *              integration-shares / generic-integrations capability.
      */
     public function createShare(
         string $objectUuid,
@@ -303,7 +305,8 @@ class ShareLinkService
      * @throws Exception On missing user (401), share-not-found (404),
      *                   ownership mismatch (403).
      *
-     * @spec exclude ADR-019 Tier-2 integration link-service facade; the revoke-share contract is owned by the integration-shares / generic-integrations capability.
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the revoke-share contract is owned by the
+     *              integration-shares / generic-integrations capability.
      */
     public function revokeShare(string $objectUuid, string $shareId): void
     {
@@ -334,7 +337,8 @@ class ShareLinkService
      *
      * @return array<int,array<string,mixed>> File descriptors `{fileId, fileName, mimetype, size}`.
      *
-     * @spec exclude ADR-019 Tier-2 integration link-service facade; the shareable-files listing contract is owned by the integration-shares / generic-integrations capability.
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the shareable-files listing contract is owned by
+     *              the integration-shares / generic-integrations capability.
      */
     public function getShareableFiles(string $objectUuid): array
     {
@@ -406,7 +410,11 @@ class ShareLinkService
 
             $entity = $this->resolveObjectEntity(objectUuid: $objectUuid);
             $folder = $handler->getObjectFolder($entity ?? $objectUuid);
-            return ($folder instanceof Folder) === true ? $folder : null;
+            if (($folder instanceof Folder) === true) {
+                return $folder;
+            }
+
+            return null;
         } catch (Throwable $e) {
             return null;
         }
@@ -498,7 +506,11 @@ class ShareLinkService
             }
 
             $entity = $mapper->find($objectUuid);
-            return is_object($entity) === true ? $entity : null;
+            if (is_object($entity) === true) {
+                return $entity;
+            }
+
+            return null;
         } catch (Throwable $e) {
             return null;
         }
@@ -552,11 +564,19 @@ class ShareLinkService
             }
 
             $stime     = $share->getShareTime();
-            $createdAt = $stime !== null ? $stime->format(DateTimeInterface::ATOM) : null;
-            $owner     = (string) ($share->getSharedBy() ?? '');
-            $node      = $share->getNode();
-            $fileName  = $node !== null ? (string) $node->getName() : '';
-            $fileId    = $node !== null ? (int) $node->getId() : 0;
+            $createdAt = null;
+            if ($stime !== null) {
+                $createdAt = $stime->format(DateTimeInterface::ATOM);
+            }
+
+            $owner    = (string) ($share->getSharedBy() ?? '');
+            $node     = $share->getNode();
+            $fileName = '';
+            $fileId   = 0;
+            if ($node !== null) {
+                $fileName = (string) $node->getName();
+                $fileId   = (int) $node->getId();
+            }
 
             return [
                 'shareId'              => $shareId,
@@ -588,7 +608,11 @@ class ShareLinkService
         try {
             $container = $this->resolveContainer();
             $service   = $container->get($serviceName);
-            return is_object($service) === true ? $service : null;
+            if (is_object($service) === true) {
+                return $service;
+            }
+
+            return null;
         } catch (Throwable $e) {
             return null;
         }

@@ -96,9 +96,14 @@ class EmailLinksController extends Controller
             $cursor = $this->request->getParam('cursor');
             $limit  = (int) $this->request->getParam('limit', 50);
 
+            $cursorStr = null;
+            if ($cursor !== null) {
+                $cursorStr = (string) $cursor;
+            }
+
             $result = $this->emailLinkService->getLinkedEmails(
                 $object->getUuid(),
-                $cursor === null ? null : (string) $cursor,
+                $cursorStr,
                 $limit
             );
 
@@ -286,17 +291,22 @@ class EmailLinksController extends Controller
             $cursor = $this->request->getParam('cursor');
             $limit  = (int) $this->request->getParam('limit', 50);
 
+            $cursorStr = null;
+            if ($cursor !== null) {
+                $cursorStr = (string) $cursor;
+            }
+
             $result = $this->emailLinkService->getMessagesForMailbox(
                 (int) $accountId,
                 $mailbox,
-                $cursor === null ? null : (string) $cursor,
+                $cursorStr,
                 $limit
             );
 
             return new JSONResponse($result);
         } catch (Exception $e) {
             return $this->mapException(exception: $e);
-        }
+        }//end try
     }//end messages()
 
     /**
@@ -308,7 +318,8 @@ class EmailLinksController extends Controller
      *
      * @return ObjectEntity|null
      *
-     * @spec exclude Private helper: resolves an object from register/schema/id; the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+     * @spec exclude Private helper: resolves an object from register/schema/id; the link REST contract is
+     *              owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
      */
     private function validateObject(string $register, string $schema, string $id): ?ObjectEntity
     {
@@ -334,7 +345,8 @@ class EmailLinksController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec exclude Private helper: maps a service exception code to an HTTP status; the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+     * @spec exclude Private helper: maps a service exception code to an HTTP status; the link REST contract
+     *              is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
      */
     private function mapException(Exception $exception): JSONResponse
     {

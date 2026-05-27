@@ -167,7 +167,8 @@ class SharesProvider extends AbstractIntegrationProvider
      *
      * @return bool
      *
-     * @spec exclude Trivial always-on predicate (`return true`) — the registry stage-1 enabled-filter contract is owned by pluggable-integration-registry task-3.
+     * @spec exclude Trivial always-on predicate (`return true`) — the registry stage-1 enabled-filter contract
+     *              is owned by pluggable-integration-registry task-3.
      */
     public function isEnabled(): bool
     {
@@ -308,7 +309,11 @@ class SharesProvider extends AbstractIntegrationProvider
      */
     private function mapServiceRow(array $row): array
     {
-        $fileId = (int) ($row['fileId'] ?? 0);
+        $fileId  = (int) ($row['fileId'] ?? 0);
+        $fileUrl = '/index.php/apps/files';
+        if ($fileId > 0) {
+            $fileUrl = '/index.php/apps/files/?fileid='.$fileId;
+        }
 
         return [
             'id'                   => (string) ($row['shareId'] ?? ''),
@@ -321,7 +326,7 @@ class SharesProvider extends AbstractIntegrationProvider
             'stime'                => $row['createdAt'] ?? null,
             'nodeName'             => (string) ($row['fileName'] ?? ''),
             'canRevoke'            => (bool) ($row['canRevoke'] ?? false),
-            'url'                  => $fileId > 0 ? '/index.php/apps/files/?fileid='.$fileId : '/index.php/apps/files',
+            'url'                  => $fileUrl,
             'data'                 => [
                 'id'     => (string) ($row['shareId'] ?? ''),
                 'nodeId' => $fileId,
@@ -370,7 +375,8 @@ class SharesProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static ok/degraded descriptor echoing share-manager reachability — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static ok/degraded descriptor echoing share-manager reachability — no standalone health
+     *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
@@ -427,7 +433,11 @@ class SharesProvider extends AbstractIntegrationProvider
 
             $entity = $this->resolveObjectEntity(objectId: $objectId);
             $folder = $handler->getObjectFolder($entity ?? $objectId);
-            return ($folder instanceof Folder) === true ? $folder : null;
+            if (($folder instanceof Folder) === true) {
+                return $folder;
+            }
+
+            return null;
         } catch (Throwable $e) {
             return null;
         }
@@ -457,7 +467,11 @@ class SharesProvider extends AbstractIntegrationProvider
             }
 
             $entity = $mapper->find($objectId);
-            return is_object($entity) === true ? $entity : null;
+            if (is_object($entity) === true) {
+                return $entity;
+            }
+
+            return null;
         } catch (Throwable $e) {
             return null;
         }
@@ -510,12 +524,28 @@ class SharesProvider extends AbstractIntegrationProvider
                 $expiration = $expDate->format(\DateTimeInterface::ATOM);
             }
 
-            $stime    = $share->getShareTime();
-            $stimeTs  = $stime !== null ? $stime->getTimestamp() : 0;
+            $stime   = $share->getShareTime();
+            $stimeTs = 0;
+            if ($stime !== null) {
+                $stimeTs = $stime->getTimestamp();
+            }
+
             $owner    = (string) ($share->getSharedBy() ?? '');
             $node     = $share->getNode();
-            $nodeName = $node !== null ? (string) $node->getName() : '';
-            $nodeId   = $node !== null ? (int) $node->getId() : 0;
+            $nodeName = '';
+            if ($node !== null) {
+                $nodeName = (string) $node->getName();
+            }
+
+            $nodeId = 0;
+            if ($node !== null) {
+                $nodeId = (int) $node->getId();
+            }
+
+            $nodeUrl = '/index.php/apps/files';
+            if ($nodeId > 0) {
+                $nodeUrl = '/index.php/apps/files/?fileid='.$nodeId;
+            }
 
             return [
                 'id'                   => $id,
@@ -528,7 +558,7 @@ class SharesProvider extends AbstractIntegrationProvider
                 'stime'                => $stimeTs,
                 'nodeName'             => $nodeName,
                 'canRevoke'            => $owner === $userId,
-                'url'                  => $nodeId > 0 ? '/index.php/apps/files/?fileid='.$nodeId : '/index.php/apps/files',
+                'url'                  => $nodeUrl,
                 'data'                 => [
                     'id'     => $id,
                     'token'  => (string) ($share->getToken() ?? ''),
@@ -553,7 +583,11 @@ class SharesProvider extends AbstractIntegrationProvider
         try {
             $container = $this->resolveContainer();
             $service   = $container->get($serviceName);
-            return is_object($service) === true ? $service : null;
+            if (is_object($service) === true) {
+                return $service;
+            }
+
+            return null;
         } catch (Throwable $e) {
             return null;
         }

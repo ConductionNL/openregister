@@ -125,7 +125,8 @@ class UiController extends Controller
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function registers(): TemplateResponse
     {
@@ -149,7 +150,8 @@ class UiController extends Controller
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function registersDetails(): TemplateResponse
     {
@@ -173,7 +175,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function schemas(): TemplateResponse
     {
@@ -197,7 +200,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function schemasDetails(): TemplateResponse
     {
@@ -217,7 +221,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function sources(): TemplateResponse
     {
@@ -237,7 +242,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function organisation(): TemplateResponse
     {
@@ -257,7 +263,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function objects(): TemplateResponse
     {
@@ -302,7 +309,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function tables(): TemplateResponse
     {
@@ -322,7 +330,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function chat(): TemplateResponse
     {
@@ -342,7 +351,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function configurations(): TemplateResponse
     {
@@ -362,7 +372,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function deleted(): TemplateResponse
     {
@@ -382,7 +393,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function auditTrail(): TemplateResponse
     {
@@ -402,7 +414,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function searchTrail(): TemplateResponse
     {
@@ -422,7 +435,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function webhooks(): TemplateResponse
     {
@@ -442,7 +456,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function webhooksLogs(): TemplateResponse
     {
@@ -462,7 +477,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function entities(): TemplateResponse
     {
@@ -482,7 +498,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function entitiesDetails(): TemplateResponse
     {
@@ -526,7 +543,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function reports(): TemplateResponse
     {
@@ -546,7 +564,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function reportView(): TemplateResponse
     {
@@ -570,7 +589,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function endpoints(): TemplateResponse
     {
@@ -593,7 +613,8 @@ class UiController extends Controller
      *
      * @return TemplateResponse The SPA template response
      *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function endpointLogs(): TemplateResponse
     {

@@ -772,7 +772,8 @@ class FileSettingsController extends Controller
      *
      * @return array{success: bool, message?: string, error?: string} Health check result.
      *
-     * @spec exclude Private helper: shared cURL health-check used by the connection-test endpoints; the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
+     * @spec exclude Private helper: shared cURL health-check used by the connection-test endpoints;
+     *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
      */
     private function performHealthCheck(string $url, string $serviceName, array $headers=[]): array
     {
@@ -826,7 +827,8 @@ class FileSettingsController extends Controller
      *
      * @return array Capabilities array, potentially containing 'supported_entities'.
      *
-     * @spec exclude Private helper: fetches Presidio supported-entities for the connection test; the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
+     * @spec exclude Private helper: fetches Presidio supported-entities for the connection test;
+     *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
      */
     private function fetchPresidioCapabilities(string $apiEndpoint): array
     {

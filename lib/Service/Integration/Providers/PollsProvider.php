@@ -125,15 +125,19 @@ class PollsProvider extends AbstractIntegrationProvider
         $out = [];
         foreach ($links as $link) {
             $pollId  = (int) $link->getPollId();
-            $pollRow = $this->fetchPollRow($pollId);
+            $pollRow = $this->fetchPollRow(pollId: $pollId);
 
             $title       = (string) ($pollRow['title'] ?? $link->getPollTitle() ?? '');
             $description = (string) ($pollRow['description'] ?? '');
             $type        = (string) ($pollRow['type'] ?? $link->getPollType() ?? '');
             $expire      = (int) ($pollRow['expire'] ?? 0);
 
-            $options = $this->fetchOptionsWithCounts($pollId);
-            $voters  = $this->fetchVoterCount($pollId);
+            $options  = $this->fetchOptionsWithCounts(pollId: $pollId);
+            $voters   = $this->fetchVoterCount(pollId: $pollId);
+            $deadline = null;
+            if ($expire > 0) {
+                $deadline = $expire;
+            }
 
             $out[] = [
                 'id'          => (string) $pollId,
@@ -142,7 +146,7 @@ class PollsProvider extends AbstractIntegrationProvider
                 'description' => $description,
                 'type'        => $type,
                 'url'         => '/index.php/apps/polls/vote/'.$pollId,
-                'deadline'    => $expire > 0 ? $expire : null,
+                'deadline'    => $deadline,
                 'closed'      => ($expire > 0 && $expire <= time()),
                 'voterCount'  => $voters,
                 'options'     => $options,
@@ -217,7 +221,11 @@ class PollsProvider extends AbstractIntegrationProvider
                     ->andWhere($vq->expr()->eq('vote_option_hash', $vq->createNamedParameter($hash)))
                     ->andWhere($vq->expr()->eq('vote_answer', $vq->createNamedParameter('yes')))
                     ->andWhere($vq->expr()->eq('deleted', $vq->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
-                $votes = (int) ($vq->executeQuery()->fetchOne() ?: 0);
+                $fetchedVotes = $vq->executeQuery()->fetchOne();
+                $votes        = 0;
+                if ($fetchedVotes !== false) {
+                    $votes = (int) $fetchedVotes;
+                }
             } catch (Throwable $e) {
                 $votes = 0;
             }
@@ -259,15 +267,27 @@ class PollsProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health
+     *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+
+        $status = 'unavailable';
+        if ($installed === true) {
+            $status = 'ok';
+        }
+
+        $message = 'NC Polls app is not installed';
+        if ($installed === true) {
+            $message = null;
+        }
+
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Polls app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

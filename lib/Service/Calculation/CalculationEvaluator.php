@@ -132,7 +132,14 @@ class CalculationEvaluator
      */
     private function propValue(array $object, mixed $args): mixed
     {
-        $name = is_string($args) === true ? $args : (is_array($args) === true ? (string) ($args[0] ?? '') : '');
+        if (is_string($args) === true) {
+            $name = $args;
+        } else if (is_array($args) === true) {
+            $name = (string) ($args[0] ?? '');
+        } else {
+            $name = '';
+        }
+
         if ($name === '') {
             throw new EvaluationException('prop requires a non-empty field name.');
         }
@@ -200,7 +207,11 @@ class CalculationEvaluator
             return $this->evaluate(object: $object, expression: $args[1]);
         }
 
-        return count($args) >= 3 ? $this->evaluate(object: $object, expression: $args[2]) : null;
+        if (count($args) >= 3) {
+            return $this->evaluate(object: $object, expression: $args[2]);
+        }
+
+        return null;
     }//end ifExpr()
 
     /**
@@ -491,7 +502,11 @@ class CalculationEvaluator
 
         $date = $this->toDateOrNull(v: $this->evaluate(object: $object, expression: $args[0]));
         $fmt  = (string) $this->evaluate(object: $object, expression: $args[1]);
-        return $date === null ? null : $date->format($fmt);
+        if ($date === null) {
+            return null;
+        }
+
+        return $date->format($fmt);
     }//end formatDate()
 
     /**
@@ -574,7 +589,11 @@ class CalculationEvaluator
         // Calendar-based units use DateInterval for accuracy across leap years / variable month lengths.
         if ($unit === 'years' || $unit === 'months') {
             $interval = $from->diff($to);
-            $sign     = ($interval->invert === 1) ? -1 : 1;
+            $sign     = -1;
+            if ($interval->invert !== 1) {
+                $sign = 1;
+            }
+
             if ($unit === 'years') {
                 return $sign * $interval->y;
             }

@@ -290,7 +290,11 @@ class MappingService
 
         // Ensure output is always an array.
         if (is_array($output) === false) {
-            $output = $output === null ? [] : [$output];
+            if ($output === null) {
+                $output = [];
+            } else {
+                $output = [$output];
+            }
         }
 
         return $output;

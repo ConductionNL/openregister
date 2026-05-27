@@ -550,17 +550,42 @@ class CalendarEventService
             }
         }
 
+        $uid = null;
+        if (isset($vevent->UID) === true) {
+            $uid = (string) $vevent->UID;
+        }
+
+        $summary = '';
+        if (isset($vevent->SUMMARY) === true) {
+            $summary = (string) $vevent->SUMMARY;
+        }
+
+        $location = null;
+        if (isset($vevent->LOCATION) === true) {
+            $location = (string) $vevent->LOCATION;
+        }
+
+        $description = '';
+        if (isset($vevent->DESCRIPTION) === true) {
+            $description = (string) $vevent->DESCRIPTION;
+        }
+
+        $status = null;
+        if (isset($vevent->STATUS) === true) {
+            $status = strtolower((string) $vevent->STATUS);
+        }
+
         return [
             'id'          => $uri,
-            'uid'         => isset($vevent->UID) === true ? (string) $vevent->UID : null,
+            'uid'         => $uid,
             'calendarId'  => $calendarId,
-            'summary'     => isset($vevent->SUMMARY) === true ? (string) $vevent->SUMMARY : '',
+            'summary'     => $summary,
             'dtstart'     => $dtstart,
             'dtend'       => $dtend,
-            'location'    => isset($vevent->LOCATION) === true ? (string) $vevent->LOCATION : null,
-            'description' => isset($vevent->DESCRIPTION) === true ? (string) $vevent->DESCRIPTION : '',
+            'location'    => $location,
+            'description' => $description,
             'attendees'   => $attendees,
-            'status'      => isset($vevent->STATUS) === true ? strtolower((string) $vevent->STATUS) : null,
+            'status'      => $status,
             'objectUuid'  => $linkData['objectUuid'],
             'registerId'  => $linkData['registerId'],
             'schemaId'    => $linkData['schemaId'],

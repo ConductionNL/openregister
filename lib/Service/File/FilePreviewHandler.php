@@ -134,6 +134,10 @@ class FilePreviewHandler
      */
     public function getMimeTypeIconUrl(string $mimeType): string
     {
-        return $this->previewManager->isMimeSupported($mimeType) === true ? '' : '/core/img/filetypes/file.svg';
+        if ($this->previewManager->isMimeSupported($mimeType) === true) {
+            return '';
+        }
+
+        return '/core/img/filetypes/file.svg';
     }//end getMimeTypeIconUrl()
 }//end class

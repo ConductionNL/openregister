@@ -228,7 +228,9 @@ class RegisterService
      *
      * @throws Exception If register creation fails
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management (after mapper create, assigns the active/default organisation for multi-tenancy and provisions the register's backing folder)
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (after mapper create, assigns the active/default organisation for multi-tenancy
+     *   and provisions the register's backing folder)
      */
     public function createFromArray(array $data): Register
     {
@@ -287,7 +289,9 @@ class RegisterService
      *
      * @throws Exception If register update fails
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management (after mapper update, ensures the register's backing folder exists, healing legacy null/string folder properties)
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (after mapper update, ensures the register's backing folder exists,
+     *   healing legacy null/string folder properties)
      */
     public function updateFromArray(int $id, array $data): Register
     {

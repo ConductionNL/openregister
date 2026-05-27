@@ -259,6 +259,11 @@ class ActionService
 
         $matched = $eventMatch && $schemaMatch && $registerMatch && $filterMatch;
 
+        $builtPayload = null;
+        if ($matched === true) {
+            $builtPayload = $samplePayload;
+        }
+
         return [
             'matched'       => $matched,
             'action'        => $action->jsonSerialize(),
@@ -267,7 +272,7 @@ class ActionService
             'registerMatch' => $registerMatch,
             'filterMatch'   => $filterMatch,
             'filterReasons' => $filterReasons,
-            'builtPayload'  => $matched === true ? $samplePayload : null,
+            'builtPayload'  => $builtPayload,
         ];
     }//end testAction()
 

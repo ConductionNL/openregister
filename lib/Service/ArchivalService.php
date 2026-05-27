@@ -456,7 +456,10 @@ class ArchivalService
                     $retentionYears = $selectionLists[0]->getRetentionYears();
 
                     $rawActieDatum = ($retention['archiefactiedatum'] ?? null);
-                    $currentDate   = $rawActieDatum !== null ? new DateTime($rawActieDatum) : new DateTime();
+                    $currentDate   = new DateTime();
+                    if ($rawActieDatum !== null) {
+                        $currentDate = new DateTime($rawActieDatum);
+                    }
 
                     $newDate = clone $currentDate;
                     $newDate->add(new DateInterval('P'.$retentionYears.'Y'));

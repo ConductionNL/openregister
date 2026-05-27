@@ -207,7 +207,9 @@ class ImportService
      *     errors: list<array{uuid: string, error: string}>
      * }
      *
-     * @spec openspec/specs/data-import-export/spec.md#import-rollback-on-critical-failure (rolls back an import unit: finds every create-audited object for the import job UUID and soft-deletes them, reporting per-object outcomes)
+     * @spec openspec/specs/data-import-export/spec.md#import-rollback-on-critical-failure (rolls back an import
+     *       unit: finds every create-audited object for the import job UUID and soft-deletes them, reporting
+     *       per-object outcomes)
      */
     public function softDeleteByImportJobId(string $importJobId): array
     {
@@ -1953,7 +1955,11 @@ class ImportService
         $csv = stream_get_contents($stream);
         fclose($stream);
 
-        return $csv === false ? '' : $csv;
+        if ($csv === false) {
+            return '';
+        }
+
+        return $csv;
 
     }//end serializeErrorsToCsv()
 
@@ -1981,7 +1987,11 @@ class ImportService
 
         if (is_array($value) === true || is_object($value) === true) {
             $encoded = json_encode($value, (JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-            return $encoded === false ? '' : $encoded;
+            if ($encoded === false) {
+                return '';
+            }
+
+            return $encoded;
         }
 
         return '';

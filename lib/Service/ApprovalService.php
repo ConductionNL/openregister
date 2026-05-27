@@ -79,7 +79,10 @@ class ApprovalService
         $createdSteps = [];
 
         foreach ($steps as $index => $stepDef) {
-            $status = ($index === 0) ? 'pending' : 'waiting';
+            $status = 'waiting';
+            if ($index === 0) {
+                $status = 'pending';
+            }
 
             $step = $this->stepMapper->createFromArray(
                     [

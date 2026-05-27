@@ -446,7 +446,11 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            $code = ($e->getCode() !== 0 ? $e->getCode() : 500);
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
             if ($code === 403) {
                 $clientIp = $this->securityService->getClientIpAddress(request: $this->request);
                 $this->securityService->recordFailedLoginAttempt(
@@ -495,7 +499,12 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
         } catch (Exception $e) {
             $this->logError(message: 'Failed to upload avatar', exception: $e);
             return $this->errorResponse(message: 'Failed to upload avatar', statusCode: 500);
@@ -525,7 +534,12 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
         } catch (Exception $e) {
             $this->logError(message: 'Failed to delete avatar', exception: $e);
             return $this->errorResponse(message: 'Failed to delete avatar', statusCode: 500);
@@ -558,7 +572,11 @@ class UserController extends Controller
 
             return new DataDownloadResponse($json, $filename, 'application/json');
         } catch (\RuntimeException $e) {
-            $code = ($e->getCode() !== 0 ? $e->getCode() : 500);
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
             if ($code === 429) {
                 $errorData = json_decode($e->getMessage(), true);
                 $response  = new JSONResponse(data: $errorData ?? ['error' => $e->getMessage()], statusCode: 429);
@@ -732,7 +750,12 @@ class UserController extends Controller
             $response = new JSONResponse(data: $token, statusCode: 201);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
         } catch (Exception $e) {
             $this->logError(message: 'Failed to create token', exception: $e);
             return $this->errorResponse(message: 'Failed to create token', statusCode: 500);
@@ -763,7 +786,12 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
         } catch (Exception $e) {
             $this->logError(message: 'Failed to revoke token', exception: $e);
             return $this->errorResponse(message: 'Failed to revoke token', statusCode: 500);
@@ -796,7 +824,11 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            $code = ($e->getCode() !== 0 ? $e->getCode() : 500);
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
             if ($code === 409) {
                 $errorData = json_decode($e->getMessage(), true);
                 $response  = new JSONResponse(data: $errorData ?? ['error' => $e->getMessage()], statusCode: 409);
@@ -861,7 +893,12 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
+            $code = 500;
+            if ($e->getCode() !== 0) {
+                $code = $e->getCode();
+            }
+
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
         } catch (Exception $e) {
             $this->logError(message: 'Failed to cancel deactivation', exception: $e);
             return $this->errorResponse(message: 'Failed to cancel deactivation', statusCode: 500);

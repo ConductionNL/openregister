@@ -196,7 +196,12 @@ class AuditTrailProvider extends AbstractIntegrationProvider
         foreach ($entries as $entry) {
             if (is_object($entry) === true && method_exists($entry, 'jsonSerialize') === true) {
                 $serialised = $entry->jsonSerialize();
-                $rows[]     = is_array($serialised) === true ? $serialised : ['value' => $serialised];
+                $rowValue   = ['value' => $serialised];
+                if (is_array($serialised) === true) {
+                    $rowValue = $serialised;
+                }
+
+                $rows[] = $rowValue;
                 continue;
             }
 

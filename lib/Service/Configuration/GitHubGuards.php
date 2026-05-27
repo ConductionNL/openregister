@@ -81,7 +81,8 @@ class GitHubGuards
      *
      * @return JSONResponse|null First failing response, or null when all guards pass.
      *
-     * @spec exclude Generic guard-runner combinator — loops guard closures and short-circuits on the first non-null response; carries no policy itself (the individual guards are separately annotated).
+     * @spec exclude Generic guard-runner combinator — loops guard closures and short-circuits on the first
+     *              non-null response; carries no policy itself (the individual guards are separately annotated).
      */
     public function runGuards(array $guards): ?JSONResponse
     {

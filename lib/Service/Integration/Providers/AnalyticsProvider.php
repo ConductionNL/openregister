@@ -189,15 +189,27 @@ class AnalyticsProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+     *              the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
         $available = $this->isEnabled();
+
+        $status = 'unavailable';
+        if ($available === true) {
+            $status = 'ok';
+        }
+
+        $message = 'NC Analytics app is not installed';
+        if ($available === true) {
+            $message = null;
+        }
+
         return [
-            'status'     => $available === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $available === true ? null : 'NC Analytics app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

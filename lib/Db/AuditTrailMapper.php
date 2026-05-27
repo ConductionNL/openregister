@@ -372,7 +372,10 @@ class AuditTrailMapper extends QBMapper
                 $oldArray = $old->jsonSerialize();
             }
 
-            $newArray = ($new !== null) ? $new->jsonSerialize() : [];
+            $newArray = [];
+            if ($new !== null) {
+                $newArray = $new->jsonSerialize();
+            }
 
             // Compare old and new values to detect changes.
             foreach ($newArray as $key => $value) {
@@ -1477,7 +1480,10 @@ class AuditTrailMapper extends QBMapper
         array $context=[]
     ): AuditTrail {
         $user   = $this->userSession->getUser();
-        $userId = $user !== null ? $user->getUID() : 'system';
+        $userId = 'system';
+        if ($user !== null) {
+            $userId = $user->getUID();
+        }
 
         $auditTrail = new AuditTrail();
         $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
@@ -1494,7 +1500,11 @@ class AuditTrailMapper extends QBMapper
         // no displayable actor. Without this default, every audit row
         // produced through this entry point would persist with a NULL
         // `user_name` — undermining GDPR Art 30 §4 supervisor review.
-        $userName = $user !== null ? $user->getDisplayName() : 'System';
+        $userName = 'System';
+        if ($user !== null) {
+            $userName = $user->getDisplayName();
+        }
+
         $auditTrail->setUserName($userName);
 
         $auditTrail->setCreated(new DateTime());

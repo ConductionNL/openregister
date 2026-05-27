@@ -147,15 +147,31 @@ class EmailProvider extends AbstractIntegrationProvider
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
-        $limit  = isset($filters['_limit']) === true ? (int) $filters['_limit'] : null;
-        $page   = isset($filters['_page']) === true ? max(0, (int) $filters['_page']) : 0;
-        $offset = ($limit !== null) ? ($page * $limit) : 0;
+        $limit = null;
+        if (isset($filters['_limit']) === true) {
+            $limit = (int) $filters['_limit'];
+        }
+
+        $page = 0;
+        if (isset($filters['_page']) === true) {
+            $page = max(0, (int) $filters['_page']);
+        }
+
+        $offset = 0;
+        if ($limit !== null) {
+            $offset = ($page * $limit);
+        }
+
+        $offsetArg = null;
+        if ($limit !== null) {
+            $offsetArg = $offset;
+        }
 
         try {
             $result = $this->emailService->getEmailsForObject(
                 objectUuid: $objectId,
                 limit: $limit,
-                offset: ($limit !== null ? $offset : null)
+                offset: $offsetArg
             );
         } catch (Throwable $e) {
             return ['items' => [], 'total' => 0, 'nextCursor' => null];
@@ -248,15 +264,27 @@ class EmailProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+     *              the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
         $available = $this->emailLinkService->isMailAvailable();
+
+        $status = 'unavailable';
+        if ($available === true) {
+            $status = 'ok';
+        }
+
+        $message = 'NC Mail app is not installed';
+        if ($available === true) {
+            $message = null;
+        }
+
         return [
-            'status'     => $available === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $available === true ? null : 'NC Mail app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

@@ -132,7 +132,10 @@ class GitHubIssuesController extends Controller
         $perPage = (int) $this->request->getParam('per_page', 30);
         $labels  = (string) $this->request->getParam('labels', '');
 
-        $labelArray = $labels === '' ? null : array_values(array_filter(array_map('trim', explode(',', $labels))));
+        $labelArray = null;
+        if ($labels !== '') {
+            $labelArray = array_values(array_filter(array_map('trim', explode(',', $labels))));
+        }
 
         $guardError = $this->guards->runGuards(
             $this->readGuardPipeline(repo: $repo, sort: $sort, perPage: $perPage, labels: $labelArray)
@@ -216,7 +219,11 @@ class GitHubIssuesController extends Controller
         $title   = (string) $this->request->getParam('title', '');
         $body    = (string) $this->request->getParam('body', '');
         $specRef = $this->request->getParam('specRef');
-        $specRef = ($specRef === null || $specRef === '') ? null : (string) $specRef;
+        if ($specRef === null || $specRef === '') {
+            $specRef = null;
+        } else {
+            $specRef = (string) $specRef;
+        }
 
         $guardError = $this->guards->runGuards(
             $this->writeGuardPipeline(repo: $repo, title: $title, body: $body, specRef: $specRef, uid: $uid)

@@ -1138,7 +1138,11 @@ class OrganisationController extends Controller
             $result       = $this->tenantLifecycleService->suspend($organisation);
             return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
-            $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
+            $statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+            if ($e->getCode() >= 400) {
+                $statusCode = $e->getCode();
+            }
+
             return new JSONResponse(
                 data: [
                     'error'            => $e->getMessage(),
@@ -1178,7 +1182,11 @@ class OrganisationController extends Controller
             $result = $this->tenantLifecycleService->reactivate($organisation);
             return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
-            $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
+            $statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+            if ($e->getCode() >= 400) {
+                $statusCode = $e->getCode();
+            }
+
             return new JSONResponse(
                 data: ['error' => $e->getMessage()],
                 statusCode: $statusCode
@@ -1205,7 +1213,11 @@ class OrganisationController extends Controller
             $result       = $this->tenantLifecycleService->deprovision($organisation);
             return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {
-            $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
+            $statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+            if ($e->getCode() >= 400) {
+                $statusCode = $e->getCode();
+            }
+
             return new JSONResponse(
                 data: ['error' => $e->getMessage()],
                 statusCode: $statusCode
@@ -1238,12 +1250,18 @@ class OrganisationController extends Controller
             $currentBandwidth = 0;
 
             if (function_exists('apcu_enabled') === true && apcu_enabled() === true) {
-                $reqSuccess       = false;
-                $bwSuccess        = false;
-                $reqFetched       = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}", $reqSuccess);
-                $currentRequests  = ($reqSuccess === true) ? (int) $reqFetched : 0;
-                $bwFetched        = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}", $bwSuccess);
-                $currentBandwidth = ($bwSuccess === true) ? (int) $bwFetched : 0;
+                $reqSuccess = false;
+                $bwSuccess  = false;
+
+                $reqFetched = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}", $reqSuccess);
+                if ($reqSuccess === true) {
+                    $currentRequests = (int) $reqFetched;
+                }
+
+                $bwFetched = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}", $bwSuccess);
+                if ($bwSuccess === true) {
+                    $currentBandwidth = (int) $bwFetched;
+                }
             }
 
             // Get historical data (last 30 days).

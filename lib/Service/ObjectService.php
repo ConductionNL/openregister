@@ -373,7 +373,12 @@ class ObjectService
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID.
                     $folderIdValue = $folderNode->getId();
-                    $entity->setFolder($folderIdValue !== null ? (string) $folderIdValue : null);
+                    $folderStr     = null;
+                    if ($folderIdValue !== null) {
+                        $folderStr = (string) $folderIdValue;
+                    }
+
+                    $entity->setFolder($folderStr);
 
                     // Save the entity with the new folder ID.
                     $this->objectMapper->update($entity);
@@ -381,7 +386,7 @@ class ObjectService
             } catch (Exception $e) {
                 // Log the error but don't fail the object creation/update.
                 // The object can still function without a folder.
-            }
+            }//end try
         }//end if
     }//end ensureObjectFolderExists()
 
@@ -589,7 +594,8 @@ class ObjectService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex permission and context handling requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional parameters create many execution paths
      *
-     * @spec exclude Facade coordinating GetObject + permission check + RenderObject handlers; read/RBAC/render behavior owned by object-interactions / rbac-scopes / files-render-extension.
+     * @spec exclude Facade coordinating GetObject + permission check + RenderObject handlers;
+     *   read/RBAC/render behavior owned by object-interactions / rbac-scopes / files-render-extension.
      */
     public function find(
         int | string $id,
@@ -2228,7 +2234,8 @@ class ObjectService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex search routing requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)      Many search options create many execution paths
      *
-     * @spec exclude Facade routing the unified paginated/faceted search to the query + facet handlers; behavior owned by zoeken-filteren / faceting-configuration.
+     * @spec exclude Facade routing the unified paginated/faceted search to the query + facet handlers;
+     *   behavior owned by zoeken-filteren / faceting-configuration.
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -2495,7 +2502,8 @@ class ObjectService
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
-     * @spec exclude Facade delegating object rendering to the render handler; render contract owned by files-render-extension / schema-driven-read-coercion.
+     * @spec exclude Facade delegating object rendering to the render handler;
+     *   render contract owned by files-render-extension / schema-driven-read-coercion.
      */
     public function renderEntity(
         ObjectEntity $entity,

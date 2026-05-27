@@ -206,7 +206,8 @@ class FilesProvider extends AbstractIntegrationProvider
      * @throws NotImplementedException Always — write path consolidates
      *                                 in tasks 18-22.
      *
-     * @spec exclude NotImplemented write stub — Files writes still route through FileController; the consolidated write path is owned by pluggable-integration-registry tasks 18-22, not this stub.
+     * @spec exclude NotImplemented write stub — Files writes still route through FileController;
+     *              the consolidated write path is owned by pluggable-integration-registry tasks 18-22, not this stub.
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {

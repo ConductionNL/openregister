@@ -337,9 +337,19 @@ class EmlParser
         $plain = $message->getTextContent();
         $html  = $message->getHtmlContent();
 
+        $plainText = null;
+        if ($plain !== null && $plain !== '') {
+            $plainText = $plain;
+        }
+
+        $htmlText = null;
+        if ($html !== null && $html !== '') {
+            $htmlText = $html;
+        }
+
         return new EmlBody(
-            plainText: ($plain !== null && $plain !== '') ? $plain : null,
-            html: ($html !== null && $html !== '') ? $html : null
+            plainText: $plainText,
+            html: $htmlText
         );
     }//end extractBody()
 
@@ -548,7 +558,11 @@ class EmlParser
         }
 
         $trimmed = trim(string: $raw, characters: " \t\n\r\0\x0B<>");
-        return $trimmed === '' ? null : $trimmed;
+        if ($trimmed === '') {
+            return null;
+        }
+
+        return $trimmed;
     }//end stripAngleBrackets()
 
     /**

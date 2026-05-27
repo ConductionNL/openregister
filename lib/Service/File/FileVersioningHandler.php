@@ -124,18 +124,23 @@ class FileVersioningHandler
                 if ($versionManager !== null && $user !== null) {
                     $fileVersions = $versionManager->getVersionsForFile($user, $file);
                     foreach ($fileVersions as $version) {
+                        $label = null;
+                        if (method_exists($version, 'getLabel') === true) {
+                            $label = $version->getLabel();
+                        }
+
                         $versions[] = [
                             'versionId'         => 'v-'.$version->getTimestamp(),
                             'timestamp'         => (new DateTime())->setTimestamp($version->getTimestamp())->format('c'),
                             'size'              => $version->getSize(),
                             'author'            => $version->getSourceFileName(),
                             'authorDisplayName' => $version->getSourceFileName(),
-                            'label'             => method_exists($version, 'getLabel') === true ? $version->getLabel() : null,
+                            'label'             => $label,
                             'isCurrent'         => false,
                         ];
                     }
                 }
-            }
+            }//end if
 
             return ['versions' => $versions];
         } catch (Exception $e) {
@@ -215,6 +220,10 @@ class FileVersioningHandler
     private function getCurrentUserId(): string
     {
         $user = $this->userSession->getUser();
-        return $user !== null ? $user->getUID() : 'system';
+        if ($user !== null) {
+            return $user->getUID();
+        }
+
+        return 'system';
     }//end getCurrentUserId()
 }//end class

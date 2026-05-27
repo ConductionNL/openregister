@@ -77,7 +77,10 @@ final class NotificationAnnotationValidator
         }
 
         $properties = ($schema['properties'] ?? []);
-        $propKeys   = is_array($properties) === true ? array_keys($properties) : [];
+        $propKeys   = [];
+        if (is_array($properties) === true) {
+            $propKeys = array_keys($properties);
+        }
 
         $errors = [];
         foreach ($notifications as $name => $spec) {
@@ -98,7 +101,11 @@ final class NotificationAnnotationValidator
             }
 
             $trigger     = ($spec['trigger'] ?? null);
-            $triggerType = is_array($trigger) === true ? (string) ($trigger['type'] ?? '') : '';
+            $triggerType = '';
+            if (is_array($trigger) === true) {
+                $triggerType = (string) ($trigger['type'] ?? '');
+            }
+
             if (in_array($triggerType, self::VALID_TRIGGERS, true) === false) {
                 $errors[] = [
                     'code'    => 'notification-bad-trigger',
@@ -111,7 +118,11 @@ final class NotificationAnnotationValidator
             }
 
             if ($triggerType === 'scheduled') {
-                $intervalSec = is_array($trigger) === true ? ($trigger['intervalSec'] ?? null) : null;
+                $intervalSec = null;
+                if (is_array($trigger) === true) {
+                    $intervalSec = ($trigger['intervalSec'] ?? null);
+                }
+
                 if (is_int($intervalSec) === false || $intervalSec < 60) {
                     $errors[] = [
                         'code'    => 'notification-scheduled-bad-interval',
@@ -124,8 +135,13 @@ final class NotificationAnnotationValidator
             }
 
             if ($triggerType === 'threshold') {
-                $aggregation = is_array($trigger) === true ? (string) ($trigger['aggregation'] ?? '') : '';
-                $op          = is_array($trigger) === true ? (string) ($trigger['op'] ?? '') : '';
+                $aggregation = '';
+                $op          = '';
+                if (is_array($trigger) === true) {
+                    $aggregation = (string) ($trigger['aggregation'] ?? '');
+                    $op          = (string) ($trigger['op'] ?? '');
+                }
+
                 if ($aggregation === '') {
                     $errors[] = [
                         'code'    => 'notification-threshold-no-aggregation',
@@ -159,7 +175,11 @@ final class NotificationAnnotationValidator
             }//end if
 
             if ($triggerType === 'calculatedChange') {
-                $field = is_array($trigger) === true ? ($trigger['field'] ?? null) : null;
+                $field = null;
+                if (is_array($trigger) === true) {
+                    $field = ($trigger['field'] ?? null);
+                }
+
                 if (is_string($field) === false || $field === '') {
                     $errors[] = [
                         'code'    => 'notification-calculated-change-no-field',
@@ -173,7 +193,11 @@ final class NotificationAnnotationValidator
                 $validOps = ['lt', 'lte', 'gt', 'gte', 'eq', 'ne'];
 
                 foreach (['condition', 'previously'] as $clauseKey) {
-                    $clause = is_array($trigger) === true ? ($trigger[$clauseKey] ?? null) : null;
+                    $clause = null;
+                    if (is_array($trigger) === true) {
+                        $clause = ($trigger[$clauseKey] ?? null);
+                    }
+
                     if ($clause === null) {
                         continue;
                     }

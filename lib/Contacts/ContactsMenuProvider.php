@@ -167,10 +167,15 @@ class ContactsMenuProvider implements IProvider
         }
 
         // Match contact against OpenRegister entities.
+        $organizationString = null;
+        if (is_string($organization) === true) {
+            $organizationString = $organization;
+        }
+
         $matches = $this->matchingService->matchContact(
             $primaryEmail,
             $fullName,
-            is_string($organization) === true ? $organization : null
+            $organizationString
         );
 
         if (empty($matches) === true) {

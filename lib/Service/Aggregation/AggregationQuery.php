@@ -208,8 +208,13 @@ class AggregationQuery
             return null;
         }
 
-        $field = ($this->groupBy['field'] ?? null);
-        return is_string($field) === true ? $field : null;
+        $field      = ($this->groupBy['field'] ?? null);
+        $fieldValue = null;
+        if (is_string($field) === true) {
+            $fieldValue = $field;
+        }
+
+        return $fieldValue;
 
     }//end getGroupByField()
 

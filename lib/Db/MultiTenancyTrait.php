@@ -256,7 +256,8 @@ trait MultiTenancyTrait
      * @param string        $tableAlias          Optional table alias
      * @param bool          $multiTenancyEnabled Whether multitenancy is enabled (default: true)
      *
-     * @spec openspec/specs/deprecate-published-metadata/spec.md#REQ-5 (MultiTenancyTrait Documentation — published-bypass docs scoped to Register/Schema entities only; object-level published bypass removed)
+     * @spec openspec/specs/deprecate-published-metadata/spec.md#REQ-5 (MultiTenancyTrait Documentation —
+     *       published-bypass docs scoped to Register/Schema entities only; object-level published bypass removed)
      *
      * @return void
      *
@@ -507,7 +508,11 @@ trait MultiTenancyTrait
             // Audit log the admin cross-tenant override.
             if (isset($this->logger) === true) {
                 $hasGetUid = ($user !== null && method_exists($user, 'getUID'));
-                $userId    = ($hasGetUid === true) ? $user->getUID() : 'unknown';
+                $userId    = 'unknown';
+                if ($hasGetUid === true) {
+                    $userId = $user->getUID();
+                }
+
                 $this->logger->info(
                     '[MultiTenancyTrait] Admin override: cross-organisation access granted',
                     [

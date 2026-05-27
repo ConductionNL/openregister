@@ -664,7 +664,8 @@ class FileService
      *
      * @phpstan-return Node|null
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management (unified entry: provisions the backing folder for a Register or ObjectEntity, degrading to null on failure)
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (unified entry: provisions the backing folder for a Register or ObjectEntity, degrading to null on failure)
      */
     public function createEntityFolder(Register | ObjectEntity $entity): ?Node
     {
@@ -771,7 +772,8 @@ class FileService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag is intentional for simple filter toggle
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File retrieval requires entity type checking
      *
-     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (unified file listing for a Register or ObjectEntity via the stored folder, with optional shared-only filter)
+     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
+     *   (unified file listing for a Register or ObjectEntity via the stored folder, with optional shared-only filter)
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
@@ -933,7 +935,8 @@ class FileService
      *
      * @return array Formatted file data with pagination
      *
-     * @spec exclude File JSON formatting + pagination; deferred to the file-actions FileFormattingHandler follow-up pass (see file-actions tasks.md DROP list).
+     * @spec exclude File JSON formatting + pagination; deferred to the file-actions FileFormattingHandler
+     *   follow-up pass (see file-actions tasks.md DROP list).
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
@@ -1151,7 +1154,8 @@ class FileService
      *
      * @return Node The Node object for the folder (existing or newly created), or null on failure
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management (idempotent get-or-create of a folder at the given path under the OpenRegister root)
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (idempotent get-or-create of a folder at the given path under the OpenRegister root)
      */
     public function createFolder(string $folderPath): Node
     {
@@ -1354,7 +1358,8 @@ class FileService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
      *
-     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (creates/writes a file into an object's folder with optional tags and share toggle)
+     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
+     *   (creates/writes a file into an object's folder with optional tags and share toggle)
      */
     public function saveFile(
         ObjectEntity $objectEntity,
@@ -1422,7 +1427,8 @@ class FileService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
      *
-     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (lists an object's files via its stored folder, with optional shared-only filter)
+     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
+     *   (lists an object's files via its stored folder, with optional shared-only filter)
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly=false): array
     {
@@ -1556,7 +1562,8 @@ class FileService
      * @psalm-return   File
      * @phpstan-return File
      *
-     * @spec exclude File publish via public share; deferred to the file-actions FilePublishingHandler follow-up pass (see file-actions tasks.md DROP list).
+     * @spec exclude File publish via public share; deferred to the file-actions FilePublishingHandler
+     *   follow-up pass (see file-actions tasks.md DROP list).
      */
     public function publishFile(ObjectEntity | string $object, string | int $file): File
     {
@@ -1581,7 +1588,8 @@ class FileService
      * @psalm-return   File
      * @phpstan-return File
      *
-     * @spec exclude File unpublish (remove public share); deferred to the file-actions FilePublishingHandler follow-up pass (see file-actions tasks.md DROP list).
+     * @spec exclude File unpublish (remove public share); deferred to the file-actions FilePublishingHandler
+     *   follow-up pass (see file-actions tasks.md DROP list).
      */
     public function unpublishFile(ObjectEntity | string $object, string|int $filePath): File
     {
@@ -1766,7 +1774,8 @@ class FileService
      *
      * @return int The created folder ID
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management (provisions an object's folder and returns its id without writing the id back onto the entity)
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (provisions an object's folder and returns its id without writing the id back onto the entity)
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {

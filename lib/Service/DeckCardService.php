@@ -143,7 +143,7 @@ class DeckCardService
         $results = array_map(
             function (DeckLink $link) use ($cardService): array {
                 $row     = $link->jsonSerialize();
-                $widened = $this->extractCardFields($cardService, $link->getCardId());
+                $widened = $this->extractCardFields(cardService: $cardService, cardId: $link->getCardId());
                 return $row + $widened;
             },
             $links
@@ -220,7 +220,7 @@ class DeckCardService
                 $dueDate = $due->format(\DateTime::ATOM);
             }
         } catch (\Throwable $e) {
-            // getDuedate missing — leave dueDate null.
+            // GetDuedate missing — leave dueDate null.
         }
 
         $labels = [];
@@ -228,11 +228,11 @@ class DeckCardService
             $rawLabels = $card->getLabels();
             if (is_array($rawLabels) === true) {
                 foreach ($rawLabels as $label) {
-                    $labels[] = $this->mapLabel($label);
+                    $labels[] = $this->mapLabel(label: $label);
                 }
             }
         } catch (\Throwable $e) {
-            // getLabels missing or returned unexpected shape — leave labels empty.
+            // GetLabels missing or returned unexpected shape — leave labels empty.
         }
 
         $assignees = [];
@@ -240,11 +240,11 @@ class DeckCardService
             $rawAssignees = $card->getAssignedUsers();
             if (is_array($rawAssignees) === true) {
                 foreach ($rawAssignees as $assignment) {
-                    $assignees[] = $this->mapAssignee($assignment);
+                    $assignees[] = $this->mapAssignee(assignment: $assignment);
                 }
             }
         } catch (\Throwable $e) {
-            // getAssignedUsers missing — leave assignees empty.
+            // GetAssignedUsers missing — leave assignees empty.
         }
 
         return [
@@ -268,21 +268,24 @@ class DeckCardService
         $color = '';
 
         try {
-            $id = $label->getId() !== null ? (int) $label->getId() : null;
+            $rawId = $label->getId();
+            if ($rawId !== null) {
+                $id = (int) $rawId;
+            }
         } catch (\Throwable $e) {
-            // leave null
+            // Leave null.
         }
 
         try {
             $title = (string) $label->getTitle();
         } catch (\Throwable $e) {
-            // leave empty
+            // Leave empty.
         }
 
         try {
             $color = (string) $label->getColor();
         } catch (\Throwable $e) {
-            // leave empty
+            // Leave empty.
         }
 
         return ['id' => $id, 'title' => $title, 'color' => $color];
@@ -307,13 +310,13 @@ class DeckCardService
         try {
             $uid = (string) $assignment->getParticipant();
         } catch (\Throwable $e) {
-            // leave empty
+            // Leave empty.
         }
 
         try {
             $type = (string) $assignment->getTypeString();
         } catch (\Throwable $e) {
-            // leave default
+            // Leave default.
         }
 
         // Resolve a displayName for user assignments via the user manager;

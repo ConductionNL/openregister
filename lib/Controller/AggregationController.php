@@ -102,11 +102,13 @@ class AggregationController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
         }
 
-        $response = new JSONResponse($result);
-        $response->addHeader(
-            'X-OR-Cache',
-            ($result['cached'] ?? false) === true ? 'hit' : 'miss'
-        );
+        $response    = new JSONResponse($result);
+        $cacheHeader = 'miss';
+        if (($result['cached'] ?? false) === true) {
+            $cacheHeader = 'hit';
+        }
+
+        $response->addHeader('X-OR-Cache', $cacheHeader);
         return $response;
     }//end aggregate()
 

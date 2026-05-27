@@ -163,7 +163,7 @@ class FlowLinkService
             throw new Exception('Operation already linked to this object', 409);
         }
 
-        $opRow = $this->fetchOperationRow($operationId);
+        $opRow = $this->fetchOperationRow(operationId: $operationId);
         if ($opRow === null) {
             throw new Exception('Flow operation not found', 404);
         }
@@ -235,7 +235,7 @@ class FlowLinkService
             $row = $link->jsonSerialize();
 
             if ($available === true) {
-                $opRow = $this->fetchOperationRow((int) $link->getOperationId());
+                $opRow = $this->fetchOperationRow(operationId: (int) $link->getOperationId());
                 if ($opRow !== null) {
                     $row['operationName']  = (string) ($opRow['name'] ?? $row['operationName']);
                     $row['operationClass'] = (string) ($opRow['class'] ?? $row['operationClass']);
@@ -244,8 +244,8 @@ class FlowLinkService
                     // flag (operations are always "live" once configured);
                     // we just surface that the row still exists.
                     $row['enabled']   = true;
-                    $row['events']    = $this->decodeJsonField($opRow['events'] ?? null);
-                    $row['checks']    = $this->decodeJsonField($opRow['checks'] ?? null);
+                    $row['events']    = $this->decodeJsonField(value: ($opRow['events'] ?? null));
+                    $row['checks']    = $this->decodeJsonField(value: ($opRow['checks'] ?? null));
                     $row['operation'] = (string) ($opRow['operation'] ?? '');
                 } else {
                     // Operation deleted in NC Flow — flag the link as
@@ -310,8 +310,8 @@ class FlowLinkService
                 'class'     => (string) ($row['class'] ?? ''),
                 'entity'    => (string) ($row['entity'] ?? ''),
                 'operation' => (string) ($row['operation'] ?? ''),
-                'events'    => $this->decodeJsonField($row['events'] ?? null),
-                'checks'    => $this->decodeJsonField($row['checks'] ?? null),
+                'events'    => $this->decodeJsonField(value: ($row['events'] ?? null)),
+                'checks'    => $this->decodeJsonField(value: ($row['checks'] ?? null)),
                 'enabled'   => true,
             ];
         }
@@ -372,7 +372,7 @@ class FlowLinkService
                 return $decoded;
             }
         } catch (Throwable $e) {
-            // fall through.
+            // Fall through.
         }
 
         return [];

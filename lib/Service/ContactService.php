@@ -270,7 +270,7 @@ class ContactService
         $org = null;
         if (isset($vcard->ORG) === true) {
             $value = (string) $vcard->ORG;
-            // vCard ORG often uses semicolon-separated component fields
+            // VCard ORG often uses semicolon-separated component fields
             // (`Acme;Engineering;Backend`) — surface only the primary
             // organisation name.
             $primary = trim(explode(';', $value)[0]);
@@ -385,10 +385,18 @@ class ContactService
         }
 
         // Parse vCard for cached fields.
-        $vcard       = Reader::read($card['carddata']);
-        $contactUid  = isset($vcard->UID) === true ? (string) $vcard->UID : '';
-        $displayName = isset($vcard->FN) === true ? (string) $vcard->FN : null;
-        $email       = null;
+        $vcard      = Reader::read($card['carddata']);
+        $contactUid = '';
+        if (isset($vcard->UID) === true) {
+            $contactUid = (string) $vcard->UID;
+        }
+
+        $displayName = null;
+        if (isset($vcard->FN) === true) {
+            $displayName = (string) $vcard->FN;
+        }
+
+        $email = null;
         if (isset($vcard->EMAIL) === true) {
             $email = (string) $vcard->EMAIL;
         }
@@ -675,7 +683,8 @@ class ContactService
      *
      * @throws Exception If no row is found for the (objectUuid, contactUid) pair.
      *
-     * @spec exclude Thin (objectUuid,contactUid)->linkId overload; resolves the row then delegates to the already-specced unlinkContact (contacts-actions#task-1).
+     * @spec exclude Thin (objectUuid,contactUid)->linkId overload; resolves the row then delegates to the
+     *              already-specced unlinkContact (contacts-actions#task-1).
      */
     public function unlinkContactByUid(string $objectUuid, string $contactUid): void
     {
@@ -687,7 +696,7 @@ class ContactService
             throw new Exception('Contact link not found', 404);
         }
 
-        $this->unlinkContact($link->getId());
+        $this->unlinkContact(linkId: $link->getId());
     }//end unlinkContactByUid()
 
     /**

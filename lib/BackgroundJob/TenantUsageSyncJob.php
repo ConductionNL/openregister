@@ -113,10 +113,19 @@ class TenantUsageSyncJob extends TimedJob
             $requestKey   = "or_quota_{$orgUuid}_{$hourBucket}";
             $bandwidthKey = "or_bw_{$orgUuid}_{$hourBucket}";
 
-            $requestCount   = apcu_fetch($requestKey, $reqSuccess);
-            $requestCount   = ($reqSuccess === true) ? (int) $requestCount : 0;
+            $requestCount = apcu_fetch($requestKey, $reqSuccess);
+            if ($reqSuccess !== true) {
+                $requestCount = 0;
+            } else {
+                $requestCount = (int) $requestCount;
+            }
+
             $bandwidthBytes = apcu_fetch($bandwidthKey, $bwSuccess);
-            $bandwidthBytes = ($bwSuccess === true) ? (int) $bandwidthBytes : 0;
+            if ($bwSuccess !== true) {
+                $bandwidthBytes = 0;
+            } else {
+                $bandwidthBytes = (int) $bandwidthBytes;
+            }
 
             if ($requestCount === 0 && $bandwidthBytes === 0) {
                 continue;

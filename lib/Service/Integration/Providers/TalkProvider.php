@@ -151,7 +151,7 @@ class TalkProvider extends AbstractIntegrationProvider
             try {
                 $links = $this->talkLinkMapper->findByObjectUuid($objectId);
                 if (count($links) > 0) {
-                    return $this->mapLinks($links);
+                    return $this->mapLinks(links: $links);
                 }
             } catch (Throwable $e) {
                 // Fall through to legacy marker scan.
@@ -184,7 +184,11 @@ class TalkProvider extends AbstractIntegrationProvider
 
         $out = [];
         foreach ($rooms as $room) {
-            $name = method_exists($room, 'getName') === true ? (string) ($room->getName() ?? '') : '';
+            $name = '';
+            if (method_exists($room, 'getName') === true) {
+                $name = (string) ($room->getName() ?? '');
+            }
+
             if (method_exists($room, 'getDisplayName') === true) {
                 $displayName = (string) $room->getDisplayName($user->getUID());
                 if ($displayName !== '') {
@@ -201,12 +205,20 @@ class TalkProvider extends AbstractIntegrationProvider
                 $lastActivity = $room->getLastActivity()->getTimestamp();
             }
 
-            $type     = method_exists($room, 'getType') === true ? (int) $room->getType() : null;
-            $token    = method_exists($room, 'getToken') === true ? (string) $room->getToken() : '';
-            $title    = $this->stripMarker($name, $marker);
-            $subtitle = $this->buildSubtitle($room, $type);
-            $participantCount = $this->resolveParticipantCount($participantService, $room);
-            $lastMessage      = $this->buildLastMessage($room);
+            $type = null;
+            if (method_exists($room, 'getType') === true) {
+                $type = (int) $room->getType();
+            }
+
+            $token = '';
+            if (method_exists($room, 'getToken') === true) {
+                $token = (string) $room->getToken();
+            }
+
+            $title            = $this->stripMarker(name: $name, marker: $marker);
+            $subtitle         = $this->buildSubtitle(room: $room, type: $type);
+            $participantCount = $this->resolveParticipantCount(participantService: $participantService, room: $room);
+            $lastMessage      = $this->buildLastMessage(room: $room);
 
             $out[] = [
                 'id'               => $token,
@@ -344,9 +356,20 @@ class TalkProvider extends AbstractIntegrationProvider
             return null;
         }
 
-        $text      = method_exists($comment, 'getMessage') === true ? (string) $comment->getMessage() : '';
-        $actorType = method_exists($comment, 'getActorType') === true ? (string) $comment->getActorType() : '';
-        $actorId   = method_exists($comment, 'getActorId') === true ? (string) $comment->getActorId() : '';
+        $text = '';
+        if (method_exists($comment, 'getMessage') === true) {
+            $text = (string) $comment->getMessage();
+        }
+
+        $actorType = '';
+        if (method_exists($comment, 'getActorType') === true) {
+            $actorType = (string) $comment->getActorType();
+        }
+
+        $actorId = '';
+        if (method_exists($comment, 'getActorId') === true) {
+            $actorId = (string) $comment->getActorId();
+        }
 
         $timestamp = null;
         if (method_exists($comment, 'getCreationDateTime') === true) {
@@ -389,7 +412,11 @@ class TalkProvider extends AbstractIntegrationProvider
                 }
             }
 
-            $token = (string) ($serialized['roomToken'] ?? '');
+            $token   = (string) ($serialized['roomToken'] ?? '');
+            $linkUrl = $serialized['url'] ?? null;
+            if ($linkUrl === null && $token !== '') {
+                $linkUrl = '/index.php/call/'.$token;
+            }
 
             $out[] = [
                 'id'               => $token,
@@ -401,7 +428,7 @@ class TalkProvider extends AbstractIntegrationProvider
                 // `unreadMessages` left null — see legacy list() docblock.
                 'unreadMessages'   => null,
                 'lastActivity'     => $lastActivityTs,
-                'url'              => $serialized['url'] ?? ($token !== '' ? '/index.php/call/'.$token : null),
+                'url'              => $linkUrl,
             ];
         }//end foreach
 
@@ -413,15 +440,23 @@ class TalkProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health
+     *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+        $status    = 'unavailable';
+        $message   = 'NC Talk (spreed) is not installed';
+        if ($installed === true) {
+            $status  = 'ok';
+            $message = null;
+        }
+
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Talk (spreed) is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

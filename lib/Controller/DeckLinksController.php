@@ -203,6 +203,16 @@ class DeckLinksController extends Controller
             $description = $this->request->getParam('description');
             $duedate     = $this->request->getParam('duedate');
 
+            $descriptionStr = null;
+            if ($description !== null) {
+                $descriptionStr = (string) $description;
+            }
+
+            $duedateStr = null;
+            if ($duedate !== null) {
+                $duedateStr = (string) $duedate;
+            }
+
             $link = $this->deckLinkService->createAndLinkCard(
                 $object->getUuid(),
                 (int) $object->getRegister(),
@@ -210,8 +220,8 @@ class DeckLinksController extends Controller
                 $boardId,
                 $stackId,
                 $title,
-                $description === null ? null : (string) $description,
-                $duedate === null ? null : (string) $duedate
+                $descriptionStr,
+                $duedateStr
             );
 
             return new JSONResponse($link->jsonSerialize(), 201);

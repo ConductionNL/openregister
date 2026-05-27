@@ -83,7 +83,7 @@ class BackfillCalendarLinksJob extends QueuedJob
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
     }//end __construct()
 
     /**
@@ -95,7 +95,8 @@ class BackfillCalendarLinksJob extends QueuedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec exclude Disabled-by-default one-time Tier-2 migration backfill, gated behind the `backfill_calendar_links` app-config flag; not a production capability surface.
+     * @spec exclude Disabled-by-default one-time Tier-2 migration backfill, gated behind the
+     *       `backfill_calendar_links` app-config flag; not a production capability surface.
      */
     protected function run($argument): void
     {
@@ -143,11 +144,26 @@ class BackfillCalendarLinksJob extends QueuedJob
                             $link->setRegisterId((int) ($event['registerId'] ?? 0));
                             $link->setSchemaId((int) ($event['schemaId'] ?? 0));
                             $link->setCalendarUri('');
-                            $link->setCalendarId(isset($event['calendarId']) ? (int) $event['calendarId'] : null);
+                            $calendarId = null;
+                            if (isset($event['calendarId']) === true) {
+                                $calendarId = (int) $event['calendarId'];
+                            }
+
+                            $summary = null;
+                            if (isset($event['summary']) === true) {
+                                $summary = (string) $event['summary'];
+                            }
+
+                            $location = null;
+                            if (isset($event['location']) === true) {
+                                $location = (string) $event['location'];
+                            }
+
+                            $link->setCalendarId($calendarId);
                             $link->setEventUid($eventUid);
                             $link->setEventUri((string) ($event['id'] ?? ''));
-                            $link->setSummary(isset($event['summary']) ? (string) $event['summary'] : null);
-                            $link->setLocation(isset($event['location']) ? (string) $event['location'] : null);
+                            $link->setSummary($summary);
+                            $link->setLocation($location);
                             if (isset($event['dtstart']) === true && $event['dtstart'] !== null) {
                                 $link->setDtstart(new DateTime((string) $event['dtstart']));
                             }

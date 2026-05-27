@@ -86,7 +86,8 @@ class ObjectServiceMapperAdapter
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec exclude Facade plumbing: argument-normalisation + register/schema injection then delegate to ObjectService::findAll; no standalone contract.
+     * @spec exclude Facade plumbing: argument-normalisation + register/schema injection then delegate to
+     *              ObjectService::findAll; no standalone contract.
      */
     public function findAll(
         array $config=[],
@@ -182,7 +183,8 @@ class ObjectServiceMapperAdapter
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $validate kept for interface compatibility.
      *
-     * @spec exclude Facade plumbing: PUT/PATCH merge then delegate to ObjectService::saveObject; no standalone contract beyond ObjectService's save path.
+     * @spec exclude Facade plumbing: PUT/PATCH merge then delegate to ObjectService::saveObject; no standalone
+     *              contract beyond ObjectService's save path.
      */
     public function updateFromArray(
         int|string $id,
@@ -252,7 +254,8 @@ class ObjectServiceMapperAdapter
      *         bound to a specific `(register, schema)` and the UUID is not
      *         present in that magic table.
      *
-     * @spec exclude Facade plumbing: id-extraction then delegate to ObjectService::deleteObject (scoped delete owned by ObjectService); no standalone contract.
+     * @spec exclude Facade plumbing: id-extraction then delegate to ObjectService::deleteObject (scoped delete
+     *              owned by ObjectService); no standalone contract.
      */
     public function delete(array $criteria): bool
     {
@@ -275,7 +278,11 @@ class ObjectServiceMapperAdapter
      */
     public function getSchema(): ?int
     {
-        return $this->schema !== null ? (int) $this->schema : null;
+        if ($this->schema !== null) {
+            return (int) $this->schema;
+        }
+
+        return null;
     }//end getSchema()
 
     /**
@@ -285,7 +292,11 @@ class ObjectServiceMapperAdapter
      */
     public function getRegister(): ?int
     {
-        return $this->register !== null ? (int) $this->register : null;
+        if ($this->register !== null) {
+            return (int) $this->register;
+        }
+
+        return null;
     }//end getRegister()
 
     /**

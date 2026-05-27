@@ -225,12 +225,16 @@ class TaskService
             return stripos($components, 'VTODO') !== false;
         } else if (is_iterable($components) === true) {
             foreach ($components as $comp) {
-                $compName = (is_string($comp) === true) ? $comp : (string) $comp;
+                $compName = (string) $comp;
+                if (is_string($comp) === true) {
+                    $compName = $comp;
+                }
+
                 if (strtoupper($compName) === 'VTODO') {
                     return true;
                 }
             }
-        }
+        }//end if
 
         return false;
     }//end calendarSupportsVtodo()

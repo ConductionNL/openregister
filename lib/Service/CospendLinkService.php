@@ -471,7 +471,8 @@ class CospendLinkService
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec exclude ADR-019 Tier-2 integration link-service facade; the linked-entries listing contract is owned by the integration-cospend capability.
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the linked-entries listing contract is owned
+     *              by the integration-cospend capability.
      */
     public function getLinkedEntries(string $objectUuid): array
     {

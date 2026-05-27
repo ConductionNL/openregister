@@ -102,9 +102,14 @@ class DsarController extends Controller
         $type = $this->request->getParam(key: 'type');
         $mode = (string) ($this->request->getParam(key: 'mode') ?? 'exact');
 
+        $typeString = null;
+        if ($type !== null && $type !== '') {
+            $typeString = (string) $type;
+        }
+
         $results = $this->dsarService->findObjectsForSubject(
             subject: $subject,
-            type: ($type !== null && $type !== '') ? (string) $type : null,
+            type: $typeString,
             mode: $mode
         );
 
@@ -146,9 +151,14 @@ class DsarController extends Controller
         $type = $this->request->getParam(key: 'type');
         $mode = (string) ($this->request->getParam(key: 'mode') ?? 'exact');
 
+        $typeString = null;
+        if ($type !== null && $type !== '') {
+            $typeString = (string) $type;
+        }
+
         $results = $this->dsarService->findObjectsForSubject(
             subject: $subject,
-            type: ($type !== null && $type !== '') ? (string) $type : null,
+            type: $typeString,
             mode: $mode
         );
 
@@ -202,9 +212,14 @@ class DsarController extends Controller
             FILTER_VALIDATE_BOOLEAN
         );
 
+        $typeString = null;
+        if ($type !== null && $type !== '') {
+            $typeString = (string) $type;
+        }
+
         $summary = $this->dsarService->eraseObjectsForSubject(
             subject: $subject,
-            type: ($type !== null && $type !== '') ? (string) $type : null,
+            type: $typeString,
             dryRun: $dryRun
         );
 

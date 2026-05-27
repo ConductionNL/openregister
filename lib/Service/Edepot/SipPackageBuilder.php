@@ -187,7 +187,11 @@ class SipPackageBuilder
         int $sequenceNumber,
         int $totalPackages
     ): string {
-        $suffix  = $totalPackages > 1 ? "-part{$sequenceNumber}" : '';
+        $suffix = '';
+        if ($totalPackages > 1) {
+            $suffix = "-part{$sequenceNumber}";
+        }
+
         $zipPath = $this->tempManager->getTemporaryFile(".sip{$suffix}.zip");
 
         $zip    = new ZipArchive();
@@ -214,7 +218,11 @@ class SipPackageBuilder
 
             if (empty($files) === false) {
                 foreach ($files as $file) {
-                    $subDir   = ($file['isRendition'] === true) ? 'rendition' : 'original';
+                    $subDir = 'original';
+                    if ($file['isRendition'] === true) {
+                        $subDir = 'rendition';
+                    }
+
                     $filePath = "{$objectDir}/content/{$subDir}/{$file['name']}";
 
                     if (file_exists($file['path']) === true) {
@@ -342,8 +350,12 @@ class SipPackageBuilder
                 $fileCounter++;
 
                 $isRendition = ($file['isRendition'] === true);
-                $subDir      = ($isRendition === true) ? 'rendition' : 'original';
-                $filePath    = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
+                $subDir      = 'original';
+                if ($isRendition === true) {
+                    $subDir = 'rendition';
+                }
+
+                $filePath = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
 
                 $fileElement = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
                 $fileElement->setAttribute('ID', $fileId);
@@ -432,7 +444,11 @@ class SipPackageBuilder
                 $objIdType->textContent = 'filepath';
                 $objId->appendChild($objIdType);
 
-                $subDir     = ($file['isRendition'] === true) ? 'rendition' : 'original';
+                $subDir = 'original';
+                if ($file['isRendition'] === true) {
+                    $subDir = 'rendition';
+                }
+
                 $objIdValue = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:objectIdentifierValue');
                 $objIdValue->textContent = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
                 $objId->appendChild($objIdValue);

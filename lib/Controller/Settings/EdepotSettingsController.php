@@ -199,11 +199,16 @@ class EdepotSettingsController extends Controller
             $transport = $this->resolveTransport(type: ($config['transport'] ?? 'rest_api'));
             $result    = $transport->testConnection($config);
 
+            $message = 'Connection failed';
+            if ($result === true) {
+                $message = 'Connection successful';
+            }
+
             return new JSONResponse(
                     data: [
                         'success'   => $result,
                         'transport' => $transport->getName(),
-                        'message'   => ($result === true) ? 'Connection successful' : 'Connection failed',
+                        'message'   => $message,
                     ]
                     );
         } catch (\Exception $e) {

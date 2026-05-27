@@ -197,7 +197,10 @@ class ReportsController extends Controller
     private function loadDashboard(string $identifier): ObjectEntity
     {
         $identifier = trim($identifier);
-        $arg        = ctype_digit($identifier) === true ? (int) $identifier : $identifier;
+        $arg        = $identifier;
+        if (ctype_digit($identifier) === true) {
+            $arg = (int) $identifier;
+        }
 
         // SECURITY: standard RBAC + multitenancy filtering must apply on every
         // dashboard load — render/preview surface user-controlled HTML/XLSX/PDF

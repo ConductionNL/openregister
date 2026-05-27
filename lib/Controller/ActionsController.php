@@ -168,8 +168,15 @@ class ActionsController extends Controller
         try {
             $params = $this->request->getParams();
 
-            $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : null;
-            $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : null;
+            $limit = null;
+            if (isset($params['_limit']) === true) {
+                $limit = (int) $params['_limit'];
+            }
+
+            $offset = null;
+            if (isset($params['_offset']) === true) {
+                $offset = (int) $params['_offset'];
+            }
 
             if (isset($params['_page']) === true && $limit !== null) {
                 $offset = ((int) $params['_page'] - 1) * $limit;
@@ -505,8 +512,15 @@ class ActionsController extends Controller
     {
         try {
             $params = $this->request->getParams();
-            $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : 25;
-            $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : 0;
+            $limit  = 25;
+            if (isset($params['_limit']) === true) {
+                $limit = (int) $params['_limit'];
+            }
+
+            $offset = 0;
+            if (isset($params['_offset']) === true) {
+                $offset = (int) $params['_offset'];
+            }
 
             $logs = $this->actionLogMapper->findByActionId(
                 actionId: $id,

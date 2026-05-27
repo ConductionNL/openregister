@@ -310,8 +310,13 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
             $registerTitle = $this->resolveRegisterName(registerId: $registerId);
 
             // Resolve deep link URL.
+            $selfArray = [];
+            if (is_array($selfData) === true) {
+                $selfArray = $selfData;
+            }
+
             $flatData = array_merge(
-                is_array($selfData) === true ? $selfData : [],
+                $selfArray,
                 ['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
             );
 

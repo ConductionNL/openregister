@@ -1323,7 +1323,11 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
         } catch (Exception $e) {
-            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
+            $statusCode = 400;
+            if (str_contains($e->getMessage(), 'not found') === true) {
+                $statusCode = 404;
+            }
+
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end copy()
@@ -1518,7 +1522,11 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
         } catch (Exception $e) {
-            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
+            $statusCode = 400;
+            if (str_contains($e->getMessage(), 'not found') === true) {
+                $statusCode = 404;
+            }
+
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end restoreVersion()
@@ -1570,7 +1578,11 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
-            $statusCode = str_contains($e->getMessage(), 'locked') === true ? 423 : 400;
+            $statusCode = 400;
+            if (str_contains($e->getMessage(), 'locked') === true) {
+                $statusCode = 423;
+            }
+
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end lock()
@@ -1608,10 +1620,15 @@ class FilesController extends Controller
             $result = $this->fileService->getLockHandler()->unlockFile($fileId, $force);
 
             // Audit trail entry: distinguish force-unlock from regular unlock.
+            $unlockAction = 'file.unlocked';
+            if ($force === true) {
+                $unlockAction = 'file.force_unlocked';
+            }
+
             $this->fileService->getAuditHandler()->logFileAction(
                 object: $object,
                 fileId: $fileId,
-                action: $force === true ? 'file.force_unlocked' : 'file.unlocked',
+                action: $unlockAction,
                 data: ["force" => $force]
             );
 
@@ -1674,7 +1691,10 @@ class FilesController extends Controller
             );
 
             // Return 207 if there were partial failures.
-            $statusCode = $result["summary"]["failed"] > 0 ? 207 : 200;
+            $statusCode = 200;
+            if ($result["summary"]["failed"] > 0) {
+                $statusCode = 207;
+            }
 
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (Exception $e) {

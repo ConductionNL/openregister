@@ -208,7 +208,7 @@ class TasksProvider extends AbstractIntegrationProvider
         $data = [
             'summary'     => (string) ($payload['summary'] ?? ''),
             'description' => (string) ($payload['description'] ?? ''),
-            'priority'    => isset($payload['priority']) === true ? (int) $payload['priority'] : 0,
+            'priority'    => (int) ($payload['priority'] ?? 0),
             'status'      => (string) ($payload['status'] ?? 'NEEDS-ACTION'),
         ];
         if (isset($payload['due']) === true) {

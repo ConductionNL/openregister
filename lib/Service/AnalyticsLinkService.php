@@ -474,11 +474,21 @@ class AnalyticsLinkService
             return null;
         }
 
+        $type      = null;
+        $subheader = null;
+        if (isset($report['type']) === true) {
+            $type = (string) $report['type'];
+        }
+
+        if (isset($report['subheader']) === true) {
+            $subheader = (string) $report['subheader'];
+        }
+
         return [
             'id'        => $reportId,
             'name'      => $name,
-            'type'      => isset($report['type']) === true ? (string) $report['type'] : null,
-            'subheader' => isset($report['subheader']) === true ? (string) $report['subheader'] : null,
+            'type'      => $type,
+            'subheader' => $subheader,
             'url'       => $this->reportDeepLink(reportId: $reportId),
         ];
     }//end pickerRowFromReport()
@@ -561,10 +571,20 @@ class AnalyticsLinkService
             return null;
         }
 
+        $type2      = null;
+        $subheader2 = null;
+        if (isset($report['type']) === true) {
+            $type2 = (string) $report['type'];
+        }
+
+        if (isset($report['subheader']) === true) {
+            $subheader2 = (string) $report['subheader'];
+        }
+
         return [
             'title'      => (string) ($report['name'] ?? ''),
-            'type'       => isset($report['type']) === true ? (string) $report['type'] : null,
-            'subheader'  => isset($report['subheader']) === true ? (string) $report['subheader'] : null,
+            'type'       => $type2,
+            'subheader'  => $subheader2,
             'createdAt'  => $this->parseTimestamp(value: ($report['created_at'] ?? null)),
             'modifiedAt' => $this->parseTimestamp(value: ($report['modified_at'] ?? ($report['updated_at'] ?? null))),
         ];

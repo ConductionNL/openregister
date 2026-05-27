@@ -91,7 +91,10 @@ final class AggregationAnnotationValidator
         }
 
         $properties = ($schema['properties'] ?? []);
-        $propKeys   = is_array($properties) === true ? array_keys($properties) : [];
+        $propKeys   = [];
+        if (is_array($properties) === true) {
+            $propKeys = array_keys($properties);
+        }
 
         $errors = [];
         foreach ($aggregations as $name => $spec) {

@@ -127,7 +127,8 @@ class ApplicationsController extends Controller
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
      *
-     * @spec exclude Trivial SPA-mount route stub: returns the Vue index template for client-side routing. SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+     * @spec exclude Trivial SPA-mount route stub: returns the Vue index template for client-side routing.
+     *              SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function page(): TemplateResponse
     {
@@ -461,7 +462,8 @@ class ApplicationsController extends Controller
      *
      * @psalm-return int|null
      *
-     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
+     *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
      */
     private function extractLimit(array $params): ?int
     {
@@ -486,7 +488,8 @@ class ApplicationsController extends Controller
      *
      * @psalm-return int|null
      *
-     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
+     *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
      */
     private function extractOffset(array $params): ?int
     {
@@ -511,7 +514,8 @@ class ApplicationsController extends Controller
      *
      * @psalm-return int|null
      *
-     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
+     *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
      */
     private function extractPage(array $params): ?int
     {
