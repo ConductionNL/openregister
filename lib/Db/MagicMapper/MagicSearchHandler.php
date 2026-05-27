@@ -412,7 +412,8 @@ class MagicSearchHandler
         $objectConditions = $this->buildObjectFilterConditionsSql(
             query: $query,
             schema: $schema,
-            connection: $connection
+            connection: $connection,
+            isPostgres: $isPostgres
         );
         $conditions       = array_merge($conditions, $objectConditions);
 
@@ -530,16 +531,26 @@ class MagicSearchHandler
     /**
      * Build object field filter SQL conditions for non-reserved query parameters
      *
+     * Column identifiers are quoted via quoteIdentifier() so that schema properties
+     * named with SQL reserved words (e.g. 'status', 'case', 'order', 'group', 'key')
+     * do not break the generated query. Mirrors the same defence the search path
+     * already applies in buildSearchConditionSql().
+     *
      * @param array  $query      Full query array
      * @param Schema $schema     Schema for property type lookup
      * @param object $connection Database connection for value quoting
+     * @param bool   $isPostgres Whether the active platform is PostgreSQL (selects "" vs ``)
      *
      * @return string[] Array of SQL WHERE conditions
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
-    private function buildObjectFilterConditionsSql(array $query, Schema $schema, object $connection): array
-    {
+    private function buildObjectFilterConditionsSql(
+        array $query,
+        Schema $schema,
+        object $connection,
+        bool $isPostgres
+    ): array {
         $conditions     = [];
         $reservedParams = $this->getReservedParams();
         $properties     = $schema->getProperties() ?? [];
@@ -561,12 +572,13 @@ class MagicSearchHandler
             }
 
             $columnName   = $this->sanitizeColumnName(name: $key);
+            $quotedCol    = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
             $propertyType = $properties[$key]['type'] ?? 'string';
 
             // Handle array-type properties (JSONB columns) with JSON containment operator.
             if ($propertyType === 'array') {
                 $conditions[] = $this->buildArrayPropertyConditionSql(
-                    columnName: $columnName,
+                    columnName: $quotedCol,
                     value: $value,
                     connection: $connection
                 );
@@ -578,19 +590,19 @@ class MagicSearchHandler
                 $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
                 if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
                     if (isset($value['gte']) === true) {
-                        $conditions[] = "{$columnName} >= ".$connection->quote((string) $value['gte']);
+                        $conditions[] = "{$quotedCol} >= ".$connection->quote((string) $value['gte']);
                     }
 
                     if (isset($value['lte']) === true) {
-                        $conditions[] = "{$columnName} <= ".$connection->quote((string) $value['lte']);
+                        $conditions[] = "{$quotedCol} <= ".$connection->quote((string) $value['lte']);
                     }
 
                     if (isset($value['gt']) === true) {
-                        $conditions[] = "{$columnName} > ".$connection->quote((string) $value['gt']);
+                        $conditions[] = "{$quotedCol} > ".$connection->quote((string) $value['gt']);
                     }
 
                     if (isset($value['lt']) === true) {
-                        $conditions[] = "{$columnName} < ".$connection->quote((string) $value['lt']);
+                        $conditions[] = "{$quotedCol} < ".$connection->quote((string) $value['lt']);
                     }
 
                     if (isset($value['in']) === true) {
@@ -600,21 +612,21 @@ class MagicSearchHandler
                         }
 
                         $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $inValues);
-                        $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+                        $conditions[] = "{$quotedCol} IN (".implode(', ', $quotedValues).')';
                     }
                 } else if (empty($value) === false) {
                     $quotedValues = array_map(
                         fn($v) => $connection->quote((string) $v),
                         $value
                     );
-                    $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+                    $conditions[] = "{$quotedCol} IN (".implode(', ', $quotedValues).')';
                 }//end if
 
                 continue;
             }//end if
 
             // Simple equality filter.
-            $conditions[] = "{$columnName} = ".$connection->quote((string) $value);
+            $conditions[] = "{$quotedCol} = ".$connection->quote((string) $value);
         }//end foreach
 
         return $conditions;

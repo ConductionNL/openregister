@@ -212,9 +212,10 @@ class FilesControllerTest extends TestCase
     public function testShowFileNotFoundFallbackViaOwner(): void
     {
         $object = $this->getMockBuilder(ObjectEntity::class)
-            ->addMethods(['getOwner'])
+            ->addMethods(['getOwner', 'getUuid'])
             ->getMock();
         $object->method('getOwner')->willReturn('testuser');
+        $object->method('getUuid')->willReturn('object-uuid-1');
         $this->setupObjectServiceMocks($object);
 
         $this->fileService->method('getFile')->willReturn(null);
@@ -231,12 +232,18 @@ class FilesControllerTest extends TestCase
                 return null;
             });
 
+        // The resolved file's parent folder name must match the object UUID
+        // so the IDOR guard accepts it as belonging to this object (issue #1956 c).
+        $objectFolder = $this->createMock(Folder::class);
+        $objectFolder->method('getName')->willReturn('object-uuid-1');
+
         $file = $this->createMock(File::class);
         $resource = fopen('php://memory', 'r');
         $file->method('fopen')->willReturn($resource);
         $file->method('getMimeType')->willReturn('image/png');
         $file->method('getName')->willReturn('logo.png');
         $file->method('getSize')->willReturn(1024);
+        $file->method('getParent')->willReturn($objectFolder);
 
         $userFolder = $this->createMock(Folder::class);
         $userFolder->method('getById')->willReturn([$file]);
@@ -251,12 +258,54 @@ class FilesControllerTest extends TestCase
         fclose($resource);
     }
 
+    /**
+     * Regression guard for issue #1956 part (c) — sibling-object IDOR.
+     *
+     * The fallback resolves a file (F1) that exists in the owner's user folder
+     * but lives under a DIFFERENT object's folder (uuid 'other-object-uuid').
+     * Before the fix, this returned the file content unchecked; after the fix
+     * the guard must reject it and return 404.
+     */
+    public function testShowFallbackRejectsSiblingObjectFile(): void
+    {
+        $object = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getOwner', 'getUuid'])
+            ->getMock();
+        $object->method('getOwner')->willReturn('testuser');
+        $object->method('getUuid')->willReturn('object-uuid-A');
+        $this->setupObjectServiceMocks($object);
+
+        $this->fileService->method('getFile')->willReturn(null);
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('testuser');
+        $this->userManager->method('get')->willReturn($user);
+
+        // The fallback finds the file, but its parent folder is a DIFFERENT object's folder.
+        $otherObjectFolder = $this->createMock(Folder::class);
+        $otherObjectFolder->method('getName')->willReturn('other-object-uuid-B');
+
+        $file = $this->createMock(File::class);
+        $file->method('getParent')->willReturn($otherObjectFolder);
+
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([$file]);
+        $this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+        $result = $this->controller->show('reg1', 'schema1', 'obj1', 42);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertEquals(404, $result->getStatus());
+        $this->assertEquals(['error' => 'File not found'], $result->getData());
+    }
+
     public function testShowFileNotFoundFallbackViaSystemUser(): void
     {
         $object = $this->getMockBuilder(ObjectEntity::class)
-            ->addMethods(['getOwner'])
+            ->addMethods(['getOwner', 'getUuid'])
             ->getMock();
         $object->method('getOwner')->willReturn(null);
+        $object->method('getUuid')->willReturn('sysobj-uuid');
         $this->setupObjectServiceMocks($object);
 
         $this->fileService->method('getFile')->willReturn(null);
@@ -273,10 +322,14 @@ class FilesControllerTest extends TestCase
                 return null;
             });
 
+        $objectFolder = $this->createMock(Folder::class);
+        $objectFolder->method('getName')->willReturn('sysobj-uuid');
+
         $file = $this->createMock(File::class);
         $resource = fopen('php://memory', 'r');
         $file->method('fopen')->willReturn($resource);
         $file->method('getMimeType')->willReturn('application/pdf');
+        $file->method('getParent')->willReturn($objectFolder);
         $file->method('getName')->willReturn('doc.pdf');
         $file->method('getSize')->willReturn(2048);
 
