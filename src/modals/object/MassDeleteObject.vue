@@ -121,8 +121,11 @@ export default {
 	},
 	methods: {
 		initializeSelection() {
-			// Get selected objects from the store or navigation context
-			this.selectedObjects = objectStore.selectedObjects || []
+			const selectedIds = objectStore.selectedObjects || []
+			const collection = objectStore.searchCollection || []
+			this.selectedObjects = collection
+				.map(obj => ({ ...obj, id: obj['@self']?.id ?? obj.id }))
+				.filter(obj => selectedIds.includes(obj.id) || selectedIds.includes(String(obj.id)))
 			if (this.selectedObjects.length === 0) {
 				this.closeDialog()
 			}
@@ -149,26 +152,47 @@ export default {
 		async deleteObject() {
 			this.loading = true
 
-			objectStore.massDeleteObject(this.selectedObjects.map(obj => obj.id))
-				.then((result) => {
-					this.result = result
-					this.success = result.successfulIds.length > 0
-					this.error = result.failedIds.length > 0
-					if (result.successfulIds.length > 0) {
-						// Clear selected objects and refresh the object list
-						objectStore.selectedObjects = []
-						objectStore.refreshObjectList()
+			try {
+				const firstObj = this.selectedObjects[0]
+				const self = firstObj?.['@self']
+				const register = self?.register
+				const schema = self?.schema
 
-						this.closeModalTimeout = setTimeout(() => {
-							this.closeDialog()
-						}, 2000)
-					}
-				}).catch((error) => {
-					this.success = false
-					this.error = error.message || t('openregister', 'An error occurred while deleting the object')
-				}).finally(() => {
-					this.loading = false
-				})
+				if (!register || !schema) {
+					throw new Error('Objects are missing required metadata (register or schema)')
+				}
+
+				const type = objectStore.createObjectTypeSlug(register, schema)
+				if (!objectStore.objectTypes.includes(type)) {
+					objectStore.registerObjectType(type, schema, register)
+				}
+
+				const ids = this.selectedObjects.map(obj => obj['@self']?.id ?? obj.id)
+
+				objectStore.deleteObjects(type, ids)
+					.then((result) => {
+						this.result = result
+						this.success = result.successfulIds.length > 0
+						this.error = result.failedIds.length > 0
+						if (result.successfulIds.length > 0) {
+							objectStore.clearSelectedObjects()
+							objectStore.refetchSearchCollection()
+
+							this.closeModalTimeout = setTimeout(() => {
+								this.closeDialog()
+							}, 2000)
+						}
+					}).catch((error) => {
+						this.success = false
+						this.error = error.message || 'An error occurred while deleting the objects'
+					}).finally(() => {
+						this.loading = false
+					})
+			} catch (error) {
+				this.success = false
+				this.error = error.message || 'An error occurred while deleting the objects'
+				this.loading = false
+			}
 		},
 	},
 }
