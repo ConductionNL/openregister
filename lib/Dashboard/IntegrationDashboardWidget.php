@@ -139,6 +139,11 @@ class IntegrationDashboardWidget implements IWidget, IIconWidget
      * leaves, and rendering {@see CnIntegrationWidgetGrid}.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Util::addScript() is the
+     *   canonical Nextcloud API for enqueuing scripts from an IWidget::load()
+     *   implementation; no injectable alternative (IUtil, etc.) exists in the
+     *   NC AppFramework.
      */
     public function load(): void
     {

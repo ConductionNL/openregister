@@ -122,29 +122,39 @@ final class PaginatedResult
 
         // Envelope shape: has an explicit items/results key.
         if (array_key_exists('items', $value) === true || array_key_exists('results', $value) === true) {
-            $items = $value['items'] ?? $value['results'] ?? [];
-            if (is_array($items) === false) {
-                $items = [];
-            }
-
-            $total = $items;
-            if (array_key_exists('total', $value) === true && is_numeric($value['total']) === true) {
-                $total = (int) $value['total'];
-            } else {
-                $total = count($items);
-            }
-
-            $nextCursor = null;
-            if (array_key_exists('nextCursor', $value) === true && $value['nextCursor'] !== null) {
-                $nextCursor = (string) $value['nextCursor'];
-            }
-
-            return new self(items: array_values($items), total: $total, nextCursor: $nextCursor);
+            return self::fromEnvelope(value: $value);
         }
 
         // Flat list: numeric-keyed array of rows.
         return new self(items: array_values($value), total: count($value), nextCursor: null);
     }//end fromMixed()
+
+    /**
+     * Parse an envelope-shaped array (has `items` or `results` key) into a PaginatedResult.
+     *
+     * @param array<string,mixed> $value The envelope array.
+     *
+     * @return self
+     */
+    private static function fromEnvelope(array $value): self
+    {
+        $items = $value['items'] ?? $value['results'] ?? [];
+        if (is_array($items) === false) {
+            $items = [];
+        }
+
+        $total = count($items);
+        if (array_key_exists('total', $value) === true && is_numeric($value['total']) === true) {
+            $total = (int) $value['total'];
+        }
+
+        $nextCursor = null;
+        if (array_key_exists('nextCursor', $value) === true && $value['nextCursor'] !== null) {
+            $nextCursor = (string) $value['nextCursor'];
+        }
+
+        return new self(items: array_values($items), total: $total, nextCursor: $nextCursor);
+    }//end fromEnvelope()
 
     /**
      * Serialize to the canonical wire shape.

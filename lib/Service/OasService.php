@@ -860,12 +860,8 @@ class OasService
         if (isset($cleanDef['items']) === true) {
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
-                $firstItem = $cleanDef['items'][0] ?? null;
-                if (empty($firstItem) === false) {
-                    $cleanDef['items'] = $firstItem;
-                } else {
-                    $cleanDef['items'] = ['type' => 'string'];
-                }
+                $firstItem         = $cleanDef['items'][0] ?? null;
+                $cleanDef['items'] = (empty($firstItem) === false) ? $firstItem : ['type' => 'string'];
             }
 
             if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {

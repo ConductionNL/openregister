@@ -110,6 +110,8 @@ class PollsProvider extends AbstractIntegrationProvider
      * @return array<int,array<string,mixed>>
      *
      * @spec openspec/changes/integration-polls/tasks.md
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) AbstractIntegrationProvider::list() mandates (register, schema, objectId, filters); $register and $schema are unused because Polls links are stored per-object-uuid only, but the interface signature must match.
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -194,6 +196,8 @@ class PollsProvider extends AbstractIntegrationProvider
      * @param int $pollId Poll primary key.
      *
      * @return array<int,array{id:int,text:string,votes:int}>
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $vq is the query-builder variable for the inner vote-count query; it is intentionally distinct from $qb (the outer options query) to make the two nested queries readable in sequence.
      */
     private function fetchOptionsWithCounts(int $pollId): array
     {

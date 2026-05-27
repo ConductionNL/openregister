@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $_multitenancy boolean flag is part of the public API contract shared with RegisterMapper::findAll/find; the method signature must match callers that explicitly pass `false` to bypass multitenancy for admin/repair contexts.
  */
 class RegisterService
 {
@@ -392,6 +392,8 @@ class RegisterService
      * @psalm-return array<int, array{total: int}>
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) getSchemaObjectCounts() builds a UNION SQL query across N schema magic-tables with platform-specific CAST syntax (Postgres vs MariaDB/MySQL), processes the result set, and backfills zero-stats for missing tables in one pass; splitting would require multiple DB round-trips or passing the DB connection to sub-helpers.
      */
     public function getSchemaObjectCounts(int $registerId, array $schemas): array
     {

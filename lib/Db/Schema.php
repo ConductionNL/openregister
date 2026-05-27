@@ -1714,7 +1714,7 @@ class Schema extends Entity implements JsonSerializable
                 // `\OC::$server` static accessor — collecting on
                 // the entity and bridging through the mapper is
                 // the cleanest path that still surfaces a signal.
-                $this->droppedAnnotationKeys[] = (string) $key;
+                $this->droppedKeys[] = (string) $key;
             }//end if
         }//end foreach
 
@@ -1722,15 +1722,15 @@ class Schema extends Entity implements JsonSerializable
     }//end validateConfigurationArray()
 
     /**
-     * R07: dropped `x-openregister-*` keys collected during the most
-     * recent `validateConfigurationArray()` pass. SchemaMapper reads
+     * Dropped `x-openregister-*` annotation keys collected during the most
+     * recent `validateConfigurationArray()` pass (R07). SchemaMapper reads
      * this after `setConfiguration()` and emits a logger->warning()
      * for each entry so operators see a signal without us having to
      * inject a logger into the entity itself.
      *
      * @var array<int, string>
      */
-    private array $droppedAnnotationKeys = [];
+    private array $droppedKeys = [];
 
     /**
      * Return + reset the list of dropped annotation keys.
@@ -1744,8 +1744,8 @@ class Schema extends Entity implements JsonSerializable
      */
     public function consumeDroppedAnnotationKeys(): array
     {
-        $dropped = $this->droppedAnnotationKeys;
-        $this->droppedAnnotationKeys = [];
+        $dropped = $this->droppedKeys;
+        $this->droppedKeys = [];
         return $dropped;
     }//end consumeDroppedAnnotationKeys()
 

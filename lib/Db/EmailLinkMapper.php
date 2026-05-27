@@ -238,14 +238,21 @@ class EmailLinkMapper extends QBMapper
 
         if ($mailMessageUid === null) {
             $qb->andWhere($qb->expr()->isNull('mail_message_uid'));
-        } else {
-            $qb->andWhere(
-                $qb->expr()->eq(
-                    'mail_message_uid',
-                    $qb->createNamedParameter($mailMessageUid)
-                )
-            );
+            try {
+                return $this->findEntity(query: $qb);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                return null;
+            } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+                return null;
+            }
         }
+
+        $qb->andWhere(
+            $qb->expr()->eq(
+                'mail_message_uid',
+                $qb->createNamedParameter($mailMessageUid)
+            )
+        );
 
         try {
             return $this->findEntity(query: $qb);

@@ -43,7 +43,13 @@ use OCP\IRequest;
  * @psalm-type     TemplateName = 'index'
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods) Every public method is a one-liner
+ *     SPA-mount route stub required by the NC AppFramework router: each history-
+ *     mode deep-link path needs its own named action so OC\Route\Router does not
+ *     drop duplicate route names. Splitting into multiple controllers would not
+ *     reduce complexity and would scatter the route registration.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Same reason as TooManyMethods
+ *     above: each SPA route requires its own public NC controller action.
  */
 class UiController extends Controller
 {

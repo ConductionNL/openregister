@@ -55,15 +55,15 @@ class CollectiveLinksController extends Controller
     /**
      * Constructor.
      *
-     * @param string                $appName               App id.
-     * @param IRequest              $request               HTTP request.
-     * @param CollectiveLinkService $collectiveLinkService Backing service.
-     * @param ObjectService         $objectService         OR object resolver.
+     * @param string                $appName      App id.
+     * @param IRequest              $request      HTTP request.
+     * @param CollectiveLinkService $linkService  Backing service.
+     * @param ObjectService         $objectService OR object resolver.
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly CollectiveLinkService $collectiveLinkService,
+        private readonly CollectiveLinkService $linkService,
         private readonly ObjectService $objectService,
     ) {
         parent::__construct(appName: $appName, request: $request);
@@ -85,7 +85,7 @@ class CollectiveLinksController extends Controller
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
-        if ($this->collectiveLinkService->isCollectivesAvailable() === false) {
+        if ($this->linkService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -98,7 +98,7 @@ class CollectiveLinksController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $results = $this->collectiveLinkService->getLinkedPages($object->getUuid());
+            $results = $this->linkService->getLinkedPages($object->getUuid());
 
             return new JSONResponse(
                     [
@@ -131,7 +131,7 @@ class CollectiveLinksController extends Controller
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
-        if ($this->collectiveLinkService->isCollectivesAvailable() === false) {
+        if ($this->linkService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -149,7 +149,7 @@ class CollectiveLinksController extends Controller
                 return new JSONResponse(['error' => 'pageId is required'], 400);
             }
 
-            $link = $this->collectiveLinkService->linkPage(
+            $link = $this->linkService->linkPage(
                 $object->getUuid(),
                 (int) $object->getRegister(),
                 (int) $object->getSchema(),
@@ -182,7 +182,7 @@ class CollectiveLinksController extends Controller
      */
     public function createAndLink(string $register, string $schema, string $id): JSONResponse
     {
-        if ($this->collectiveLinkService->isCollectivesAvailable() === false) {
+        if ($this->linkService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -205,7 +205,7 @@ class CollectiveLinksController extends Controller
                 return new JSONResponse(['error' => 'title is required'], 400);
             }
 
-            $link = $this->collectiveLinkService->createAndLinkPage(
+            $link = $this->linkService->createAndLinkPage(
                 $object->getUuid(),
                 (int) $object->getRegister(),
                 (int) $object->getSchema(),
@@ -238,7 +238,7 @@ class CollectiveLinksController extends Controller
      */
     public function destroy(string $register, string $schema, string $id, string $pageId): JSONResponse
     {
-        if ($this->collectiveLinkService->isCollectivesAvailable() === false) {
+        if ($this->linkService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -251,7 +251,7 @@ class CollectiveLinksController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $this->collectiveLinkService->unlinkPage($object->getUuid(), (int) $pageId);
+            $this->linkService->unlinkPage($object->getUuid(), (int) $pageId);
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {
@@ -275,7 +275,7 @@ class CollectiveLinksController extends Controller
      */
     public function available(): JSONResponse
     {
-        if ($this->collectiveLinkService->isCollectivesAvailable() === false) {
+        if ($this->linkService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -287,7 +287,7 @@ class CollectiveLinksController extends Controller
             $search = (string) $search;
         }
 
-        $pages = $this->collectiveLinkService->getAvailablePages($search);
+        $pages = $this->linkService->getAvailablePages($search);
         return new JSONResponse(['results' => $pages, 'total' => count($pages)]);
     }//end available()
 
@@ -303,14 +303,14 @@ class CollectiveLinksController extends Controller
      */
     public function collectives(): JSONResponse
     {
-        if ($this->collectiveLinkService->isCollectivesAvailable() === false) {
+        if ($this->linkService->isCollectivesAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC Collectives app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
             );
         }
 
-        $collectives = $this->collectiveLinkService->getAvailableCollectives();
+        $collectives = $this->linkService->getAvailableCollectives();
         return new JSONResponse(['results' => $collectives, 'total' => count($collectives)]);
     }//end collectives()
 

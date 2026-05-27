@@ -82,6 +82,8 @@ class CospendLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
@@ -130,6 +132,8 @@ class CospendLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function link(string $register, string $schema, string $id): JSONResponse
@@ -166,14 +170,15 @@ class CospendLinksController extends Controller
                     $projectId,
                     (int) $billIdParam
                 );
-            } else {
-                $link = $this->cospendLinkService->linkProject(
-                    $object->getUuid(),
-                    $registerId,
-                    $schemaId,
-                    $projectId
-                );
+                return new JSONResponse($link->jsonSerialize(), 201);
             }
+
+            $link = $this->cospendLinkService->linkProject(
+                $object->getUuid(),
+                $registerId,
+                $schemaId,
+                $projectId
+            );
 
             return new JSONResponse($link->jsonSerialize(), 201);
         } catch (DoesNotExistException $e) {
@@ -196,6 +201,8 @@ class CospendLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
@@ -249,6 +256,8 @@ class CospendLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
@@ -315,6 +324,8 @@ class CospendLinksController extends Controller
      * @param string $id       Object id.
      *
      * @return ObjectEntity|null
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route parameter; renaming would break consistency with caller method signatures.
      */
     private function validateObject(string $register, string $schema, string $id): ?ObjectEntity
     {

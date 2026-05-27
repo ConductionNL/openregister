@@ -65,9 +65,9 @@ use Psr\Log\LoggerInterface;
  * 7. Log all hook executions
  * 8. Persist execution history to WorkflowExecution entities
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Needs engine registry, formatter, schema mapper, execution mapper, job list, and logger
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Lifecycle: filter, sync/async dispatch, result processing, 4 failure modes, logging, retry
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Each method is a cohesive pipeline stage; splitting would scatter execution context
  */
 class HookExecutor
 {
@@ -309,7 +309,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dispatch: filter, engine, async/sync, result, exception - each a required lifecycle branch
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
      */
@@ -666,7 +666,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Failure modes reject/allow/flag/queue plus unknown fallback - each case has distinct side effects
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
      */
@@ -825,7 +825,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) hook, timing, event type, object, and 4 optional fields; extracted from logHookExecution
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-68
      */
@@ -864,7 +864,6 @@ class HookExecutor
             $context['deliveryStatus'] = $deliveryStatus;
         }
 
-        // Determine the persisted status.
         $defaultStatus = 'error';
         if ($success === true) {
             $defaultStatus = 'approved';
@@ -872,7 +871,70 @@ class HookExecutor
 
         $persistedStatus = $responseStatus ?? $deliveryStatus ?? $defaultStatus;
 
-        // Persist execution history to WorkflowExecution entity.
+        $this->persistExecutionHistory(
+            hook: $hook,
+            eventType: $eventType,
+            object: $object,
+            objectUuid: $objectUuid,
+            engineName: $engineName,
+            workflowId: $workflowId,
+            mode: $mode,
+            persistedStatus: $persistedStatus,
+            durationMs: $durationMs,
+            error: $error,
+            payload: $payload,
+            context: $context
+        );
+
+        $this->logExecutionOutcome(
+            success: $success,
+            hookId: $hookId,
+            eventType: $eventType,
+            objectUuid: $objectUuid,
+            durationMs: $durationMs,
+            error: $error,
+            payload: $payload,
+            context: $context
+        );
+    }//end logHookExecution()
+
+    /**
+     * Persist a hook execution record to the WorkflowExecution entity.
+     *
+     * @param array<string,mixed> $hook            Hook configuration.
+     * @param string              $eventType       Event type.
+     * @param ObjectEntity        $object          The object the hook ran against.
+     * @param string              $objectUuid      Resolved object UUID string.
+     * @param string              $engineName      Engine name.
+     * @param string              $workflowId      Workflow id.
+     * @param string              $mode            Execution mode (sync/async).
+     * @param string              $persistedStatus Status to persist.
+     * @param int                 $durationMs      Execution duration in ms.
+     * @param string|null         $error           Error message, if any.
+     * @param array|null          $payload         Request payload.
+     * @param array<string,mixed> $context         Log context array.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Extracted from logHookExecution() to reduce
+     *   NPath complexity; all params are distinct scalar/array values, no grouping reduces clarity.
+     */
+    private function persistExecutionHistory(
+        array $hook,
+        string $eventType,
+        ObjectEntity $object,
+        string $objectUuid,
+        string $engineName,
+        string $workflowId,
+        string $mode,
+        string $persistedStatus,
+        int $durationMs,
+        ?string $error,
+        ?array $payload,
+        array $context
+    ): void {
+        $hookId = ($hook['id'] ?? 'unknown');
+
         $encodedErrors = null;
         if ($error !== null) {
             $encodedErrors = json_encode([['message' => $error]]);
@@ -885,23 +947,23 @@ class HookExecutor
 
         try {
             $this->executionMapper->createFromArray(
-                    [
-                        'hookId'     => $hookId,
-                        'eventType'  => $eventType,
-                        'objectUuid' => $objectUuid,
-                        'schemaId'   => $object->getSchema(),
-                        'registerId' => $object->getRegister(),
-                        'engine'     => $engineName,
-                        'workflowId' => $workflowId,
-                        'mode'       => $mode,
-                        'status'     => $persistedStatus,
-                        'durationMs' => $durationMs,
-                        'errors'     => $encodedErrors,
-                        'metadata'   => json_encode($context),
-                        'payload'    => $encodedPayload,
-                        'executedAt' => new DateTime(),
-                    ]
-                    );
+                [
+                    'hookId'     => $hookId,
+                    'eventType'  => $eventType,
+                    'objectUuid' => $objectUuid,
+                    'schemaId'   => $object->getSchema(),
+                    'registerId' => $object->getRegister(),
+                    'engine'     => $engineName,
+                    'workflowId' => $workflowId,
+                    'mode'       => $mode,
+                    'status'     => $persistedStatus,
+                    'durationMs' => $durationMs,
+                    'errors'     => $encodedErrors,
+                    'metadata'   => json_encode($context),
+                    'payload'    => $encodedPayload,
+                    'executedAt' => new DateTime(),
+                ]
+            );
         } catch (Exception $e) {
             // Persistence failure MUST NOT fail the original hook execution.
             $this->logger->warning(
@@ -910,6 +972,32 @@ class HookExecutor
             );
         }//end try
 
+    }//end persistExecutionHistory()
+
+    /**
+     * Emit an info or error log line for a completed hook execution.
+     *
+     * @param bool                $success    Whether execution succeeded.
+     * @param string              $hookId     Hook id.
+     * @param string              $eventType  Event type.
+     * @param string              $objectUuid Object UUID string.
+     * @param int                 $durationMs Execution duration in ms.
+     * @param string|null         $error      Error message, if any.
+     * @param array|null          $payload    Request payload (appended to error context).
+     * @param array<string,mixed> $context    Base log context.
+     *
+     * @return void
+     */
+    private function logExecutionOutcome(
+        bool $success,
+        string $hookId,
+        string $eventType,
+        string $objectUuid,
+        int $durationMs,
+        ?string $error,
+        ?array $payload,
+        array $context
+    ): void {
         if ($success === true) {
             $this->logger->info(
                 message: "[HookExecutor] Hook '$hookId' ok ($eventType on '$objectUuid', {$durationMs}ms)",
@@ -928,5 +1016,5 @@ class HookExecutor
             message: "[HookExecutor] Hook '$hookId' failed for $eventType on object '$objectUuid': $error ({$durationMs}ms)",
             context: $context
         );
-    }//end logHookExecution()
+    }//end logExecutionOutcome()
 }//end class

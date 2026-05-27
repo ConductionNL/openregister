@@ -1310,11 +1310,13 @@ class RenderObject
                 // These are the properties that need inverse lookups to populate their data.
                 $inversePropertyNames = array_keys($inversedProperties);
 
-                // Normalize extend to array.
-                if (is_array($_extend) === true) {
-                    $extendArray = $_extend;
-                } else {
-                    $extendArray = explode(',', $_extend);
+                // Normalize extend to array. $_extend may already be an array
+                // (CnPageRenderer config-path) or a comma-separated string
+                // (legacy query-string path) — explode only when it's a string,
+                // otherwise PHP 8 throws TypeError on array input.
+                $extendArray = $_extend;
+                if (is_array($_extend) === false) {
+                    $extendArray = explode(',', (string) $_extend);
                 }
 
                 // Check if any inverse property is being extended (or 'all' is specified).
@@ -1466,12 +1468,11 @@ class RenderObject
         // Evaluate virtual calculations (`materialise: false`) when the
         // caller asks for them via _extend. Materialised calcs are
         // already in $objectData (set by CalculationOnSaveListener).
+        $extendArr = [$_extend];
         if (is_array($_extend) === true) {
             $extendArr = $_extend;
         } else if ($_extend === null) {
             $extendArr = [];
-        } else {
-            $extendArr = [$_extend];
         }
 
         if (in_array('calculations', $extendArr, true) === true) {
@@ -2207,10 +2208,9 @@ class RenderObject
 
         // Normalize inversedBy to an array to support multi-field inverse relations.
         // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
+        $inversedByFields = [$inversedByField];
         if (is_array($inversedByField) === true) {
             $inversedByFields = $inversedByField;
-        } else {
-            $inversedByFields = [$inversedByField];
         }
 
         return [

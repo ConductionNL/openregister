@@ -43,8 +43,6 @@
  *
  * @version GIT: <git-id>
  * @link    https://OpenRegister.app
- *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 
 declare(strict_types=1);
@@ -73,7 +71,7 @@ use Throwable;
  *     session + app manager + container + logger. Each dependency is
  *     required for one of the Tier-2 flows (link, create, unlink, list,
  *     picker, cache refresh, graceful degradation).
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Tier-2 service implements linkEntry/createAndLinkClient/unlink/getLinkedEntries/getAvailableClients plus resolveMapper/requireUid/normaliseEntryType/idComponents/fetchEntryInfo/hydrateLink/insertClient/normaliseRow/isStale/refreshEntry; each is required for a distinct flow in the integration surface.
  */
 class TimeTrackerLinkService
 {
@@ -101,6 +99,8 @@ class TimeTrackerLinkService
      * @param IAppManager           $appManager            NC app manager.
      * @param IUserSession          $userSession           Active session.
      * @param LoggerInterface       $logger                Logger.
+     *
+     * @SuppressWarnings(PHPMD.LongVariable) $timeTrackerLinkMapper follows the repo naming convention for OR link-table mappers; $timeTrackerLinkMapper is the exact constructor-injected variable name used across the Tier-2 service pattern and abbreviating it would obscure its purpose.
      */
     public function __construct(
         private readonly TimeTrackerLinkMapper $timeTrackerLinkMapper,
@@ -413,12 +413,15 @@ class TimeTrackerLinkService
 
         if ($entryType === self::ENTRY_CLIENT) {
             $components['client_id'] = $id;
-        } else if ($entryType === self::ENTRY_TASK) {
-            $components['task_id'] = $id;
-        } else {
-            $components['time_id'] = $id;
+            return $components;
         }
 
+        if ($entryType === self::ENTRY_TASK) {
+            $components['task_id'] = $id;
+            return $components;
+        }
+
+        $components['time_id'] = $id;
         return $components;
     }//end idComponents()
 
@@ -799,6 +802,8 @@ class TimeTrackerLinkService
      * @param object $row Raw upstream row.
      *
      * @return array<string,mixed>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) normaliseRow() maps four fields (name/duration/billable/startedAt) from NC TimeManager entity objects whose property names differ across client/task/time entry types (`payed` vs `billable`, `start` vs `started_at`); each alternative is required for backward-compatibility with TimeManager's schema evolution.
      */
     private function normaliseRow(object $row): array
     {

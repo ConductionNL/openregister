@@ -79,11 +79,17 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.ExcessiveClassLength)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
- * @suppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @suppressWarnings(PHPMD.ExcessiveClassLength)     NC REST controller must expose all CRUD + subresource
+ *   endpoints (registers, schemas, objects, statistics) in one class per NC AppFramework routing;
+ *   splitting into multiple controllers would require additional routing registration.
+ * @suppressWarnings(PHPMD.ExcessiveClassComplexity) Aggregate complexity from N independent REST actions;
+ *   each action is individually simple — the class total is a routing artifact, not design debt.
+ * @suppressWarnings(PHPMD.TooManyPublicMethods)     Each public method maps to one REST endpoint; NC AppFramework
+ *   requires public methods for route dispatch — they cannot be made protected/private.
+ * @suppressWarnings(PHPMD.CouplingBetweenObjects)   NC Controller DI injects AppFramework, RBAC, audit, domain
+ *   services, and mappers — each dep is used and cannot be combined without violating SRP.
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    The create/update actions include multi-step validation
+ *   that is a single atomic write; extracting sub-steps would create misleading partial-update helpers.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
@@ -547,8 +553,11 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.StaticAccess)         Uses \OCA\OpenRegister\Exception\ValidationException
+     *   as a static reference; no injectable factory exists in NC AppFramework for exception types.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) The update action must validate each editable
+     *   field individually (authorization, schemas, config) — extracting branches into separate
+     *   methods would scatter what is a single transactional write operation.
      *
      * @return JSONResponse JSON response with updated register or error
      *
@@ -703,12 +712,7 @@ class RegistersController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
-        // **DELETE SAFETY (runtime-schema-api)**: Count attached objects across
-        // every schema attached to this register. If N > 0 and ?force=true is
-        // not set, refuse with HTTP 409 so the caller sees a structured error
-        // containing the orphan count.
-        $forceParam = $this->request->getParam(key: 'force', default: null);
-        $force      = (string) $forceParam === 'true' || $forceParam === true || $forceParam === '1';
+        $force = $this->parseForceParam();
 
         try {
             // Find the register first (validates existence + access).
@@ -723,36 +727,15 @@ class RegistersController extends Controller
                 );
             }
 
-            // Count objects still referencing this register across all schemas.
-            // Use getStatistics() (single-axis registerId path) — countSearchObjects()
-            // only returns a real count when BOTH register AND schema are present
-            // in the @self filter, and silently returns 0 on single-axis queries,
-            // which would let DELETE silently succeed on registers with objects.
-            $objectStats = $this->objectEntityMapper->getStatistics(registerId: $register->getId(), schemaId: null);
-            $objectCount = (int) $objectStats['total'];
-
-            if ($objectCount > 0 && $force === false) {
-                return new JSONResponse(
-                    data: [
-                        'error'       => 'register-has-objects',
-                        'objectCount' => $objectCount,
-                    ],
-                    statusCode: 409
-                );
-            }
-
-            if ($objectCount > 0 && $force === true) {
-                // Force-delete with audit at WARNING level so operators can review.
-                $this->logger->warning(
-                    message: '[RegistersController] Force-deleting register with attached objects',
-                    context: [
-                        'file'         => __FILE__,
-                        'line'         => __LINE__,
-                        'registerId'   => $register->getId(),
-                        'registerSlug' => $register->getSlug(),
-                        'objectCount'  => $objectCount,
-                    ]
-                );
+            // Count objects and apply the delete-safety guard.
+            $objectCount   = $this->countRegisterObjects(registerId: $register->getId());
+            $guardResponse = $this->handleObjectCountGuard(
+                register: $register,
+                objectCount: $objectCount,
+                force: $force
+            );
+            if ($guardResponse !== null) {
+                return $guardResponse;
             }
 
             $this->registerService->delete($register);
@@ -774,6 +757,80 @@ class RegistersController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
     }//end destroy()
+
+    /**
+     * Parse the ?force query parameter into a boolean.
+     *
+     * Accepts 'true', '1', or boolean true.
+     *
+     * @return bool
+     */
+    private function parseForceParam(): bool
+    {
+        $forceParam = $this->request->getParam(key: 'force', default: null);
+        return (string) $forceParam === 'true' || $forceParam === true || $forceParam === '1';
+    }//end parseForceParam()
+
+    /**
+     * Count objects attached to a register.
+     *
+     * Uses getStatistics() (single-axis registerId path) — countSearchObjects()
+     * only returns a real count when BOTH register AND schema are present in the
+     * $self filter, and silently returns 0 on single-axis queries.
+     *
+     * @param int $registerId Register id.
+     *
+     * @return int Total object count.
+     */
+    private function countRegisterObjects(int $registerId): int
+    {
+        $stats = $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+        return (int) $stats['total'];
+    }//end countRegisterObjects()
+
+    /**
+     * Apply the delete-safety guard for object count.
+     *
+     * Returns a JSONResponse (409) when objects exist and force is false.
+     * Logs a WARNING when force-deleting with objects present.
+     * Returns null when the delete may proceed.
+     *
+     * @param Register $register    The register to be deleted.
+     * @param int      $objectCount Number of objects attached to the register.
+     * @param bool     $force       Whether the force flag was set.
+     *
+     * @return JSONResponse|null 409 response to abort, or null to continue.
+     */
+    private function handleObjectCountGuard(Register $register, int $objectCount, bool $force): ?JSONResponse
+    {
+        if ($objectCount === 0) {
+            return null;
+        }
+
+        if ($force === false) {
+            return new JSONResponse(
+                data: [
+                    'error'       => 'register-has-objects',
+                    'objectCount' => $objectCount,
+                ],
+                statusCode: 409
+            );
+        }
+
+        // Force-delete with audit at WARNING level so operators can review.
+        $this->logger->warning(
+            message: '[RegistersController] Force-deleting register with attached objects',
+            context: [
+                'file'         => __FILE__,
+                'line'         => __LINE__,
+                'registerId'   => $register->getId(),
+                'registerSlug' => $register->getSlug(),
+                'objectCount'  => $objectCount,
+            ]
+        );
+
+        return null;
+    }//end handleObjectCountGuard()
 
     /**
      * Get schemas associated with a register
@@ -1850,8 +1907,11 @@ class RegistersController extends Controller
      *
      * @return bool True if user has manage permission.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission resolution must handle four distinct
+     *   cases: no authorization config, admin bypass, group-string rules, and group-object rules —
+     *   each is a real runtime path, not artificial branching.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Consequence of the four-case permission decision tree
+     *   above; see CyclomaticComplexity note.
      */
     private function checkRegisterManagePermission(Register $register): bool
     {

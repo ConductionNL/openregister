@@ -49,7 +49,9 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Backfill job requires CalendarLinkMapper,
+ *   CalendarEventService, IUserManager, IUserSession, IAppConfig, and LoggerInterface;
+ *   each is needed for iterating users, reading CalDAV X-OR-* properties, and persisting links.
  */
 class BackfillCalendarLinksJob extends QueuedJob
 {
@@ -93,7 +95,8 @@ class BackfillCalendarLinksJob extends QueuedJob
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $argument is required by the OCP
+     *   QueuedJob contract; this job is flag-gated and uses no per-run arguments.
      *
      * @spec exclude Disabled-by-default one-time Tier-2 migration backfill, gated behind the
      *       `backfill_calendar_links` app-config flag; not a production capability surface.
@@ -111,82 +114,128 @@ class BackfillCalendarLinksJob extends QueuedJob
         $skipped  = 0;
 
         $this->userManager->callForSeenUsers(
-                function ($user) use (&$inserted, &$skipped): void {
-                    try {
-                        $this->userSession->setUser($user);
-                        $events = $this->calendarEventService->getEventsForObject(objectUuid: '');
-                    } catch (Throwable $e) {
-                        // No-op: callForSeenUsers iterates regardless of CalDAV state.
-                        return;
-                    }
-
-                    foreach ($events as $event) {
-                        $objectUuid = (string) ($event['objectUuid'] ?? '');
-                        $eventUid   = (string) ($event['uid'] ?? '');
-                        if ($objectUuid === '' || $eventUid === '') {
-                            continue;
-                        }
-
-                        try {
-                            $this->linkMapper->findByObjectAndEvent(
-                                objectUuid: $objectUuid,
-                                eventUid: $eventUid
-                            );
-                            $skipped++;
-                            continue;
-                        } catch (DoesNotExistException $e) {
-                            // No row yet — insert it below.
-                        }
-
-                        try {
-                            $link = new CalendarLink();
-                            $link->setObjectUuid($objectUuid);
-                            $link->setRegisterId((int) ($event['registerId'] ?? 0));
-                            $link->setSchemaId((int) ($event['schemaId'] ?? 0));
-                            $link->setCalendarUri('');
-                            $calendarId = null;
-                            if (isset($event['calendarId']) === true) {
-                                $calendarId = (int) $event['calendarId'];
-                            }
-
-                            $summary = null;
-                            if (isset($event['summary']) === true) {
-                                $summary = (string) $event['summary'];
-                            }
-
-                            $location = null;
-                            if (isset($event['location']) === true) {
-                                $location = (string) $event['location'];
-                            }
-
-                            $link->setCalendarId($calendarId);
-                            $link->setEventUid($eventUid);
-                            $link->setEventUri((string) ($event['id'] ?? ''));
-                            $link->setSummary($summary);
-                            $link->setLocation($location);
-                            if (isset($event['dtstart']) === true && $event['dtstart'] !== null) {
-                                $link->setDtstart(new DateTime((string) $event['dtstart']));
-                            }
-
-                            if (isset($event['dtend']) === true && $event['dtend'] !== null) {
-                                $link->setDtend(new DateTime((string) $event['dtend']));
-                            }
-
-                            $link->setLinkedBy('system:backfill');
-                            $link->setLinkedAt(new DateTime());
-                            $link->setTaggedWithXor(true);
-
-                            $this->linkMapper->insert(entity: $link);
-                            $inserted++;
-                        } catch (Throwable $e) {
-                            $this->logger->warning(
-                                'BackfillCalendarLinksJob: failed to insert link for event '.$eventUid.': '.$e->getMessage()
-                            );
-                        }//end try
-                    }//end foreach
-                }
-                );
+            function ($user) use (&$inserted, &$skipped): void {
+                $this->backfillUser(user: $user, inserted: $inserted, skipped: $skipped);
+            }
+        );
 
         $this->logger->info('BackfillCalendarLinksJob finished. Inserted='.$inserted.', skipped='.$skipped);
     }//end run()
+
+    /**
+     * Backfill calendar link rows for a single user.
+     *
+     * @param mixed $user     NC user object from callForSeenUsers.
+     * @param int   $inserted Running count of inserted rows (passed by reference).
+     * @param int   $skipped  Running count of skipped rows (passed by reference).
+     *
+     * @return void
+     */
+    private function backfillUser(mixed $user, int &$inserted, int &$skipped): void
+    {
+        try {
+            $this->userSession->setUser($user);
+            $events = $this->calendarEventService->getEventsForObject(objectUuid: '');
+        } catch (Throwable $e) {
+            // No-op: callForSeenUsers iterates regardless of CalDAV state.
+            return;
+        }
+
+        foreach ($events as $event) {
+            $objectUuid = (string) ($event['objectUuid'] ?? '');
+            $eventUid   = (string) ($event['uid'] ?? '');
+            if ($objectUuid === '' || $eventUid === '') {
+                continue;
+            }
+
+            $this->backfillEvent(
+                event: $event,
+                objectUuid: $objectUuid,
+                eventUid: $eventUid,
+                inserted: $inserted,
+                skipped: $skipped
+            );
+        }//end foreach
+    }//end backfillUser()
+
+    /**
+     * Insert a calendar link row for one event, or increment $skipped if
+     * the row already exists.
+     *
+     * @param array<string,mixed> $event      Raw event data array.
+     * @param string              $objectUuid OR object uuid.
+     * @param string              $eventUid   CalDAV event UID.
+     * @param int                 $inserted   Running insert count (passed by reference).
+     * @param int                 $skipped    Running skip count (passed by reference).
+     *
+     * @return void
+     */
+    private function backfillEvent(
+        array $event,
+        string $objectUuid,
+        string $eventUid,
+        int &$inserted,
+        int &$skipped
+    ): void {
+        try {
+            $this->linkMapper->findByObjectAndEvent(
+                objectUuid: $objectUuid,
+                eventUid: $eventUid
+            );
+            $skipped++;
+            return;
+        } catch (DoesNotExistException $e) {
+            // No row yet — insert it below.
+        }
+
+        try {
+            $link = new CalendarLink();
+            $link->setObjectUuid($objectUuid);
+            $link->setRegisterId((int) ($event['registerId'] ?? 0));
+            $link->setSchemaId((int) ($event['schemaId'] ?? 0));
+            $link->setCalendarUri('');
+
+            $calendarId = isset($event['calendarId']) ? (int) $event['calendarId'] : null;
+            $summary    = isset($event['summary']) ? (string) $event['summary'] : null;
+            $location   = isset($event['location']) ? (string) $event['location'] : null;
+
+            $link->setCalendarId($calendarId);
+            $link->setEventUid($eventUid);
+            $link->setEventUri((string) ($event['id'] ?? ''));
+            $link->setSummary($summary);
+            $link->setLocation($location);
+
+            $this->applyEventDates(link: $link, event: $event);
+
+            $link->setLinkedBy('system:backfill');
+            $link->setLinkedAt(new DateTime());
+            $link->setTaggedWithXor(true);
+
+            $this->linkMapper->insert(entity: $link);
+            $inserted++;
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                'BackfillCalendarLinksJob: failed to insert link for event '.$eventUid.': '.$e->getMessage()
+            );
+        }//end try
+    }//end backfillEvent()
+
+    /**
+     * Apply dtstart / dtend from the raw event array to a CalendarLink entity.
+     *
+     * @param CalendarLink        $link  The link entity to update.
+     * @param array<string,mixed> $event Raw event data array.
+     *
+     * @return void
+     */
+    private function applyEventDates(CalendarLink $link, array $event): void
+    {
+        if (isset($event['dtstart']) === true && $event['dtstart'] !== null) {
+            $link->setDtstart(new DateTime((string) $event['dtstart']));
+        }
+
+        if (isset($event['dtend']) === true && $event['dtend'] !== null) {
+            $link->setDtend(new DateTime((string) $event['dtend']));
+        }
+    }//end applyEventDates()
 }//end class

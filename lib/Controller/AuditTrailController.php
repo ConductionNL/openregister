@@ -116,7 +116,9 @@ class AuditTrailController extends Controller
      * @return array The extracted request parameters
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each of limit/offset/page supports
+     *   two alternative parameter names (with and without underscore prefix); the resulting
+     *   if/else-if pairs are required to preserve backward compatibility with both formats.
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
@@ -155,66 +157,8 @@ class AuditTrailController extends Controller
         // Extract search parameter.
         $search = $params['search'] ?? $params['_search'] ?? null;
 
-        // Extract sort parameters.
-        // Supports both flat format (sort=created&order=DESC)
-        // and bracket format (_sort[created]=DESC).
-        $sort    = [];
-        $sortRaw = $params['sort'] ?? $params['_sort'] ?? null;
-
-        if (is_array($sortRaw) === true) {
-            // Bracket format: _sort[created]=DESC.
-            foreach ($sortRaw as $field => $direction) {
-                $directionUpper = strtoupper($direction);
-                $sort[$field]   = 'DESC';
-                if ($directionUpper === 'ASC') {
-                    $sort[$field] = 'ASC';
-                }
-            }
-        } else if ($sortRaw !== null) {
-            // Flat format: sort=created&order=DESC.
-            $sortOrder      = $params['order'] ?? $params['_order'] ?? 'DESC';
-            $sort[$sortRaw] = 'DESC';
-            if (strtoupper($sortOrder) === 'ASC') {
-                $sort[$sortRaw] = 'ASC';
-            }
-        }
-
-        if (empty($sort) === true) {
-            $sort['created'] = 'DESC';
-        }
-
-        // Filter out special parameters and system fields.
-        $filters = array_filter(
-            $params,
-            function ($key) {
-                return !in_array(
-                    $key,
-                    [
-                        'limit',
-                        '_limit',
-                        'offset',
-                        '_offset',
-                        'page',
-                        '_page',
-                        'search',
-                        '_search',
-                        'sort',
-                        '_sort',
-                        'order',
-                        '_order',
-                        '_route',
-                        'id',
-                        'register',
-                        'schema',
-                        'format',
-                        'from',
-                        'to',
-                        'identifier',
-                    ]
-                );
-            },
-            ARRAY_FILTER_USE_KEY
-        );
+        $sort    = $this->buildSortFromParams($params);
+        $filters = $this->buildFiltersFromParams($params);
 
         return [
             'limit'   => $limit,
@@ -225,6 +169,68 @@ class AuditTrailController extends Controller
             'search'  => $search,
         ];
     }//end extractRequestParameters()
+
+    /**
+     * Build a sort map from raw request params.
+     *
+     * Supports bracket format `_sort[field]=ASC|DESC` and flat format
+     * `sort=field&order=ASC|DESC`. Defaults to `created DESC`.
+     *
+     * @param array<string,mixed> $params Raw request params.
+     *
+     * @return array<string,string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sort format normalisation
+     *     inherently branches on array vs. scalar vs. absent.
+     */
+    private function buildSortFromParams(array $params): array
+    {
+        $sort    = [];
+        $sortRaw = $params['sort'] ?? $params['_sort'] ?? null;
+
+        if (is_array($sortRaw) === true) {
+            // Bracket format: _sort[created]=DESC.
+            foreach ($sortRaw as $field => $direction) {
+                $sort[$field] = strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC';
+            }
+        } else if ($sortRaw !== null) {
+            // Flat format: sort=created&order=DESC.
+            $sortOrder      = $params['order'] ?? $params['_order'] ?? 'DESC';
+            $sort[$sortRaw] = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+        }
+
+        if (empty($sort) === true) {
+            $sort['created'] = 'DESC';
+        }
+
+        return $sort;
+    }//end buildSortFromParams()
+
+    /**
+     * Strip pagination/system keys from raw request params to produce a
+     * filter map for mapper queries.
+     *
+     * @param array<string,mixed> $params Raw request params.
+     *
+     * @return array<string,mixed>
+     */
+    private function buildFiltersFromParams(array $params): array
+    {
+        $systemKeys = [
+            'limit', '_limit', 'offset', '_offset', 'page', '_page',
+            'search', '_search', 'sort', '_sort', 'order', '_order',
+            '_route', 'id', 'register', 'schema', 'format', 'from', 'to',
+            'identifier',
+        ];
+
+        return array_filter(
+            $params,
+            function ($key) use ($systemKeys) {
+                return in_array($key, $systemKeys, true) === false;
+            },
+            ARRAY_FILTER_USE_KEY
+        );
+    }//end buildFiltersFromParams()
 
     /**
      * Get all audit trail logs
@@ -311,7 +317,8 @@ class AuditTrailController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $id is required by the OCP Controller
+     *   route contract; the method intentionally ignores it to enforce immutability.
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
@@ -394,7 +401,8 @@ class AuditTrailController extends Controller
      */
     public function export(): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -463,7 +471,8 @@ class AuditTrailController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $id is required by the OCP Controller
+     *   route contract; the method intentionally ignores it to enforce immutability.
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      */
@@ -508,7 +517,8 @@ class AuditTrailController extends Controller
      */
     public function clearAll(): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -594,7 +604,9 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse List of processing activities
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Large OCP/NC annotation block
+     *   (@NoAdminRequired, @NoCSRFRequired, @psalm-return) inflates the reported line
+     *   count; the actual executable body is 12 lines.
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-83

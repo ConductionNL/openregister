@@ -138,9 +138,9 @@ class TransitionEngine
             );
         }
 
-        $spec = $transitions[$action];
-        $to   = (string) ($spec['to'] ?? '');
-        $from = (array) ($spec['from'] ?? []);
+        $spec        = $transitions[$action];
+        $targetState = (string) ($spec['to'] ?? '');
+        $from        = (array) ($spec['from'] ?? []);
 
         $data         = $object->getObject() ?? [];
         $currentValue = (string) ($data[$field] ?? '');
@@ -157,7 +157,7 @@ class TransitionEngine
 
         // Mutate the lifecycle field. The validator listener will re-check
         // the transition on save; the guard (if any) will run there too.
-        $data[$field] = $to;
+        $data[$field] = $targetState;
 
         $saved = $this->objectService->saveObject(
             object: $data,
@@ -173,7 +173,7 @@ class TransitionEngine
                 object: $saved,
                 action: $action,
                 from: $currentValue,
-                to: $to,
+                to: $targetState,
                 userId: $userId,
                 register: (string) $object->getRegister(),
                 schema: (string) $object->getSchema()
@@ -189,6 +189,9 @@ class TransitionEngine
      * @param string $objectId Object id/uuid/slug.
      *
      * @return array<int, array{action: string, to: string, requires: ?string, description: ?string}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent guard + per-transition from/requires/description checks each add one branch; none can be removed without losing safety or fidelity.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      RBAC check + missing-object guard + annotation-absent guard + per-transition from/requires/description checks each add one branch; none can be removed without losing safety or fidelity.
      *
      * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
      */

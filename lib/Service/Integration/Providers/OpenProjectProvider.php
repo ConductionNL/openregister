@@ -72,7 +72,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param ExternalIntegrationRouter  $router                External-call router.
      * @param IAppManager                $appManager            NC app manager.
      * @param IL10N                      $l10n                  Localisation.
-     * @param OpenProjectLinkMapper|null $openProjectLinkMapper Tier-2 link table (optional).
+     * @param OpenProjectLinkMapper|null $linkMapper Tier-2 link table (optional).
      *
      * @return void
      */
@@ -80,7 +80,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider
         private ExternalIntegrationRouter $router,
         private IAppManager $appManager,
         private IL10N $l10n,
-        private ?OpenProjectLinkMapper $openProjectLinkMapper=null,
+        private ?OpenProjectLinkMapper $linkMapper=null,
     ) {
     }//end __construct()
 
@@ -162,9 +162,9 @@ class OpenProjectProvider extends AbstractIntegrationProvider
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         // Tier-2 path: read from the link table first.
-        if ($this->openProjectLinkMapper !== null) {
+        if ($this->linkMapper !== null) {
             try {
-                $linkRows = $this->openProjectLinkMapper->findByObjectUuid($objectId);
+                $linkRows = $this->linkMapper->findByObjectUuid($objectId);
             } catch (Throwable $e) {
                 $linkRows = [];
             }
@@ -390,26 +390,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      */
     private function normalizeList(array $response): array
     {
-        $rows = [];
-        foreach (['results', 'items', '_embedded', 'elements'] as $key) {
-            if (isset($response[$key]) === true && is_array($response[$key]) === true) {
-                $candidate = $response[$key];
-                // OpenProject's HAL+JSON envelope nests rows under _embedded.elements.
-                if ($key === '_embedded'
-                    && isset($candidate['elements']) === true
-                    && is_array($candidate['elements']) === true
-                ) {
-                    $candidate = $candidate['elements'];
-                }
-
-                $rows = $candidate;
-                break;
-            }
-        }
-
-        if ($rows === [] && array_is_list($response) === true) {
-            $rows = $response;
-        }
+        $rows = $this->extractRowsFromEnvelope(response: $response);
 
         $out = [];
         foreach ($rows as $row) {
@@ -420,6 +401,42 @@ class OpenProjectProvider extends AbstractIntegrationProvider
 
         return $out;
     }//end normalizeList()
+
+    /**
+     * Extract the row list from a potentially enveloped source response.
+     *
+     * Handles OpenProject HAL+JSON (`_embedded.elements`), generic
+     * `results`, `items`, `elements` wrappers, and bare top-level arrays.
+     *
+     * @param array<string,mixed> $response Decoded source response.
+     *
+     * @return array<mixed> Flat list of raw row arrays.
+     */
+    private function extractRowsFromEnvelope(array $response): array
+    {
+        foreach (['results', 'items', '_embedded', 'elements'] as $key) {
+            if (isset($response[$key]) === false || is_array($response[$key]) === false) {
+                continue;
+            }
+
+            $candidate = $response[$key];
+            // OpenProject HAL+JSON nests rows under _embedded.elements.
+            if ($key === '_embedded'
+                && isset($candidate['elements']) === true
+                && is_array($candidate['elements']) === true
+            ) {
+                $candidate = $candidate['elements'];
+            }
+
+            return $candidate;
+        }
+
+        if (array_is_list($response) === true) {
+            return $response;
+        }
+
+        return [];
+    }//end extractRowsFromEnvelope()
 
     /**
      * Shape one work-package row to the registry contract.

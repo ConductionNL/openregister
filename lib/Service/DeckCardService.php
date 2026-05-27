@@ -36,7 +36,14 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service composes DeckLinkMapper,
+ *   IAppManager, IUserSession, LoggerInterface, and dynamic Deck service classes; the set
+ *   cannot be reduced as each dependency serves a distinct orchestration concern.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Deck's Card entity resolves
+ *   getDuedate/getLabels/getAssignedUsers via OCP Entity::__call magic — method_exists()
+ *   returns false for all three, so each must be individually wrapped in try/catch.
+ *   There is no alternative API that avoids this pattern; complexity is intrinsic
+ *   to defensive interop with the Deck app's internal entity layer.
  */
 class DeckCardService
 {
@@ -185,9 +192,12 @@ class DeckCardService
      *
      * @return array{dueDate: ?string, labels: array, assignees: array}
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Method composes
-     *     three independent optional getters with type guards; splitting
-     *     would scatter the leaf-row contract.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Defensive null/type guards for service
+     *   and card availability are mandatory; Deck's entity magic prevents compile-time
+     *   checks, requiring runtime branches that cannot be removed without losing safety.
+     * @SuppressWarnings(PHPMD.NPathComplexity) NPath inflation is caused by PHPMD 2.x
+     *   counting logical sub-expressions in guard conditions independently; the method
+     *   body is already fully decomposed into extractDueDate/extractLabels/extractAssignees.
      */
     private function extractCardFields(?object $cardService, ?int $cardId): array
     {
@@ -213,46 +223,93 @@ class DeckCardService
         // `method_exists()` returns false for `getDuedate`, `getLabels`,
         // and `getAssignedUsers` even though the calls work. Each call
         // is therefore wrapped in its own try/catch.
-        $dueDate = null;
+        return [
+            'dueDate'   => $this->extractDueDate(card: $card),
+            'labels'    => $this->extractLabels(card: $card),
+            'assignees' => $this->extractAssignees(card: $card),
+        ];
+    }//end extractCardFields()
+
+    /**
+     * Extract the due date string from a Deck card entity.
+     *
+     * Returns null when the card has no due date or `getDuedate()` is unavailable
+     * (resolved via OCP Entity magic — method_exists returns false).
+     *
+     * @param object $card Deck Card entity.
+     *
+     * @return string|null ISO 8601 datetime, or null.
+     */
+    private function extractDueDate(object $card): ?string
+    {
         try {
             $due = $card->getDuedate();
             if ($due instanceof \DateTimeInterface) {
-                $dueDate = $due->format(\DateTime::ATOM);
+                return $due->format(\DateTime::ATOM);
             }
         } catch (\Throwable $e) {
-            // GetDuedate missing — leave dueDate null.
+            // getDuedate missing on this Deck version — leave null.
         }
 
-        $labels = [];
+        return null;
+    }//end extractDueDate()
+
+    /**
+     * Extract the labels array from a Deck card entity.
+     *
+     * Returns an empty array when `getLabels()` is unavailable or returns an
+     * unexpected shape.
+     *
+     * @param object $card Deck Card entity.
+     *
+     * @return array
+     */
+    private function extractLabels(object $card): array
+    {
         try {
             $rawLabels = $card->getLabels();
             if (is_array($rawLabels) === true) {
+                $labels = [];
                 foreach ($rawLabels as $label) {
                     $labels[] = $this->mapLabel(label: $label);
                 }
+
+                return $labels;
             }
         } catch (\Throwable $e) {
-            // GetLabels missing or returned unexpected shape — leave labels empty.
+            // getLabels missing or returned unexpected shape — leave empty.
         }
 
-        $assignees = [];
+        return [];
+    }//end extractLabels()
+
+    /**
+     * Extract the assignees array from a Deck card entity.
+     *
+     * Returns an empty array when `getAssignedUsers()` is unavailable.
+     *
+     * @param object $card Deck Card entity.
+     *
+     * @return array
+     */
+    private function extractAssignees(object $card): array
+    {
         try {
             $rawAssignees = $card->getAssignedUsers();
             if (is_array($rawAssignees) === true) {
+                $assignees = [];
                 foreach ($rawAssignees as $assignment) {
                     $assignees[] = $this->mapAssignee(assignment: $assignment);
                 }
+
+                return $assignees;
             }
         } catch (\Throwable $e) {
-            // GetAssignedUsers missing — leave assignees empty.
+            // getAssignedUsers missing — leave empty.
         }
 
-        return [
-            'dueDate'   => $dueDate,
-            'labels'    => $labels,
-            'assignees' => $assignees,
-        ];
-    }//end extractCardFields()
+        return [];
+    }//end extractAssignees()
 
     /**
      * Map a Deck Label entity to the leaf-row label shape.
@@ -353,7 +410,9 @@ class DeckCardService
      *
      * @throws Exception If parameters are missing or Deck operations fail.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two mutually exclusive dispatch paths
+     *   (link existing card vs. create new card) each require their own guard and error
+     *   branches; the logic cannot be split further without hiding the business rule.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-8
      */

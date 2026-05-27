@@ -116,7 +116,9 @@ class CospendLinkMapper extends QBMapper
 
         if ($billId === null) {
             $qb->andWhere($qb->expr()->isNull('bill_id'));
-        } else {
+        }
+
+        if ($billId !== null) {
             $qb->andWhere($qb->expr()->eq('bill_id', $qb->createNamedParameter($billId, IQueryBuilder::PARAM_INT)));
         }
 

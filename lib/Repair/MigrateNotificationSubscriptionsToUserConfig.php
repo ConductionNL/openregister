@@ -50,6 +50,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Repair step: migrate legacy notification subscriptions to user-config overrides.
+ *
+ * @SuppressWarnings(PHPMD.LongClassName) Class name mirrors the IRepairStep convention of describing exactly what the one-shot migration does; abbreviating it would break the self-documenting intent that makes repair steps auditable in occ and the admin UI.
  */
 class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
 {
@@ -88,6 +90,9 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
      * @param IOutput $output Migration output handle.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) run() validates table availability, iterates subscription rows, and per row: guards on null userId/schemaId, finds the schema, validates the notification annotation, and loops keys — each check is a defensive guard required for the idempotent migration contract.
+     * @SuppressWarnings(PHPMD.NPathComplexity) Multiple independent early-returns (table absent, no rows, service unavailable, null userId, null schemaId, schema not found, missing annotation) represent distinct migration-skip conditions, not extractable sub-paths.
      */
     public function run(IOutput $output): void
     {

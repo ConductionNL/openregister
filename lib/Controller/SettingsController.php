@@ -124,18 +124,20 @@ use Psr\Log\LoggerInterface;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
- */
-
-/**
- * SettingsController class
- *
- * Thin controller layer for settings management.
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     NC AppFramework controller groups all settings
+ *   endpoints (general/rbac/multitenancy/retention/solr/llm/file/object/cache) in one class per
+ *   the thin-controller architecture; splitting would require multiple route groups and controllers
+ *   for a natural single responsibility surface.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity is distributed across 15 thin
+ *   delegation methods each containing a single try/catch; the overall score exceeds the threshold
+ *   purely from method count, not from deep conditional logic in any single method.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller requires DI for
+ *   AppFramework types (IRequest, IAppConfig, IDBConnection, ContainerInterface, IAppManager)
+ *   plus SettingsService, VectorizationService, LoggerInterface, and IL10N — all are single-call
+ *   dependencies that cannot be cohesively grouped without hiding the NC DI contract.
  */
 class SettingsController extends Controller
 {
@@ -647,9 +649,8 @@ class SettingsController extends Controller
                 // MariaDB/MySQL do not support native vector operations.
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
-                $phpNote           = 'Current: Similarity calculated in PHP (slow).';
-                $pgNote            = 'Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
-                $performanceNote   = $phpNote.' '.$pgNote;
+                $performanceNote   = 'Current: Similarity calculated in PHP (slow).'
+                    .' Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
             } else if (strpos($platformName, 'postgres') !== false) {
                 $dbType = 'PostgreSQL';
 
@@ -1044,11 +1045,7 @@ class SettingsController extends Controller
                 );
             }
 
-            // Use VectorizationService for semantic search.
-            $vectorService = $this->vectorizationService;
-
-            // Perform semantic search.
-            $results = $vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
+            $results = $this->vectorizationService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
 
             return new JSONResponse(
                 data: [
@@ -1106,19 +1103,14 @@ class SettingsController extends Controller
                 );
             }
 
-            // Use VectorizationService for hybrid search.
-            $vectorService = $this->vectorizationService;
-
-            // Perform hybrid search.
-            $result = $vectorService->hybridSearch(
+            $result = $this->vectorizationService->hybridSearch(
                 query: $query,
                 solrFilters: $solrFilters,
                 limit: $limit,
                 weights: $weights,
                 provider: $provider
             );
-
-            // Ensure result is an array for spread operator.
+            // Ensure result is an array for the spread operator.
             $resultArray = [];
             if (is_array($result) === true) {
                 $resultArray = $result;

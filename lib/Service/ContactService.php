@@ -37,9 +37,9 @@ use Sabre\VObject\Reader;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Class exposes get/link/unlink/list for contact-to-object bindings and an internal vCard enrichment path; complexity is distributed across multiple private helpers and is not reducible without splitting the dual-storage (vCard + link table) abstraction.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Depends on ContactLinkMapper, CardDavBackend, IUserSession, LoggerInterface, DateTime, and the Sabre VObject Reader — each is a required integration point for the dual CardDAV+link-table storage strategy.
+ * @SuppressWarnings(PHPMD.StaticAccess) Sabre\VObject\Reader::read() is a static factory; Sabre provides no injectable alternative in the library.
  */
 class ContactService
 {
@@ -210,6 +210,10 @@ class ContactService
      *                                   is absent).
      *
      * @return array{phone: ?string, org: ?string, avatarUrl: ?string}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each vCard property (TEL, ORG, PHOTO) requires distinct handling: TEL is iterable or scalar, PHOTO may be URI/data-URL/raw bytes requiring format detection; collapsing branches loses semantic specificity.
+     * @SuppressWarnings(PHPMD.NPathComplexity) TEL iterable vs scalar + PHOTO URI vs data vs bytes + contactUid fallback produce many distinct execution paths; all are in-method because extracting each to a helper would scatter the single "resolve phone+org+avatar" contract.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method resolves phone, org, and avatar from vCard in one pass; splitting into three sub-helpers would require re-reading and re-parsing the vCard three times or passing the parsed vCard object across helpers.
      */
     private function extractVcardFields(?int $addressbookId, ?string $contactUri, ?string $contactUid): array
     {
@@ -259,7 +263,9 @@ class ContactService
                         break;
                     }
                 }
-            } else {
+            }
+
+            if (is_iterable($tel) === false) {
                 $value = (string) $tel;
                 if ($value !== '') {
                     $phone = $value;
@@ -302,7 +308,9 @@ class ContactService
                 // the per-uid Contacts route below).
                 if (preg_match('#^(https?://|data:)#i', $rawValue) === 1) {
                     $avatarUrl = $rawValue;
-                } else {
+                }
+
+                if (preg_match('#^(https?://|data:)#i', $rawValue) === 0) {
                     // Otherwise treat as inline image bytes; wrap as data URL.
                     $mediaType = 'image/jpeg';
                     if (isset($photoProp['TYPE']) === true) {
@@ -316,7 +324,9 @@ class ContactService
                     // left in place when round-tripping a data URL.
                     if (str_starts_with($rawValue, 'data:') === true) {
                         $avatarUrl = $rawValue;
-                    } else {
+                    }
+
+                    if (str_starts_with($rawValue, 'data:') === false) {
                         $avatarUrl = 'data:'.$mediaType.';base64,'.$rawValue;
                     }
                 }
@@ -364,6 +374,8 @@ class ContactService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Single switch on upsert state — extracting a sub-method
      *                                                doesn't add clarity and would split the vCard hydration
      *                                                from the DB write that consumes it.
+     * @SuppressWarnings(PHPMD.NPathComplexity) insert vs update branches plus optional role/schemaId null-checks plus best-effort persist error path expand NPath; each path serves a distinct upsert variant in the idempotent link contract.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) linkContact() covers card lookup, user auth, vCard hydration, existence check, and insert-or-update in sequence; splitting would scatter the idempotent upsert contract across multiple methods.
      */
     public function linkContact(
         string $objectUuid,

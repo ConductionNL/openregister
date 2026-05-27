@@ -204,14 +204,15 @@ class FormLinksController extends Controller
                     submissionId: $submissionId,
                     schemaId: $schemaId
                 );
-            } else {
-                $link = $this->formLinkService->linkForm(
-                    objectUuid: $object->getUuid(),
-                    registerId: $registerId,
-                    formId: $formId,
-                    schemaId: $schemaId
-                );
+                return new JSONResponse($link, 201);
             }
+
+            $link = $this->formLinkService->linkForm(
+                objectUuid: $object->getUuid(),
+                registerId: $registerId,
+                formId: $formId,
+                schemaId: $schemaId
+            );
 
             return new JSONResponse($link, 201);
         } catch (DoesNotExistException $e) {
@@ -391,12 +392,8 @@ class FormLinksController extends Controller
     public function available(): JSONResponse
     {
         try {
-            $objectUuid = $this->request->getParam('objectUuid');
-            if ($objectUuid !== null && $objectUuid !== '') {
-                $objectUuid = (string) $objectUuid;
-            } else {
-                $objectUuid = null;
-            }
+            $rawObjectUuid = $this->request->getParam('objectUuid');
+            $objectUuid    = ($rawObjectUuid !== null && $rawObjectUuid !== '') ? (string) $rawObjectUuid : null;
 
             $results = $this->formLinkService->getAvailableForms(objectUuid: $objectUuid);
 

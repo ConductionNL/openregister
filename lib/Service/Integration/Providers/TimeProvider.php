@@ -62,16 +62,18 @@ class TimeProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param IDBConnection         $db                    NC DB connection.
-     * @param IAppManager           $appManager            NC app manager.
-     * @param IL10N                 $l10n                  Localisation.
-     * @param TimeTrackerLinkMapper $timeTrackerLinkMapper Time-tracker-link mapper (Tier-2 link table).
+     * @param IDBConnection         $db         NC DB connection (well-known idiom; used for legacy marker fallback queries).
+     * @param IAppManager           $appManager NC app manager.
+     * @param IL10N                 $l10n       Localisation.
+     * @param TimeTrackerLinkMapper $linkMapper Time-tracker-link mapper (Tier-2 link table).
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
      */
     public function __construct(
         private IDBConnection $db,
         private IAppManager $appManager,
         private IL10N $l10n,
-        private TimeTrackerLinkMapper $timeTrackerLinkMapper,
+        private TimeTrackerLinkMapper $linkMapper,
     ) {
     }//end __construct()
 
@@ -126,6 +128,8 @@ class TimeProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the IntegrationProvider interface contract; this implementation routes by $objectId only.
+     *
      * @spec openspec/changes/integration-time-tracker/tasks.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
@@ -136,7 +140,7 @@ class TimeProvider extends AbstractIntegrationProvider
 
         // Tier-2 path: read from the link table.
         try {
-            $linkRows = $this->timeTrackerLinkMapper->findByObjectUuid($objectId);
+            $linkRows = $this->linkMapper->findByObjectUuid($objectId);
         } catch (Throwable $e) {
             $linkRows = [];
         }
@@ -179,7 +183,7 @@ class TimeProvider extends AbstractIntegrationProvider
             'duration'  => $link->getDuration(),
             'billable'  => $link->getBillable(),
             'startedAt' => $link->getStartedAt()?->format(\DateTime::ATOM),
-            'url'       => $this->entryDeepLink(entryType: $entryType, id: $id),
+            'url'       => $this->entryDeepLink(entryType: $entryType, entryId: $id),
             'data'      => $link->jsonSerialize(),
         ];
     }//end rowFromLink()
@@ -207,19 +211,19 @@ class TimeProvider extends AbstractIntegrationProvider
      * Build the NC TimeManager deep link for an entry.
      *
      * @param string $entryType Entry kind.
-     * @param string $id        Upstream entry uuid.
+     * @param string $entryId   Upstream entry uuid.
      *
      * @return string
      */
-    private function entryDeepLink(string $entryType, string $id): string
+    private function entryDeepLink(string $entryType, string $entryId): string
     {
         switch ($entryType) {
             case 'task':
-                return '/index.php/apps/timemanager/tasks/'.$id;
+                return '/index.php/apps/timemanager/tasks/'.$entryId;
             case 'time':
-                return '/index.php/apps/timemanager/times/'.$id;
+                return '/index.php/apps/timemanager/times/'.$entryId;
             default:
-                return '/index.php/apps/timemanager/clients/'.$id;
+                return '/index.php/apps/timemanager/clients/'.$entryId;
         }
     }//end entryDeepLink()
 
@@ -262,7 +266,7 @@ class TimeProvider extends AbstractIntegrationProvider
                 'type'  => 'client',
                 'title' => (string) ($row['name'] ?? ''),
                 'name'  => (string) ($row['name'] ?? ''),
-                'url'   => $this->entryDeepLink(entryType: 'client', id: $uuid),
+                'url'   => $this->entryDeepLink(entryType: 'client', entryId: $uuid),
                 'data'  => $row,
             ];
         }
@@ -275,7 +279,7 @@ class TimeProvider extends AbstractIntegrationProvider
                 'type'  => 'task',
                 'title' => (string) ($row['name'] ?? ''),
                 'name'  => (string) ($row['name'] ?? ''),
-                'url'   => $this->entryDeepLink(entryType: 'task', id: $uuid),
+                'url'   => $this->entryDeepLink(entryType: 'task', entryId: $uuid),
                 'data'  => $row,
             ];
         }

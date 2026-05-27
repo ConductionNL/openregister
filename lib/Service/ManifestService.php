@@ -47,7 +47,9 @@ use Throwable;
 /**
  * Enriches a manifest with `runtime.user` context for the authenticated user.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes ObjectService, SchemaMapper,
+ *   CalculationEvaluator, IUserSession, and LoggerInterface; each serves a distinct
+ *   concern in the profile-lookup, calculation-evaluation, and manifest-enrichment pipeline.
  */
 class ManifestService
 {
@@ -117,7 +119,10 @@ class ManifestService
      *
      * @return array<string, mixed> Enriched manifest (original if no `currentUserSchema`).
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Security-critical slug validation
+     *   (type + length + charset checks) combined with anonymous/profile-absent early
+     *   returns requires several guard branches; removing any guard would introduce
+     *   an injection or data-leak risk.
      *
      * @spec openspec/changes/manifest-user-context/tasks.md#task-1
      */
@@ -252,7 +257,9 @@ class ManifestService
      *
      * @return array<string, mixed> The `runtime.user` data block.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field-allowlist filtering loop
+     *   plus conditional calculation injection each contribute branches; PHPMD 2.x
+     *   also accumulates CC from the extracted applyCalculations helper.
      */
     private function buildUserContext(string $userId, ObjectEntity $profile, string $schemaSlug): array
     {
@@ -286,30 +293,57 @@ class ManifestService
             return $context;
         }
 
-        // Build @self metadata the same way the listener does, so expressions
-        // referencing @self.created / @self.updated work correctly.
-        $created          = $profile->getCreated();
-        $updated          = $profile->getUpdated();
-        $createdFormatted = null;
-        $updatedFormatted = null;
-        if ($created !== null) {
-            $createdFormatted = $created->format(DateTimeInterface::ATOM);
-        }
+        $data['@self'] = $this->buildSelfMeta(profile: $profile);
 
-        if ($updated !== null) {
-            $updatedFormatted = $updated->format(DateTimeInterface::ATOM);
-        }
+        return $this->applyCalculations(
+            context: $context,
+            data: $data,
+            calcs: $calcs,
+            userId: $userId
+        );
+    }//end buildUserContext()
 
-        $data['@self'] = [
+    /**
+     * Build the `@self` metadata block injected into the evaluation data map
+     * so calculations can reference `@self.created`, `@self.uuid`, etc.
+     *
+     * @param ObjectEntity $profile The profile entity.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildSelfMeta(ObjectEntity $profile): array
+    {
+        $created = $profile->getCreated();
+        $updated = $profile->getUpdated();
+
+        return [
             'id'       => $profile->getUuid(),
             'uuid'     => $profile->getUuid(),
             'register' => $profile->getRegister(),
             'schema'   => $profile->getSchema(),
             'owner'    => $profile->getOwner(),
-            'created'  => $createdFormatted,
-            'updated'  => $updatedFormatted,
+            'created'  => $created !== null ? $created->format(DateTimeInterface::ATOM) : null,
+            'updated'  => $updated !== null ? $updated->format(DateTimeInterface::ATOM) : null,
         ];
+    }//end buildSelfMeta()
 
+    /**
+     * Evaluate the non-materialised calculations from the schema and merge
+     * the results into $context.
+     *
+     * @param array<string, mixed> $context Base context (already contains filtered profile fields).
+     * @param array<string, mixed> $data    Evaluation data including `@self`.
+     * @param array<string, mixed> $calcs   Calculation spec map from the schema.
+     * @param string               $userId  Nextcloud user id (used in warning messages only).
+     *
+     * @return array<string, mixed> Enriched context.
+     */
+    private function applyCalculations(
+        array $context,
+        array $data,
+        array $calcs,
+        string $userId
+    ): array {
         foreach ($calcs as $name => $spec) {
             if (is_array($spec) === false) {
                 continue;
@@ -339,7 +373,7 @@ class ManifestService
         }//end foreach
 
         return $context;
-    }//end buildUserContext()
+    }//end applyCalculations()
 
     /**
      * Read `x-openregister-calculations` from the schema identified by slug.

@@ -104,6 +104,9 @@ class ToolManagementHandler
      * @psalm-return list<ToolInterface>
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) getAgentTools() iterates tool ids, tries multiple candidate key formats (raw / prefixed) per id, and logs both found and not-found results — each branch is a required backward-compatibility guard for agent records from different schema eras.
+     * @SuppressWarnings(PHPMD.NPathComplexity) Three independent early-returns (null agent, empty enabledToolIds, filtered-to-empty selection) plus the two-candidate loop expand the NPath count without adding logical complexity.
      */
     public function getAgentTools(?Agent $agent, array $selectedTools=[]): array
     {

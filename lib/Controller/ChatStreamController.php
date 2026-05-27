@@ -66,6 +66,7 @@ use Throwable;
  * @package  OCA\OpenRegister\Controller
  *
  * @psalm-suppress UnusedClass
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) SSE controller composes ChatService + ConversationMapper + AgentMapper + IUserSession + IDBConnection + LoggerInterface; each handles a separate concern of the streaming pipeline (auth, DB commit safety, conversation routing, message processing) and cannot be removed without losing functionality.
  */
 class ChatStreamController extends Controller
 {
@@ -197,6 +198,10 @@ class ChatStreamController extends Controller
      * @NoAdminRequired
      *
      * @return Response Never returned — emitAndExit() always terminates.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) stream() is the single SSE dispatch path: auth check, body parse, agent/conversation resolution, heartbeat, channel wiring, and error handling are sequential guards that cannot be split into sub-methods without leaking the exit-based flow control across multiple layers.
+     * @SuppressWarnings(PHPMD.NPathComplexity) Multiple independent early-exit paths (unauthenticated, missing message, missing agent, forbidden conversation, stream failure) must all terminate via emitAndExit(); collapsing them would hide the distinct SSE error codes.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method coordinates the full SSE lifecycle in one readable sequence; extracting sub-stages would split the exit-based control flow across multiple methods and make the error-path analysis harder.
      *
      * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream
      */
@@ -391,6 +396,8 @@ class ChatStreamController extends Controller
      * @param array<string, mixed> $payload   JSON-encodable payload.
      *
      * @return never
+     *
+     * @SuppressWarnings(PHPMD.ExitExpression) SSE streaming contract requires process termination after the final frame; exit cannot be replaced by a return because the calling loop in stream() must stop unconditionally.
      *
      * @spec exclude SSE-framing helper: emits one frame, finalises the DB transaction, and exits;
      *              the streaming endpoint contract is owned by

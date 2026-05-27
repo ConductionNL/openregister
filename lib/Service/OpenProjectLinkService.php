@@ -46,8 +46,6 @@
  *
  * @version GIT: <git-id>
  * @link    https://OpenRegister.app
- *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 
 declare(strict_types=1);
@@ -77,7 +75,8 @@ use Throwable;
  *     user session + logger. Each dependency is required for one of the
  *     Tier-2 flows (link, create, unlink, list, picker, cache refresh,
  *     graceful degradation).
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Tier-2 service implements link/createAndLink/unlink/list/picker/refresh/hydrateLink/fetchWorkPackage/normalise — all are required faces of the OpenProject integration surface; splitting into separate classes would break the single-service lazy-resolution contract.
+ * @SuppressWarnings(PHPMD.LongVariable) $openProjectLinkMapper follows the repo naming convention for OR link-table mappers; $workPackageId is the exact term used by the OpenProject API and abbreviating it would misalign with upstream documentation.
  */
 class OpenProjectLinkService
 {
@@ -509,6 +508,8 @@ class OpenProjectLinkService
      * @param array<string,mixed> $response Decoded source response.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) normaliseList() probes four distinct OpenProject response envelope shapes (results/items/_embedded/elements) and handles the `_embedded.elements` nesting variant; each probe is required to support the differing API versions returned by the router.
      */
     private function normaliseList(array $response): array
     {

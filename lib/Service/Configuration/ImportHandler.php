@@ -2728,9 +2728,9 @@ class ImportHandler
 
         // Surface the auto-created register in the import result so callers
         // see a complete (Configuration, Schemas, Register) triple.
-        $existingResultRegisters = $result['registers'] ?? [];
-        $alreadyPresent          = false;
-        foreach ($existingResultRegisters as $existing) {
+        $resultRegisters = $result['registers'] ?? [];
+        $alreadyPresent  = false;
+        foreach ($resultRegisters as $existing) {
             if ($existing instanceof Register && $existing->getId() === $register->getId()) {
                 $alreadyPresent = true;
                 break;
@@ -2738,8 +2738,8 @@ class ImportHandler
         }
 
         if ($alreadyPresent === false) {
-            $existingResultRegisters[] = $register;
-            $result['registers']       = $existingResultRegisters;
+            $resultRegisters[]   = $register;
+            $result['registers'] = $resultRegisters;
         }
 
         // Keep the Configuration entity's registers[] field in sync so the

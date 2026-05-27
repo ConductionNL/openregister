@@ -43,9 +43,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/integration-shares/tasks.md
- *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 
 declare(strict_types=1);
@@ -71,8 +68,8 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service references IManager, IShare, Folder, Node, IL10N, LoggerInterface, ContainerInterface, DateTime, DateTimeInterface, OCP\Server, and Throwable — every type is required for the share list/create/revoke contract or the lazy-resolution policy.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Service exposes getLinkedShares/createShare/revokeShare/getShareableFiles plus internal resolution helpers (getShareManager, resolveObjectFolder, resolveNodeInFolder, normaliseShare, shareIsInFolder, resolveCurrentUserId, resolveObjectEntity, lookup, resolveContainer); each is a required step of a distinct public flow.
  */
 class ShareLinkService
 {
@@ -143,6 +140,8 @@ class ShareLinkService
      *
      * @spec exclude ADR-019 Tier-2 integration link-service facade; the shares-listing contract is owned by the
      *              integration-shares / generic-integrations capability.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) getLinkedShares() walks six share types per folder node with per-type Throwable swallow and per-share deduplication; each branch is a required degradation guard per the AD-23 graceful-degradation contract.
      */
     public function getLinkedShares(string $objectUuid): array
     {
@@ -218,7 +217,10 @@ class ShareLinkService
      * @throws Exception On missing user (401), file-not-in-folder (404),
      *                   invalid recipient (400) or share-manager failure.
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) createShare() maps directly to IManager::createShare()'s required fields (node, shareType, sharedBy, permissions, shareWith, password, expiration); bundling into a value-object would add an intermediate type not used elsewhere.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) createShare() guards share type validity, shareWith requirement per type, password/expiration optional fields, and ownership boundary (node-in-folder check); each branch enforces a distinct access-control requirement.
+     * @SuppressWarnings(PHPMD.NPathComplexity) Optional password + optional expiration + three share-type branches that require shareWith produce many independent paths; all enforce the IManager::createShare contract.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $registerId and $schemaId are reserved for future folder-scoping; removing them now would break the method signature used by the controller and SharesProvider.
      *
      * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-share contract is owned by the
      *              integration-shares / generic-integrations capability.
@@ -623,6 +625,8 @@ class ShareLinkService
      * otherwise NC's global server container.
      *
      * @return ContainerInterface
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Server::get() is the Nextcloud-prescribed static service-locator for optional late-bound dependencies; no injectable alternative exists for the lazy-resolution policy (constructor injection would fail when optional services are absent).
      */
     private function resolveContainer(): ContainerInterface
     {

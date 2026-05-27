@@ -126,36 +126,51 @@ class AnnotationNotifier implements INotifier
         // The schema's custom per-locale subject (already interpolated by the
         // dispatcher for this recipient) wins; otherwise render the canonical
         // localised string with the object title + register name substituted.
+        $objectTitle  = (string) ($params['objectTitle'] ?? $l->t('object'));
+        $registerName = (string) ($params['registerName'] ?? ($params['registerId'] ?? ''));
+        $parsedSubject = $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName]);
         if ($hasText === true) {
-            $notification->setParsedSubject($text);
-        } else {
-            $objectTitle  = (string) ($params['objectTitle'] ?? $l->t('object'));
-            $registerName = (string) ($params['registerName'] ?? ($params['registerId'] ?? ''));
-            $notification->setParsedSubject(
-                $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName])
-            );
+            $parsedSubject = $text;
         }
+
+        $notification->setParsedSubject($parsedSubject);
 
         $notification->setIcon(
             $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
         );
 
-        // Deep-link to the object detail view when routing params are present.
-        $registerId = ($params['registerId'] ?? null);
-        $schemaId   = ($params['schemaId'] ?? null);
-        $objectUuid = ($params['objectUuid'] ?? null);
-        if ($registerId !== null && $schemaId !== null && $objectUuid !== null && (string) $objectUuid !== '') {
-            $action = $notification->createAction();
-            $action->setLabel($l->t('View'))
-                ->setPrimary(true)
-                ->setLink(
-                    $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
-                    .sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid),
-                    'GET'
-                );
-            $notification->addAction($action);
-        }
+        $this->addViewAction(notification: $notification, params: $params, label: $l->t('View'));
 
         return $notification;
     }//end prepare()
+
+    /**
+     * Attach a "View" deep-link action to the notification when all routing
+     * parameters (registerId, schemaId, objectUuid) are present and non-empty.
+     *
+     * @param INotification       $notification Notification to attach the action to.
+     * @param array<string,mixed> $params       Subject parameters from the notification.
+     * @param string              $label        Localised label for the action button.
+     *
+     * @return void
+     */
+    private function addViewAction(INotification $notification, array $params, string $label): void
+    {
+        $registerId = ($params['registerId'] ?? null);
+        $schemaId   = ($params['schemaId'] ?? null);
+        $objectUuid = ($params['objectUuid'] ?? null);
+        if ($registerId === null || $schemaId === null || $objectUuid === null || (string) $objectUuid === '') {
+            return;
+        }
+
+        $action = $notification->createAction();
+        $action->setLabel($label)
+            ->setPrimary(true)
+            ->setLink(
+                $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
+                .sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid),
+                'GET'
+            );
+        $notification->addAction($action);
+    }//end addViewAction()
 }//end class

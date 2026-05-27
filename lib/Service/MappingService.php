@@ -288,13 +288,13 @@ class MappingService
             }
         }
 
-        // Ensure output is always an array.
+        // Ensure output is always an array — default null to [], wrap scalars.
+        if ($output === null) {
+            $output = [];
+        }
+
         if (is_array($output) === false) {
-            if ($output === null) {
-                $output = [];
-            } else {
-                $output = [$output];
-            }
+            $output = [$output];
         }
 
         return $output;

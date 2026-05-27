@@ -236,6 +236,12 @@ class FlowLinkService
 
             if ($available === true) {
                 $opRow = $this->fetchOperationRow(operationId: (int) $link->getOperationId());
+                if ($opRow === null) {
+                    // Operation deleted in NC Flow — flag the link as
+                    // stale by setting enabled=false.
+                    $row['enabled'] = false;
+                }
+
                 if ($opRow !== null) {
                     $row['operationName']  = (string) ($opRow['name'] ?? $row['operationName']);
                     $row['operationClass'] = (string) ($opRow['class'] ?? $row['operationClass']);
@@ -247,10 +253,6 @@ class FlowLinkService
                     $row['events']    = $this->decodeJsonField(value: ($opRow['events'] ?? null));
                     $row['checks']    = $this->decodeJsonField(value: ($opRow['checks'] ?? null));
                     $row['operation'] = (string) ($opRow['operation'] ?? '');
-                } else {
-                    // Operation deleted in NC Flow — flag the link as
-                    // stale by setting enabled=false.
-                    $row['enabled'] = false;
                 }
             }
 

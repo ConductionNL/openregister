@@ -69,10 +69,10 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.ExcessiveClassLength)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
- * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     REST controllers have many endpoints; extraction into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) REST controllers have many endpoints; extraction into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     REST controllers have many endpoints; extraction into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller DI requires injecting framework + RBAC + audit + domain services, each used in separate endpoint groups.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
@@ -100,7 +100,7 @@ class SchemasController extends Controller
      *
      * @return void
      *
-     * @suppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud AppFramework requires all services to be constructor-injected.
      */
     public function __construct(
         string $appName,
@@ -151,8 +151,9 @@ class SchemasController extends Controller
      *     configuration: array|null|string, allOf: array|null,
      *     oneOf: array|null, anyOf: array|null}>}, array<never, never>>
      *
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
-     * @suppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple optional extend/pagination/filter parameters each add one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple optional extend/pagination/filter parameters each add one branch.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Handling pagination + filtering + extend + stats in one NC controller action is idiomatic; extracting helpers would obscure the flow.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
@@ -283,6 +284,9 @@ class SchemasController extends Controller
      *
      * @PublicPage
      *
+     * @SuppressWarnings(PHPMD.ShortVariable)        $id matches the {id} URL route parameter; renaming breaks route binding.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles _extend, _count, RBAC, 404, and several response-shaping branches; each is a required rendering path that cannot be extracted without splitting the HTTP contract.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function show($id): JSONResponse
@@ -362,8 +366,10 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @suppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException factory method is standard pattern
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block at the end is repetitive but intentional; extracting it would not reduce cognitive load.
      *
      * @return JSONResponse JSON response with created schema or error
      *
@@ -497,10 +503,11 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block is repetitive but intentional; extracting it would not reduce cognitive load.
+     * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @return JSONResponse JSON response with updated schema or error
      *
@@ -648,6 +655,8 @@ class SchemasController extends Controller
      *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
      *     array<never, never>>
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function patch(int $id): JSONResponse
@@ -671,6 +680,9 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|409|500, array{error?: string}, array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Force-flag and orphan-count branches are inherent to a safe delete endpoint.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
@@ -770,6 +782,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function uploadUpdate(?int $id=null): JSONResponse
@@ -794,10 +808,11 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @suppressWarnings(PHPMD.StaticAccess)          Uuid::v4 and DatabaseConstraintException factory are standard patterns
-     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
-     * @suppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is a named constructor and DatabaseConstraintException::fromDatabaseException is a factory — no DI alternatives.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) JSON-upload path merges insert + update branches; splitting would duplicate error classification.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
@@ -928,6 +943,8 @@ class SchemasController extends Controller
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Schema not found'}, array<never, never>>
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function download(int $id): JSONResponse
@@ -960,6 +977,8 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with related schemas
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
@@ -1027,6 +1046,8 @@ class SchemasController extends Controller
      *
      * @return JSONResponse JSON response with schema statistics
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
     public function stats(int $id): JSONResponse
@@ -1088,6 +1109,8 @@ class SchemasController extends Controller
      *
      * @return JSONResponse JSON response with exploration results
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
     public function explore(int $id): JSONResponse
@@ -1128,6 +1151,8 @@ class SchemasController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated schema
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
      */
@@ -1203,6 +1228,8 @@ class SchemasController extends Controller
      *     published?: null|string, depublished?: null|string,
      *     configuration?: array|null|string, allOf?: array|null,
      *     oneOf?: array|null, anyOf?: array|null}, array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
      */
@@ -1293,6 +1320,8 @@ class SchemasController extends Controller
      *     published?: null|string, depublished?: null|string,
      *     configuration?: array|null|string, allOf?: array|null,
      *     oneOf?: array|null, anyOf?: array|null}, array<never, never>>
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
      */

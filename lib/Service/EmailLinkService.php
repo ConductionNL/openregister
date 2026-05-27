@@ -50,8 +50,12 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes EmailLinkMapper, IDBConnection,
+ *   IAppManager, IUserSession, and LoggerInterface; each is a required dependency for
+ *   direct-SQL Mail table queries, availability checks, and user-session handling.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Direct SQL queries against NC Mail
+ *   internal tables (oc_mail_messages, oc_mail_accounts) inflate complexity; the
+ *   alternative (relying on Mail's PHP API) is unavailable outside Mail's own session.
  */
 
 declare(strict_types=1);
@@ -77,6 +81,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes mapper +
  *     IDBConnection (direct Mail-table queries) + IAppManager +
  *     IUserSession + LoggerInterface. Each dependency is required.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Spans send, link, list,
+ *     enrich, and delete paths; each path requires direct NC Mail DB queries
+ *     because Mail's own service layer is session-gated outside its own context.
  */
 class EmailLinkService
 {
@@ -220,6 +227,44 @@ class EmailLinkService
             throw new Exception('Mail message not found', 404);
         }
 
+        $link = $this->buildNewLink(
+            objectUuid: $objectUuid,
+            registerId: $registerId,
+            schemaId: $schemaId,
+            mailAccountId: $mailAccountId,
+            messageIdInt: $messageIdInt,
+            uidForMatch: $uidForMatch,
+            message: $message,
+            userId: $user->getUID()
+        );
+
+        return $this->mapper->insert($link);
+    }//end linkEmail()
+
+    /**
+     * Build a new EmailLink entity from link parameters and harvested message metadata.
+     *
+     * @param string              $objectUuid    Parent OR object uuid.
+     * @param int                 $registerId    OR register id.
+     * @param int                 $schemaId      OR schema id (0 = none).
+     * @param int                 $mailAccountId Mail account id.
+     * @param int                 $messageIdInt  Mail message id.
+     * @param string|null         $uidForMatch   Explicit UID or null to fall back from message row.
+     * @param array<string,mixed> $message       Harvested message metadata row.
+     * @param string              $userId        Linking user's NC uid.
+     *
+     * @return EmailLink Unsaved link entity.
+     */
+    private function buildNewLink(
+        string $objectUuid,
+        int $registerId,
+        int $schemaId,
+        int $mailAccountId,
+        int $messageIdInt,
+        ?string $uidForMatch,
+        array $message,
+        string $userId
+    ): EmailLink {
         $link = new EmailLink();
         $link->setObjectUuid($objectUuid);
         $link->setRegisterId($registerId);
@@ -229,11 +274,7 @@ class EmailLinkService
 
         $link->setMailAccountId($mailAccountId);
         $link->setMailMessageId($messageIdInt);
-        $effectiveUid = $uidForMatch;
-        if ($effectiveUid === null && $message['uid'] !== '') {
-            $effectiveUid = $message['uid'];
-        }
-
+        $effectiveUid = ($uidForMatch !== null || $message['uid'] === '') ? $uidForMatch : $message['uid'];
         $link->setMailMessageUid($effectiveUid);
         $link->setSubject($message['subject']);
         $link->setSender($message['sender']);
@@ -242,15 +283,15 @@ class EmailLinkService
             try {
                 $link->setMailDate(new DateTime($message['date']));
             } catch (Throwable $e) {
-                // Leave default null.
+                // Leave date null when the mail date string is unparseable.
             }
         }
 
-        $link->setLinkedBy($user->getUID());
+        $link->setLinkedBy($userId);
         $link->setLinkedAt(new DateTime());
 
-        return $this->mapper->insert($link);
-    }//end linkEmail()
+        return $link;
+    }//end buildNewLink()
 
     /**
      * Unlink a Mail message from an OR object.
@@ -482,10 +523,49 @@ class EmailLinkService
 
         $limit = max(1, min($limit, self::MAX_LIMIT));
 
+        $rows = $this->fetchMailboxRows(
+            accountId: $accountId,
+            mailbox: $mailbox,
+            afterCursor: $afterCursor,
+            fetch: $limit + 1
+        );
+
+        if ($rows === null) {
+            return ['items' => [], 'nextCursor' => null];
+        }
+
+        $hasMore = count($rows) > $limit;
+        if ($hasMore === true) {
+            $rows = array_slice($rows, 0, $limit);
+        }
+
+        $items      = $this->normalizeMessageRows(rows: $rows);
+        $nextCursor = ($hasMore === true && $items !== []) ? $items[count($items) - 1]['id'] : null;
+
+        return [
+            'items'      => $items,
+            'nextCursor' => $nextCursor,
+        ];
+    }//end getMessagesForMailbox()
+
+    /**
+     * Execute the mailbox message query and return the raw rows.
+     *
+     * Returns null when the mailbox cannot be resolved or the query fails.
+     *
+     * @param int         $accountId   Mail account id.
+     * @param string      $mailbox     Mailbox name.
+     * @param string|null $afterCursor Opaque cursor (message id) or null.
+     * @param int         $fetch       Number of rows to fetch (limit + 1 for hasMore detection).
+     *
+     * @return array<int,array<string,mixed>>|null Raw DB rows or null on failure.
+     */
+    private function fetchMailboxRows(int $accountId, string $mailbox, ?string $afterCursor, int $fetch): ?array
+    {
         try {
             $mailboxId = $this->resolveMailboxId(accountId: $accountId, mailbox: $mailbox);
             if ($mailboxId === 0) {
-                return ['items' => [], 'nextCursor' => null];
+                return null;
             }
 
             $qb = $this->db->getQueryBuilder();
@@ -512,33 +592,38 @@ class EmailLinkService
                 )
                 ->orderBy('m.sent_at', 'DESC')
                 ->addOrderBy('m.id', 'DESC')
-                ->setMaxResults($limit + 1);
+                ->setMaxResults($fetch);
 
-            if ($afterCursor !== null && $afterCursor !== '') {
-                $cursorId = (int) $afterCursor;
-                if ($cursorId > 0) {
-                    $qb->andWhere(
-                        $qb->expr()->lt(
-                            'm.id',
-                            $qb->createNamedParameter($cursorId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)
-                        )
-                    );
-                }
+            $cursorId = ($afterCursor !== null && $afterCursor !== '') ? (int) $afterCursor : 0;
+            if ($cursorId > 0) {
+                $qb->andWhere(
+                    $qb->expr()->lt(
+                        'm.id',
+                        $qb->createNamedParameter($cursorId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)
+                    )
+                );
             }
 
             $result = $qb->executeQuery();
             $rows   = $result->fetchAll();
             $result->closeCursor();
+
+            return $rows;
         } catch (Throwable $e) {
             $this->logger->warning('[EmailLinkService] getMessagesForMailbox failed: '.$e->getMessage());
-            return ['items' => [], 'nextCursor' => null];
+            return null;
         }//end try
+    }//end fetchMailboxRows()
 
-        $hasMore = count($rows) > $limit;
-        if ($hasMore === true) {
-            $rows = array_slice($rows, 0, $limit);
-        }
-
+    /**
+     * Normalise raw DB message rows to the API item shape.
+     *
+     * @param array<int,array<string,mixed>> $rows Raw DB rows.
+     *
+     * @return array<int,array<string,mixed>> Normalised items.
+     */
+    private function normalizeMessageRows(array $rows): array
+    {
         $items = [];
         foreach ($rows as $row) {
             $id     = (int) ($row['id'] ?? 0);
@@ -556,16 +641,8 @@ class EmailLinkService
             ];
         }
 
-        $nextCursor = null;
-        if ($hasMore === true && $items !== []) {
-            $nextCursor = $items[count($items) - 1]['id'];
-        }
-
-        return [
-            'items'      => $items,
-            'nextCursor' => $nextCursor,
-        ];
-    }//end getMessagesForMailbox()
+        return $items;
+    }//end normalizeMessageRows()
 
     /**
      * Resolve a mailbox id from `(accountId, mailbox-name)`.

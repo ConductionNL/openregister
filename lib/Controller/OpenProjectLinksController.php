@@ -58,13 +58,13 @@ class OpenProjectLinksController extends Controller
      *
      * @param string                 $appName                App id.
      * @param IRequest               $request                HTTP request.
-     * @param OpenProjectLinkService $openProjectLinkService Backing service.
+     * @param OpenProjectLinkService $linkService Backing service.
      * @param ObjectService          $objectService          OR object resolver.
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly OpenProjectLinkService $openProjectLinkService,
+        private readonly OpenProjectLinkService $linkService,
         private readonly ObjectService $objectService,
     ) {
         parent::__construct(appName: $appName, request: $request);
@@ -86,7 +86,7 @@ class OpenProjectLinksController extends Controller
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
-        if ($this->openProjectLinkService->isOpenConnectorAvailable() === false) {
+        if ($this->linkService->isOpenConnectorAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -99,7 +99,7 @@ class OpenProjectLinksController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $results = $this->openProjectLinkService->getLinkedWorkPackages($object->getUuid());
+            $results = $this->linkService->getLinkedWorkPackages($object->getUuid());
 
             return new JSONResponse(
                 [
@@ -132,7 +132,7 @@ class OpenProjectLinksController extends Controller
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
-        if ($this->openProjectLinkService->isOpenConnectorAvailable() === false) {
+        if ($this->linkService->isOpenConnectorAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -150,7 +150,7 @@ class OpenProjectLinksController extends Controller
                 return new JSONResponse(['error' => 'workPackageId is required'], 400);
             }
 
-            $link = $this->openProjectLinkService->linkWorkPackage(
+            $link = $this->linkService->linkWorkPackage(
                 $object->getUuid(),
                 (int) $object->getRegister(),
                 (int) $object->getSchema(),
@@ -183,7 +183,7 @@ class OpenProjectLinksController extends Controller
      */
     public function createAndLink(string $register, string $schema, string $id): JSONResponse
     {
-        if ($this->openProjectLinkService->isOpenConnectorAvailable() === false) {
+        if ($this->linkService->isOpenConnectorAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -208,7 +208,7 @@ class OpenProjectLinksController extends Controller
 
             $type = (string) $this->request->getParam('type', '');
 
-            $link = $this->openProjectLinkService->createAndLinkWorkPackage(
+            $link = $this->linkService->createAndLinkWorkPackage(
                 $object->getUuid(),
                 (int) $object->getRegister(),
                 (int) $object->getSchema(),
@@ -242,7 +242,7 @@ class OpenProjectLinksController extends Controller
      */
     public function destroy(string $register, string $schema, string $id, string $wpId): JSONResponse
     {
-        if ($this->openProjectLinkService->isOpenConnectorAvailable() === false) {
+        if ($this->linkService->isOpenConnectorAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -255,7 +255,7 @@ class OpenProjectLinksController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $this->openProjectLinkService->unlink($object->getUuid(), (int) $wpId);
+            $this->linkService->unlink($object->getUuid(), (int) $wpId);
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {
@@ -280,7 +280,7 @@ class OpenProjectLinksController extends Controller
      */
     public function available(): JSONResponse
     {
-        if ($this->openProjectLinkService->isOpenConnectorAvailable() === false) {
+        if ($this->linkService->isOpenConnectorAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -293,7 +293,7 @@ class OpenProjectLinksController extends Controller
         }
 
         try {
-            $workPackages = $this->openProjectLinkService->getAvailableWorkPackages($search);
+            $workPackages = $this->linkService->getAvailableWorkPackages($search);
             return new JSONResponse(['results' => $workPackages, 'total' => count($workPackages)]);
         } catch (Exception $e) {
             return $this->mapException(exception: $e);
