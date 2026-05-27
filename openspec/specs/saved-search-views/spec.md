@@ -53,7 +53,6 @@ The search sidebar MUST let a signed-in user favorite a view, automatically appl
 - **AND** no PATCH request MUST be issued
 
 #### Scenario: The default view is applied on mount
-@e2e exclude blocked by ViewService::create() not persisting `organisation` (backend bug — views vanish on reload); default-view-on-mount not reachable in the UI until fixed
 - **GIVEN** `viewsStore.getDefaultView` returns a view
 - **WHEN** the sidebar's `mounted()` hook runs
 - **THEN** `applyViewConfiguration(defaultView)` MUST be invoked
