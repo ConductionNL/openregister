@@ -1720,10 +1720,14 @@ class FilesController extends Controller
      */
     public function preview(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse
     {
-        $this->objectService->setSchema($schema);
-        $this->objectService->setRegister($register);
-
         try {
+            // SetSchema/setRegister throw DoesNotExistException for an unknown
+            // register/schema slug. Keep them inside the try so anonymous/missing-
+            // resource probes return a clean 404, not a 500 HTML page. See the
+            // newman files-domain triage and openregister#1962 follow-up.
+            $this->objectService->setSchema($schema);
+            $this->objectService->setRegister($register);
+
             // Gate anonymous callers on the file being publicly published.
             // Authenticated callers fall through to the existing object-level
             // RBAC path; anonymous callers MUST NOT be able to preview files
