@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\IUserSession;
 use OCP\IUser;
 use OCP\ISession;
@@ -201,7 +202,8 @@ class EntityOrganisationAssignmentTest extends TestCase
             db: $this->createMock(IDBConnection::class),
             fileService: $this->fileService,
             organisationService: $this->organisationService,
-            logger: $this->logger
+            logger: $this->logger,
+            registerSerializer: $this->createMock(RegisterSerializer::class)
         );
     }
 
