@@ -755,6 +755,8 @@ return [
         ['name' => 'userSettings#removeGitHubToken', 'url' => '/api/user-settings/github/token', 'verb' => 'DELETE'],
         // Applications.
         ['name' => 'applications#page', 'url' => '/applications', 'verb' => 'GET'],
+        // SPA detail route — see ConductionNL/openregister#1962.
+        ['name' => 'ui#applicationDetails', 'url' => '/applications/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Agents.
         ['name' => 'agents#page', 'url' => '/agents', 'verb' => 'GET'],
         ['name' => 'agents#stats', 'url' => '/api/agents/stats', 'verb' => 'GET'],
@@ -869,7 +871,12 @@ return [
 		// parses the {register, schema, id} params and ObjectsIndex
 		// fetches the object so its detail tabs (including the registry-
 		// driven Integrations tab) render directly.
-		['name' => 'ui#objects', 'url' => '/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+		//
+		// Distinct action name (`ui#objectDetail`) so OC's `OC\Route\Router`
+		// duplicate-route-name guard does not drop one of the two `/objects*`
+		// declarations — same pattern as `ui#integrationsView` below. See
+		// ConductionNL/openregister#1962.
+		['name' => 'ui#objectDetail', 'url' => '/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
 		// Standalone integrations view (per-leaf screenshot harness target).
 		// Bypasses ObjectDetails; Vue Router resolves to IntegrationsView.vue.
 		// Has its own action `ui#integrationsView` so the duplicate-route-name
@@ -895,6 +902,8 @@ return [
 		['name' => 'reports#preview', 'url' => '/api/reports/{id}/preview', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
 		['name' => 'ui#templates', 'url' => '/templates', 'verb' => 'GET'],
 		['name' => 'ui#featuresRoadmap', 'url' => '/features-roadmap', 'verb' => 'GET'],
+		// SPA my-account route — see ConductionNL/openregister#1962.
+		['name' => 'ui#myAccount', 'url' => '/mijn-account', 'verb' => 'GET'],
 		['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
 		// User - Profile management and authentication.

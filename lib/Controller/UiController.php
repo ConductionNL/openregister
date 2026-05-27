@@ -645,4 +645,79 @@ class UiController extends Controller
     {
         return $this->makeSpaResponse();
     }//end featuresRoadmap()
+
+    /**
+     * Render My-account UI
+     *
+     * Serves the Single Page Application template for the per-user account page
+     * (`/mijn-account`). Mounted by the manifest as `myAccount` and reached via
+     * the settings menu. Without this route the hard-load and deep-link 404
+     * server-side. See ConductionNL/openregister#1962.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function myAccount(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end myAccount()
+
+    /**
+     * Render Application-detail UI
+     *
+     * Serves the Single Page Application template for `/applications/{id}`.
+     * Without this route the hard-load and deep-link 404 server-side. See
+     * ConductionNL/openregister#1962.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function applicationDetails(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end applicationDetails()
+
+    /**
+     * Render Object-detail (deep-link) UI
+     *
+     * Serves the Single Page Application template for
+     * `/objects/{register}/{schema}/{id}`. Has its own action name (distinct
+     * from `ui#objects`) so OC's `OC\Route\Router` duplicate-route-name guard
+     * does not drop one of the two — same trick as `ui#integrationsView` at
+     * `appinfo/routes.php`. See ConductionNL/openregister#1962.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     *
+     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
+     */
+    public function objectDetail(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end objectDetail()
 }//end class
