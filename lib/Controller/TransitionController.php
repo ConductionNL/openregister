@@ -65,6 +65,8 @@ class TransitionController extends Controller
      *
      * @NoAdminRequired
      *
+     * @NoCSRFRequired
+     *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-6
      */
     public function transition(string $id): JSONResponse

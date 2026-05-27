@@ -9,6 +9,10 @@
         This is a custom ruleset for OpenRegister Nextcloud.
     </description>
 
+    <!-- Exclude database migration files: they are one-time DDL scripts with no business logic,
+         and analysing all 136+ of them accounts for ~100s of the total phpmd runtime. -->
+    <exclude-pattern>*/Migration/*</exclude-pattern>
+
     <!-- Clean Code Rules -->
     <rule ref="rulesets/cleancode.xml/BooleanArgumentFlag"/>
     <rule ref="rulesets/cleancode.xml/ElseExpression"/>
