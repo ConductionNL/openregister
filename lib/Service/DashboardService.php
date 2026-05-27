@@ -790,7 +790,8 @@ class DashboardService
      *
      * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
      *
-     * @spec exclude Thin try/catch delegation to ObjectMapper::getSizeDistributionChartData with degraded-empty fallback; chart shaping owned by the mapper.
+     * @spec exclude Thin try/catch delegation to ObjectMapper::getSizeDistributionChartData with degraded-empty
+     *              fallback; chart shaping owned by the mapper.
      */
     public function getObjectsBySizeChartData(?int $registerId=null, ?int $schemaId=null): array
     {

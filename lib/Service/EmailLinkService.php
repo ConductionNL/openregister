@@ -193,7 +193,10 @@ class EmailLinkService
             throw new Exception('Invalid mail message id', 400);
         }
 
-        $uidForMatch = $messageUid !== '' ? $messageUid : null;
+        $uidForMatch = null;
+        if ($messageUid !== '') {
+            $uidForMatch = $messageUid;
+        }
 
         // Idempotent path: return the existing row if the composite key
         // already exists.
@@ -226,7 +229,12 @@ class EmailLinkService
 
         $link->setMailAccountId($mailAccountId);
         $link->setMailMessageId($messageIdInt);
-        $link->setMailMessageUid($uidForMatch ?? ($message['uid'] !== '' ? $message['uid'] : null));
+        $effectiveUid = $uidForMatch;
+        if ($effectiveUid === null && $message['uid'] !== '') {
+            $effectiveUid = $message['uid'];
+        }
+
+        $link->setMailMessageUid($effectiveUid);
         $link->setSubject($message['subject']);
         $link->setSender($message['sender']);
 
@@ -310,7 +318,10 @@ class EmailLinkService
             $links
         );
 
-        $nextCursor = $hasMore === true ? ($offset + $limit) : null;
+        $nextCursor = null;
+        if ($hasMore === true) {
+            $nextCursor = ($offset + $limit);
+        }
 
         return [
             'items'      => $items,
@@ -429,7 +440,7 @@ class EmailLinkService
             $out[] = [
                 'id'          => $id,
                 'name'        => $name,
-                'displayName' => $this->formatMailboxName($name),
+                'displayName' => $this->formatMailboxName(name: $name),
             ];
         }
 

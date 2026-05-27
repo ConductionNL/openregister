@@ -264,7 +264,11 @@ class ObjectIntegrationsController extends Controller
         if ($provider === null) {
             $registered = $this->registry->listIds();
             sort($registered);
-            $hint = ($registered === []) ? '(no providers registered)' : implode(', ', $registered);
+            $hint = '(no providers registered)';
+            if ($registered !== []) {
+                $hint = implode(', ', $registered);
+            }
+
             throw new NotImplementedException(
                 message: sprintf("Integration '%s' is not registered. Registered: %s", $integrationId, $hint)
             );

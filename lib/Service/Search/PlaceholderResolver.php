@@ -119,7 +119,10 @@ final class PlaceholderResolver
         if ($matched === 1) {
             $base = $matches[1];
             $sign = (int) $matches[2];
-            $unit = ($matches[3] !== '' ? $matches[3] : $this->defaultUnitFor(base: $base));
+            $unit = $this->defaultUnitFor(base: $base);
+            if ($matches[3] !== '') {
+                $unit = $matches[3];
+            }
         } else if (in_array($expr, $datebases, true) === true) {
             $base = $expr;
             $sign = 0;
@@ -150,7 +153,12 @@ final class PlaceholderResolver
                 default => 'days',
             };
 
-            $intervalSpec = sprintf('%s%d %s', ($sign < 0 ? '-' : '+'), abs($sign), $unitWord);
+            $signChar = '+';
+            if ($sign < 0) {
+                $signChar = '-';
+            }
+
+            $intervalSpec = sprintf('%s%d %s', $signChar, abs($sign), $unitWord);
             $dateTime     = $dateTime->modify($intervalSpec);
         }
 

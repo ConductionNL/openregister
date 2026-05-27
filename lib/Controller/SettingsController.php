@@ -803,7 +803,8 @@ class SettingsController extends Controller
      *     array<never, never>>|JSONResponse<422,
      *     array{success: false, error: string}, array<never, never>>
      *
-     * @spec exclude Debug/test scaffolding endpoint: indexes sample objects to exercise schema-aware SOLR mapping; not a product contract (see proposal Notes — routed debug surface).
+     * @spec exclude Debug/test scaffolding endpoint: indexes sample objects to exercise schema-aware SOLR mapping;
+     *              not a product contract (see proposal Notes — routed debug surface).
      */
     public function testSchemaMapping(): JSONResponse
     {
@@ -858,7 +859,9 @@ class SettingsController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps organisation/object data; not a product contract (see proposal Notes — routed debug surface, information-disclosure risk).
+     * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps
+     *              organisation/object data; not a product contract (see proposal Notes — routed debug surface,
+     *              information-disclosure risk).
      */
     public function debugTypeFiltering(): JSONResponse
     {

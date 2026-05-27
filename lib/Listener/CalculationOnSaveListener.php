@@ -124,16 +124,26 @@ class CalculationOnSaveListener implements IEventListener
         // `@self.created`, `@self.updated`, etc. via the CalculationEvaluator's
         // dotted prop path. ObjectEntity carries these on the entity itself,
         // not in the data array.
-        $created       = $object->getCreated();
-        $updated       = $object->getUpdated();
+        $created          = $object->getCreated();
+        $updated          = $object->getUpdated();
+        $createdFormatted = null;
+        if ($created !== null) {
+            $createdFormatted = $created->format(\DateTimeInterface::ATOM);
+        }//end if
+
+        $updatedFormatted = null;
+        if ($updated !== null) {
+            $updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
+        }//end if
+
         $data['@self'] = [
             'id'       => $object->getUuid(),
             'uuid'     => $object->getUuid(),
             'register' => $object->getRegister(),
             'schema'   => $object->getSchema(),
             'owner'    => $object->getOwner(),
-            'created'  => $created !== null ? $created->format(\DateTimeInterface::ATOM) : null,
-            'updated'  => $updated !== null ? $updated->format(\DateTimeInterface::ATOM) : null,
+            'created'  => $createdFormatted,
+            'updated'  => $updatedFormatted,
         ];
 
         foreach ($calcs as $name => $spec) {
@@ -230,6 +240,11 @@ class CalculationOnSaveListener implements IEventListener
     {
         $config = ($schema->getConfiguration() ?? []);
         $value  = ($config['x-openregister-calculations'] ?? null);
-        return is_array($value) === true ? $value : null;
+        $result = null;
+        if (is_array($value) === true) {
+            $result = $value;
+        }
+
+        return $result;
     }//end getCalculations()
 }//end class

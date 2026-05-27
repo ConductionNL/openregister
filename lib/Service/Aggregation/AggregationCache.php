@@ -123,10 +123,14 @@ class AggregationCache
             }
 
             $decoded = json_decode($blob, true);
-            return is_array($decoded) === true ? $decoded : null;
+            if (is_array($decoded) === true) {
+                return $decoded;
+            }
+
+            return null;
         } catch (\Throwable $e) {
             return null;
-        }
+        }//end try
     }//end get()
 
     /**
@@ -231,8 +235,13 @@ class AggregationCache
      */
     private function adhocName(AggregationQuery $query): string
     {
-        $encoded = json_encode($query->toArray());
-        return 'adhoc:'.sha1($encoded === false ? '' : $encoded);
+        $encoded    = json_encode($query->toArray());
+        $encodedStr = '';
+        if ($encoded !== false) {
+            $encodedStr = $encoded;
+        }
+
+        return 'adhoc:'.sha1($encodedStr);
 
     }//end adhocName()
 
@@ -290,7 +299,13 @@ class AggregationCache
     private function key(string $registerSlug, string $schemaSlug, string $name, array $filter): string
     {
         ksort($filter);
-        $filterHash = sha1(json_encode($filter) === false ? '' : json_encode($filter));
+        $filterEncoded = json_encode($filter);
+        $filterStr     = '';
+        if ($filterEncoded !== false) {
+            $filterStr = $filterEncoded;
+        }
+
+        $filterHash = sha1($filterStr);
         $rbacHash   = $this->rbacScopeHash();
         return sprintf('agg:%s:%s:%s:%s:%s', $registerSlug, $schemaSlug, $name, $filterHash, $rbacHash);
     }//end key()

@@ -505,7 +505,11 @@ class RenderObject
 
         foreach ($rows as $index => &$row) {
             $uuid = $uuidByIndex[$index] ?? null;
-            $ids  = ($uuid !== null) ? ($idsByUuid[$uuid] ?? []) : [];
+            $ids  = [];
+            if ($uuid !== null) {
+                $ids = ($idsByUuid[$uuid] ?? []);
+            }
+
             self::writeFilesToRow(row: $row, ids: $ids);
         }
 
@@ -1307,7 +1311,11 @@ class RenderObject
                 $inversePropertyNames = array_keys($inversedProperties);
 
                 // Normalize extend to array.
-                $extendArray = is_array($_extend) === true ? $_extend : explode(',', $_extend);
+                if (is_array($_extend) === true) {
+                    $extendArray = $_extend;
+                } else {
+                    $extendArray = explode(',', $_extend);
+                }
 
                 // Check if any inverse property is being extended (or 'all' is specified).
                 $shouldHandleInverse = in_array('all', $extendArray, true)
@@ -1458,7 +1466,14 @@ class RenderObject
         // Evaluate virtual calculations (`materialise: false`) when the
         // caller asks for them via _extend. Materialised calcs are
         // already in $objectData (set by CalculationOnSaveListener).
-        $extendArr = is_array($_extend) === true ? $_extend : ($_extend === null ? [] : [$_extend]);
+        if (is_array($_extend) === true) {
+            $extendArr = $_extend;
+        } else if ($_extend === null) {
+            $extendArr = [];
+        } else {
+            $extendArr = [$_extend];
+        }
+
         if (in_array('calculations', $extendArr, true) === true) {
             $objectData = $this->applyVirtualCalculations(
                 entity: $entity,
@@ -1603,8 +1618,19 @@ class RenderObject
             return $data;
         }
 
-        $created          = $entity->getCreated();
-        $updated          = $entity->getUpdated();
+        $created = $entity->getCreated();
+        $updated = $entity->getUpdated();
+
+        $createdFormatted = null;
+        if ($created !== null) {
+            $createdFormatted = $created->format(\DateTimeInterface::ATOM);
+        }
+
+        $updatedFormatted = null;
+        if ($updated !== null) {
+            $updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
+        }
+
         $payload          = $data;
         $payload['@self'] = [
             'id'       => $entity->getUuid(),
@@ -1612,8 +1638,8 @@ class RenderObject
             'register' => $entity->getRegister(),
             'schema'   => $entity->getSchema(),
             'owner'    => $entity->getOwner(),
-            'created'  => $created !== null ? $created->format(\DateTimeInterface::ATOM) : null,
-            'updated'  => $updated !== null ? $updated->format(\DateTimeInterface::ATOM) : null,
+            'created'  => $createdFormatted,
+            'updated'  => $updatedFormatted,
         ];
 
         foreach ($calcs as $name => $spec) {
@@ -2181,7 +2207,11 @@ class RenderObject
 
         // Normalize inversedBy to an array to support multi-field inverse relations.
         // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
-        $inversedByFields = is_array($inversedByField) === true ? $inversedByField : [$inversedByField];
+        if (is_array($inversedByField) === true) {
+            $inversedByFields = $inversedByField;
+        } else {
+            $inversedByFields = [$inversedByField];
+        }
 
         return [
             'targetSchemaRef'  => $targetSchemaRef,
@@ -2308,7 +2338,10 @@ class RenderObject
 
         // Pass additional field names for multi-field inversedBy so the SQL also searches
         // columns that may store references in {"value": "uuid"} format not in _relations.
-        $additionalFields = count($inversedByFields) > 1 ? array_slice($inversedByFields, 1) : [];
+        $additionalFields = [];
+        if (count($inversedByFields) > 1) {
+            $additionalFields = array_slice($inversedByFields, 1);
+        }
 
         $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
@@ -2639,7 +2672,12 @@ class RenderObject
 
             // Initialize the target property if not already set to preserve any existing values.
             if (isset($objectData[$targetProperty]) === false) {
-                $objectData[$targetProperty] = $isArray === true ? [] : null;
+                $defaultValue = null;
+                if ($isArray === true) {
+                    $defaultValue = [];
+                }
+
+                $objectData[$targetProperty] = $defaultValue;
             }
 
             // Find objects that have our UUID in ANY of their inversedBy fields.

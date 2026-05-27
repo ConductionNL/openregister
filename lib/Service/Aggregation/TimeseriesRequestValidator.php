@@ -209,7 +209,10 @@ class TimeseriesRequestValidator
         // interval-bucket requests we let dateBucket carry the field and
         // leave groupBy null — AggregationQuery::create() rejects the
         // combination as mutually exclusive.
-        $groupBy = ($dateBucket === null) ? ['field' => $field] : null;
+        $groupBy = null;
+        if ($dateBucket === null) {
+            $groupBy = ['field' => $field];
+        }
 
         $filter = (array) ($input['filter'] ?? []);
 
@@ -262,7 +265,11 @@ class TimeseriesRequestValidator
         }
 
         $format = ($property['format'] ?? null);
-        return is_string($format) === true ? $format : null;
+        if (is_string($format) === true) {
+            return $format;
+        }
+
+        return null;
 
     }//end fieldFormat()
 }//end class

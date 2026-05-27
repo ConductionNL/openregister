@@ -594,7 +594,11 @@ class MagicSearchHandler
                     }
 
                     if (isset($value['in']) === true) {
-                        $inValues     = is_array($value['in']) === true ? $value['in'] : [$value['in']];
+                        $inValues = [$value['in']];
+                        if (is_array($value['in']) === true) {
+                            $inValues = $value['in'];
+                        }
+
                         $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $inValues);
                         $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
                     }
@@ -1023,7 +1027,11 @@ class MagicSearchHandler
                 }
 
                 if (isset($value['in']) === true) {
-                    $inValues = is_array($value['in']) === true ? $value['in'] : [$value['in']];
+                    $inValues = [$value['in']];
+                    if (is_array($value['in']) === true) {
+                        $inValues = $value['in'];
+                    }
+
                     $qb->andWhere(
                         $qb->expr()->in(
                             "t.{$columnName}",

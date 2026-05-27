@@ -265,7 +265,8 @@ class SourcesController extends Controller
      *
      * @return int|null Integer value or null
      *
-     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned
+     *   by retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
      */
     private function getIntParam(array $params, string $key): ?int
     {

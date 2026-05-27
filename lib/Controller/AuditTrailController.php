@@ -164,12 +164,19 @@ class AuditTrailController extends Controller
         if (is_array($sortRaw) === true) {
             // Bracket format: _sort[created]=DESC.
             foreach ($sortRaw as $field => $direction) {
-                $sort[$field] = strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC';
+                $directionUpper = strtoupper($direction);
+                $sort[$field]   = 'DESC';
+                if ($directionUpper === 'ASC') {
+                    $sort[$field] = 'ASC';
+                }
             }
         } else if ($sortRaw !== null) {
             // Flat format: sort=created&order=DESC.
             $sortOrder      = $params['order'] ?? $params['_order'] ?? 'DESC';
-            $sort[$sortRaw] = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+            $sort[$sortRaw] = 'DESC';
+            if (strtoupper($sortOrder) === 'ASC') {
+                $sort[$sortRaw] = 'ASC';
+            }
         }
 
         if (empty($sort) === true) {
@@ -555,8 +562,15 @@ class AuditTrailController extends Controller
         $from = $this->request->getParam('from');
         $to   = $this->request->getParam('to');
 
-        $fromInt = ($from !== null) ? (int) $from : null;
-        $toInt   = ($to !== null) ? (int) $to : null;
+        $fromInt = null;
+        if ($from !== null) {
+            $fromInt = (int) $from;
+        }
+
+        $toInt = null;
+        if ($to !== null) {
+            $toInt = (int) $to;
+        }
 
         try {
             $result = $this->auditHashService->verifyChain($fromInt, $toInt);

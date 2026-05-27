@@ -131,15 +131,15 @@ class PollLinkService
             throw new Exception('Polls is not available', 503);
         }
 
-        $pollRow = $this->fetchPollRow($pollId);
+        $pollRow = $this->fetchPollRow(pollId: $pollId);
         if ($pollRow === null) {
             throw new Exception('Poll not found', 404);
         }
 
-        $deadline    = $this->expireToDateTime((int) ($pollRow['expire'] ?? 0));
+        $deadline    = $this->expireToDateTime(expire: (int) ($pollRow['expire'] ?? 0));
         $closed      = ($deadline !== null && $deadline->getTimestamp() <= time());
-        $voterCount  = $this->fetchVoterCount($pollId);
-        $optionCount = $this->fetchOptionCount($pollId);
+        $voterCount  = $this->fetchVoterCount(pollId: $pollId);
+        $optionCount = $this->fetchOptionCount(pollId: $pollId);
 
         $link = new PollLink();
         $link->setObjectUuid($objectUuid);
@@ -207,15 +207,15 @@ class PollLinkService
 
             if ($available === true) {
                 $pollId  = (int) $link->getPollId();
-                $pollRow = $this->fetchPollRow($pollId);
+                $pollRow = $this->fetchPollRow(pollId: $pollId);
 
                 if ($pollRow !== null) {
-                    $deadline           = $this->expireToDateTime((int) ($pollRow['expire'] ?? 0));
+                    $deadline           = $this->expireToDateTime(expire: (int) ($pollRow['expire'] ?? 0));
                     $row['pollTitle']   = (string) ($pollRow['title'] ?? $row['pollTitle']);
                     $row['pollType']    = (string) ($pollRow['type'] ?? $row['pollType']);
                     $row['deadline']    = $deadline?->format(DateTime::ATOM);
-                    $row['voterCount']  = $this->fetchVoterCount($pollId);
-                    $row['optionCount'] = $this->fetchOptionCount($pollId);
+                    $row['voterCount']  = $this->fetchVoterCount(pollId: $pollId);
+                    $row['optionCount'] = $this->fetchOptionCount(pollId: $pollId);
                     $row['closed']      = ($deadline !== null && $deadline->getTimestamp() <= time());
                 }
             }
@@ -273,15 +273,15 @@ class PollLinkService
         $out = [];
         foreach ($rows as $row) {
             $pollId   = (int) ($row['id'] ?? 0);
-            $deadline = $this->expireToDateTime((int) ($row['expire'] ?? 0));
+            $deadline = $this->expireToDateTime(expire: (int) ($row['expire'] ?? 0));
             $out[]    = [
                 'id'          => $pollId,
                 'title'       => (string) ($row['title'] ?? ''),
                 'type'        => (string) ($row['type'] ?? ''),
                 'deadline'    => $deadline?->format(DateTime::ATOM),
                 'closed'      => ($deadline !== null && $deadline->getTimestamp() <= time()),
-                'voterCount'  => $this->fetchVoterCount($pollId),
-                'optionCount' => $this->fetchOptionCount($pollId),
+                'voterCount'  => $this->fetchVoterCount(pollId: $pollId),
+                'optionCount' => $this->fetchOptionCount(pollId: $pollId),
             ];
         }
 
@@ -337,11 +337,14 @@ class PollLinkService
         }
 
         // Normalise the type — accept legacy short forms.
-        $normalisedType = $this->normalisePollType($type);
+        $normalisedType = $this->normalisePollType(type: $type);
 
         $uid    = $user->getUID();
         $now    = time();
-        $expire = ($deadline !== null) ? $deadline->getTimestamp() : 0;
+        $expire = 0;
+        if ($deadline !== null) {
+            $expire = $deadline->getTimestamp();
+        }
 
         try {
             $insert = $this->db->getQueryBuilder();
@@ -379,7 +382,7 @@ class PollLinkService
                 throw new Exception('Failed to retrieve created poll id', 500);
             }
 
-            $this->insertPollOptions($pollId, $uid, $normalisedType, $options, $now);
+            $this->insertPollOptions(pollId: $pollId, owner: $uid, type: $normalisedType, options: $options, now: $now);
         } catch (Throwable $e) {
             $this->logger->warning('Failed to create poll: '.$e->getMessage());
             throw new Exception('Failed to create poll: '.$e->getMessage(), 500);
@@ -434,7 +437,13 @@ class PollLinkService
             $order++;
 
             $hash      = substr(hash('sha256', $pollId.'-'.$text.'-'.$order), 0, 32);
-            $timestamp = ($type === 'datePoll' ? strtotime($text) ?: 0 : 0);
+            $timestamp = 0;
+            if ($type === 'datePoll') {
+                $parsedTime = strtotime($text);
+                if ($parsedTime !== false) {
+                    $timestamp = $parsedTime;
+                }
+            }
 
             $qb = $this->db->getQueryBuilder();
             $qb->insert('polls_options')->values(
@@ -521,7 +530,12 @@ class PollLinkService
                 ->from('polls_options')
                 ->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
                 ->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
-            return (int) ($qb->executeQuery()->fetchOne() ?: 0);
+            $fetchedCount = $qb->executeQuery()->fetchOne();
+            if ($fetchedCount === false || $fetchedCount === null) {
+                return 0;
+            }
+
+            return (int) $fetchedCount;
         } catch (Throwable $e) {
             return 0;
         }
@@ -574,6 +588,10 @@ class PollLinkService
             return 'datePoll';
         }
 
-        return $type === '' ? 'textPoll' : $type;
+        if ($type === '') {
+            return 'textPoll';
+        }
+
+        return $type;
     }//end normalisePollType()
 }//end class

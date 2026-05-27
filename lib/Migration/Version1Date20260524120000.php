@@ -51,6 +51,7 @@ class Version1Date20260524120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_calendar_links') === true) {

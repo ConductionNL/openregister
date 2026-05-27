@@ -119,7 +119,10 @@ class SolrDocumentIndexer
             $document = $this->documentBuilder->createDocument($object);
 
             // Index the document.
-            $commitValue = $commit === true ? 'true' : 'false';
+            $commitValue = 'false';
+            if ($commit === true) {
+                $commitValue = 'true';
+            }
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
 
@@ -201,7 +204,10 @@ class SolrDocumentIndexer
 
         if (empty($documents) === false) {
             try {
-                $commitValue = $commit === true ? 'true' : 'false';
+                $commitValue = 'false';
+                if ($commit === true) {
+                    $commitValue = 'true';
+                }//end if
 
                 $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
                 $this->httpClient->post($url, $documents);
@@ -268,7 +274,10 @@ class SolrDocumentIndexer
         }
 
         try {
-            $commitValue = $commit === true ? 'true' : 'false';
+            $commitValue = 'false';
+            if ($commit === true) {
+                $commitValue = 'true';
+            }
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
             $this->httpClient->post($url, $documents);
@@ -322,7 +331,10 @@ class SolrDocumentIndexer
         }
 
         try {
-            $commitValue = $commit === true ? 'true' : 'false';
+            $commitValue = 'false';
+            if ($commit === true) {
+                $commitValue = 'true';
+            }
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
 
@@ -387,7 +399,10 @@ class SolrDocumentIndexer
         }
 
         try {
-            $commitValue = $commit === true ? 'true' : 'false';
+            $commitValue = 'false';
+            if ($commit === true) {
+                $commitValue = 'true';
+            }
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
 

@@ -246,13 +246,23 @@ class TransitionEngine
                 continue;
             }
 
+            $requires    = null;
+            $description = null;
+            if (isset($spec['requires']) === true) {
+                $requires = (string) $spec['requires'];
+            }
+
+            if (isset($spec['description']) === true) {
+                $description = (string) $spec['description'];
+            }
+
             $available[] = [
                 'action'      => (string) $action,
                 'to'          => (string) ($spec['to'] ?? ''),
-                'requires'    => isset($spec['requires']) === true ? (string) $spec['requires'] : null,
-                'description' => isset($spec['description']) === true ? (string) $spec['description'] : null,
+                'requires'    => $requires,
+                'description' => $description,
             ];
-        }
+        }//end foreach
 
         return $available;
     }//end availableActions()
@@ -289,6 +299,10 @@ class TransitionEngine
     {
         $config     = ($schema->getConfiguration() ?? []);
         $annotation = ($config['x-openregister-lifecycle'] ?? null);
-        return is_array($annotation) === true ? $annotation : null;
+        if (is_array($annotation) === true) {
+            return $annotation;
+        }
+
+        return null;
     }//end getLifecycleAnnotation()
 }//end class

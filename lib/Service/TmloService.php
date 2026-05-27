@@ -344,7 +344,11 @@ class TmloService
         // Check if the transition is allowed.
         $allowedTargets = (self::VALID_TRANSITIONS[$oldStatus] ?? []);
         if (in_array($newStatus, $allowedTargets, true) === false) {
-            $allowed  = (empty($allowedTargets) === true ? 'none (terminal state)' : implode(', ', $allowedTargets));
+            $allowed = 'none (terminal state)';
+            if (empty($allowedTargets) === false) {
+                $allowed = implode(', ', $allowedTargets);
+            }//end if
+
             $errors[] = sprintf(
                 "Transition from '%s' to '%s' is not allowed. Allowed transitions from '%s': %s",
                 $oldStatus,

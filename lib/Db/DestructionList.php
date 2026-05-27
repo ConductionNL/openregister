@@ -172,6 +172,21 @@ class DestructionList extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+        $approvedAt = null;
+        if ($this->approvedAt instanceof DateTime) {
+            $approvedAt = $this->approvedAt->format('c');
+        }
+
+        $created = null;
+        if ($this->created instanceof DateTime) {
+            $created = $this->created->format('c');
+        }
+
+        $updated = null;
+        if ($this->updated instanceof DateTime) {
+            $updated = $this->updated->format('c');
+        }
+
         return [
             'id'           => $this->uuid,
             'uuid'         => $this->uuid,
@@ -180,11 +195,11 @@ class DestructionList extends Entity implements JsonSerializable
             'objects'      => $this->objects ?? [],
             'objectCount'  => count($this->objects ?? []),
             'approvedBy'   => $this->approvedBy,
-            'approvedAt'   => $this->approvedAt instanceof DateTime ? $this->approvedAt->format('c') : null,
+            'approvedAt'   => $approvedAt,
             'notes'        => $this->notes,
             'organisation' => $this->organisation,
-            'created'      => $this->created instanceof DateTime ? $this->created->format('c') : null,
-            'updated'      => $this->updated instanceof DateTime ? $this->updated->format('c') : null,
+            'created'      => $created,
+            'updated'      => $updated,
         ];
     }//end jsonSerialize()
 

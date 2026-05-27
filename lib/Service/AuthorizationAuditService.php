@@ -71,7 +71,8 @@ class AuthorizationAuditService
      *
      * @return void
      *
-     * @spec exclude Facade plumbing: emits one structured audit log line; sibling of logRegisterAuthorizationChange (rbac-scopes REQ-002), no distinct behavioral contract.
+     * @spec exclude Facade plumbing: emits one structured audit log line; sibling of logRegisterAuthorizationChange
+     *              (rbac-scopes REQ-002), no distinct behavioral contract.
      */
     public function logSchemaAuthorizationChange(
         int $schemaId,
@@ -80,8 +81,12 @@ class AuthorizationAuditService
         ?array $newAuthorization
     ): void {
         $user     = $this->userSession->getUser();
-        $userName = $user !== null ? $user->getDisplayName() : 'System';
-        $userId   = $user !== null ? $user->getUID() : 'system';
+        $userName = 'System';
+        $userId   = 'system';
+        if ($user !== null) {
+            $userName = $user->getDisplayName();
+            $userId   = $user->getUID();
+        }
 
         $this->logger->info(
             message: '[AuthorizationAudit] Schema authorization changed',
@@ -119,8 +124,12 @@ class AuthorizationAuditService
         ?array $newAuthorization
     ): void {
         $user     = $this->userSession->getUser();
-        $userName = $user !== null ? $user->getDisplayName() : 'System';
-        $userId   = $user !== null ? $user->getUID() : 'system';
+        $userName = 'System';
+        $userId   = 'system';
+        if ($user !== null) {
+            $userName = $user->getDisplayName();
+            $userId   = $user->getUID();
+        }
 
         // Count schemas that will inherit this change.
         // This is approximate -- we don't load each schema to check whether it has its own authorization.
@@ -128,7 +137,9 @@ class AuthorizationAuditService
         try {
             $register = $this->registerMapper->find($registerId);
             $schemas  = $register->getSchemas();
-            $affectedSchemaCount = is_array($schemas) === true ? count($schemas) : 0;
+            if (is_array($schemas) === true) {
+                $affectedSchemaCount = count($schemas);
+            }
         } catch (\Throwable $e) {
             // Could not count affected schemas.
         }
@@ -170,8 +181,12 @@ class AuthorizationAuditService
         ?array $newRoles
     ): void {
         $user     = $this->userSession->getUser();
-        $userName = $user !== null ? $user->getDisplayName() : 'System';
-        $userId   = $user !== null ? $user->getUID() : 'system';
+        $userName = 'System';
+        $userId   = 'system';
+        if ($user !== null) {
+            $userName = $user->getDisplayName();
+            $userId   = $user->getUID();
+        }
 
         $this->logger->info(
             message: '[AuthorizationAudit] Role definitions changed',

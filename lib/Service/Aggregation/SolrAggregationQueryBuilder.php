@@ -165,7 +165,11 @@ class SolrAggregationQueryBuilder
     {
         switch ($op) {
             case 'in':
-                $list = is_array($value) === true ? $value : [];
+                $list = [];
+                if (is_array($value) === true) {
+                    $list = $value;
+                }
+
                 if (count($list) === 0) {
                     return $field.':("__or_no_match__")';
                 }
@@ -199,7 +203,11 @@ class SolrAggregationQueryBuilder
     private function quote(mixed $value): string
     {
         if (is_bool($value) === true) {
-            return $value === true ? 'true' : 'false';
+            if ($value === true) {
+                return 'true';
+            }
+
+            return 'false';
         }
 
         if (is_int($value) === true || is_float($value) === true) {

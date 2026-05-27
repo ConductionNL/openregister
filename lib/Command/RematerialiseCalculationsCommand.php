@@ -139,13 +139,18 @@ class RematerialiseCalculationsCommand extends Command
             return Command::SUCCESS;
         }
 
+        $dryRunLabel = '';
+        if ($dryRun === true) {
+            $dryRunLabel = ' (dry run)';
+        }
+
         $output->writeln(
                 sprintf(
             '<info>Rematerialising %d calculation(s) on %s/%s%s</info>',
             count($materialiseNames),
             $register->getSlug() ?? $register->getId(),
             $schema->getSlug() ?? $schema->getId(),
-            $dryRun === true ? ' (dry run)' : ''
+            $dryRunLabel
         )
                 );
 
@@ -227,7 +232,12 @@ class RematerialiseCalculationsCommand extends Command
             $failed
         )
                 );
-        return $failed > 0 ? Command::FAILURE : Command::SUCCESS;
+        $exitCode = Command::SUCCESS;
+        if ($failed > 0) {
+            $exitCode = Command::FAILURE;
+        }
+
+        return $exitCode;
     }//end execute()
 
     /**
@@ -242,16 +252,26 @@ class RematerialiseCalculationsCommand extends Command
      */
     private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array
     {
-        $created       = $entity->getCreated();
-        $updated       = $entity->getUpdated();
+        $created          = $entity->getCreated();
+        $updated          = $entity->getUpdated();
+        $createdFormatted = null;
+        if ($created !== null) {
+            $createdFormatted = $created->format(DateTimeInterface::ATOM);
+        }
+
+        $updatedFormatted = null;
+        if ($updated !== null) {
+            $updatedFormatted = $updated->format(DateTimeInterface::ATOM);
+        }
+
         $data['@self'] = [
             'id'       => $entity->getUuid(),
             'uuid'     => $entity->getUuid(),
             'register' => $entity->getRegister(),
             'schema'   => $entity->getSchema(),
             'owner'    => $entity->getOwner(),
-            'created'  => $created !== null ? $created->format(DateTimeInterface::ATOM) : null,
-            'updated'  => $updated !== null ? $updated->format(DateTimeInterface::ATOM) : null,
+            'created'  => $createdFormatted,
+            'updated'  => $updatedFormatted,
         ];
         return $data;
     }//end withSelf()
@@ -269,6 +289,10 @@ class RematerialiseCalculationsCommand extends Command
     {
         $config = ($schema->getConfiguration() ?? []);
         $value  = ($config['x-openregister-calculations'] ?? null);
-        return is_array($value) === true ? $value : null;
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return null;
     }//end getCalculations()
 }//end class

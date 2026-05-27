@@ -73,8 +73,13 @@ class ProblemDetailsBuilder
         string $instance='',
         array $extensions=[]
     ): array {
+        $problemType = self::DEFAULT_TYPE;
+        if ($type !== '') {
+            $problemType = $type;
+        }
+
         $problem = [
-            'type'   => ($type !== '' ? $type : self::DEFAULT_TYPE),
+            'type'   => $problemType,
             'title'  => $title,
             'status' => $status,
         ];

@@ -1408,8 +1408,12 @@ class GitHubHandler
         // reads on a configured PAT.
         $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
 
-        $effectiveLabels = is_array($labels) === true ? array_values(array_filter($labels, static fn($l) => $l !== '')) : [];
-        $labelCount      = count($effectiveLabels);
+        $effectiveLabels = [];
+        if (is_array($labels) === true) {
+            $effectiveLabels = array_values(array_filter($labels, static fn($l) => $l !== ''));
+        }//end if
+
+        $labelCount = count($effectiveLabels);
 
         if ($labelCount >= 2) {
             // OR semantics: one request per label, merge deduped by issue number, re-sort, truncate.
@@ -1445,8 +1449,12 @@ class GitHubHandler
             return ['items' => $items];
         }//end if
 
-        $singleLabel = $labelCount === 1 ? $effectiveLabels[0] : null;
-        $items       = $this->fetchIssuesPage(
+        $singleLabel = null;
+        if ($labelCount === 1) {
+            $singleLabel = $effectiveLabels[0];
+        }//end if
+
+        $items = $this->fetchIssuesPage(
             owner: $owner,
             repo: $repo,
             state: $state,

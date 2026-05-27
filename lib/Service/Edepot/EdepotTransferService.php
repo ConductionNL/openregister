@@ -364,15 +364,25 @@ class EdepotTransferService
             }
 
             foreach ($objectsWithFiles as $item) {
-                $uuid = $item['object']->getUuid();
-                $ref  = $results[0]->getTransferReference() ?? '';
+                $uuid           = $item['object']->getUuid();
+                $ref            = $results[0]->getTransferReference() ?? '';
+                $referenceValue = null;
+                if ($overallSuccess === true) {
+                    $referenceValue = $ref;
+                }
+
+                $errorValue = null;
+                if ($overallSuccess !== true) {
+                    $errorValue = $results[0]->getErrorMessage() ?? 'Transfer failed';
+                }
+
                 $mergedObjectResults[$uuid] = [
                     'accepted'  => $overallSuccess,
-                    'reference' => ($overallSuccess === true) ? $ref : null,
-                    'error'     => ($overallSuccess === true) ? null : ($results[0]->getErrorMessage() ?? 'Transfer failed'),
+                    'reference' => $referenceValue,
+                    'error'     => $errorValue,
                 ];
-            }
-        }
+            }//end foreach
+        }//end if
 
         // Update each object's retention status.
         foreach ($objectsWithFiles as $item) {

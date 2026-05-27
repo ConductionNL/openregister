@@ -179,7 +179,11 @@ class ElasticsearchAggregationQueryBuilder
     {
         switch ($op) {
             case 'in':
-                $list = is_array($value) === true ? $value : [];
+                $list = [];
+                if (is_array($value) === true) {
+                    $list = $value;
+                }
+
                 if (count($list) === 0) {
                     // `in` with empty list never matches.
                     $must[] = ['term' => ['_or_no_match_' => '___']];

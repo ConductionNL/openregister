@@ -187,14 +187,22 @@ class TalkLinksController extends Controller
 
             $description = $this->request->getParam('description');
             $typeParam   = $this->request->getParam('type');
-            $type        = $typeParam === null ? 2 : (int) $typeParam;
+            $type        = 2;
+            if ($typeParam !== null) {
+                $type = (int) $typeParam;
+            }
+
+            $descriptionValue = null;
+            if ($description !== null) {
+                $descriptionValue = (string) $description;
+            }
 
             $link = $this->talkLinkService->createAndLinkRoom(
                 $object->getUuid(),
                 (int) $object->getRegister(),
                 (int) $object->getSchema(),
                 $name,
-                $description === null ? null : (string) $description,
+                $descriptionValue,
                 $type
             );
 
@@ -265,10 +273,13 @@ class TalkLinksController extends Controller
             );
         }
 
-        $search = $this->request->getParam('search');
-        $rooms  = $this->talkLinkService->getAvailableRoomsForUser(
-            $search === null ? null : (string) $search
-        );
+        $search      = $this->request->getParam('search');
+        $searchValue = null;
+        if ($search !== null) {
+            $searchValue = (string) $search;
+        }
+
+        $rooms = $this->talkLinkService->getAvailableRoomsForUser($searchValue);
 
         return new JSONResponse(['results' => $rooms, 'total' => count($rooms)]);
     }//end rooms()
@@ -282,7 +293,8 @@ class TalkLinksController extends Controller
      *
      * @return ObjectEntity|null
      *
-     * @spec exclude Private helper: resolves an object from register/schema/id; the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+     * @spec exclude Private helper: resolves an object from register/schema/id; the link REST contract is owned by
+     *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
      */
     private function validateObject(string $register, string $schema, string $id): ?ObjectEntity
     {
@@ -307,7 +319,8 @@ class TalkLinksController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec exclude Private helper: maps a service exception code to an HTTP status; the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+     * @spec exclude Private helper: maps a service exception code to an HTTP status; the link REST contract is owned by
+     *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
      */
     private function mapException(Exception $exception): JSONResponse
     {

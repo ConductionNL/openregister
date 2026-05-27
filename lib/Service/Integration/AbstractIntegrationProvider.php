@@ -62,7 +62,9 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      *
      * @return string|null Default null (inherits from object RBAC).
      *
-     * @spec exclude Base-class default (trivial `return null`) — RBAC gating contract is owned by pluggable-integration-registry task-2/generic-integrations Permission Inheritance; concrete overrides carry the behaviour.
+     * @spec exclude Base-class default (trivial `return null`) — RBAC gating contract is owned by
+     *              pluggable-integration-registry task-2/generic-integrations Permission Inheritance;
+     *              concrete overrides carry the behaviour.
      */
     public function requiresPermission(): ?string
     {
@@ -75,7 +77,8 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      * @return array<string,mixed> Default `['type' => 'none']` for
      *                             integrations that need no credentials.
      *
-     * @spec exclude Base-class default (static `['type' => 'none']`) — the auth-requirements contract is owned by pluggable-integration-registry task-2; external providers override with real descriptors.
+     * @spec exclude Base-class default (static `['type' => 'none']`) — the auth-requirements contract is owned by
+     *              pluggable-integration-registry task-2; external providers override with real descriptors.
      */
     public function authRequirements(): array
     {
@@ -109,7 +112,8 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      *
      * @throws NotImplementedException Always, unless overridden.
      *
-     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501 contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
+     *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
      */
     public function get(string $register, string $schema, string $objectId, string $entityId): array
     {
@@ -130,7 +134,8 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      *
      * @throws NotImplementedException Always, unless overridden.
      *
-     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501 contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
+     *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -152,7 +157,8 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      *
      * @throws NotImplementedException Always, unless overridden.
      *
-     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501 contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
+     *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -173,7 +179,8 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      *
      * @throws NotImplementedException Always, unless overridden.
      *
-     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501 contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
+     *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
@@ -191,7 +198,8 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Base-class default health descriptor (static ok/configured) — the health/OCS-capabilities contract is owned by pluggable-integration-registry task-2; external providers override with a real probe.
+     * @spec exclude Base-class default health descriptor (static ok/configured) — the health/OCS-capabilities
+     *              contract is owned by pluggable-integration-registry task-2; external providers override with a real probe.
      */
     public function health(): array
     {

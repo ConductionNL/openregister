@@ -246,11 +246,16 @@ class ReportRenderJob extends TimedJob
 
         $channel = (string) ($delivery['channel'] ?? 'files');
         if ($channel === 'files' || $channel === 'both') {
+            $deliveryArray = [];
+            if (is_array($delivery) === true) {
+                $deliveryArray = $delivery;
+            }
+
             $this->writeToFiles(
                 dashboard: $dashboard,
                 payload: $payload,
                 rendered: $rendered,
-                delivery: is_array($delivery) === true ? $delivery : []
+                delivery: $deliveryArray
             );
         }
 

@@ -140,6 +140,10 @@ class LifecycleInitialStateListener implements IEventListener
     {
         $config     = ($schema->getConfiguration() ?? []);
         $annotation = ($config['x-openregister-lifecycle'] ?? null);
-        return is_array($annotation) === true ? $annotation : null;
+        if (is_array($annotation) === true) {
+            return $annotation;
+        }
+
+        return null;
     }//end getLifecycleAnnotation()
 }//end class

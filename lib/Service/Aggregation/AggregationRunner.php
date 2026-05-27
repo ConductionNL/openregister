@@ -274,11 +274,21 @@ class AggregationRunner
         // and finally to the PHP fallback.
         if ($this->searchBackend !== null) {
             try {
+                $fieldArg = null;
+                if (is_string($field) === true) {
+                    $fieldArg = $field;
+                }
+
+                $groupByArg = null;
+                if (is_array($groupBy) === true) {
+                    $groupByArg = $groupBy;
+                }
+
                 $portableQuery = AggregationQuery::create(
                     metric: $metric,
-                    field: is_string($field) === true ? $field : null,
+                    field: $fieldArg,
                     filter: $resolvedFilter,
-                    groupBy: is_array($groupBy) === true ? $groupBy : null
+                    groupBy: $groupByArg
                 );
                 $external      = $this->searchBackend->aggregate(query: $portableQuery);
                 if ($external !== null) {
@@ -287,10 +297,15 @@ class AggregationRunner
                     // shape is consistent. Search backends propagate the
                     // flag from the engine when supplied; otherwise
                     // assume the engine returned the full set.
+                    $fieldValue = null;
+                    if (is_string($field) === true) {
+                        $fieldValue = $field;
+                    }
+
                     $result = [
                         'name'      => $name,
                         'metric'    => $metric,
-                        'field'     => is_string($field) === true ? $field : null,
+                        'field'     => $fieldValue,
                         'backend'   => $backendName,
                         'truncated' => (bool) ($external['truncated'] ?? false),
                     ] + $external;
@@ -312,23 +327,38 @@ class AggregationRunner
         // Try the Postgres-native fast path. Falls back to PHP when the
         // query shape isn't supported (operator filters, complex values,
         // non-Postgres DB, etc).
+        $nativeFieldArg = null;
+        if (is_string($field) === true) {
+            $nativeFieldArg = $field;
+        }
+
+        $nativeGroupByArg = null;
+        if (is_array($groupBy) === true) {
+            $nativeGroupByArg = $groupBy;
+        }
+
         $native = $this->tryNativeAggregation(
             register: $register,
             schema: $schema,
             metric: $metric,
-            field: is_string($field) === true ? $field : null,
+            field: $nativeFieldArg,
             filter: $resolvedFilter,
-            groupBy: is_array($groupBy) === true ? $groupBy : null
+            groupBy: $nativeGroupByArg
         );
         if ($native !== null) {
             // R05: native Postgres aggregates over the full set, so
             // `truncated` is structurally always false here. Surface
             // the key explicitly so client code can branch on
             // `result.truncated` regardless of backend.
+            $nativeFieldValue = null;
+            if (is_string($field) === true) {
+                $nativeFieldValue = $field;
+            }
+
             $result = [
                 'name'      => $name,
                 'metric'    => $metric,
-                'field'     => is_string($field) === true ? $field : null,
+                'field'     => $nativeFieldValue,
                 'backend'   => 'postgres',
                 'truncated' => false,
             ] + $native;
@@ -372,10 +402,15 @@ class AggregationRunner
         // already applied above, so re-applying them is a no-op.
         $rows = $this->applyFilter(rows: $rows, filter: $resolvedFilter);
 
+        $phpFallbackField = null;
+        if (is_string($field) === true) {
+            $phpFallbackField = $field;
+        }
+
         $result = [
             'name'      => $name,
             'metric'    => $metric,
-            'field'     => is_string($field) === true ? $field : null,
+            'field'     => $phpFallbackField,
             'backend'   => 'php-fallback',
             'truncated' => $truncated,
         ];
@@ -599,7 +634,9 @@ class AggregationRunner
      *
      * @throws RuntimeException When the schema can't be found.
      *
-     * @spec exclude Thin public convenience wrapper over the private loadSchema mapper lookup; exposed only so the REST controller can validate field allow-lists before building an AggregationQuery. No business logic of its own.
+     * @spec exclude Thin public convenience wrapper over the private loadSchema mapper lookup; exposed only so
+     *              the REST controller can validate field allow-lists before building an AggregationQuery.
+     *              No business logic of its own.
      */
     public function findSchema(string $schemaRef): Schema
     {
@@ -678,7 +715,12 @@ class AggregationRunner
                     continue;
                 }
 
-                $stamp = is_numeric($raw) === true ? (int) $raw : strtotime((string) $raw);
+                if (is_numeric($raw) === true) {
+                    $stamp = (int) $raw;
+                } else {
+                    $stamp = strtotime((string) $raw);
+                }
+
                 if ($stamp === false || $stamp < $start || $stamp >= $end) {
                     continue;
                 }
@@ -840,7 +882,12 @@ class AggregationRunner
         $buckets = [];
         foreach ($rows as $row) {
             $bucket = $row[$groupField] ?? null;
-            $key    = is_scalar($bucket) === true ? (string) $bucket : json_encode($bucket);
+            if (is_scalar($bucket) === true) {
+                $key = (string) $bucket;
+            } else {
+                $key = json_encode($bucket);
+            }
+
             if (isset($buckets[$key]) === false) {
                 $buckets[$key] = ['key' => $bucket, 'rows' => []];
             }
@@ -880,7 +927,11 @@ class AggregationRunner
             }
 
             $count++;
-            $acc = $acc === null ? (float) $value : $reducer((float) $acc, (float) $value);
+            if ($acc === null) {
+                $acc = (float) $value;
+            } else {
+                $acc = $reducer((float) $acc, (float) $value);
+            }
         }
 
         if ($count === 0 && $acc === null) {
@@ -912,7 +963,11 @@ class AggregationRunner
             $count++;
         }
 
-        return $count === 0 ? null : ($sum / $count);
+        if ($count === 0) {
+            return null;
+        }
+
+        return ($sum / $count);
     }//end avg()
 
     /**
@@ -1126,7 +1181,11 @@ class AggregationRunner
 
             foreach ($v as $op => $opValue) {
                 if ($op === 'in') {
-                    $list = is_array($opValue) === true ? $opValue : [];
+                    $list = [];
+                    if (is_array($opValue) === true) {
+                        $list = $opValue;
+                    }
+
                     if (count($list) === 0) {
                         // `in` with empty list never matches; emit a no-op
                         // condition that returns no rows.
@@ -1141,7 +1200,7 @@ class AggregationRunner
                     }
 
                     continue;
-                }
+                }//end if
 
                 $sqlOp = match ((string) $op) {
                     'gt'  => '>',
@@ -1279,7 +1338,11 @@ class AggregationRunner
             $stmt = $this->db->prepare($sql);
             $stmt->execute($bindings);
             $row   = $stmt->fetch();
-            $value = $row !== false ? $row['agg'] : null;
+            $value = null;
+            if ($row !== false) {
+                $value = $row['agg'];
+            }
+
             if ($metric === 'count') {
                 return ['value' => (int) ($value ?? 0)];
             }
@@ -1288,7 +1351,12 @@ class AggregationRunner
                 return ['value' => null];
             }
 
-            return ['value' => is_string($value) === true ? (float) $value : $value];
+            $floatValue = $value;
+            if (is_string($value) === true) {
+                $floatValue = (float) $value;
+            }
+
+            return ['value' => $floatValue];
         } catch (\Throwable $e) {
             // Native path failed (table not found, column not found, etc) —
             // tell the caller to fall back to PHP.
@@ -1376,7 +1444,11 @@ class AggregationRunner
      */
     private function identifierQuote(string $platform): string
     {
-        return $platform === 'mysql' ? '`' : '"';
+        if ($platform === 'mysql') {
+            return '`';
+        }
+
+        return '"';
 
     }//end identifierQuote()
 
@@ -1492,7 +1564,11 @@ class AggregationRunner
         }
 
         if (is_bool($value) === true) {
-            return $value === true ? 'true' : 'false';
+            if ($value === true) {
+                return 'true';
+            }
+
+            return 'false';
         }
 
         return (string) $value;
@@ -1649,20 +1725,35 @@ class AggregationRunner
         }
 
         // Attempt Postgres-native aggregation on the target schema table.
+        $crossFieldArg = null;
+        if (is_string($field) === true) {
+            $crossFieldArg = $field;
+        }
+
+        $crossGroupByArg = null;
+        if (is_array($groupBy) === true) {
+            $crossGroupByArg = $groupBy;
+        }
+
         $native = $this->tryNativeAggregation(
             register: $targetRegister,
             schema: $targetSchema,
             metric: $metric,
-            field: is_string($field) === true ? $field : null,
+            field: $crossFieldArg,
             filter: $resolvedWhere,
-            groupBy: is_array($groupBy) === true ? $groupBy : null
+            groupBy: $crossGroupByArg
         );
 
         if ($native !== null) {
+            $crossNativeField = null;
+            if (is_string($field) === true) {
+                $crossNativeField = $field;
+            }
+
             $result = [
                 'name'      => $name,
                 'metric'    => $metric,
-                'field'     => is_string($field) === true ? $field : null,
+                'field'     => $crossNativeField,
                 'from'      => $fromRef,
                 'backend'   => 'postgres',
                 'truncated' => false,
@@ -1695,10 +1786,15 @@ class AggregationRunner
 
         $rows = $this->applyFilter(rows: $rows, filter: $resolvedWhere);
 
+        $crossPhpField = null;
+        if (is_string($field) === true) {
+            $crossPhpField = $field;
+        }
+
         $result = [
             'name'      => $name,
             'metric'    => $metric,
-            'field'     => is_string($field) === true ? $field : null,
+            'field'     => $crossPhpField,
             'from'      => $fromRef,
             'backend'   => 'php-fallback',
             'truncated' => $truncated,
@@ -1869,7 +1965,11 @@ class AggregationRunner
     {
         $config = ($schema->getConfiguration() ?? []);
         $value  = ($config['x-openregister-aggregations'] ?? null);
-        return is_array($value) === true ? $value : null;
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return null;
     }//end getAnnotation()
 
     /**

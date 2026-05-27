@@ -185,7 +185,8 @@ class TagsProvider extends AbstractIntegrationProvider
      * @throws NotImplementedException Always — write path lives at
      *                                 `/api/tags/{...}` controllers.
      *
-     * @spec exclude NotImplemented write stub — tag writes still route through TagsController; the consolidated write path is owned by pluggable-integration-registry tasks 18-22, not this stub.
+     * @spec exclude NotImplemented write stub — tag writes still route through TagsController;
+     *   the consolidated write path is owned by pluggable-integration-registry tasks 18-22, not this stub.
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {

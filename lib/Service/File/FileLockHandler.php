@@ -178,7 +178,7 @@ class FileLockHandler
         $this->removeLockEntry(fileId: $fileId);
 
         $this->logger->info(
-            message: "[FileLockHandler] File {$fileId} unlocked by {$currentUserId}".($force === true ? ' (force)' : ''),
+            message: "[FileLockHandler] File {$fileId} unlocked by {$currentUserId}".($force === true ? ' (force)' : ''), // phpcs:ignore
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
@@ -323,7 +323,11 @@ class FileLockHandler
     {
         if ($this->cache !== null) {
             $entry = $this->cache->get(self::CACHE_PREFIX.$fileId);
-            return is_array($entry) === true ? $entry : null;
+            if (is_array($entry) === true) {
+                return $entry;
+            }
+
+            return null;
         }
 
         return ($this->localFallback[$fileId] ?? null);

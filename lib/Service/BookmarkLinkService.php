@@ -150,7 +150,7 @@ class BookmarkLinkService
             throw new Exception('Bookmarks is not available', 503);
         }
 
-        $details = $this->fetchBookmarkDetails($bookmarkId, $user->getUID());
+        $details = $this->fetchBookmarkDetails(bookmarkId: $bookmarkId, userId: $user->getUID());
         if ($details === null) {
             throw new Exception('Bookmark not found', 404);
         }
@@ -220,8 +220,8 @@ class BookmarkLinkService
 
         $results = [];
         foreach ($links as $link) {
-            if ($available === true && $userId !== null && $this->isStale($link, $now) === true) {
-                $details = $this->fetchBookmarkDetails((int) $link->getBookmarkId(), $userId);
+            if ($available === true && $userId !== null && $this->isStale(link: $link, now: $now) === true) {
+                $details = $this->fetchBookmarkDetails(bookmarkId: (int) $link->getBookmarkId(), userId: $userId);
                 if ($details !== null) {
                     $link->setTitle($details['title']);
                     $link->setUrl($details['url']);
@@ -293,7 +293,7 @@ class BookmarkLinkService
 
         $out = [];
         foreach ($bookmarks as $bookmark) {
-            $out[] = $this->normaliseBookmark($bookmark);
+            $out[] = $this->normaliseBookmark(bookmark: $bookmark);
         }
 
         return $out;
@@ -355,7 +355,7 @@ class BookmarkLinkService
             throw new Exception('Bookmarks is not available', 503);
         }
 
-        $cleanTags = $this->cleanTags($tags);
+        $cleanTags = $this->cleanTags(tags: $tags);
 
         try {
             $bookmark = new \OCA\Bookmarks\Db\Bookmark();
@@ -450,7 +450,7 @@ class BookmarkLinkService
             return null;
         }
 
-        $normalised = $this->normaliseBookmark($bookmark);
+        $normalised = $this->normaliseBookmark(bookmark: $bookmark);
 
         $addedAt = null;
         if ($normalised['added'] !== null && $normalised['added'] > 0) {
@@ -483,9 +483,17 @@ class BookmarkLinkService
      */
     private function normaliseBookmark(object $bookmark): array
     {
-        $arr = (method_exists($bookmark, 'toArray') === true) ? $bookmark->toArray() : (array) $bookmark;
+        $arr = (array) $bookmark;
+        if (method_exists($bookmark, 'toArray') === true) {
+            $arr = $bookmark->toArray();
+        }
 
-        $id  = (int) ($arr['id'] ?? (method_exists($bookmark, 'getId') === true ? $bookmark->getId() : 0));
+        $idFallback = 0;
+        if (method_exists($bookmark, 'getId') === true) {
+            $idFallback = $bookmark->getId();
+        }
+
+        $id  = (int) ($arr['id'] ?? $idFallback);
         $url = (string) ($arr['url'] ?? '');
 
         $tags = [];
@@ -507,13 +515,18 @@ class BookmarkLinkService
             }
         }
 
+        $added = null;
+        if (isset($arr['added']) === true) {
+            $added = (int) $arr['added'];
+        }
+
         return [
             'id'          => $id,
             'title'       => (string) ($arr['title'] ?? $url),
             'url'         => $url,
             'description' => (string) ($arr['description'] ?? ''),
-            'tags'        => $this->cleanTags($tags),
-            'added'       => (isset($arr['added']) === true) ? (int) $arr['added'] : null,
+            'tags'        => $this->cleanTags(tags: $tags),
+            'added'       => $added,
         ];
     }//end normaliseBookmark()
 

@@ -710,7 +710,8 @@ class IndexService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls total count inclusion
      *
-     * @spec exclude Facade plumbing: maps IndexService params onto the query array then delegate to SearchBackendInterface::searchObjectsPaginated (search-index), no standalone contract.
+     * @spec exclude Facade plumbing: maps IndexService params onto the query array then delegate to
+     *              SearchBackendInterface::searchObjectsPaginated (search-index), no standalone contract.
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -815,7 +816,8 @@ class IndexService
      *
      * @psalm-return array{collection: string, exists: true, tenant: null|string}
      *
-     * @spec exclude Facade plumbing: composes getTenantSpecificCollectionName + collectionExists + createCollection (search-index), no standalone contract.
+     * @spec exclude Facade plumbing: composes getTenantSpecificCollectionName + collectionExists + createCollection
+     *              (search-index), no standalone contract.
      */
     public function ensureTenantCollection(?string $tenant=null): array
     {
@@ -957,7 +959,8 @@ class IndexService
      *
      * @return array List of available ConfigSets.
      *
-     * @spec exclude Facade plumbing: method_exists guard then delegate to the Solr backend's listConfigSets, empty for non-Solr (search-index), no standalone contract.
+     * @spec exclude Facade plumbing: method_exists guard then delegate to the Solr backend's listConfigSets,
+     *              empty for non-Solr (search-index), no standalone contract.
      */
     public function listConfigSets(): array
     {

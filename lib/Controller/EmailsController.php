@@ -130,8 +130,15 @@ class EmailsController extends Controller
             }
 
             $params = $this->request->getParams();
-            $limit  = isset($params['limit']) === true ? (int) $params['limit'] : null;
-            $offset = isset($params['offset']) === true ? (int) $params['offset'] : null;
+            $limit  = null;
+            if (isset($params['limit']) === true) {
+                $limit = (int) $params['limit'];
+            }
+
+            $offset = null;
+            if (isset($params['offset']) === true) {
+                $offset = (int) $params['offset'];
+            }
 
             $result = $this->emailService->getEmailsForObject($object->getUuid(), $limit, $offset);
 

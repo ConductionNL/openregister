@@ -192,7 +192,10 @@ class AggregationThresholdListener implements IEventListener
         }
 
         $isAbove  = $this->compare(actual: $value, op: $op, expected: $threshold);
-        $newState = $isAbove === true ? self::STATE_ABOVE : self::STATE_BELOW;
+        $newState = self::STATE_BELOW;
+        if ($isAbove === true) {
+            $newState = self::STATE_ABOVE;
+        }
 
         $stateKey = sprintf('threshold:%d:%s', $schema->getId(), $notificationName);
         $oldState = $this->stateCache?->get($stateKey);

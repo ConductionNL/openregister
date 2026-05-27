@@ -202,7 +202,11 @@ class TenantKeyService
         $row    = $result->fetch();
         $result->closeCursor();
 
-        return ($row === false) ? null : $row;
+        if ($row === false) {
+            return null;
+        }
+
+        return $row;
     }//end fetchActiveRow()
 
     /**

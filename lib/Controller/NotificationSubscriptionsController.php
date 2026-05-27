@@ -209,7 +209,8 @@ class NotificationSubscriptionsController extends Controller
      *
      * @return ?string
      *
-     * @spec exclude Private helper: resolves the session UID (null when anonymous); the subscription endpoints are owned by notificatie-engine/tasks.md.
+     * @spec exclude Private helper: resolves the session UID (null when anonymous);
+     *              the subscription endpoints are owned by notificatie-engine/tasks.md.
      */
     private function resolveUserId(): ?string
     {

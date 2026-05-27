@@ -104,9 +104,13 @@ class AttributionFormatter
     public function format(string $userId): string
     {
         $user           = $this->userManager->get($userId);
-        $rawDisplayName = $user !== null ? $user->getDisplayName() : $userId;
-        $displayName    = $this->sanitizeDisplayName(rawDisplayName: $rawDisplayName);
-        $instanceUrl    = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
+        $rawDisplayName = $userId;
+        if ($user !== null) {
+            $rawDisplayName = $user->getDisplayName();
+        }
+
+        $displayName = $this->sanitizeDisplayName(rawDisplayName: $rawDisplayName);
+        $instanceUrl = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
 
         if ($this->isValidInstanceUrl(url: $instanceUrl) === false) {
             return self::FALLBACK_PREFIX;

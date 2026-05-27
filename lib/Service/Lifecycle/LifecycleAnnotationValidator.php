@@ -156,7 +156,12 @@ final class LifecycleAnnotationValidator
                 ];
             }
 
-            foreach (($fromOk === true ? $from : []) as $fromState) {
+            $fromIterable = [];
+            if ($fromOk === true) {
+                $fromIterable = $from;
+            }
+
+            foreach ($fromIterable as $fromState) {
                 if (isset($enumSet[(string) $fromState]) === false) {
                     $errors[] = [
                         'code'    => 'lifecycle-from-not-in-enum',

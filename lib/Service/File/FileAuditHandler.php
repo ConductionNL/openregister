@@ -268,6 +268,10 @@ class FileAuditHandler
     private function getCurrentUserId(): string
     {
         $user = $this->userSession->getUser();
-        return $user !== null ? $user->getUID() : 'anonymous';
+        if ($user !== null) {
+            return $user->getUID();
+        }
+
+        return 'anonymous';
     }//end getCurrentUserId()
 }//end class

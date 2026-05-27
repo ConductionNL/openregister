@@ -269,13 +269,23 @@ class GeoSpatialEvaluator
         }
 
         if ($type === 'Polygon') {
-            $ring = ($coords[0] ?? null);
-            return $this->ringCentroid(ring: (is_array($ring) === true ? $ring : []));
+            $ring      = ($coords[0] ?? null);
+            $ringArray = [];
+            if (is_array($ring) === true) {
+                $ringArray = $ring;
+            }
+
+            return $this->ringCentroid(ring: $ringArray);
         }
 
         if ($type === 'MultiPolygon') {
-            $ring = ($coords[0][0] ?? null);
-            return $this->ringCentroid(ring: (is_array($ring) === true ? $ring : []));
+            $ring      = ($coords[0][0] ?? null);
+            $ringArray = [];
+            if (is_array($ring) === true) {
+                $ringArray = $ring;
+            }
+
+            return $this->ringCentroid(ring: $ringArray);
         }
 
         if ($type === 'LineString'
@@ -388,13 +398,17 @@ class GeoSpatialEvaluator
                 continue;
             }
 
-            $denom     = ((($yj - $yi) === 0.0) ? 1e-12 : ($yj - $yi));
+            $denom = ($yj - $yi);
+            if ($denom === 0.0) {
+                $denom = 1e-12;
+            }
+
             $intersect = (($yi > $y) !== ($yj > $y))
                 && ($x < (($xj - $xi) * (($y - $yi) / $denom) + $xi));
             if ($intersect === true) {
                 $inside = !$inside;
             }
-        }
+        }//end for
 
         return $inside;
 

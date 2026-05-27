@@ -534,7 +534,12 @@ class SecurityService
      */
     private function buildAuthCompositeKey(string $identity, string $ipAddress): string
     {
-        $identity = $this->sanitizeForCacheKey(input: ($identity !== '' ? $identity : 'anonymous'));
+        $identityValue = $identity;
+        if ($identity === '') {
+            $identityValue = 'anonymous';
+        }
+
+        $identity = $this->sanitizeForCacheKey(input: $identityValue);
         $ip       = $this->sanitizeForCacheKey(input: $ipAddress);
 
         return $identity.'_'.$ip;

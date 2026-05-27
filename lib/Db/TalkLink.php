@@ -199,6 +199,12 @@ class TalkLink extends Entity implements JsonSerializable
             }
         }
 
+        // Convenience deep-link for the UI.
+        $url = null;
+        if ($this->roomToken !== null) {
+            $url = '/index.php/call/'.$this->roomToken;
+        }
+
         return [
             'id'               => $this->id,
             'objectUuid'       => $this->objectUuid,
@@ -214,8 +220,7 @@ class TalkLink extends Entity implements JsonSerializable
             'lastActivity'     => $this->lastActivity?->format(DateTime::ATOM),
             'linkedBy'         => $this->linkedBy,
             'linkedAt'         => $this->linkedAt?->format(DateTime::ATOM),
-            // Convenience deep-link for the UI.
-            'url'              => $this->roomToken !== null ? '/index.php/call/'.$this->roomToken : null,
+            'url'              => $url,
         ];
     }//end jsonSerialize()
 }//end class

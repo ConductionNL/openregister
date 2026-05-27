@@ -865,9 +865,24 @@ class HookExecutor
         }
 
         // Determine the persisted status.
-        $persistedStatus = $responseStatus ?? $deliveryStatus ?? ($success === true ? 'approved' : 'error');
+        $defaultStatus = 'error';
+        if ($success === true) {
+            $defaultStatus = 'approved';
+        }
+
+        $persistedStatus = $responseStatus ?? $deliveryStatus ?? $defaultStatus;
 
         // Persist execution history to WorkflowExecution entity.
+        $encodedErrors = null;
+        if ($error !== null) {
+            $encodedErrors = json_encode([['message' => $error]]);
+        }
+
+        $encodedPayload = null;
+        if ($payload !== null) {
+            $encodedPayload = json_encode($payload);
+        }
+
         try {
             $this->executionMapper->createFromArray(
                     [
@@ -881,9 +896,9 @@ class HookExecutor
                         'mode'       => $mode,
                         'status'     => $persistedStatus,
                         'durationMs' => $durationMs,
-                        'errors'     => $error !== null ? json_encode([['message' => $error]]) : null,
+                        'errors'     => $encodedErrors,
                         'metadata'   => json_encode($context),
-                        'payload'    => $payload !== null ? json_encode($payload) : null,
+                        'payload'    => $encodedPayload,
                         'executedAt' => new DateTime(),
                     ]
                     );

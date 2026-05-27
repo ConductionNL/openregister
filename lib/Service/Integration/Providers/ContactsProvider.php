@@ -185,15 +185,27 @@ class ContactsProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health
+     *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
      */
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+
+        $status = 'unavailable';
+        if ($installed === true) {
+            $status = 'ok';
+        }
+
+        $message = 'NC Contacts app is not installed';
+        if ($installed === true) {
+            $message = null;
+        }
+
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Contacts app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

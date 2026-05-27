@@ -137,16 +137,31 @@ class ShareLinksController extends Controller
             $password    = $this->request->getParam('password');
             $expiration  = $this->request->getParam('expiration');
 
+            $shareWithStr = null;
+            if ($shareWith !== null) {
+                $shareWithStr = (string) $shareWith;
+            }
+
+            $passwordStr = null;
+            if ($password !== null) {
+                $passwordStr = (string) $password;
+            }
+
+            $expirationStr = null;
+            if ($expiration !== null) {
+                $expirationStr = (string) $expiration;
+            }
+
             $share = $this->shareLinkService->createShare(
                 $object->getUuid(),
                 (int) $object->getRegister(),
                 (int) $object->getSchema(),
                 $fileId,
                 $shareType,
-                $shareWith !== null ? (string) $shareWith : null,
+                $shareWithStr,
                 $permissions,
-                $password !== null ? (string) $password : null,
-                $expiration !== null ? (string) $expiration : null
+                $passwordStr,
+                $expirationStr
             );
 
             return new JSONResponse(

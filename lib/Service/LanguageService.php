@@ -169,7 +169,9 @@ class LanguageService
      *
      * @return string The best matching language code
      *
-     * @spec openspec/specs/register-i18n/spec.md#fallback-language-chain (matches accepted languages against a register's available languages in priority order, with base-language fallback and register-default fallback flagged as fallbackUsed)
+     * @spec openspec/specs/register-i18n/spec.md#fallback-language-chain (matches accepted languages against a
+     *       register's available languages in priority order, with base-language fallback and register-default
+     *       fallback flagged as fallbackUsed)
      */
     public function resolveLanguageForRegister(array $registerLanguages): string
     {
@@ -209,7 +211,8 @@ class LanguageService
      *
      * @return string[] Ordered array of language codes (highest priority first)
      *
-     * @spec openspec/specs/register-i18n/spec.md#language-negotiation-accept-language (parses the Accept-Language header per RFC 9110, ordering language tags by descending q-value then appearance)
+     * @spec openspec/specs/register-i18n/spec.md#language-negotiation-accept-language (parses the Accept-Language
+     *       header per RFC 9110, ordering language tags by descending q-value then appearance)
      */
     public static function parseAcceptLanguageHeader(string $headerValue): array
     {

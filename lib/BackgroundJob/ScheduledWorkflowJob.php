@@ -135,7 +135,10 @@ class ScheduledWorkflowJob extends TimedJob
             $engine  = $engines[0];
             $adapter = $this->engineRegistry->resolveAdapter($engine);
 
-            $payloadData = $schedule->getPayload() !== null ? (json_decode($schedule->getPayload(), true) ?? []) : [];
+            $payloadData = [];
+            if ($schedule->getPayload() !== null) {
+                $payloadData = (json_decode($schedule->getPayload(), true) ?? []);
+            }
 
             $data = array_merge(
                     $payloadData,
@@ -160,6 +163,11 @@ class ScheduledWorkflowJob extends TimedJob
             $this->workflowMapper->update($schedule);
 
             // Persist execution history.
+            $errors = null;
+            if ($result->isError() === true) {
+                $errors = json_encode($result->getErrors());
+            }
+
             $this->executionMapper->createFromArray(
                     [
                         'hookId'     => 'scheduled-'.$schedule->getId(),
@@ -172,7 +180,7 @@ class ScheduledWorkflowJob extends TimedJob
                         'mode'       => 'sync',
                         'status'     => $result->getStatus(),
                         'durationMs' => $durationMs,
-                        'errors'     => $result->isError() === true ? json_encode($result->getErrors()) : null,
+                        'errors'     => $errors,
                         'metadata'   => json_encode($result->getMetadata()),
                         'executedAt' => $now,
                     ]

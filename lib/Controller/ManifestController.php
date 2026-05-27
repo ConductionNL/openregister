@@ -129,7 +129,8 @@ class ManifestController extends Controller
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
-     * @spec exclude Private helper: loads + JSON-decodes a host app's bundled manifest.json; the manifest endpoint contract is owned by manifest-user-context/tasks.md.
+     * @spec exclude Private helper: loads + JSON-decodes a host app's bundled manifest.json; the manifest endpoint
+     *              contract is owned by manifest-user-context/tasks.md.
      */
     private function loadBundledManifest(string $appId): ?array
     {

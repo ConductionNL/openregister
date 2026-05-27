@@ -223,7 +223,11 @@ class ManifestService
                 ]
             );
 
-            return count($results) > 0 ? $results[0] : null;
+            if (count($results) > 0) {
+                return $results[0];
+            }
+
+            return null;
         } catch (Throwable $e) {
             $this->logger->warning(
                 message: sprintf('[ManifestService] Profile lookup failed for user "%s": %s', $userId, $e->getMessage()),
@@ -284,16 +288,26 @@ class ManifestService
 
         // Build @self metadata the same way the listener does, so expressions
         // referencing @self.created / @self.updated work correctly.
-        $created       = $profile->getCreated();
-        $updated       = $profile->getUpdated();
+        $created          = $profile->getCreated();
+        $updated          = $profile->getUpdated();
+        $createdFormatted = null;
+        $updatedFormatted = null;
+        if ($created !== null) {
+            $createdFormatted = $created->format(DateTimeInterface::ATOM);
+        }
+
+        if ($updated !== null) {
+            $updatedFormatted = $updated->format(DateTimeInterface::ATOM);
+        }
+
         $data['@self'] = [
             'id'       => $profile->getUuid(),
             'uuid'     => $profile->getUuid(),
             'register' => $profile->getRegister(),
             'schema'   => $profile->getSchema(),
             'owner'    => $profile->getOwner(),
-            'created'  => $created !== null ? $created->format(DateTimeInterface::ATOM) : null,
-            'updated'  => $updated !== null ? $updated->format(DateTimeInterface::ATOM) : null,
+            'created'  => $createdFormatted,
+            'updated'  => $updatedFormatted,
         ];
 
         foreach ($calcs as $name => $spec) {
@@ -348,7 +362,11 @@ class ManifestService
 
         $config = ($schemas[0]->getConfiguration() ?? []);
         $calcs  = ($config['x-openregister-calculations'] ?? null);
-        return is_array($calcs) === true ? $calcs : null;
+        if (is_array($calcs) === true) {
+            return $calcs;
+        }
+
+        return null;
     }//end getCalculations()
 
     /**

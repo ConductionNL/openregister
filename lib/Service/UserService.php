@@ -1165,7 +1165,15 @@ class UserService
                 continue;
             }
 
-            $storeValue = is_bool($value) === true ? ($value === true ? 'true' : 'false') : (string) $value;
+            $storeValue = (string) $value;
+            if (is_bool($value) === true) {
+                if ($value === true) {
+                    $storeValue = 'true';
+                } else {
+                    $storeValue = 'false';
+                }
+            }
+
             $this->config->setUserValue($userId, self::APP_NAME, 'notification_'.$key, $storeValue);
         }
 

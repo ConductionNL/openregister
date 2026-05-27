@@ -96,7 +96,10 @@ HTML;
             $bodyHtml = $this->renderBody(widget: $widget, data: $data, type: $type);
         }
 
-        $subtitleBlock = $subtitle !== '' ? "<p class=\"widget-subtitle\">{$subtitle}</p>" : '';
+        $subtitleBlock = '';
+        if ($subtitle !== '') {
+            $subtitleBlock = "<p class=\"widget-subtitle\">{$subtitle}</p>";
+        }
 
         return <<<HTML
 <section class="widget widget-{$this->escape(value: $type)}">

@@ -265,7 +265,8 @@ class TimeTrackerLinkService
      * @throws Exception On missing user (401), empty name (400),
      *                   TimeManager unavailable (503), create failure (500).
      *
-     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-client contract is owned by the integration-time-tracker capability.
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-client contract is
+     *       owned by the integration-time-tracker capability.
      */
     public function createAndLinkClient(
         string $objectUuid,
@@ -454,7 +455,8 @@ class TimeTrackerLinkService
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec exclude ADR-019 Tier-2 integration link-service facade; the linked-entries listing contract is owned by the integration-time-tracker capability.
+     * @spec exclude ADR-019 Tier-2 integration link-service facade; the linked-entries listing contract is
+     *       owned by the integration-time-tracker capability.
      */
     public function getLinkedEntries(string $objectUuid): array
     {

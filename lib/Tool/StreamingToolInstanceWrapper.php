@@ -126,7 +126,11 @@ class StreamingToolInstanceWrapper
             throw $e;
         }
 
-        $resultPayload = is_array($result) === true ? $result : ['value' => $result];
+        $resultPayload = ['value' => $result];
+        if (is_array($result) === true) {
+            $resultPayload = $result;
+        }
+
         $this->channel->emitToolResult(
             payload: [
                 'toolId'  => $functionName,

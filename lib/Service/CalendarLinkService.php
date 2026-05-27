@@ -175,7 +175,7 @@ class CalendarLinkService
 
         // CalendarEventService::createEvent returns the veventToArray
         // shape with id=eventUri and calendarId stringified.
-        $calendarId  = isset($event['calendarId']) ? (int) $event['calendarId'] : 0;
+        $calendarId  = (int) ($event['calendarId'] ?? 0);
         $calendarUri = $this->resolveCalendarUriForId(userId: $user->getUID(), calendarId: $calendarId);
 
         $dtstart = null;
@@ -207,7 +207,12 @@ class CalendarLinkService
         $link->setSummary((string) ($event['summary'] ?? ''));
         $link->setDtstart($dtstart);
         $link->setDtend($dtend);
-        $link->setLocation(isset($event['location']) ? (string) $event['location'] : null);
+        $location = null;
+        if (isset($event['location']) === true) {
+            $location = (string) $event['location'];
+        }
+
+        $link->setLocation($location);
         $link->setLinkedBy($user->getUID());
         $link->setLinkedAt(new DateTime());
         $link->setTaggedWithXor(true);
@@ -357,7 +362,7 @@ class CalendarLinkService
                 continue;
             }
 
-            // Try fallback dedupe by uid alone (calendar URI missing)
+            // Try fallback dedupe by uid alone (calendar URI missing).
             $fallbackKey = null;
             foreach (array_keys($merged) as $existingKey) {
                 if (str_ends_with($existingKey, '|'.$eventUid) === true) {
@@ -405,11 +410,16 @@ class CalendarLinkService
                 continue;
             }
 
+            $color = null;
+            if (isset($calendar['{http://apple.com/ns/ical/}calendar-color']) === true) {
+                $color = (string) $calendar['{http://apple.com/ns/ical/}calendar-color'];
+            }
+
             $results[] = [
                 'id'          => (int) $calendar['id'],
                 'uri'         => (string) $calendar['uri'],
                 'displayName' => (string) ($calendar['{DAV:}displayname'] ?? $calendar['uri']),
-                'color'       => isset($calendar['{http://apple.com/ns/ical/}calendar-color']) ? (string) $calendar['{http://apple.com/ns/ical/}calendar-color'] : null,
+                'color'       => $color,
             ];
         }
 
@@ -474,7 +484,11 @@ class CalendarLinkService
                     continue;
                 }
 
-                $uid = isset($vevent->UID) ? (string) $vevent->UID : null;
+                $uid = null;
+                if (isset($vevent->UID) === true) {
+                    $uid = (string) $vevent->UID;
+                }
+
                 if ($uid === null) {
                     continue;
                 }
@@ -488,13 +502,23 @@ class CalendarLinkService
                     continue;
                 }
 
+                $dtend = null;
+                if (isset($vevent->DTEND) === true) {
+                    $dtend = $vevent->DTEND->getDateTime()->format('c');
+                }
+
+                $rowLocation = null;
+                if (isset($vevent->LOCATION) === true) {
+                    $rowLocation = (string) $vevent->LOCATION;
+                }
+
                 $results[] = [
                     'uid'         => $uid,
                     'uri'         => $object['uri'],
-                    'summary'     => isset($vevent->SUMMARY) ? (string) $vevent->SUMMARY : '',
+                    'summary'     => (string) ($vevent->SUMMARY ?? ''),
                     'dtstart'     => $start?->format('c'),
-                    'dtend'       => isset($vevent->DTEND) ? $vevent->DTEND->getDateTime()->format('c') : null,
-                    'location'    => isset($vevent->LOCATION) ? (string) $vevent->LOCATION : null,
+                    'dtend'       => $dtend,
+                    'location'    => $rowLocation,
                     'calendarId'  => $calendarId,
                     'calendarUri' => $calendarUri,
                 ];
@@ -510,8 +534,16 @@ class CalendarLinkService
         usort(
                 $results,
                 static function (array $a, array $b): int {
-                    $ta = $a['dtstart'] !== null ? strtotime((string) $a['dtstart']) : PHP_INT_MAX;
-                    $tb = $b['dtstart'] !== null ? strtotime((string) $b['dtstart']) : PHP_INT_MAX;
+                    $ta = PHP_INT_MAX;
+                    if ($a['dtstart'] !== null) {
+                        $ta = strtotime((string) $a['dtstart']);
+                    }
+
+                    $tb = PHP_INT_MAX;
+                    if ($b['dtstart'] !== null) {
+                        $tb = strtotime((string) $b['dtstart']);
+                    }
+
                     return $ta <=> $tb;
                 }
                 );
@@ -580,13 +612,23 @@ class CalendarLinkService
                     $dtend = DateTime::createFromInterface($vevent->DTEND->getDateTime());
                 }
 
+                $rowSummary = null;
+                if (isset($vevent->SUMMARY) === true) {
+                    $rowSummary = (string) $vevent->SUMMARY;
+                }
+
+                $rowLocation = null;
+                if (isset($vevent->LOCATION) === true) {
+                    $rowLocation = (string) $vevent->LOCATION;
+                }
+
                 return [
                     'calendarId' => $calendarId,
                     'eventUri'   => (string) $object['uri'],
-                    'summary'    => isset($vevent->SUMMARY) ? (string) $vevent->SUMMARY : null,
+                    'summary'    => $rowSummary,
                     'dtstart'    => $dtstart,
                     'dtend'      => $dtend,
-                    'location'   => isset($vevent->LOCATION) ? (string) $vevent->LOCATION : null,
+                    'location'   => $rowLocation,
                 ];
             } catch (Throwable $e) {
                 $this->logger->warning(

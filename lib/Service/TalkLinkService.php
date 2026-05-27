@@ -147,7 +147,7 @@ class TalkLinkService
             throw new Exception('Talk is not available', 503);
         }
 
-        $room = $this->findRoom($manager, $roomToken, $user->getUID());
+        $room = $this->findRoom(manager: $manager, roomToken: $roomToken, userUid: $user->getUID());
         if ($room === null) {
             throw new Exception('Talk room not found', 404);
         }
@@ -164,9 +164,12 @@ class TalkLinkService
         $link->setRoomType($cache['roomType']);
         $link->setSubtitle($cache['subtitle']);
         $link->setParticipantCount($cache['participantCount']);
-        $link->setLastMessageData(
-            $cache['lastMessage'] !== null ? json_encode($cache['lastMessage']) : null
-        );
+        $lastMessageData = null;
+        if ($cache['lastMessage'] !== null) {
+            $lastMessageData = json_encode($cache['lastMessage']);
+        }
+
+        $link->setLastMessageData($lastMessageData);
         $link->setLastActivity($cache['lastActivity']);
         $link->setLinkedBy($user->getUID());
         $link->setLinkedAt(new DateTime());
@@ -220,9 +223,9 @@ class TalkLinkService
         foreach ($links as $link) {
             $row = $link->jsonSerialize();
 
-            if ($manager !== null && $user !== null && $this->isStale($link) === true) {
+            if ($manager !== null && $user !== null && $this->isStale(link: $link) === true) {
                 try {
-                    $room = $this->findRoom($manager, $link->getRoomToken(), $user->getUID());
+                    $room = $this->findRoom(manager: $manager, roomToken: $link->getRoomToken(), userUid: $user->getUID());
                     if ($room !== null) {
                         $refreshed = $this->extractRoomFields(room: $room, userUid: $user->getUID());
                         $link->setRoomId($refreshed['roomId']);
@@ -230,9 +233,12 @@ class TalkLinkService
                         $link->setRoomType($refreshed['roomType']);
                         $link->setSubtitle($refreshed['subtitle']);
                         $link->setParticipantCount($refreshed['participantCount']);
-                        $link->setLastMessageData(
-                            $refreshed['lastMessage'] !== null ? json_encode($refreshed['lastMessage']) : null
-                        );
+                        $refreshedLastMessageData = null;
+                        if ($refreshed['lastMessage'] !== null) {
+                            $refreshedLastMessageData = json_encode($refreshed['lastMessage']);
+                        }
+
+                        $link->setLastMessageData($refreshedLastMessageData);
                         $link->setLastActivity($refreshed['lastActivity']);
                         $this->talkLinkMapper->update($link);
                         $row = $link->jsonSerialize();
@@ -240,7 +246,7 @@ class TalkLinkService
                 } catch (Throwable $e) {
                     // Stale link — keep cached row as-is.
                     $this->logger->debug('Stale talk link for room '.$link->getRoomToken().': '.$e->getMessage());
-                }
+                }//end try
             }//end if
 
             $results[] = $row;
@@ -365,13 +371,26 @@ class TalkLinkService
         $link->setSchemaId($schemaId);
         $link->setRoomToken($roomToken);
         $link->setRoomId($cache['roomId']);
-        $link->setRoomName($cache['roomName'] !== null && $cache['roomName'] !== '' ? $cache['roomName'] : $roomName);
-        $link->setRoomType($cache['roomType'] !== null ? $cache['roomType'] : $roomType);
+        $resolvedRoomName = $roomName;
+        if ($cache['roomName'] !== null && $cache['roomName'] !== '') {
+            $resolvedRoomName = $cache['roomName'];
+        }
+
+        $resolvedRoomType = $roomType;
+        if ($cache['roomType'] !== null) {
+            $resolvedRoomType = $cache['roomType'];
+        }
+
+        $cacheLastMessageData = null;
+        if ($cache['lastMessage'] !== null) {
+            $cacheLastMessageData = json_encode($cache['lastMessage']);
+        }
+
+        $link->setRoomName($resolvedRoomName);
+        $link->setRoomType($resolvedRoomType);
         $link->setSubtitle($cache['subtitle']);
         $link->setParticipantCount($cache['participantCount']);
-        $link->setLastMessageData(
-            $cache['lastMessage'] !== null ? json_encode($cache['lastMessage']) : null
-        );
+        $link->setLastMessageData($cacheLastMessageData);
         $link->setLastActivity($cache['lastActivity']);
         $link->setLinkedBy($userUid);
         $link->setLinkedAt(new DateTime());
@@ -427,7 +446,10 @@ class TalkLinkService
         }
 
         $participantService = $this->resolveParticipantService();
-        $needle = $search !== null ? mb_strtolower(trim($search)) : null;
+        $needle = null;
+        if ($search !== null) {
+            $needle = mb_strtolower(trim($search));
+        }
 
         $out = [];
         foreach ($rooms as $room) {
@@ -460,7 +482,7 @@ class TalkLinkService
                 }
             }
 
-            $cleanName = $this->stripMarker($name);
+            $cleanName = $this->stripMarker(name: $name);
 
             if ($needle !== null && $needle !== '' && mb_strpos(mb_strtolower($cleanName), $needle) === false) {
                 continue;
@@ -680,7 +702,7 @@ class TalkLinkService
             }
         }
 
-        $cleanName = $this->stripMarker($name);
+        $cleanName = $this->stripMarker(name: $name);
 
         $type = null;
         try {
@@ -689,7 +711,7 @@ class TalkLinkService
             // Leave null.
         }
 
-        $subtitle = $this->buildSubtitle($room, $type);
+        $subtitle = $this->buildSubtitle(room: $room, type: $type);
 
         $participantCount   = null;
         $participantService = $this->resolveParticipantService();
@@ -703,7 +725,11 @@ class TalkLinkService
 
         $lastActivity = null;
         try {
-            $rawActivity = method_exists($room, 'getLastActivity') === true ? $room->getLastActivity() : null;
+            $rawActivity = null;
+            if (method_exists($room, 'getLastActivity') === true) {
+                $rawActivity = $room->getLastActivity();
+            }
+
             if ($rawActivity instanceof \DateTimeInterface) {
                 $lastActivity = new DateTime($rawActivity->format(DateTime::ATOM));
             }
@@ -711,11 +737,16 @@ class TalkLinkService
             // Leave null.
         }
 
-        $lastMessage = $this->buildLastMessage($room);
+        $lastMessage = $this->buildLastMessage(room: $room);
+
+        $resolvedName = null;
+        if ($cleanName !== '') {
+            $resolvedName = $cleanName;
+        }
 
         return [
             'roomId'           => $roomId,
-            'roomName'         => $cleanName !== '' ? $cleanName : null,
+            'roomName'         => $resolvedName,
             'roomType'         => $type,
             'subtitle'         => $subtitle,
             'participantCount' => $participantCount,
@@ -798,9 +829,20 @@ class TalkLinkService
             return null;
         }
 
-        $text      = method_exists($comment, 'getMessage') === true ? (string) $comment->getMessage() : '';
-        $actorType = method_exists($comment, 'getActorType') === true ? (string) $comment->getActorType() : '';
-        $actorId   = method_exists($comment, 'getActorId') === true ? (string) $comment->getActorId() : '';
+        $text = '';
+        if (method_exists($comment, 'getMessage') === true) {
+            $text = (string) $comment->getMessage();
+        }
+
+        $actorType = '';
+        if (method_exists($comment, 'getActorType') === true) {
+            $actorType = (string) $comment->getActorType();
+        }
+
+        $actorId = '';
+        if (method_exists($comment, 'getActorId') === true) {
+            $actorId = (string) $comment->getActorId();
+        }
 
         $timestamp = null;
         if (method_exists($comment, 'getCreationDateTime') === true) {
