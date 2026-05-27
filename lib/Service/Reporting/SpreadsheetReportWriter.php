@@ -238,11 +238,7 @@ class SpreadsheetReportWriter
             return $bytes;
         }
 
-        if ($format === 'ods') {
-            $writer = new Ods($spreadsheet);
-        } else {
-            $writer = new Xlsx($spreadsheet);
-        }
+        $writer = ($format === 'ods') ? new Ods($spreadsheet) : new Xlsx($spreadsheet);
 
         ob_start();
         $writer->save('php://output');

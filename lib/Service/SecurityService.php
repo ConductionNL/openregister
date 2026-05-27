@@ -44,6 +44,11 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) SecurityService covers a single cohesive
+ *   security domain (login rate-limiting, inbound-API brute-force protection, input
+ *   sanitization, and response headers). Each method is consumed by external callers
+ *   (UserController and RateLimitMiddleware); splitting into sub-services would scatter
+ *   the security surface without reducing per-method complexity.
  */
 class SecurityService
 {
@@ -539,10 +544,10 @@ class SecurityService
             $identityValue = 'anonymous';
         }
 
-        $identity = $this->sanitizeForCacheKey(input: $identityValue);
-        $ip       = $this->sanitizeForCacheKey(input: $ipAddress);
+        $identity  = $this->sanitizeForCacheKey(input: $identityValue);
+        $ipKey     = $this->sanitizeForCacheKey(input: $ipAddress);
 
-        return $identity.'_'.$ip;
+        return $identity.'_'.$ipKey;
     }//end buildAuthCompositeKey()
 
     /**

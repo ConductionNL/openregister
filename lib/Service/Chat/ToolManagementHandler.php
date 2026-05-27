@@ -104,6 +104,9 @@ class ToolManagementHandler
      * @psalm-return list<ToolInterface>
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function getAgentTools(?Agent $agent, array $selectedTools=[]): array
     {

@@ -211,30 +211,68 @@ class LogDanglingLinkedTypes implements IRepairStep
             return [];
         }
 
-        foreach (['getLinkedTypes', 'getConfiguration'] as $accessor) {
-            if (method_exists($schema, $accessor) === false) {
-                continue;
-            }
+        $direct = $this->extractViaGetLinkedTypes(schema: $schema);
+        if ($direct !== null) {
+            return $direct;
+        }
 
-            try {
-                $value = $schema->{$accessor}();
-            } catch (\Throwable $e) {
-                continue;
-            }
-
-            if ($accessor === 'getLinkedTypes' && is_array($value) === true) {
-                return $value;
-            }
-
-            if ($accessor === 'getConfiguration' && is_array($value) === true) {
-                if (isset($value['linkedTypes']) === true && is_array($value['linkedTypes']) === true) {
-                    return $value['linkedTypes'];
-                }
-            }
-        }//end foreach
-
-        return [];
+        return $this->extractViaGetConfiguration(schema: $schema) ?? [];
     }//end extractLinkedTypes()
+
+    /**
+     * Try to read linkedTypes via getLinkedTypes() accessor.
+     *
+     * @param object $schema Schema entity.
+     *
+     * @return array<int,mixed>|null Array when found, null when not available.
+     */
+    private function extractViaGetLinkedTypes(object $schema): ?array
+    {
+        if (method_exists($schema, 'getLinkedTypes') === false) {
+            return null;
+        }
+
+        try {
+            $value = $schema->getLinkedTypes();
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return null;
+    }//end extractViaGetLinkedTypes()
+
+    /**
+     * Try to read linkedTypes via getConfiguration() accessor.
+     *
+     * @param object $schema Schema entity.
+     *
+     * @return array<int,mixed>|null Array when found, null when not available.
+     */
+    private function extractViaGetConfiguration(object $schema): ?array
+    {
+        if (method_exists($schema, 'getConfiguration') === false) {
+            return null;
+        }
+
+        try {
+            $value = $schema->getConfiguration();
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (is_array($value) === true
+            && isset($value['linkedTypes']) === true
+            && is_array($value['linkedTypes']) === true
+        ) {
+            return $value['linkedTypes'];
+        }
+
+        return null;
+    }//end extractViaGetConfiguration()
 
     /**
      * Call the first available string accessor on a schema entity.

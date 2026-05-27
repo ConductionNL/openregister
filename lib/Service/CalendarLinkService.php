@@ -43,9 +43,14 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) CalDAV protocol requires handling multiple
+ *   branching cases per operation (object types, URI resolution, legacy X-OR fallback) — the
+ *   complexity is inherent to wrapping two distinct CalDAV data sources.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) CalDAV link service must compose CalDavBackend,
+ *   CalendarEventService, CalendarLinkMapper, UserSession, and Logger — each serves a distinct
+ *   concern and cannot be merged.
+ * @SuppressWarnings(PHPMD.StaticAccess) Sabre\VObject\Reader::read() is a static factory with
+ *   no injectable alternative in the Sabre VObject library.
  */
 class CalendarLinkService
 {
@@ -178,24 +183,6 @@ class CalendarLinkService
         $calendarId  = (int) ($event['calendarId'] ?? 0);
         $calendarUri = $this->resolveCalendarUriForId(userId: $user->getUID(), calendarId: $calendarId);
 
-        $dtstart = null;
-        if (isset($event['dtstart']) === true && $event['dtstart'] !== null) {
-            try {
-                $dtstart = new DateTime((string) $event['dtstart']);
-            } catch (Exception $e) {
-                $dtstart = null;
-            }
-        }
-
-        $dtend = null;
-        if (isset($event['dtend']) === true && $event['dtend'] !== null) {
-            try {
-                $dtend = new DateTime((string) $event['dtend']);
-            } catch (Exception $e) {
-                $dtend = null;
-            }
-        }
-
         $link = new CalendarLink();
         $link->setObjectUuid($objectUuid);
         $link->setRegisterId($registerId);
@@ -205,20 +192,37 @@ class CalendarLinkService
         $link->setEventUid((string) ($event['uid'] ?? ''));
         $link->setEventUri((string) ($event['id'] ?? ''));
         $link->setSummary((string) ($event['summary'] ?? ''));
-        $link->setDtstart($dtstart);
-        $link->setDtend($dtend);
-        $location = null;
-        if (isset($event['location']) === true) {
-            $location = (string) $event['location'];
-        }
-
-        $link->setLocation($location);
+        $link->setDtstart($this->parseEventDateTime(value: $event['dtstart'] ?? null));
+        $link->setDtend($this->parseEventDateTime(value: $event['dtend'] ?? null));
+        $link->setLocation(isset($event['location']) === true ? (string) $event['location'] : null);
         $link->setLinkedBy($user->getUID());
         $link->setLinkedAt(new DateTime());
         $link->setTaggedWithXor(true);
 
         return $this->linkMapper->insert(entity: $link);
     }//end createAndLinkEvent()
+
+    /**
+     * Parse a possibly-null event date/time value into a DateTime object.
+     *
+     * Returns null when the value is absent or cannot be parsed.
+     *
+     * @param mixed $value Raw date/time string or null from the event array.
+     *
+     * @return DateTime|null
+     */
+    private function parseEventDateTime(mixed $value): ?DateTime
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        try {
+            return new DateTime((string) $value);
+        } catch (Exception $e) {
+            return null;
+        }
+    }//end parseEventDateTime()
 
     /**
      * Unlink an event from an object.
@@ -268,27 +272,29 @@ class CalendarLinkService
                     'Failed to strip X-OPENREGISTER properties for event '.$eventUid.': '.$e->getMessage()
                 );
             }
-        } else {
-            // Fall back to the legacy X-OR-* scan: maybe this event
-            // pre-dates the link table and only carries the custom
-            // properties. Walk the user's events to find a match.
-            try {
-                $events = $this->calendarEventService->getEventsForObject(objectUuid: $objectUuid);
-                foreach ($events as $event) {
-                    if (($event['uid'] ?? null) === $eventUid) {
-                        $this->calendarEventService->unlinkEvent(
-                            calendarId: (string) $event['calendarId'],
-                            eventUri: (string) $event['id']
-                        );
-                        break;
-                    }
+
+            return;
+        }
+
+        // Fall back to the legacy X-OR-* scan: maybe this event
+        // pre-dates the link table and only carries the custom
+        // properties. Walk the user's events to find a match.
+        try {
+            $events = $this->calendarEventService->getEventsForObject(objectUuid: $objectUuid);
+            foreach ($events as $event) {
+                if (($event['uid'] ?? null) === $eventUid) {
+                    $this->calendarEventService->unlinkEvent(
+                        calendarId: (string) $event['calendarId'],
+                        eventUri: (string) $event['id']
+                    );
+                    break;
                 }
-            } catch (Throwable $e) {
-                $this->logger->info(
-                    'Legacy X-OR unlink fallback failed for event '.$eventUid.': '.$e->getMessage()
-                );
             }
-        }//end if
+        } catch (Throwable $e) {
+            $this->logger->info(
+                'Legacy X-OR unlink fallback failed for event '.$eventUid.': '.$e->getMessage()
+            );
+        }
     }//end unlinkEvent()
 
     /**
@@ -346,44 +352,58 @@ class CalendarLinkService
 
             $calendarId  = (int) ($event['calendarId'] ?? 0);
             $calendarUri = $calendarMap[$calendarId] ?? '';
-            $key         = $calendarUri.'|'.$eventUid;
-
-            if (isset($merged[$key]) === true) {
-                // Already present from link-table; mark as both.
-                $merged[$key]['source'] = 'both';
-                // Prefer the live X-OR-* values for free-text fields
-                // (DB cache may be stale).
-                foreach (['summary', 'dtstart', 'dtend', 'location', 'description', 'attendees', 'status'] as $field) {
-                    if (isset($event[$field]) === true && $event[$field] !== null && $event[$field] !== '') {
-                        $merged[$key][$field] = $event[$field];
-                    }
-                }
-
-                continue;
-            }
-
-            // Try fallback dedupe by uid alone (calendar URI missing).
-            $fallbackKey = null;
-            foreach (array_keys($merged) as $existingKey) {
-                if (str_ends_with($existingKey, '|'.$eventUid) === true) {
-                    $fallbackKey = $existingKey;
-                    break;
-                }
-            }
-
-            if ($fallbackKey !== null) {
-                $merged[$fallbackKey]['source'] = 'both';
-                continue;
-            }
-
-            $payload           = $event;
-            $payload['source'] = 'xor-only';
-            $payload['calendarUri'] = $calendarUri;
-            $merged[$key]           = $payload;
+            $this->mergeXorEvent(merged: $merged, event: $event, eventUid: $eventUid, calendarUri: $calendarUri);
         }//end foreach
 
         return array_values($merged);
     }//end getLinkedEvents()
+
+    /**
+     * Merge a single X-OR-* scan event into the dedupe map.
+     *
+     * Mutates $merged in place:
+     *   - If the (calendarUri, eventUid) key is already present: mark as 'both'
+     *     and refresh free-text fields from the live scan.
+     *   - If only the UID matches (calendar URI missing from the live event):
+     *     mark the existing entry as 'both' via fallback dedupe.
+     *   - Otherwise: insert a new 'xor-only' entry.
+     *
+     * @param array<string,array<string,mixed>> &$merged      Dedupe map, modified in place.
+     * @param array<string,mixed>               $event        X-OR-* scan event row.
+     * @param string                            $eventUid     Pre-extracted UID.
+     * @param string                            $calendarUri  Resolved calendar URI (may be '').
+     *
+     * @return void
+     */
+    private function mergeXorEvent(array &$merged, array $event, string $eventUid, string $calendarUri): void
+    {
+        $key = $calendarUri.'|'.$eventUid;
+
+        if (isset($merged[$key]) === true) {
+            // Already present from link-table; mark as both and refresh free-text fields.
+            $merged[$key]['source'] = 'both';
+            foreach (['summary', 'dtstart', 'dtend', 'location', 'description', 'attendees', 'status'] as $field) {
+                if (isset($event[$field]) === true && $event[$field] !== null && $event[$field] !== '') {
+                    $merged[$key][$field] = $event[$field];
+                }
+            }
+
+            return;
+        }
+
+        // Try fallback dedupe by uid alone (calendar URI missing from live event).
+        foreach (array_keys($merged) as $existingKey) {
+            if (str_ends_with($existingKey, '|'.$eventUid) === true) {
+                $merged[$existingKey]['source'] = 'both';
+                return;
+            }
+        }
+
+        $payload                = $event;
+        $payload['source']      = 'xor-only';
+        $payload['calendarUri'] = $calendarUri;
+        $merged[$key]           = $payload;
+    }//end mergeXorEvent()
 
     /**
      * List the current user's VEVENT-supporting calendars.
@@ -446,18 +466,9 @@ class CalendarLinkService
             throw new Exception('No user logged in');
         }
 
-        $principal = 'principals/users/'.$user->getUID();
-        $calendars = $this->calDavBackend->getCalendarsForUser($principal);
-
-        $calendarId = null;
-        foreach ($calendars as $calendar) {
-            if (($calendar['uri'] ?? null) === $calendarUri
-                && $this->calendarSupportsVevent(calendar: $calendar) === true
-            ) {
-                $calendarId = (int) $calendar['id'];
-                break;
-            }
-        }
+        $principal  = 'principals/users/'.$user->getUID();
+        $calendars  = $this->calDavBackend->getCalendarsForUser($principal);
+        $calendarId = $this->resolveCalendarIdForUri(calendars: $calendars, calendarUri: $calendarUri);
 
         if ($calendarId === null) {
             throw new Exception('Calendar '.$calendarUri.' not found for user');
@@ -467,84 +478,24 @@ class CalendarLinkService
         $results = [];
 
         foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $object) {
-            $fullObject = $this->calDavBackend->getCalendarObject($calendarId, $object['uri']);
-            if ($fullObject === null || empty($fullObject['calendardata']) === true) {
-                continue;
+            $row = $this->parseCalendarObjectForPicker(
+                calendarId: $calendarId,
+                calendarUri: $calendarUri,
+                object: $object,
+                cutoff: $cutoff
+            );
+            if ($row !== null) {
+                $results[] = $row;
             }
-
-            $calendarData = $fullObject['calendardata'];
-            if (strpos($calendarData, 'VEVENT') === false) {
-                continue;
-            }
-
-            try {
-                $vcalendar = Reader::read($calendarData);
-                $vevent    = $vcalendar->VEVENT;
-                if ($vevent === null) {
-                    continue;
-                }
-
-                $uid = null;
-                if (isset($vevent->UID) === true) {
-                    $uid = (string) $vevent->UID;
-                }
-
-                if ($uid === null) {
-                    continue;
-                }
-
-                $start = null;
-                if (isset($vevent->DTSTART) === true) {
-                    $start = $vevent->DTSTART->getDateTime();
-                }
-
-                if ($cutoff !== null && $start !== null && $start->getTimestamp() < $cutoff) {
-                    continue;
-                }
-
-                $dtend = null;
-                if (isset($vevent->DTEND) === true) {
-                    $dtend = $vevent->DTEND->getDateTime()->format('c');
-                }
-
-                $rowLocation = null;
-                if (isset($vevent->LOCATION) === true) {
-                    $rowLocation = (string) $vevent->LOCATION;
-                }
-
-                $results[] = [
-                    'uid'         => $uid,
-                    'uri'         => $object['uri'],
-                    'summary'     => (string) ($vevent->SUMMARY ?? ''),
-                    'dtstart'     => $start?->format('c'),
-                    'dtend'       => $dtend,
-                    'location'    => $rowLocation,
-                    'calendarId'  => $calendarId,
-                    'calendarUri' => $calendarUri,
-                ];
-            } catch (Throwable $e) {
-                $this->logger->warning(
-                    'Failed to parse calendar event for picker: '.$e->getMessage(),
-                    ['uri' => $object['uri']]
-                );
-            }//end try
         }//end foreach
 
         // Sort ascending by dtstart, nulls last.
         usort(
                 $results,
                 static function (array $a, array $b): int {
-                    $ta = PHP_INT_MAX;
-                    if ($a['dtstart'] !== null) {
-                        $ta = strtotime((string) $a['dtstart']);
-                    }
-
-                    $tb = PHP_INT_MAX;
-                    if ($b['dtstart'] !== null) {
-                        $tb = strtotime((string) $b['dtstart']);
-                    }
-
-                    return $ta <=> $tb;
+                    $timeA = ($a['dtstart'] !== null) ? strtotime((string) $a['dtstart']) : PHP_INT_MAX;
+                    $timeB = ($b['dtstart'] !== null) ? strtotime((string) $b['dtstart']) : PHP_INT_MAX;
+                    return $timeA <=> $timeB;
                 }
                 );
 
@@ -554,6 +505,125 @@ class CalendarLinkService
 
         return $results;
     }//end getEventsForCalendar()
+
+    /**
+     * Find the numeric calendarId for a named URI in a list of CalDAV calendar rows.
+     *
+     * Only VEVENT-supporting calendars are considered.
+     *
+     * @param array<int,array<string,mixed>> $calendars   Rows from CalDavBackend::getCalendarsForUser().
+     * @param string                         $calendarUri URI to look up.
+     *
+     * @return int|null Numeric calendar id, or null when not found.
+     */
+    private function resolveCalendarIdForUri(array $calendars, string $calendarUri): ?int
+    {
+        foreach ($calendars as $calendar) {
+            if (($calendar['uri'] ?? null) === $calendarUri
+                && $this->calendarSupportsVevent(calendar: $calendar) === true
+            ) {
+                return (int) $calendar['id'];
+            }
+        }
+
+        return null;
+    }//end resolveCalendarIdForUri()
+
+    /**
+     * Parse a single CalDAV object into a picker result row.
+     *
+     * Returns null when the object is not a parseable VEVENT, has no UID,
+     * or falls before the cutoff timestamp.
+     *
+     * @param int                     $calendarId  Numeric calendar id.
+     * @param string                  $calendarUri Calendar URI string.
+     * @param array<string,mixed>     $object      Lightweight object row from getCalendarObjects().
+     * @param int|null                $cutoff      Unix timestamp lower bound (null = no filter).
+     *
+     * @return array<string,mixed>|null Picker row, or null to skip this object.
+     */
+    private function parseCalendarObjectForPicker(
+        int $calendarId,
+        string $calendarUri,
+        array $object,
+        ?int $cutoff
+    ): ?array {
+        $fullObject = $this->calDavBackend->getCalendarObject($calendarId, $object['uri']);
+        if ($fullObject === null || empty($fullObject['calendardata']) === true) {
+            return null;
+        }
+
+        $calendarData = $fullObject['calendardata'];
+        if (strpos($calendarData, 'VEVENT') === false) {
+            return null;
+        }
+
+        try {
+            return $this->buildPickerRowFromIcal(
+                calendarData: $calendarData,
+                objectUri: (string) $object['uri'],
+                calendarId: $calendarId,
+                calendarUri: $calendarUri,
+                cutoff: $cutoff
+            );
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                'Failed to parse calendar event for picker: '.$e->getMessage(),
+                ['uri' => $object['uri']]
+            );
+        }//end try
+
+        return null;
+    }//end parseCalendarObjectForPicker()
+
+    /**
+     * Build a picker row from raw iCal data.
+     *
+     * Returns null when the iCal has no VEVENT, no UID, or the event
+     * is before the cutoff timestamp.
+     *
+     * @param string         $calendarData Raw iCal data.
+     * @param string         $objectUri    CalDAV object URI.
+     * @param int            $calendarId   Numeric calendar id.
+     * @param string         $calendarUri  Calendar URI string.
+     * @param int|null       $cutoff       Unix timestamp lower bound (null = no filter).
+     *
+     * @return array<string,mixed>|null Picker row, or null to skip.
+     */
+    private function buildPickerRowFromIcal(
+        string $calendarData,
+        string $objectUri,
+        int $calendarId,
+        string $calendarUri,
+        ?int $cutoff
+    ): ?array {
+        $vcalendar = Reader::read($calendarData);
+        $vevent    = $vcalendar->VEVENT;
+        if ($vevent === null || isset($vevent->UID) === false) {
+            return null;
+        }
+
+        $uid   = (string) $vevent->UID;
+        $start = isset($vevent->DTSTART) === true ? $vevent->DTSTART->getDateTime() : null;
+
+        if ($cutoff !== null && $start !== null && $start->getTimestamp() < $cutoff) {
+            return null;
+        }
+
+        $dtend       = isset($vevent->DTEND) === true ? $vevent->DTEND->getDateTime()->format('c') : null;
+        $rowLocation = isset($vevent->LOCATION) === true ? (string) $vevent->LOCATION : null;
+
+        return [
+            'uid'         => $uid,
+            'uri'         => $objectUri,
+            'summary'     => (string) ($vevent->SUMMARY ?? ''),
+            'dtstart'     => $start?->format('c'),
+            'dtend'       => $dtend,
+            'location'    => $rowLocation,
+            'calendarId'  => $calendarId,
+            'calendarUri' => $calendarUri,
+        ];
+    }//end buildPickerRowFromIcal()
 
     /**
      * Locate a VEVENT on a named calendar and pull cacheable fields.
@@ -566,10 +636,10 @@ class CalendarLinkService
      */
     private function locateEventOnCalendar(string $userId, string $calendarUri, string $eventUid): ?array
     {
-        $principal = 'principals/users/'.$userId;
-        $calendars = $this->calDavBackend->getCalendarsForUser($principal);
-
+        $principal  = 'principals/users/'.$userId;
+        $calendars  = $this->calDavBackend->getCalendarsForUser($principal);
         $calendarId = null;
+
         foreach ($calendars as $calendar) {
             if (($calendar['uri'] ?? null) === $calendarUri) {
                 $calendarId = (int) $calendar['id'];
@@ -591,54 +661,76 @@ class CalendarLinkService
                 continue;
             }
 
-            try {
-                $vcalendar = Reader::read($fullObject['calendardata']);
-                $vevent    = $vcalendar->VEVENT;
-                if ($vevent === null) {
-                    continue;
-                }
+            $row = $this->parseVeventObjectForLocate(
+                calendarData: $fullObject['calendardata'],
+                calendarId: $calendarId,
+                eventUri: (string) $object['uri'],
+                expectedUid: $eventUid
+            );
 
-                if (isset($vevent->UID) === false || (string) $vevent->UID !== $eventUid) {
-                    continue;
-                }
-
-                $dtstart = null;
-                if (isset($vevent->DTSTART) === true) {
-                    $dtstart = DateTime::createFromInterface($vevent->DTSTART->getDateTime());
-                }
-
-                $dtend = null;
-                if (isset($vevent->DTEND) === true) {
-                    $dtend = DateTime::createFromInterface($vevent->DTEND->getDateTime());
-                }
-
-                $rowSummary = null;
-                if (isset($vevent->SUMMARY) === true) {
-                    $rowSummary = (string) $vevent->SUMMARY;
-                }
-
-                $rowLocation = null;
-                if (isset($vevent->LOCATION) === true) {
-                    $rowLocation = (string) $vevent->LOCATION;
-                }
-
-                return [
-                    'calendarId' => $calendarId,
-                    'eventUri'   => (string) $object['uri'],
-                    'summary'    => $rowSummary,
-                    'dtstart'    => $dtstart,
-                    'dtend'      => $dtend,
-                    'location'   => $rowLocation,
-                ];
-            } catch (Throwable $e) {
-                $this->logger->warning(
-                    'Failed to parse VEVENT while locating event '.$eventUid.': '.$e->getMessage()
-                );
-            }//end try
+            if ($row !== null) {
+                return $row;
+            }
         }//end foreach
 
         return null;
     }//end locateEventOnCalendar()
+
+    /**
+     * Parse iCal data and return locate-row fields when the UID matches.
+     *
+     * Returns null when the data cannot be parsed, contains no VEVENT,
+     * or the UID does not match.
+     *
+     * @param string $calendarData Raw iCal data.
+     * @param int    $calendarId   Numeric calendar id.
+     * @param string $eventUri     Object URI from the CalDAV store.
+     * @param string $expectedUid  UID to match against.
+     *
+     * @return array{calendarId:int, eventUri:string, summary:?string, dtstart:?DateTime, dtend:?DateTime, location:?string}|null
+     */
+    private function parseVeventObjectForLocate(
+        string $calendarData,
+        int $calendarId,
+        string $eventUri,
+        string $expectedUid
+    ): ?array {
+        try {
+            $vcalendar = Reader::read($calendarData);
+            $vevent    = $vcalendar->VEVENT;
+            if ($vevent === null) {
+                return null;
+            }
+
+            if (isset($vevent->UID) === false || (string) $vevent->UID !== $expectedUid) {
+                return null;
+            }
+
+            $dtstart     = isset($vevent->DTSTART) === true
+                ? DateTime::createFromInterface($vevent->DTSTART->getDateTime())
+                : null;
+            $dtend       = isset($vevent->DTEND) === true
+                ? DateTime::createFromInterface($vevent->DTEND->getDateTime())
+                : null;
+            $rowSummary  = isset($vevent->SUMMARY) === true  ? (string) $vevent->SUMMARY  : null;
+            $rowLocation = isset($vevent->LOCATION) === true ? (string) $vevent->LOCATION : null;
+
+            return [
+                'calendarId' => $calendarId,
+                'eventUri'   => $eventUri,
+                'summary'    => $rowSummary,
+                'dtstart'    => $dtstart,
+                'dtend'      => $dtend,
+                'location'   => $rowLocation,
+            ];
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                'Failed to parse VEVENT while locating event '.$expectedUid.': '.$e->getMessage()
+            );
+        }//end try
+
+        return null;
+    }//end parseVeventObjectForLocate()
 
     /**
      * Build a {calendarId → calendarUri} map for the current user.
@@ -695,13 +787,7 @@ class CalendarLinkService
         }
 
         if (is_object($components) === true && method_exists($components, 'getValue') === true) {
-            foreach ($components->getValue() as $comp) {
-                if (strtoupper((string) $comp) === 'VEVENT') {
-                    return true;
-                }
-            }
-
-            return false;
+            return $this->componentListContainsVevent($components->getValue());
         }
 
         if (is_string($components) === true) {
@@ -709,13 +795,27 @@ class CalendarLinkService
         }
 
         if (is_iterable($components) === true) {
-            foreach ($components as $comp) {
-                if (strtoupper((string) $comp) === 'VEVENT') {
-                    return true;
-                }
-            }
+            return $this->componentListContainsVevent($components);
         }
 
         return false;
     }//end calendarSupportsVevent()
+
+    /**
+     * Check whether an iterable list of component names contains 'VEVENT'.
+     *
+     * @param iterable<mixed> $components List of component name strings.
+     *
+     * @return bool
+     */
+    private function componentListContainsVevent(iterable $components): bool
+    {
+        foreach ($components as $comp) {
+            if (strtoupper((string) $comp) === 'VEVENT') {
+                return true;
+            }
+        }
+
+        return false;
+    }//end componentListContainsVevent()
 }//end class

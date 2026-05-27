@@ -49,6 +49,7 @@ use OCP\AppFramework\Utility\IControllerMethodReflector;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 use Throwable;
 
 /**
@@ -92,6 +93,7 @@ class RateLimitMiddleware extends Middleware
      * @throws AuthRateLimitExceededException When the identity+IP is locked out
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.ShortVariable)
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
@@ -137,6 +139,7 @@ class RateLimitMiddleware extends Middleware
      * @return Response The unmodified response
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.ShortVariable)
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
@@ -182,6 +185,7 @@ class RateLimitMiddleware extends Middleware
      * @throws \Exception The original exception is re-thrown for all non-lockout cases
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.ShortVariable)
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
@@ -261,7 +265,7 @@ class RateLimitMiddleware extends Middleware
      */
     private function isAuthFailure(\Throwable $exception): bool
     {
-        $shortName = (new \ReflectionClass($exception))->getShortName();
+        $shortName = (new ReflectionClass($exception))->getShortName();
         if (in_array($shortName, ['NotLoggedInException', 'NotAdminException'], true) === true) {
             return true;
         }

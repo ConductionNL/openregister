@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use DateTime;
 use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
@@ -44,6 +45,14 @@ use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
+/**
+ * Integration provider that surfaces NC Talk rooms linked to an OpenRegister object.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The overall complexity is
+ *     driven by the many `method_exists` guards required to safely call Talk's
+ *     loose-typed Room/Comment API across NC versions; extracting additional
+ *     classes would not reduce complexity — it would only scatter guards.
+ */
 class TalkProvider extends AbstractIntegrationProvider
 {
 
@@ -125,10 +134,12 @@ class TalkProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Method composes a handful of
-     *     optional Talk API calls behind method_exists guards; splitting would
-     *     hide the leaf-row contract.
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  method_exists guards for Talk API calls form one leaf-row shape; splitting obscures the contract
+     * @SuppressWarnings(PHPMD.NPathComplexity)       method_exists guards for optional Talk features combined with room filtering multiply NPath
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema, and
+     *     $filters are required by the IntegrationProvider interface contract
+     *     (lib/Service/Integration/IntegrationProvider.php:209) but Talk room
+     *     lookup is keyed solely on $objectId.
      *
      * @spec openspec/changes/integration-talk/tasks.md
      */
@@ -158,13 +169,30 @@ class TalkProvider extends AbstractIntegrationProvider
             }
         }
 
+        return $this->listByMarkerScan(objectId: $objectId, userId: $user->getUID());
+    }//end list()
+
+    /**
+     * Legacy fallback: scan the current user's Talk rooms for the
+     * `[or:{objectId}]` marker in the display name.
+     *
+     * Used when the Tier-2 link table has no rows for the object (pre-Tier-2
+     * linked rooms). Degrades to an empty array when Talk is unavailable.
+     *
+     * @param string $objectId Object uuid used to build the marker string.
+     * @param string $userId   Current user's id for display-name resolution.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function listByMarkerScan(string $objectId, string $userId): array
+    {
         $marker = self::ROOM_TAG.$objectId.']';
 
         try {
             $manager = $this->container->get('OCA\\Talk\\Manager');
             // `includeLastMessage=true` populates Room::getLastMessage()
             // eagerly so we don't issue an extra DB round-trip per row.
-            $rooms = $manager->getRoomsForUser($user->getUID(), [], true);
+            $rooms = $manager->getRoomsForUser($userId, [], true);
         } catch (Throwable $e) {
             // Talk app schema mismatch / un-installed-during-runtime
             // degrades to empty list — AD-23.
@@ -184,58 +212,82 @@ class TalkProvider extends AbstractIntegrationProvider
 
         $out = [];
         foreach ($rooms as $room) {
-            $name = '';
-            if (method_exists($room, 'getName') === true) {
-                $name = (string) ($room->getName() ?? '');
+            $row = $this->buildRoomRow(
+                room: $room,
+                userId: $userId,
+                marker: $marker,
+                participantService: $participantService
+            );
+            if ($row !== null) {
+                $out[] = $row;
             }
-
-            if (method_exists($room, 'getDisplayName') === true) {
-                $displayName = (string) $room->getDisplayName($user->getUID());
-                if ($displayName !== '') {
-                    $name = $displayName;
-                }
-            }
-
-            if (str_contains($name, $marker) === false) {
-                continue;
-            }
-
-            $lastActivity = null;
-            if (method_exists($room, 'getLastActivity') === true && $room->getLastActivity() !== null) {
-                $lastActivity = $room->getLastActivity()->getTimestamp();
-            }
-
-            $type = null;
-            if (method_exists($room, 'getType') === true) {
-                $type = (int) $room->getType();
-            }
-
-            $token = '';
-            if (method_exists($room, 'getToken') === true) {
-                $token = (string) $room->getToken();
-            }
-
-            $title            = $this->stripMarker(name: $name, marker: $marker);
-            $subtitle         = $this->buildSubtitle(room: $room, type: $type);
-            $participantCount = $this->resolveParticipantCount(participantService: $participantService, room: $room);
-            $lastMessage      = $this->buildLastMessage(room: $room);
-
-            $out[] = [
-                'id'               => $token,
-                'title'            => $title,
-                'type'             => $type,
-                'subtitle'         => $subtitle,
-                'participantCount' => $participantCount,
-                'lastMessage'      => $lastMessage,
-                // `unreadMessages` is left null on purpose — see method docblock.
-                'unreadMessages'   => null,
-                'lastActivity'     => $lastActivity,
-                'url'              => '/index.php/call/'.$token,
-            ];
         }//end foreach
 
         return $out;
-    }//end list()
+    }//end listByMarkerScan()
+
+    /**
+     * Build a leaf-row array from a single Talk Room, or return null when
+     * the room does not carry the OR marker.
+     *
+     * @param object      $room               Talk Room object.
+     * @param string      $userId             Current user id (for display name).
+     * @param string      $marker             Marker string to match.
+     * @param object|null $participantService Talk ParticipantService (may be null).
+     *
+     * @return array<string,mixed>|null
+     */
+    private function buildRoomRow(object $room, string $userId, string $marker, ?object $participantService): ?array
+    {
+        $name = '';
+        if (method_exists($room, 'getName') === true) {
+            $name = (string) ($room->getName() ?? '');
+        }
+
+        if (method_exists($room, 'getDisplayName') === true) {
+            $displayName = (string) $room->getDisplayName($userId);
+            if ($displayName !== '') {
+                $name = $displayName;
+            }
+        }
+
+        if (str_contains($name, $marker) === false) {
+            return null;
+        }
+
+        $lastActivity = null;
+        if (method_exists($room, 'getLastActivity') === true && $room->getLastActivity() !== null) {
+            $lastActivity = $room->getLastActivity()->getTimestamp();
+        }
+
+        $type = null;
+        if (method_exists($room, 'getType') === true) {
+            $type = (int) $room->getType();
+        }
+
+        $token = '';
+        if (method_exists($room, 'getToken') === true) {
+            $token = (string) $room->getToken();
+        }
+
+        $title            = $this->stripMarker(name: $name, marker: $marker);
+        $subtitle         = $this->buildSubtitle(room: $room, type: $type);
+        $participantCount = $this->resolveParticipantCount(participantService: $participantService, room: $room);
+        $lastMessage      = $this->buildLastMessage(room: $room);
+
+        return [
+            'id'               => $token,
+            'title'            => $title,
+            'type'             => $type,
+            'subtitle'         => $subtitle,
+            'participantCount' => $participantCount,
+            'lastMessage'      => $lastMessage,
+            // `unreadMessages` is left null on purpose — see list() docblock.
+            'unreadMessages'   => null,
+            'lastActivity'     => $lastActivity,
+            'url'              => '/index.php/call/'.$token,
+        ];
+    }//end buildRoomRow()
 
     /**
      * Strip the OR linking marker `[or:{uuid}]` from a room title so the
@@ -406,7 +458,7 @@ class TalkProvider extends AbstractIntegrationProvider
             $lastActivityTs  = null;
             if ($lastActivityIso !== null) {
                 try {
-                    $lastActivityTs = (new \DateTime($lastActivityIso))->getTimestamp();
+                    $lastActivityTs = (new DateTime($lastActivityIso))->getTimestamp();
                 } catch (Throwable $e) {
                     $lastActivityTs = null;
                 }

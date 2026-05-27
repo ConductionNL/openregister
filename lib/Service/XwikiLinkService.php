@@ -135,26 +135,6 @@ class XwikiLinkService
     }//end getProvider()
 
     /**
-     * Lazily resolve the ExternalIntegrationRouter from the container.
-     *
-     * @return ExternalIntegrationRouter|null
-     */
-    private function getRouter(): ?ExternalIntegrationRouter
-    {
-        try {
-            $router = $this->container->get(ExternalIntegrationRouter::class);
-            if ($router instanceof ExternalIntegrationRouter) {
-                return $router;
-            }
-
-            return null;
-        } catch (Throwable $e) {
-            $this->logger->debug('XwikiLinkService: ExternalIntegrationRouter unavailable: '.$e->getMessage());
-            return null;
-        }
-    }//end getRouter()
-
-    /**
      * Active session UID, or throw if no user is logged in.
      *
      * @return string The user id.
@@ -264,6 +244,9 @@ class XwikiLinkService
      *                   source unconfigured/upstream down (503).
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function createAndLinkPage(
         string $objectUuid,

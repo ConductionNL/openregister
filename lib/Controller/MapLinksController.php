@@ -194,34 +194,20 @@ class MapLinksController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $name = (string) $this->request->getParam('name', '');
-            if (trim($name) === '') {
-                return new JSONResponse(['error' => 'name is required'], 400);
+            $params = $this->parsePoiRequestParams();
+            if ($params instanceof JSONResponse) {
+                return $params;
             }
 
-            $latParam = $this->request->getParam('lat');
-            $lngParam = $this->request->getParam('lng');
-            if ($latParam === null || $latParam === '' || $lngParam === null || $lngParam === '') {
-                return new JSONResponse(['error' => 'lat and lng are required'], 400);
-            }
-
-            $category = $this->request->getParam('category');
-            if ($category !== null) {
-                $category = (string) $category;
-            }
-
-            $comment = $this->request->getParam('comment');
-            if ($comment !== null) {
-                $comment = (string) $comment;
-            }
+            [$name, $lat, $lng, $category, $comment] = $params;
 
             $link = $this->mapLinkService->createAndLinkPoi(
                 $object->getUuid(),
                 (int) $object->getRegister(),
                 (int) $object->getSchema(),
                 $name,
-                (float) $latParam,
-                (float) $lngParam,
+                $lat,
+                $lng,
                 $category,
                 $comment
             );
@@ -233,6 +219,40 @@ class MapLinksController extends Controller
             return $this->mapException(exception: $e);
         }//end try
     }//end createAndLink()
+
+    /**
+     * Parse and validate the POI creation request parameters.
+     *
+     * Returns a JSONResponse with the appropriate error status on validation failure,
+     * or a tuple array `[name, lat, lng, category, comment]` on success.
+     *
+     * @return array{0: string, 1: float, 2: float, 3: string|null, 4: string|null}|JSONResponse
+     */
+    private function parsePoiRequestParams(): array|JSONResponse
+    {
+        $name = (string) $this->request->getParam('name', '');
+        if (trim($name) === '') {
+            return new JSONResponse(['error' => 'name is required'], 400);
+        }
+
+        $latParam = $this->request->getParam('lat');
+        $lngParam = $this->request->getParam('lng');
+        if ($latParam === null || $latParam === '' || $lngParam === null || $lngParam === '') {
+            return new JSONResponse(['error' => 'lat and lng are required'], 400);
+        }
+
+        $category = $this->request->getParam('category');
+        if ($category !== null) {
+            $category = (string) $category;
+        }
+
+        $comment = $this->request->getParam('comment');
+        if ($comment !== null) {
+            $comment = (string) $comment;
+        }
+
+        return [$name, (float) $latParam, (float) $lngParam, $category, $comment];
+    }//end parsePoiRequestParams()
 
     /**
      * Unlink a Maps POI.

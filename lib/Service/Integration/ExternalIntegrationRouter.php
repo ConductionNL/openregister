@@ -60,9 +60,9 @@ class ExternalIntegrationRouter
      *
      * Null means "not yet checked" — the first call resolves it.
      *
-     * @var boolean|null
+     * @var bool|null
      */
-    private ?bool $openConnectorAvailable = null;
+    private ?bool $connectorAvailable = null;
 
     /**
      * Constructor.
@@ -260,12 +260,12 @@ class ExternalIntegrationRouter
      */
     private function isOpenConnectorAvailable(): bool
     {
-        if ($this->openConnectorAvailable === null) {
-            $this->openConnectorAvailable = $this->appManager->isInstalled('openconnector')
+        if ($this->connectorAvailable === null) {
+            $this->connectorAvailable = $this->appManager->isInstalled('openconnector')
                 && $this->appManager->isEnabledForUser('openconnector');
         }
 
-        return $this->openConnectorAvailable;
+        return $this->connectorAvailable;
     }//end isOpenConnectorAvailable()
 
     /**
@@ -403,6 +403,9 @@ class ExternalIntegrationRouter
      * @param mixed $response The raw return from CallService.
      *
      * @return array<string,mixed>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles four distinct OpenConnector response shapes (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required shape check.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Handles four distinct OpenConnector response shapes (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required shape check.
      */
     private function decodeResponse($response): array
     {

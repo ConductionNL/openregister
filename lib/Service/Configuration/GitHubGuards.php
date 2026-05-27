@@ -148,7 +148,7 @@ class GitHubGuards
     public function enforceRepoAllowlist(string $repo, bool $isRead): ?JSONResponse
     {
         $rawAllowed = $this->appConfig->getValueString('openregister', 'github_allowed_owners', 'ConductionNL,nextcloud');
-        $allowed    = array_values(array_filter(array_map('trim', explode(',', $rawAllowed)), static fn($o) => $o !== ''));
+        $allowed    = array_values(array_filter(array_map('trim', explode(',', $rawAllowed)), static fn($ownerStr) => $ownerStr !== ''));
 
         if ($allowed === []) {
             if ($isRead === true) {

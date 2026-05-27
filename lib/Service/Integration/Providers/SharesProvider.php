@@ -63,6 +63,10 @@ use Throwable;
  *
  * Always-on metadata: id='shares', group='core', requiredApp=null
  * (NC core sharing is always available), storage='query-time'.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
  */
 class SharesProvider extends AbstractIntegrationProvider
 {
@@ -217,6 +221,10 @@ class SharesProvider extends AbstractIntegrationProvider
      * @return array<int,array<string,mixed>>
      *
      * @spec openspec/changes/integration-shares/tasks.md
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

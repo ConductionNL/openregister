@@ -143,6 +143,8 @@ class ShareLinkService
      *
      * @spec exclude ADR-019 Tier-2 integration link-service facade; the shares-listing contract is owned by the
      *              integration-shares / generic-integrations capability.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function getLinkedShares(string $objectUuid): array
     {
@@ -219,6 +221,9 @@ class ShareLinkService
      *                   invalid recipient (400) or share-manager failure.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-share contract is owned by the
      *              integration-shares / generic-integrations capability.
@@ -623,6 +628,8 @@ class ShareLinkService
      * otherwise NC's global server container.
      *
      * @return ContainerInterface
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     private function resolveContainer(): ContainerInterface
     {

@@ -143,6 +143,10 @@ class FormsProvider extends AbstractIntegrationProvider
      * @return array<int,array<string,mixed>>
      *
      * @spec openspec/changes/integration-forms/tasks.md
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the
+     *   IntegrationProvider interface signature (IntegrationProvider::list) — this provider only
+     *   uses $objectId but cannot alter the shared contract.
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -224,9 +228,10 @@ class FormsProvider extends AbstractIntegrationProvider
         foreach ($links as $link) {
             if ($link->getSubmissionId() === null) {
                 $byForm[(int) $link->getFormId()] = $link;
-            } else {
-                $submissionLinks[] = $link;
+                continue;
             }
+
+            $submissionLinks[] = $link;
         }
 
         $out = [];
@@ -236,23 +241,10 @@ class FormsProvider extends AbstractIntegrationProvider
                 row: $this->mergeFormLinkAndUpstream(link: $link, upstream: $upstream)
             );
 
-            // Roll up the matching submission rows into a count + last timestamp.
-            $count       = 0;
-            $lastUpdated = null;
-            foreach ($submissionLinks as $sub) {
-                if ((int) $sub->getFormId() !== $formId) {
-                    continue;
-                }
-
-                $count++;
-                $linkedAt = $sub->getLinkedAt();
-                if ($linkedAt !== null) {
-                    $timestamp = $linkedAt->getTimestamp();
-                    if ($lastUpdated === null || $timestamp > $lastUpdated) {
-                        $lastUpdated = $timestamp;
-                    }
-                }
-            }
+            [$count, $lastUpdated] = $this->rollUpSubmissions(
+                submissionLinks: $submissionLinks,
+                formId: $formId
+            );
 
             $row['submissionCount'] = max($row['submissionCount'], $count);
             if ($lastUpdated !== null) {
@@ -281,6 +273,40 @@ class FormsProvider extends AbstractIntegrationProvider
         return $out;
 
     }//end rowsFromLinks()
+
+    /**
+     * Roll up submission links for a given form into a count and the latest linked timestamp.
+     *
+     * @param FormLink[] $submissionLinks All submission-level links across all forms.
+     * @param int        $formId          The form id to aggregate for.
+     *
+     * @return array{int, int|null} Tuple of [count, lastUpdatedTimestamp|null].
+     */
+    private function rollUpSubmissions(array $submissionLinks, int $formId): array
+    {
+        $count       = 0;
+        $lastUpdated = null;
+
+        foreach ($submissionLinks as $sub) {
+            if ((int) $sub->getFormId() !== $formId) {
+                continue;
+            }
+
+            $count++;
+            $linkedAt = $sub->getLinkedAt();
+            if ($linkedAt === null) {
+                continue;
+            }
+
+            $timestamp = $linkedAt->getTimestamp();
+            if ($lastUpdated === null || $timestamp > $lastUpdated) {
+                $lastUpdated = $timestamp;
+            }
+        }
+
+        return [$count, $lastUpdated];
+
+    }//end rollUpSubmissions()
 
     /**
      * Fetch the upstream `forms_v2_forms` row for a given form id.

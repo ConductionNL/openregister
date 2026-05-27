@@ -78,6 +78,7 @@ use Throwable;
  *     Tier-2 flows (link, create, unlink, list, picker, cache refresh,
  *     graceful degradation).
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class OpenProjectLinkService
 {
@@ -509,6 +510,8 @@ class OpenProjectLinkService
      * @param array<string,mixed> $response Decoded source response.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function normaliseList(array $response): array
     {

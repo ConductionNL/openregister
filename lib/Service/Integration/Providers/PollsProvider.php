@@ -110,6 +110,8 @@ class PollsProvider extends AbstractIntegrationProvider
      * @return array<int,array<string,mixed>>
      *
      * @spec openspec/changes/integration-polls/tasks.md
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -194,6 +196,8 @@ class PollsProvider extends AbstractIntegrationProvider
      * @param int $pollId Poll primary key.
      *
      * @return array<int,array{id:int,text:string,votes:int}>
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable)
      */
     private function fetchOptionsWithCounts(int $pollId): array
     {

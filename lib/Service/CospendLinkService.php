@@ -200,18 +200,18 @@ class CospendLinkService
             throw new Exception('Cospend project not found', 404);
         }
 
-        $link = $this->hydrateLink(
-            objectUuid: $objectUuid,
-            registerId: $registerId,
-            schemaId: $schemaId,
-            entryType: self::ENTRY_PROJECT,
-            projectId: $projectId,
-            billId: null,
-            name: (string) ($project['name'] ?? $projectId),
-            amount: null,
-            currency: ($project['currency'] ?? null),
-            uid: $uid
-        );
+        $link = $this->hydrateLink([
+            'objectUuid' => $objectUuid,
+            'registerId' => $registerId,
+            'schemaId'   => $schemaId,
+            'entryType'  => self::ENTRY_PROJECT,
+            'projectId'  => $projectId,
+            'billId'     => null,
+            'name'       => (string) ($project['name'] ?? $projectId),
+            'amount'     => null,
+            'currency'   => ($project['currency'] ?? null),
+            'uid'        => $uid,
+        ]);
 
         return $this->cospendLinkMapper->insert($link);
     }//end linkProject()
@@ -262,18 +262,18 @@ class CospendLinkService
         $project  = $this->fetchProject(projectId: $projectId);
         $currency = $project['currency'] ?? null;
 
-        $link = $this->hydrateLink(
-            objectUuid: $objectUuid,
-            registerId: $registerId,
-            schemaId: $schemaId,
-            entryType: self::ENTRY_BILL,
-            projectId: $projectId,
-            billId: $billId,
-            name: (string) ($bill['what'] ?? ($project['name'] ?? $projectId)),
-            amount: ($bill['amount'] ?? null),
-            currency: $currency,
-            uid: $uid
-        );
+        $link = $this->hydrateLink([
+            'objectUuid' => $objectUuid,
+            'registerId' => $registerId,
+            'schemaId'   => $schemaId,
+            'entryType'  => self::ENTRY_BILL,
+            'projectId'  => $projectId,
+            'billId'     => $billId,
+            'name'       => (string) ($bill['what'] ?? ($project['name'] ?? $projectId)),
+            'amount'     => ($bill['amount'] ?? null),
+            'currency'   => $currency,
+            'uid'        => $uid,
+        ]);
 
         return $this->cospendLinkMapper->insert($link);
     }//end linkBill()
@@ -329,18 +329,18 @@ class CospendLinkService
             $currencyValue = $cleanCurrency;
         }
 
-        $link = $this->hydrateLink(
-            objectUuid: $objectUuid,
-            registerId: $registerId,
-            schemaId: $schemaId,
-            entryType: self::ENTRY_PROJECT,
-            projectId: $projectId,
-            billId: null,
-            name: $name,
-            amount: null,
-            currency: $currencyValue,
-            uid: $uid
-        );
+        $link = $this->hydrateLink([
+            'objectUuid' => $objectUuid,
+            'registerId' => $registerId,
+            'schemaId'   => $schemaId,
+            'entryType'  => self::ENTRY_PROJECT,
+            'projectId'  => $projectId,
+            'billId'     => null,
+            'name'       => $name,
+            'amount'     => null,
+            'currency'   => $currencyValue,
+            'uid'        => $uid,
+        ]);
 
         return $this->cospendLinkMapper->insert($link);
     }//end createAndLinkProject()
@@ -396,44 +396,34 @@ class CospendLinkService
     }//end createProject()
 
     /**
-     * Build a CospendLink from normalised entry info.
+     * Build a CospendLink from a normalised options map.
      *
-     * @param string      $objectUuid Parent OR object uuid.
-     * @param int         $registerId OR register id.
-     * @param int         $schemaId   OR schema id.
-     * @param string      $entryType  Entry type (`project`|`bill`).
-     * @param string      $projectId  Cospend project id.
-     * @param int|null    $billId     Cospend bill id, or null.
-     * @param string      $name       Cached display name.
-     * @param float|null  $amount     Cached amount, or null.
-     * @param string|null $currency   Cached currency, or null.
-     * @param string      $uid        The linking user id.
+     * Uses an options array instead of 10 individual parameters to keep the
+     * call sites readable and satisfy the PHPMD ExcessiveParameterList rule.
+     *
+     * Required keys: `objectUuid` (string), `registerId` (int),
+     * `schemaId` (int), `entryType` (string), `projectId` (string),
+     * `uid` (string).
+     * Optional keys: `billId` (?int), `name` (string), `amount` (?float),
+     * `currency` (?string).
+     *
+     * @param array<string,mixed> $opts Options map — see keys above.
      *
      * @return CospendLink
      */
-    private function hydrateLink(
-        string $objectUuid,
-        int $registerId,
-        int $schemaId,
-        string $entryType,
-        string $projectId,
-        ?int $billId,
-        string $name,
-        ?float $amount,
-        ?string $currency,
-        string $uid
-    ): CospendLink {
+    private function hydrateLink(array $opts): CospendLink
+    {
         $link = new CospendLink();
-        $link->setObjectUuid($objectUuid);
-        $link->setRegisterId($registerId);
-        $link->setSchemaId($schemaId);
-        $link->setEntryType($entryType);
-        $link->setProjectId($projectId);
-        $link->setBillId($billId);
-        $link->setName($name);
-        $link->setAmount($amount);
-        $link->setCurrency($currency);
-        $link->setLinkedBy($uid);
+        $link->setObjectUuid((string) $opts['objectUuid']);
+        $link->setRegisterId((int) $opts['registerId']);
+        $link->setSchemaId((int) $opts['schemaId']);
+        $link->setEntryType((string) $opts['entryType']);
+        $link->setProjectId((string) $opts['projectId']);
+        $link->setBillId(isset($opts['billId']) ? (int) $opts['billId'] : null);
+        $link->setName((string) ($opts['name'] ?? ''));
+        $link->setAmount(isset($opts['amount']) ? (float) $opts['amount'] : null);
+        $link->setCurrency(isset($opts['currency']) ? (string) $opts['currency'] : null);
+        $link->setLinkedBy((string) $opts['uid']);
         $link->setLinkedAt(new DateTime());
 
         return $link;
@@ -588,9 +578,19 @@ class CospendLinkService
                 $link->setName((string) ($bill['what'] ?? $link->getName()));
                 $link->setAmount($bill['amount'] ?? $link->getAmount());
             }
-        } else {
-            $link->setName((string) ($project['name'] ?? $link->getName()));
+
+            $link->setCurrency($project['currency'] ?? $link->getCurrency());
+            $link->setLinkedAt(new DateTime());
+
+            try {
+                return $this->cospendLinkMapper->update($link);
+            } catch (Throwable $e) {
+                $this->logger->debug('CospendLinkService::refreshLink update failed: '.$e->getMessage());
+                return $link;
+            }
         }
+
+        $link->setName((string) ($project['name'] ?? $link->getName()));
 
         $link->setCurrency($project['currency'] ?? $link->getCurrency());
         $link->setLinkedAt(new DateTime());

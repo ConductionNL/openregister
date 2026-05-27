@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class ActionsController extends Controller
 {
@@ -304,7 +305,8 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -357,7 +359,8 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -426,7 +429,8 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -464,7 +468,8 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function test(int $id): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -569,7 +574,8 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function migrateFromHooks(int $schemaId): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 

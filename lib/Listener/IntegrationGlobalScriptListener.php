@@ -63,6 +63,10 @@ class IntegrationGlobalScriptListener implements IEventListener
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Util::addInitScript is a
+     *     Nextcloud framework static helper with no injectable DI equivalent;
+     *     the NC AppFramework does not expose addInitScript via any interface.
+     *
      * @spec openspec/changes/universal-shared-integration-registry/tasks.md
      */
     public function handle(Event $event): void

@@ -35,8 +35,12 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes PollLinkMapper, IDBConnection,
+ *   IAppManager, IUserSession, and LoggerInterface; each is a distinct orchestration
+ *   concern for direct-DB poll creation and user-session handling.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Direct SQL inserts into oc_polls_polls
+ *   and oc_polls_options are required because Polls' PollService depends on its own
+ *   UserSession which is not bootstrapped in OR controller context.
  */
 
 declare(strict_types=1);
@@ -192,7 +196,9 @@ class PollLinkService
      *
      * @return array<int,array<string,mixed>>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Conditional enrichment path (Polls
+     *   available/unavailable) combined with per-link row hydration requires nested guards;
+     *   the logic cannot be split without losing the "degrade gracefully" contract.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
@@ -308,8 +314,13 @@ class PollLinkService
      *
      * @throws Exception On missing user, Polls unavailable, or create failure.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) PHPMD 2.x accumulates the complexity
+     *   of insertPollRecord and buildPollLink (extracted helpers) into this orchestrator;
+     *   the method itself only validates preconditions and delegates to those helpers.
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Poll creation requires seven distinct
+     *   parameters (objectUuid, registerId, schemaId, title, description, type, options,
+     *   deadline); grouping them into a DTO would add an extra abstraction layer with no
+     *   functional benefit since callers already have all values as discrete variables.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
      */
@@ -336,40 +347,82 @@ class PollLinkService
             throw new Exception('Title is required', 400);
         }
 
-        // Normalise the type — accept legacy short forms.
         $normalisedType = $this->normalisePollType(type: $type);
+        $uid            = $user->getUID();
 
-        $uid    = $user->getUID();
+        $pollId = $this->insertPollRecord(
+            uid: $uid,
+            title: $title,
+            description: $description,
+            type: $normalisedType,
+            options: $options,
+            deadline: $deadline
+        );
+
+        $link = $this->buildPollLink(
+            objectUuid: $objectUuid,
+            registerId: $registerId,
+            schemaId: $schemaId,
+            pollId: $pollId,
+            title: $title,
+            normalisedType: $normalisedType,
+            options: $options,
+            deadline: $deadline,
+            uid: $uid
+        );
+
+        return $this->pollLinkMapper->insert($link);
+    }//end createAndLinkPoll()
+
+    /**
+     * Insert the polls_polls row and its options, returning the new poll id.
+     *
+     * @param string                 $uid         Owner user id.
+     * @param string                 $title       Poll title.
+     * @param string                 $description Poll description.
+     * @param string                 $type        Normalised poll type.
+     * @param array<int,string>      $options     Option labels.
+     * @param DateTimeInterface|null $deadline    Optional deadline.
+     *
+     * @return int The new poll id.
+     *
+     * @throws Exception When the insert fails or the new id cannot be retrieved.
+     */
+    private function insertPollRecord(
+        string $uid,
+        string $title,
+        string $description,
+        string $type,
+        array $options,
+        ?DateTimeInterface $deadline
+    ): int {
         $now    = time();
-        $expire = 0;
-        if ($deadline !== null) {
-            $expire = $deadline->getTimestamp();
-        }
+        $expire = ($deadline !== null) ? $deadline->getTimestamp() : 0;
 
         try {
             $insert = $this->db->getQueryBuilder();
             $insert->insert('polls_polls')
                 ->values(
-                        [
-                            'type'            => $insert->createNamedParameter($normalisedType),
-                            'title'           => $insert->createNamedParameter(mb_substr($title, 0, 128)),
-                            'description'     => $insert->createNamedParameter($description),
-                            'owner'           => $insert->createNamedParameter($uid),
-                            'created'         => $insert->createNamedParameter($now, IQueryBuilder::PARAM_INT),
-                            'expire'          => $insert->createNamedParameter($expire, IQueryBuilder::PARAM_INT),
-                            'deleted'         => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                            'access'          => $insert->createNamedParameter('private'),
-                            'anonymous'       => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                            'allow_maybe'     => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-                            'allow_proposals' => $insert->createNamedParameter('disallow'),
-                            'show_results'    => $insert->createNamedParameter('always'),
-                            'admin_access'    => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                            'allow_comment'   => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-                            'hide_booked_up'  => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-                            'use_no'          => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-                            'voting_variant'  => $insert->createNamedParameter('simple'),
-                        ]
-                        );
+                    [
+                        'type'            => $insert->createNamedParameter($type),
+                        'title'           => $insert->createNamedParameter(mb_substr($title, 0, 128)),
+                        'description'     => $insert->createNamedParameter($description),
+                        'owner'           => $insert->createNamedParameter($uid),
+                        'created'         => $insert->createNamedParameter($now, IQueryBuilder::PARAM_INT),
+                        'expire'          => $insert->createNamedParameter($expire, IQueryBuilder::PARAM_INT),
+                        'deleted'         => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                        'access'          => $insert->createNamedParameter('private'),
+                        'anonymous'       => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                        'allow_maybe'     => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
+                        'allow_proposals' => $insert->createNamedParameter('disallow'),
+                        'show_results'    => $insert->createNamedParameter('always'),
+                        'admin_access'    => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+                        'allow_comment'   => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
+                        'hide_booked_up'  => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
+                        'use_no'          => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
+                        'voting_variant'  => $insert->createNamedParameter('simple'),
+                    ]
+                );
             $insert->executeStatement();
 
             $pollId = (int) $this->db->lastInsertId('oc_polls_polls_id_seq');
@@ -382,12 +435,44 @@ class PollLinkService
                 throw new Exception('Failed to retrieve created poll id', 500);
             }
 
-            $this->insertPollOptions(pollId: $pollId, owner: $uid, type: $normalisedType, options: $options, now: $now);
+            $this->insertPollOptions(pollId: $pollId, owner: $uid, type: $type, options: $options, now: $now);
         } catch (Throwable $e) {
             $this->logger->warning('Failed to create poll: '.$e->getMessage());
             throw new Exception('Failed to create poll: '.$e->getMessage(), 500);
         }//end try
 
+        return $pollId;
+    }//end insertPollRecord()
+
+    /**
+     * Assemble an unsaved PollLink entity from poll creation data.
+     *
+     * @param string                 $objectUuid    Parent OR object uuid.
+     * @param int                    $registerId    OR register id.
+     * @param int                    $schemaId      OR schema id.
+     * @param int                    $pollId        Newly created Polls poll id.
+     * @param string                 $title         Poll title.
+     * @param string                 $normalisedType Normalised poll type.
+     * @param array<int,string>      $options       Option labels.
+     * @param DateTimeInterface|null $deadline      Optional deadline.
+     * @param string                 $uid           Owner user id.
+     *
+     * @return PollLink The unsaved entity.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required to assemble all
+     *   PollLink fields from the caller's arguments without a mutable context object.
+     */
+    private function buildPollLink(
+        string $objectUuid,
+        int $registerId,
+        int $schemaId,
+        int $pollId,
+        string $title,
+        string $normalisedType,
+        array $options,
+        ?DateTimeInterface $deadline,
+        string $uid
+    ): PollLink {
         $deadlineDateTime = null;
         if ($deadline !== null) {
             try {
@@ -411,8 +496,8 @@ class PollLinkService
         $link->setLinkedBy($uid);
         $link->setLinkedAt(new DateTime());
 
-        return $this->pollLinkMapper->insert($link);
-    }//end createAndLinkPoll()
+        return $link;
+    }//end buildPollLink()
 
     /**
      * Insert poll options.

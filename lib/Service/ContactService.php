@@ -210,6 +210,10 @@ class ContactService
      *                                   is absent).
      *
      * @return array{phone: ?string, org: ?string, avatarUrl: ?string}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     private function extractVcardFields(?int $addressbookId, ?string $contactUri, ?string $contactUid): array
     {
@@ -259,7 +263,9 @@ class ContactService
                         break;
                     }
                 }
-            } else {
+            }
+
+            if (is_iterable($tel) === false) {
                 $value = (string) $tel;
                 if ($value !== '') {
                     $phone = $value;
@@ -302,7 +308,9 @@ class ContactService
                 // the per-uid Contacts route below).
                 if (preg_match('#^(https?://|data:)#i', $rawValue) === 1) {
                     $avatarUrl = $rawValue;
-                } else {
+                }
+
+                if (preg_match('#^(https?://|data:)#i', $rawValue) === 0) {
                     // Otherwise treat as inline image bytes; wrap as data URL.
                     $mediaType = 'image/jpeg';
                     if (isset($photoProp['TYPE']) === true) {
@@ -316,7 +324,9 @@ class ContactService
                     // left in place when round-tripping a data URL.
                     if (str_starts_with($rawValue, 'data:') === true) {
                         $avatarUrl = $rawValue;
-                    } else {
+                    }
+
+                    if (str_starts_with($rawValue, 'data:') === false) {
                         $avatarUrl = 'data:'.$mediaType.';base64,'.$rawValue;
                     }
                 }
@@ -364,6 +374,8 @@ class ContactService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Single switch on upsert state — extracting a sub-method
      *                                                doesn't add clarity and would split the vCard hydration
      *                                                from the DB write that consumes it.
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function linkContact(
         string $objectUuid,

@@ -292,7 +292,9 @@ class MappingService
         if (is_array($output) === false) {
             if ($output === null) {
                 $output = [];
-            } else {
+            }
+
+            if ($output !== null && is_array($output) === false) {
                 $output = [$output];
             }
         }

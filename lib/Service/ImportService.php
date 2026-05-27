@@ -679,6 +679,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Spreadsheet batch processing requires many validation branches
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple row/column validation paths needed for data integrity
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing consolidates related operations for performance
+     * @SuppressWarnings(PHPMD.StaticAccess)          NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */
@@ -868,6 +869,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  CSV processing requires many conditional branches for data handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       CSV processing requires many conditional row/column handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) CSV processing consolidates related operations for performance
+     * @SuppressWarnings(PHPMD.StaticAccess)          NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */

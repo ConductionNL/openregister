@@ -2692,11 +2692,8 @@ class MagicMapper extends AbstractObjectMapper
             foreach ($uniqueConstraints as $uniqueCol) {
                 $rawCol         = trim($uniqueCol, '`"');
                 $constraintName = $tableName.'_'.ltrim($rawCol, '_').'_uq';
-                if ($isPostgres === true) {
-                    $sql .= ', CONSTRAINT "'.$constraintName.'" UNIQUE ('.$uniqueCol.')';
-                } else {
-                    $sql .= ', CONSTRAINT `'.$constraintName.'` UNIQUE ('.$uniqueCol.')';
-                }
+                $quote        = $isPostgres === true ? '"' : '`';
+                $sql .= ', CONSTRAINT '.$quote.$constraintName.$quote.' UNIQUE ('.$uniqueCol.')';
             }
 
             $sql .= ')';

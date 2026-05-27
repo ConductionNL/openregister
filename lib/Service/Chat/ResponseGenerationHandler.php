@@ -47,7 +47,6 @@ use LLPhant\Chat\Message as LLPhantMessage;
 use LLPhant\OpenAIConfig;
 use LLPhant\OllamaConfig;
 use LLPhant\Exception\MissingFeatureException;
-use Psr\Http\Message\StreamInterface;
 use ReflectionClass;
 
 /**
@@ -64,6 +63,12 @@ use ReflectionClass;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) This class is a multi-provider LLM router that
+ *   must reference OpenAI, Ollama, and Fireworks config/chat classes plus the streaming
+ *   infrastructure (StreamYieldChannel, StreamingToolInstanceWrapper, MissingFeatureException).
+ *   Splitting into one class per provider would be the clean long-term solution; for now all
+ *   13 imported types are genuinely load-bearing and cannot be consolidated without an
+ *   architectural refactor tracked as a separate ADR task.
  */
 class ResponseGenerationHandler
 {

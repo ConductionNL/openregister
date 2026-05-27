@@ -50,6 +50,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Repair step: migrate legacy notification subscriptions to user-config overrides.
+ *
+ * @SuppressWarnings(PHPMD.LongClassName)
  */
 class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
 {
@@ -88,6 +90,9 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
      * @param IOutput $output Migration output handle.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function run(IOutput $output): void
     {

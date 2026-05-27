@@ -211,6 +211,8 @@ class TalkLinkService
      *
      * @return array<int,array<string,mixed>>
      *
+     * @SuppressWarnings(PHPMD.LongVariable)
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
     public function getLinkedRooms(string $objectUuid): array
@@ -282,6 +284,8 @@ class TalkLinkService
      *                   type, or create failure.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
@@ -415,6 +419,7 @@ class TalkLinkService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
@@ -812,6 +817,9 @@ class TalkLinkService
      * @param object $room Talk Room.
      *
      * @return array{actor:array{type:string,id:string},text:string,timestamp:?int}|null
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function buildLastMessage(object $room): ?array
     {

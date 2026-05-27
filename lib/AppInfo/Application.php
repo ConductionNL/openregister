@@ -247,6 +247,26 @@ use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Service\XwikiLinkService;
+use OCA\OpenRegister\Service\OpenProjectLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\FormsProvider;
+use OCA\OpenRegister\Service\ShareLinkService;
+use OCA\OpenRegister\Service\TalkLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\FlowProvider;
+use OCA\OpenRegister\Service\ActivityFilterService;
+use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\MapsProvider;
+use OCA\OpenRegister\Service\MapLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\PhotosProvider;
+use OCA\OpenRegister\Service\PhotoLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider;
+use OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\CospendProvider;
+use OCA\OpenRegister\Service\CospendLinkService;
+use OCA\OpenRegister\Service\CollectiveLinkService;
+use OCA\OpenRegister\Service\AnalyticsLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
+use OCA\OpenRegister\Service\TimeTrackerLinkService;
 
 /**
  * Class Application
@@ -261,9 +281,17 @@ use OCA\OpenRegister\Service\Mcp\McpToolsService;
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Bootstrap class must reference every
+ *   service, mapper, event listener, and middleware registered for the entire app; the
+ *   coupling is structural and cannot be reduced without breaking the NC bootstrap contract.
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Service registration methods enumerate
+ *   all DI bindings in one place per NC bootstrap pattern; splitting them would spread
+ *   the wire-up across unrelated files and obscure the dependency graph.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) Single IBootstrap implementation per NC
+ *   app-info convention; all register/boot logic must live in this one class.
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter) IBootstrap::boot(IBootContext) signature
+ *   is fixed by the NC framework contract; the $context parameter may not be used in
+ *   every version of the boot method.
  */
 class Application extends App implements IBootstrap
 {
@@ -385,7 +413,10 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Manual DI factory closures for four
+     *   interdependent mappers/services each require 10-20 lines of constructor wiring;
+     *   the length is structural to the NC DI pattern and cannot be shortened without
+     *   obscuring the circular-dependency resolution order.
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
@@ -1085,7 +1116,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\XwikiLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\XwikiLinkService(
+                return new XwikiLinkService(
                     xwikiLinkMapper: $container->get(\OCA\OpenRegister\Db\XwikiLinkMapper::class),
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
@@ -1124,7 +1155,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\OpenProjectLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\OpenProjectLinkService(
+                return new OpenProjectLinkService(
                     openProjectLinkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
                     provider: $container->get(OpenProjectProvider::class),
                     router: $container->get(ExternalIntegrationRouter::class),
@@ -1242,7 +1273,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\FormsProvider(
+                return new FormsProvider(
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1273,7 +1304,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\ShareLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\ShareLinkService(
+                return new ShareLinkService(
                     l10n: $container->get('OCP\IL10N'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                 );
@@ -1324,7 +1355,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\TalkLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\TalkLinkService(
+                return new TalkLinkService(
                     talkLinkMapper: $container->get(\OCA\OpenRegister\Db\TalkLinkMapper::class),
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
@@ -1361,7 +1392,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\FlowProvider(
+                return new FlowProvider(
                     flowLinkMapper: $container->get(\OCA\OpenRegister\Db\FlowLinkMapper::class),
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
@@ -1379,7 +1410,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\ActivityFilterService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\ActivityFilterService(
+                return new ActivityFilterService(
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                 );
@@ -1394,7 +1425,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\FlowLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\FlowLinkService(
+                return new FlowLinkService(
                     flowLinkMapper: $container->get(\OCA\OpenRegister\Db\FlowLinkMapper::class),
                     db: $container->get('OCP\IDBConnection'),
                     container: $container,
@@ -1414,7 +1445,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\MapsProvider(
+                return new MapsProvider(
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1431,7 +1462,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\MapLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\MapLinkService(
+                return new MapLinkService(
                     mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
@@ -1450,7 +1481,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider(
+                return new PhotosProvider(
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1467,7 +1498,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\PhotoLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\PhotoLinkService(
+                return new PhotoLinkService(
                     photoLinkMapper: $container->get(\OCA\OpenRegister\Db\PhotoLinkMapper::class),
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
@@ -1486,7 +1517,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider(
+                return new CollectivesProvider(
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1504,7 +1535,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider(
+                return new AnalyticsProvider(
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1522,7 +1553,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\CospendProvider(
+                return new CospendProvider(
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1541,7 +1572,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\CospendLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\CospendLinkService(
+                return new CospendLinkService(
                     cospendLinkMapper: $container->get(\OCA\OpenRegister\Db\CospendLinkMapper::class),
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
@@ -1561,7 +1592,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\CollectiveLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\CollectiveLinkService(
+                return new CollectiveLinkService(
                     collectiveLinkMapper: $container->get(\OCA\OpenRegister\Db\CollectiveLinkMapper::class),
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
@@ -1581,7 +1612,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\AnalyticsLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\AnalyticsLinkService(
+                return new AnalyticsLinkService(
                     analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
@@ -1600,7 +1631,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\TimeProvider(
+                return new TimeProvider(
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1617,7 +1648,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\TimeTrackerLinkService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\TimeTrackerLinkService(
+                return new TimeTrackerLinkService(
                     timeTrackerLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
                     db: $container->get('OCP\IDBConnection'),
                     container: $container,
@@ -1791,99 +1822,11 @@ class Application extends App implements IBootstrap
                     $container->get(IntegrationsToolProvider::class),
                 ];
 
-                // Per-app tool providers: try two discovery paths for each
-                // installed app:
-                // 1) the alias key `OCA\OpenRegister\Mcp\IMcpToolProvider::<appId>`
-                // (works only if the app registered the alias on this same
-                // container instance — NC scopes alias registration per app);
-                // 2) the canonical FQCN `OCA\<AppId>\Mcp\<AppId>ToolProvider`
-                // (resolved via NC's autoloader + DI autowiring, which works
-                // cross-app since the autoloader is process-global).
-                try {
-                    $appManager = $container->get('OCP\App\IAppManager');
-                    foreach ($appManager->getInstalledApps() as $appId) {
-                        $candidates = [
-                            'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
-                            'OCA\\'.ucfirst($appId).'\\Mcp\\'.ucfirst($appId).'ToolProvider',
-                        ];
-
-                        // Third candidate: trust <namespace> from info.xml when
-                        // the app declares one (e.g. `openbuilt` → `OpenBuilt`,
-                        // `softwarecatalog` → `SoftwareCatalog`). ucfirst() on
-                        // the appId alone mangles camel-cased namespaces.
-                        //
-                        // NC's bootstrap nulls libxml's external-entity resolver
-                        // for XXE-hardening, which makes simplexml_load_file()
-                        // return false on well-formed files. Read first, parse
-                        // the string.
-                        try {
-                            $infoPath = $appManager->getAppPath($appId).'/appinfo/info.xml';
-                            if (is_file($infoPath) === true) {
-                                $body = @file_get_contents($infoPath);
-                                if ($body !== false && $body !== '') {
-                                    $xml = @simplexml_load_string($body);
-                                    if ($xml !== false && isset($xml->namespace) === true) {
-                                        $ns = (string) $xml->namespace;
-                                        if ($ns !== '' && $ns !== ucfirst($appId)) {
-                                            $candidates[] = 'OCA\\'.$ns.'\\Mcp\\'.$ns.'ToolProvider';
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (\Throwable $e) {
-                            // Path-resolution failures are benign; the other two
-                            // candidates already cover the common case.
-                        }
-
-                        foreach ($candidates as $key) {
-                            try {
-                                if (str_contains($key, '\\') === true && str_contains($key, '::') === false) {
-                                    // FQCN — only try if the class actually
-                                    // exists; calling get() on a non-existent
-                                    // class would throw NotFoundExceptionInterface
-                                    // for every installed app (noisy).
-                                    if (class_exists($key) === false) {
-                                        $logger->warning(
-                                            '[McpToolsService] Class does not exist',
-                                            ['appId' => $appId, 'fqcn' => $key]
-                                        );
-                                        continue;
-                                    }
-                                }
-
-                                $appProvider = $container->get($key);
-                                if ($appProvider instanceof IMcpToolProvider) {
-                                    $providers[] = $appProvider;
-                                    $logger->warning(
-                                        '[McpToolsService] Discovered per-app tool provider',
-                                        ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
-                                    );
-                                    break;
-                                }
-
-                                $resolvedClass = gettype($appProvider);
-                                if (is_object($appProvider) === true) {
-                                    $resolvedClass = get_class($appProvider);
-                                }
-
-                                $logger->warning(
-                                    '[McpToolsService] Resolved but not IMcpToolProvider',
-                                    ['appId' => $appId, 'via' => $key, 'class' => $resolvedClass]
-                                );
-                            } catch (\Throwable $e) {
-                                $logger->warning(
-                                    '[McpToolsService] Resolve failed',
-                                    ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
-                                );
-                                continue;
-                            }//end try
-                        }//end foreach
-                    }//end foreach
-                } catch (\Throwable $e) {
-                    $logger->warning(
-                        '[McpToolsService] Per-app provider enumeration failed: '.$e->getMessage()
-                    );
-                }//end try
+                $this->collectPerAppMcpProviders(
+                    container: $container,
+                    logger: $logger,
+                    providers: $providers
+                );
 
                 return new McpToolsService(
                     providers: $providers,
@@ -1892,6 +1835,161 @@ class Application extends App implements IBootstrap
             }
         );
     }//end registerMcpToolProviders()
+
+    /**
+     * Iterate over all installed apps and append any discovered
+     * IMcpToolProvider implementations to the $providers array.
+     *
+     * Tries up to three candidate keys per app — alias, ucfirst FQCN,
+     * and namespace-from-info.xml FQCN — stopping at the first match.
+     *
+     * @param ContainerInterface           $container The DI container.
+     * @param \Psr\Log\LoggerInterface     $logger    PSR logger.
+     * @param array<IMcpToolProvider>      &$providers Providers array (modified in place).
+     *
+     * @return void
+     */
+    private function collectPerAppMcpProviders(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array &$providers
+    ): void {
+        try {
+            $appManager = $container->get('OCP\App\IAppManager');
+            foreach ($appManager->getInstalledApps() as $appId) {
+                $candidates = $this->buildMcpProviderCandidates(
+                    appId: $appId,
+                    appManager: $appManager
+                );
+
+                foreach ($candidates as $key) {
+                    $resolved = $this->tryResolveMcpProviderCandidate(
+                        container: $container,
+                        logger: $logger,
+                        appId: $appId,
+                        key: $key
+                    );
+                    if ($resolved !== null) {
+                        $providers[] = $resolved;
+                        break;
+                    }
+                }//end foreach
+            }//end foreach
+        } catch (\Throwable $e) {
+            $logger->warning(
+                '[McpToolsService] Per-app provider enumeration failed: '.$e->getMessage()
+            );
+        }//end try
+    }//end collectPerAppMcpProviders()
+
+    /**
+     * Build the list of candidate lookup keys for a given app's MCP tool provider.
+     *
+     * Produces up to three candidates:
+     * 1. The alias key `OCA\OpenRegister\Mcp\IMcpToolProvider::<appId>`.
+     * 2. The canonical FQCN built from ucfirst($appId).
+     * 3. (Optional) A FQCN derived from the `<namespace>` declared in info.xml,
+     *    when the declared namespace differs from ucfirst($appId) (covers camel-cased
+     *    app names like `openbuilt` → `OpenBuilt`).
+     *
+     * @param string $appId      The Nextcloud app id.
+     * @param mixed  $appManager The IAppManager instance.
+     *
+     * @return string[] Ordered candidate key list.
+     */
+    private function buildMcpProviderCandidates(string $appId, $appManager): array
+    {
+        $candidates = [
+            'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
+            'OCA\\'.ucfirst($appId).'\\Mcp\\'.ucfirst($appId).'ToolProvider',
+        ];
+
+        // Third candidate: trust <namespace> from info.xml when the app declares
+        // one that differs from ucfirst($appId). NC's bootstrap nulls libxml's
+        // external-entity resolver for XXE-hardening, which makes
+        // simplexml_load_file() return false on well-formed files; read first,
+        // then parse the string.
+        try {
+            $infoPath = $appManager->getAppPath($appId).'/appinfo/info.xml';
+            if (is_file($infoPath) === true) {
+                $body = file_get_contents($infoPath);
+                if ($body !== false && $body !== '') {
+                    $useErrors = libxml_use_internal_errors(true);
+                    $xml       = simplexml_load_string($body);
+                    libxml_use_internal_errors($useErrors);
+                    if ($xml !== false && isset($xml->namespace) === true) {
+                        $namespace = (string) $xml->namespace;
+                        if ($namespace !== '' && $namespace !== ucfirst($appId)) {
+                            $candidates[] = 'OCA\\'.$namespace.'\\Mcp\\'.$namespace.'ToolProvider';
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Path-resolution failures are benign; the other two
+            // candidates already cover the common case.
+        }
+
+        return $candidates;
+    }//end buildMcpProviderCandidates()
+
+    /**
+     * Try to resolve a single MCP provider candidate key from the container.
+     *
+     * Returns the resolved IMcpToolProvider on success, or null when the
+     * candidate does not exist, could not be resolved, or resolved to a
+     * non-IMcpToolProvider object.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param string                   $appId     The Nextcloud app id (for logging).
+     * @param string                   $key       The candidate lookup key.
+     *
+     * @return IMcpToolProvider|null The resolved provider or null.
+     */
+    private function tryResolveMcpProviderCandidate(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        string $appId,
+        string $key
+    ): ?IMcpToolProvider {
+        try {
+            if (str_contains($key, '\\') === true && str_contains($key, '::') === false) {
+                // FQCN — only try if the class actually exists; calling get() on a
+                // non-existent class would throw NotFoundExceptionInterface for every
+                // installed app (noisy).
+                if (class_exists($key) === false) {
+                    $logger->warning(
+                        '[McpToolsService] Class does not exist',
+                        ['appId' => $appId, 'fqcn' => $key]
+                    );
+                    return null;
+                }
+            }
+
+            $appProvider = $container->get($key);
+            if ($appProvider instanceof IMcpToolProvider) {
+                $logger->warning(
+                    '[McpToolsService] Discovered per-app tool provider',
+                    ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
+                );
+                return $appProvider;
+            }
+
+            // get_debug_type() returns the FQCN for objects and the type name for scalars.
+            $logger->warning(
+                '[McpToolsService] Resolved but not IMcpToolProvider',
+                ['appId' => $appId, 'via' => $key, 'class' => get_debug_type($appProvider)]
+            );
+        } catch (\Throwable $e) {
+            $logger->warning(
+                '[McpToolsService] Resolve failed',
+                ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
+            );
+        }//end try
+
+        return null;
+    }//end tryResolveMcpProviderCandidate()
 
     /**
      * Boot application components

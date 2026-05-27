@@ -285,6 +285,11 @@ class ObjectIntegrationsController extends Controller
      * @param string                  $integrationId Integration id.
      *
      * @return JSONResponse
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) QueryTimeContract is a final utility/value
+     *   class with only static constants and a static factory method; it has no
+     *   instance state and is not registered in the DI container, so injection
+     *   would require a needless wrapper class.
      */
     private function respondNotImplemented(NotImplementedException $exception, string $integrationId): JSONResponse
     {

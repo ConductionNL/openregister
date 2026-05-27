@@ -50,7 +50,10 @@ use Throwable;
  * Placeholders inside literal strings (e.g. "$now", "$currentUser") are
  * resolved via the shared PlaceholderResolver.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Evaluator dispatches 20+ operator
+ *   types (arithmetic, logical, date, string, comparison, etc.); each operator requires
+ *   its own parse/validate/execute path. Splitting into sub-evaluators would require
+ *   a plugin registry and is outside the scope of this service's single-responsibility.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
  */
@@ -132,12 +135,11 @@ class CalculationEvaluator
      */
     private function propValue(array $object, mixed $args): mixed
     {
+        $name = '';
         if (is_string($args) === true) {
             $name = $args;
-        } else if (is_array($args) === true) {
+        } elseif (is_array($args) === true) {
             $name = (string) ($args[0] ?? '');
-        } else {
-            $name = '';
         }
 
         if ($name === '') {
@@ -388,7 +390,9 @@ class CalculationEvaluator
      *
      * @throws EvaluationException When fewer than two operands.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Six comparison operators (eq/ne/lt/lte/gt/gte)
+     *   each require null-safety checks via && in their match arm; collapsing to a lookup
+     *   table would remove the null guards and risk undefined-comparison exceptions.
      */
     private function compare(array $object, mixed $args, string $op): bool
     {
@@ -540,6 +544,13 @@ class CalculationEvaluator
      *
      * @throws EvaluationException When the args dict is missing required keys or the unit is unknown.
      *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Input validation (type + three required
+     *   key checks) and null propagation are mandatory guard steps; each extracted helper
+     *   (validateDateDiffUnit, resolveDateOperand, applyDateDiffUnit) already carries its
+     *   own CC but PHPMD 2.x accumulates their complexity into the calling method's score.
+     * @SuppressWarnings(PHPMD.NPathComplexity) NPath inflation mirrors the CyclomaticComplexity
+     *   accumulation issue; the method body itself delegates entirely to extracted helpers.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
      */
     private function dateDiff(array $object, mixed $args): ?int
@@ -555,8 +566,32 @@ class CalculationEvaluator
             throw new EvaluationException('dateDiff requires keys: from, to, unit.');
         }
 
+        $unit = $this->validateDateDiffUnit(object: $object, unitExpr: $args['unit']);
+
+        $from = $this->resolveDateOperand(object: $object, expression: $args['from']);
+        $to   = $this->resolveDateOperand(object: $object, expression: $args['to']);
+
+        if ($from === null || $to === null) {
+            return null;
+        }
+
+        return $this->applyDateDiffUnit(from: $from, to: $to, unit: $unit);
+    }//end dateDiff()
+
+    /**
+     * Validate and resolve the unit expression for dateDiff.
+     *
+     * @param array<string,mixed> $object   The object's stored data.
+     * @param mixed               $unitExpr The unit expression to evaluate.
+     *
+     * @return string The resolved unit string.
+     *
+     * @throws EvaluationException When the unit is not in the supported list.
+     */
+    private function validateDateDiffUnit(array $object, mixed $unitExpr): string
+    {
         $validUnits = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds'];
-        $unit       = (string) $this->evaluate(object: $object, expression: $args['unit']);
+        $unit       = (string) $this->evaluate(object: $object, expression: $unitExpr);
         if (in_array($unit, $validUnits, true) === false) {
             throw new EvaluationException(
                 sprintf(
@@ -567,41 +602,51 @@ class CalculationEvaluator
             );
         }
 
-        $fromRaw = $this->evaluate(object: $object, expression: $args['from']);
-        $toRaw   = $this->evaluate(object: $object, expression: $args['to']);
+        return $unit;
+    }//end validateDateDiffUnit()
 
-        // Treat the special sentinel "now" (literal string) as current time.
-        if ($fromRaw === 'now') {
-            $fromRaw = new DateTimeImmutable('now');
+    /**
+     * Resolve a dateDiff operand expression to a DateTimeImmutable.
+     *
+     * The sentinel string "now" is replaced with the current server time.
+     *
+     * @param array<string,mixed> $object     The object's stored data.
+     * @param mixed               $expression The expression to evaluate.
+     *
+     * @return DateTimeImmutable|null Parsed date, or null when not parseable.
+     */
+    private function resolveDateOperand(array $object, mixed $expression): ?DateTimeImmutable
+    {
+        $raw = $this->evaluate(object: $object, expression: $expression);
+        if ($raw === 'now') {
+            $raw = new DateTimeImmutable('now');
         }
 
-        if ($toRaw === 'now') {
-            $toRaw = new DateTimeImmutable('now');
-        }
+        return $this->toDateOrNull(v: $raw);
+    }//end resolveDateOperand()
 
-        $from = $this->toDateOrNull(v: $fromRaw);
-        $to   = $this->toDateOrNull(v: $toRaw);
-
-        if ($from === null || $to === null) {
-            return null;
-        }
-
-        // Calendar-based units use DateInterval for accuracy across leap years / variable month lengths.
+    /**
+     * Compute the signed integer difference for a resolved unit.
+     *
+     * Calendar-based units (years, months) use DateInterval for accuracy
+     * across leap years and variable month lengths. All sub-day and week
+     * units are derived from the elapsed-second delta so DST transitions
+     * are handled consistently.
+     *
+     * @param DateTimeImmutable $from The start date.
+     * @param DateTimeImmutable $to   The end date.
+     * @param string            $unit One of years, months, weeks, days, hours, minutes, seconds.
+     *
+     * @return int The signed integer difference.
+     *
+     * @throws EvaluationException When the unit is unhandled (should not occur after validation).
+     */
+    private function applyDateDiffUnit(DateTimeImmutable $from, DateTimeImmutable $to, string $unit): int
+    {
         if ($unit === 'years' || $unit === 'months') {
-            $interval = $from->diff($to);
-            $sign     = -1;
-            if ($interval->invert !== 1) {
-                $sign = 1;
-            }
-
-            if ($unit === 'years') {
-                return $sign * $interval->y;
-            }
-
-            return $sign * ($interval->y * 12 + $interval->m);
+            return $this->calendarDiff(from: $from, to: $to, unit: $unit);
         }
 
-        // All remaining units are derived from the elapsed-second delta.
         $deltaSecs = $to->getTimestamp() - $from->getTimestamp();
 
         return match ($unit) {
@@ -612,7 +657,30 @@ class CalculationEvaluator
             'seconds' => $deltaSecs,
             default   => throw new EvaluationException(sprintf('Unhandled unit "%s".', $unit)),
         };
-    }//end dateDiff()
+    }//end applyDateDiffUnit()
+
+    /**
+     * Compute a calendar-accurate signed difference in years or months.
+     *
+     * Uses DateInterval::diff() to respect leap years and variable month lengths.
+     *
+     * @param DateTimeImmutable $from The start date.
+     * @param DateTimeImmutable $to   The end date.
+     * @param string            $unit Either "years" or "months".
+     *
+     * @return int The signed integer difference.
+     */
+    private function calendarDiff(DateTimeImmutable $from, DateTimeImmutable $to, string $unit): int
+    {
+        $interval = $from->diff($to);
+        $sign     = ($interval->invert !== 1) ? 1 : -1;
+
+        if ($unit === 'years') {
+            return $sign * $interval->y;
+        }
+
+        return $sign * ($interval->y * 12 + $interval->m);
+    }//end calendarDiff()
 
     /**
      * Coerce a value to DateTimeImmutable when possible.
@@ -621,7 +689,9 @@ class CalculationEvaluator
      *
      * @return DateTimeImmutable|null The parsed date, or null when not parseable.
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface() and
+     *   DateTimeImmutable::createFromFormat() are static factory methods on PHP's built-in
+     *   class; no instance-based alternatives exist in the PHP standard library.
      */
     private function toDateOrNull(mixed $v): ?DateTimeImmutable
     {

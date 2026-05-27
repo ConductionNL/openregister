@@ -1311,10 +1311,9 @@ class RenderObject
                 $inversePropertyNames = array_keys($inversedProperties);
 
                 // Normalize extend to array.
+                $extendArray = explode(',', $_extend);
                 if (is_array($_extend) === true) {
                     $extendArray = $_extend;
-                } else {
-                    $extendArray = explode(',', $_extend);
                 }
 
                 // Check if any inverse property is being extended (or 'all' is specified).
@@ -1466,12 +1465,11 @@ class RenderObject
         // Evaluate virtual calculations (`materialise: false`) when the
         // caller asks for them via _extend. Materialised calcs are
         // already in $objectData (set by CalculationOnSaveListener).
+        $extendArr = [$_extend];
         if (is_array($_extend) === true) {
             $extendArr = $_extend;
         } else if ($_extend === null) {
             $extendArr = [];
-        } else {
-            $extendArr = [$_extend];
         }
 
         if (in_array('calculations', $extendArr, true) === true) {
@@ -2207,10 +2205,9 @@ class RenderObject
 
         // Normalize inversedBy to an array to support multi-field inverse relations.
         // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
+        $inversedByFields = [$inversedByField];
         if (is_array($inversedByField) === true) {
             $inversedByFields = $inversedByField;
-        } else {
-            $inversedByFields = [$inversedByField];
         }
 
         return [

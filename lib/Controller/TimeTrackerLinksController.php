@@ -59,13 +59,13 @@ class TimeTrackerLinksController extends Controller
      *
      * @param string                 $appName                App id.
      * @param IRequest               $request                HTTP request.
-     * @param TimeTrackerLinkService $timeTrackerLinkService Backing service.
+     * @param TimeTrackerLinkService $linkService Backing service.
      * @param ObjectService          $objectService          OR object resolver.
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly TimeTrackerLinkService $timeTrackerLinkService,
+        private readonly TimeTrackerLinkService $linkService,
         private readonly ObjectService $objectService,
     ) {
         parent::__construct(appName: $appName, request: $request);
@@ -83,11 +83,13 @@ class TimeTrackerLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
-        if ($this->timeTrackerLinkService->isTimeManagerAvailable() === false) {
+        if ($this->linkService->isTimeManagerAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -100,7 +102,7 @@ class TimeTrackerLinksController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $results = $this->timeTrackerLinkService->getLinkedEntries($object->getUuid());
+            $results = $this->linkService->getLinkedEntries($object->getUuid());
 
             return new JSONResponse(
                     [
@@ -129,11 +131,13 @@ class TimeTrackerLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
-        if ($this->timeTrackerLinkService->isTimeManagerAvailable() === false) {
+        if ($this->linkService->isTimeManagerAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -156,7 +160,7 @@ class TimeTrackerLinksController extends Controller
                 return new JSONResponse(['error' => 'id is required'], 400);
             }
 
-            $link = $this->timeTrackerLinkService->linkEntry(
+            $link = $this->linkService->linkEntry(
                 $object->getUuid(),
                 (int) $object->getRegister(),
                 (int) $object->getSchema(),
@@ -186,11 +190,13 @@ class TimeTrackerLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function createAndLink(string $register, string $schema, string $id): JSONResponse
     {
-        if ($this->timeTrackerLinkService->isTimeManagerAvailable() === false) {
+        if ($this->linkService->isTimeManagerAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -208,7 +214,7 @@ class TimeTrackerLinksController extends Controller
                 return new JSONResponse(['error' => 'name is required'], 400);
             }
 
-            $link = $this->timeTrackerLinkService->createAndLinkClient(
+            $link = $this->linkService->createAndLinkClient(
                 $object->getUuid(),
                 (int) $object->getRegister(),
                 (int) $object->getSchema(),
@@ -236,11 +242,13 @@ class TimeTrackerLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function destroy(string $register, string $schema, string $id, string $entryId): JSONResponse
     {
-        if ($this->timeTrackerLinkService->isTimeManagerAvailable() === false) {
+        if ($this->linkService->isTimeManagerAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -253,7 +261,7 @@ class TimeTrackerLinksController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $this->timeTrackerLinkService->unlink($object->getUuid(), $entryId);
+            $this->linkService->unlink($object->getUuid(), $entryId);
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {
@@ -277,7 +285,7 @@ class TimeTrackerLinksController extends Controller
      */
     public function available(): JSONResponse
     {
-        if ($this->timeTrackerLinkService->isTimeManagerAvailable() === false) {
+        if ($this->linkService->isTimeManagerAvailable() === false) {
             return new JSONResponse(
                 ['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
@@ -289,7 +297,7 @@ class TimeTrackerLinksController extends Controller
             $search = (string) $search;
         }
 
-        $clients = $this->timeTrackerLinkService->getAvailableClients($search);
+        $clients = $this->linkService->getAvailableClients($search);
         return new JSONResponse(['results' => $clients, 'total' => count($clients)]);
     }//end available()
 
@@ -301,6 +309,8 @@ class TimeTrackerLinksController extends Controller
      * @param string $id       Object id.
      *
      * @return ObjectEntity|null
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route parameter; renaming would break consistency with caller method signatures.
      */
     private function validateObject(string $register, string $schema, string $id): ?ObjectEntity
     {

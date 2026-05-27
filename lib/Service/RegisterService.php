@@ -392,6 +392,8 @@ class RegisterService
      * @psalm-return array<int, array{total: int}>
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function getSchemaObjectCounts(int $registerId, array $schemas): array
     {

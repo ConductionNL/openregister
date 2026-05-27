@@ -62,16 +62,18 @@ class TimeProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param IDBConnection         $db                    NC DB connection.
-     * @param IAppManager           $appManager            NC app manager.
-     * @param IL10N                 $l10n                  Localisation.
-     * @param TimeTrackerLinkMapper $timeTrackerLinkMapper Time-tracker-link mapper (Tier-2 link table).
+     * @param IDBConnection         $db         NC DB connection (well-known idiom; used for legacy marker fallback queries).
+     * @param IAppManager           $appManager NC app manager.
+     * @param IL10N                 $l10n       Localisation.
+     * @param TimeTrackerLinkMapper $linkMapper Time-tracker-link mapper (Tier-2 link table).
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
      */
     public function __construct(
         private IDBConnection $db,
         private IAppManager $appManager,
         private IL10N $l10n,
-        private TimeTrackerLinkMapper $timeTrackerLinkMapper,
+        private TimeTrackerLinkMapper $linkMapper,
     ) {
     }//end __construct()
 
@@ -125,6 +127,8 @@ class TimeProvider extends AbstractIntegrationProvider
      * @param array  $filters  Optional registry filters (unused).
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the IntegrationProvider interface contract; this implementation routes by $objectId only.
      *
      * @spec openspec/changes/integration-time-tracker/tasks.md
      */
@@ -207,19 +211,19 @@ class TimeProvider extends AbstractIntegrationProvider
      * Build the NC TimeManager deep link for an entry.
      *
      * @param string $entryType Entry kind.
-     * @param string $id        Upstream entry uuid.
+     * @param string $entryId   Upstream entry uuid.
      *
      * @return string
      */
-    private function entryDeepLink(string $entryType, string $id): string
+    private function entryDeepLink(string $entryType, string $entryId): string
     {
         switch ($entryType) {
             case 'task':
-                return '/index.php/apps/timemanager/tasks/'.$id;
+                return '/index.php/apps/timemanager/tasks/'.$entryId;
             case 'time':
-                return '/index.php/apps/timemanager/times/'.$id;
+                return '/index.php/apps/timemanager/times/'.$entryId;
             default:
-                return '/index.php/apps/timemanager/clients/'.$id;
+                return '/index.php/apps/timemanager/clients/'.$entryId;
         }
     }//end entryDeepLink()
 

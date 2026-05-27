@@ -398,16 +398,17 @@ class ContactsController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            // Numeric param → legacy/link-id path. Otherwise resolve via
-            // the (objectUuid, contactUid) composite index.
+            // Numeric param → legacy/link-id path.
             if (ctype_digit($contactUid) === true) {
                 $this->contactService->unlinkContact((int) $contactUid);
-            } else {
-                $this->contactService->unlinkContactByUid(
-                    objectUuid: $object->getUuid(),
-                    contactUid: $contactUid
-                );
+                return new JSONResponse(['success' => true]);
             }
+
+            // Non-numeric: resolve via the (objectUuid, contactUid) composite index.
+            $this->contactService->unlinkContactByUid(
+                objectUuid: $object->getUuid(),
+                contactUid: $contactUid
+            );
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {

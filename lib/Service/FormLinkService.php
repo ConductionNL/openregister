@@ -162,12 +162,13 @@ class FormLinkService
 
         foreach ($links as $link) {
             $row = $link->jsonSerialize();
-            if ($link->getSubmissionId() === null) {
-                $row['submissions']         = [];
-                $byForm[$link->getFormId()] = $row;
-            } else {
+            if ($link->getSubmissionId() !== null) {
                 $submissions[] = $row;
+                continue;
             }
+
+            $row['submissions']         = [];
+            $byForm[$link->getFormId()] = $row;
         }
 
         foreach ($submissions as $sub) {

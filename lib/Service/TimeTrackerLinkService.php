@@ -101,6 +101,8 @@ class TimeTrackerLinkService
      * @param IAppManager           $appManager            NC app manager.
      * @param IUserSession          $userSession           Active session.
      * @param LoggerInterface       $logger                Logger.
+     *
+     * @SuppressWarnings(PHPMD.LongVariable)
      */
     public function __construct(
         private readonly TimeTrackerLinkMapper $timeTrackerLinkMapper,
@@ -413,12 +415,15 @@ class TimeTrackerLinkService
 
         if ($entryType === self::ENTRY_CLIENT) {
             $components['client_id'] = $id;
-        } else if ($entryType === self::ENTRY_TASK) {
-            $components['task_id'] = $id;
-        } else {
-            $components['time_id'] = $id;
+            return $components;
         }
 
+        if ($entryType === self::ENTRY_TASK) {
+            $components['task_id'] = $id;
+            return $components;
+        }
+
+        $components['time_id'] = $id;
         return $components;
     }//end idComponents()
 
@@ -799,6 +804,8 @@ class TimeTrackerLinkService
      * @param object $row Raw upstream row.
      *
      * @return array<string,mixed>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function normaliseRow(object $row): array
     {

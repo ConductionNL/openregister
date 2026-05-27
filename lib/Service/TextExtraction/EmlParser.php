@@ -62,6 +62,7 @@ use ZBateson\MailMimeParser\Message\IMessagePart;
  * Parser for `message/rfc822` files.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) MIME parsing requires several collaborating types
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex MIME/RFC 2822 parsing logic
  */
 class EmlParser
 {
@@ -165,6 +166,7 @@ class EmlParser
      * @return string Flat plain-text output.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Mostly attachment-loop branching
+     * @SuppressWarnings(PHPMD.NPathComplexity) Nested attachment-tree traversal
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
@@ -263,6 +265,9 @@ class EmlParser
      * @param string|null $raw Raw header value.
      *
      * @return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RFC 2822 address-list parsing state machine
+     * @SuppressWarnings(PHPMD.NPathComplexity) RFC 2822 address-list parsing state machine
      */
     private function splitAddressList(?string $raw): array
     {
@@ -276,39 +281,39 @@ class EmlParser
         $inAngle = false;
         $length  = strlen($raw);
         for ($i = 0; $i < $length; $i++) {
-            $ch = $raw[$i];
+            $char = $raw[$i];
 
-            if ($ch === '\\' && $inQuote === true && $i + 1 < $length) {
+            if ($char === '\\' && $inQuote === true && $i + 1 < $length) {
                 // Honour escaped character inside a quoted display name.
-                $buffer .= $ch.$raw[++$i];
+                $buffer .= $char.$raw[++$i];
                 continue;
             }
 
-            if ($ch === '"' && $inAngle === false) {
+            if ($char === '"' && $inAngle === false) {
                 $inQuote = !$inQuote;
-                $buffer .= $ch;
+                $buffer .= $char;
                 continue;
             }
 
-            if ($ch === '<' && $inQuote === false) {
+            if ($char === '<' && $inQuote === false) {
                 $inAngle = true;
-                $buffer .= $ch;
+                $buffer .= $char;
                 continue;
             }
 
-            if ($ch === '>' && $inQuote === false) {
+            if ($char === '>' && $inQuote === false) {
                 $inAngle = false;
-                $buffer .= $ch;
+                $buffer .= $char;
                 continue;
             }
 
-            if ($ch === ',' && $inQuote === false && $inAngle === false) {
+            if ($char === ',' && $inQuote === false && $inAngle === false) {
                 $tokens[] = trim($buffer);
                 $buffer   = '';
                 continue;
             }
 
-            $buffer .= $ch;
+            $buffer .= $char;
         }//end for
 
         if ($buffer !== '') {
@@ -571,6 +576,8 @@ class EmlParser
      * @param string|null $raw Raw header value.
      *
      * @return DateTimeImmutable|null Null when the header is missing or unparseable.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromFormat is idiomatic PHP
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */

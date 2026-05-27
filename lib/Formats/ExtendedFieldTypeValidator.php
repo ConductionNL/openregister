@@ -108,11 +108,7 @@ class ExtendedFieldTypeValidator
             return "Property '{$propertyName}': color value must be a string";
         }
 
-        if ($format === null || $format === '') {
-            $format = 'hex';
-        } else {
-            $format = strtolower($format);
-        }
+        $format = ($format === null || $format === '') ? 'hex' : strtolower($format);
 
         if ($format === 'rgba') {
             return $this->validateRgba(value: $value, propertyName: $propertyName);
@@ -230,10 +226,12 @@ class ExtendedFieldTypeValidator
         try {
             $iterator    = new RRuleIterator($rrule, $start);
             $occurrences = [];
-            while ($iterator->valid() === true && count($occurrences) < $count) {
+            $collected   = 0;
+            while ($iterator->valid() === true && $collected < $count) {
                 $current = $iterator->current();
                 if ($current instanceof DateTimeInterface) {
                     $occurrences[] = $current->format(DateTimeInterface::ATOM);
+                    $collected++;
                 }
 
                 $iterator->next();

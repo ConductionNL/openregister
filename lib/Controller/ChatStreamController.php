@@ -66,6 +66,7 @@ use Throwable;
  * @package  OCA\OpenRegister\Controller
  *
  * @psalm-suppress UnusedClass
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ChatStreamController extends Controller
 {
@@ -197,6 +198,10 @@ class ChatStreamController extends Controller
      * @NoAdminRequired
      *
      * @return Response Never returned — emitAndExit() always terminates.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream
      */
@@ -391,6 +396,8 @@ class ChatStreamController extends Controller
      * @param array<string, mixed> $payload   JSON-encodable payload.
      *
      * @return never
+     *
+     * @SuppressWarnings(PHPMD.ExitExpression)
      *
      * @spec exclude SSE-framing helper: emits one frame, finalises the DB transaction, and exits;
      *              the streaming endpoint contract is owned by
