@@ -24,16 +24,22 @@ test.describe('auth-system — authentication methods', () => {
 		expect(resp.status(), 'authenticated request should return 200').toBe(200)
 	})
 
-	test('unauthenticated request to /api/registers is rejected (401)', async ({ request }) => {
+	test('unauthenticated request to /api/registers returns 200 with only published registers (PR #1950)', async ({ request }) => {
+		// PR #1950 made /api/registers @PublicPage so anonymous callers can discover
+		// published registers. The response must be 200 with a valid JSON envelope;
+		// unpublished registers must NOT appear in the results.
 		const resp = await request.get('/index.php/apps/openregister/api/registers?_limit=1', {
 			headers: {
 				Authorization: '', // Strip Basic auth.
 				Accept: 'application/json',
 			},
 		})
-		// Should be 401 (unauthorized) — NOT 200 and NOT 5xx.
-		expect(resp.status(), 'unauthenticated request should be rejected').toBeGreaterThanOrEqual(400)
-		expect(resp.status(), 'unauthenticated request should not 5xx').toBeLessThan(500)
+		expect(resp.status(), 'anonymous read of registers should return 200').toBe(200)
+		const contentType = resp.headers()['content-type'] ?? ''
+		expect(contentType, 'response must be JSON').toContain('application/json')
+		const body = await resp.json() as Record<string, unknown>
+		expect(body, 'response must have results array').toHaveProperty('results')
+		expect(Array.isArray(body['results']), 'results must be an array').toBe(true)
 	})
 
 	test('wrong credentials return 401', async ({ request }) => {
