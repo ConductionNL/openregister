@@ -1041,6 +1041,16 @@ parameters:
 			path: lib/Controller/NamesController.php
 
 		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/NotificationSubscriptionsController.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/NotificationSubscriptionsController.php
+
+		-
 			message: "#^Call to function is_array\\(\\) with string\\|null will always evaluate to false\\.$#"
 			count: 2
 			path: lib/Controller/ObjectsController.php
@@ -1392,11 +1402,6 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|403\\|404\\|409\\|500, array\\{error\\?\\: string, objectCount\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 1
-			path: lib/Controller/RegistersController.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|403\\|404\\|409\\|500, array\\{error\\?\\: string, objectCount\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<409, array\\{error\\: string, objectCount\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/RegistersController.php
 
@@ -3756,21 +3761,6 @@ parameters:
 			path: lib/Listener/ObjectChangeListener.php
 
 		-
-			message: "#^Offset 'description' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Listener/ToolRegistrationListener.php
-
-		-
-			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Listener/ToolRegistrationListener.php
-
-		-
-			message: "#^Offset 'name' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Listener/ToolRegistrationListener.php
-
-		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Mcp/BuiltIn/SchemasToolProvider.php
@@ -4004,11 +3994,6 @@ parameters:
 			message: "#^Strict comparison using \\!\\=\\= between null and null will always evaluate to false\\.$#"
 			count: 2
 			path: lib/Service/Calculation/CalculationAnnotationValidator.php
-
-		-
-			message: "#^Match arm is unreachable because previous comparison is always true\\.$#"
-			count: 1
-			path: lib/Service/Calculation/CalculationEvaluator.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Calculation\\\\CalculationEvaluator\\:\\:modulo\\(\\) never returns int so it can be removed from the return type\\.$#"
@@ -5231,11 +5216,6 @@ parameters:
 			path: lib/Service/Integration/Providers/OpenProjectProvider.php
 
 		-
-			message: "#^Result of && is always false\\.$#"
-			count: 1
-			path: lib/Service/Integration/Providers/OpenProjectProvider.php
-
-		-
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/Integration/Providers/OpenProjectProvider.php
@@ -5351,12 +5331,12 @@ parameters:
 			path: lib/Service/MappingService.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between \\*NEVER\\* and null will always evaluate to false\\.$#"
+			message: "#^Strict comparison using \\=\\=\\= between array and false will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/MappingService.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between array and false will always evaluate to false\\.$#"
+			message: "#^Strict comparison using \\=\\=\\= between array and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/MappingService.php
 
@@ -5727,7 +5707,7 @@ parameters:
 
 		-
 			message: "#^Else branch is unreachable because previous condition is always true\\.$#"
-			count: 2
+			count: 1
 			path: lib/Service/Object/RenderObject.php
 
 		-
@@ -6758,11 +6738,6 @@ parameters:
 		-
 			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\ProviderUnavailableException is never thrown in the try block\\.$#"
 			count: 2
-			path: lib/Service/XwikiLinkService.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\XwikiLinkService\\:\\:getRouter\\(\\) is unused\\.$#"
-			count: 1
 			path: lib/Service/XwikiLinkService.php
 
 		-

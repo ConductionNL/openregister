@@ -130,15 +130,18 @@ class NotificationSubscriptionsController extends Controller
         $registerId = $this->coerceNullableInt(value: ($params['registerId'] ?? null));
         $schemaId   = $this->coerceNullableInt(value: ($params['schemaId'] ?? null));
 
-        // SECURITY: load the referenced register/schema through the
-        // standard RBAC + multitenancy filter before persisting the
-        // subscription. Without this gate the mapper accepted any
-        // (registerId, schemaId) pair — letting a caller subscribe
-        // themselves to objects in other tenants and confirming the
-        // existence of arbitrary IDs via the success/404 channel.
+        // Validate the referenced register/schema exists before persisting
+        // the subscription. Metadata-read bypass per the auth-system
+        // requirement "Schema and register METADATA-READ lookups MUST
+        // bypass multi-tenancy" — register/schema definitions are a
+        // globally-visible catalog (admin without an active organisation
+        // would otherwise 404 here). Tenant isolation for the eventual
+        // notification delivery is enforced downstream by the dispatcher,
+        // which filters object-row events by the subscriber's organisation
+        // before fan-out.
         if ($registerId !== null) {
             try {
-                $this->registerMapper->find($registerId);
+                $this->registerMapper->find($registerId, _multitenancy: false);
             } catch (\Throwable $e) {
                 return new JSONResponse(
                     data: ['error' => 'Register not found or not accessible'],
@@ -149,7 +152,7 @@ class NotificationSubscriptionsController extends Controller
 
         if ($schemaId !== null) {
             try {
-                $this->schemaMapper->find($schemaId);
+                $this->schemaMapper->find($schemaId, _multitenancy: false);
             } catch (\Throwable $e) {
                 return new JSONResponse(
                     data: ['error' => 'Schema not found or not accessible'],
