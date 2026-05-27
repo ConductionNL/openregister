@@ -293,12 +293,7 @@ class FormsProvider extends AbstractIntegrationProvider
             }
 
             $count++;
-            $linkedAt = $sub->getLinkedAt();
-            if ($linkedAt === null) {
-                continue;
-            }
-
-            $timestamp = $linkedAt->getTimestamp();
+            $timestamp = $sub->getLinkedAt()->getTimestamp();
             if ($lastUpdated === null || $timestamp > $lastUpdated) {
                 $lastUpdated = $timestamp;
             }

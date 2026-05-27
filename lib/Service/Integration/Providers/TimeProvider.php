@@ -140,7 +140,7 @@ class TimeProvider extends AbstractIntegrationProvider
 
         // Tier-2 path: read from the link table.
         try {
-            $linkRows = $this->timeTrackerLinkMapper->findByObjectUuid($objectId);
+            $linkRows = $this->linkMapper->findByObjectUuid($objectId);
         } catch (Throwable $e) {
             $linkRows = [];
         }
@@ -183,7 +183,7 @@ class TimeProvider extends AbstractIntegrationProvider
             'duration'  => $link->getDuration(),
             'billable'  => $link->getBillable(),
             'startedAt' => $link->getStartedAt()?->format(\DateTime::ATOM),
-            'url'       => $this->entryDeepLink(entryType: $entryType, id: $id),
+            'url'       => $this->entryDeepLink(entryType: $entryType, entryId: $id),
             'data'      => $link->jsonSerialize(),
         ];
     }//end rowFromLink()
@@ -266,7 +266,7 @@ class TimeProvider extends AbstractIntegrationProvider
                 'type'  => 'client',
                 'title' => (string) ($row['name'] ?? ''),
                 'name'  => (string) ($row['name'] ?? ''),
-                'url'   => $this->entryDeepLink(entryType: 'client', id: $uuid),
+                'url'   => $this->entryDeepLink(entryType: 'client', entryId: $uuid),
                 'data'  => $row,
             ];
         }
@@ -279,7 +279,7 @@ class TimeProvider extends AbstractIntegrationProvider
                 'type'  => 'task',
                 'title' => (string) ($row['name'] ?? ''),
                 'name'  => (string) ($row['name'] ?? ''),
-                'url'   => $this->entryDeepLink(entryType: 'task', id: $uuid),
+                'url'   => $this->entryDeepLink(entryType: 'task', entryId: $uuid),
                 'data'  => $row,
             ];
         }

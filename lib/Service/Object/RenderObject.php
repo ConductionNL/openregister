@@ -1310,10 +1310,13 @@ class RenderObject
                 // These are the properties that need inverse lookups to populate their data.
                 $inversePropertyNames = array_keys($inversedProperties);
 
-                // Normalize extend to array.
-                $extendArray = explode(',', $_extend);
-                if (is_array($_extend) === true) {
-                    $extendArray = $_extend;
+                // Normalize extend to array. $_extend may already be an array
+                // (CnPageRenderer config-path) or a comma-separated string
+                // (legacy query-string path) — explode only when it's a string,
+                // otherwise PHP 8 throws TypeError on array input.
+                $extendArray = $_extend;
+                if (is_array($_extend) === false) {
+                    $extendArray = explode(',', (string) $_extend);
                 }
 
                 // Check if any inverse property is being extended (or 'all' is specified).

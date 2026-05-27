@@ -1139,7 +1139,7 @@ class Application extends App implements IBootstrap
                     router: $container->get(ExternalIntegrationRouter::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
-                    openProjectLinkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
+                    linkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
                 );
             }
         );
@@ -1635,7 +1635,7 @@ class Application extends App implements IBootstrap
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
-                    timeTrackerLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                    linkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
                 );
             }
         );
