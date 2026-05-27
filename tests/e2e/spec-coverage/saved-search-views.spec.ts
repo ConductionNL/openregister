@@ -68,6 +68,12 @@ async function selectRegisterAndSchema(page: Page): Promise<boolean> {
 	const hasRegister = await registerCombo.isVisible({ timeout: 5_000 }).catch(() => false)
 	if (!hasRegister) return false
 
+	// The combobox is `:disabled="registerLoading"` while the registers list
+	// is fetched (`_extend=schemas&stats` is ~5s on busy dev envs). Await the
+	// `disabled` flag clearing before clicking, otherwise the click no-ops
+	// against the disabled host until the global 30s timeout fires.
+	await expect(registerCombo).toBeEnabled({ timeout: 15_000 })
+
 	await registerCombo.click()
 	// Pick LarpingApp Register (register 8).
 	const opt = page.getByRole('option', { name: /LarpingApp Register/i })

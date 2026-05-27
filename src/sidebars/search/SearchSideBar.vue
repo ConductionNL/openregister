@@ -700,6 +700,25 @@ export default {
 			},
 			deep: true,
 		},
+		// Re-apply the query params once the register list arrives. The mount-
+		// time `applyQueryParamsFromRoute()` retry loop (10 × 200ms) is shorter
+		// than the actual `_extend=schemas&stats` register-list response on
+		// busy dev envs (~5s observed), so deep-links with ?register=… stayed
+		// empty and downstream tables never populated. Reacting to the list
+		// transition closes that race without polling. See the e2e investigation
+		// in tests/e2e/spec-coverage/{entity-management-modals, saved-search-views}.
+		'$root.registerStore.registerList': {
+			/**
+			 * @spec exclude Vue watch handler plumbing; re-runs applyQueryParamsFromRoute when the register list finishes loading on /tables deep-links.
+			 */
+			handler(newList) {
+				if (this.$route.path !== '/tables') return
+				if (Array.isArray(newList) === false || newList.length === 0) return
+				if (this.$route.query.register === undefined) return
+				if (this.selectedRegisters.length > 0) return
+				this.applyQueryParamsFromRoute()
+			},
+		},
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
