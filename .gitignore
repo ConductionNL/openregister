@@ -54,6 +54,12 @@ phpqa_output.log
 simple-solr-test.php
 test-solr-connection.php
 
+# Editor / scratch backups should never be committed (issue #1956 part d)
+*.bak
+*.bak2
+*.bak3
+*.orig
+
 phpqa/
 
 # Docker AI models (too large for git)

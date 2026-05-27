@@ -264,9 +264,19 @@ class FilesController extends Controller
             // Fall back to direct file ID lookup via known user contexts
             // when the normal path fails (e.g. anonymous/public access to files
             // uploaded by a different user whose folder is not accessible).
+            //
+            // Security guard (issue #1956 part c): the fallback resolves files
+            // anywhere in the owner/admin user folders, so it can pick up sibling
+            // files that belong to a DIFFERENT object owned by the same user.
+            // Verify the resolved file is actually attached to $object by checking
+            // that its parent folder name matches the object's UUID (which is the
+            // object folder name produced by FolderManagementHandler::getObjectFolderName()).
             if ($file === null) {
-                $owner = $object->getOwner();
-                $file  = $this->getFileViaKnownUsers(fileId: $fileId, owner: $owner);
+                $owner    = $object->getOwner();
+                $fallback = $this->getFileViaKnownUsers(fileId: $fileId, owner: $owner);
+                if ($fallback !== null && $this->fileBelongsToObject(file: $fallback, object: $object) === true) {
+                    $file = $fallback;
+                }
             }
 
             if ($file === null) {
@@ -329,6 +339,43 @@ class FilesController extends Controller
 
         return null;
     }//end getFileViaKnownUsers()
+
+    /**
+     * Verify that a file is actually attached to a specific object.
+     *
+     * Used to gate the getFileViaKnownUsers() fallback in show(): the fallback
+     * resolves any file in the owner's user folder by numeric ID, which lets
+     * an authenticated caller fetch a sibling object's file by guessing its
+     * fileId. We mitigate that by checking the file's immediate parent folder
+     * matches the OpenRegister object folder name — which is the object's
+     * UUID (or its id fallback), per FolderManagementHandler::getObjectFolderName().
+     *
+     * @param File         $file   The resolved file node.
+     * @param ObjectEntity $object The object the request is scoped to.
+     *
+     * @return bool True when the file's parent folder is the object's folder.
+     */
+    private function fileBelongsToObject(File $file, ObjectEntity $object): bool
+    {
+        try {
+            $parent     = $file->getParent();
+            $parentName = $parent->getName();
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        $uuid = $object->getUuid();
+        if ($uuid !== null && $uuid !== '' && $parentName === $uuid) {
+            return true;
+        }
+
+        $id = $object->getId();
+        if ($id !== null && (string) $id !== '' && $parentName === (string) $id) {
+            return true;
+        }
+
+        return false;
+    }//end fileBelongsToObject()
 
     /**
      * Add a new file to an object

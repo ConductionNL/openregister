@@ -252,23 +252,13 @@ class LockHandler
             $context = $this->findObjectWithContext(identifier: $identifier);
             $object  = $context['object'];
 
-            // Check the locked property on the ObjectEntity.
-            $locked = $object->getLocked();
-
-            if (empty($locked) === true) {
-                return false;
-            }
-
-            // Check if lock has expired.
-            if (isset($locked['expiresAt']) === true) {
-                $expiryDate = new DateTime($locked['expiresAt']);
-                if ($expiryDate < new DateTime()) {
-                    return false;
-                    // Lock expired.
-                }
-            }
-
-            return true;
+            // Delegate to the canonical ObjectEntity::isLocked() implementation,
+            // which understands both the current `{user, process, created, duration, expiration}`
+            // schema (see ObjectEntity::lock() at lib/Db/ObjectEntity.php:1042-1066) and the
+            // legacy lockedAt+duration fallback. Reading bespoke keys ('expiresAt', 'userId',
+            // 'lockedAt') here would never match what lock() writes, so a stale/expired lock
+            // could never be detected via this code path.
+            return $object->isLocked();
         } catch (\Exception $e) {
             $this->logger->warning(
                 message: '[LockHandler] Failed to check lock status',
@@ -300,17 +290,22 @@ class LockHandler
             $context = $this->findObjectWithContext(identifier: $identifier);
             $object  = $context['object'];
 
-            $locked = $object->getLocked();
+            // Delegate to ObjectEntity::getLockInfo() which returns the raw lock payload
+            // written by lock() — `{user, process, created, duration, expiration}` — or
+            // null if no active (non-expired) lock is present. Map to the public, snake_case
+            // representation expected by API consumers without re-inventing the key names.
+            $locked = $object->getLockInfo();
 
-            if (empty($locked) === true) {
+            if ($locked === null) {
                 return null;
             }
 
             return [
-                'locked_at'  => $locked['lockedAt'] ?? null,
-                'locked_by'  => $locked['userId'] ?? null,
+                'locked_at'  => $locked['created'] ?? null,
+                'locked_by'  => $locked['user'] ?? null,
                 'process'    => $locked['process'] ?? null,
-                'expires_at' => $locked['expiresAt'] ?? null,
+                'expires_at' => $locked['expiration'] ?? null,
+                'duration'   => $locked['duration'] ?? null,
             ];
         } catch (\Exception $e) {
             $this->logger->warning(
