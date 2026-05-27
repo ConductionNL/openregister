@@ -340,6 +340,9 @@ export default {
 			return this.selectedEntities.length > 0 && !this.allSelected
 		},
 	},
+	/**
+	 * @spec exclude Lifecycle plumbing; loads entity list and wires root event bus listeners from EntitiesSideBar.
+	 */
 	mounted() {
 		this.loadEntities()
 		// Listen for filter changes emitted by EntitiesSideBar via the root event bus.
@@ -347,6 +350,9 @@ export default {
 		this.$root.$on('entities-type-changed', this.handleTypeUpdate)
 		this.$root.$on('entities-category-changed', this.handleCategoryUpdate)
 	},
+	/**
+	 * @spec exclude Lifecycle teardown; removes root event bus listeners to prevent memory leaks.
+	 */
 	beforeDestroy() {
 		this.$root.$off('entities-search-changed', this.handleSearchUpdate)
 		this.$root.$off('entities-type-changed', this.handleTypeUpdate)

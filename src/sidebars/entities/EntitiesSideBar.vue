@@ -185,6 +185,7 @@ export default {
 		/**
 		 * Expose navigationStore to the template.
 		 *
+		 * @spec exclude Trivial store-passthrough getter; no business contract.
 		 * @return {object} The navigation store instance.
 		 */
 		navigationStore() {
