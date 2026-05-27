@@ -431,8 +431,7 @@ The `SecurityService` MUST sanitize all user inputs to prevent cross-site script
 - **THEN** the validation MUST return `{ valid: false, error: "Password is too long" }`
 
 ### REQ-001: The system SHALL provide an idempotent OCC command to backfill the `__system__` owner sentinel on legacy magic-table rows
-
-> Added by retrofit-2026-05-24-2b-command-repair-middleware (archived).
+The system MUST provide an idempotent OCC command (`occ openregister:backfill-system-owner`) to backfill the `__system__` owner sentinel on legacy magic-table rows. *(Added by retrofit-2026-05-24-2b-command-repair-middleware, archived.)*
 
 `occ openregister:backfill-system-owner` is a one-shot operational command that scans every magic table reachable by combining (register, schema) pairs and, for each row where `_owner = ''`, sets `_owner` to `OrganisationService::SYSTEM_USER_ID_DEFAULT` (the `__system__` sentinel). The command is idempotent by design: re-running on already-backfilled tables produces a per-table `scanned=N updated=0` line and the grand total returns `0` updates.
 
@@ -479,7 +478,6 @@ On failure to resolve a register or schema, the command writes the error message
 - **AND** no writes are performed
 
 ### Requirement: Register and schema read endpoints MUST remain reachable when OpenRegister is restricted to a user group
-
 When an administrator limits OpenRegister to specific Nextcloud groups (the *"Limit app to groups"* setting, i.e. `occ app:enable openregister --groups <group>`), Nextcloud blocks every non-`#[PublicPage]` route for users outside those groups (dispatch is gated by `IAppManager::isEnabledForUser()`). Because OpenRegister's register, schema, and object **read** endpoints are consumed by other apps on behalf of every user, those read endpoints MUST be marked `#[PublicPage]` so they survive the app-group restriction. Write/management endpoints MUST remain non-public so that the same restriction continues to limit management to the group.
 
 #### Scenario: A user outside the restriction group can read registers and schemas
@@ -496,7 +494,6 @@ When an administrator limits OpenRegister to specific Nextcloud groups (the *"Li
 - **THEN** the request MUST NOT succeed — it is either blocked by the Nextcloud app-group restriction (non-public route) or rejected by the register/schema write authorization check (HTTP 403)
 
 ### Requirement: Public read endpoints MUST require an authenticated user except for published resources
-
 Marking register/schema read endpoints `#[PublicPage]` also exposes them to fully anonymous callers. Register and schema **definitions** MUST NOT be served to anonymous callers unless the specific resource is published. A resource is *published* when its `published` field is set (non-null) and its `depublished` field is null. Authenticated users are unaffected and continue to receive results scoped by the existing RBAC / multitenancy rules.
 
 #### Scenario: Anonymous list returns only published registers/schemas
@@ -523,7 +520,6 @@ Marking register/schema read endpoints `#[PublicPage]` also exposes them to full
 - **THEN** the published/unpublished gate MUST NOT apply — `bob` receives every resource permitted by his RBAC scope, published or not
 
 ### Requirement: The published-visibility gate MUST derive from server-side entity state
-
 The decision to expose a register or schema to an anonymous caller MUST be derived from the persisted `published`/`depublished` fields on the entity, never from client-supplied request parameters. This prevents an anonymous caller from bypassing the gate by asserting visibility in the request.
 
 #### Scenario: Client cannot assert published state
@@ -531,6 +527,44 @@ The decision to expose a register or schema to an anonymous caller MUST be deriv
 - **WHEN** the read-visibility guard evaluates the request
 - **THEN** the guard MUST ignore the client-supplied value and use the entity's persisted `published`/`depublished` fields
 - **AND** the request MUST be rejected with HTTP 401
+
+### Requirement: Object write operations MUST fail closed for anonymous callers
+Creating or updating an object MUST be denied for an anonymous caller (no resolved Nextcloud user) unless the target schema's `authorization` explicitly grants the `public` group the requested write action. A schema with no `authorization` block, or no entry for the action, MUST NOT permit anonymous writes by default. Authenticated callers are out of scope of this requirement (their write authorization is governed by the existing schema RBAC rules).
+
+#### Scenario: Anonymous write to a schema with no authorization rule is denied
+- **GIVEN** a schema with no `authorization` block (or no `create`/`update` entry)
+- **WHEN** an anonymous caller sends `POST`/`PUT /api/objects/{register}/{schema}`
+- **THEN** the request MUST be rejected with HTTP 403
+- **AND** no object is created or modified
+
+#### Scenario: Anonymous write to a schema that declares public write is allowed
+- **GIVEN** a schema whose `authorization` grants the `public` group the `create` action
+- **WHEN** an anonymous caller sends `POST /api/objects/{register}/{schema}`
+- **THEN** the request MUST be allowed (the schema opted in to public submissions)
+
+#### Scenario: Authenticated write behaviour is unchanged
+- **GIVEN** an authenticated user
+- **WHEN** they create or update an object
+- **THEN** the authorization outcome MUST be identical to before this change (this requirement only constrains anonymous writes)
+
+### Requirement: SQL/list RBAC match evaluation MUST fail closed on unresolved dynamic variables
+When a schema `authorization` rule carries a `match` clause referencing a dynamic variable (e.g. `$organisation`, `$userId`, `$now`) that resolves to `null` for the current principal, the SQL/list-path evaluator MUST treat that match property as unsatisfiable (emit an impossible predicate, `1 = 0`) rather than dropping it. The list path and the single-object find path MUST produce identical authorization verdicts for the same rule and principal.
+
+#### Scenario: Multi-condition match with a null dynamic variable denies on both list and find
+- **GIVEN** a read rule `{ "group": "public", "match": { "name": "X", "organisation": "$organisation" } }`
+- **AND** a principal for whom `$organisation` resolves to `null`
+- **WHEN** the principal lists objects (`GET /api/objects/{register}/{schema}`) and fetches the single object (`GET /api/objects/{register}/{schema}/{uuid}`)
+- **THEN** BOTH requests MUST deny access to the object (the unresolved `organisation` predicate is not silently dropped on the list path)
+
+#### Scenario: Rules whose dynamic variables resolve are unaffected
+- **GIVEN** the same rule and a principal for whom `$organisation` resolves to a concrete value
+- **WHEN** the principal lists and finds objects
+- **THEN** access is granted exactly as before — the fail-closed change introduces no new denials for resolvable rules
+
+#### Scenario: Single-condition match parity is preserved
+- **GIVEN** a single-condition `match` rule on a dynamic variable that resolves to null
+- **WHEN** evaluated on the list and find paths
+- **THEN** both paths MUST deny (the SQL path no longer differs from the PHP path)
 
 ## Current Implementation Status
 - **Fully implemented:**

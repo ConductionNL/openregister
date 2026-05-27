@@ -83,6 +83,18 @@ class MagicRbacHandler
 {
 
     /**
+     * Raw-SQL impossible predicate used to fail closed on the SQL-string RBAC path.
+     *
+     * Emitted when a `match` rule's dynamic variable resolves to null so the
+     * predicate is NOT silently dropped from the AND (#1953). Mirrors the
+     * QueryBuilder path's {@see impossibleCondition()} and ConditionMatcher's
+     * fail-closed semantics.
+     *
+     * @var string
+     */
+    private const IMPOSSIBLE_SQL_CONDITION = '1 = 0';
+
+    /**
      * Cached active organisation UUID
      *
      * @var string|null
@@ -378,6 +390,24 @@ class MagicRbacHandler
     }//end buildMatchConditions()
 
     /**
+     * Build an IMPOSSIBLE SQL predicate (`1 = 0`) for the QueryBuilder path.
+     *
+     * Used to fail closed when a `match` rule's dynamic variable resolves to null
+     * (#1953): the predicate is included in the AND but can never be satisfied, so
+     * the rule grants no rows — matching the PHP/find path verdict rather than
+     * silently dropping the condition. Mirrors the existing impossible predicate in
+     * applyRbacFilters().
+     *
+     * @param IQueryBuilder $qb Query builder.
+     *
+     * @return mixed An always-false SQL expression.
+     */
+    private function impossibleCondition(IQueryBuilder $qb): mixed
+    {
+        return $qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0));
+    }//end impossibleCondition()
+
+    /**
      * Resolve dynamic variable values in match conditions
      *
      * Supports special variables:
@@ -460,9 +490,15 @@ class MagicRbacHandler
         // Resolve dynamic variables in the value.
         $resolvedValue = $this->resolveDynamicValue(value: $value);
 
-        // If dynamic variable resolved to null, this condition cannot be met.
+        // Fail closed when a dynamic variable resolves to null (#1953): emit an
+        // IMPOSSIBLE predicate (1 = 0) for this property rather than returning null.
+        // Returning null would let buildMatchConditions() silently DROP the predicate
+        // from the AND, degrading a multi-condition match rule to its surviving
+        // static predicates and leaking objects on the LIST path that the PHP/find
+        // path (ConditionMatcher) denies. The impossible predicate makes the LIST and
+        // FIND verdicts identical (both deny) for unresolved variables.
         if ($value !== $resolvedValue && $resolvedValue === null) {
-            return null;
+            return $this->impossibleCondition(qb: $qb);
         }
 
         // Simple value: equals comparison.
@@ -952,9 +988,12 @@ class MagicRbacHandler
         // Resolve dynamic variables in the value.
         $resolvedValue = $this->resolveDynamicValue(value: $value);
 
-        // If dynamic variable resolved to null, this condition cannot be met.
+        // Fail closed when a dynamic variable resolves to null (#1953): emit an
+        // IMPOSSIBLE predicate (1 = 0) rather than returning null, which would let
+        // buildMatchConditionsSql() drop the predicate from the AND and leak objects
+        // on this LIST path. Mirrors the QueryBuilder path and ConditionMatcher.
         if ($value !== $resolvedValue && $resolvedValue === null) {
-            return null;
+            return self::IMPOSSIBLE_SQL_CONDITION;
         }
 
         // Simple value: equals comparison.
@@ -1084,9 +1123,10 @@ class MagicRbacHandler
         $sqlOperator     = $comparisonMap[$operator];
         $resolvedOperand = $this->resolveDynamicValue(value: $operand);
 
-        // If dynamic variable resolved to null, this condition cannot be met.
+        // Fail closed when a dynamic variable resolves to null (#1953): emit an
+        // IMPOSSIBLE predicate (1 = 0) rather than dropping the condition.
         if ($operand !== $resolvedOperand && $resolvedOperand === null) {
-            return null;
+            return self::IMPOSSIBLE_SQL_CONDITION;
         }
 
         $quotedValue = $this->quoteValue(value: $resolvedOperand);

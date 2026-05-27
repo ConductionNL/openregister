@@ -2,42 +2,42 @@
 
 ## Phase 1 — Fail-closed object writes for anonymous (#1955)
 
-- [ ] In the object create/update authorization path (`ObjectService::checkSavePermissions`
+- [x] In the object create/update authorization path (`ObjectService::checkSavePermissions`
       and/or `PermissionHandler`), when the resolved principal is anonymous
       (`IUserSession` has no user) AND no authorization rule explicitly grants the
       `public` group the requested write action, return/throw a 403 denial.
-- [ ] Preserve declared public-submission: a schema whose `authorization` grants
+- [x] Preserve declared public-submission: a schema whose `authorization` grants
       `public` `create`/`update` continues to allow anonymous writes for that action.
-- [ ] Do NOT change authenticated-user write behaviour in this change (tracked
+- [x] Do NOT change authenticated-user write behaviour in this change (tracked
       separately in #1955) — scope the new denial to anonymous principals.
 
 ## Phase 2 — Fail-closed SQL match evaluation (#1953)
 
-- [ ] In `MagicRbacHandler::buildPropertyCondition`/`buildMatchConditions`, when a
+- [x] In `MagicRbacHandler::buildPropertyCondition`/`buildMatchConditions`, when a
       `match` property's dynamic value resolves to null, emit an impossible
       predicate (`1 = 0`) for that rule instead of dropping the condition.
-- [ ] Verify single-condition and multi-condition `match` rules now produce the
+- [x] Verify single-condition and multi-condition `match` rules now produce the
       same verdict on LIST as the PHP/find path does (fail-closed), and that
       rules whose variables DO resolve are unaffected (no new denials).
 
 ## Phase 3 — Tests
 
-- [ ] Unit test: anonymous object create/update on a no-rule schema → denied;
+- [x] Unit test: anonymous object create/update on a no-rule schema → denied;
       on a schema with an explicit `public` create rule → allowed; authenticated
       user unaffected.
-- [ ] Shared RBAC parity test: for a schema with a multi-condition `match` rule on
+- [x] Shared RBAC parity test: for a schema with a multi-condition `match` rule on
       `$organisation`, a principal with null `$organisation` gets identical
       verdicts from LIST (`searchObjects`) and FIND (`find`) — both deny.
-- [ ] Run the OR unit suite for the touched handlers; ensure no regressions.
+- [x] Run the OR unit suite for the touched handlers; ensure no regressions.
 
 ## Phase 4 — Runtime verification
 
-- [ ] Anonymous `POST /api/objects/{register}/{schema}` on a no-rule schema → 403
+- [x] Anonymous `POST /api/objects/{register}/{schema}` on a no-rule schema → 403
       (was 201); authenticated create still works; a `public`-create schema still
       accepts anonymous create.
-- [ ] Reproduce the #1953 setup (multi-condition `$organisation` match, anonymous
+- [x] Reproduce the #1953 setup (multi-condition `$organisation` match, anonymous
       caller): LIST and FIND now both deny (LIST no longer leaks the object).
-- [ ] Restore the instance + clean up fixtures after verification.
+- [x] Restore the instance + clean up fixtures after verification.
 
 ## Acceptance criteria
 - Anonymous writes are denied by default and only allowed where a schema declares a public-write rule.

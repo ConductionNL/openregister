@@ -130,6 +130,24 @@ class PermissionHandler
     ];
 
     /**
+     * Write actions that fail closed for anonymous callers.
+     *
+     * For an anonymous principal (no resolved Nextcloud user), these actions are
+     * denied unless the schema's `authorization` explicitly grants the `public`
+     * group the action. This closes the implicit default-open write hole (#1955)
+     * while preserving schemas that opt in to public submissions. Object reads are
+     * intentionally NOT listed here — read default-open is a separate policy
+     * question and is unchanged by this constant.
+     *
+     * @var string[]
+     */
+    private const ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS = [
+        'create',
+        'update',
+        'delete',
+    ];
+
+    /**
      * PermissionHandler constructor.
      *
      * @param IUserSession                               $userSession        User session for getting current user.
@@ -317,7 +335,7 @@ class PermissionHandler
             return false;
         }
 
-        foreach ($authorization as $_ => $entries) {
+        foreach ($authorization as $entries) {
             if (is_array($entries) === false) {
                 continue;
             }
@@ -377,6 +395,19 @@ class PermissionHandler
         if ($userId === null) {
             $user = $this->userSession->getUser();
             if ($user === null) {
+                // Fail-closed object writes for anonymous callers (#1955): a write
+                // action (create/update/delete) is denied for an anonymous principal
+                // unless the schema explicitly grants the `public` group that action.
+                // This scopes the new denial strictly to anonymous principals —
+                // authenticated users are unaffected (their default-open behaviour is
+                // a separate, broader policy decision). Declared public-submission
+                // schemas (public create/update rule) still allow anonymous writes.
+                if (in_array(needle: $action, haystack: self::ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS, strict: true) === true
+                    && $this->publicGroupExplicitlyGranted(authorization: $authorization, action: $action) === false
+                ) {
+                    return false;
+                }//end if
+
                 // For unauthenticated requests, check if 'public' group has permission.
                 return $this->hasGroupPermission(
                     authorization: $authorization,
@@ -388,10 +419,10 @@ class PermissionHandler
                     objectData: $objectData,
                     objectOrganisation: $objectOrganisation
                 );
-            }
+            }//end if
 
             $userId = $user->getUID();
-        }
+        }//end if
 
         // Get user object from user ID.
         $userObj = $this->userManager->get($userId);
@@ -971,6 +1002,47 @@ class PermissionHandler
     }//end hasGroupPermission()
 
     /**
+     * Determine whether the `public` group is EXPLICITLY granted an action.
+     *
+     * Unlike {@see hasGroupPermission()}, this does NOT treat a missing
+     * `authorization` block or a missing action entry as a grant (the
+     * default-open behaviour that {@see hasGroupPermission()} relies on for
+     * authenticated users). It returns true only when the schema's
+     * `authorization[$action]` list contains a `public` reference — either as a
+     * bare string entry (`"public"`) or as a complex entry whose `group` is
+     * `public` (with or without a `match` clause). This is the opt-in signal for
+     * anonymous-write fail-closed scoping (#1955): the conditional `match`, if
+     * present, is still evaluated downstream by {@see hasGroupPermission()}.
+     *
+     * @param array|null $authorization The schema's authorization array.
+     * @param string     $action        The CRUD action being checked.
+     *
+     * @return bool True only when `public` is explicitly listed for the action.
+     */
+    private function publicGroupExplicitlyGranted(?array $authorization, string $action): bool
+    {
+        if (empty($authorization) === true || isset($authorization[$action]) === false) {
+            return false;
+        }
+
+        if (is_array($authorization[$action]) === false) {
+            return false;
+        }
+
+        foreach ($authorization[$action] as $entry) {
+            if (is_string($entry) === true && $entry === 'public') {
+                return true;
+            }
+
+            if (is_array($entry) === true && ($entry['group'] ?? null) === 'public') {
+                return true;
+            }
+        }
+
+        return false;
+    }//end publicGroupExplicitlyGranted()
+
+    /**
      * Get all groups that have permission for a specific action
      *
      * @param array|null $authorization The schema's authorization array
@@ -1416,7 +1488,11 @@ class PermissionHandler
         // override (or just live alongside) inherited entries.
         $extends = $definition['extends'] ?? null;
         if ($extends !== null) {
-            $parents = is_array($extends) === true ? $extends : [$extends];
+            $parents = [$extends];
+            if (is_array($extends) === true) {
+                $parents = $extends;
+            }
+
             foreach ($parents as $parent) {
                 if (is_string($parent) === false || $parent === '') {
                     continue;
@@ -1432,9 +1508,9 @@ class PermissionHandler
                     if (in_array($inheritedAction, $actions, true) === false) {
                         $actions[] = $inheritedAction;
                     }
-                }
-            }
-        }
+                }//end foreach
+            }//end foreach
+        }//end if
 
         // Own actions on top.
         $ownActions = $definition['actions'] ?? [];
