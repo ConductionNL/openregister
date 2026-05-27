@@ -11,7 +11,9 @@
 	],
 	"autoload": {
 		"psr-4": {
-			"OCA\\OpenRegister\\": "lib/"
+			"OCA\\OpenRegister\\": "lib/",
+			"OCP\\": "vendor/nextcloud/ocp/OCP/",
+			"NCU\\": "vendor/nextcloud/ocp/NCU/"
 		}
 	},
 	"repositories": [
