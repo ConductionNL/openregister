@@ -22,6 +22,7 @@ export const useNavigationStore = defineStore('ui', {
 			searchTrail: true,
 			auditTrail: true,
 			chat: true,
+			entities: false,
 		},
 	}),
 	actions: {

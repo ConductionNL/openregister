@@ -7,13 +7,13 @@
  * TAG CONVENTION: each test carries
  *   @e2e openspec/specs/files-sidebar-tabs/spec.md#<scenario-slug>
  *
- * Methodology: drive the real UI (EntitiesSidebar on /entities,
+ * Methodology: drive the real UI (EntitiesSideBar on /entities,
  * DeletedSideBar on /deleted).
  * The OR REST API is used ONLY for test-data setup/teardown.
  *
  * Scenarios covered:
- *   single-keystroke-emits-after-500ms                       — UI test (EntitiesSidebar)
- *   rapid-keystrokes-only-emit-the-final-value               — UI test (EntitiesSidebar)
+ *   single-keystroke-emits-after-500ms                       — UI test (EntitiesSideBar)
+ *   rapid-keystrokes-only-emit-the-final-value               — UI test (EntitiesSideBar)
  *   switching-register-clears-the-active-schema              — UI test (DeletedSideBar)
  *   clearing-the-register-also-clears-the-schema             — UI test (DeletedSideBar)
  *   deletedsidebar-additionally-re-applies-filters-after-the-cascade — UI test (DeletedSideBar)
@@ -25,13 +25,9 @@
  *   applyfilters-skips-redundant-navigation        — internal router guard, unit tests
  *   backend-file-reverse-lookup-…                  — PHPUnit
  *
- * NOTE on EntitiesSidebar: the component renders in the `#details` slot of
- * NcAppContent on /entities only when sidebarOpen=true.  The Vue state starts
- * as false; clicking the "Show Filters" button opens it.  NcAppContent's
- * details slot renders as a complementary panel to the right of the main area
- * — but in the current NC version it does not render a visible sidebar panel;
- * the EntitiesSidebar DOM is not inserted.  Scenarios 1+2 are therefore
- * tested via the "Show Filters" toggle approach with a skip guard.
+ * EntitiesSideBar renders as an NcAppSidebar (right-rail slide-out) opened via
+ * the "Show Filters" button on /entities.  The sidebar is conditionally rendered
+ * by SideBars.vue for the /entities route, controlled by navigationStore.sidebarState.entities.
  */
 
 import { test, expect, type Page } from '@playwright/test'
@@ -50,6 +46,29 @@ async function gotoApp(page: Page, subpath: string): Promise<void> {
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 	// Give Vue a moment to mount and hydrate the component tree.
 	await page.waitForTimeout(800)
+}
+
+/**
+ * Open the EntitiesSideBar on /entities by clicking the "Show Filters" toggle button.
+ * Waits for the NcAppSidebar panel to appear in the DOM.
+ * Returns the search input locator inside the sidebar.
+ */
+async function openEntitiesSidebar(page: Page): Promise<ReturnType<Page['locator']>> {
+	// Click the "Show Filters" button to open the NcAppSidebar.
+	const toggleBtn = page.locator('button', { hasText: 'Show Filters' })
+		.or(page.getByRole('button', { name: /Toggle search sidebar/i }))
+		.first()
+	await expect(toggleBtn).toBeVisible({ timeout: 10_000 })
+	await toggleBtn.click()
+
+	// NcAppSidebar renders as .app-sidebar in the DOM.
+	await page.waitForSelector('.app-sidebar, [class*="app-sidebar"]', { timeout: 10_000 })
+	await page.waitForTimeout(400) // let Vue finish transition
+
+	// The search input is inside the sidebar — look for the "Search by value" text input.
+	const sidebarInput = page.getByRole('textbox', { name: /search by value/i }).first()
+		.or(page.locator('.app-sidebar input[type="text"], .app-sidebar input:not([type="hidden"])').first())
+	return sidebarInput
 }
 
 /**
@@ -81,44 +100,15 @@ test.describe('files-sidebar-tabs — single-keystroke-emits-after-500ms', () =>
 	test('typing one character in the entities sidebar triggers search after 500ms debounce', async ({ page }) => {
 		await gotoApp(page, '/entities')
 
-		// Try to open the filter sidebar — "Show Filters" / "Toggle search sidebar" button.
-		const toggleBtn = page.locator('button', { hasText: 'Show Filters' })
-			.or(page.getByRole('button', { name: /Toggle search sidebar/i }))
-			.first()
-		const hasToggle = await toggleBtn.isVisible({ timeout: 5_000 }).catch(() => false)
-		if (hasToggle) {
-			await toggleBtn.click()
-			await page.waitForTimeout(500) // wait for Vue to mount the sidebar
-		}
-
-		// EntitiesSidebar contains a text input — try various selectors.
-		const sidebarSearch = page.locator(
-			'.entities-sidebar input[type="text"], .entities-sidebar input:not([type="hidden"])',
-		).first()
-		const isVisible = await sidebarSearch.isVisible({ timeout: 8_000 }).catch(() => false)
-
-		if (!isVisible) {
-			// Fallback: look for "Search by value" label.
-			const byLabel = page.getByRole('textbox', { name: /search by value/i }).first()
-			const hasLabel = await byLabel.isVisible({ timeout: 5_000 }).catch(() => false)
-			if (!hasLabel) {
-				// @e2e exclude: EntitiesSidebar does not render in the current NC version
-				// (NcAppContent #details slot is not inserted into the DOM in NC<34).
-				// This scenario is covered by Jest unit tests for EntitiesSidebar.vue.
-				test.skip(true, 'EntitiesSidebar: #details slot not rendered by NcAppContent on /entities — covered by unit tests')
-				return
-			}
-		}
-
-		const theInput = isVisible
-			? sidebarSearch
-			: page.getByRole('textbox', { name: /search by value/i }).first()
+		// Open the NcAppSidebar and get the search input.
+		const theInput = await openEntitiesSidebar(page)
+		await expect(theInput).toBeVisible({ timeout: 10_000 })
 
 		// Type one character.
 		await theInput.fill('f')
 		const t0 = Date.now()
 
-		// After >500ms the debounce fires.
+		// After >500ms the debounce fires — the parent EntitiesIndex reloads.
 		await page.waitForTimeout(600)
 		const elapsed = Date.now() - t0
 
@@ -142,34 +132,14 @@ test.describe('files-sidebar-tabs — rapid-keystrokes-only-emit-the-final-value
 	test('typing three rapid characters results in a single debounced emission', async ({ page }) => {
 		await gotoApp(page, '/entities')
 
-		// Try to open the filter sidebar.
-		const toggleBtn = page.locator('button', { hasText: 'Show Filters' })
-			.or(page.getByRole('button', { name: /Toggle search sidebar/i }))
-			.first()
-		const hasToggle = await toggleBtn.isVisible({ timeout: 5_000 }).catch(() => false)
-		if (hasToggle) {
-			await toggleBtn.click()
-			await page.waitForTimeout(500)
-		}
+		// Open the NcAppSidebar and get the search input.
+		const theInput = await openEntitiesSidebar(page)
+		await expect(theInput).toBeVisible({ timeout: 10_000 })
 
-		const sidebarInput = page.locator('.entities-sidebar input[type="text"]').first()
-		const isVisible = await sidebarInput.isVisible({ timeout: 8_000 }).catch(() => false)
-
-		const theInput = isVisible
-			? sidebarInput
-			: page.getByRole('textbox', { name: /search by value/i }).first()
-
-		if (!await theInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			// @e2e exclude: EntitiesSidebar does not render in the current NC version.
-			// Covered by Jest unit tests for EntitiesSidebar.vue.
-			test.skip(true, 'EntitiesSidebar: #details slot not rendered by NcAppContent on /entities — covered by unit tests')
-			return
-		}
-
-		// Count outbound search requests.
+		// Count outbound entity search requests made after input starts.
 		let searchRequestCount = 0
 		page.on('request', (req) => {
-			if (req.url().includes('/api/entities') || (req.url().includes('entities') && req.method() === 'GET')) {
+			if (req.url().includes('/api/entities') && req.method() === 'GET') {
 				searchRequestCount++
 			}
 		})
@@ -180,13 +150,14 @@ test.describe('files-sidebar-tabs — rapid-keystrokes-only-emit-the-final-value
 
 		const countBeforeDebounce = searchRequestCount
 
-		// Wait for debounce window to expire.
+		// Wait for the full debounce window to expire.
 		await page.waitForTimeout(700)
 
 		// Input should still show 'foo'.
 		await expect(theInput).toHaveValue('foo')
 
-		// At most one extra search request after the debounce.
+		// At most one extra search request should have fired after debounce (the coalesced one).
+		// Two requests tolerated: one for the initial page load + one for the debounced search.
 		const countAfterDebounce = searchRequestCount
 		expect(countAfterDebounce - countBeforeDebounce).toBeLessThanOrEqual(2)
 
