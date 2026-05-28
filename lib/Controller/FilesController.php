@@ -205,8 +205,11 @@ class FilesController extends Controller
         unset($routeParams);
 
         try {
+            // SECURITY (H6): anonymous callers see only published (shared) files.
+            $isAnonymous = ($this->userSession !== null && $this->userSession->getUser() === null);
+
             // Get the raw files from the file service.
-            $files = $this->fileService->getFiles(object: $id);
+            $files = $this->fileService->getFiles(object: $id, sharedFilesOnly: $isAnonymous);
 
             // Format the files with pagination using request parameters.
             $formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
@@ -284,6 +287,18 @@ class FilesController extends Controller
                     data: ['error' => 'File not found'],
                     statusCode: 404
                 );
+            }
+
+            // SECURITY (H5): gate anonymous callers on the file being published.
+            // Mirrors the same guard in downloadById() and preview().
+            $isAnonymous = ($this->userSession !== null && $this->userSession->getUser() === null);
+            if ($isAnonymous === true) {
+                if ($this->fileMapper === null || $this->fileMapper->isFilePublished((int) $file->getId()) === false) {
+                    return new JSONResponse(
+                        data: ['error' => 'File not available for anonymous access'],
+                        statusCode: 403
+                    );
+                }
             }
 
             // Stream the file inline so browsers display images/logos directly.
