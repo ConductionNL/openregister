@@ -27,8 +27,11 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUserSession;
+use OCP\Security\ICrypto;
 
 /**
  * Class SourcesController
@@ -49,6 +52,9 @@ class SourcesController extends Controller
      * @param IAppConfig   $config       The app configuration object
      * @param SourceMapper $sourceMapper The source mapper
      * @param IL10N        $l10n         The localization service
+     * @param IUserSession $userSession  User session for admin checks
+     * @param IGroupManager $groupManager Group manager for admin checks
+     * @param ICrypto      $crypto       Crypto service for databaseUrl encryption
      *
      * @return void
      */
@@ -57,10 +63,45 @@ class SourcesController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly SourceMapper $sourceMapper,
-        private readonly IL10N $l10n
+        private readonly IL10N $l10n,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
+        private readonly ICrypto $crypto
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
+
+    /**
+     * Serialize a source for the response, stripping databaseUrl for non-admins.
+     *
+     * @param Source $source The source entity to serialize.
+     *
+     * @return array<string, mixed> The serialized source data.
+     */
+    private function serializeSource(Source $source): array
+    {
+        $data = $source->jsonSerialize();
+        if ($this->isCurrentUserAdmin() === false) {
+            unset($data['databaseUrl']);
+        }
+
+        return $data;
+    }//end serializeSource()
 
     /**
      * Retrieves a list of all sources
@@ -97,13 +138,15 @@ class SourcesController extends Controller
         unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
         // Return all sources that match the filters.
+        // Strip databaseUrl from non-admin responses to prevent credential exposure.
+        $sources = $this->sourceMapper->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters
+        );
         return new JSONResponse(
             data: [
-                'results' => $this->sourceMapper->findAll(
-                    limit: $limit,
-                    offset: $offset,
-                    filters: $filters
-                ),
+                'results' => array_map(fn(Source $s) => $this->serializeSource($s), $sources),
             ]
         );
     }//end index()
@@ -126,7 +169,8 @@ class SourcesController extends Controller
     {
         try {
             // Try to find the source by ID.
-            return new JSONResponse(data: $this->sourceMapper->find(id: (int) $id));
+            $source = $this->sourceMapper->find(id: (int) $id);
+            return new JSONResponse(data: $this->serializeSource($source));
         } catch (DoesNotExistException $exception) {
             // Return a 404 error if the source doesn't exist.
             return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
@@ -150,6 +194,10 @@ class SourcesController extends Controller
      */
     public function create(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
         // Get request parameters.
         $data = $this->request->getParams();
 
@@ -165,8 +213,14 @@ class SourcesController extends Controller
             unset($data['id']);
         }
 
+        // Encrypt databaseUrl at rest before persisting.
+        if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
+            $data['databaseUrl'] = $this->crypto->encrypt((string) $data['databaseUrl']);
+        }
+
         // Create a new source from the data.
-        return new JSONResponse(data: $this->sourceMapper->createFromArray(object: $data));
+        $source = $this->sourceMapper->createFromArray(object: $data);
+        return new JSONResponse(data: $this->serializeSource($source));
     }//end create()
 
     /**
@@ -188,6 +242,10 @@ class SourcesController extends Controller
      */
     public function update(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
         // Get request parameters.
         $data = $this->request->getParams();
 
@@ -204,9 +262,14 @@ class SourcesController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
+        // Encrypt databaseUrl at rest before persisting.
+        if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== null && $data['databaseUrl'] !== '') {
+            $data['databaseUrl'] = $this->crypto->encrypt((string) $data['databaseUrl']);
+        }
+
         // Update the source with the provided data.
         $source = $this->sourceMapper->updateFromArray(id: $id, object: $data);
-        return new JSONResponse(data: $source);
+        return new JSONResponse(data: $this->serializeSource($source));
     }//end update()
 
     /**
@@ -250,6 +313,10 @@ class SourcesController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+        }
+
         // Find the source by ID and delete it.
         $this->sourceMapper->delete($this->sourceMapper->find($id));
 

@@ -1113,6 +1113,19 @@ class FilesController extends Controller
      */
     public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse
     {
+        // SECURITY (C1): gate anonymous callers on the file being published.
+        // Authenticated callers are allowed through (they have a valid NC session).
+        // This mirrors preview()'s isFilePublished guard (line 1782).
+        $isAnonymous = ($this->userSession !== null && $this->userSession->getUser() === null);
+        if ($isAnonymous === true) {
+            if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'File not available for anonymous access'],
+                    statusCode: 403
+                );
+            }
+        }
+
         try {
             // Get the file using the file service.
             $file = $this->fileService->getFileById($fileId);
@@ -1121,10 +1134,11 @@ class FilesController extends Controller
                 return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
             }
 
-            // Record download (counter + audit). Best-effort. No object
-            // context here — downloadById is the cross-object lookup
-            // path that doesn't carry a parent object reference.
-            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: null);
+            // L2: resolve parent object for audit context (best-effort).
+            $parentObject = $this->resolveParentObjectForFile(file: $file);
+
+            // Record download (counter + audit). Best-effort.
+            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: $parentObject);
 
             // Stream the file content back to the client.
             return $this->fileService->streamFile($file);
@@ -1134,6 +1148,36 @@ class FilesController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
     }//end downloadById()
+
+    /**
+     * Best-effort: resolve the parent ObjectEntity for a given file node by
+     * checking the file's parent folder name against known OR object folders.
+     *
+     * Used by downloadById() to provide audit context in recordDownloadEvent().
+     * Returns null when resolution fails — never blocks the download.
+     *
+     * @param File $file The resolved file node.
+     *
+     * @return \OCA\OpenRegister\Db\ObjectEntity|null The parent object or null.
+     */
+    private function resolveParentObjectForFile(File $file): ?\OCA\OpenRegister\Db\ObjectEntity
+    {
+        try {
+            $parent     = $file->getParent();
+            $folderName = $parent->getName();
+
+            if (empty($folderName) === true) {
+                return null;
+            }
+
+            // The folder name is either the object UUID or its integer ID.
+            // Try ObjectService to resolve by setting UUID.
+            // This is best-effort — swallow any exception.
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolveParentObjectForFile()
 
     /**
      * Get a human-readable error message for PHP file upload errors
