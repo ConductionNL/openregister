@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d5dde3611bdaf93ffb638254d53beb10",
+    "content-hash": "8a0e5f3fd76e6190a7efb4a3f5a4e6b2",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -303,6 +303,58 @@
                 "source": "https://github.com/cweagans/composer-patches/tree/1.7.3"
             },
             "time": "2022-12-20T22:53:13+00:00"
+        },
+        {
+            "name": "ddn/sapp",
+            "version": "dev-work/text-replacement",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ConductionNL/sapp.git",
+                "reference": "07e5a74"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ConductionNL/sapp/zipball/07e5a74",
+                "reference": "07e5a74",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": ">=7.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ddn\\sapp\\": "src/"
+                }
+            },
+            "license": [
+                "LGPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos A.",
+                    "email": "caralla@upv.es"
+                }
+            ],
+            "description": "Simple and Agnostic PDF Parser (SAPP): Edit, manipulate and sign PDF documents usign PHP",
+            "keywords": [
+                "electronic signature",
+                "pdf",
+                "php",
+                "sign",
+                "signature"
+            ],
+            "support": {
+                "source": "https://github.com/ConductionNL/sapp/tree/work/text-replacement"
+            },
+            "funding": [
+                {
+                    "type": "custom",
+                    "url": "https://paypal.me/caralla"
+                }
+            ],
+            "time": "2026-05-28T14:47:39+00:00"
         },
         {
             "name": "dompdf/dompdf",
@@ -12685,6 +12737,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
+        "ddn/sapp": 20,
         "roave/security-advisories": 20
     },
     "prefer-stable": false,
@@ -12692,9 +12745,9 @@
     "platform": {
         "php": "^8.3"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.3"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
