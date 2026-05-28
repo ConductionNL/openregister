@@ -21,10 +21,15 @@ Annotations-only. Each task records the `@spec` tag added (or why none was added
 - [x] task-5 — `deprecate-published-metadata#REQ-4` — cleanup complete; the
   auto-publish import toggle is gone. Nothing to annotate.
 
-## Gaps (MISSING — reported, not implemented)
+## Gaps unblocked (MAN-001 satisfied by openregister-manifest-shell-swap)
 
-- [ ] task-6 — `openregister-app-manifest#MAN-002` — blocked on
-  `REQ-OR-MAN-001` (author `src/manifest.json`). No `dependencies: []` to assert
-  until the manifest exists.
-- [ ] task-7 — `openregister-app-manifest#MAN-008` — blocked on
-  `REQ-OR-MAN-001`/`REQ-OR-MAN-005`. No `version` field until the manifest exists.
+- [x] task-6 — `openregister-app-manifest#MAN-002` → annotated
+  `tests/validate-manifest.js` header docblock with
+  `@spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-002`.
+  Manifest now ships `"dependencies": []` (OR is the foundation app); validator
+  schema-asserts the field on every CI run.
+- [x] task-7 — `openregister-app-manifest#MAN-008` → annotated
+  `tests/validate-manifest.js` header docblock with
+  `@spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-008`.
+  Manifest now ships `"version": "1.0.0"` (Tier-4 / full-shell adoption);
+  validator schema-asserts the field plus structural-lint fallback.

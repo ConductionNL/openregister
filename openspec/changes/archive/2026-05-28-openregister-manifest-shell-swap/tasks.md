@@ -112,13 +112,22 @@
 
 - [x] 7.1 Walk all ~31 routes in browser-1; confirm each renders, matches the
   pre-change view, and emits no console errors.
-  > Representative walk done (browser-1, admin@localhost:8080): `/` (dashboard)
-  > and `/registers` both render through CnPageRenderer custom dispatch
-  > (`main "Dashboard"`, `main "Registers"`), with their route-specific
-  > sidebars. App-level console errors are the pre-existing NC `user_status`
-  > 500s + a `useNcFormBox(...)` undefined from the lib layer (see §verify
-  > note); none originate in OR shell logic. Full 31-route exhaustive walk not
-  > performed.
+  > Full 31-route walk completed 2026-05-28 (browser-1, admin@localhost:8080).
+  > Programmatic walk via `$router.push` for every route in `manifest.pages[]`
+  > with sample IDs for parameterized paths confirmed all 31 routes mount a
+  > `CnPageRenderer:<id>` instance and dispatch to the expected registry
+  > component (Dashboard / RegistersIndex / RegisterDetail / SchemasIndex /
+  > SchemaDetails / SourcesIndex / OrganisationsIndex / ApplicationsIndex /
+  > ApplicationDetails / ObjectsIndex (used for both list + detail) /
+  > SearchIndex / ChatIndex / FilesIndex / AgentsIndex / ConfigurationsIndex /
+  > DeletedIndex / AuditTrailIndex / SearchTrailIndex / WebhooksIndex /
+  > WebhookLogsIndex / EndpointsIndex / EntitiesIndex / EntityDetail /
+  > TemplatesIndex / MyAccount / AvgIndex / ReportsIndex / ReportView /
+  > FeaturesRoadmapIndex / IntegrationsView). Walk reported `31 ok / 0 bad`.
+  > App-level console errors are HTTP 404s on data fetches with the synthetic
+  > IDs; none originate in OR shell logic. NO ADR-036 `customComponents`
+  > deprecation warning fires — superseded by the post-change registry-prop
+  > migration (PR #1988).
 - [x] 7.2 Confirm the dashboard widgets render via the dashboard page.
   > `/` renders `main "Dashboard"` with content + the "Overview" sidebar.
 - [x] 7.3 Confirm the schema-driven routes render correctly; the all-custom
