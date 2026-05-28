@@ -33,7 +33,9 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -104,6 +106,20 @@ class EndpointsController extends Controller
     private readonly LoggerInterface $logger;
 
     /**
+     * User session for authentication checks.
+     *
+     * @var IUserSession User session instance
+     */
+    private readonly IUserSession $userSession;
+
+    /**
+     * Group manager for admin-role checks.
+     *
+     * @var IGroupManager Group manager instance
+     */
+    private readonly IGroupManager $groupManager;
+
+    /**
      * Constructor
      *
      * Initializes controller with required dependencies for endpoint management.
@@ -115,6 +131,8 @@ class EndpointsController extends Controller
      * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper for log operations
      * @param EndpointService   $endpointService   Endpoint service for business logic
      * @param LoggerInterface   $logger            Logger for error tracking
+     * @param IUserSession      $userSession       User session for auth checks
+     * @param IGroupManager     $groupManager      Group manager for admin checks
      *
      * @return void
      */
@@ -124,7 +142,9 @@ class EndpointsController extends Controller
         EndpointMapper $endpointMapper,
         EndpointLogMapper $endpointLogMapper,
         EndpointService $endpointService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        IUserSession $userSession,
+        IGroupManager $groupManager
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -134,7 +154,24 @@ class EndpointsController extends Controller
         $this->endpointLogMapper = $endpointLogMapper;
         $this->endpointService   = $endpointService;
         $this->logger            = $logger;
+        $this->userSession       = $userSession;
+        $this->groupManager      = $groupManager;
     }//end __construct()
+
+    /**
+     * Determine whether the current user is a Nextcloud admin.
+     *
+     * @return bool True when the active session user belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * List all endpoints
@@ -276,6 +313,11 @@ class EndpointsController extends Controller
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
+        // SECURITY (H7): endpoint writes are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             // Get endpoint data from request parameters.
             $data = $this->request->getParams();
@@ -354,6 +396,11 @@ class EndpointsController extends Controller
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
     {
+        // SECURITY (H7): endpoint writes are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             // Get update data from request parameters.
             $data = $this->request->getParams();
@@ -467,6 +514,11 @@ class EndpointsController extends Controller
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
     {
+        // SECURITY (H7): endpoint writes are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             // Find endpoint by ID to ensure it exists before deletion.
             $endpoint = $this->endpointMapper->find($id);
