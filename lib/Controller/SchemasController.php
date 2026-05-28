@@ -826,6 +826,25 @@ class SchemasController extends Controller
             $schema = $this->schemaMapper->find($id);
         }
 
+        // SECURITY (H3): gate schema uploads on appropriate permissions.
+        // Updating an existing schema requires manage-permission (same as update/destroy).
+        // Creating a new schema requires admin (same as create).
+        if ($id !== null) {
+            if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'You do not have permission to update this schema'],
+                    statusCode: 403
+                );
+            }
+        } else {
+            if ($this->isCurrentUserAdmin() === false) {
+                return new JSONResponse(
+                    data: ['error' => 'Admin privileges required to upload new schemas'],
+                    statusCode: 403
+                );
+            }
+        }
+
         // Get the uploaded JSON data.
         $phpArray = $this->uploadService->getUploadedJson($this->request->getParams());
         if ($phpArray instanceof JSONResponse) {
@@ -1200,188 +1219,6 @@ class SchemasController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
     }//end updateFromExploration()
-
-    /**
-     * Publish a schema
-     *
-     * This method publishes a schema by setting its publication date to now or a specified date.
-     *
-     * @param int $id The ID of the schema to publish
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with published schema
-     *
-     * @psalm-return JSONResponse<200|400|404,
-     *     array{error?: string, id?: int, uuid?: null|string, uri?: null|string,
-     *     slug?: null|string, title?: null|string, description?: null|string,
-     *     version?: null|string, summary?: null|string, icon?: null|string,
-     *     required?: array, properties?: array, archive?: array|null,
-     *     source?: null|string, hardValidation?: bool, immutable?: bool,
-     *     searchable?: bool, updated?: null|string, created?: null|string,
-     *     maxDepth?: int, owner?: null|string, application?: null|string,
-     *     organisation?: null|string,
-     *     groups?: array<string, list<string>>|null,
-     *     authorization?: array|null, deleted?: null|string,
-     *     published?: null|string, depublished?: null|string,
-     *     configuration?: array|null|string, allOf?: array|null,
-     *     oneOf?: array|null, anyOf?: array|null}, array<never, never>>
-     *
-     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
-     */
-    public function publish(int $id): JSONResponse
-    {
-        try {
-            // Get the publication date from request if provided, otherwise use now.
-            $date = new DateTime();
-            if ($this->request->getParam('date') !== null) {
-                $date = new DateTime($this->request->getParam('date'));
-            }
-
-            // Metadata-read bypass per auth-system "Schema and register
-            // METADATA-READ lookups MUST bypass multi-tenancy" — publish is a
-            // status-flag toggle on the catalog entry, not an authoring
-            // mutation that gates on tenancy. Authorisation is handled by the
-            // surrounding permission check, not by the find() filter.
-            $schema = $this->schemaMapper->find($id, _multitenancy: false);
-
-            // Set published date and clear depublished date if set.
-            $schema->setPublished($date);
-            $schema->setDepublished(null);
-
-            // Update the schema.
-            $updatedSchema = $this->schemaMapper->update($schema);
-
-            // **CACHE INVALIDATION**: Clear schema cache when publication status changes
-            $this->schemaCacheService->invalidateForSchemaChange(
-                schemaId: $updatedSchema->getId(),
-                operation: 'publish'
-            );
-            $this->facetCacheSvc->invalidateForSchemaChange(
-                schemaId: $updatedSchema->getId(),
-                operation: 'publish'
-            );
-
-            $this->logger->info(
-                message: '[SchemasController] Schema published',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'schema_id'      => $id,
-                    'published_date' => $date->format('Y-m-d H:i:s'),
-                ]
-            );
-
-            return new JSONResponse($updatedSchema->jsonSerialize());
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Schema not found'], 404);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[SchemasController] Failed to publish schema',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'schema_id' => $id,
-                    'error'     => $e->getMessage(),
-                ]
-            );
-            return new JSONResponse(['error' => $e->getMessage()], 400);
-        }//end try
-    }//end publish()
-
-    /**
-     * Depublish a schema
-     *
-     * This method depublishes a schema by setting its depublication date to now or a specified date.
-     *
-     * @param int $id The ID of the schema to depublish
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with depublished schema
-     *
-     * @psalm-return JSONResponse<200|400|404,
-     *     array{error?: string, id?: int, uuid?: null|string, uri?: null|string,
-     *     slug?: null|string, title?: null|string, description?: null|string,
-     *     version?: null|string, summary?: null|string, icon?: null|string,
-     *     required?: array, properties?: array, archive?: array|null,
-     *     source?: null|string, hardValidation?: bool, immutable?: bool,
-     *     searchable?: bool, updated?: null|string, created?: null|string,
-     *     maxDepth?: int, owner?: null|string, application?: null|string,
-     *     organisation?: null|string,
-     *     groups?: array<string, list<string>>|null,
-     *     authorization?: array|null, deleted?: null|string,
-     *     published?: null|string, depublished?: null|string,
-     *     configuration?: array|null|string, allOf?: array|null,
-     *     oneOf?: array|null, anyOf?: array|null}, array<never, never>>
-     *
-     * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
-     */
-    public function depublish(int $id): JSONResponse
-    {
-        try {
-            // Get the depublication date from request if provided, otherwise use now.
-            $date = new DateTime();
-            if ($this->request->getParam('date') !== null) {
-                $date = new DateTime($this->request->getParam('date'));
-            }
-
-            // Metadata-read bypass per auth-system "Schema and register
-            // METADATA-READ lookups MUST bypass multi-tenancy" — depublish is
-            // a status-flag toggle on the catalog entry; see publish() for
-            // the parallel rationale.
-            $schema = $this->schemaMapper->find($id, _multitenancy: false);
-
-            // Set depublished date.
-            $schema->setDepublished($date);
-
-            // Update the schema.
-            $updatedSchema = $this->schemaMapper->update($schema);
-
-            // **CACHE INVALIDATION**: Clear schema cache when publication status changes
-            $this->schemaCacheService->invalidateForSchemaChange(
-                schemaId: $updatedSchema->getId(),
-                operation: 'depublish'
-            );
-            $this->facetCacheSvc->invalidateForSchemaChange(
-                schemaId: $updatedSchema->getId(),
-                operation: 'depublish'
-            );
-
-            $this->logger->info(
-                message: '[SchemasController] Schema depublished',
-                context: [
-                    'file'             => __FILE__,
-                    'line'             => __LINE__,
-                    'schema_id'        => $id,
-                    'depublished_date' => $date->format('Y-m-d H:i:s'),
-                ]
-            );
-
-            return new JSONResponse($updatedSchema->jsonSerialize());
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Schema not found'], 404);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[SchemasController] Failed to depublish schema',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'schema_id' => $id,
-                    'error'     => $e->getMessage(),
-                ]
-            );
-            return new JSONResponse(['error' => $e->getMessage()], 400);
-        }//end try
-    }//end depublish()
 
     /**
      * Whether the current request has no resolved Nextcloud user (anonymous).

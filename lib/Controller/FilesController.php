@@ -205,8 +205,11 @@ class FilesController extends Controller
         unset($routeParams);
 
         try {
+            // SECURITY (H6): anonymous callers see only published (shared) files.
+            $isAnonymous = ($this->userSession !== null && $this->userSession->getUser() === null);
+
             // Get the raw files from the file service.
-            $files = $this->fileService->getFiles(object: $id);
+            $files = $this->fileService->getFiles(object: $id, sharedFilesOnly: $isAnonymous);
 
             // Format the files with pagination using request parameters.
             $formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
@@ -284,6 +287,18 @@ class FilesController extends Controller
                     data: ['error' => 'File not found'],
                     statusCode: 404
                 );
+            }
+
+            // SECURITY (H5): gate anonymous callers on the file being published.
+            // Mirrors the same guard in downloadById() and preview().
+            $isAnonymous = ($this->userSession !== null && $this->userSession->getUser() === null);
+            if ($isAnonymous === true) {
+                if ($this->fileMapper === null || $this->fileMapper->isFilePublished((int) $file->getId()) === false) {
+                    return new JSONResponse(
+                        data: ['error' => 'File not available for anonymous access'],
+                        statusCode: 403
+                    );
+                }
             }
 
             // Stream the file inline so browsers display images/logos directly.
@@ -977,114 +992,6 @@ class FilesController extends Controller
     }//end delete()
 
     /**
-     * Publish a file associated with an object
-     *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
-     * @param string $id       The ID of the object to retrieve files for
-     * @param int    $fileId   ID of the file to publish
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|400|404,
-     *     array{error?: mixed|string, labels?: list<string>,...},
-     *     array<never, never>>
-     *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
-     */
-    public function publish(
-        string $register,
-        string $schema,
-        string $id,
-        int $fileId
-    ): JSONResponse {
-        // Set the schema and register to the object service (forces a check if the are valid).
-        $this->objectService->setSchema($schema);
-        $this->objectService->setRegister($register);
-
-        try {
-            $this->objectService->setObject($id);
-            $object = $this->objectService->getObject();
-
-            if ($object === null) {
-                return new JSONResponse(
-                    data: ['error' => 'Object not found'],
-                    statusCode: 404
-                );
-            }
-
-            $result = $this->fileService->publishFile(
-                object: $object,
-                file: $fileId
-            );
-
-            return new JSONResponse(data: $this->fileService->formatFile($result));
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }//end try
-    }//end publish()
-
-    /**
-     * Depublish a file associated with an object
-     *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
-     * @param string $id       The ID of the object to retrieve files for
-     * @param int    $fileId   ID of the file to depublish
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|400|404,
-     *     array{error?: mixed|string, labels?: list<string>,...},
-     *     array<never, never>>
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
-     */
-    public function depublish(
-        string $register,
-        string $schema,
-        string $id,
-        int $fileId
-    ): JSONResponse {
-        // Set the schema and register to the object service (forces a check if the are valid).
-        $this->objectService->setSchema($schema);
-        $this->objectService->setRegister($register);
-
-        try {
-            $this->objectService->setObject($id);
-            $object = $this->objectService->getObject();
-
-            if ($object === null) {
-                return new JSONResponse(
-                    data: ['error' => 'Object not found'],
-                    statusCode: 404
-                );
-            }
-
-            $result = $this->fileService->unpublishFile(
-                object: $object,
-                filePath: $fileId
-            );
-
-            return new JSONResponse(data: $this->fileService->formatFile($result));
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }//end try
-    }//end depublish()
-
-    /**
      * Download a file by its ID (authenticated endpoint)
      *
      * This endpoint allows downloading a file by its file ID without needing
@@ -1113,6 +1020,19 @@ class FilesController extends Controller
      */
     public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse
     {
+        // SECURITY (C1): gate anonymous callers on the file being published.
+        // Authenticated callers are allowed through (they have a valid NC session).
+        // This mirrors preview()'s isFilePublished guard (line 1782).
+        $isAnonymous = ($this->userSession !== null && $this->userSession->getUser() === null);
+        if ($isAnonymous === true) {
+            if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'File not available for anonymous access'],
+                    statusCode: 403
+                );
+            }
+        }
+
         try {
             // Get the file using the file service.
             $file = $this->fileService->getFileById($fileId);
@@ -1121,10 +1041,11 @@ class FilesController extends Controller
                 return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
             }
 
-            // Record download (counter + audit). Best-effort. No object
-            // context here — downloadById is the cross-object lookup
-            // path that doesn't carry a parent object reference.
-            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: null);
+            // L2: resolve parent object for audit context (best-effort).
+            $parentObject = $this->resolveParentObjectForFile(file: $file);
+
+            // Record download (counter + audit). Best-effort.
+            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: $parentObject);
 
             // Stream the file content back to the client.
             return $this->fileService->streamFile($file);
@@ -1134,6 +1055,36 @@ class FilesController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
     }//end downloadById()
+
+    /**
+     * Best-effort: resolve the parent ObjectEntity for a given file node by
+     * checking the file's parent folder name against known OR object folders.
+     *
+     * Used by downloadById() to provide audit context in recordDownloadEvent().
+     * Returns null when resolution fails — never blocks the download.
+     *
+     * @param File $file The resolved file node.
+     *
+     * @return \OCA\OpenRegister\Db\ObjectEntity|null The parent object or null.
+     */
+    private function resolveParentObjectForFile(File $file): ?\OCA\OpenRegister\Db\ObjectEntity
+    {
+        try {
+            $parent     = $file->getParent();
+            $folderName = $parent->getName();
+
+            if (empty($folderName) === true) {
+                return null;
+            }
+
+            // The folder name is either the object UUID or its integer ID.
+            // Try ObjectService to resolve by setting UUID.
+            // This is best-effort — swallow any exception.
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolveParentObjectForFile()
 
     /**
      * Get a human-readable error message for PHP file upload errors

@@ -33,7 +33,9 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -66,6 +68,8 @@ class ConfigurationsController extends Controller
      * @param ConfigurationService $configurationService The configuration service instance
      * @param UploadService        $uploadService        The upload service instance
      * @param string|null          $userId               The current user ID
+     * @param IUserSession         $userSession          User session for admin checks
+     * @param IGroupManager        $groupManager         Group manager for admin checks
      */
     public function __construct(
         string $appName,
@@ -73,11 +77,28 @@ class ConfigurationsController extends Controller
         private readonly ConfigurationMapper $configurationMapper,
         private readonly ConfigurationService $configurationService,
         private readonly UploadService $uploadService,
-        ?string $userId
+        ?string $userId,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->userId = $userId;
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * List all configurations
@@ -103,8 +124,11 @@ class ConfigurationsController extends Controller
         $searchConditions = [];
         $filters          = $filters;
 
+        // Admins bypass multitenancy so they can see all configurations.
+        // Non-admin authenticated users see only their tenant's configurations.
+        $multitenancy = ($this->isCurrentUserAdmin() === false);
+
         // Return all configurations that match the search conditions.
-        // Disable multitenancy filtering so admins can see all configurations.
         return new JSONResponse(
             data: [
                 'results' => $this->configurationMapper->findAll(
@@ -113,7 +137,7 @@ class ConfigurationsController extends Controller
                     filters: $filters,
                     searchConditions: $searchConditions,
                     searchParams: $searchParams,
-                    _multitenancy: false
+                    _multitenancy: $multitenancy
                 ),
             ]
         );
@@ -139,9 +163,9 @@ class ConfigurationsController extends Controller
     public function show(int $id): JSONResponse
     {
         try {
-            // Disable multitenancy filtering for show operations.
-            // When retrieving by ID, admins should be able to access configurations regardless of organisation.
-            return new JSONResponse(data: $this->configurationMapper->find($id, _multitenancy: false));
+            // Admins bypass multitenancy; non-admins see only their tenant's configurations.
+            $multitenancy = ($this->isCurrentUserAdmin() === false);
+            return new JSONResponse(data: $this->configurationMapper->find($id, _multitenancy: $multitenancy));
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         }
@@ -168,6 +192,10 @@ class ConfigurationsController extends Controller
      */
     public function create(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         $data = $this->request->getParams();
 
         // Remove internal parameters and data attribute.
@@ -229,6 +257,10 @@ class ConfigurationsController extends Controller
      */
     public function update(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         $data = $this->request->getParams();
 
         // Remove internal parameters and data attribute.
@@ -303,6 +335,10 @@ class ConfigurationsController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             // Disable multitenancy filtering for delete operations.
             // When deleting by ID, admins should be able to delete configurations regardless of organisation.
@@ -389,6 +425,10 @@ class ConfigurationsController extends Controller
      */
     public function import(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             // Initialize uploadedFiles array.
             $uploadedFiles = [];
