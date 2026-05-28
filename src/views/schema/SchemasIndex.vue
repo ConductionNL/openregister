@@ -97,24 +97,6 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 						</template>
 						Edit
 					</NcActionButton>
-					<NcActionButton
-						v-if="!row.published || (row.depublished && new Date(row.depublished) <= new Date())"
-						close-after-click
-						@click="publishSchema(row)">
-						<template #icon>
-							<Publish :size="20" />
-						</template>
-						Publish
-					</NcActionButton>
-					<NcActionButton
-						v-if="row.published && (!row.depublished || new Date(row.depublished) > new Date())"
-						close-after-click
-						@click="depublishSchema(row)">
-						<template #icon>
-							<PublishOff :size="20" />
-						</template>
-						Depublish
-					</NcActionButton>
 					<NcActionButton v-tooltip="row.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 						close-after-click
 						:disabled="row.stats?.objects?.total > 0"
@@ -137,8 +119,6 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import Publish from 'vue-material-design-icons/Publish.vue'
-import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 
@@ -153,8 +133,6 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		CogOutline,
-		Publish,
-		PublishOff,
 		RegisterSchemaCard,
 	},
 	data() {
@@ -334,39 +312,6 @@ export default {
 			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
 		},
 
-		/**
-		 * Publish a schema via the store and surface a toast.
-		 *
-		 * @param {object} schema The schema to publish.
-		 * @spec exclude UI plumbing — action delegates to the schema store
-		 * @return {Promise<void>}
-		 */
-		async publishSchema(schema) {
-			try {
-				await schemaStore.publishSchema(schema.id)
-				showSuccess(t('openregister', 'Schema published successfully'))
-			} catch (error) {
-				console.error('Error publishing schema:', error)
-				showError(t('openregister', 'Failed to publish schema: {error}', { error: error.message }))
-			}
-		},
-
-		/**
-		 * Depublish a schema via the store and surface a toast.
-		 *
-		 * @param {object} schema The schema to depublish.
-		 * @spec exclude UI plumbing — action delegates to the schema store
-		 * @return {Promise<void>}
-		 */
-		async depublishSchema(schema) {
-			try {
-				await schemaStore.depublishSchema(schema.id)
-				showSuccess(t('openregister', 'Schema depublished successfully'))
-			} catch (error) {
-				console.error('Error depublishing schema:', error)
-				showError(t('openregister', 'Failed to depublish schema: {error}', { error: error.message }))
-			}
-		},
 	},
 }
 </script>

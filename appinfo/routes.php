@@ -665,9 +665,6 @@ return [
 		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#update', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#delete', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-		['name' => 'files#publish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-		['name' => 'files#depublish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-
 		// File-actions (rename / copy / move / versions / lock / batch / preview / labels).
 		['name' => 'files#rename',         'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/rename',                       'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#copy',           'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/copy',                         'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
@@ -706,8 +703,6 @@ return [
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'schemas#publish', 'url' => '/api/schemas/{id}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'schemas#depublish', 'url' => '/api/schemas/{id}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // Registers
         ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -719,8 +714,6 @@ return [
             'requirements' => ['id' => '[^/]+', 'schema' => '[^/]+'],
         ],
         ['name' => 'registers#publishToGitHub', 'url' => '/api/registers/{id}/publish/github', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'registers#publish', 'url' => '/api/registers/{id}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'registers#depublish', 'url' => '/api/registers/{id}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#schemas', 'url' => '/api/registers/{id}/schemas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
