@@ -258,6 +258,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testUnlockReturnsUnlockedObject(): void
     {
+        $this->setupAdminUser();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('unlockObject')->willReturn(true);
@@ -269,6 +270,33 @@ class ObjectsControllerTest extends TestCase
         $this->assertFalse($data['locked']);
         $this->assertSame('uuid-123', $data['uuid']);
         $this->assertSame('Object unlocked successfully', $data['message']);
+    }
+
+    public function testUnlockAnonymousRejected(): void
+    {
+        // Wave-3 C14 regression guard: anonymous callers must not be able
+        // to release a lock.
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->objectService->expects($this->never())->method('unlockObject');
+
+        $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testUnlockPermissionDeniedReturns403(): void
+    {
+        // Wave-3 C14 regression guard: when LockHandler raises a permission
+        // error, the controller maps it to 403 (not 500).
+        $this->setupRegularUser();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('unlockObject')
+            ->willThrowException(new \Exception('User does not have permission to unlock this object'));
+
+        $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(403, $result->getStatus());
     }
 
     public function testMergeReturnsMergedObject(): void
@@ -2514,13 +2542,15 @@ class ObjectsControllerTest extends TestCase
 
     public function testUnlockReturns404WhenObjectNotFound(): void
     {
+        $this->setupAdminUser();
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('unlockObject')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
-        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-        $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+        $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(404, $result->getStatus());
     }
 
     // =========================================================================

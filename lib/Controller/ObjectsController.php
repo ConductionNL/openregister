@@ -2886,17 +2886,36 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{
-     *     message: 'Object unlocked successfully', locked: false, uuid: string
-     * }, array<never, never>>
-     *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
-        $this->objectService->setRegister(register: $register);
-        $this->objectService->setSchema(schema: $schema);
-        $this->objectService->unlockObject($id);
+        // Authorization: anonymous callers cannot unlock anything; the
+        // per-object permission check (lock-holder OR owner OR schema-manage
+        // OR admin) lives in LockHandler::unlock and surfaces a permission
+        // error message we map to 403 here. This closes the wave-3 C14
+        // "any authenticated user can unlock anything" finding.
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not authenticated'],
+                statusCode: 401
+            );
+        }
+
+        try {
+            $this->objectService->setRegister(register: $register);
+            $this->objectService->setSchema(schema: $schema);
+            $this->objectService->unlockObject($id);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            if (str_contains($message, 'does not have permission to unlock') === true) {
+                return new JSONResponse(data: ['error' => $message], statusCode: 403);
+            }
+
+            return new JSONResponse(data: ['error' => $message], statusCode: 500);
+        }
 
         // Return response with locked status for test compatibility.
         return new JSONResponse(
