@@ -1718,14 +1718,17 @@ class SaveObjectTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function testSetSelfMetadataSetsOwner(): void
+    public function testSetSelfMetadataOwnerIsIgnored(): void
     {
-        $entity = new ObjectEntity();
-        $selfData = ['owner' => 'admin'];
+        // SECURITY (wave-7 CRITICAL C2): owner must NOT be settable via client @self input.
+        // The sole authoritative setter is applyOwnerAttribution() (session user UID).
+        $entity   = new ObjectEntity();
+        $selfData = ['owner' => 'injected-owner'];
 
         $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
 
-        $this->assertSame('admin', $entity->getOwner());
+        // Owner must remain null — client-supplied value is discarded.
+        $this->assertNull($entity->getOwner());
     }
 
     public function testSetSelfMetadataSetsOrganisation(): void

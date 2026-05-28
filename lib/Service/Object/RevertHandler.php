@@ -72,6 +72,36 @@ class RevertHandler
     private MagicMapper $objectEntityMapper;
 
     /**
+     * Permission handler for RBAC enforcement
+     *
+     * @var PermissionHandler
+     */
+    private PermissionHandler $permissionHandler;
+
+    /**
+     * RevertHandler constructor.
+     *
+     * @param AuditTrailMapper  $auditTrailMapper  Audit trail mapper.
+     * @param ContainerInterface $container         DI container.
+     * @param IEventDispatcher  $eventDispatcher   Event dispatcher.
+     * @param MagicMapper       $objectEntityMapper Object entity mapper.
+     * @param PermissionHandler $permissionHandler  Permission handler for RBAC.
+     */
+    public function __construct(
+        AuditTrailMapper $auditTrailMapper,
+        ContainerInterface $container,
+        IEventDispatcher $eventDispatcher,
+        MagicMapper $objectEntityMapper,
+        PermissionHandler $permissionHandler
+    ) {
+        $this->auditTrailMapper   = $auditTrailMapper;
+        $this->container          = $container;
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->objectEntityMapper = $objectEntityMapper;
+        $this->permissionHandler  = $permissionHandler;
+    }//end __construct()
+
+    /**
      * Revert an object to a previous state
      *
      * @param string $register         The register identifier
@@ -98,12 +128,10 @@ class RevertHandler
         mixed $until,
         bool $overwriteVersion=false
     ): ObjectEntity {
-        // Get the object with context (searches across all magic tables).
+        // Get the object with RBAC and multitenancy enforced (tenant-scoped find).
         $context        = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $id,
-            includeDeleted: false,
-            _rbac: false,
-            _multitenancy: false
+            includeDeleted: false
         );
         $object         = $context['object'];
         $registerEntity = $context['register'];
@@ -112,6 +140,17 @@ class RevertHandler
         // Verify that the object belongs to the specified register and schema.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
             throw new DoesNotExistException('Object not found in specified register/schema');
+        }
+
+        // Enforce RBAC: the caller must have 'update' permission on this object.
+        if ($this->permissionHandler->hasPermission(
+            schema: $schemaEntity,
+            action: 'update',
+            object: $object
+        ) === false) {
+            throw new NotAuthorizedException(
+                message: 'You do not have permission to revert this object'
+            );
         }
 
         // Check if the object is locked.
