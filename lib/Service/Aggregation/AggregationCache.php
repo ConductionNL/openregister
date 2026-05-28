@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUserSession;
@@ -38,8 +39,9 @@ use Psr\Log\LoggerInterface;
  * Aggregation result cache.
  *
  * Reads are content-addressed by the resolved filter shape + the
- * caller's RBAC scope (current user uid + active organisation), so two
- * users in different orgs see independently scoped cached values.
+ * caller's RBAC scope (current user uid + active organisation UUID), so
+ * two users in different orgs — or the same user with a different active
+ * organisation — see independently scoped cached values.
  *
  * Writes are evicted globally for a (register, schema) pair on any
  * object-write event (Created/Updated/Deleted/Transitioned). The
@@ -65,9 +67,10 @@ class AggregationCache
     /**
      * Constructor.
      *
-     * @param ICacheFactory   $cacheFactory Factory used to create the distributed cache.
-     * @param IUserSession    $userSession  Current user session, used to scope the cache key.
-     * @param LoggerInterface $logger       Logger for backend-unavailable warnings.
+     * @param ICacheFactory      $cacheFactory        Factory used to create the distributed cache.
+     * @param IUserSession       $userSession         Current user session, used to scope the cache key.
+     * @param LoggerInterface    $logger              Logger for backend-unavailable warnings.
+     * @param OrganisationService $organisationService Organisation service, used to include active organisation in cache key.
      *
      * @return void
      *
@@ -76,7 +79,8 @@ class AggregationCache
     public function __construct(
         ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly OrganisationService $organisationService
     ) {
         try {
             $this->cache = $cacheFactory->createDistributed('openregister_aggregations');
@@ -311,13 +315,19 @@ class AggregationCache
     }//end key()
 
     /**
-     * Hash the current RBAC scope (currently: the user UID).
+     * Hash the current RBAC scope (user UID + active organisation).
      *
-     * @return string SHA-1 hash of the user UID, or of "anonymous" when no user is logged in.
+     * Including both dimensions prevents a cache hit when the same user
+     * switches active organisation between requests, or when two users in
+     * different organisations would otherwise share a cache key.
+     *
+     * @return string SHA-1 hash of "uid:orgUuid" (or "anonymous:none" for unauthenticated callers).
      */
     private function rbacScopeHash(): string
     {
-        $uid = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
-        return sha1($uid);
+        $uid    = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
+        $org    = $this->organisationService->getActiveOrganisation();
+        $orgId  = ($org !== null ? $org->getUuid() : 'none');
+        return sha1($uid.':'.$orgId);
     }//end rbacScopeHash()
 }//end class
