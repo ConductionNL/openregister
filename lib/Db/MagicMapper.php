@@ -1212,7 +1212,23 @@ class MagicMapper extends AbstractObjectMapper
                 // Translate field name to column name.
                 $columnName = $this->sanitizeColumnName(name: $field);
                 if (str_starts_with($field, '@self.') === true) {
-                    $columnName = self::METADATA_PREFIX.substr($field, 6);
+                    // Metadata fields: sanitize the bare name, then validate against
+                    // the known METADATA_PREFIX column allowlist before quoting.
+                    // Without this allowlist, raw user input was concatenated into
+                    // the UNION SQL (SQL injection via ORDER BY).
+                    $rawMetaName     = substr($field, 6);
+                    $sanitizedMeta   = $this->sanitizeColumnName(name: $rawMetaName);
+                    $candidateColumn = self::METADATA_PREFIX.$sanitizedMeta;
+                    $allowedMetadata = array_keys($this->getMetadataColumns());
+                    if (in_array($candidateColumn, $allowedMetadata, true) === false) {
+                        // Unknown metadata column - skip this ORDER BY clause entirely.
+                        continue;
+                    }
+
+                    $columnName = $this->quoteIdentifier(
+                        name: $candidateColumn,
+                        isPostgres: $isPostgres
+                    );
                 } else if (str_starts_with($field, '_') === false) {
                     // Non-metadata fields - property columns are included in UNION queries.
                     // The column must exist in the SELECT for ordering to work.
@@ -1240,8 +1256,10 @@ class MagicMapper extends AbstractObjectMapper
         }//end if
 
         // Apply LIMIT/OFFSET to final UNION result.
-        $limit     = $query['_limit'] ?? 100;
-        $offset    = $query['_offset'] ?? 0;
+        // Cast + clamp at the boundary so raw user input cannot reach the
+        // interpolated SQL string (SQL injection via _limit / _offset).
+        $limit     = max(1, min(1000, (int) ($query['_limit'] ?? 100)));
+        $offset    = max(0, (int) ($query['_offset'] ?? 0));
         $unionSql .= " LIMIT {$limit} OFFSET {$offset}";
 
         // Execute the combined query.
