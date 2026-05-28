@@ -390,24 +390,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															<FormatListChecks :size="20" />
 														</template>
 														<NcActionButton
-															:disabled="publishLoading.length > 0 || selectedAttachments.length === 0"
-															@click="publishSelectedFiles">
-															<template #icon>
-																<NcLoadingIcon v-if="publishLoading.length > 0" :size="20" />
-																<FileOutline v-else :size="20" />
-															</template>
-															Publish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
-														</NcActionButton>
-														<NcActionButton
-															:disabled="depublishLoading.length > 0 || selectedAttachments.length === 0"
-															@click="depublishSelectedFiles">
-															<template #icon>
-																<NcLoadingIcon v-if="depublishLoading.length > 0" :size="20" />
-																<LockOutline v-else :size="20" />
-															</template>
-															Depublish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
-														</NcActionButton>
-														<NcActionButton
 															:disabled="fileIdsLoading.length > 0 || selectedAttachments.length === 0"
 															@click="deleteSelectedFiles">
 															<template #icon>
@@ -492,26 +474,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 																<Tag :size="20" />
 															</template>
 															Labels
-														</NcActionButton>
-														<NcActionButton
-															v-if="!attachment.accessUrl && !attachment.downloadUrl"
-															:disabled="publishLoading.includes(attachment.id)"
-															@click="publishFile(attachment)">
-															<template #icon>
-																<NcLoadingIcon v-if="publishLoading.includes(attachment.id)" :size="20" />
-																<FileOutline v-else :size="20" />
-															</template>
-															Publish
-														</NcActionButton>
-														<NcActionButton
-															v-else
-															:disabled="depublishLoading.includes(attachment.id)"
-															@click="depublishFile(attachment)">
-															<template #icon>
-																<NcLoadingIcon v-if="depublishLoading.includes(attachment.id)" :size="20" />
-																<LockOutline v-else :size="20" />
-															</template>
-															Depublish
 														</NcActionButton>
 														<NcActionButton
 															:disabled="fileIdsLoading.includes(attachment.id)"
@@ -718,8 +680,6 @@ export default {
 			objectEditors: {},
 			tabOptions: ['Properties', 'Metadata', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
 			selectedAttachments: [],
-			publishLoading: [],
-			depublishLoading: [],
 			fileIdsLoading: [],
 			editingLabelsFileId: null,
 			editingLabels: [],
@@ -902,71 +862,10 @@ export default {
 			return { ...schema, properties: { ...inherited, ...(schema.properties || {}) } }
 		},
 		/**
-		 * @spec exclude computed count of selected published files
-		 */
-		selectedPublishedCount() {
-			return this.selectedAttachments.filter((a) => {
-				const found = objectStore.files.results
-					?.find(item => item.id === a)
-				if (!found) return false
-
-				return !!found.published
-			}).length
-		},
-		/**
-		 * @spec exclude computed count of selected unpublished files
-		 */
-		selectedUnpublishedCount() {
-			return this.selectedAttachments.filter((a) => {
-				const found = objectStore.files.results
-					?.find(item => item.id === a)
-				if (!found) return false
-				return found.published === null
-			}).length
-		},
-		/**
-		 * @spec exclude computed select-all state for published files
-		 */
-		allPublishedSelected() {
-			const published = objectStore.files.results
-				?.filter(item => !!item.published)
-				.map(item => item.id) || []
-
-			if (!published.length) {
-				return false
-			}
-			return published.every(pubId => this.selectedAttachments.includes(pubId))
-		},
-		/**
-		 * @spec exclude computed select-all state for unpublished files
-		 */
-		allUnpublishedSelected() {
-			const unpublished = objectStore.files.results
-				?.filter(item => !item.published)
-				.map(item => item.id) || []
-
-			if (!unpublished.length) {
-				return false
-			}
-			return unpublished.every(unpubId => this.selectedAttachments.includes(unpubId))
-		},
-		/**
 		 * @spec exclude computed aggregate loading flag for file actions
 		 */
 		loading() {
-			return this.publishLoading.length > 0 || this.depublishLoading.length > 0 || this.fileIdsLoading.length > 0
-		},
-		/**
-		 * @spec exclude computed flag whether any file is published
-		 */
-		filesHasPublished() {
-			return objectStore.files.results?.some(item => !!item.published)
-		},
-		/**
-		 * @spec exclude computed flag whether any file is unpublished
-		 */
-		filesHasUnpublished() {
-			return objectStore.files.results?.some(item => !item.published)
+			return this.fileIdsLoading.length > 0
 		},
 		/**
 		 * @spec exclude computed pagination slice of files
@@ -1767,8 +1666,6 @@ export default {
 		// shared-store batchFiles action (one POST to /files/batch); falls
 		// back to N sequential single-file calls when the runtime store
 		// doesn't expose batchFiles yet (older @conduction/nextcloud-vue).
-		// Per-action callbacks let callers swap in publishFile / unpublishFile
-		// / deleteFile for the legacy fallback path.
 		/**
 		 * @spec exclude file batch-action dispatch helper delegating to objectStore.batchFiles
 		 */
@@ -1785,46 +1682,6 @@ export default {
 			// Legacy fallback: loop the per-file action.
 			for (const fileId of fileIds) {
 				await perFileFallback(type, objectId, fileId)
-			}
-		},
-		/**
-		 * @spec exclude bulk file-publish handler delegating to objectStore
-		 */
-		async publishSelectedFiles() {
-			if (this.selectedAttachments.length === 0) return
-
-			try {
-				this.publishLoading = [...this.selectedAttachments]
-				await this._runBatchAction(
-					'publish',
-					(type, objectId, fileId) => objectStore.publishFile(type, objectId, fileId),
-				)
-				this.selectedAttachments = []
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Error publishing files:', error)
-			} finally {
-				this.publishLoading = []
-			}
-		},
-		/**
-		 * @spec exclude bulk file-depublish handler delegating to objectStore
-		 */
-		async depublishSelectedFiles() {
-			if (this.selectedAttachments.length === 0) return
-
-			try {
-				this.depublishLoading = [...this.selectedAttachments]
-				await this._runBatchAction(
-					'depublish',
-					(type, objectId, fileId) => objectStore.unpublishFile(type, objectId, fileId),
-				)
-				this.selectedAttachments = []
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Error depublishing files:', error)
-			} finally {
-				this.depublishLoading = []
 			}
 		},
 		/**
@@ -1845,36 +1702,6 @@ export default {
 				console.error('Failed to delete selected files:', error)
 			} finally {
 				this.fileIdsLoading = []
-			}
-		},
-		/**
-		 * @spec exclude single file-publish handler delegating to objectStore.publishFile
-		 */
-		async publishFile(file) {
-			try {
-				this.publishLoading.push(file.id)
-				const { type, objectId } = this._getFileParams()
-				await objectStore.publishFile(type, objectId, file.id)
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Failed to publish file:', error)
-			} finally {
-				this.publishLoading = this.publishLoading.filter(id => id !== file.id)
-			}
-		},
-		/**
-		 * @spec exclude single file-depublish handler delegating to objectStore.unpublishFile
-		 */
-		async depublishFile(file) {
-			try {
-				this.depublishLoading.push(file.id)
-				const { type, objectId } = this._getFileParams()
-				await objectStore.unpublishFile(type, objectId, file.id)
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Failed to depublish file:', error)
-			} finally {
-				this.depublishLoading = this.depublishLoading.filter(id => id !== file.id)
 			}
 		},
 		/**
