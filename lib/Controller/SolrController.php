@@ -389,6 +389,8 @@ class SolrController extends Controller
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
+     *
+     * @NoAdminRequired
      */
     public function testVectorEmbedding(): JSONResponse
     {
@@ -1037,6 +1039,8 @@ class SolrController extends Controller
      * >
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
+     *
+     * @NoAdminRequired
      */
     public function bulkVectorizeObjects(
         ?int $schemaId=null,
@@ -1170,6 +1174,8 @@ class SolrController extends Controller
      * >
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
+     *
+     * @NoAdminRequired
      */
     public function getVectorizationStats(): JSONResponse
     {

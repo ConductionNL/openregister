@@ -14,6 +14,7 @@
  * @package  OCA\OpenRegister\Service\Reporting
  *
  * @author  Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app

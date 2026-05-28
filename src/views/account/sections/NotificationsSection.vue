@@ -12,7 +12,8 @@
 			</div>
 			<div class="notifications-section__digest">
 				<label for="email-digest">{{ t('openregister', 'Email digest frequency') }}</label>
-				<NcSelect v-model="prefs.emailDigest"
+				<NcSelect
+						input-label="Prefs Email Digest" v-model="prefs.emailDigest"
 					:options="digestOptions"
 					input-id="email-digest"
 					@input="save" />

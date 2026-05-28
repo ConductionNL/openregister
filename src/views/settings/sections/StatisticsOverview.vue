@@ -363,34 +363,12 @@
 		</SettingsSection>
 
 		<!-- Rebase Confirmation Dialog -->
-		<NcDialog v-if="showRebaseConfirmation"
+		<RebaseConfirmationDialog
+			v-if="showRebaseConfirmation"
 			:open="showRebaseConfirmation"
-			name="Confirm Rebase Operation"
-			@closing="settingsStore.hideRebaseDialog">
-			<div class="rebase-dialog-content">
-				<h3>⚠️ Confirm Rebase Operation</h3>
-				<p>
-					This operation will recalculate deletion times for all objects and logs based on current retention settings.
-					It will also assign default owners and organizations to objects that don't have them assigned.
-				</p>
-				<p><strong>This operation may take some time to complete.</strong></p>
-
-				<div class="dialog-actions">
-					<NcButton @click="settingsStore.hideRebaseDialog">
-						Cancel
-					</NcButton>
-					<NcButton type="error"
-						:disabled="rebasing"
-						@click="settingsStore.confirmRebase">
-						<template #icon>
-							<NcLoadingIcon v-if="rebasing" :size="20" />
-							<Refresh v-else :size="20" />
-						</template>
-						{{ rebasing ? 'Rebasing...' : 'Confirm Rebase' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:rebasing="rebasing"
+			@closing="settingsStore.hideRebaseDialog"
+			@confirm="settingsStore.confirmRebase" />
 
 		<!-- Mass Validate Modal -->
 		<MassValidateModal
@@ -408,100 +386,31 @@
 			@reset="handleResetMassValidate" />
 
 		<!-- Clear Audit Trails Confirmation Dialog -->
-		<NcDialog v-if="showClearAuditTrailsConfirmation"
+		<ClearAuditTrailsDialog
+			v-if="showClearAuditTrailsConfirmation"
 			:open="showClearAuditTrailsConfirmation"
-			name="Confirm Clear Audit Trails"
-			@closing="hideClearAuditTrailsDialog">
-			<div class="clear-dialog-content">
-				<h3>⚠️ Confirm Clear All Audit Trails</h3>
-				<p>
-					This operation will permanently delete all audit trail logs from the database.
-					This action cannot be undone.
-				</p>
-				<p><strong>Current audit trails: {{ stats.totals.totalAuditTrails }}</strong></p>
-				<p><strong>This operation may take some time to complete.</strong></p>
-
-				<div class="dialog-actions">
-					<NcButton @click="hideClearAuditTrailsDialog">
-						Cancel
-					</NcButton>
-					<NcButton type="error"
-						:disabled="clearingAuditTrails"
-						@click="clearAllAuditTrails">
-						<template #icon>
-							<NcLoadingIcon v-if="clearingAuditTrails" :size="20" />
-							<Delete v-else :size="20" />
-						</template>
-						{{ clearingAuditTrails ? 'Clearing...' : 'Confirm Clear All' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:clearing="clearingAuditTrails"
+			:total-audit-trails="stats.totals.totalAuditTrails"
+			@closing="hideClearAuditTrailsDialog"
+			@confirm="clearAllAuditTrails" />
 
 		<!-- Clear Search Trails Confirmation Dialog -->
-		<NcDialog v-if="showClearSearchTrailsConfirmation"
+		<ClearSearchTrailsDialog
+			v-if="showClearSearchTrailsConfirmation"
 			:open="showClearSearchTrailsConfirmation"
-			name="Confirm Clear Search Trails"
-			@closing="hideClearSearchTrailsDialog">
-			<div class="clear-dialog-content">
-				<h3>⚠️ Confirm Clear All Search Trails</h3>
-				<p>
-					This operation will permanently delete all search trail logs from the database.
-					This action cannot be undone.
-				</p>
-				<p><strong>Current search trails: {{ stats.totals.totalSearchTrails }}</strong></p>
-				<p><strong>This operation may take some time to complete.</strong></p>
-
-				<div class="dialog-actions">
-					<NcButton @click="hideClearSearchTrailsDialog">
-						Cancel
-					</NcButton>
-					<NcButton type="error"
-						:disabled="clearingSearchTrails"
-						@click="clearAllSearchTrails">
-						<template #icon>
-							<NcLoadingIcon v-if="clearingSearchTrails" :size="20" />
-							<Delete v-else :size="20" />
-						</template>
-						{{ clearingSearchTrails ? 'Clearing...' : 'Confirm Clear All' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:clearing="clearingSearchTrails"
+			:total-search-trails="stats.totals.totalSearchTrails"
+			@closing="hideClearSearchTrailsDialog"
+			@confirm="clearAllSearchTrails" />
 
 		<!-- Clear Blob Objects Confirmation Dialog -->
-		<NcDialog v-if="showClearBlobObjectsConfirmation"
+		<ClearBlobObjectsDialog
+			v-if="showClearBlobObjectsConfirmation"
 			:open="showClearBlobObjectsConfirmation"
-			name="Confirm Clear Blob Objects"
-			@closing="hideClearBlobObjectsDialog">
-			<div class="clear-dialog-content">
-				<h3>⚠️ Confirm Clear All Blob Storage Objects</h3>
-				<p>
-					This operation will permanently delete all objects stored in blob storage mode from the database.
-					Magic Mapper objects will NOT be affected.
-				</p>
-				<p><strong>Current blob storage objects: {{ stats.totals.totalBlobObjects }}</strong></p>
-				<p class="warning-text">
-					⚠️ This action cannot be undone!
-				</p>
-				<p><strong>This operation may take some time to complete.</strong></p>
-
-				<div class="dialog-actions">
-					<NcButton @click="hideClearBlobObjectsDialog">
-						Cancel
-					</NcButton>
-					<NcButton type="error"
-						:disabled="clearingBlobObjects"
-						@click="clearAllBlobObjects">
-						<template #icon>
-							<NcLoadingIcon v-if="clearingBlobObjects" :size="20" />
-							<Delete v-else :size="20" />
-						</template>
-						{{ clearingBlobObjects ? 'Clearing...' : 'Confirm Clear All' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:clearing="clearingBlobObjects"
+			:total-blob-objects="stats.totals.totalBlobObjects"
+			@closing="hideClearBlobObjectsDialog"
+			@confirm="clearAllBlobObjects" />
 	</div>
 </template>
 
@@ -509,11 +418,15 @@
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import MassValidateModal from '../../../modals/settings/MassValidateModal.vue'
+import RebaseConfirmationDialog from '../../../dialogs/settings/RebaseConfirmationDialog.vue'
+import ClearAuditTrailsDialog from '../../../dialogs/settings/ClearAuditTrailsDialog.vue'
+import ClearSearchTrailsDialog from '../../../dialogs/settings/ClearSearchTrailsDialog.vue'
+import ClearBlobObjectsDialog from '../../../dialogs/settings/ClearBlobObjectsDialog.vue'
 
 export default {
 	name: 'StatisticsOverview',
@@ -522,11 +435,14 @@ export default {
 		SettingsSection,
 		NcButton,
 		NcLoadingIcon,
-		NcDialog,
 		Refresh,
 		CheckCircle,
 		Delete,
 		MassValidateModal,
+		RebaseConfirmationDialog,
+		ClearAuditTrailsDialog,
+		ClearSearchTrailsDialog,
+		ClearBlobObjectsDialog,
 	},
 
 	data() {
@@ -1126,47 +1042,5 @@ export default {
 	.button-group {
 		justify-content: center;
 	}
-}
-
-.rebase-dialog-content {
-	padding: 20px;
-}
-
-.rebase-dialog-content h3 {
-	color: var(--color-text-light);
-	margin: 0 0 16px 0;
-}
-
-.rebase-dialog-content p {
-	color: var(--color-text-light);
-	line-height: 1.5;
-	margin: 0 0 12px 0;
-}
-
-.dialog-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 24px;
-}
-
-.clear-dialog-content {
-	padding: 20px;
-}
-
-.clear-dialog-content h3 {
-	color: var(--color-text-light);
-	margin: 0 0 16px 0;
-}
-
-.clear-dialog-content p {
-	color: var(--color-text-light);
-	line-height: 1.5;
-	margin: 0 0 12px 0;
-}
-
-.clear-dialog-content .warning-text {
-	color: var(--color-error);
-	font-weight: 600;
 }
 </style>

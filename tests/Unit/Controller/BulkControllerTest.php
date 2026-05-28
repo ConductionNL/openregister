@@ -594,12 +594,12 @@ class BulkControllerTest extends TestCase
     }
 
     // ========================================================================
-    // validateSchema() tests
+    // runSchemaValidation() tests
     // ========================================================================
 
     public function testValidateSchemaInvalidId(): void
     {
-        $result = $this->controller->validateSchema('abc');
+        $result = $this->controller->runSchemaValidation('abc');
 
         $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
         $data = $result->getData();
@@ -612,7 +612,7 @@ class BulkControllerTest extends TestCase
         $this->objectService->method('validateObjectsBySchema')
             ->willReturn($validationResult);
 
-        $result = $this->controller->validateSchema('1');
+        $result = $this->controller->runSchemaValidation('1');
 
         $this->assertEquals(Http::STATUS_OK, $result->getStatus());
         $data = $result->getData();
@@ -625,7 +625,7 @@ class BulkControllerTest extends TestCase
         $this->objectService->method('validateObjectsBySchema')
             ->willThrowException(new \Exception('Validation error'));
 
-        $result = $this->controller->validateSchema('1');
+        $result = $this->controller->runSchemaValidation('1');
 
         $this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
         $data = $result->getData();

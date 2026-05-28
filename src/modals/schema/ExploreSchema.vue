@@ -143,6 +143,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<div class="filter-section">
 						<label class="filter-label">{{ t('openregister', 'Confidence Level') }}</label>
 						<NcSelect
+						input-label="Confidence Filter"
 							v-model="confidenceFilter"
 							:options="confidenceFilterOptions" />
 					</div>
@@ -150,6 +151,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<div class="filter-section">
 						<label class="filter-label">{{ t('openregister', 'Property Type') }}</label>
 						<NcSelect
+						input-label="Type Filter"
 							v-model="typeFilter"
 							:options="typeFilterOptions" />
 					</div>

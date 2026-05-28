@@ -557,7 +557,7 @@ class ConfigurationController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
-    public function checkVersion(int $id): JSONResponse
+    public function versionStatus(int $id): JSONResponse
     {
         try {
             $configuration = $this->configurationMapper->find($id);
@@ -596,7 +596,7 @@ class ConfigurationController extends Controller
 
             return new JSONResponse(data: ['error' => 'Failed to check version'], statusCode: 500);
         }//end try
-    }//end checkVersion()
+    }//end versionStatus()
 
     /**
      * Preview configuration changes.

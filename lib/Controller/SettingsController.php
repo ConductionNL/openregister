@@ -863,6 +863,8 @@ class SettingsController extends Controller
      * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps
      *              organisation/object data; not a product contract (see proposal Notes — routed debug surface,
      *              information-disclosure risk).
+     *
+     * @NoAdminRequired
      */
     public function debugTypeFiltering(): JSONResponse
     {

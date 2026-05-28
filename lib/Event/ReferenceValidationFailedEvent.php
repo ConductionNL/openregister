@@ -23,6 +23,7 @@
  * @package  OCA\OpenRegister\Event
  *
  * @author  Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app

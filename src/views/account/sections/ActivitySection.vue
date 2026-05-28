@@ -2,7 +2,8 @@
 	<div class="section">
 		<h2>{{ t('openregister', 'Activity') }}</h2>
 		<div class="activity-section__filters">
-			<NcSelect v-model="typeFilter"
+			<NcSelect
+						input-label="Type Filter" v-model="typeFilter"
 				:options="typeOptions"
 				:placeholder="t('openregister', 'Filter by type')"
 				@input="loadActivity" />

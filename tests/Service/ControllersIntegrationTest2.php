@@ -1402,14 +1402,14 @@ class ControllersIntegrationTest2 extends TestCase
     }//end testBulkControllerDeleteRegisterNonNumeric()
 
     /**
-     * Test BulkController::validateSchema with non-numeric schema
+     * Test BulkController::runSchemaValidation with non-numeric schema
      *
      * @return void
      */
     public function testBulkControllerValidateSchemaNonNumeric(): void
     {
         $controller = $this->buildBulkController();
-        $response   = $controller->validateSchema('not-numeric');
+        $response   = $controller->runSchemaValidation('not-numeric');
         $data       = $response->getData();
 
         $this->assertSame(400, $response->getStatus());
