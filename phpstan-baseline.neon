@@ -1071,27 +1071,32 @@ parameters:
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, errors\\: array\\<string, mixed\\>\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, errors\\: array\\<string, mixed\\>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ObjectsController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<401, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
