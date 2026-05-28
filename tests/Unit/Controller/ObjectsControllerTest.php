@@ -2270,27 +2270,26 @@ class ObjectsControllerTest extends TestCase
     }
 
     /**
-     * Test create() with no user session (returns isAdmin=false, rbac=true).
+     * Test create() with no user session — anonymous writes must be rejected.
+     *
+     * Pre-wave-3-C13 this test asserted 201 (anonymous create succeeded).
+     * The C13 fix short-circuits anonymous writes with 401 BEFORE the webhook
+     * intercept runs — see ObjectsController::create(). The test is preserved
+     * as a regression guard: if someone accidentally removes the auth guard,
+     * this test (and testCreateRejectsAnonymousWith401) will catch it.
      */
-    public function testCreateWithNoUserSessionReturns201OnSuccess(): void
+    public function testCreateWithNoUserSessionReturns401(): void
     {
         $this->userSession->method('getUser')->willReturn(null);
 
-        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-        $objectEntity->setUuid('new-uuid');
-        $objectEntity->setObject(['title' => 'Created']);
-
+        // The mocks below are intentionally left untouched — none of them
+        // should be reached because the anonymous guard short-circuits.
         $this->request->method('getParams')->willReturn(['title' => 'Public']);
         $this->request->method('getHeader')->willReturn('application/json');
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('getRegister')->willReturn(1);
-        $this->objectService->method('getSchema')->willReturn(2);
-        $this->objectService->method('saveObject')->willReturn($objectEntity);
 
         $result = $this->controller->create('1', '2', $this->objectService);
 
-        $this->assertSame(201, $result->getStatus());
+        $this->assertSame(401, $result->getStatus());
     }
 
     // =========================================================================
@@ -6982,5 +6981,86 @@ class ObjectsControllerTest extends TestCase
         $data = $result->getData();
         // registerEntity is null (DI mapper throws), so registers is empty and stripped
         $this->assertArrayHasKey('@self', $data);
+    }
+
+    // =========================================================================
+    // Wave-3 C13: anonymous-write must not reach the webhook intercept
+    //
+    // ObjectsController::create() and postPatch() are #[PublicPage] so that
+    // anonymous reads can survive an app-group restriction (per
+    // /openspec/.../register-schema-read-accessibility). The bug: writes
+    // shared that public attribute, AND the create() handler invoked
+    // webhookService->interceptRequest() before any auth/RBAC check. Result:
+    // an anonymous POST would fire the pre-event webhook (with side effects
+    // in n8n flows, file ingest, audit logs) BEFORE the request was rejected.
+    //
+    // The fix short-circuits anonymous callers at the top of create() and
+    // postPatch() with a 401, BEFORE the webhook intercept runs. These tests
+    // verify (a) anonymous gets 401, (b) the webhook is never invoked.
+    // =========================================================================
+
+    /**
+     * Configure userSession to report an anonymous (no signed-in) caller.
+     */
+    private function setupAnonymousUser(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+    }
+
+    public function testCreateRejectsAnonymousWith401(): void
+    {
+        $this->setupAnonymousUser();
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    public function testCreateAnonymousDoesNotInvokeWebhookIntercept(): void
+    {
+        // The whole point of the C13 fix: webhook MUST NOT fire for
+        // unauthenticated writes — even though the endpoint is @PublicPage.
+        $this->setupAnonymousUser();
+
+        $this->webhookService->expects($this->never())->method('interceptRequest');
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testCreateAnonymousDoesNotInvokeSaveObject(): void
+    {
+        $this->setupAnonymousUser();
+
+        // Sanity: the request short-circuits before any business logic.
+        $this->objectService->expects($this->never())->method('saveObject');
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testPostPatchRejectsAnonymousWith401(): void
+    {
+        $this->setupAnonymousUser();
+
+        $result = $this->controller->postPatch('reg', 'schema', 'uuid-1', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testPostPatchAnonymousDoesNotInvokeSaveObject(): void
+    {
+        $this->setupAnonymousUser();
+
+        $this->objectService->expects($this->never())->method('saveObject');
+        $this->objectService->expects($this->never())->method('findSilent');
+
+        $result = $this->controller->postPatch('reg', 'schema', 'uuid-1', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
     }
 }
