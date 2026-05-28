@@ -47,6 +47,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<div class="groups-select-container">
 								<label class="groups-label">{{ t('openregister', 'Nextcloud Groups') }}</label>
 								<NcSelect
+						input-label="Selected Groups"
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
@@ -299,6 +300,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
+						input-label="Selected Special Rights Object Publish"
 																v-model="selectedSpecialRights.object_publish"
 																:options="filteredAvailableGroups"
 																label="name"
@@ -317,6 +319,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
+						input-label="Selected Special Rights Agent Use"
 																v-model="selectedSpecialRights.agent_use"
 																:options="filteredAvailableGroups"
 																label="name"
@@ -335,6 +338,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
+						input-label="Selected Special Rights Dashboard View"
 																v-model="selectedSpecialRights.dashboard_view"
 																:options="filteredAvailableGroups"
 																label="name"
@@ -353,6 +357,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
+						input-label="Selected Special Rights Llm Use"
 																v-model="selectedSpecialRights.llm_use"
 																:options="filteredAvailableGroups"
 																label="name"

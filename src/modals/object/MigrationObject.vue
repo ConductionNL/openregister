@@ -104,6 +104,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<div class="selection-section">
 				<h4>Target Register</h4>
 				<NcSelect
+						input-label="Target Register"
 					v-model="targetRegister"
 					:options="availableRegisters"
 					label="title"
@@ -116,6 +117,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<div v-if="targetRegister" class="selection-section">
 				<h4>Target Schema</h4>
 				<NcSelect
+						input-label="Target Schema"
 					v-model="targetSchema"
 					:options="availableSchemas"
 					label="title"
@@ -163,6 +165,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						</div>
 						<div class="target-property">
 							<NcSelect
+						input-label="Ui Mappings[Source Property Name]"
 								v-model="uiMappings[sourceProperty.name]"
 								:options="targetPropertyOptions"
 								label="label"

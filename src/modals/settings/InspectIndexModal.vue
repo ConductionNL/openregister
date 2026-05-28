@@ -40,6 +40,7 @@ import { translate as t } from '@nextcloud/l10n'
 
 				<div class="filter-row">
 					<NcSelect
+						input-label="Selected Fields"
 						v-model="selectedFields"
 						:options="availableFields"
 						:label="t('openregister', 'Fields to Display')"

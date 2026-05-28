@@ -62,7 +62,8 @@ import { translate as t } from '@nextcloud/l10n'
 				<!-- File Type Filter -->
 				<div class="form-group">
 					<label>{{ t('openregister', 'File Types to Process') }}</label>
-					<NcSelect v-model="config.selectedFileTypes"
+					<NcSelect
+						input-label="Config Selected File Types" v-model="config.selectedFileTypes"
 						:options="fileTypeOptions"
 						:multiple="true"
 						:label-outside="true"

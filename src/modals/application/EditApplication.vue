@@ -44,6 +44,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 							<div class="groups-select-container">
 								<label class="groups-label">Nextcloud Groups</label>
 								<NcSelect
+						input-label="Selected Groups"
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"

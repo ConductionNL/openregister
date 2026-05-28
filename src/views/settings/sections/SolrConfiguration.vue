@@ -620,6 +620,7 @@ import { translate as t } from '@nextcloud/l10n'
 									:placeholder="t('openregister', 'Filter fields...')"
 									class="field-filter">
 								<NcSelect
+						input-label="Field Type Filter"
 									v-model="fieldTypeFilter"
 									:options="fieldTypeOptions"
 									:placeholder="t('openregister', 'Filter by type')"

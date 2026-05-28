@@ -40,6 +40,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="type-select">{{ t('openregister', 'Type') }}</label>
 							<NcSelect
+						input-label="Selected Type"
 								id="type-select"
 								v-model="selectedType"
 								:options="typeOptions"
@@ -85,6 +86,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="registers-select">{{ t('openregister', 'Registers') }}</label>
 							<NcSelect
+						input-label="Selected Registers"
 								id="registers-select"
 								v-model="selectedRegisters"
 								:options="registerOptions"
@@ -117,6 +119,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="schemas-select">{{ t('openregister', 'Schemas') }}</label>
 							<NcSelect
+						input-label="Selected Schemas"
 								id="schemas-select"
 								v-model="selectedSchemas"
 								:options="schemaOptions"
@@ -149,6 +152,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="objects-select">{{ t('openregister', 'Objects') }}</label>
 							<NcSelect
+						input-label="Selected Objects"
 								id="objects-select"
 								v-model="selectedObjects"
 								:options="objectOptions"
@@ -184,6 +188,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="sources-select">{{ t('openregister', 'Data Sources') }}</label>
 							<NcSelect
+						input-label="Selected Sources"
 								id="sources-select"
 								v-model="selectedSources"
 								:options="sourceOptions"
@@ -216,6 +221,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="agents-select">{{ t('openregister', 'Agents') }}</label>
 							<NcSelect
+						input-label="Selected Agents"
 								id="agents-select"
 								v-model="selectedAgents"
 								:options="agentOptions"
@@ -248,6 +254,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="views-select">{{ t('openregister', 'Views') }}</label>
 							<NcSelect
+						input-label="Selected Views"
 								id="views-select"
 								v-model="selectedViews"
 								:options="viewOptions"
@@ -280,6 +287,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="managed-applications-select">Applications</label>
 							<NcSelect
+						input-label="Selected Managed Applications"
 								id="managed-applications-select"
 								v-model="selectedManagedApplications"
 								:options="applicationOptions"
@@ -322,6 +330,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="source-type-select">Source Type *</label>
 							<NcSelect
+						input-label="Selected Source Type"
 								id="source-type-select"
 								v-model="selectedSourceType"
 								:options="sourceTypeOptions"
@@ -366,6 +375,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="application-select">Owner Application</label>
 							<NcSelect
+						input-label="Selected Application"
 								id="application-select"
 								v-model="selectedApplication"
 								:options="applicationOptions"
@@ -423,6 +433,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="notification-groups-select">Notification Groups</label>
 							<NcSelect
+						input-label="Selected Notification Groups"
 								id="notification-groups-select"
 								v-model="selectedNotificationGroups"
 								:options="notificationGroupOptions"

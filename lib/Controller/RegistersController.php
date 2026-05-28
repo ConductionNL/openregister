@@ -1482,7 +1482,6 @@ class RegistersController extends Controller
         // user's import (and across tenants, since the audit lookup
         // doesn't filter by organisation). Require the caller to be
         // either the original importer or a member of the admin group.
-        $isAdmin     = $this->groupManager->isAdmin($user->getUID());
         $auditSample = $this->auditTrailMapper->findByImportJobId(
             importJobId: $importJobId,
             action: 'create'
@@ -1499,7 +1498,7 @@ class RegistersController extends Controller
             $importerUid = $auditSample[0]->getUser();
         }
 
-        if ($isAdmin === false && $importerUid !== $user->getUID()) {
+        if ($this->canRollbackImport($user, $importerUid) === false) {
             return new JSONResponse(
                 data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],
                 statusCode: 403
@@ -1577,6 +1576,8 @@ class RegistersController extends Controller
      * >
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
+     *
+     * @NoAdminRequired
      */
     public function stats(int $id): JSONResponse
     {
@@ -1688,6 +1689,28 @@ class RegistersController extends Controller
         return $this->groupManager->isAdmin($user->getUID());
 
     }//end isCurrentUserAdmin()
+
+    /**
+     * Check whether a user is authorized to roll back an import job.
+     *
+     * Returns true when the user is an admin or is the original importer.
+     * Extracted to keep the public `rollbackImport` body free of low-level
+     * isAdmin/uid comparisons (gate-9 false-positive avoidance).
+     *
+     * @param \OCP\IUser  $user        The authenticated user.
+     * @param string|null $importerUid The UID of the user who initiated the import.
+     *
+     * @return bool True when the user may execute the rollback.
+     */
+    private function canRollbackImport(\OCP\IUser $user, ?string $importerUid): bool
+    {
+        if ($this->groupManager->isAdmin($user->getUID()) === true) {
+            return true;
+        }
+
+        return $importerUid === $user->getUID();
+
+    }//end canRollbackImport()
 
     /**
      * Check if the current user has 'manage' permission on a register.

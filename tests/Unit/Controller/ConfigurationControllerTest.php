@@ -207,7 +207,7 @@ class ConfigurationControllerTest extends TestCase
         $this->configurationMapper->method('find')
             ->willThrowException(new DoesNotExistException('not found'));
 
-        $result = $this->controller->checkVersion(999);
+        $result = $this->controller->versionStatus(999);
 
         $this->assertEquals(404, $result->getStatus());
     }
@@ -222,7 +222,7 @@ class ConfigurationControllerTest extends TestCase
             'remote' => '1.0.1',
         ]);
 
-        $result = $this->controller->checkVersion(1);
+        $result = $this->controller->versionStatus(1);
 
         $this->assertEquals(200, $result->getStatus());
     }
@@ -402,7 +402,7 @@ class ConfigurationControllerTest extends TestCase
         $this->configurationMapper->method('find')->willReturn($config);
         $this->configurationService->method('checkRemoteVersion')->willReturn(null);
 
-        $result = $this->controller->checkVersion(1);
+        $result = $this->controller->versionStatus(1);
 
         $this->assertEquals(500, $result->getStatus());
     }
@@ -414,7 +414,7 @@ class ConfigurationControllerTest extends TestCase
         $this->configurationService->method('checkRemoteVersion')
             ->willThrowException(new \Exception('Version check failed'));
 
-        $result = $this->controller->checkVersion(1);
+        $result = $this->controller->versionStatus(1);
 
         $this->assertEquals(500, $result->getStatus());
     }

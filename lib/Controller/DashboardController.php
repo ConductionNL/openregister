@@ -264,6 +264,8 @@ class DashboardController extends Controller
      * >
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-6
+     *
+     * @NoAdminRequired
      */
     public function index(): JSONResponse
     {

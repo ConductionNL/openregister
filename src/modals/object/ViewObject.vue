@@ -23,6 +23,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableRegisters.length > 1" class="field-group">
 								<label for="register-select">{{ t('openregister', 'Register') }}</label>
 								<NcSelect
+						input-label="Selected Register For New Object"
 									id="register-select"
 									v-model="selectedRegisterForNewObject"
 									:options="availableRegisters"
@@ -35,6 +36,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableSchemas.length > 1" class="field-group">
 								<label for="schema-select">{{ t('openregister', 'Schema') }}</label>
 								<NcSelect
+						input-label="Selected Schema For New Object"
 									id="schema-select"
 									v-model="selectedSchemaForNewObject"
 									:options="availableSchemas"

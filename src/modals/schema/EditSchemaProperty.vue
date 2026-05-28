@@ -36,10 +36,12 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 				:value.sync="properties.title" />
 
 			<div class="ASP-selectContainer">
-				<NcSelect v-bind="typeOptions"
+				<NcSelect
+						input-label="Properties Type" v-bind="typeOptions"
 					v-model="properties.type" />
 
 				<NcSelect
+						input-label="Properties Format"
 					v-bind="formatOptions"
 					v-model="properties.format"
 					:disabled="properties.type !== 'string'" />
@@ -50,6 +52,7 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 					{{ t('openregister', 'Object Configuration:') }}
 				</div>
 				<NcSelect
+						input-label="Properties Object Configuration Handling"
 					v-model="properties.objectConfiguration.handling"
 					v-bind="objectConfiguration.handling" />
 				<NcSelect
@@ -104,6 +107,7 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 			<!-- File configuration -->
 			<div v-if="properties.type === 'file'" class="ASP-selectContainer">
 				<NcSelect
+						input-label="Properties File Configuration Handling"
 					v-bind="fileConfiguration.handling"
 					v-model="properties.fileConfiguration.handling"
 					:label="t('openregister', 'File Handling')" />
@@ -453,7 +457,8 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 				</h5>
 
 				<div class="ASP-selectContainer">
-					<NcSelect v-bind="itemsTypeOptions"
+					<NcSelect
+						input-label="Properties Items Type" v-bind="itemsTypeOptions"
 						v-model="properties.items.type" />
 				</div>
 
@@ -463,6 +468,7 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 						{{ t('openregister', 'Array Object Configuration:') }}
 					</div>
 					<NcSelect
+						input-label="Properties Object Configuration Handling"
 						v-model="properties.objectConfiguration.handling"
 						v-bind="objectConfiguration.handling" />
 					<NcSelect

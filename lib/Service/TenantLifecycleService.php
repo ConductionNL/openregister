@@ -120,6 +120,14 @@ class TenantLifecycleService
      */
     public function validateTransition(string $currentStatus, string $targetStatus): void
     {
+        // Validate that both statuses are known before checking transition.
+        if ($this->isValidStatus($currentStatus) === false || $this->isValidStatus($targetStatus) === false) {
+            throw new Exception(
+                sprintf("Unknown status '%s' or '%s'.", $currentStatus, $targetStatus),
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
         $allowedTransitions = self::STATE_TRANSITIONS[$currentStatus] ?? [];
 
         if (in_array($targetStatus, $allowedTransitions, true) === false) {
@@ -172,6 +180,24 @@ class TenantLifecycleService
         }
 
         $slug = $organisation->getSlug() ?? 'org';
+
+        // Validate that the organisation's target environment is a known OTAP stage.
+        $env = $organisation->getEnvironment() ?? self::ENV_PRODUCTION;
+        if ($this->isValidEnvironment($env) === false) {
+            throw new Exception(
+                sprintf("Unknown target environment '%s'.", $env),
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        // If a source environment is set, validate the promotion order.
+        $sourceEnv = $organisation->getEnvironment() ?? null;
+        if ($sourceEnv !== null && $sourceEnv !== $env && $this->isValidPromotionOrder($sourceEnv, $env) === false) {
+            throw new Exception(
+                sprintf("Invalid OTAP promotion order from '%s' to '%s'.", $sourceEnv, $env),
+                Response::HTTP_CONFLICT
+            );
+        }
 
         try {
             // Create default groups prefixed with org slug.

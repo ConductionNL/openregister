@@ -431,7 +431,7 @@ class BulkController extends Controller
     }//end deleteRegister()
 
     /**
-     * Validate all objects belonging to a specific schema
+     * Run validation for all objects belonging to a specific schema.
      *
      * @param string $schema The schema identifier
      *
@@ -442,7 +442,7 @@ class BulkController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
      */
-    public function validateSchema(string $schema): JSONResponse
+    public function runSchemaValidation(string $schema): JSONResponse
     {
         try {
             // Validate input.
@@ -464,5 +464,5 @@ class BulkController extends Controller
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-    }//end validateSchema()
+    }//end runSchemaValidation()
 }//end class
