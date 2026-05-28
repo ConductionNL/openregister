@@ -224,6 +224,11 @@ class WebhookService
      *  - The host's resolved IPv4 must not fall in loopback (127.0.0.0/8),
      *    RFC-1918 (10/8, 172.16/12, 192.168/16) or link-local (169.254/16,
      *    which includes the cloud metadata endpoint 169.254.169.254).
+     *  - IPv6 literals and AAAA DNS results are checked against loopback
+     *    (::1/128), unique-local (fc00::/7), link-local (fe80::/10),
+     *    documentation (2001:db8::/32), unspecified (::/128) and
+     *    IPv4-mapped (::ffff:0:0/96) ranges; the mapped IPv4 address is
+     *    additionally re-validated against the IPv4 block list.
      *  - Unresolvable hosts are allowed through so that DNS failures surface
      *    as the normal Guzzle ConnectException, not a 400 here.
      *
@@ -252,6 +257,49 @@ class WebhookService
             throw new \RuntimeException('Webhook target URL is missing a host');
         }
 
+        // ── IPv6 literal detection ──────────────────────────────────────
+        // parse_url() keeps the surrounding brackets when the host is an IPv6
+        // literal (e.g. "http://[::1]/" yields $host = "[::1]"). Strip them
+        // before validation. A colon anywhere in $host (brackets or not) is
+        // the reliable heuristic that we have an IPv6 address rather than a
+        // plain hostname.
+        $bareHost     = trim($host, '[]');
+        $isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
+            || strpos($host, ':') !== false;
+
+        if ($isIpv6Literal === true) {
+            $reason = $this->blockedIpv6Reason($bareHost);
+            if ($reason !== null) {
+                throw new \RuntimeException(
+                    'Webhook target URL resolves to a blocked IP range ('.$reason.')'
+                );
+            }
+
+            // Valid, non-blocked IPv6 literal — nothing more to check.
+            return;
+        }
+
+        // ── IPv6 DNS (AAAA) resolution ──────────────────────────────────
+        // gethostbyname() / gethostbynamel() only return A records.  Use
+        // dns_get_record() to pick up AAAA answers as well.
+        $aaaaRecords = @dns_get_record($host, DNS_AAAA);
+        if (is_array($aaaaRecords) === true) {
+            foreach ($aaaaRecords as $record) {
+                $ipv6 = $record['ipv6'] ?? '';
+                if ($ipv6 === '') {
+                    continue;
+                }
+
+                $reason = $this->blockedIpv6Reason($ipv6);
+                if ($reason !== null) {
+                    throw new \RuntimeException(
+                        'Webhook target URL resolves to a blocked IP range ('.$reason.')'
+                    );
+                }
+            }
+        }
+
+        // ── IPv4 resolution and range checks ───────────────────────────
         // Resolve to IPv4 for range checks. gethostbyname() returns the input
         // host unchanged on failure or when given an IP literal. To handle
         // raw IP literals (the classic SSRF case), fall back to validating
@@ -309,12 +357,107 @@ class WebhookService
     }//end assertSafeWebhookUri()
 
     /**
+     * Return the block-list reason for a given IPv6 address, or null if safe.
+     *
+     * Checks the following RFC-defined ranges:
+     *  - ::1/128            IPv6 loopback
+     *  - ::/128             Unspecified address
+     *  - fc00::/7           Unique local (includes fd00::/8)
+     *  - fe80::/10          Link-local unicast
+     *  - 2001:db8::/32      Documentation / example range (RFC 3849)
+     *  - ::ffff:0:0/96      IPv4-mapped IPv6 — the embedded IPv4 is further
+     *                       re-checked against the existing IPv4 block list so
+     *                       ::ffff:127.0.0.1 is also rejected.
+     *
+     * Binary range comparisons use inet_pton() for byte-level accuracy so
+     * no risk of the ip2long() sign-extension quirks that affect IPv4.
+     *
+     * @param string $ip IPv6 address string (no surrounding brackets).
+     *
+     * @return string|null Human-readable range label, or null when the address is safe.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential CIDR checks require multiple branches.
+     */
+    private function blockedIpv6Reason(string $ip): ?string
+    {
+        $bin = @inet_pton($ip);
+        if ($bin === false || strlen($bin) !== 16) {
+            // Not a valid IPv6 address; let caller decide whether to block.
+            return null;
+        }
+
+        // ::1/128 — loopback.
+        if ($bin === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01") {
+            return 'loopback';
+        }
+
+        // ::/128 — unspecified.
+        if ($bin === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") {
+            return 'unspecified';
+        }
+
+        // fc00::/7 — unique local (covers fc00:: and fd00:: blocks).
+        // First byte with mask 0xFE must equal 0xFC.
+        if ((ord($bin[0]) & 0xFE) === 0xFC) {
+            return 'unique-local';
+        }
+
+        // fe80::/10 — link-local unicast.
+        // First byte 0xFE, second byte upper 6 bits = 0x80 → mask 0xC0.
+        if (ord($bin[0]) === 0xFE && (ord($bin[1]) & 0xC0) === 0x80) {
+            return 'link-local';
+        }
+
+        // 2001:db8::/32 — documentation/example range (RFC 3849).
+        if (substr($bin, 0, 4) === "\x20\x01\x0d\xb8") {
+            return 'documentation';
+        }
+
+        // ::ffff:0:0/96 — IPv4-mapped IPv6.
+        // Bytes 0-9 are zero, bytes 10-11 are 0xFFFF.
+        if (substr($bin, 0, 10) === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            && substr($bin, 10, 2) === "\xff\xff"
+        ) {
+            // Extract the embedded IPv4 address (bytes 12-15) and re-validate
+            // it against the IPv4 block list so ::ffff:127.0.0.1 is also caught.
+            $embeddedIpv4 = inet_ntop(substr($bin, 12, 4));
+            if ($embeddedIpv4 !== false) {
+                $longIp = ip2long($embeddedIpv4);
+                if ($longIp !== false) {
+                    if (($longIp & 0xFF000000) === 0x7F000000) {
+                        return 'IPv4-mapped loopback';
+                    }
+
+                    if (($longIp & 0xFF000000) === 0x0A000000
+                        || ($longIp & 0xFFF00000) === 0xAC100000
+                        || ($longIp & 0xFFFF0000) === 0xC0A80000
+                    ) {
+                        return 'IPv4-mapped RFC-1918';
+                    }
+
+                    if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
+                        return 'IPv4-mapped link-local/metadata';
+                    }
+                }
+            }
+
+            // The mapped address is itself a public IPv4 — still block the
+            // IPv4-mapped form to prevent protocol-confusion attacks.
+            return 'IPv4-mapped';
+        }//end if
+
+        return null;
+    }//end blockedIpv6Reason()
+
+    /**
      * Detect whether a host resolves to an internal/private address.
      *
      * Used to decide whether the captured response body is safe to echo into
      * the application log. When the target is private we redact rather than
      * preview, so an SSRF probe cannot tunnel internal data through the log
      * pipeline.
+     *
+     * Covers both IPv4 and IPv6 (literals and DNS A/AAAA records).
      *
      * @param string $host Hostname extracted from the webhook URL.
      *
@@ -327,6 +470,28 @@ class WebhookService
             return false;
         }
 
+        // ── IPv6 literal ────────────────────────────────────────────────
+        // Strip brackets that parse_url() may leave around IPv6 literals.
+        $bareHost     = trim($host, '[]');
+        $isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
+            || strpos($host, ':') !== false;
+
+        if ($isIpv6Literal === true) {
+            return $this->blockedIpv6Reason($bareHost) !== null;
+        }
+
+        // ── IPv6 DNS (AAAA) ─────────────────────────────────────────────
+        $aaaaRecords = @dns_get_record($host, DNS_AAAA);
+        if (is_array($aaaaRecords) === true) {
+            foreach ($aaaaRecords as $record) {
+                $ipv6 = $record['ipv6'] ?? '';
+                if ($ipv6 !== '' && $this->blockedIpv6Reason($ipv6) !== null) {
+                    return true;
+                }
+            }
+        }
+
+        // ── IPv4 resolution ─────────────────────────────────────────────
         // Same dual-path as assertSafeWebhookUri(): resolve via DNS first,
         // then fall back to validating the host string directly so IP
         // literals (127.0.0.1, 192.168.x.y …) are matched too.
