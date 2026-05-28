@@ -42,6 +42,9 @@ use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\ChatService;
@@ -53,6 +56,7 @@ use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -64,7 +68,9 @@ use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -2074,7 +2080,11 @@ class ControllersIntegrationTest2 extends TestCase
             $this->request,
             \OC::$server->get(OrganisationService::class),
             \OC::$server->get(OrganisationMapper::class),
-            $this->logger
+            $this->logger,
+            \OC::$server->get(TenantLifecycleService::class),
+            \OC::$server->get(TenantUsageMapper::class),
+            \OC::$server->get(IUserSession::class),
+            \OC::$server->get(IGroupManager::class)
         );
     }//end buildOrganisationController()
 
@@ -2125,7 +2135,11 @@ class ControllersIntegrationTest2 extends TestCase
         return new BulkController(
             'openregister',
             $this->request,
-            \OC::$server->get(ObjectService::class)
+            \OC::$server->get(ObjectService::class),
+            \OC::$server->get(RegisterMapper::class),
+            \OC::$server->get(SchemaMapper::class),
+            \OC::$server->get(IUserSession::class),
+            \OC::$server->get(IGroupManager::class)
         );
     }//end buildBulkController()
 

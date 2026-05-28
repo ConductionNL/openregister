@@ -504,10 +504,6 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404|500,
-     *     array{error?: 'Configuration not found'|'Failed to delete configuration',
-     *     success?: true}, array<never, never>>
-     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
      */
     public function destroy(int $id): JSONResponse
@@ -1222,24 +1218,28 @@ class ConfigurationController extends Controller
                 if (($longIp & 0xFF000000) === 0x7F000000) {
                     throw new Exception('URL resolves to a blocked IP range (loopback)', 400);
                 }
+
                 // Block RFC-1918: 10.0.0.0/8.
                 if (($longIp & 0xFF000000) === 0x0A000000) {
                     throw new Exception('URL resolves to a blocked IP range (RFC-1918)', 400);
                 }
+
                 // Block RFC-1918: 172.16.0.0/12.
                 if (($longIp & 0xFFF00000) === 0xAC100000) {
                     throw new Exception('URL resolves to a blocked IP range (RFC-1918)', 400);
                 }
+
                 // Block RFC-1918: 192.168.0.0/16.
                 if (($longIp & 0xFFFF0000) === 0xC0A80000) {
                     throw new Exception('URL resolves to a blocked IP range (RFC-1918)', 400);
                 }
+
                 // Block link-local (169.254.0.0/16) including AWS metadata endpoint.
                 if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
                     throw new Exception('URL resolves to a blocked IP range (link-local/metadata)', 400);
                 }
-            }
-        }
+            }//end if
+        }//end if
 
         // Fetch content from URL.
         $client   = new Client();
@@ -1523,6 +1523,18 @@ class ConfigurationController extends Controller
      */
     public function publishToGitHub(int $id): JSONResponse
     {
+        // Authorization: publishToGitHub uses the shared app-level
+        // `github_api_token` to push to any repo that token can write. Restrict
+        // to administrators (mirror the importFromGitHub gate). Ideally
+        // callers would use a per-user token, but until that lands the
+        // endpoint must be admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Only administrators may publish configurations to GitHub'],
+                statusCode: 403
+            );
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
 

@@ -29,8 +29,10 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -52,14 +54,15 @@ class DeletedController extends Controller
     /**
      * Constructor for the DeletedController
      *
-     * @param string         $appName            The name of the app
-     * @param IRequest       $request            The request object
-     * @param MagicMapper    $objectEntityMapper The object entity mapper
-     * @param RegisterMapper $registerMapper     The register mapper
-     * @param SchemaMapper   $schemaMapper       The schema mapper
-     * @param ObjectService  $objectService      The object service
-     * @param IUserSession   $userSession        The user session
-     * @param IGroupManager  $groupManager       The group manager for admin checks
+     * @param string            $appName            The name of the app
+     * @param IRequest          $request            The request object
+     * @param MagicMapper       $objectEntityMapper The object entity mapper
+     * @param RegisterMapper    $registerMapper     The register mapper
+     * @param SchemaMapper      $schemaMapper       The schema mapper
+     * @param ObjectService     $objectService      The object service
+     * @param IUserSession      $userSession        The user session
+     * @param IGroupManager     $groupManager       The group manager for admin checks
+     * @param PermissionHandler $permissionHandler  Handler for per-schema RBAC checks
      *
      * @return void
      */
@@ -71,7 +74,8 @@ class DeletedController extends Controller
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectService $objectService,
         private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager
+        private readonly IGroupManager $groupManager,
+        private readonly PermissionHandler $permissionHandler
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -90,6 +94,62 @@ class DeletedController extends Controller
 
         return (bool) $this->groupManager->isAdmin($user->getUID());
     }//end isCurrentUserAdmin()
+
+    /**
+     * Resolve a soft-deleted object's schema and check the caller has the
+     * required action permission.
+     *
+     * Refuses the call (returns false) when:
+     *  - no user is authenticated, OR
+     *  - the object lacks a resolvable register/schema context, OR
+     *  - PermissionHandler denies the action for the caller.
+     *
+     * Admin users always pass. This mirrors the fail-closed write-RBAC
+     * pattern from #1949: when register/schema context cannot be derived,
+     * the destructive operation is refused.
+     *
+     * @param ObjectEntity $object The soft-deleted object being acted on.
+     * @param string       $action The action to authorize ('delete'|'update').
+     *
+     * @return bool True if the caller may perform the action on this object.
+     */
+    private function userMayActOnDeletedObject(ObjectEntity $object, string $action): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        // Admin bypass.
+        if ($this->isCurrentUserAdmin() === true) {
+            return true;
+        }
+
+        $schemaId = $object->getSchema();
+        if ($schemaId === null || $schemaId === '') {
+            // Fail-closed: cannot resolve schema, refuse.
+            return false;
+        }
+
+        try {
+            $schema = $this->schemaMapper->find((int) $schemaId);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        try {
+            return $this->permissionHandler->hasPermission(
+                schema: $schema,
+                action: $action,
+                userId: $user->getUID(),
+                objectOwner: $object->getOwner(),
+                _rbac: true,
+                object: $object
+            );
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }//end userMayActOnDeletedObject()
 
     /**
      * Helper method to extract request parameters for deleted objects
@@ -402,9 +462,12 @@ class DeletedController extends Controller
     /**
      * Restore multiple deleted objects
      *
-     * TODO: This function is unsafe as it doesn't filter by register/schema.
-     * In the future, add register and schema filtering to mass operations
-     * to prevent cross-register restoring.
+     * Each soft-deleted object is gated through PermissionHandler with the
+     * `update` action against the object's resolved schema. Admins bypass.
+     * Objects whose schema cannot be resolved or for which the caller lacks
+     * `update` permission are skipped (counted as `failed`) so a partial
+     * cross-tenant bulk restore cannot succeed silently. This closes the
+     * wave-3 C4 finding (no RBAC on `restoreMultiple`).
      *
      * @NoAdminRequired
      *
@@ -416,6 +479,13 @@ class DeletedController extends Controller
      */
     public function restoreMultiple(): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not authenticated'],
+                statusCode: 401
+            );
+        }
+
         $ids = $this->request->getParam('ids', []);
 
         if (empty($ids) === true) {
@@ -457,13 +527,22 @@ class DeletedController extends Controller
                         continue;
                     }
 
+                    // Per-object RBAC gate: caller must have `update`
+                    // permission on the resolved schema (admins bypass).
+                    // Cross-tenant restores are silently dropped (counted
+                    // as failed) rather than aborting the whole batch.
+                    if ($this->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
+                        $failed++;
+                        continue;
+                    }
+
                     $object->setDeleted(null);
                     $this->objectEntityMapper->update(entity: $object);
                     $restored++;
                 } catch (\Exception $e) {
                     $failed++;
-                }
-            }
+                }//end try
+            }//end foreach
 
             // Count objects that were requested but not found in database.
             $notFound = count(array_diff($ids, $foundIds));
@@ -491,6 +570,11 @@ class DeletedController extends Controller
     /**
      * Permanently delete an object
      *
+     * Gated through PermissionHandler with the `delete` action against the
+     * resolved schema (admins bypass). When register/schema context cannot
+     * be derived the call is refused fail-closed. This closes the wave-3 C4
+     * finding (no RBAC on `destroy`).
+     *
      * @param string $id The ID or UUID of the object to permanently delete
      *
      * @NoAdminRequired
@@ -503,6 +587,13 @@ class DeletedController extends Controller
      */
     public function destroy(string $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not authenticated'],
+                statusCode: 401
+            );
+        }
+
         try {
             $object = $this->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
 
@@ -512,6 +603,17 @@ class DeletedController extends Controller
                         'error' => 'Object is not deleted',
                     ],
                     statusCode: 400
+                );
+            }
+
+            // Per-object RBAC gate: caller must have `delete` permission on
+            // the resolved schema (admins bypass). Cross-tenant destructive
+            // deletes are refused with 403 — no silent fail since this is a
+            // single-object endpoint.
+            if ($this->userMayActOnDeletedObject(object: $object, action: 'delete') === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to permanently delete this object'],
+                    statusCode: 403
                 );
             }
 
@@ -537,9 +639,12 @@ class DeletedController extends Controller
     /**
      * Permanently delete multiple objects
      *
-     * TODO: This function is unsafe as it doesn't filter by register/schema.
-     * In the future, add register and schema filtering to mass operations
-     * to prevent cross-register deleting.
+     * Each soft-deleted object is gated through PermissionHandler with the
+     * `delete` action against the object's resolved schema. Admins bypass.
+     * Objects whose schema cannot be resolved or for which the caller lacks
+     * `delete` permission are skipped (counted as `failed`) so a partial
+     * cross-tenant bulk wipe cannot succeed silently. This closes the
+     * wave-3 C4 finding (no RBAC on `destroyMultiple`).
      *
      * @NoAdminRequired
      *
@@ -551,6 +656,13 @@ class DeletedController extends Controller
      */
     public function destroyMultiple(): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not authenticated'],
+                statusCode: 401
+            );
+        }
+
         $ids = $this->request->getParam('ids', []);
 
         if (empty($ids) === true) {
@@ -592,12 +704,19 @@ class DeletedController extends Controller
                         continue;
                     }
 
+                    // Per-object RBAC gate: caller must have `delete`
+                    // permission on the resolved schema (admins bypass).
+                    if ($this->userMayActOnDeletedObject(object: $object, action: 'delete') === false) {
+                        $failed++;
+                        continue;
+                    }
+
                     $this->objectEntityMapper->delete($object);
                     $deleted++;
                 } catch (\Exception $e) {
                     $failed++;
                 }
-            }
+            }//end foreach
 
             // Count objects that were requested but not found in database.
             $notFound = count(array_diff($ids, $foundIds));

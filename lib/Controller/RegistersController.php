@@ -1086,6 +1086,18 @@ class RegistersController extends Controller
      */
     public function publishToGitHub(int $id): JSONResponse
     {
+        // Authorization: publishToGitHub uses the shared app-level
+        // `github_api_token` to push to any repo that token can write. Restrict
+        // to administrators (mirror the wave-1 #1949 admin-gate pattern and
+        // the existing importFromGitHub gate). Ideally callers would use a
+        // per-user token, but until that lands the endpoint must be admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Only administrators may publish registers to GitHub'],
+                statusCode: 403
+            );
+        }
+
         try {
             $register = $this->registerMapper->find($id);
 
@@ -1259,6 +1271,25 @@ class RegistersController extends Controller
             $uploadedFile = $this->request->getUploadedFile('file');
             if ($uploadedFile === null) {
                 return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
+            }
+
+            // Authorization: importing into a register can create schemas/
+            // registers/objects and calls `registerService->updateFromArray`
+            // (a configurable data-model write). Gate on manage-permission for
+            // the target register (default-SECURE: admin-only when no manage
+            // rule exists). Closes the bypass of the wave-1 #1949 admin-only
+            // create/update gate.
+            try {
+                $registerForAuth = $this->registerMapper->find($id);
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+            }
+
+            if ($this->checkRegisterManagePermission(register: $registerForAuth) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this register'],
+                    statusCode: 403
+                );
             }
 
             // Dynamically determine import type if not provided.

@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\BulkController;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -18,6 +25,10 @@ class BulkControllerTest extends TestCase
     private BulkController $controller;
     private IRequest&MockObject $request;
     private ObjectService&MockObject $objectService;
+    private RegisterMapper&MockObject $registerMapper;
+    private SchemaMapper&MockObject $schemaMapper;
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -25,12 +36,64 @@ class BulkControllerTest extends TestCase
 
         $this->request = $this->createMock(IRequest::class);
         $this->objectService = $this->createMock(ObjectService::class);
+        $this->registerMapper = $this->createMock(RegisterMapper::class);
+        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
 
         $this->controller = new BulkController(
             'openregister',
             $this->request,
-            $this->objectService
+            $this->objectService,
+            $this->registerMapper,
+            $this->schemaMapper,
+            $this->userSession,
+            $this->groupManager
         );
+    }
+
+    /**
+     * Helper: stub the user session as an admin user so manage-permission gates pass.
+     */
+    private function stubAdminUser(string $userId = 'admin'): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn($userId);
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with($userId)->willReturn(true);
+    }
+
+    /**
+     * Helper: stub the schemaMapper to return a default schema entity so the
+     * manage-permission gate on deleteSchema/deleteSchemaObjects has something
+     * to inspect (admin bypass still does the work).
+     */
+    private function stubSchemaLookup(?int $schemaId = null): void
+    {
+        $schema = new Schema();
+        if ($schemaId !== null) {
+            $ref = new \ReflectionClass($schema);
+            $prop = $ref->getProperty('id');
+            $prop->setAccessible(true);
+            $prop->setValue($schema, $schemaId);
+        }
+        $this->schemaMapper->method('find')->willReturn($schema);
+    }
+
+    /**
+     * Helper: stub the registerMapper to return a default register entity so
+     * the manage-permission gate on deleteRegister has something to inspect.
+     */
+    private function stubRegisterLookup(?int $registerId = null): void
+    {
+        $register = new Register();
+        if ($registerId !== null) {
+            $ref = new \ReflectionClass($register);
+            $prop = $ref->getProperty('id');
+            $prop->setAccessible(true);
+            $prop->setValue($register, $registerId);
+        }
+        $this->registerMapper->method('find')->willReturn($register);
     }
 
     /**
@@ -395,8 +458,26 @@ class BulkControllerTest extends TestCase
         $this->assertStringContainsString('Invalid schema ID', $data['error']);
     }
 
+    public function testDeleteSchemaUnauthorizedRejected(): void
+    {
+        // Wave-3 C5 regression guard: non-admin without manage-permission
+        // cannot mass-delete schema objects.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
+        $this->stubSchemaLookup(2);
+        $this->objectService->expects($this->never())->method('deleteObjectsBySchema');
+
+        $result = $this->controller->deleteSchema('1', '2');
+
+        $this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+    }
+
     public function testDeleteSchemaSuccess(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('deleteObjectsBySchema')->willReturn([
@@ -421,6 +502,8 @@ class BulkControllerTest extends TestCase
 
     public function testDeleteSchemaWithHardDelete(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(3);
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('deleteObjectsBySchema')->willReturn([
@@ -440,6 +523,8 @@ class BulkControllerTest extends TestCase
 
     public function testDeleteSchemaException(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('deleteObjectsBySchema')
@@ -459,8 +544,26 @@ class BulkControllerTest extends TestCase
     // deleteSchemaObjects() tests
     // ========================================================================
 
+    public function testDeleteSchemaObjectsUnauthorizedRejected(): void
+    {
+        // Wave-3 C5 regression guard.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
+        $this->setupResolveSuccess();
+        $this->stubSchemaLookup(2);
+        $this->objectService->expects($this->never())->method('deleteObjectsBySchema');
+
+        $result = $this->controller->deleteSchemaObjects('1', '2');
+
+        $this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+    }
+
     public function testDeleteSchemaObjectsSuccess(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         $this->objectService->method('deleteObjectsBySchema')->willReturn([
             'deleted_count' => 4,
@@ -485,6 +588,8 @@ class BulkControllerTest extends TestCase
 
     public function testDeleteSchemaObjectsWithHardDelete(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         $this->objectService->method('deleteObjectsBySchema')->willReturn([
             'deleted_count' => 1,
@@ -532,6 +637,8 @@ class BulkControllerTest extends TestCase
 
     public function testDeleteSchemaObjectsException(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         $this->objectService->method('deleteObjectsBySchema')
             ->willThrowException(new \Exception('Delete objects error'));
@@ -559,8 +666,25 @@ class BulkControllerTest extends TestCase
         $this->assertStringContainsString('Invalid register ID', $data['error']);
     }
 
+    public function testDeleteRegisterUnauthorizedRejected(): void
+    {
+        // Wave-3 C5 regression guard.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
+        $this->stubRegisterLookup(1);
+        $this->objectService->expects($this->never())->method('deleteObjectsByRegister');
+
+        $result = $this->controller->deleteRegister('1');
+
+        $this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+    }
+
     public function testDeleteRegisterSuccess(): void
     {
+        $this->stubAdminUser();
+        $this->stubRegisterLookup(1);
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('deleteObjectsByRegister')->willReturn([
             'deleted_count' => 3,
@@ -581,6 +705,8 @@ class BulkControllerTest extends TestCase
 
     public function testDeleteRegisterException(): void
     {
+        $this->stubAdminUser();
+        $this->stubRegisterLookup(1);
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('deleteObjectsByRegister')
             ->willThrowException(new \Exception('Register delete error'));
