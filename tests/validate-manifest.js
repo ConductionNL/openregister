@@ -5,13 +5,13 @@
 // validate-manifest.js — schema-validates src/manifest.json against the
 // @conduction/nextcloud-vue app-manifest schema using Ajv.
 //
-// @spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-007
+// @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-007
 //   (Build gate validates the manifest — `npm run check:manifest` runs this CLI,
 //    is wired into CI via .github/workflows/spec-validation.yml → check:specs,
 //    Ajv-validates against the canonical schema, prints error paths, exits non-zero
 //    on schema violation.)
 //
-// @spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-002
+// @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-002
 //   (Manifest declares zero Conduction-app dependencies — OpenRegister is the
 //    foundation app, so src/manifest.json carries `"dependencies": []`. The
 //    schema declares `dependencies` as a required array, and CnAppRoot guards
@@ -19,7 +19,7 @@
 //    openregister-manifest-shell-swap, the validator now enforces this end-to-
 //    end on every CI run.)
 //
-// @spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-008
+// @spec openspec/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-008
 //   (Manifest version reflects the adoption tier — top-level `version: "1.0.0"`
 //    set in src/manifest.json signals Tier-4 / full-shell adoption. The schema's
 //    required `version` field, asserted by Ajv here AND by structuralLint
