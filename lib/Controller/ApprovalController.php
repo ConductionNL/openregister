@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Service\ApprovalService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -56,6 +57,7 @@ class ApprovalController extends Controller
      * @param ApprovalService     $approvalService Approval service
      * @param IUserSession        $userSession     User session
      * @param LoggerInterface     $logger          Logger
+     * @param IGroupManager       $groupManager    Group manager for admin checks
      */
     public function __construct(
         string $appName,
@@ -64,10 +66,26 @@ class ApprovalController extends Controller
         private readonly ApprovalStepMapper $stepMapper,
         private readonly ApprovalService $approvalService,
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Determine whether the current user is a Nextcloud admin.
+     *
+     * @return bool True when the active session user belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * List all approval chains.
@@ -118,6 +136,11 @@ class ApprovalController extends Controller
      */
     public function create(): JSONResponse
     {
+        // SECURITY (M1): approval chain writes are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         $data = $this->request->getParams();
 
         try {
@@ -140,6 +163,11 @@ class ApprovalController extends Controller
      */
     public function update(int $id): JSONResponse
     {
+        // SECURITY (M1): approval chain writes are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data  = $this->request->getParams();
             $chain = $this->chainMapper->updateFromArray($id, $data);
@@ -163,6 +191,11 @@ class ApprovalController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        // SECURITY (M1): approval chain writes are admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $chain = $this->chainMapper->find($id);
             $this->chainMapper->delete($chain);
