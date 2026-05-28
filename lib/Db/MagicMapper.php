@@ -1210,10 +1210,30 @@ class MagicMapper extends AbstractObjectMapper
                 }
 
                 // Translate field name to column name.
-                $columnName = $this->sanitizeColumnName(name: $field);
+                // Security: every branch MUST route the user-supplied $field through
+                // sanitizeColumnName + quoteIdentifier before concatenating into the
+                // raw ORDER BY clause. The `@self.<suffix>` branch is additionally
+                // allowlist-validated against the known metadata-column set; any
+                // unknown suffix is silently skipped so an attacker cannot inject
+                // arbitrary identifiers or SQL fragments via the order parameter.
                 if (str_starts_with($field, '@self.') === true) {
-                    $columnName = self::METADATA_PREFIX.substr($field, 6);
-                } else if (str_starts_with($field, '_') === false) {
+                    $suffix             = substr($field, 6);
+                    $candidate          = self::METADATA_PREFIX.$this->sanitizeColumnName(name: $suffix);
+                    $allowedMetaColumns = array_keys($this->getMetadataColumns());
+                    if (in_array($candidate, $allowedMetaColumns, true) === false) {
+                        // Unknown metadata suffix: skip rather than risk arbitrary identifier injection.
+                        continue;
+                    }
+
+                    $columnName = $this->quoteIdentifier(name: $candidate, isPostgres: $isPostgres);
+                } else if (str_starts_with($field, '_') === true) {
+                    // Reserved system column reference (e.g. `_relevance` handled above; others
+                    // like `_search_score`). Still sanitise + quote to be safe.
+                    $columnName = $this->quoteIdentifier(
+                        name: $this->sanitizeColumnName(name: $field),
+                        isPostgres: $isPostgres
+                    );
+                } else {
                     // Non-metadata fields - property columns are included in UNION queries.
                     // The column must exist in the SELECT for ordering to work.
                     // Quote to protect against SQL reserved keywords (e.g. "order", "group").
@@ -1240,8 +1260,12 @@ class MagicMapper extends AbstractObjectMapper
         }//end if
 
         // Apply LIMIT/OFFSET to final UNION result.
-        $limit     = $query['_limit'] ?? 100;
-        $offset    = $query['_offset'] ?? 0;
+        // Security: coerce to int + clamp at the boundary. Without this cast the
+        // user-supplied _limit / _offset interpolate as strings directly into
+        // raw SQL, which is a textbook SQL-injection vector. The clamp also
+        // prevents pathological pagination requests from blowing up the DB.
+        $limit     = max(1, min(1000, (int) ($query['_limit'] ?? 100)));
+        $offset    = max(0, (int) ($query['_offset'] ?? 0));
         $unionSql .= " LIMIT {$limit} OFFSET {$offset}";
 
         // Execute the combined query.
