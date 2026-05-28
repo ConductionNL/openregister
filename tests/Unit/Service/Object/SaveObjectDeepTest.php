@@ -1126,11 +1126,19 @@ class SaveObjectDeepTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function testSetSelfMetadataOwner(): void
+    public function testSetSelfMetadataOwnerIsIgnored(): void
     {
+        // SECURITY (wave-7 CRITICAL C2): owner must NOT be settable via client @self input.
+        // The authoritative setter is applyOwnerAttribution() which stamps the session
+        // user's UID. Accepting owner from $selfData allowed ownership hijacking in
+        // background/system contexts where applyOwnerAttribution only fills empty owners.
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $this->invokePrivateMethod('setSelfMetadata', [$entity, ['owner' => 'admin'], []]);
-        $this->assertSame('admin', $entity->getOwner());
+        // Ensure owner starts as null (default for a new entity).
+        $this->assertNull($entity->getOwner());
+        // Pass a client-supplied owner value — it must be silently ignored.
+        $this->invokePrivateMethod('setSelfMetadata', [$entity, ['owner' => 'injected-owner'], []]);
+        // Owner remains null; applyOwnerAttribution() will set it from the session.
+        $this->assertNull($entity->getOwner());
     }
 
     public function testSetSelfMetadataOrganisation(): void

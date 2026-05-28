@@ -1491,18 +1491,22 @@ class SaveObjectCoverageTest extends TestCase
     }
 
     /**
-     * Test setSelfMetadata sets owner.
+     * Test setSelfMetadata ignores owner from client @self input.
+     *
+     * SECURITY (wave-7 CRITICAL C2): owner must NOT be settable via client @self —
+     * applyOwnerAttribution() is the sole authoritative setter.
      *
      * @return void
      */
-    public function testSetSelfMetadataWithOwner(): void
+    public function testSetSelfMetadataWithOwnerIsIgnored(): void
     {
-        $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+        $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
         $selfData = ['owner' => 'user123'];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
 
-        $this->assertSame('user123', $entity->getOwner());
+        // owner must remain null — the client-supplied value is discarded.
+        $this->assertNull($entity->getOwner());
     }
 
     /**
