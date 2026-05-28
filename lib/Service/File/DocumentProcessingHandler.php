@@ -17,6 +17,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
+use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
+use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -130,6 +133,10 @@ class DocumentProcessingHandler
         // Process based on file type.
         if (in_array($fileExtension, ['doc', 'docx'], true) === true) {
             return $this->replaceWordsInWordDocument(node: $node, replacements: $replacements, outputName: $outputName);
+        }
+
+        if ($fileExtension === 'pdf') {
+            return $this->replaceWordsInPdfDocument(node: $node, replacements: $replacements, outputName: $outputName);
         }
 
         return $this->replaceWordsInTextDocument(node: $node, replacements: $replacements, outputName: $outputName);
@@ -465,4 +472,118 @@ class DocumentProcessingHandler
 
         return $newFile;
     }//end replaceWordsInTextDocument()
+
+    /**
+     * Replace words in a PDF document via the SAPP byte-level pipeline.
+     *
+     * Routes to {@see PdfTextReplacer} (text replacement with font switch
+     * + Helvetica fallback) and {@see PdfMetadataSanitizer} (/Info and
+     * XMP stripping). The output is validated post-replacement: any
+     * residual entity text triggers a {@see PdfAnonymisationException}
+     * with `REASON_VALIDATION_FAILED` and the file is NOT written.
+     *
+     * Pre-dispatch: if smalot/pdfparser cannot extract any text from the
+     * input, the call defers to the `ocr-document-scanning` capability
+     * via `REASON_TEXT_LAYER_MISSING` (caller's responsibility to route).
+     *
+     * @param Node   $node         The PDF file node to process.
+     * @param array  $replacements Map: entity-text => placeholder.
+     * @param string $outputName   Output file name.
+     *
+     * @throws Exception                  If node content is unreadable.
+     * @throws PdfAnonymisationException  On encrypted PDF, missing text
+     *                                    layer, validation gate failure,
+     *                                    or internal pipeline errors.
+     *
+     * @phpstan-param array<string, string> $replacements
+     * @psalm-param   array<string, string> $replacements
+     *
+     * @return File The anonymised PDF.
+     *
+     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     */
+    private function replaceWordsInPdfDocument(
+        Node $node,
+        array $replacements,
+        string $outputName
+    ): File {
+        $content = $node->getContent();
+        if ($content === false) {
+            throw new Exception('Failed to get content from file: '.$node->getPath());
+        }
+
+        // Pre-dispatch text-layer probe — image-only scans must defer
+        // to the `ocr-document-scanning` capability rather than producing
+        // an empty no-op output via the byte-replace path.
+        try {
+            $parser    = new \Smalot\PdfParser\Parser();
+            $parsedPdf = $parser->parseContent($content);
+            $extracted = $parsedPdf->getText();
+        } catch (\Throwable $e) {
+            // Parsing failure on input itself — surface as internal error.
+            throw new PdfAnonymisationException(
+                reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+                message: 'smalot/pdfparser failed on input PDF',
+                diagnostic: ['stage' => 'input.text_layer_probe'],
+                previous: $e
+            );
+        }
+
+        if (trim($extracted) === '') {
+            throw new PdfAnonymisationException(
+                reason: PdfAnonymisationException::REASON_TEXT_LAYER_MISSING,
+                message: 'PDF has no extractable text layer; defer to OCR',
+                diagnostic: ['stage' => 'input.text_layer_probe']
+            );
+        }
+
+        $replacer  = new PdfTextReplacer(logger: $this->logger);
+        $sanitizer = new PdfMetadataSanitizer(logger: $this->logger);
+
+        // Run text replacement first; metadata sanitisation operates on
+        // the result so /Info / XMP changes survive the rebuild.
+        $replacedBytes = $replacer->replaceInPdf(pdfBytes: $content, substitutions: $replacements);
+
+        try {
+            $doc = \ddn\sapp\PDFDoc::from_string(buffer: $replacedBytes);
+            if ($doc !== false) {
+                $sanitizer->sanitize(doc: $doc);
+                $serialised = $doc->to_pdf_file_s(rebuild: true);
+                if ($serialised !== false && $serialised !== '') {
+                    $replacedBytes = $serialised;
+                }
+            }
+        } catch (PdfAnonymisationException $e) {
+            // Sanitiser-raised — surface to the caller.
+            throw $e;
+        } catch (\Throwable $e) {
+            throw new PdfAnonymisationException(
+                reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+                message: 'Metadata sanitisation stage failed',
+                diagnostic: ['stage' => 'sanitize'],
+                previous: $e
+            );
+        }
+
+        // Create output file.
+        $parentFolder = $node->getParent();
+        if ($parentFolder->nodeExists($outputName) === true) {
+            $parentFolder->get($outputName)->delete();
+        }
+
+        $newFile = $parentFolder->newFile(path: $outputName, content: $replacedBytes);
+
+        $this->logger->info(
+            message: '[DocumentProcessingHandler] PDF anonymised via SAPP',
+            context: [
+                'file'         => __FILE__,
+                'line'         => __LINE__,
+                'originalFile' => $node->getPath(),
+                'outputFile'   => $newFile->getPath(),
+                'replacements' => count($replacements),
+            ]
+        );
+
+        return $newFile;
+    }//end replaceWordsInPdfDocument()
 }//end class
