@@ -156,7 +156,6 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</NcButton>
 
 						<NcSelect
-						input-label="Select Importconfiguration"
 							v-if="branches.length > 0"
 							v-model="selectedBranch"
 							:options="branches"

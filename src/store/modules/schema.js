@@ -2,6 +2,14 @@
 import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
 
+// Module-scoped single-flight for refreshSchemaList; same rationale as the
+// register store — AppInitializationService and every search/dashboard
+// sidebar mount calls refreshSchemaList in parallel on boot. Coalescing
+// here keeps the SearchSideBar's schemaLoading flag from racing past the
+// e2e budget. CRUD-driven callers that pass a custom `search` bypass the
+// cache.
+let inFlightSchemaRefresh = null
+
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
 		schemaItem: false,
@@ -87,19 +95,24 @@ export const useSchemaStore = defineStore('schema', {
 		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshSchemaList(search = null) {
+			if (search === null && inFlightSchemaRefresh) {
+				return inFlightSchemaRefresh
+			}
 			let endpoint = '/index.php/apps/openregister/api/schemas'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '?_search=' + encodeURIComponent(search)
 			}
-			const response = await fetch(endpoint, {
-				method: 'GET',
-			})
-
-			const data = (await response.json()).results
-
-			this.setSchemaList(data)
-
-			return { response, data }
+			const work = (async () => {
+				const response = await fetch(endpoint, { method: 'GET' })
+				const data = (await response.json()).results
+				this.setSchemaList(data)
+				return { response, data }
+			})()
+			if (search === null) {
+				inFlightSchemaRefresh = work.finally(() => { inFlightSchemaRefresh = null })
+				return inFlightSchemaRefresh
+			}
+			return work
 		},
 		/**
 		 * Get a single schema by id.
