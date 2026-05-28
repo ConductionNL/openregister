@@ -130,18 +130,13 @@ class NotificationSubscriptionsController extends Controller
         $registerId = $this->coerceNullableInt(value: ($params['registerId'] ?? null));
         $schemaId   = $this->coerceNullableInt(value: ($params['schemaId'] ?? null));
 
-        // Validate the referenced register/schema exists before persisting
-        // the subscription. Metadata-read bypass per the auth-system
-        // requirement "Schema and register METADATA-READ lookups MUST
-        // bypass multi-tenancy" — register/schema definitions are a
-        // globally-visible catalog (admin without an active organisation
-        // would otherwise 404 here). Tenant isolation for the eventual
-        // notification delivery is enforced downstream by the dispatcher,
-        // which filters object-row events by the subscriber's organisation
-        // before fan-out.
+        // SECURITY (M2): verify the caller has read access to the referenced
+        // register/schema before persisting the subscription.
+        // Use _multitenancy: true to enforce tenant-scope — a user in org A
+        // must not be allowed to subscribe to org B's register/schema events.
         if ($registerId !== null) {
             try {
-                $this->registerMapper->find($registerId, _multitenancy: false);
+                $this->registerMapper->find($registerId, _multitenancy: true);
             } catch (\Throwable $e) {
                 return new JSONResponse(
                     data: ['error' => 'Register not found or not accessible'],
@@ -152,7 +147,7 @@ class NotificationSubscriptionsController extends Controller
 
         if ($schemaId !== null) {
             try {
-                $this->schemaMapper->find($schemaId, _multitenancy: false);
+                $this->schemaMapper->find($schemaId, _multitenancy: true);
             } catch (\Throwable $e) {
                 return new JSONResponse(
                     data: ['error' => 'Schema not found or not accessible'],

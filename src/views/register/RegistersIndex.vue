@@ -147,24 +147,6 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						</template>
 						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
-					<NcActionButton
-						v-if="!row.published || (row.depublished && new Date(row.depublished) <= new Date())"
-						close-after-click
-						@click="publishRegister(row)">
-						<template #icon>
-							<Publish :size="20" />
-						</template>
-						{{ t('openregister', 'Publish') }}
-					</NcActionButton>
-					<NcActionButton
-						v-if="row.published && (!row.depublished || new Date(row.depublished) > new Date())"
-						close-after-click
-						@click="depublishRegister(row)">
-						<template #icon>
-							<PublishOff :size="20" />
-						</template>
-						{{ t('openregister', 'Depublish') }}
-					</NcActionButton>
 					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); navigationStore.setModal('publishRegister')">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
@@ -222,8 +204,6 @@ import Download from 'vue-material-design-icons/Download.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import Publish from 'vue-material-design-icons/Publish.vue'
-import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
@@ -247,8 +227,6 @@ export default {
 		InformationOutline,
 		CogOutline,
 		CloudUploadOutline,
-		Publish,
-		PublishOff,
 		RegisterSchemaCard,
 	},
 	data() {
@@ -436,32 +414,6 @@ export default {
 				this.$refs.indexPage.setFormResult({ success: true })
 			} catch (error) {
 				this.$refs.indexPage.setFormResult({ error: error.message })
-			}
-		},
-
-		/**
-		 * @spec exclude list-view row-action wiring; delegates to store publish + toast (registers-management contract)
-		 */
-		async publishRegister(register) {
-			try {
-				await registerStore.publishRegister(register.id)
-				showSuccess(t('openregister', 'Register published successfully'))
-			} catch (error) {
-				console.error('Error publishing register:', error)
-				showError(t('openregister', 'Failed to publish register: {error}', { error: error.message }))
-			}
-		},
-
-		/**
-		 * @spec exclude list-view row-action wiring; delegates to store depublish + toast (registers-management contract)
-		 */
-		async depublishRegister(register) {
-			try {
-				await registerStore.depublishRegister(register.id)
-				showSuccess(t('openregister', 'Register depublished successfully'))
-			} catch (error) {
-				console.error('Error depublishing register:', error)
-				showError(t('openregister', 'Failed to depublish register: {error}', { error: error.message }))
 			}
 		},
 

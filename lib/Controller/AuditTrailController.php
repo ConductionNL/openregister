@@ -47,9 +47,14 @@ use OCP\IRequest;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Controller covers audit trail, verification, verwerkingsregister
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Necessary service dependencies
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)   One public method per audit trail route
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Controller covers audit trail, verification, verwerkingsregister
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Necessary service dependencies
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     One public method per audit trail route
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Audit-trail surface fans out into hash-verify,
+ *     verwerkingsregister, inzageverzoek, export, immutability + admin-gating; the controller's
+ *     overall cyclomatic complexity sits one step above the default threshold (51 vs 50) after
+ *     the wave-3 C6 admin-only gates on index()/show() were added. Splitting the controller
+ *     would force a route-table reshuffle without removing any actual branching.
  */
 class AuditTrailController extends Controller
 {
@@ -77,12 +82,17 @@ class AuditTrailController extends Controller
     }//end __construct()
 
     /**
-     * Gate destructive / bulk-export audit operations on admin membership.
+     * Gate destructive / bulk-export / bulk-read audit operations on admin membership.
      *
      * SECURITY: `clearAll` wipes the entire audit table — a chain of
      * trust for AVG/GDPR Art 30 reviews. `export` dumps every row in
-     * bulk and is an obvious recon path across tenants. Both surfaces
-     * are admin-only at the framework level (the methods carry no
+     * bulk and is an obvious recon path across tenants. `index` and
+     * `show` expose cross-tenant audit-trail rows (per-row diffs of
+     * every object change in every register/schema, frequently PII or
+     * IP-heavy); without this gate any authenticated user — including
+     * users restricted to a single app group — could enumerate every
+     * other tenant's change history (wave-3 C6). All surfaces are
+     * admin-only at the framework level for sensitive routes (no
      * `@NoAdminRequired`) and this body-level helper stays as
      * defence-in-depth so removing the framework gate by accident does
      * not silently open the surface.
@@ -157,8 +167,8 @@ class AuditTrailController extends Controller
         // Extract search parameter.
         $search = $params['search'] ?? $params['_search'] ?? null;
 
-        $sort    = $this->buildSortFromParams($params);
-        $filters = $this->buildFiltersFromParams($params);
+        $sort    = $this->buildSortFromParams(params: $params);
+        $filters = $this->buildFiltersFromParams(params: $params);
 
         return [
             'limit'   => $limit,
@@ -191,12 +201,18 @@ class AuditTrailController extends Controller
         if (is_array($sortRaw) === true) {
             // Bracket format: _sort[created]=DESC.
             foreach ($sortRaw as $field => $direction) {
-                $sort[$field] = strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC';
+                $sort[$field] = 'DESC';
+                if (strtoupper($direction) === 'ASC') {
+                    $sort[$field] = 'ASC';
+                }
             }
         } else if ($sortRaw !== null) {
             // Flat format: sort=created&order=DESC.
             $sortOrder      = $params['order'] ?? $params['_order'] ?? 'DESC';
-            $sort[$sortRaw] = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+            $sort[$sortRaw] = 'DESC';
+            if (strtoupper($sortOrder) === 'ASC') {
+                $sort[$sortRaw] = 'ASC';
+            }
         }
 
         if (empty($sort) === true) {
@@ -217,9 +233,25 @@ class AuditTrailController extends Controller
     private function buildFiltersFromParams(array $params): array
     {
         $systemKeys = [
-            'limit', '_limit', 'offset', '_offset', 'page', '_page',
-            'search', '_search', 'sort', '_sort', 'order', '_order',
-            '_route', 'id', 'register', 'schema', 'format', 'from', 'to',
+            'limit',
+            '_limit',
+            'offset',
+            '_offset',
+            'page',
+            '_page',
+            'search',
+            '_search',
+            'sort',
+            '_sort',
+            'order',
+            '_order',
+            '_route',
+            'id',
+            'register',
+            'schema',
+            'format',
+            'from',
+            'to',
             'identifier',
         ];
 
@@ -235,22 +267,26 @@ class AuditTrailController extends Controller
     /**
      * Get all audit trail logs
      *
-     * @NoAdminRequired
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth. The cross-tenant
+     * audit-trail index leaks per-row diffs of every object change
+     * across every register/schema — wave-3 C6. Returns 200 on
+     * success, 401 when anonymous, 403 when non-admin.
      *
      * @return JSONResponse JSON response containing list of audit trails
      *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200,
-     *     array{results: array<\OCA\OpenRegister\Db\AuditTrail>,
-     *     total: int<0, max>, page: int|null, pages: float, limit: int,
-     *     offset: int|null}, array<never, never>>
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-17
      */
     public function index(): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         // Extract common parameters.
         $params = $this->extractRequestParameters();
 
@@ -276,29 +312,30 @@ class AuditTrailController extends Controller
     /**
      * Get a specific audit trail log by ID
      *
+     * Admin-only at the framework level (no @NoAdminRequired). Body
+     * `requireAdmin()` stays as defence-in-depth. Without the gate,
+     * any authed caller could fetch any audit-trail row by ID — and
+     * IDs are sequential, so this is also a trivial enumeration path
+     * across every tenant's change history (wave-3 C6). Returns 200
+     * on success, 401 when anonymous, 403 when non-admin, 404 if
+     * the row does not exist.
+     *
      * @param int $id The audit trail ID
      *
      * @return JSONResponse A JSON response containing the log
      *
-     * @NoAdminRequired
-     *
      * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<
-     *     200,
-     *     array<array-key, mixed>,
-     *     array<never, never>
-     * >|JSONResponse<
-     *     404,
-     *     array{error: 'Audit trail not found'},
-     *     array<never, never>
-     * >
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-15
      */
     public function show(int $id): JSONResponse
     {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
         try {
             $log = $this->logService->getLog($id);
             return new JSONResponse(data: $log);

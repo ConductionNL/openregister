@@ -37,7 +37,9 @@ use GuzzleHttp\Client;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -119,6 +121,8 @@ class ConfigurationController extends Controller
      * @param GitLabHandler        $gitlabHandler        GitLab handler
      * @param IAppManager          $appManager           App manager
      * @param LoggerInterface      $logger               Logger
+     * @param IUserSession         $userSession          User session for admin checks
+     * @param IGroupManager        $groupManager         Group manager for admin checks
      */
     public function __construct(
         string $appName,
@@ -129,7 +133,9 @@ class ConfigurationController extends Controller
         GitHubHandler $githubHandler,
         GitLabHandler $gitlabHandler,
         IAppManager $appManager,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -141,6 +147,21 @@ class ConfigurationController extends Controller
         $this->appManager           = $appManager;
         $this->logger = $logger;
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * Get all configurations.
@@ -309,6 +330,10 @@ class ConfigurationController extends Controller
      */
     public function create(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $data = $this->request->getParams();
 
@@ -378,6 +403,10 @@ class ConfigurationController extends Controller
      */
     public function update(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
             $data          = $this->request->getParams();
@@ -483,6 +512,10 @@ class ConfigurationController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
             $this->configurationMapper->delete($configuration);
@@ -622,6 +655,10 @@ class ConfigurationController extends Controller
      */
     public function import(int $id): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             $configuration = $this->configurationMapper->find($id);
             $data          = $this->request->getParams();
@@ -1162,9 +1199,46 @@ class ConfigurationController extends Controller
             throw new Exception('URL parameter is required', 400);
         }
 
-        // Validate URL.
+        // Validate URL: must be a valid URL.
         if (filter_var($url, FILTER_VALIDATE_URL) === false) {
             throw new Exception('Invalid URL provided', 400);
+        }
+
+        // SSRF guard: only allow HTTPS URLs and block RFC-1918 / link-local /
+        // loopback / cloud-metadata IP ranges that should never be reachable
+        // from a legitimate external configuration URL.
+        $parsedUrl = parse_url($url);
+        if (($parsedUrl['scheme'] ?? '') !== 'https') {
+            throw new Exception('Only HTTPS URLs are allowed for configuration import', 400);
+        }
+
+        $host = strtolower($parsedUrl['host'] ?? '');
+        // Resolve the host to an IP for range checks (best-effort; DNS must succeed).
+        $resolvedIp = gethostbyname($host);
+        if ($resolvedIp !== $host) {
+            $longIp = ip2long($resolvedIp);
+            if ($longIp !== false) {
+                // Block loopback (127.0.0.0/8).
+                if (($longIp & 0xFF000000) === 0x7F000000) {
+                    throw new Exception('URL resolves to a blocked IP range (loopback)', 400);
+                }
+                // Block RFC-1918: 10.0.0.0/8.
+                if (($longIp & 0xFF000000) === 0x0A000000) {
+                    throw new Exception('URL resolves to a blocked IP range (RFC-1918)', 400);
+                }
+                // Block RFC-1918: 172.16.0.0/12.
+                if (($longIp & 0xFFF00000) === 0xAC100000) {
+                    throw new Exception('URL resolves to a blocked IP range (RFC-1918)', 400);
+                }
+                // Block RFC-1918: 192.168.0.0/16.
+                if (($longIp & 0xFFFF0000) === 0xC0A80000) {
+                    throw new Exception('URL resolves to a blocked IP range (RFC-1918)', 400);
+                }
+                // Block link-local (169.254.0.0/16) including AWS metadata endpoint.
+                if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
+                    throw new Exception('URL resolves to a blocked IP range (link-local/metadata)', 400);
+                }
+            }
         }
 
         // Fetch content from URL.
@@ -1361,6 +1435,10 @@ class ConfigurationController extends Controller
      */
     public function importFromGitHub(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         return $this->importFromSource(
             fetchConfig: fn(array $params) => $this->fetchConfigFromGitHub(params: $params),
             params: $this->request->getParams(),
@@ -1385,6 +1463,10 @@ class ConfigurationController extends Controller
      */
     public function importFromGitLab(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         return $this->importFromSource(
             fetchConfig: fn(array $params) => $this->fetchConfigFromGitLab(params: $params),
             params: $this->request->getParams(),
@@ -1409,6 +1491,10 @@ class ConfigurationController extends Controller
      */
     public function importFromUrl(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         return $this->importFromSource(
             fetchConfig: fn(array $params) => $this->fetchConfigFromUrl(params: $params),
             params: $this->request->getParams(),

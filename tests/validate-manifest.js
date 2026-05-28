@@ -9,8 +9,21 @@
 //   (Build gate validates the manifest — `npm run check:manifest` runs this CLI,
 //    is wired into CI via .github/workflows/spec-validation.yml → check:specs,
 //    Ajv-validates against the canonical schema, prints error paths, exits non-zero
-//    on schema violation. Cleanly skips with exit 0 when no src/manifest.json
-//    exists, since OpenRegister is the foundation app and ships no manifest yet.)
+//    on schema violation.)
+//
+// @spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-002
+//   (Manifest declares zero Conduction-app dependencies — OpenRegister is the
+//    foundation app, so src/manifest.json carries `"dependencies": []`. The
+//    schema declares `dependencies` as a required array, and CnAppRoot guards
+//    the dependency-check phase against it. With the manifest authored under
+//    openregister-manifest-shell-swap, the validator now enforces this end-to-
+//    end on every CI run.)
+//
+// @spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-008
+//   (Manifest version reflects the adoption tier — top-level `version: "1.0.0"`
+//    set in src/manifest.json signals Tier-4 / full-shell adoption. The schema's
+//    required `version` field, asserted by Ajv here AND by structuralLint
+//    below as a fallback, prevents accidental removal or empty-string drift.)
 //
 // Usage:
 //   node tests/validate-manifest.js
