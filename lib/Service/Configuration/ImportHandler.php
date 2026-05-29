@@ -2564,7 +2564,7 @@ class ImportHandler
             }//end if
 
             // **AUTO-REGISTER CREATION (runtime-schema-api / data-import-export spec)**:
-            // When a runtime caller (e.g. OpenBuilt's schema editor) imports an OAS
+            // When a runtime caller (e.g. OpenBuild's schema editor) imports an OAS
             // marked as `x-openregister.type=application`, the installer-time `repair`
             // step that normally provisions a Register row does NOT run. Without this
             // step, the smoke-test foot-gun reappears: schemas exist but no Register

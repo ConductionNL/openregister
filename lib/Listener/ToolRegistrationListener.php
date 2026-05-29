@@ -200,7 +200,7 @@ class ToolRegistrationListener implements IEventListener
      *
      * ToolRegistry enforces the id format `app_name.tool_name` so we register ONE
      * bridge instance per (provider, function) pair under its full MCP id (e.g.
-     * `openbuilt.createApp`). The bridge is configured via setOnlyMcpId() so each
+     * `openbuild.createApp`). The bridge is configured via setOnlyMcpId() so each
      * entry's getFunctions() returns just that one descriptor — preventing the LLM
      * from seeing the same provider's tool list duplicated across N registry entries.
      *

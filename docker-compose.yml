@@ -625,6 +625,7 @@ services:
       - ../decidesk:/var/www/html/custom_apps/decidesk
       - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
       - ../larpingapp:/var/www/html/custom_apps/larpingapp
+      - ../openbuild:/var/www/html/custom_apps/openbuild
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud

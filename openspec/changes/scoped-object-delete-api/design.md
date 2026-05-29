@@ -78,7 +78,7 @@ Adding `@deprecated` to the single-arg form is the right marker for the next mig
 ### Alternatives considered
 
 - **A new sibling `deleteScoped()`**: rejected — see Decision 1. Doubles the public surface and forces callers to choose; the optional-parameter extension is the path the rest of the public API already follows.
-- **Auto-derive scope from `currentRegister` / `currentSchema`**: the current code already does this for permissions, but it relies on a service-instance side effect set by `setRegister()`/`setSchema()`. Past bugs (openbuilt#75 / openregister#1520: `TransitionController` 500 from inherited stale schema) show this is fragile. Make the scope explicit at the call site or accept the unscoped fallback; do not silently inherit.
+- **Auto-derive scope from `currentRegister` / `currentSchema`**: the current code already does this for permissions, but it relies on a service-instance side effect set by `setRegister()`/`setSchema()`. Past bugs (openbuild#75 / openregister#1520: `TransitionController` 500 from inherited stale schema) show this is fragile. Make the scope explicit at the call site or accept the unscoped fallback; do not silently inherit.
 - **Refuse unscoped + multi-match**: rejected for this change. Pre-existing callers may legitimately rely on the cross-table fallback (notably MCP and import paths). Tightening that would be a behaviour break disguised as a defensive check. Revisit once all known call sites are migrated.
 
 ## Risks / Trade-offs

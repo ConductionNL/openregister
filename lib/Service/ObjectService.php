@@ -611,7 +611,7 @@ class ObjectService
         // a previous call on this service instance. When the caller
         // omits either argument we want MagicMapper's cross-table search
         // to resolve the object — NOT a previous caller's leftover
-        // schema (openbuilt#75 / openregister#1520: TransitionController
+        // schema (openbuild#75 / openregister#1520: TransitionController
         // was 500-ing because `objectService->find(id: $uuid)` from
         // `TransitionEngine::transition()` inherited a stale schema and
         // hit the wrong magic table).
@@ -1851,7 +1851,7 @@ class ObjectService
      *
      * **Numeric-ID contract (runtime-schema-api):** `@self.register` and
      * `@self.schema` MUST be numeric IDs (int). Passing a slug string here
-     * is the documented foot-gun the OpenBuilt smoke test surfaced — it
+     * is the documented foot-gun the OpenBuild smoke test surfaced — it
      * silently returns zero results instead of resolving the slug.
      * Slug-aware callers MUST use {@see self::searchObjectsBySlug()},
      * which resolves the slugs via the mappers and then delegates here on
@@ -1913,7 +1913,7 @@ class ObjectService
      * the mappers' standard multi-tenancy filter) and delegates to the
      * numeric-ID search path.
      *
-     * This helper exists to close the OpenBuilt smoke-test foot-gun where
+     * This helper exists to close the OpenBuild smoke-test foot-gun where
      * callers passed slugs in `@self.register` / `@self.schema` and got
      * zero results back. The strict numeric-ID contract on `searchObjects`
      * means any future misuse fails loudly at the call site; slug-aware
