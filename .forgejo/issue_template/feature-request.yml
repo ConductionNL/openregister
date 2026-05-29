@@ -1,0 +1,125 @@
+name: "✨ Feature request"
+description: "Suggest a feature or improvement. Fields below feed a draft OpenSpec proposal."
+title: "[FEATURE] "
+labels: ["enhancement", "feature", "needs-triage"]
+type: "Feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Suggest a feature
+
+        Thanks for telling us what you need. **Triage happens within 24 hours.**
+
+        The fields below feed an OpenSpec proposal directly if the suggestion
+        is accepted. The more concrete you are, the faster it ships.
+
+        Prefer Dutch? Vul de velden in het Nederlands in — that's fine, we triage in both.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem"
+      description: "What can't you do today? What's the friction? Write it from your perspective — one or two sentences is plenty."
+      placeholder: "I want to filter contacts by last interaction date but the list view doesn't support it. I end up exporting to CSV and sorting in a spreadsheet."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: "Proposed solution"
+      description: "How would you like it to work? Sketches, links, references welcome. \"I'm not sure\" is also a valid answer — we'll figure it out together."
+      placeholder: "A date-range filter in the contacts list sidebar, defaulting to last 30 days, persisted per user."
+    validations:
+      required: true
+
+  - type: textarea
+    id: who-benefits
+    attributes:
+      label: "Who benefits"
+      description: "Which user role or workflow does this serve? Be specific."
+      placeholder: "Account managers tracking client engagement, especially before renewal conversations."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority-to-you
+    attributes:
+      label: "How important is this to you?"
+      description: "Honest self-assessment. Helps us prioritise."
+      options:
+        - "Nice to have"
+        - "Would use weekly"
+        - "Would use daily"
+        - "Blocking me right now"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Anything else?"
+      description: "Edge cases, alternatives you've considered, things to avoid, related capabilities, anything that didn't fit in the boxes above."
+      placeholder: "Out of scope: per-team default filter (could be later). Avoid: hiding the filter behind a settings page — needs to be one click from the list."
+
+  - type: markdown
+    attributes:
+      value: |
+        ### Context
+
+        The fields below are auto-filled when you suggest a feature from inside
+        the app. They capture where you were when the idea hit so we can scope
+        the spec without a second round of questions.
+
+        **We show them to you here on purpose**: you can see exactly what we
+        send and edit or clear any field before you submit. Leave them blank if
+        you're filing directly from GitHub — we'll still triage it.
+
+  - type: input
+    id: app
+    attributes:
+      label: "App"
+      description: "Auto-filled by the in-product modal. The Nextcloud app you were using."
+      placeholder: "pipelinq"
+
+  - type: input
+    id: page
+    attributes:
+      label: "Page"
+      description: "Auto-filled. The manifest page id + route you were on when you opened the modal."
+      placeholder: "clients-detail (/clients/abc-123)"
+
+  - type: input
+    id: surface
+    attributes:
+      label: "Modal or widget"
+      description: "Auto-filled. Any modal, dialog, dashboard widget, or sidebar tab open at the moment the modal launched. Helps us pinpoint UI-attached suggestions."
+      placeholder: "edit-client-modal · or · dashboard widget: open-leads"
+
+  - type: input
+    id: object
+    attributes:
+      label: "Object in focus"
+      description: "Auto-filled. The OpenRegister register + schema + UUID the page was viewing, if any. Lets us trace the suggestion to a real data shape."
+      placeholder: "pipelinq · Client · 2f9d-…-abc"
+
+  - type: input
+    id: spec-ref
+    attributes:
+      label: "Related capability"
+      description: "Auto-filled if the page or widget declares a `specRef`. Connects the suggestion to the existing OpenSpec for that capability."
+      placeholder: "client-management"
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        ### What happens next
+
+        1. **Within 24 hours**: a maintainer reads this and replies with one of `ready-to-build`, `needs-design`, `parking-lot`, or `wont-build` (with a reason).
+        2. **If `ready-to-build`**: an OpenSpec proposal is auto-drafted from these fields. Hydra picks it up and opens a draft PR within days.
+        3. **When it ships**: you're credited on the spec, you get a `Co-Authored-By:` trailer on the merge commit, and you appear on the app's contributors page.
+
+        Read the full flow at the [Users are the moat](https://docs.conduction.nl/strategy/users-are-the-moat) strategy doc.
