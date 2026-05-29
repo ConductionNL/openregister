@@ -274,7 +274,12 @@ class EmailLinkService
 
         $link->setMailAccountId($mailAccountId);
         $link->setMailMessageId($messageIdInt);
-        $effectiveUid = ($uidForMatch !== null || $message['uid'] === '') ? $uidForMatch : $message['uid'];
+        if ($uidForMatch !== null || $message['uid'] === '') {
+            $effectiveUid = $uidForMatch;
+        } else {
+            $effectiveUid = $message['uid'];
+        }
+
         $link->setMailMessageUid($effectiveUid);
         $link->setSubject($message['subject']);
         $link->setSender($message['sender']);
@@ -540,7 +545,10 @@ class EmailLinkService
         }
 
         $items      = $this->normalizeMessageRows(rows: $rows);
-        $nextCursor = ($hasMore === true && $items !== []) ? $items[count($items) - 1]['id'] : null;
+        $nextCursor = null;
+        if ($hasMore === true && $items !== []) {
+            $nextCursor = $items[count($items) - 1]['id'];
+        }
 
         return [
             'items'      => $items,
@@ -594,7 +602,11 @@ class EmailLinkService
                 ->addOrderBy('m.id', 'DESC')
                 ->setMaxResults($fetch);
 
-            $cursorId = ($afterCursor !== null && $afterCursor !== '') ? (int) $afterCursor : 0;
+            $cursorId = 0;
+            if ($afterCursor !== null && $afterCursor !== '') {
+                $cursorId = (int) $afterCursor;
+            }
+
             if ($cursorId > 0) {
                 $qb->andWhere(
                     $qb->expr()->lt(

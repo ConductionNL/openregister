@@ -121,7 +121,7 @@ class TenantLifecycleService
     public function validateTransition(string $currentStatus, string $targetStatus): void
     {
         // Validate that both statuses are known before checking transition.
-        if ($this->isValidStatus($currentStatus) === false || $this->isValidStatus($targetStatus) === false) {
+        if ($this->isValidStatus(status: $currentStatus) === false || $this->isValidStatus(status: $targetStatus) === false) {
             throw new Exception(
                 sprintf("Unknown status '%s' or '%s'.", $currentStatus, $targetStatus),
                 Response::HTTP_UNPROCESSABLE_ENTITY
@@ -183,7 +183,7 @@ class TenantLifecycleService
 
         // Validate that the organisation's target environment is a known OTAP stage.
         $env = $organisation->getEnvironment() ?? self::ENV_PRODUCTION;
-        if ($this->isValidEnvironment($env) === false) {
+        if ($this->isValidEnvironment(environment: $env) === false) {
             throw new Exception(
                 sprintf("Unknown target environment '%s'.", $env),
                 Response::HTTP_UNPROCESSABLE_ENTITY
@@ -192,7 +192,7 @@ class TenantLifecycleService
 
         // If a source environment is set, validate the promotion order.
         $sourceEnv = $organisation->getEnvironment() ?? null;
-        if ($sourceEnv !== null && $sourceEnv !== $env && $this->isValidPromotionOrder($sourceEnv, $env) === false) {
+        if ($sourceEnv !== null && $sourceEnv !== $env && $this->isValidPromotionOrder(sourceEnv: $sourceEnv, targetEnv: $env) === false) {
             throw new Exception(
                 sprintf("Invalid OTAP promotion order from '%s' to '%s'.", $sourceEnv, $env),
                 Response::HTTP_CONFLICT

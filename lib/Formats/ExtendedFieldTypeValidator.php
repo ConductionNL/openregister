@@ -108,7 +108,11 @@ class ExtendedFieldTypeValidator
             return "Property '{$propertyName}': color value must be a string";
         }
 
-        $format = ($format === null || $format === '') ? 'hex' : strtolower($format);
+        if ($format === null || $format === '') {
+            $format = 'hex';
+        } else {
+            $format = strtolower($format);
+        }
 
         if ($format === 'rgba') {
             return $this->validateRgba(value: $value, propertyName: $propertyName);

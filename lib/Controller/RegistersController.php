@@ -1529,7 +1529,7 @@ class RegistersController extends Controller
             $importerUid = $auditSample[0]->getUser();
         }
 
-        if ($this->canRollbackImport($user, $importerUid) === false) {
+        if ($this->canRollbackImport(user: $user, importerUid: $importerUid) === false) {
             return new JSONResponse(
                 data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],
                 statusCode: 403
@@ -1607,8 +1607,6 @@ class RegistersController extends Controller
      * >
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
-     *
-     * @NoAdminRequired
      */
     public function stats(int $id): JSONResponse
     {

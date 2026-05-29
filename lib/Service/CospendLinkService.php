@@ -201,7 +201,7 @@ class CospendLinkService
         }
 
         $link = $this->hydrateLink(
-                [
+                opts: [
                     'objectUuid' => $objectUuid,
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
@@ -265,7 +265,7 @@ class CospendLinkService
         $currency = $project['currency'] ?? null;
 
         $link = $this->hydrateLink(
-                [
+                opts: [
                     'objectUuid' => $objectUuid,
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
@@ -334,7 +334,7 @@ class CospendLinkService
         }
 
         $link = $this->hydrateLink(
-                [
+                opts: [
                     'objectUuid' => $objectUuid,
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
@@ -425,10 +425,26 @@ class CospendLinkService
         $link->setSchemaId((int) $opts['schemaId']);
         $link->setEntryType((string) $opts['entryType']);
         $link->setProjectId((string) $opts['projectId']);
-        $link->setBillId(isset($opts['billId']) ? (int) $opts['billId'] : null);
+        $billId = null;
+        if (isset($opts['billId']) === true) {
+            $billId = (int) $opts['billId'];
+        }
+
+        $link->setBillId($billId);
         $link->setName((string) ($opts['name'] ?? ''));
-        $link->setAmount(isset($opts['amount']) ? (float) $opts['amount'] : null);
-        $link->setCurrency(isset($opts['currency']) ? (string) $opts['currency'] : null);
+
+        $amount = null;
+        if (isset($opts['amount']) === true) {
+            $amount = (float) $opts['amount'];
+        }
+
+        $currency = null;
+        if (isset($opts['currency']) === true) {
+            $currency = (string) $opts['currency'];
+        }
+
+        $link->setAmount($amount);
+        $link->setCurrency($currency);
         $link->setLinkedBy((string) $opts['uid']);
         $link->setLinkedAt(new DateTime());
 

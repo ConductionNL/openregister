@@ -194,7 +194,12 @@ class CalendarLinkService
         $link->setSummary((string) ($event['summary'] ?? ''));
         $link->setDtstart($this->parseEventDateTime(value: $event['dtstart'] ?? null));
         $link->setDtend($this->parseEventDateTime(value: $event['dtend'] ?? null));
-        $link->setLocation(isset($event['location']) === true ? (string) $event['location'] : null);
+        $location = null;
+        if (isset($event['location']) === true) {
+            $location = (string) $event['location'];
+        }
+
+        $link->setLocation($location);
         $link->setLinkedBy($user->getUID());
         $link->setLinkedAt(new DateTime());
         $link->setTaggedWithXor(true);
@@ -368,7 +373,7 @@ class CalendarLinkService
      *     mark the existing entry as 'both' via fallback dedupe.
      *   - Otherwise: insert a new 'xor-only' entry.
      *
-     * @param array<string,array<string,mixed>> &$merged     Dedupe map, modified in place.
+     * @param array<string,array<string,mixed>> $merged      Dedupe map, modified in place by reference.
      * @param array<string,mixed>               $event       X-OR-* scan event row.
      * @param string                            $eventUid    Pre-extracted UID.
      * @param string                            $calendarUri Resolved calendar URI (may be '').
@@ -493,8 +498,18 @@ class CalendarLinkService
         usort(
                 $results,
                 static function (array $a, array $b): int {
-                    $timeA = ($a['dtstart'] !== null) ? strtotime((string) $a['dtstart']) : PHP_INT_MAX;
-                    $timeB = ($b['dtstart'] !== null) ? strtotime((string) $b['dtstart']) : PHP_INT_MAX;
+                    if ($a['dtstart'] !== null) {
+                        $timeA = strtotime((string) $a['dtstart']);
+                    } else {
+                        $timeA = PHP_INT_MAX;
+                    }
+
+                    if ($b['dtstart'] !== null) {
+                        $timeB = strtotime((string) $b['dtstart']);
+                    } else {
+                        $timeB = PHP_INT_MAX;
+                    }
+
                     return $timeA <=> $timeB;
                 }
                 );
@@ -604,14 +619,24 @@ class CalendarLinkService
         }
 
         $uid   = (string) $vevent->UID;
-        $start = isset($vevent->DTSTART) === true ? $vevent->DTSTART->getDateTime() : null;
+        $start = null;
+        if (isset($vevent->DTSTART) === true) {
+            $start = $vevent->DTSTART->getDateTime();
+        }
 
         if ($cutoff !== null && $start !== null && $start->getTimestamp() < $cutoff) {
             return null;
         }
 
-        $dtend       = isset($vevent->DTEND) === true ? $vevent->DTEND->getDateTime()->format('c') : null;
-        $rowLocation = isset($vevent->LOCATION) === true ? (string) $vevent->LOCATION : null;
+        $dtend = null;
+        if (isset($vevent->DTEND) === true) {
+            $dtend = $vevent->DTEND->getDateTime()->format('c');
+        }
+
+        $rowLocation = null;
+        if (isset($vevent->LOCATION) === true) {
+            $rowLocation = (string) $vevent->LOCATION;
+        }
 
         return [
             'uid'         => $uid,
@@ -706,10 +731,25 @@ class CalendarLinkService
                 return null;
             }
 
-            $dtstart     = isset($vevent->DTSTART) === true ? DateTime::createFromInterface($vevent->DTSTART->getDateTime()) : null;
-            $dtend       = isset($vevent->DTEND) === true ? DateTime::createFromInterface($vevent->DTEND->getDateTime()) : null;
-            $rowSummary  = isset($vevent->SUMMARY) === true ? (string) $vevent->SUMMARY : null;
-            $rowLocation = isset($vevent->LOCATION) === true ? (string) $vevent->LOCATION : null;
+            $dtstart = null;
+            if (isset($vevent->DTSTART) === true) {
+                $dtstart = DateTime::createFromInterface($vevent->DTSTART->getDateTime());
+            }
+
+            $dtend = null;
+            if (isset($vevent->DTEND) === true) {
+                $dtend = DateTime::createFromInterface($vevent->DTEND->getDateTime());
+            }
+
+            $rowSummary = null;
+            if (isset($vevent->SUMMARY) === true) {
+                $rowSummary = (string) $vevent->SUMMARY;
+            }
+
+            $rowLocation = null;
+            if (isset($vevent->LOCATION) === true) {
+                $rowLocation = (string) $vevent->LOCATION;
+            }
 
             return [
                 'calendarId' => $calendarId,
@@ -783,7 +823,7 @@ class CalendarLinkService
         }
 
         if (is_object($components) === true && method_exists($components, 'getValue') === true) {
-            return $this->componentListContainsVevent($components->getValue());
+            return $this->componentListContainsVevent(components: $components->getValue());
         }
 
         if (is_string($components) === true) {
@@ -791,7 +831,7 @@ class CalendarLinkService
         }
 
         if (is_iterable($components) === true) {
-            return $this->componentListContainsVevent($components);
+            return $this->componentListContainsVevent(components: $components);
         }
 
         return false;

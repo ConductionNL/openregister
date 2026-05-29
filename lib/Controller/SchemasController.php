@@ -69,10 +69,14 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)     REST controllers have many endpoints; extraction into sub-controllers would break the route registration.
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) REST controllers have many endpoints; extraction into sub-controllers would break the route registration.
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)     REST controllers have many endpoints; extraction into sub-controllers would break the route registration.
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller DI requires injecting framework + RBAC + audit + domain services, each used in separate endpoint groups.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     REST controllers have many endpoints; extraction
+ * into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) REST controllers have many endpoints; extraction
+ * into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     REST controllers have many endpoints; extraction
+ * into sub-controllers would break the route registration.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller DI requires injecting
+ * framework + RBAC + audit + domain services, each used in separate endpoint groups.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
@@ -153,7 +157,8 @@ class SchemasController extends Controller
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple optional extend/pagination/filter parameters each add one branch.
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional extend/pagination/filter parameters each add one branch.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handling pagination + filtering + extend + stats in one NC controller action is idiomatic; extracting helpers would obscure the flow.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handling pagination + filtering + extend + stats
+     * in one NC controller action is idiomatic; extracting helpers would obscure the flow.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
@@ -285,7 +290,9 @@ class SchemasController extends Controller
      * @PublicPage
      *
      * @SuppressWarnings(PHPMD.ShortVariable)        $id matches the {id} URL route parameter; renaming breaks route binding.
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles _extend, _count, RBAC, 404, and several response-shaping branches; each is a required rendering path that cannot be extracted without splitting the HTTP contract.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles _extend, _count, RBAC, 404, and several
+     * response-shaping branches; each is a required rendering path that cannot be extracted without
+     * splitting the HTTP contract.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
@@ -369,7 +376,8 @@ class SchemasController extends Controller
      * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block at the end is repetitive but intentional; extracting it would not reduce cognitive load.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block at the end is
+     * repetitive but intentional; extracting it would not reduce cognitive load.
      *
      * @return JSONResponse JSON response with created schema or error
      *
@@ -506,7 +514,8 @@ class SchemasController extends Controller
      * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block is repetitive but intentional; extracting it would not reduce cognitive load.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block is repetitive but
+     * intentional; extracting it would not reduce cognitive load.
      * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.
      *
      * @return JSONResponse JSON response with updated schema or error
@@ -808,8 +817,10 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is a named constructor and DatabaseConstraintException::fromDatabaseException is a factory — no DI alternatives.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) JSON-upload path merges insert + update branches; splitting would duplicate error classification.
+     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is a named constructor and
+     * DatabaseConstraintException::fromDatabaseException is a factory — no DI alternatives.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) JSON-upload path merges insert + update branches;
+     * splitting would duplicate error classification.
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
      * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.

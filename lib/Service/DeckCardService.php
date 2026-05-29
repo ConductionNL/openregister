@@ -248,7 +248,7 @@ class DeckCardService
                 return $due->format(\DateTime::ATOM);
             }
         } catch (\Throwable $e) {
-            // getDuedate missing on this Deck version — leave null.
+            // GetDuedate missing on this Deck version — leave null.
         }
 
         return null;
@@ -277,7 +277,7 @@ class DeckCardService
                 return $labels;
             }
         } catch (\Throwable $e) {
-            // getLabels missing or returned unexpected shape — leave empty.
+            // GetLabels missing or returned unexpected shape — leave empty.
         }
 
         return [];
@@ -305,7 +305,7 @@ class DeckCardService
                 return $assignees;
             }
         } catch (\Throwable $e) {
-            // getAssignedUsers missing — leave empty.
+            // GetAssignedUsers missing — leave empty.
         }
 
         return [];

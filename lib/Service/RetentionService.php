@@ -662,7 +662,7 @@ class RetentionService
                 }
 
                 // Skip objects in an immutable archival status (vernietigd, overgebracht).
-                if ($this->validateNotImmutable($object) !== null) {
+                if ($this->validateNotImmutable(object: $object) !== null) {
                     continue;
                 }
 

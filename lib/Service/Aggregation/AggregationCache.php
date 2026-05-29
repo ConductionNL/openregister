@@ -327,7 +327,11 @@ class AggregationCache
     {
         $uid   = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
         $org   = $this->organisationService->getActiveOrganisation();
-        $orgId = ($org !== null ? $org->getUuid() : 'none');
+        $orgId = 'none';
+        if ($org !== null) {
+            $orgId = $org->getUuid();
+        }
+
         return sha1($uid.':'.$orgId);
     }//end rbacScopeHash()
 }//end class

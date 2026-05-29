@@ -70,7 +70,10 @@ use Throwable;
  *     user session + app manager + container + logger. Each dependency is
  *     required for one of the Tier-2 flows (link, create, unlink, list,
  *     picker, cache refresh, graceful degradation).
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Tier-2 service implements linkPage/createAndLinkPage/unlinkPage/getLinkedPages/getAvailablePages plus getProvider/resolveRouter/requireUid/resolveRemotePage/hydrateLink/normaliseRemoteRow/normaliseList/toServiceException/isStale/refreshLink; each is a required face of the xWiki integration surface.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Tier-2 service implements
+ * linkPage/createAndLinkPage/unlinkPage/getLinkedPages/getAvailablePages plus
+ * getProvider/resolveRouter/requireUid/resolveRemotePage/hydrateLink/normaliseRemoteRow/normaliseList/
+ * toServiceException/isStale/refreshLink; each is a required face of the xWiki integration surface.
  */
 class XwikiLinkService
 {
@@ -243,8 +246,13 @@ class XwikiLinkService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) createAndLinkPage() guards user auth, non-empty title/space, OpenConnector availability, provider resolution, create call, canonical-reference extraction, and title/space fallback in sequence; each is a required guard for the atomic create+link contract.
-     * @SuppressWarnings(PHPMD.NPathComplexity)      empty-title + empty-space + OpenConnector-unavailable + provider-null + ProviderUnavailableException + generic-Throwable + canonical-reference-fallback + title-fallback + space-fallback produce many independent paths; all guard the create+link contract.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) createAndLinkPage() guards user auth, non-empty
+     * title/space, OpenConnector availability, provider resolution, create call, canonical-reference
+     * extraction, and title/space fallback in sequence; each is a required guard for the atomic
+     * create+link contract.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      empty-title + empty-space + OpenConnector-unavailable
+     * + provider-null + ProviderUnavailableException + generic-Throwable + canonical-reference-fallback
+     * + title-fallback + space-fallback produce many independent paths; all guard the create+link contract.
      */
     public function createAndLinkPage(
         string $objectUuid,
