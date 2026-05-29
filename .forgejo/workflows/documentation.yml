@@ -1,0 +1,21 @@
+name: Publish docs
+
+on:
+  push:
+    branches: [documentation, main, development]
+  pull_request:
+    branches: [documentation, main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *"
+
+jobs:
+  docs:
+    uses: https://codeberg.org/Conduction/.github/.forgejo/workflows/documentation.yml@main
+    with:
+      cf-project-name: openregister-docs
+      source-folder: docs
+    secrets:
+      CF_API_TOKEN:   ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID:  ${{ secrets.CF_ACCOUNT_ID }}
+      CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
