@@ -312,11 +312,21 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 1
+			count: 2
 			path: lib/Controller/BulkController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/BulkController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/BulkController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, error_code\\: string, detail\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/BulkController.php
 
