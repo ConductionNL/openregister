@@ -100,7 +100,7 @@ make push
 docker exec -u www-data nextcloud php occ app_api:app:register \
     n8n \
     harp_daemon \
-    --info-xml https://raw.githubusercontent.com/ConductionNL/openregister/main/exapps/n8n/appinfo/info.xml \
+    --info-xml https://codeberg.org/Conduction/openregister/raw/branch/main/exapps/n8n/appinfo/info.xml \
     --force-scopes
 
 # Or for local development
