@@ -68,7 +68,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service references IManager, IShare, Folder, Node, IL10N, LoggerInterface, ContainerInterface, DateTime, DateTimeInterface, OCP\Server, and Throwable — every type is required for the share list/create/revoke contract or the lazy-resolution policy.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Service references IManager, IShare, Folder, Node, IL10N, LoggerInterface, ContainerInterface, DateTime, DateTimeInterface, OCP\Server, and Throwable — every type is required for the share list/create/revoke contract or the lazy-resolution policy.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Service exposes getLinkedShares/createShare/revokeShare/getShareableFiles plus internal resolution helpers (getShareManager, resolveObjectFolder, resolveNodeInFolder, normaliseShare, shareIsInFolder, resolveCurrentUserId, resolveObjectEntity, lookup, resolveContainer); each is a required step of a distinct public flow.
  */
 class ShareLinkService
@@ -218,9 +218,9 @@ class ShareLinkService
      *                   invalid recipient (400) or share-manager failure.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) createShare() maps directly to IManager::createShare()'s required fields (node, shareType, sharedBy, permissions, shareWith, password, expiration); bundling into a value-object would add an intermediate type not used elsewhere.
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) createShare() guards share type validity, shareWith requirement per type, password/expiration optional fields, and ownership boundary (node-in-folder check); each branch enforces a distinct access-control requirement.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Optional password + optional expiration + three share-type branches that require shareWith produce many independent paths; all enforce the IManager::createShare contract.
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $registerId and $schemaId are reserved for future folder-scoping; removing them now would break the method signature used by the controller and SharesProvider.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   createShare() guards share type validity, shareWith requirement per type, password/expiration optional fields, and ownership boundary (node-in-folder check); each branch enforces a distinct access-control requirement.
+     * @SuppressWarnings(PHPMD.NPathComplexity)        Optional password + optional expiration + three share-type branches that require shareWith produce many independent paths; all enforce the IManager::createShare contract.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)  $registerId and $schemaId are reserved for future folder-scoping; removing them now would break the method signature used by the controller and SharesProvider.
      *
      * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-share contract is owned by the
      *              integration-shares / generic-integrations capability.

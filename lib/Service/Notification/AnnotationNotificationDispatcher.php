@@ -49,10 +49,10 @@ use Psr\Log\LoggerInterface;
 /**
  * Reads notification annotations and dispatches matching ones.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Dispatcher wires SchemaMapper, INotificationManager, IGroupManager, IUserManager, IMailer, IActivityManager, IClientService, IServerContainer, RateLimiter, IConfig, NotificationHistoryMapper, NotificationCoalescer, NotificationSubscriptionMapper, NotificationDispatchLogMapper, NotificationPreferenceService — every dependency serves a distinct notification channel or cross-cutting concern (audit, dedup, rate-limit, preference).
- * @SuppressWarnings(PHPMD.ExcessiveClassLength) Class implements the full notification dispatch pipeline (nc-notification, email, activity, webhook, talk channels) plus recipient resolution, rate-limiting, coalescing, idempotency, history audit, and organisation gating; each concern requires its own helper method and cannot be moved to a separate class without breaking the single-dispatch-per-call contract.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Dispatcher wires SchemaMapper, INotificationManager, IGroupManager, IUserManager, IMailer, IActivityManager, IClientService, IServerContainer, RateLimiter, IConfig, NotificationHistoryMapper, NotificationCoalescer, NotificationSubscriptionMapper, NotificationDispatchLogMapper, NotificationPreferenceService — every dependency serves a distinct notification channel or cross-cutting concern (audit, dedup, rate-limit, preference).
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Class implements the full notification dispatch pipeline (nc-notification, email, activity, webhook, talk channels) plus recipient resolution, rate-limiting, coalescing, idempotency, history audit, and organisation gating; each concern requires its own helper method and cannot be moved to a separate class without breaking the single-dispatch-per-call contract.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity is spread across 20+ private helpers each testing a distinct dispatch condition; PHPMD accumulates scores from every helper into the class total.
- * @SuppressWarnings(PHPMD.TooManyMethods) Each notification channel (nc-notification, email, activity, webhook, talk), each gate (rate-limit, coalesce, preference, subscription, organisation), each helper (recipient resolve, locale, history record, idempotency) requires its own method per the single-responsibility principle.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Each notification channel (nc-notification, email, activity, webhook, talk), each gate (rate-limit, coalesce, preference, subscription, organisation), each helper (recipient resolve, locale, history record, idempotency) requires its own method per the single-responsibility principle.
  */
 class AnnotationNotificationDispatcher
 {
@@ -108,10 +108,10 @@ class AnnotationNotificationDispatcher
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) dispatch() iterates notifications, filters by organisation gate, idempotency, recipient resolution, rate-limit, coalesce, and preference per recipient per channel — each branch is a required dispatch condition; extracting sub-methods would split the sequential guard chain.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Per-rule: trigger match + org gate + idempotency claim + subscription filter + rate-limit + coalesce + preference check + channel fan-out produce many independent paths; all are required for the notification contract.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  dispatch() iterates notifications, filters by organisation gate, idempotency, recipient resolution, rate-limit, coalesce, and preference per recipient per channel — each branch is a required dispatch condition; extracting sub-methods would split the sequential guard chain.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Per-rule: trigger match + org gate + idempotency claim + subscription filter + rate-limit + coalesce + preference check + channel fan-out produce many independent paths; all are required for the notification contract.
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) dispatch() is the single entry point that chains all notification gates in order; splitting the chain would break the sequential guard semantics (e.g. rate-limit must run after idempotency claim).
-     * @SuppressWarnings(PHPMD.LongVariable) $resolvedIdempotencyKey and $idempotencyKeyTemplate are descriptive names for distinct lifecycle stages of the same template value; abbreviating would obscure the claim-before-send ordering that prevents duplicate dispatches.
+     * @SuppressWarnings(PHPMD.LongVariable)          $resolvedIdempotencyKey and $idempotencyKeyTemplate are descriptive names for distinct lifecycle stages of the same template value; abbreviating would obscure the claim-before-send ordering that prevents duplicate dispatches.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
      */
@@ -1014,7 +1014,7 @@ class AnnotationNotificationDispatcher
      * @return bool True when the rule should fire for this event.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) matches() handles four trigger types (created/updated/transition/calculatedChange) each with sub-conditions (action filter, field-change condition, boundary-crossing operators); each branch is a distinct spec requirement and cannot be merged.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Each trigger type has optional sub-conditions that can independently pass or fail; the NPath count reflects spec-mandated combinations, not accidental branching.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Each trigger type has optional sub-conditions that can independently pass or fail; the NPath count reflects spec-mandated combinations, not accidental branching.
      */
     private function matches(array $triggerSpec, string $trigger, array $context): bool
     {
@@ -1207,8 +1207,8 @@ class AnnotationNotificationDispatcher
      * @return array<int, string>
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) resolveRecipients() handles five recipient kinds (users, groups, field, acl-read, acl-manage) plus expression evaluation, deduplication, and exclusion; each kind requires its own resolution logic and must run in one pass to produce a deduplicated uid list.
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each recipient entry is dispatched by kind; within each kind there are null-guards and type checks — all are required branches of the spec's recipient model.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Combinations of recipient kinds, expression evaluation, null-guards, and exclusion list produce many paths; each is required by the spec's recipient-resolution contract.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each recipient entry is dispatched by kind; within each kind there are null-guards and type checks — all are required branches of the spec's recipient model.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Combinations of recipient kinds, expression evaluation, null-guards, and exclusion list produce many paths; each is required by the spec's recipient-resolution contract.
      */
     private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object=null, array $context=[]): array
     {
@@ -1567,7 +1567,7 @@ class AnnotationNotificationDispatcher
      * @return string The interpolated subject string.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) resolveLocalizedSubject() handles three template shapes (string, locale-keyed map, default-locale fallback) and within each shape applies template-variable interpolation; each branch is required by the i18n subject contract.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Template shape × locale-match × defaultLocale fallback × interpolation presence produce many paths; all are required by the spec's subject-resolution priority chain.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Template shape × locale-match × defaultLocale fallback × interpolation presence produce many paths; all are required by the spec's subject-resolution priority chain.
      */
     private function resolveLocalizedSubject(
         mixed $template,

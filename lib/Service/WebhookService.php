@@ -263,7 +263,7 @@ class WebhookService
         // before validation. A colon anywhere in $host (brackets or not) is
         // the reliable heuristic that we have an IPv6 address rather than a
         // plain hostname.
-        $bareHost     = trim($host, '[]');
+        $bareHost      = trim($host, '[]');
         $isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
             || strpos($host, ':') !== false;
 
@@ -472,7 +472,7 @@ class WebhookService
 
         // ── IPv6 literal ────────────────────────────────────────────────
         // Strip brackets that parse_url() may leave around IPv6 literals.
-        $bareHost     = trim($host, '[]');
+        $bareHost      = trim($host, '[]');
         $isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
             || strpos($host, ':') !== false;
 

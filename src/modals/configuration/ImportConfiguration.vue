@@ -156,7 +156,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</NcButton>
 
 						<NcSelect
-							v-if="branches.length > 0"
+							v-if="branches.length !== 0"
 							v-model="selectedBranch"
 							:options="branches"
 							input-label="Branch"

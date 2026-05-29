@@ -6794,3 +6794,75 @@ parameters:
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Tool/SchemaTool.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<201, OCA\\\\OpenRegister\\\\Db\\\\Configuration, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Configuration, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<204, null, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400\\|500, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<201, OCA\\\\OpenRegister\\\\Db\\\\Endpoint, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/EndpointsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<404\\|500, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Endpoint, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/EndpointsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FilesController\\:\\:resolveParentObjectForFile\\(\\) never returns OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity so it can be removed from the return type\\.$#"
+			count: 1
+			path: lib/Controller/FilesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array\\{results: array<OCA\\\\OpenRegister\\\\Db\\\\Source>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array\\{results: array<array<string, mixed>>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array<string, mixed>, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array<string, mixed>, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php

@@ -47,14 +47,14 @@ class SourcesController extends Controller
     /**
      * Constructor for the SourcesController
      *
-     * @param string       $appName      The name of the app
-     * @param IRequest     $request      The request object
-     * @param IAppConfig   $config       The app configuration object
-     * @param SourceMapper $sourceMapper The source mapper
-     * @param IL10N        $l10n         The localization service
-     * @param IUserSession $userSession  User session for admin checks
+     * @param string        $appName      The name of the app
+     * @param IRequest      $request      The request object
+     * @param IAppConfig    $config       The app configuration object
+     * @param SourceMapper  $sourceMapper The source mapper
+     * @param IL10N         $l10n         The localization service
+     * @param IUserSession  $userSession  User session for admin checks
      * @param IGroupManager $groupManager Group manager for admin checks
-     * @param ICrypto      $crypto       Crypto service for databaseUrl encryption
+     * @param ICrypto       $crypto       Crypto service for databaseUrl encryption
      *
      * @return void
      */

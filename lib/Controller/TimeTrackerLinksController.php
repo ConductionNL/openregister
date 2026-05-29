@@ -57,10 +57,10 @@ class TimeTrackerLinksController extends Controller
     /**
      * Constructor.
      *
-     * @param string                 $appName                App id.
-     * @param IRequest               $request                HTTP request.
-     * @param TimeTrackerLinkService $linkService Backing service.
-     * @param ObjectService          $objectService          OR object resolver.
+     * @param string                 $appName       App id.
+     * @param IRequest               $request       HTTP request.
+     * @param TimeTrackerLinkService $linkService   Backing service.
+     * @param ObjectService          $objectService OR object resolver.
      */
     public function __construct(
         string $appName,

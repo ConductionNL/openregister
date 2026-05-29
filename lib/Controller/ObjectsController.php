@@ -1823,8 +1823,6 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @PublicPage
-     *
      * @psalm-return JSONResponse<201|401|403|404,
      *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
      *     message?: mixed|string, error?: mixed|string,...},
@@ -1842,12 +1840,9 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Wave-3 C13: short-circuit anonymous writes BEFORE the webhook
-        // intercept fires. The endpoint is @PublicPage so unauthenticated
-        // reads can pass through the access guard, but writes from an
-        // anonymous caller must never trigger pre-event webhooks
-        // (which can cause side effects in receiving systems —
-        // file ingest, n8n flows, audit logs — before any RBAC check runs).
+        // Defense-in-depth: ensure a session user is present even though
+        // @NoAdminRequired already restricts this to authenticated callers.
+        // Guards against any future middleware changes that could bypass NC auth.
         if ($this->userSession->getUser() === null) {
             return new JSONResponse(
                 data: ['error' => 'Authentication required to create objects'],
@@ -2333,8 +2328,6 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the updated object
      *
-     * @PublicPage
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
@@ -2347,11 +2340,9 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Wave-3 C13: short-circuit anonymous writes early. postPatch is
-        // @PublicPage to let multipart file-upload PATCH-semantics work for
-        // logged-in users, but it must never accept writes from an
-        // unauthenticated caller — consistent with create() above and with
-        // OR's read-public / write-authenticated split.
+        // Defense-in-depth: ensure a session user is present even though
+        // @NoAdminRequired already restricts this to authenticated callers.
+        // Guards against any future middleware changes that could bypass NC auth.
         if ($this->userSession->getUser() === null) {
             return new JSONResponse(
                 data: ['error' => 'Authentication required to update objects'],

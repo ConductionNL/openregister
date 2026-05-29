@@ -92,7 +92,7 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) run() validates table availability, iterates subscription rows, and per row: guards on null userId/schemaId, finds the schema, validates the notification annotation, and loops keys — each check is a defensive guard required for the idempotent migration contract.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Multiple independent early-returns (table absent, no rows, service unavailable, null userId, null schemaId, schema not found, missing annotation) represent distinct migration-skip conditions, not extractable sub-paths.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple independent early-returns (table absent, no rows, service unavailable, null userId, null schemaId, schema not found, missing annotation) represent distinct migration-skip conditions, not extractable sub-paths.
      */
     public function run(IOutput $output): void
     {

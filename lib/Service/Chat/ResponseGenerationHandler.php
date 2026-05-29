@@ -63,7 +63,7 @@ use ReflectionClass;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) This class is a multi-provider LLM router that
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   This class is a multi-provider LLM router that
  *   must reference OpenAI, Ollama, and Fireworks config/chat classes plus the streaming
  *   infrastructure (StreamYieldChannel, StreamingToolInstanceWrapper, MissingFeatureException).
  *   Splitting into one class per provider would be the clean long-term solution; for now all

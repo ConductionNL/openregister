@@ -254,7 +254,7 @@ class FlowLinkService
                     $row['checks']    = $this->decodeJsonField(value: ($opRow['checks'] ?? null));
                     $row['operation'] = (string) ($opRow['operation'] ?? '');
                 }
-            }
+            }//end if
 
             $row['url'] = '/index.php/settings/admin/workflow#'.($row['operationId'] ?? '');
             $results[]  = $row;

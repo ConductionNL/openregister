@@ -284,12 +284,12 @@ use OCA\OpenRegister\Service\TimeTrackerLinkService;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Bootstrap class must reference every
  *   service, mapper, event listener, and middleware registered for the entire app; the
  *   coupling is structural and cannot be reduced without breaking the NC bootstrap contract.
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Service registration methods enumerate
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Service registration methods enumerate
  *   all DI bindings in one place per NC bootstrap pattern; splitting them would spread
  *   the wire-up across unrelated files and obscure the dependency graph.
- * @SuppressWarnings(PHPMD.ExcessiveClassLength) Single IBootstrap implementation per NC
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Single IBootstrap implementation per NC
  *   app-info convention; all register/boot logic must live in this one class.
- * @SuppressWarnings(PHPMD.UnusedFormalParameter) IBootstrap::boot(IBootContext) signature
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)  IBootstrap::boot(IBootContext) signature
  *   is fixed by the NC framework contract; the $context parameter may not be used in
  *   every version of the boot method.
  */
@@ -1843,9 +1843,9 @@ class Application extends App implements IBootstrap
      * Tries up to three candidate keys per app — alias, ucfirst FQCN,
      * and namespace-from-info.xml FQCN — stopping at the first match.
      *
-     * @param ContainerInterface           $container The DI container.
-     * @param \Psr\Log\LoggerInterface     $logger    PSR logger.
-     * @param array<IMcpToolProvider>      &$providers Providers array (modified in place).
+     * @param ContainerInterface       $container  The DI container.
+     * @param \Psr\Log\LoggerInterface $logger     PSR logger.
+     * @param array<IMcpToolProvider>  &$providers Providers array (modified in place).
      *
      * @return void
      */
