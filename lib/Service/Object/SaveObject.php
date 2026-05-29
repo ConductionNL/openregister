@@ -3609,13 +3609,21 @@ class SaveObject
         // stamps the session user's UID (or the configured system identifier for
         // background jobs) AFTER this method returns. Accepting an owner value here
         // would allow any caller to forge object ownership:
-        //   - For authenticated REST requests applyOwnerAttribution() would override it,
-        //     but the defence-in-depth is still worthwhile.
-        //   - For background / system contexts (no IUserSession user) applyOwnerAttribution
-        //     only fills in owner when it is empty, so a client-supplied value would
-        //     persist — that is the actual attack vector closed by this change.
-
-        if (array_key_exists('organisation', $selfData) === true && empty($selfData['organisation']) === false) {
+        // - For authenticated REST requests applyOwnerAttribution() would override it,
+        // but the defence-in-depth is still worthwhile.
+        // - For background / system contexts (no IUserSession user) applyOwnerAttribution
+        // only fills in owner when it is empty, so a client-supplied value would
+        // persist — that is the actual attack vector closed by this change.
+        // Wave-12 Fix 3 / Wave-11 SB1: organisation can only be set from @self by
+        // admin callers. Non-admin callers (including anonymous) silently fall
+        // through to prepareObjectForCreation's getOrganisationForNewEntity()
+        // stamp, which uses the session user's active organisation. This closes
+        // the cross-tenant data-injection vector flagged in
+        // `/tmp/wave11-openregister-report.md` SB1.
+        if (array_key_exists('organisation', $selfData) === true
+            && empty($selfData['organisation']) === false
+            && $this->callerIsAdmin() === true
+        ) {
             $objectEntity->setOrganisation($selfData['organisation']);
         }
 
@@ -3624,6 +3632,31 @@ class SaveObject
             $objectEntity->setTmlo($selfData['tmlo']);
         }
     }//end setSelfMetadata()
+
+    /**
+     * Resolve whether the current session user is in the admin group.
+     *
+     * Used as the gate for accepting `@self.organisation` overrides on write
+     * (Wave-12 Fix 3). Returns false when:
+     *  - no session user (anonymous / background);
+     *  - no IGroupManager was injected (legacy DI in tests);
+     *  - IGroupManager raises an exception.
+     *
+     * @return bool True when the current caller is an admin.
+     */
+    private function callerIsAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null || $this->groupManager === null) {
+            return false;
+        }
+
+        try {
+            return $this->groupManager->isAdmin($user->getUID());
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }//end callerIsAdmin()
 
     /**
      * Populate TMLO defaults on a new object if the register has TMLO enabled.

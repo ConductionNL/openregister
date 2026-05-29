@@ -1143,9 +1143,13 @@ class SaveObjectDeepTest extends TestCase
 
     public function testSetSelfMetadataOrganisation(): void
     {
+        // Wave-12 Fix 3 / Wave-11 SB1: non-admin callers cannot inject
+        // organisation via @self. The test SaveObject is constructed without
+        // an IGroupManager (legacy fixture), so callerIsAdmin() returns false
+        // and the organisation value is silently dropped.
         $entity = $this->createObjectEntity(1, 'uuid-1');
         $this->invokePrivateMethod('setSelfMetadata', [$entity, ['organisation' => 'org-uuid'], []]);
-        $this->assertSame('org-uuid', $entity->getOrganisation());
+        $this->assertNull($entity->getOrganisation());
     }
 
     public function testSetSelfMetadataSlugFromData(): void
