@@ -19,7 +19,7 @@ docker-compose --version
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/ConductionNL/openregister.git
+git clone https://codeberg.org/Conduction/openregister.git
 cd openregister
 
 # 2. Start the services
@@ -376,8 +376,8 @@ For production:
 ## 🆘 Need Help?
 
 - **Documentation**: https://openregisters.app/
-- **GitHub Issues**: https://github.com/ConductionNL/openregister/issues
-- **Discussions**: https://github.com/ConductionNL/openregister/discussions
+- **GitHub Issues**: https://codeberg.org/Conduction/openregister/issues
+- **Discussions**: https://codeberg.org/Conduction/openregister/discussions
 - **Email**: support@conduction.nl
 
 ---

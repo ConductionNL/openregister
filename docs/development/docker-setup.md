@@ -645,5 +645,5 @@ For issues or questions:
 1. Check the [troubleshooting section](#troubleshooting)
 2. Review the logs: 'docker-compose logs -f'
 3. Contact: info@conduction.nl
-4. GitHub Issues: [OpenRegister Issues](https://github.com/ConductionNL/OpenRegister)
+4. GitHub Issues: [OpenRegister Issues](https://codeberg.org/Conduction/OpenRegister)
 

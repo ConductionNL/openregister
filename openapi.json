@@ -69,7 +69,7 @@
                     "html_url": {
                         "type": "string",
                         "format": "uri",
-                        "example": "https://github.com/ConductionNL/openregister/issues/42"
+                        "example": "https://codeberg.org/Conduction/openregister/issues/42"
                     },
                     "user": {
                         "type": "object",
@@ -164,7 +164,7 @@
                     "html_url": {
                         "type": "string",
                         "format": "uri",
-                        "example": "https://github.com/ConductionNL/openregister/issues/1247"
+                        "example": "https://codeberg.org/Conduction/openregister/issues/1247"
                     },
                     "state": {
                         "type": "string",

@@ -13,7 +13,7 @@
  * @author   Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @link     https://codeberg.org/Conduction/openregister
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @link     https://codeberg.org/Conduction/openregister
  * @version  1.0.0
  */
 class FileOwnershipHandler

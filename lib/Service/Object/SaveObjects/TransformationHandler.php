@@ -13,7 +13,7 @@
  * @author   Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @link     https://codeberg.org/Conduction/openregister
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
  */
@@ -41,7 +41,7 @@ use DateTime;
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @link     https://codeberg.org/Conduction/openregister
  * @version  1.0.0
  */
 class TransformationHandler

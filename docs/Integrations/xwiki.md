@@ -24,7 +24,7 @@ import {LeafCard, Pair} from '@conduction/docusaurus-preset/components';
   status="external"
   description="Link xWiki pages to Open Register objects. The Articles tab surfaces linked pages with their breadcrumb; the detail-page widget shows a text preview of the first linked page." />
 
-Pair a Conduction app with an xWiki instance and your users get articles, knowledge-base entries, and runbooks delivered inside the object sidebar. The integration runs through [OpenConnector](https://github.com/ConductionNL/openconnector) so credentials live in one place. One source can feed multiple apps.
+Pair a Conduction app with an xWiki instance and your users get articles, knowledge-base entries, and runbooks delivered inside the object sidebar. The integration runs through [OpenConnector](https://codeberg.org/Conduction/openconnector) so credentials live in one place. One source can feed multiple apps.
 
 <Pair
   leftLabel="Open Register"
@@ -41,7 +41,7 @@ The integration registers in OpenRegister's in-page registry and renders as one 
 
 ![xwiki integration tab active in the OpenRegister integrations view](/screenshots/integrations/xwiki.png)
 
-Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://github.com/ConductionNL/openregister/blob/development/tests/e2e/leaf-screenshots.spec.ts) against the seeded `integration-verification` register on the dev container. Empty state (`Nothing linked yet`) is expected on a freshly seeded object — link an upstream entity from the tab's `+ Add` affordance to populate it.
+Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://codeberg.org/Conduction/openregister/src/branch/development/tests/e2e/leaf-screenshots.spec.ts) against the seeded `integration-verification` register on the dev container. Empty state (`Nothing linked yet`) is expected on a freshly seeded object — link an upstream entity from the tab's `+ Add` affordance to populate it.
 
 ## What it does
 
@@ -174,5 +174,5 @@ A schema property typed as `{ "type": "string", "referenceType": "xwiki" }` rend
 
 - **[Leaf integration system](./leaf-system.md)** — how every leaf wires the same way.
 - **[Collectives leaf](./collectives.md)** — the NC-native alternative if you don't need an external wiki.
-- **[OpenConnector docs](https://github.com/ConductionNL/openconnector)** — how to manage sources and credentials.
+- **[OpenConnector docs](https://codeberg.org/Conduction/openconnector)** — how to manage sources and credentials.
 - **[Pluggable integration registry](./pluggable-integration-registry.md)** — the full ADR-019 contract.

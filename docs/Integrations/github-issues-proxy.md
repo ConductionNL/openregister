@@ -14,7 +14,7 @@ keywords:
 
 OpenRegister exposes a thin, cached, server-side proxy over GitHub's Issues API that backs the in-product **Features & Roadmap** menu component shipped from `@conduction/nextcloud-vue`. This page documents the admin-facing knobs.
 
-> **Scope.** Endpoints, request/response shapes, and error codes live in [openapi.json](https://github.com/ConductionNL/openregister/blob/development/openapi.json). The capability spec is at [`openspec/changes/add-features-roadmap-menu/specs/github-issue-proxy/spec.md`](https://github.com/ConductionNL/openregister/blob/development/openspec/changes/add-features-roadmap-menu/specs/github-issue-proxy/spec.md).
+> **Scope.** Endpoints, request/response shapes, and error codes live in [openapi.json](https://codeberg.org/Conduction/openregister/src/branch/development/openapi.json). The capability spec is at [`openspec/changes/add-features-roadmap-menu/specs/github-issue-proxy/spec.md`](https://codeberg.org/Conduction/openregister/src/branch/development/openspec/changes/add-features-roadmap-menu/specs/github-issue-proxy/spec.md).
 
 ## What the proxy does
 
@@ -128,6 +128,6 @@ These guards are enforced unconditionally and do not need admin tuning:
 
 ## Related
 
-- Frontend component family: [`@conduction/nextcloud-vue`](https://github.com/ConductionNL/nextcloud-vue) — `CnFeaturesAndRoadmapLink`, `CnFeaturesAndRoadmapView`, `CnRoadmapTab`, `CnSuggestFeatureModal`.
-- Component design + decisions (D1–D23): [`openspec/changes/add-features-roadmap-menu/design.md`](https://github.com/ConductionNL/openregister/blob/development/openspec/changes/add-features-roadmap-menu/design.md).
-- API contract: [`openapi.json`](https://github.com/ConductionNL/openregister/blob/development/openapi.json) (search for `github-issues` operations).
+- Frontend component family: [`@conduction/nextcloud-vue`](https://codeberg.org/Conduction/nextcloud-vue) — `CnFeaturesAndRoadmapLink`, `CnFeaturesAndRoadmapView`, `CnRoadmapTab`, `CnSuggestFeatureModal`.
+- Component design + decisions (D1–D23): [`openspec/changes/add-features-roadmap-menu/design.md`](https://codeberg.org/Conduction/openregister/src/branch/development/openspec/changes/add-features-roadmap-menu/design.md).
+- API contract: [`openapi.json`](https://codeberg.org/Conduction/openregister/src/branch/development/openapi.json) (search for `github-issues` operations).

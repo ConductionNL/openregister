@@ -4,7 +4,7 @@
   "repo": "ConductionNL/openregister",
   "created": "2026-04-23T14:43:49Z",
   "tracking_issue": 1336,
-  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1336",
+  "tracking_issue_url": "https://codeberg.org/Conduction/openregister/issues/1336",
   "labels": ["openspec", "openregister", "rbac-scopes"],
   "tasks": [
     {

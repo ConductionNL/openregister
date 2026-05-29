@@ -132,7 +132,7 @@ The manual `<CnSupportDialog>` SHALL be removed from `App.vue`; `CnAppRoot` SHAL
 auto-mount the support dialog from `appId="openregister"`. The derived App-Store
 URL SHALL be `https://apps.nextcloud.com/apps/openregister` and the derived
 feature-request URL SHALL be
-`https://github.com/ConductionNL/openregister/issues/new`.
+`https://codeberg.org/Conduction/openregister/issues/new`.
 
 #### Scenario: Support dialog mounts exactly once
 

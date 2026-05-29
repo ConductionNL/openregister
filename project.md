@@ -4,7 +4,7 @@
 OpenRegister is a Nextcloud app that provides a core data registration platform for structured data management. It enables creating registers, defining schemas, and managing objects with full CRUD operations.
 
 ## Repository
-- **GitHub**: https://github.com/ConductionNL/openregister
+- **GitHub**: https://codeberg.org/Conduction/openregister
 - **Organization**: ConductionNL
 - **Container mount**: `/var/www/html/custom_apps/openregister`
 

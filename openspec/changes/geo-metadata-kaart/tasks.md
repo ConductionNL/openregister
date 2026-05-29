@@ -1,8 +1,8 @@
 # Tasks: Geo Metadata en Kaart
 
 > **Status (2026-05-02): scope-tightened to GeoJSON storage + spatial-query API on the OpenRegister side.** UI / map-rendering / base-registration overlays / map drawing / NL Design System map styling are handed off to consuming apps:
-> - mydash: new change `map-support` proposed at https://github.com/ConductionNL/mydash/blob/main/openspec/changes/map-support/proposal.md
-> - tilburg-woo-ui: tracked at https://github.com/ConductionNL/tilburg-woo-ui/issues/436
+> - mydash: new change `map-support` proposed at https://codeberg.org/Conduction/mydash/src/branch/main/openspec/changes/map-support/proposal.md
+> - tilburg-woo-ui: tracked at https://codeberg.org/Conduction/tilburg-woo-ui/issues/436
 
 ## In-OR-scope (storage + API)
 

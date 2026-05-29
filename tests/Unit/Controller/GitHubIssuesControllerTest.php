@@ -211,7 +211,7 @@ class GitHubIssuesControllerTest extends TestCase
                         'number'   => 42,
                         'title'    => 'A feature',
                         'body'     => 'A description',
-                        'html_url' => 'https://github.com/ConductionNL/openregister/issues/42',
+                        'html_url' => 'https://codeberg.org/Conduction/openregister/issues/42',
                     ],
                 ],
             ]

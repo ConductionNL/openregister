@@ -4,8 +4,8 @@
 > by the `ai-chat-companion-orchestrator` change. The base capability is defined in
 > [`openspec/specs/chat-ai/spec.md`](../../../../specs/chat-ai/spec.md).
 > Canonical contracts originate from:
-> - [hydra/openspec/specs/ai-chat-companion/spec.md](https://github.com/ConductionNL/hydra/tree/development/openspec/changes/archive/2026-05-11-ai-chat-companion/specs/ai-chat-companion/spec.md) — cross-app contracts
-> - [hydra/openspec/architecture/adr-034-ai-chat-companion.md](https://github.com/ConductionNL/hydra/blob/development/openspec/architecture/adr-034-ai-chat-companion.md) — ADR with full rationale
+> - [hydra/openspec/specs/ai-chat-companion/spec.md](https://codeberg.org/Conduction/hydra/src/branch/development/openspec/changes/archive/2026-05-11-ai-chat-companion/specs/ai-chat-companion/spec.md) — cross-app contracts
+> - [hydra/openspec/architecture/adr-034-ai-chat-companion.md](https://codeberg.org/Conduction/hydra/src/branch/development/openspec/architecture/adr-034-ai-chat-companion.md) — ADR with full rationale
 
 ## ADDED Requirements
 
@@ -195,7 +195,7 @@ The persisted shape MUST conform to:
 
 ### Requirement: MCP tool authorization flowthrough
 
-Every `IMcpToolProvider::invokeTool()` call MUST run with the current Nextcloud session user's permissions and credentials. `McpToolsService` MUST NOT impersonate, elevate, or substitute a system or service account when delegating invocations to any provider. Implementations that return or mutate objects MUST perform a per-object authorization check before responding — this mirrors [adr-005-security.md](https://github.com/ConductionNL/hydra/blob/development/openspec/architecture/adr-005-security.md) Rule 3 (IDOR / OWASP A01:2021). The chat stream controller passes the session cookie unchanged via Nextcloud's standard controller middleware; no additional session forwarding is required in `McpToolsService`.
+Every `IMcpToolProvider::invokeTool()` call MUST run with the current Nextcloud session user's permissions and credentials. `McpToolsService` MUST NOT impersonate, elevate, or substitute a system or service account when delegating invocations to any provider. Implementations that return or mutate objects MUST perform a per-object authorization check before responding — this mirrors [adr-005-security.md](https://codeberg.org/Conduction/hydra/src/branch/development/openspec/architecture/adr-005-security.md) Rule 3 (IDOR / OWASP A01:2021). The chat stream controller passes the session cookie unchanged via Nextcloud's standard controller middleware; no additional session forwarding is required in `McpToolsService`.
 
 #### Scenario: User with no read permission gets filtered results from a tool
 

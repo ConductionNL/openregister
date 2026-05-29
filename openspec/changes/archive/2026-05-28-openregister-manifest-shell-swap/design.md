@@ -146,7 +146,7 @@ an explicit contract, and would still flash the capabilities-loading spinner.
 - Support dialog: drop the manual `<CnSupportDialog>` — `CnAppRoot` auto-mounts
   it from `appId="openregister"`, deriving `appStoreUrl =
   https://apps.nextcloud.com/apps/openregister` and `featureRequestUrl =
-  https://github.com/ConductionNL/openregister/issues/new`, which match the
+  https://codeberg.org/Conduction/openregister/issues/new`, which match the
   current manual values exactly.
 
 ## Page-type mapping (all routes reconciled against the 24 menu entries)

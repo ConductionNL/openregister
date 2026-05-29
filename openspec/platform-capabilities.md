@@ -137,7 +137,7 @@ Every other feature fits one of buckets 1–5 above.
 
 ## Catalog maintenance
 
-This file is updated as part of every change that adds, modifies, or removes a platform capability. The change's `tasks.md` MUST include a step to update the catalog. *(Planned: a CI check for spec PRs that touch capability-providing specs without updating this file. Until that lands, enforcement is manual via PR reviewers — see review comment [#3200795013](https://github.com/ConductionNL/openregister/pull/1353#discussion_r3200795013).)*
+This file is updated as part of every change that adds, modifies, or removes a platform capability. The change's `tasks.md` MUST include a step to update the catalog. *(Planned: a CI check for spec PRs that touch capability-providing specs without updating this file. Until that lands, enforcement is manual via PR reviewers — see review comment [#3200795013](https://codeberg.org/Conduction/openregister/pulls/1353#discussion_r3200795013).)*
 
 **Spec column resolution rule.** Every value in the `Spec` column MUST resolve to either (a) a directory under `openspec/specs/`, (b) a directory under `openspec/changes/` (with the row's `Status = proposed`), or (c) an explicit archive note `archived <date>` for slugs whose only artefact lives under `openspec/changes/archive/`. A row whose Spec column references nothing resolvable is a catalog bug — fix the reference rather than leaving it dangling.
 

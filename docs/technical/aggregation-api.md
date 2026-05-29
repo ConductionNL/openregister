@@ -61,7 +61,7 @@ Bucketing by `MINUTE` or `HOUR` requires the field's JSON-Schema `format` to be 
 
 ### Empty buckets
 
-Buckets with zero rows are **omitted** from the response — `GROUP BY` does not emit empty groups. The client fills empties at render time. See [issue #1607](https://github.com/ConductionNL/openregister/issues/1607) for cumulative / windowed series.
+Buckets with zero rows are **omitted** from the response — `GROUP BY` does not emit empty groups. The client fills empties at render time. See [issue #1607](https://codeberg.org/Conduction/openregister/issues/1607) for cumulative / windowed series.
 
 ### Status codes
 
@@ -166,6 +166,6 @@ Ad-hoc results are served via a 60-second distributed cache:
 
 | Topic | Issue |
 |---|---|
-| Multi-field groupBy (`groupBy: [status, priority]`) | [#1606](https://github.com/ConductionNL/openregister/issues/1606) |
-| Running / cumulative series | [#1607](https://github.com/ConductionNL/openregister/issues/1607) |
-| Multi-metric in one request (`count` + `sum`) | [#1608](https://github.com/ConductionNL/openregister/issues/1608) |
+| Multi-field groupBy (`groupBy: [status, priority]`) | [#1606](https://codeberg.org/Conduction/openregister/issues/1606) |
+| Running / cumulative series | [#1607](https://codeberg.org/Conduction/openregister/issues/1607) |
+| Multi-metric in one request (`count` + `sum`) | [#1608](https://codeberg.org/Conduction/openregister/issues/1608) |

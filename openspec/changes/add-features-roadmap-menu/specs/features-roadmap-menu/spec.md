@@ -343,12 +343,12 @@ When the git remote is not a GitHub URL or the default branch cannot be determin
 
 #### Scenario: docsUrl resolves against origin default branch
 
-- **WHEN** the repo origin is `git@github.com:ConductionNL/openregister.git`, the default
+- **WHEN** the repo origin is `git@codeberg.org:Conduction/openregister.git`, the default
   branch resolved from `origin/HEAD` is `main`, the currently checked-out local branch is
   `feature/something-unrelated`, and a spec lives at
   `openspec/specs/computed-fields/spec.md`
 - **THEN** the entry's `docsUrl` SHALL be
-  `https://github.com/ConductionNL/openregister/blob/main/openspec/specs/computed-fields/spec.md`
+  `https://codeberg.org/Conduction/openregister/src/branch/main/openspec/specs/computed-fields/spec.md`
 - **AND** the entry's `docsUrl` SHALL NOT reference the local checked-out branch
 
 ### Requirement: Manifest frontmatter docsUrl override

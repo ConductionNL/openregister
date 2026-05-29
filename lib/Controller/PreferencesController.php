@@ -17,7 +17,7 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://github.com/ConductionNL/openregister
+ * @link https://codeberg.org/Conduction/openregister
  */
 
 declare(strict_types=1);

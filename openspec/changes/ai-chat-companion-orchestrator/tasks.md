@@ -43,7 +43,7 @@
 > Spec: [specs/chat-ai/spec.md — Requirement: IMcpToolProvider PHP interface](specs/chat-ai/spec.md)
 
 - [x] 2.1 Create `lib/Mcp/IMcpToolProvider.php` with the exact PHP signature from the spec (namespace `OCA\OpenRegister\Mcp`, three methods: `getAppId(): string`, `getTools(): array`, `invokeTool(string $toolId, array $arguments): array`)
-- [x] 2.2 Add SPDX-License-Identifier and SPDX-FileCopyrightText inside the file docblock per [ADR-014](https://github.com/ConductionNL/hydra/blob/development/openspec/architecture/adr-014-licensing.md)
+- [x] 2.2 Add SPDX-License-Identifier and SPDX-FileCopyrightText inside the file docblock per [ADR-014](https://codeberg.org/Conduction/hydra/src/branch/development/openspec/architecture/adr-014-licensing.md)
 - [x] 2.3 Verify `composer check:strict` passes on the new file (PHPCS, PHPMD, Psalm, PHPStan)
 
 ## 3. Built-in Tool Providers and McpToolsService Refactor

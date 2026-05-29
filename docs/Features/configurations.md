@@ -670,7 +670,7 @@ Here's a complete, production-ready example:
         'type': 'application',
         'app': 'softwarecatalog',
         'sourceType': 'github',
-        'sourceUrl': 'https://github.com/ConductionNL/opencatalogi/blob/master/apps-extra/softwarecatalog/lib/Settings/softwarecatalogus_register.json',
+        'sourceUrl': 'https://codeberg.org/Conduction/opencatalogi/src/branch/master/apps-extra/softwarecatalog/lib/Settings/softwarecatalogus_register.json',
         'openregister': '^v0.2.10',
         'github': {
             'repo': 'ConductionNL/opencatalogi',

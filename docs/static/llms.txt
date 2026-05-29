@@ -12,12 +12,12 @@ OpenRegister is an open-source data register app for the Nextcloud workspace. It
 ## Optional
 
 - [Install](https://www.conduction.nl/install): self-host on your Nextcloud instance.
-- [Source code](https://github.com/ConductionNL/openregister): repository and issue tracker.
+- [Source code](https://codeberg.org/Conduction/openregister): repository and issue tracker.
 - [App page](https://www.conduction.nl/apps/openregister): product positioning on conduction.nl.
 
 ## Contact
 
 - Email: info@conduction.nl
 - Web: https://www.conduction.nl
-- GitHub: https://github.com/ConductionNL
+- GitHub: https://codeberg.org/Conduction
 - Conduction B.V. · KvK 76741850 · Lauriergracht 14h, Amsterdam, Netherlands

@@ -214,7 +214,7 @@ import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
  * @copyright 2024 Conduction B.V.
  * @license EUPL-1.2
  * @version 1.0.0
- * @link https://github.com/ConductionNL/openregister
+ * @link https://codeberg.org/Conduction/openregister
  */
 export default {
 	name: 'EntityDetail',

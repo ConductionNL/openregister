@@ -4,7 +4,7 @@
   "repo": "ConductionNL/openregister",
   "created": "2026-04-21",
   "tracking_issue": 1295,
-  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1295",
+  "tracking_issue_url": "https://codeberg.org/Conduction/openregister/issues/1295",
   "tasks": [
     { "id": "1.1", "title": "Replace `$file->getContent()` probe with `$file->isReadable()`", "section": "Ownership-probe rewrite", "status": "done", "spec_ref": "object-interactions#File Attachments on Objects", "files_likely_affected": ["lib/Service/File/FileValidationHandler.php"] },
     { "id": "1.2", "title": "Remove old exception-based probe", "section": "Ownership-probe rewrite", "status": "done", "spec_ref": "object-interactions#File Attachments on Objects", "files_likely_affected": ["lib/Service/File/FileValidationHandler.php"] },

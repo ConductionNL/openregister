@@ -9,7 +9,7 @@ declare(strict_types=1);
  * @package  OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjects
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/openregister
+ * @link     https://codeberg.org/Conduction/openregister
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjects;

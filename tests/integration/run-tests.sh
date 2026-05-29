@@ -10,7 +10,7 @@
 # @package  OpenRegister
 # @author   Conduction
 # @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
-# @link     https://github.com/ConductionNL/openregister
+# @link     https://codeberg.org/Conduction/openregister
 ##
 
 set -e  # Exit on error.

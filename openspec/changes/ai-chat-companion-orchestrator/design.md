@@ -2,8 +2,8 @@
 
 This design document describes the OpenRegister-side **HOW** for the `ai-chat-companion-orchestrator` change. The cross-app contracts (what must be built) are defined in:
 
-- [hydra/openspec/changes/archive/2026-05-11-ai-chat-companion/specs/ai-chat-companion/spec.md](https://github.com/ConductionNL/hydra/blob/development/openspec/changes/archive/2026-05-11-ai-chat-companion/specs/ai-chat-companion/spec.md) — 6 locked requirements covering `CnAiContext`, `IMcpToolProvider`, SSE envelope (6 event types including heartbeat), `Message.context`, auth flowthrough
-- [hydra/openspec/architecture/adr-034-ai-chat-companion.md](https://github.com/ConductionNL/hydra/blob/development/openspec/architecture/adr-034-ai-chat-companion.md) — ADR with full rationale and architectural decisions
+- [hydra/openspec/changes/archive/2026-05-11-ai-chat-companion/specs/ai-chat-companion/spec.md](https://codeberg.org/Conduction/hydra/src/branch/development/openspec/changes/archive/2026-05-11-ai-chat-companion/specs/ai-chat-companion/spec.md) — 6 locked requirements covering `CnAiContext`, `IMcpToolProvider`, SSE envelope (6 event types including heartbeat), `Message.context`, auth flowthrough
+- [hydra/openspec/architecture/adr-034-ai-chat-companion.md](https://codeberg.org/Conduction/hydra/src/branch/development/openspec/architecture/adr-034-ai-chat-companion.md) — ADR with full rationale and architectural decisions
 
 OpenRegister is the sole orchestrator: it owns RAG retrieval (`ContextRetrievalHandler`), MCP tool fan-out (`McpToolsService`), multi-turn tool loops, LLM provider selection (LLPhant), and conversation persistence. This change adds the streaming wire format, the tool-provider discovery interface, the health probe, and the `Message.context` metadata column.
 
@@ -25,8 +25,8 @@ OpenRegister is the sole orchestrator: it owns RAG retrieval (`ContextRetrievalH
 
 **Non-Goals:**
 
-- Refactoring `ChatIndex.vue` onto the shared `@conduction/nextcloud-vue` primitives — tracked separately as [openregister#1459](https://github.com/ConductionNL/openregister/issues/1459).
-- Integrating Nextcloud Task Processing (`OCP\TaskProcessing\IManager`) — separate research issue [openregister#1460](https://github.com/ConductionNL/openregister/issues/1460).
+- Refactoring `ChatIndex.vue` onto the shared `@conduction/nextcloud-vue` primitives — tracked separately as [openregister#1459](https://codeberg.org/Conduction/openregister/issues/1459).
+- Integrating Nextcloud Task Processing (`OCP\TaskProcessing\IManager`) — separate research issue [openregister#1460](https://codeberg.org/Conduction/openregister/issues/1460).
 - Per-app `IMcpToolProvider` implementations inside other apps (`opencatalogi`, `docudesk`, etc.) — each consuming app writes its own after this change ships.
 - Widget implementation (`CnAiCompanion`, `CnAiInput`, etc.) — that is the sibling change in `nextcloud-vue/ai-chat-companion-widget`.
 - Changing the existing `POST /api/chat/send` non-streaming endpoint contract.

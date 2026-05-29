@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
  * @author  OpenRegister Development Team
  * @license AGPL-3.0-or-later
  * @version 1.0.0
- * @link    https://github.com/ConductionNL/openregister
+ * @link    https://codeberg.org/Conduction/openregister
  */
 class SettingsControllerTest extends TestCase
 {

@@ -47,7 +47,7 @@ This is why the lib enables both by default on every detail surface.
 
 ## Lib defaults (`@conduction/nextcloud-vue`)
 
-The library's [`CnDetailPage`](https://github.com/ConductionNL/nextcloud-vue/blob/beta/docs/components/cn-detail-page.md) and [`CnObjectSidebar`](https://github.com/ConductionNL/nextcloud-vue/blob/beta/docs/components/cn-object-sidebar.md) auto-wire `useObjectSubscription` and (in v1) reactively read lock state from the cached `@self.locked` block. When a remote lock is detected, `CnDetailPage` mounts a `CnLockedBanner` automatically.
+The library's [`CnDetailPage`](https://codeberg.org/Conduction/nextcloud-vue/src/branch/beta/docs/components/cn-detail-page.md) and [`CnObjectSidebar`](https://codeberg.org/Conduction/nextcloud-vue/src/branch/beta/docs/components/cn-object-sidebar.md) auto-wire `useObjectSubscription` and (in v1) reactively read lock state from the cached `@self.locked` block. When a remote lock is detected, `CnDetailPage` mounts a `CnLockedBanner` automatically.
 
 Two manifest opt-out flags on `pages[].config`:
 
@@ -122,6 +122,6 @@ User A clicks Edit                │
 
 - [OpenRegister Push Events](../Integrations/OpenRegister.md) — the wire format used by the subscription channel.
 - [Object lifecycle — locking](../Features/objects.md) — the lock REST endpoints and behavior.
-- [`useObjectSubscription`](https://github.com/ConductionNL/nextcloud-vue/blob/beta/docs/utilities/composables/use-object-subscription.md) — the lib composable that wires the subscription.
-- [`useObjectLock`](https://github.com/ConductionNL/nextcloud-vue/blob/beta/docs/utilities/composables/use-object-lock.md) — the lib composable that wraps the lock endpoints.
-- [`CnLockedBanner`](https://github.com/ConductionNL/nextcloud-vue/blob/beta/docs/components/cn-locked-banner.md) — the default "Locked by X" UI.
+- [`useObjectSubscription`](https://codeberg.org/Conduction/nextcloud-vue/src/branch/beta/docs/utilities/composables/use-object-subscription.md) — the lib composable that wires the subscription.
+- [`useObjectLock`](https://codeberg.org/Conduction/nextcloud-vue/src/branch/beta/docs/utilities/composables/use-object-lock.md) — the lib composable that wraps the lock endpoints.
+- [`CnLockedBanner`](https://codeberg.org/Conduction/nextcloud-vue/src/branch/beta/docs/components/cn-locked-banner.md) — the default "Locked by X" UI.

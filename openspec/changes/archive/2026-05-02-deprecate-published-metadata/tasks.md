@@ -64,7 +64,7 @@
 
 ## Phase 4: OpenCatalogi Backend (handed off — ConductionNL/opencatalogi#516)
 
-> All four items below are explicit cross-repo deferrals: the listeners and EventService live in the opencatalogi repo, not openregister. The OR side has shipped the deprecation warnings + dynamic-value resolution that the migration depends on. Tracked at https://github.com/ConductionNL/opencatalogi/issues/516 — the issue carries the full migration playbook and the RBAC `$now` pattern to substitute for `isObjectPublished()`.
+> All four items below are explicit cross-repo deferrals: the listeners and EventService live in the opencatalogi repo, not openregister. The OR side has shipped the deprecation warnings + dynamic-value resolution that the migration depends on. Tracked at https://codeberg.org/Conduction/opencatalogi/issues/516 — the issue carries the full migration playbook and the RBAC `$now` pattern to substitute for `isObjectPublished()`.
 
 - [x] Remove `isObjectPublished()` from `EventService`; replace published-state checks with RBAC-based logic
   - **Deferred** — `EventService::handleObjectCreateEvents` / `handleObjectUpdateEvents` use `isObjectPublished` to gate auto-publish-attachments. Replacing with RBAC `$now` rules is a behaviour migration, not a delete; needs a dedicated review of the publication workflow. Tracked in opencatalogi follow-up issue.

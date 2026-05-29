@@ -52,9 +52,9 @@ OR's current aggregation surface is two-half: GraphQL collection queries support
 - Every Conduction app dashboard (procest, pipelinq, decidesk, shillinq, etc.) will eventually consume this primitive — the response shape MUST stay stable.
 
 **Non-goals (deferred to follow-up issues, filed at planning time):**
-- Multi-field `groupBy` (one field per query only) — [#1606](https://github.com/ConductionNL/openregister/issues/1606).
-- Running-window aggregates / cumulative series — [#1607](https://github.com/ConductionNL/openregister/issues/1607).
-- Multi-metric (`count` + `sum` simultaneously); each request is one metric — [#1608](https://github.com/ConductionNL/openregister/issues/1608).
-- MySQL / SQLite native bucketing (PHP fallback only for now) — [#1609](https://github.com/ConductionNL/openregister/issues/1609).
-- Caching of ad-hoc bucket queries — `AggregationCache` is keyed on the named-aggregation name; ad-hoc cache keying is — [#1610](https://github.com/ConductionNL/openregister/issues/1610).
+- Multi-field `groupBy` (one field per query only) — [#1606](https://codeberg.org/Conduction/openregister/issues/1606).
+- Running-window aggregates / cumulative series — [#1607](https://codeberg.org/Conduction/openregister/issues/1607).
+- Multi-metric (`count` + `sum` simultaneously); each request is one metric — [#1608](https://codeberg.org/Conduction/openregister/issues/1608).
+- MySQL / SQLite native bucketing (PHP fallback only for now) — [#1609](https://codeberg.org/Conduction/openregister/issues/1609).
+- Caching of ad-hoc bucket queries — `AggregationCache` is keyed on the named-aggregation name; ad-hoc cache keying is — [#1610](https://codeberg.org/Conduction/openregister/issues/1610).
 - `groupBy` on the JOIN side of cross-schema queries (no issue — explicitly out of scope for the primitive).

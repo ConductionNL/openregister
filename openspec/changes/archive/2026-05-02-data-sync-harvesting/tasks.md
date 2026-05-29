@@ -2,7 +2,7 @@
 
 > **Status (2026-05-02): closed by decision — moved to OpenConnector.** The user's explicit decision is that sync orchestration is OpenConnector's domain; OpenRegister exposes the hooks (event-driven save pipeline, `CustomScopeEvaluatingEvent`, `softDeleteByImportJobId` rollback contract, `saveObjectsStreaming` primitive, the abstract tab system tracked under a separate change) and OpenConnector subscribes to them.
 >
-> All 16 requirements below are inherited by OpenConnector. They are checked off here as "out-of-OR-scope" to close this change in the "all specs completed" sweep, with the understanding that the work itself lives at https://github.com/ConductionNL/openconnector and is tracked via the hand-off ticket [ConductionNL/openconnector#737](https://github.com/ConductionNL/openconnector/issues/737).
+> All 16 requirements below are inherited by OpenConnector. They are checked off here as "out-of-OR-scope" to close this change in the "all specs completed" sweep, with the understanding that the work itself lives at https://codeberg.org/Conduction/openconnector and is tracked via the hand-off ticket [ConductionNL/openconnector#737](https://codeberg.org/Conduction/openconnector/issues/737).
 
 ## Hooks OpenRegister exposes for OpenConnector to subscribe against
 

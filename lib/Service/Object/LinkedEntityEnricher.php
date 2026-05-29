@@ -11,7 +11,7 @@
  * @author   Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * @link     https://codeberg.org/Conduction/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * @link     https://codeberg.org/Conduction/openregister
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Enrichment requires multiple NC APIs
  * @SuppressWarnings(PHPMD.UnusedPrivateMethod)    Enricher methods dispatched via ENRICHER_MAP lookup

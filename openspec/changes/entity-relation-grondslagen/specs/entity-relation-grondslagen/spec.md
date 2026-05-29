@@ -248,7 +248,7 @@ Existing callers (and the OpenAnonymiser contract) MUST be unaffected when no `b
 
 The `bases` array contains UUID-shaped strings whose meaning is defined by the consumer app, not by OpenRegister. OpenRegister persists the array verbatim and never resolves the UUIDs (see Requirement: *OpenRegister MUST NOT validate that bases UUIDs resolve*).
 
-For DocuDesk-driven anonymisation — the first consumer of this capability — the UUIDs SHOULD resolve to objects in the `base` register defined by DocuDesk's [`add-dossier-schema`](https://github.com/ConductionNL/docudesk/pull/135) change. That schema seeds six canonical Woo Art. 5 *uitzonderingsgronden*:
+For DocuDesk-driven anonymisation — the first consumer of this capability — the UUIDs SHOULD resolve to objects in the `base` register defined by DocuDesk's [`add-dossier-schema`](https://codeberg.org/Conduction/docudesk/pulls/135) change. That schema seeds six canonical Woo Art. 5 *uitzonderingsgronden*:
 
 | Slug | Woo Art. 5 reference | Description (NL, excerpt) |
 |---|---|---|

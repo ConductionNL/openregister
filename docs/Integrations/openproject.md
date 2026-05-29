@@ -41,7 +41,7 @@ The integration registers in OpenRegister's in-page registry and renders as one 
 
 ![openproject integration tab active in the OpenRegister integrations view](/screenshots/integrations/openproject.png)
 
-Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://github.com/ConductionNL/openregister/blob/development/tests/e2e/leaf-screenshots.spec.ts) against the seeded `integration-verification` register on the dev container. Empty state (`Nothing linked yet`) is expected on a freshly seeded object — link an upstream entity from the tab's `+ Add` affordance to populate it.
+Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://codeberg.org/Conduction/openregister/src/branch/development/tests/e2e/leaf-screenshots.spec.ts) against the seeded `integration-verification` register on the dev container. Empty state (`Nothing linked yet`) is expected on a freshly seeded object — link an upstream entity from the tab's `+ Add` affordance to populate it.
 
 ## What it does
 
@@ -188,5 +188,5 @@ A schema property typed as `{ "type": "string", "referenceType": "openproject" }
 - **[Leaf integration system](./leaf-system.md)** — how every leaf wires the same way.
 - **[xWiki leaf](./xwiki.md)** — the other external/OpenConnector-routed leaf.
 - **[Deck leaf](./deck.md)** — the NC-native alternative if you don't need a full PM tool.
-- **[OpenConnector docs](https://github.com/ConductionNL/openconnector)** — how to manage sources and credentials.
+- **[OpenConnector docs](https://codeberg.org/Conduction/openconnector)** — how to manage sources and credentials.
 - **[Pluggable integration registry](./pluggable-integration-registry.md)** — the full ADR-019 contract.

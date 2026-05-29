@@ -12,7 +12,7 @@
  * @copyright 2024 Conduction b.v.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @version   GIT: <git_id>
- * @link      https://github.com/conductionnl/openregister
+ * @link      https://codeberg.org/Conduction/openregister
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -38,7 +38,7 @@ use OCP\IRequest;
  *
  * @version GIT: <git_id>
  *
- * @link https://github.com/conductionnl/openregister
+ * @link https://codeberg.org/Conduction/openregister
  *
  * @psalm-type     TemplateName = 'index'
  * @psalm-suppress UnusedClass

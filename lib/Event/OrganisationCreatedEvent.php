@@ -14,7 +14,7 @@
  * @copyright 2024 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @version   GIT: <git_id>
- * @link      https://github.com/ConductionNL/OpenRegister
+ * @link      https://codeberg.org/Conduction/OpenRegister
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\Organisation;
  * @author   Conduction b.v. <info@conduction.nl>
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @version  1.0.0
- * @link     https://github.com/ConductionNL/OpenRegister
+ * @link     https://codeberg.org/Conduction/OpenRegister
  */
 class OrganisationCreatedEvent extends Event
 {

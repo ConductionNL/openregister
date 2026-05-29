@@ -45,7 +45,7 @@ The integration registers in OpenRegister's in-page registry and renders as one 
 
 ![talk integration tab active in the OpenRegister integrations view](/screenshots/integrations/talk.png)
 
-Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://github.com/ConductionNL/openregister/blob/development/tests/e2e/leaf-screenshots.spec.ts) against the seeded `integration-verification` register on the dev container. Empty state (`Nothing linked yet`) is expected on a freshly seeded object — link an upstream entity from the tab's `+ Add` affordance to populate it.
+Captured by [`tests/e2e/leaf-screenshots.spec.ts`](https://codeberg.org/Conduction/openregister/src/branch/development/tests/e2e/leaf-screenshots.spec.ts) against the seeded `integration-verification` register on the dev container. Empty state (`Nothing linked yet`) is expected on a freshly seeded object — link an upstream entity from the tab's `+ Add` affordance to populate it.
 
 ## What it will do
 
@@ -75,7 +75,7 @@ Open any object whose schema declares `linkedTypes: ['talk']`. The **Chat** tab 
 
 ## Local verification setup
 
-The leaf-verification harness in [`tests/e2e/leaf-verification.spec.ts`](https://github.com/ConductionNL/openregister/blob/development/tests/e2e/leaf-verification.spec.ts) probes every advertised provider against the seeded `integration-verification` register; you can reproduce a single-leaf check by hand against any OpenRegister dev container.
+The leaf-verification harness in [`tests/e2e/leaf-verification.spec.ts`](https://codeberg.org/Conduction/openregister/src/branch/development/tests/e2e/leaf-verification.spec.ts) probes every advertised provider against the seeded `integration-verification` register; you can reproduce a single-leaf check by hand against any OpenRegister dev container.
 
 ### 1. Install the `spreed` Nextcloud app
 
@@ -120,7 +120,7 @@ The `OCS-APIRequest: true` header is mandatory — without it, Nextcloud's sessi
 
 ## Current status
 
-Provider registered. Wrapping service + link table tracked under [openspec/changes/integration-talk](https://github.com/ConductionNL/openregister/tree/development/openspec/changes/integration-talk).
+Provider registered. Wrapping service + link table tracked under [openspec/changes/integration-talk](https://codeberg.org/Conduction/openregister/src/branch/development/openspec/changes/integration-talk).
 
 ## Related
 

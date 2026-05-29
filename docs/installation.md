@@ -70,7 +70,7 @@ For custom installations or when the App Store is unavailable.
 1. **Download Latest Release:**
    ```bash
    cd /path/to/nextcloud/apps/
-   wget https://github.com/ConductionNL/openregister/releases/latest/download/openregister.tar.gz
+   wget https://codeberg.org/Conduction/openregister/releases/latest/download/openregister.tar.gz
    tar -xzf openregister.tar.gz
    chown -R www-data:www-data openregister
    ```
@@ -94,7 +94,7 @@ For development, testing, or evaluation purposes.
 
 ```bash
 # Clone the repository
-git clone https://github.com/ConductionNL/openregister.git
+git clone https://codeberg.org/Conduction/openregister.git
 cd openregister
 
 # Start with PostgreSQL (recommended)
@@ -110,7 +110,7 @@ docker-compose up -d
 
 **1. Clone and Navigate:**
 ```bash
-git clone https://github.com/ConductionNL/openregister.git
+git clone https://codeberg.org/Conduction/openregister.git
 cd openregister
 ```
 
@@ -441,8 +441,8 @@ sudo lsof -i :8080
 ### Getting Help
 
 - **Documentation**: https://openregisters.app/
-- **GitHub Issues**: https://github.com/ConductionNL/openregister/issues
-- **Community Forum**: https://github.com/ConductionNL/openregister/discussions
+- **GitHub Issues**: https://codeberg.org/Conduction/openregister/issues
+- **Community Forum**: https://codeberg.org/Conduction/openregister/discussions
 - **Email Support**: support@conduction.nl
 
 ## Next Steps
@@ -473,7 +473,7 @@ cp -r apps/openregister apps/openregister.backup
 
 # Download and extract new version
 cd apps/
-wget https://github.com/ConductionNL/openregister/releases/latest/download/openregister.tar.gz
+wget https://codeberg.org/Conduction/openregister/releases/latest/download/openregister.tar.gz
 rm -rf openregister
 tar -xzf openregister.tar.gz
 chown -R www-data:www-data openregister
@@ -598,7 +598,7 @@ Add to `config/config.php`:
 
 - **Website**: https://openregisters.app/
 - **Documentation**: https://openregisters.app/docs/
-- **GitHub**: https://github.com/ConductionNL/openregister
+- **GitHub**: https://codeberg.org/Conduction/openregister
 - **License**: EUPL-1.2
 - **Support**: support@conduction.nl
 

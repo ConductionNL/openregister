@@ -4,7 +4,7 @@
   "repo": "ConductionNL/openregister",
   "created": "2026-04-30",
   "tracking_issue": 1366,
-  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1366",
+  "tracking_issue_url": "https://codeberg.org/Conduction/openregister/issues/1366",
   "specs": [
     "schema-driven-read-coercion"
   ],

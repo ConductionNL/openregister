@@ -4,7 +4,7 @@
   "repo": "ConductionNL/openregister",
   "created": "2026-04-20",
   "tracking_issue": 1292,
-  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1292",
+  "tracking_issue_url": "https://codeberg.org/Conduction/openregister/issues/1292",
   "spec_ref": "specs/datetime-input-handling/spec.md",
   "tasks": [
     {

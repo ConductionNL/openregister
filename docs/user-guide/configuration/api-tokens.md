@@ -241,7 +241,7 @@ If you encounter issues:
 1. Check this documentation for troubleshooting steps
 2. Contact your system administrator for support
 3. Contact your system administrator
-4. Report bugs on [GitHub Issues](https://github.com/ConductionNL/openregister/issues)
+4. Report bugs on [GitHub Issues](https://codeberg.org/Conduction/openregister/issues)
 
 
 

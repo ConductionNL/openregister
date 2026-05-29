@@ -15,7 +15,7 @@
  * @copyright 2024 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @version   GIT: <git_id>
- * @link      https://github.com/ConductionNL/openregister
+ * @link      https://codeberg.org/Conduction/openregister
  */
 
 namespace OCA\OpenRegister\Controller;

@@ -486,7 +486,7 @@ services:
 
   # Tilburg WOO UI - Public interface for WOO (Wet Open Overheid) documents
   # Access at: http://localhost:3000
-  # Documentation: https://github.com/ConductionNL/tilburg-woo-ui
+  # Documentation: https://codeberg.org/Conduction/tilburg-woo-ui
   tilburg-woo-ui:
     profiles:
       - ui

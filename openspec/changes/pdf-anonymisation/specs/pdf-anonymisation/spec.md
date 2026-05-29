@@ -228,6 +228,6 @@ The `composer.json` repository entry pointing at `ConductionNL/sapp` MUST be vis
 
 - **GIVEN** the `pdf-anonymisation` change has shipped
 - **WHEN** a maintainer reads `composer.json`
-- **THEN** they see a `repositories` entry for `https://github.com/ConductionNL/sapp`
+- **THEN** they see a `repositories` entry for `https://codeberg.org/Conduction/sapp`
 - **AND** the `ddn/sapp` constraint resolves to a `work/text-replacement`-branch dev-version
 - **AND** the CHANGELOG entry documents the fork dependency + the upstream PR series tracking it

@@ -13,7 +13,7 @@
   },
   "link.item.label.GitHub": {
     "message": "GitHub",
-    "description": "The label of footer link with label=GitHub linking to https://github.com/conductionnl/openregister"
+    "description": "The label of footer link with label=GitHub linking to https://codeberg.org/Conduction/openregister"
   },
   "copyright": {
     "message": "Copyright © 2026 for <a href=\"https://openwebconcept.nl\">Open Webconcept</a> by <a href=\"https://conduction.nl\">Conduction B.V.</a>",
