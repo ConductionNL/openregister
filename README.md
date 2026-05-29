@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ConductionNL/openregister/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/openregister" alt="Latest release"></a>
-  <a href="https://github.com/ConductionNL/openregister/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
-  <a href="https://github.com/ConductionNL/openregister/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/openregister/code-quality.yml?label=quality" alt="Code quality"></a>
+  <a href="https://codeberg.org/Conduction/openregister/releases"><img src="https://img.shields.io/gitea/v/release/Conduction/openregister?gitea_url=https%3A%2F%2Fcodeberg.org" alt="Latest release"></a>
+  <a href="https://codeberg.org/Conduction/openregister/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
+  <a href="https://ci.codeberg.org/repos/Conduction/openregister"><img src="https://ci.codeberg.org/api/badges/Conduction/openregister/status.svg" alt="Code quality"></a>
   <a href="https://openregisters.app"><img src="https://img.shields.io/badge/docs-openregisters.app-green" alt="Documentation"></a>
 </p>
 
@@ -19,7 +19,7 @@
 
 OpenRegister provides a way to quickly build and deploy standardized data registers in Nextcloud. Define your data models with JSON Schema, store objects in high-performance registers, and expose them through REST APIs that follow NLGov API Design Rules and Common Ground principles.
 
-It is the shared data backbone for apps like [OpenCatalogi](https://github.com/ConductionNL/opencatalogi), [Procest](https://github.com/ConductionNL/procest), [Pipelinq](https://github.com/ConductionNL/pipelinq), and [Software Catalogus](https://github.com/ConductionNL/softwarecatalog).
+It is the shared data backbone for apps like [OpenCatalogi](https://codeberg.org/Conduction/opencatalogi), [Procest](https://codeberg.org/Conduction/procest), [Pipelinq](https://codeberg.org/Conduction/pipelinq), and [Software Catalogus](https://codeberg.org/Conduction/softwarecatalog).
 
 ## Screenshots
 
@@ -142,7 +142,7 @@ openregister/
 
 ```bash
 cd /var/www/html/custom_apps
-git clone https://github.com/ConductionNL/openregister.git
+git clone https://codeberg.org/Conduction/openregister.git
 cd openregister
 composer install --no-dev
 npm install
@@ -219,12 +219,12 @@ Full documentation is available at **[openregisters.app](https://openregisters.a
 
 ## Related Apps
 
-- **[OpenCatalogi](https://github.com/ConductionNL/opencatalogi)** — Publication and catalog management (uses OpenRegister as data layer)
-- **[Procest](https://github.com/ConductionNL/procest)** — Case and process management (uses OpenRegister as data layer)
-- **[Pipelinq](https://github.com/ConductionNL/pipelinq)** — CRM with lead pipelines (uses OpenRegister as data layer)
-- **[Software Catalogus](https://github.com/ConductionNL/softwarecatalog)** — GEMMA software catalog (uses OpenRegister as data layer)
-- **[NL Design](https://github.com/ConductionNL/nldesign)** — Design token theming for government standards
-- **[DocuDesk](https://github.com/ConductionNL/docudesk)** — Document generation
+- **[OpenCatalogi](https://codeberg.org/Conduction/opencatalogi)** — Publication and catalog management (uses OpenRegister as data layer)
+- **[Procest](https://codeberg.org/Conduction/procest)** — Case and process management (uses OpenRegister as data layer)
+- **[Pipelinq](https://codeberg.org/Conduction/pipelinq)** — CRM with lead pipelines (uses OpenRegister as data layer)
+- **[Software Catalogus](https://codeberg.org/Conduction/softwarecatalog)** — GEMMA software catalog (uses OpenRegister as data layer)
+- **[NL Design](https://codeberg.org/Conduction/nldesign)** — Design token theming for government standards
+- **[DocuDesk](https://codeberg.org/Conduction/docudesk)** — Document generation
 
 ## License
 
