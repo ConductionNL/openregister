@@ -82,7 +82,7 @@ const config = createConfig({
             'user/n8n-workflow-configuration.md',
           ],
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/ConductionNL/openregister/tree/main/docs/',
+          editUrl: 'https://codeberg.org/Conduction/openregister/src/branch/main/docs/',
         },
         blog: false,
         theme: {
@@ -131,8 +131,8 @@ const config = createConfig({
         position: 'right',
       },
       {
-        href: 'https://github.com/ConductionNL/openregister',
-        label: 'GitHub',
+        href: 'https://codeberg.org/Conduction/openregister',
+        label: 'Codeberg',
         position: 'right',
       },
       { type: 'localeDropdown', position: 'right' },
