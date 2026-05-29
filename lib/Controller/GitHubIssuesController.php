@@ -215,9 +215,9 @@ class GitHubIssuesController extends Controller
 
         $uid = $user->getUID();
 
-        $repo    = (string) $this->request->getParam('repo', '');
-        $title   = (string) $this->request->getParam('title', '');
-        $body    = (string) $this->request->getParam('body', '');
+        $repo       = (string) $this->request->getParam('repo', '');
+        $title      = (string) $this->request->getParam('title', '');
+        $body       = (string) $this->request->getParam('body', '');
         $specRefRaw = $this->request->getParam('specRef');
         $specRef    = ($specRefRaw !== null && $specRefRaw !== '') ? (string) $specRefRaw : null;
 

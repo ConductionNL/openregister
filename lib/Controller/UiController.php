@@ -43,7 +43,7 @@ use OCP\IRequest;
  * @psalm-type     TemplateName = 'index'
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.TooManyMethods) Every public method is a one-liner
+ * @SuppressWarnings(PHPMD.TooManyMethods)       Every public method is a one-liner
  *     SPA-mount route stub required by the NC AppFramework router: each history-
  *     mode deep-link path needs its own named action so OC\Route\Router does not
  *     drop duplicate route names. Splitting into multiple controllers would not

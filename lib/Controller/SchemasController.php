@@ -151,9 +151,9 @@ class SchemasController extends Controller
      *     configuration: array|null|string, allOf: array|null,
      *     oneOf: array|null, anyOf: array|null}>}, array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple optional extend/pagination/filter parameters each add one branch.
-     * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple optional extend/pagination/filter parameters each add one branch.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Handling pagination + filtering + extend + stats in one NC controller action is idiomatic; extracting helpers would obscure the flow.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple optional extend/pagination/filter parameters each add one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional extend/pagination/filter parameters each add one branch.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handling pagination + filtering + extend + stats in one NC controller action is idiomatic; extracting helpers would obscure the flow.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
@@ -366,9 +366,9 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)         DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple message-substring checks for error classification; each adds one branch.
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block at the end is repetitive but intentional; extracting it would not reduce cognitive load.
      *
      * @return JSONResponse JSON response with created schema or error
@@ -681,8 +681,8 @@ class SchemasController extends Controller
      *
      * @psalm-return JSONResponse<200|409|500, array{error?: string}, array<never, never>>
      *
-     * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Force-flag and orphan-count branches are inherent to a safe delete endpoint.
+     * @SuppressWarnings(PHPMD.ShortVariable)        $id matches the {id} URL route parameter; renaming breaks route binding.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Force-flag and orphan-count branches are inherent to a safe delete endpoint.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */

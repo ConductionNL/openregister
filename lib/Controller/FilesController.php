@@ -1070,7 +1070,7 @@ class FilesController extends Controller
             return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+        }//end try
     }//end downloadById()
 
     /**

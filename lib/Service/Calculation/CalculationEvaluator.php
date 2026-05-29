@@ -138,7 +138,7 @@ class CalculationEvaluator
         $name = '';
         if (is_string($args) === true) {
             $name = $args;
-        } elseif (is_array($args) === true) {
+        } else if (is_array($args) === true) {
             $name = (string) ($args[0] ?? '');
         }
 
@@ -548,7 +548,7 @@ class CalculationEvaluator
      *   key checks) and null propagation are mandatory guard steps; each extracted helper
      *   (validateDateDiffUnit, resolveDateOperand, applyDateDiffUnit) already carries its
      *   own CC but PHPMD 2.x accumulates their complexity into the calling method's score.
-     * @SuppressWarnings(PHPMD.NPathComplexity) NPath inflation mirrors the CyclomaticComplexity
+     * @SuppressWarnings(PHPMD.NPathComplexity)      NPath inflation mirrors the CyclomaticComplexity
      *   accumulation issue; the method body itself delegates entirely to extracted helpers.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1

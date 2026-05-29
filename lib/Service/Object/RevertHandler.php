@@ -81,11 +81,11 @@ class RevertHandler
     /**
      * RevertHandler constructor.
      *
-     * @param AuditTrailMapper  $auditTrailMapper  Audit trail mapper.
-     * @param ContainerInterface $container         DI container.
-     * @param IEventDispatcher  $eventDispatcher   Event dispatcher.
-     * @param MagicMapper       $objectEntityMapper Object entity mapper.
-     * @param PermissionHandler $permissionHandler  Permission handler for RBAC.
+     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper.
+     * @param ContainerInterface $container          DI container.
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher.
+     * @param MagicMapper        $objectEntityMapper Object entity mapper.
+     * @param PermissionHandler  $permissionHandler  Permission handler for RBAC.
      */
     public function __construct(
         AuditTrailMapper $auditTrailMapper,
@@ -147,7 +147,8 @@ class RevertHandler
             schema: $schemaEntity,
             action: 'update',
             object: $object
-        ) === false) {
+        ) === false
+        ) {
             throw new NotAuthorizedException(
                 message: 'You do not have permission to revert this object'
             );

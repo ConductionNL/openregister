@@ -3609,12 +3609,11 @@ class SaveObject
         // stamps the session user's UID (or the configured system identifier for
         // background jobs) AFTER this method returns. Accepting an owner value here
         // would allow any caller to forge object ownership:
-        //   - For authenticated REST requests applyOwnerAttribution() would override it,
-        //     but the defence-in-depth is still worthwhile.
-        //   - For background / system contexts (no IUserSession user) applyOwnerAttribution
-        //     only fills in owner when it is empty, so a client-supplied value would
-        //     persist — that is the actual attack vector closed by this change.
-
+        // - For authenticated REST requests applyOwnerAttribution() would override it,
+        // but the defence-in-depth is still worthwhile.
+        // - For background / system contexts (no IUserSession user) applyOwnerAttribution
+        // only fills in owner when it is empty, so a client-supplied value would
+        // persist — that is the actual attack vector closed by this change.
         if (array_key_exists('organisation', $selfData) === true && empty($selfData['organisation']) === false) {
             $objectEntity->setOrganisation($selfData['organisation']);
         }

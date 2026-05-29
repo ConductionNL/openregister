@@ -878,7 +878,7 @@ class AggregationRunner
         $buckets = [];
         foreach ($rows as $row) {
             $bucket = $row[$groupField] ?? null;
-            $key = is_scalar($bucket) ? (string) $bucket : json_encode($bucket);
+            $key    = is_scalar($bucket) ? (string) $bucket : json_encode($bucket);
 
             if (isset($buckets[$key]) === false) {
                 $buckets[$key] = ['key' => $bucket, 'rows' => []];

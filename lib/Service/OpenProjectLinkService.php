@@ -76,7 +76,7 @@ use Throwable;
  *     Tier-2 flows (link, create, unlink, list, picker, cache refresh,
  *     graceful degradation).
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Tier-2 service implements link/createAndLink/unlink/list/picker/refresh/hydrateLink/fetchWorkPackage/normalise — all are required faces of the OpenProject integration surface; splitting into separate classes would break the single-service lazy-resolution contract.
- * @SuppressWarnings(PHPMD.LongVariable) $openProjectLinkMapper follows the repo naming convention for OR link-table mappers; $workPackageId is the exact term used by the OpenProject API and abbreviating it would misalign with upstream documentation.
+ * @SuppressWarnings(PHPMD.LongVariable)             $openProjectLinkMapper follows the repo naming convention for OR link-table mappers; $workPackageId is the exact term used by the OpenProject API and abbreviating it would misalign with upstream documentation.
  */
 class OpenProjectLinkService
 {

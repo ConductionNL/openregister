@@ -50,7 +50,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes EmailLinkMapper, IDBConnection,
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes EmailLinkMapper, IDBConnection,
  *   IAppManager, IUserSession, and LoggerInterface; each is a required dependency for
  *   direct-SQL Mail table queries, availability checks, and user-session handling.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Direct SQL queries against NC Mail
@@ -78,7 +78,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes mapper +
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes mapper +
  *     IDBConnection (direct Mail-table queries) + IAppManager +
  *     IUserSession + LoggerInterface. Each dependency is required.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Spans send, link, list,

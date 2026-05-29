@@ -544,8 +544,8 @@ class SecurityService
             $identityValue = 'anonymous';
         }
 
-        $identity  = $this->sanitizeForCacheKey(input: $identityValue);
-        $ipKey     = $this->sanitizeForCacheKey(input: $ipAddress);
+        $identity = $this->sanitizeForCacheKey(input: $identityValue);
+        $ipKey    = $this->sanitizeForCacheKey(input: $ipAddress);
 
         return $identity.'_'.$ipKey;
     }//end buildAuthCompositeKey()

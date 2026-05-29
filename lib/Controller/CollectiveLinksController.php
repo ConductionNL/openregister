@@ -55,9 +55,9 @@ class CollectiveLinksController extends Controller
     /**
      * Constructor.
      *
-     * @param string                $appName      App id.
-     * @param IRequest              $request      HTTP request.
-     * @param CollectiveLinkService $linkService  Backing service.
+     * @param string                $appName       App id.
+     * @param IRequest              $request       HTTP request.
+     * @param CollectiveLinkService $linkService   Backing service.
      * @param ObjectService         $objectService OR object resolver.
      */
     public function __construct(

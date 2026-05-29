@@ -60,7 +60,7 @@ class ExternalIntegrationRouter
      *
      * Null means "not yet checked" — the first call resolves it.
      *
-     * @var bool|null
+     * @var boolean|null
      */
     private ?bool $connectorAvailable = null;
 

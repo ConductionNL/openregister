@@ -93,7 +93,7 @@ class RateLimitMiddleware extends Middleware
      * @throws AuthRateLimitExceededException When the identity+IP is locked out
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::beforeController() requires the ($controller, $methodName) signature; $controller is forwarded to isPublicPage() but $methodName is also needed there — PHPMD misclassifies the forwarded params as unused.
-     * @SuppressWarnings(PHPMD.ShortVariable) $ip is the established abbreviation for IP address in network-security code; renaming to $ipAddress would conflict with the SecurityService parameter name.
+     * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address in network-security code; renaming to $ipAddress would conflict with the SecurityService parameter name.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
@@ -139,7 +139,7 @@ class RateLimitMiddleware extends Middleware
      * @return Response The unmodified response
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterController() mandates ($controller, $methodName, $response) — $controller and $methodName are not used in this method's body (only $response and the session are needed), but the framework dispatch requires all three.
-     * @SuppressWarnings(PHPMD.ShortVariable) $ip is the established abbreviation for IP address; renaming disagrees with SecurityService's own parameter naming.
+     * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address; renaming disagrees with SecurityService's own parameter naming.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */
@@ -185,7 +185,7 @@ class RateLimitMiddleware extends Middleware
      * @throws \Exception The original exception is re-thrown for all non-lockout cases
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterException() requires ($controller, $methodName, $exception) — $controller is forwarded to isPublicPage() but PHPMD flags it; $methodName is also required by isPublicPage().
-     * @SuppressWarnings(PHPMD.ShortVariable) $ip is the established abbreviation for IP address; renaming disagrees with SecurityService's own parameter naming.
+     * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address; renaming disagrees with SecurityService's own parameter naming.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
      */

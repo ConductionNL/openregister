@@ -44,8 +44,8 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods) Actions CRUD exposes index/show/create/update/patch/destroy/test/logs/migrateFromHooks — each maps to a distinct REST verb or utility route required by the Actions feature; collapsing routes would break the REST contract.
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Controller composes ActionMapper + ActionLogMapper + ActionService + IUserSession + IGroupManager + LoggerInterface; each dependency serves a distinct responsibility (persistence, logging, business logic, auth) and cannot be removed without losing functionality.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Actions CRUD exposes index/show/create/update/patch/destroy/test/logs/migrateFromHooks — each maps to a distinct REST verb or utility route required by the Actions feature; collapsing routes would break the REST contract.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Controller composes ActionMapper + ActionLogMapper + ActionService + IUserSession + IGroupManager + LoggerInterface; each dependency serves a distinct responsibility (persistence, logging, business logic, auth) and cannot be removed without losing functionality.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity is spread across 9 thin public action methods; each method is independently simple. PHPMD accumulates per-method scores into the class total.
  */
 class ActionsController extends Controller
@@ -156,7 +156,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity) index() handles limit/offset/page/search/filters in one pass to avoid a second DB round-trip; extracting each branch into helpers would add indirection without reducing total paths.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      index() handles limit/offset/page/search/filters in one pass to avoid a second DB round-trip; extracting each branch into helpers would add indirection without reducing total paths.
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Branches cover five independent optional query parameters (limit, offset, page, search, field filters); each is a single isset/cast guard and cannot be split without duplicating the parameter-parsing logic.
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1

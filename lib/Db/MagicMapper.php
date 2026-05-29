@@ -1237,7 +1237,7 @@ class MagicMapper extends AbstractObjectMapper
                         name: $this->sanitizeColumnName(name: $field),
                         isPostgres: $isPostgres
                     );
-                }
+                }//end if
 
                 $dir = 'ASC';
                 if (strtoupper($direction) === 'DESC') {
@@ -2710,8 +2710,8 @@ class MagicMapper extends AbstractObjectMapper
             foreach ($uniqueConstraints as $uniqueCol) {
                 $rawCol         = trim($uniqueCol, '`"');
                 $constraintName = $tableName.'_'.ltrim($rawCol, '_').'_uq';
-                $quote        = $isPostgres === true ? '"' : '`';
-                $sql .= ', CONSTRAINT '.$quote.$constraintName.$quote.' UNIQUE ('.$uniqueCol.')';
+                $quote          = $isPostgres === true ? '"' : '`';
+                $sql           .= ', CONSTRAINT '.$quote.$constraintName.$quote.' UNIQUE ('.$uniqueCol.')';
             }
 
             $sql .= ')';
@@ -3072,28 +3072,28 @@ class MagicMapper extends AbstractObjectMapper
         //
         // Fields handled here:
         //
-        //   owner        – stripped from client @self to prevent ownership hijacking.
-        //                  For the internal entity-serialization path the owner was
-        //                  stamped by SaveObject::applyOwnerAttribution before
-        //                  jsonSerialize() was called. Stripping it here prevents any
-        //                  residual client value from persisting. The DB column will
-        //                  receive the value set by the entity's setter (not @self).
-        //                  Note: this means that for any path that does NOT go through
-        //                  applyOwnerAttribution, _owner will be null. That is safer
-        //                  than persisting an attacker-controlled value.
+        // owner        – stripped from client @self to prevent ownership hijacking.
+        // For the internal entity-serialization path the owner was
+        // stamped by SaveObject::applyOwnerAttribution before
+        // jsonSerialize() was called. Stripping it here prevents any
+        // residual client value from persisting. The DB column will
+        // receive the value set by the entity's setter (not @self).
+        // Note: this means that for any path that does NOT go through
+        // applyOwnerAttribution, _owner will be null. That is safer
+        // than persisting an attacker-controlled value.
         //
-        //   authorization – per-object RBAC rules must not be writable by ordinary
-        //                  object-create/update calls. Management of per-object
-        //                  authorization is intentionally limited to the dedicated
-        //                  authorization management endpoint.
+        // authorization – per-object RBAC rules must not be writable by ordinary
+        // object-create/update calls. Management of per-object
+        // authorization is intentionally limited to the dedicated
+        // authorization management endpoint.
         //
-        //   register / schema – always derived from the authoritative $register and
-        //                  $schema method parameters. Unconditional override (extends
-        //                  the previous conditional-on-empty guard to be absolute).
+        // register / schema – always derived from the authoritative $register and
+        // $schema method parameters. Unconditional override (extends
+        // the previous conditional-on-empty guard to be absolute).
         //
         // The following fields are intentionally NOT stripped here because they carry
         // legitimate values set by the server before this function is reached:
-        //   version, created, updated, deleted, locked, retention, uuid, slug, uri
+        // version, created, updated, deleted, locked, retention, uuid, slug, uri
         // Those fields must be fixed at the SaveObject/controller level if client
         // injection is possible for any of them.
         unset($metadata['owner'], $metadata['authorization']);

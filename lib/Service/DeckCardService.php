@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service composes DeckLinkMapper,
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Service composes DeckLinkMapper,
  *   IAppManager, IUserSession, LoggerInterface, and dynamic Deck service classes; the set
  *   cannot be reduced as each dependency serves a distinct orchestration concern.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Deck's Card entity resolves
@@ -195,7 +195,7 @@ class DeckCardService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Defensive null/type guards for service
      *   and card availability are mandatory; Deck's entity magic prevents compile-time
      *   checks, requiring runtime branches that cannot be removed without losing safety.
-     * @SuppressWarnings(PHPMD.NPathComplexity) NPath inflation is caused by PHPMD 2.x
+     * @SuppressWarnings(PHPMD.NPathComplexity)      NPath inflation is caused by PHPMD 2.x
      *   counting logical sub-expressions in guard conditions independently; the method
      *   body is already fully decomposed into extractDueDate/extractLabels/extractAssignees.
      */
