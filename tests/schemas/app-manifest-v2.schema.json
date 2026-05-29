@@ -1,6 +1,6 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+	"$id": "https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest-v2.schema.json",
 	"title": "Conduction App Manifest v2",
 	"description": "v2 schema for the JSON-driven page and navigation manifest consumed by @conduction/nextcloud-vue. Introduces a uniform widgets[] array on every page type with a per-slot grid coordinate system, a typed actions[] discriminator, and the required $schema field for version detection. v1 manifests continue to validate against app-manifest.schema.json (unchanged).",
 	"version": "2.7.0",
@@ -11,7 +11,7 @@
 		"$schema": {
 			"type": "string",
 			"format": "uri",
-			"description": "REQUIRED in v2. Must point to the v2 schema URL: https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json. Presence of this field enables the validator to dispatch to the v2 Ajv instance rather than the v1 hand-rolled validator."
+			"description": "REQUIRED in v2. Must point to the v2 schema URL: https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest-v2.schema.json. Presence of this field enables the validator to dispatch to the v2 Ajv instance rather than the v1 hand-rolled validator."
 		},
 		"version": {
 			"type": "string",
