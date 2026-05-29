@@ -219,6 +219,52 @@ class ObjectsController extends Controller
     }//end normalizeFormDataValues()
 
     /**
+     * Strip server-managed @self fields from client-supplied object data.
+     *
+     * The top-level filter in create/update/patch/postPatch already passes @self
+     * through unchanged because certain integrations legitimately set @self.slug or
+     * @self.relations.  However, several @self sub-fields MUST NOT be accepted from
+     * client input because they are either server-authoritative (owner, organisation)
+     * or carry security-sensitive semantics (authorization, groups).
+     *
+     * The service layer (SaveObject::setSelfMetadata + applyOwnerAttribution) enforces
+     * the same rules; this controller-level strip is an additional defense-in-depth
+     * boundary that catches injections before they even reach the service (wave-11 WF2).
+     *
+     * Allowed @self keys for client input (non-exhaustive; extend as features are added):
+     *   slug, name, description, summary, image, relations, tmlo (update path only)
+     *
+     * Rejected at this layer (server-managed or security-sensitive):
+     *   owner, organisation, authorization, groups, application, folder
+     *
+     * @param array $data The raw request data (may contain a '@self' key)
+     *
+     * @return array The data with dangerous @self sub-keys stripped
+     */
+    private function sanitiseSelfMetadata(array $data): array
+    {
+        if (isset($data['@self']) === false || is_array($data['@self']) === false) {
+            return $data;
+        }
+
+        // Fields that clients must never supply — they are set server-side.
+        $serverManagedKeys = [
+            'owner',
+            'organisation',
+            'authorization',
+            'groups',
+            'application',
+            'folder',
+        ];
+
+        foreach ($serverManagedKeys as $key) {
+            unset($data['@self'][$key]);
+        }
+
+        return $data;
+    }//end sanitiseSelfMetadata()
+
+    /**
      * Extract all uploaded files from the current request.
      *
      * Uses IRequest::getUploadedFile() to retrieve files by known field names.
@@ -1899,6 +1945,10 @@ class ObjectsController extends Controller
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $object = $this->normalizeFormDataValues(data: $object);
 
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields so they
+        // cannot be injected via the single-object create path.
+        $object = $this->sanitiseSelfMetadata(data: $object);
+
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
 
@@ -2012,6 +2062,9 @@ class ObjectsController extends Controller
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $object = $this->normalizeFormDataValues(data: $object);
+
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $object = $this->sanitiseSelfMetadata(data: $object);
 
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
@@ -2177,6 +2230,9 @@ class ObjectsController extends Controller
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $patchData = $this->normalizeFormDataValues(data: $patchData);
+
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $patchData = $this->sanitiseSelfMetadata(data: $patchData);
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
@@ -2368,6 +2424,9 @@ class ObjectsController extends Controller
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $patchData = $this->normalizeFormDataValues(data: $patchData);
+
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $patchData = $this->sanitiseSelfMetadata(data: $patchData);
 
         // Extract uploaded files — works because this is a POST request.
         $uploadedFiles = $this->extractAllUploadedFiles();

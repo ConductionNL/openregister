@@ -39,6 +39,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 
 /**
@@ -341,6 +342,33 @@ class BulkController extends Controller
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
             }
 
+            // AUTHORIZATION (wave-11 WF1 / wave-3 C4 pattern): bulk-writing objects is a
+            // potentially high-impact write that any authenticated user could otherwise use
+            // to spray validation work or flood the audit trail.  Gate on manage-permission
+            // for the target schema (default-SECURE: admin-only when no manage rule exists).
+            // Mixed-schema (schema=0) bulk operations skip this gate because there is no
+            // single schema entity to check against — the per-object RBAC flag (_rbac:true)
+            // still runs inside saveObjects for individual object writes.
+            $isMixedSchema = ($resolved['schema'] === 0);
+
+            if ($isMixedSchema === false) {
+                try {
+                    $schemaEntityForGate = $this->schemaMapper->find((int) $resolved['schema']);
+                } catch (\Throwable $e) {
+                    return new JSONResponse(
+                        data: ['error' => 'Schema not found'],
+                        statusCode: Http::STATUS_NOT_FOUND
+                    );
+                }
+
+                if ($this->checkSchemaManagePermission(schema: $schemaEntityForGate) === false) {
+                    return new JSONResponse(
+                        data: ['error' => 'User does not have permission to bulk-write objects on this schema'],
+                        statusCode: Http::STATUS_FORBIDDEN
+                    );
+                }
+            }//end if
+
             // Get request data.
             $data    = $this->request->getParams();
             $objects = $data['objects'] ?? [];
@@ -352,10 +380,6 @@ class BulkController extends Controller
                     statusCode: Http::STATUS_BAD_REQUEST
                 );
             }
-
-            // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations.
-            // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas.
-            $isMixedSchema = ($resolved['schema'] === 0);
 
             // Determine schema to use (null for mixed-schema, resolved for single-schema).
             $schemaToUse = $resolved['schema'];
@@ -383,6 +407,18 @@ class BulkController extends Controller
                     'saved_objects'   => $savedObjects,
                     'requested_count' => count($objects),
                 ]
+            );
+        } catch (UniqueConstraintViolationException $e) {
+            // WF3 (wave-11): a client-supplied UUID collided with an existing row at a
+            // non-upsert boundary (e.g. unique-slug constraint, or concurrent insert race).
+            // Surface a human-readable 422 instead of leaking a raw DBAL trace.
+            return new JSONResponse(
+                data: [
+                    'error'      => 'One or more objects contain a UUID or unique field that conflicts with an existing record.',
+                    'error_code' => 'uuid_conflict',
+                    'detail'     => $e->getMessage(),
+                ],
+                statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
             );
         } catch (Exception $e) {
             return new JSONResponse(
