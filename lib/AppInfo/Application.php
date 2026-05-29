@@ -1843,9 +1843,9 @@ class Application extends App implements IBootstrap
      * Tries up to three candidate keys per app — alias, ucfirst FQCN,
      * and namespace-from-info.xml FQCN — stopping at the first match.
      *
-     * @param ContainerInterface       $container  The DI container.
-     * @param \Psr\Log\LoggerInterface $logger     PSR logger.
-     * @param array<IMcpToolProvider>  &$providers Providers array (modified in place).
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
      *
      * @return void
      */
@@ -1976,7 +1976,7 @@ class Application extends App implements IBootstrap
                 return $appProvider;
             }
 
-            // get_debug_type() returns the FQCN for objects and the type name for scalars.
+            // Get_debug_type() returns the FQCN for objects and the type name for scalars.
             $logger->warning(
                 '[McpToolsService] Resolved but not IMcpToolProvider',
                 ['appId' => $appId, 'via' => $key, 'class' => get_debug_type($appProvider)]

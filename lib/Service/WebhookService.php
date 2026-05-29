@@ -268,7 +268,7 @@ class WebhookService
             || strpos($host, ':') !== false;
 
         if ($isIpv6Literal === true) {
-            $reason = $this->blockedIpv6Reason($bareHost);
+            $reason = $this->blockedIpv6Reason(ip: $bareHost);
             if ($reason !== null) {
                 throw new \RuntimeException(
                     'Webhook target URL resolves to a blocked IP range ('.$reason.')'
@@ -290,7 +290,7 @@ class WebhookService
                     continue;
                 }
 
-                $reason = $this->blockedIpv6Reason($ipv6);
+                $reason = $this->blockedIpv6Reason(ip: $ipv6);
                 if ($reason !== null) {
                     throw new \RuntimeException(
                         'Webhook target URL resolves to a blocked IP range ('.$reason.')'
@@ -396,13 +396,13 @@ class WebhookService
             return 'unspecified';
         }
 
-        // fc00::/7 — unique local (covers fc00:: and fd00:: blocks).
+        // Fc00::/7 — unique local (covers fc00:: and fd00:: blocks).
         // First byte with mask 0xFE must equal 0xFC.
         if ((ord($bin[0]) & 0xFE) === 0xFC) {
             return 'unique-local';
         }
 
-        // fe80::/10 — link-local unicast.
+        // Fe80::/10 — link-local unicast.
         // First byte 0xFE, second byte upper 6 bits = 0x80 → mask 0xC0.
         if (ord($bin[0]) === 0xFE && (ord($bin[1]) & 0xC0) === 0x80) {
             return 'link-local';
@@ -477,7 +477,7 @@ class WebhookService
             || strpos($host, ':') !== false;
 
         if ($isIpv6Literal === true) {
-            return $this->blockedIpv6Reason($bareHost) !== null;
+            return $this->blockedIpv6Reason(ip: $bareHost) !== null;
         }
 
         // ── IPv6 DNS (AAAA) ─────────────────────────────────────────────
@@ -485,7 +485,7 @@ class WebhookService
         if (is_array($aaaaRecords) === true) {
             foreach ($aaaaRecords as $record) {
                 $ipv6 = $record['ipv6'] ?? '';
-                if ($ipv6 !== '' && $this->blockedIpv6Reason($ipv6) !== null) {
+                if ($ipv6 !== '' && $this->blockedIpv6Reason(ip: $ipv6) !== null) {
                     return true;
                 }
             }

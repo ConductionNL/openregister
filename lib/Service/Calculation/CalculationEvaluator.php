@@ -673,7 +673,10 @@ class CalculationEvaluator
     private function calendarDiff(DateTimeImmutable $from, DateTimeImmutable $to, string $unit): int
     {
         $interval = $from->diff($to);
-        $sign     = ($interval->invert !== 1) ? 1 : -1;
+        $sign     = 1;
+        if ($interval->invert === 1) {
+            $sign = -1;
+        }
 
         if ($unit === 'years') {
             return $sign * $interval->y;

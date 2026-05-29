@@ -190,8 +190,12 @@ class TransitionEngine
      *
      * @return array<int, array{action: string, to: string, requires: ?string, description: ?string}>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent guard + per-transition from/requires/description checks each add one branch; none can be removed without losing safety or fidelity.
-     * @SuppressWarnings(PHPMD.NPathComplexity)      RBAC check + missing-object guard + annotation-absent guard + per-transition from/requires/description checks each add one branch; none can be removed without losing safety or fidelity.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent
+     * guard + per-transition from/requires/description checks each add one branch; none can be removed
+     * without losing safety or fidelity.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      RBAC check + missing-object guard + annotation-absent
+     * guard + per-transition from/requires/description checks each add one branch; none can be removed
+     * without losing safety or fidelity.
      *
      * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
      */

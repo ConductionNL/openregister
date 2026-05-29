@@ -45,8 +45,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
-
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata;
+// Getters mirror the contract in the interface.
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\Files\Folder;
@@ -64,9 +64,16 @@ use Throwable;
  * Always-on metadata: id='shares', group='core', requiredApp=null
  * (NC core sharing is always available), storage='query-time'.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Provider exposes list/delete/health plus lazy container resolution helpers (lookup, resolveContainer, resolveCurrentUserId, resolveObjectFolder, normaliseShare, mapServiceRow); each serves a distinct phase of the query-time share-walk and cannot be combined.
- * @SuppressWarnings(PHPMD.StaticAccess)             \OCP\Server::get() is the Nextcloud-prescribed static service-locator pattern for optional late-bound dependencies; no injectable alternative exists for the lazy-resolution policy (constructor injection would fail when the optional services are absent).
- * @SuppressWarnings(PHPMD.UnusedPrivateMethod)      mapServiceRow() is used as a callable in array_map([$this, 'mapServiceRow'], ...) — PHPMD does not trace callable-array references and incorrectly flags it as unused.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Provider exposes list/delete/health plus lazy
+ * container resolution helpers (lookup, resolveContainer, resolveCurrentUserId, resolveObjectFolder,
+ * normaliseShare, mapServiceRow); each serves a distinct phase of the query-time share-walk and
+ * cannot be combined.
+ * @SuppressWarnings(PHPMD.StaticAccess)             \OCP\Server::get() is the Nextcloud-prescribed static
+ * service-locator pattern for optional late-bound dependencies; no injectable alternative exists
+ * for the lazy-resolution policy (constructor injection would fail when optional services are absent).
+ * @SuppressWarnings(PHPMD.UnusedPrivateMethod)      mapServiceRow() is used as a callable in
+ * array_map([$this, 'mapServiceRow'], ...) — PHPMD does not trace callable-array references
+ * and incorrectly flags it as unused.
  */
 class SharesProvider extends AbstractIntegrationProvider
 {
@@ -222,9 +229,16 @@ class SharesProvider extends AbstractIntegrationProvider
      *
      * @spec openspec/changes/integration-shares/tasks.md
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  list() tries the ShareLinkService delegate first, then falls back to a local folder-walk; per-node, per-type, and per-share dedup logic are sequential — extracting them would split the single "get shares for object" contract across multiple helpers.
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Service-delegate + local-walk + Throwable fallback + folder-null + MAX_NODES cap + per-type Throwable swallow produce many paths; each guards a distinct degradation level per AD-23.
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) AbstractIntegrationProvider::list() mandates (register, schema, objectId, filters); $register and $schema are unused because shares are indexed per-object-uuid and there is no register/schema scope for NC core sharing.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  list() tries the ShareLinkService delegate first,
+     * then falls back to a local folder-walk; per-node, per-type, and per-share dedup logic are
+     * sequential — extracting them would split the single "get shares for object" contract across
+     * multiple helpers.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Service-delegate + local-walk + Throwable fallback +
+     * folder-null + MAX_NODES cap + per-type Throwable swallow produce many paths; each guards a
+     * distinct degradation level per AD-23.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) AbstractIntegrationProvider::list() mandates
+     * (register, schema, objectId, filters); $register and $schema are unused because shares are
+     * indexed per-object-uuid and there is no register/schema scope for NC core sharing.
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

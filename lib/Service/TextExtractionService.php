@@ -69,7 +69,9 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-format document extraction logic.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple document parsing libraries and mapper types for multi-format extraction.
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Individual extraction methods for PDF/DOCX/XLSX/EML each require format-specific logic.
- * @SuppressWarnings(PHPMD.TooManyMethods)           One private extraction method per supported MIME group (PDF/DOCX/XLSX/EML/text/object/file) plus chunking strategies; splitting into sub-services would break the encapsulated extraction workflow.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           One private extraction method per supported MIME group
+ * (PDF/DOCX/XLSX/EML/text/object/file) plus chunking strategies; splitting into sub-services would
+ * break the encapsulated extraction workflow.
  */
 class TextExtractionService
 {
@@ -1674,7 +1676,8 @@ class TextExtractionService
      *
      * @return string|null Flat plain-text, or null when the file cannot be parsed.
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) EmlParser::sanitisePiiForLogging is a stateless utility; making it non-static would not improve testability or DI.
+     * @SuppressWarnings(PHPMD.StaticAccess) EmlParser::sanitisePiiForLogging is a stateless utility;
+     * making it non-static would not improve testability or DI.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */

@@ -128,7 +128,8 @@ class TimeProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the IntegrationProvider interface contract; this implementation routes by $objectId only.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the
+     * IntegrationProvider interface contract; this implementation routes by $objectId only.
      *
      * @spec openspec/changes/integration-time-tracker/tasks.md
      */

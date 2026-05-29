@@ -397,7 +397,10 @@ class PollLinkService
         ?DateTimeInterface $deadline
     ): int {
         $now    = time();
-        $expire = ($deadline !== null) ? $deadline->getTimestamp() : 0;
+        $expire = 0;
+        if ($deadline !== null) {
+            $expire = $deadline->getTimestamp();
+        }
 
         try {
             $insert = $this->db->getQueryBuilder();

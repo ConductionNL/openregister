@@ -163,7 +163,7 @@ class NotifyPushListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        $resolved = $this->resolveEventAction($event);
+        $resolved = $this->resolveEventAction(event: $event);
         if ($resolved === null) {
             return;
         }

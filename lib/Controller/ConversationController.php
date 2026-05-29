@@ -475,8 +475,6 @@ class ConversationController extends Controller
      * >
      *
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
-     *
-     * @NoAdminRequired
      */
     public function create(): JSONResponse
     {
