@@ -8,9 +8,9 @@
       "cycle": 1,
       "trigger": "manual-bootstrap",
       "started_at": "2026-05-30T21:29:45Z",
-      "ended_at": null,
-      "outcome": "in-flight",
-      "outcome_reason": null,
+      "ended_at": "2026-05-30T22:02:37Z",
+      "outcome": "aborted",
+      "outcome_reason": "rebuild:queued \u2014 human wiped prior cycle",
       "pattern_tags": [],
       "stages": []
     }
