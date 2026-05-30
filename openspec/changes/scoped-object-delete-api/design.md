@@ -26,7 +26,7 @@ The fix has to remain backward-compatible: dozens of call sites pass `(string $u
 - Bulk delete (`deleteObjects(array $uuids)`) — same defect pattern but adds transaction-boundary concerns; a separate change.
 - Cascading-delete reachability across scopes — keep that with the existing dependency tracking flow.
 - A hard signature break of `deleteObject($uuid)` — out; we keep the single-arg form as a legacy fallback for at least one release cycle.
-- Fleet-wide migration of caller sites (decidesk, mydash, procest, pipelinq, openconnector#843) — that is per-app follow-up work and is tracked separately.
+- Fleet-wide migration of caller sites (decidesk, launchpad, procest, pipelinq, openconnector#843) — that is per-app follow-up work and is tracked separately.
 - Refusing the unscoped form when multiple matches exist across magic tables (the "optional" bullet in the issue) — out for this change; documented as a future tightening once all call sites are migrated, otherwise we'd break legitimate cross-table fallback callers today.
 
 ## Decisions
