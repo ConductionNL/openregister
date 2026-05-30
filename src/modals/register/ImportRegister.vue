@@ -303,7 +303,6 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						Apply multi-tenancy filtering during import. Recommended for multi-organization setups.
 					</template>
 				</NcCheckboxRadioSwitch>
-
 			</div>
 		</div>
 
@@ -666,6 +665,7 @@ export default {
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
 		/**
+		 * @param option
 		 * @spec exclude select-change UI handler updating register/schema stores
 		 */
 		async handleRegisterChange(option) {
@@ -694,6 +694,7 @@ export default {
 			}
 		},
 		/**
+		 * @param option
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
 		 */
 		async handleSchemaChange(option) {

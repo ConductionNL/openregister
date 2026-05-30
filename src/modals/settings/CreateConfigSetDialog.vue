@@ -68,6 +68,7 @@ export default {
 	watch: {
 		'navigationStore.dialog': {
 			/**
+			 * @param newValue
 			 * @spec exclude Debug-logging watcher on the dialog state; UI reactivity plumbing.
 			 */
 			handler(newValue) {

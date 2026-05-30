@@ -709,6 +709,7 @@ export default {
 		// in tests/e2e/spec-coverage/{entity-management-modals, saved-search-views}.
 		'$root.registerStore.registerList': {
 			/**
+			 * @param newList
 			 * @spec exclude Vue watch handler plumbing; re-runs applyQueryParamsFromRoute when the register list finishes loading on /tables deep-links.
 			 */
 			handler(newList) {
@@ -724,6 +725,7 @@ export default {
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
 			/**
+			 * @param newSchema
 			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
 			 */
 			handler(newSchema) {
@@ -739,6 +741,8 @@ export default {
 		// Watch for selected schemas changes to auto-expand new schemas
 		selectedSchemas: {
 			/**
+			 * @param newSchemas
+			 * @param oldSchemas
 			 * @spec exclude Vue watch handler plumbing; auto-expands newly selected schema groups in the UI.
 			 */
 			handler(newSchemas, oldSchemas) {
@@ -759,6 +763,7 @@ export default {
 		// Watch for active view changes to sync the name input
 		'viewsStore.activeView': {
 			/**
+			 * @param newView
 			 * @spec exclude Vue watch handler plumbing; mirrors the active view's name into the editable name input.
 			 */
 			handler(newView) {

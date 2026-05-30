@@ -121,6 +121,7 @@ export default {
 	methods: {
 		t,
 		/**
+		 * @param obj
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		objectUrl(obj) {
@@ -153,6 +154,7 @@ export default {
 			}
 		},
 		/**
+		 * @param obj
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		async unlinkObject(obj) {
@@ -174,6 +176,7 @@ export default {
 			}
 		},
 		/**
+		 * @param event
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
 		 */
 		onAttachmentDragOver(event) {
@@ -182,6 +185,8 @@ export default {
 			}
 		},
 		/**
+		 * @param event
+		 * @param obj
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
 		 */
 		async onAttachmentDrop(event, obj) {
@@ -209,6 +214,8 @@ export default {
 			}
 		},
 		/**
+		 * @param attachment
+		 * @param target
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
 		 */
 		async uploadAttachmentToObject(attachment, target) {

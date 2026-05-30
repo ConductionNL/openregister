@@ -24,6 +24,7 @@ export const useApplicationStore = defineStore('application', {
 	},
 	actions: {
 		/**
+		 * @param mode
 		 * @spec exclude Pure client UI-state setter — list/card view-mode toggle. No backend contract.
 		 */
 		setViewMode(mode) {
@@ -31,6 +32,7 @@ export const useApplicationStore = defineStore('application', {
 			console.log('View mode set to:', mode)
 		},
 		/**
+		 * @param applicationItem
 		 * @spec exclude Client state mutator — wraps the active application in an entity. No backend contract.
 		 */
 		setApplicationItem(applicationItem) {
@@ -47,6 +49,7 @@ export const useApplicationStore = defineStore('application', {
 			}
 		},
 		/**
+		 * @param applicationList
 		 * @spec exclude Client state mutator — maps the application list to entities. No backend contract.
 		 */
 		setApplicationList(applicationList) {
@@ -126,6 +129,7 @@ export const useApplicationStore = defineStore('application', {
 			}
 		},
 		/**
+		 * @param id
 		 * @spec exclude Thin API passthrough — GET /api/applications/{id}; observable contract owned by the applications backend capability.
 		 */
 		async getApplication(id) {
@@ -152,6 +156,7 @@ export const useApplicationStore = defineStore('application', {
 			}
 		},
 		/**
+		 * @param applicationItem
 		 * @spec exclude Thin API passthrough — DELETE /api/applications/{id}; observable contract owned by the applications backend capability.
 		 */
 		async deleteApplication(applicationItem) {
@@ -186,6 +191,7 @@ export const useApplicationStore = defineStore('application', {
 			}
 		},
 		/**
+		 * @param applicationItem
 		 * @spec exclude Thin API passthrough — POST/PUT /api/applications; observable contract owned by the applications backend capability.
 		 */
 		async saveApplication(applicationItem) {
@@ -238,6 +244,7 @@ export const useApplicationStore = defineStore('application', {
 		},
 		// Clean application data for saving - remove read-only fields
 		/**
+		 * @param applicationItem
 		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanApplicationForSave(applicationItem) {

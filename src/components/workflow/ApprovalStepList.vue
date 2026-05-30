@@ -68,6 +68,7 @@ export default {
 			return true
 		},
 		/**
+		 * @param step
 		 * @spec exclude API passthrough approving step + refetch; approval contract owned by approval-workflow capability
 		 */
 		async approve(step) {
@@ -80,6 +81,7 @@ export default {
 			}
 		},
 		/**
+		 * @param step
 		 * @spec exclude API passthrough rejecting step + refetch; approval contract owned by approval-workflow capability
 		 */
 		async reject(step) {

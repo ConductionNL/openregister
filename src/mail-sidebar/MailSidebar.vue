@@ -148,6 +148,7 @@ export default {
 			localStorage.setItem(COLLAPSED_STORAGE_KEY, String(this.collapsed))
 		},
 		/**
+		 * @param tabId
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		switchTab(tabId) {

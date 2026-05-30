@@ -73,6 +73,7 @@ export default {
 	methods: {
 		t,
 		/**
+		 * @param obj
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		objectName(obj) {
@@ -122,6 +123,7 @@ export default {
 			}
 		},
 		/**
+		 * @param schema
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		async loadInitialResults(schema) {
@@ -144,12 +146,14 @@ export default {
 			}
 		},
 		/**
+		 * @param schema
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		showResults(schema) {
 			this.$set(this.visibleResults, schema.id, true)
 		},
 		/**
+		 * @param schema
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		debounceSearch(schema) {
@@ -161,6 +165,7 @@ export default {
 			}, 300)
 		},
 		/**
+		 * @param schema
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
 		 */
 		async searchObjects(schema) {
@@ -194,6 +199,8 @@ export default {
 			}
 		},
 		/**
+		 * @param schema
+		 * @param obj
 		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-50
 		 */
 		async linkObject(schema, obj) {

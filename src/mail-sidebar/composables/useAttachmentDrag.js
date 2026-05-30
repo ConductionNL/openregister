@@ -9,7 +9,7 @@
  * and Vue component props. Track 2 (upstream): https://github.com/nextcloud/mail/pull/10509
  * should retire this composable when native drag support lands.
  *
- * @package OpenRegister
+ * @package
  *
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-3
  */

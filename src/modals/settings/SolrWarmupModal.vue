@@ -482,6 +482,7 @@ export default {
 	watch: {
 		config: {
 			/**
+			 * @param newConfig
 			 * @spec exclude UI watcher — syncs the incoming config prop into local state.
 			 */
 			handler(newConfig) {
@@ -491,6 +492,7 @@ export default {
 		},
 		localConfig: {
 			/**
+			 * @param newConfig
 			 * @spec exclude UI watcher — emits config changes to the parent.
 			 */
 			handler(newConfig) {

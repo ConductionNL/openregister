@@ -416,6 +416,7 @@ export default {
 	watch: {
 		show: {
 			/**
+			 * @param newVal
 			 * @spec exclude UI watcher — loads facets when shown, resets when hidden.
 			 */
 			handler(newVal) {

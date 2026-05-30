@@ -40,12 +40,11 @@ import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
 import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
 
 export default {
 	name: 'AccountSection',
-	components: { NcButton, NcTextField, ConfirmDeactivationModal },
+	components: { NcButton, ConfirmDeactivationModal },
 	data() {
 		return {
 			status: 'active',
