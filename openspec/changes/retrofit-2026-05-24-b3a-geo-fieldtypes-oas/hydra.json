@@ -13,6 +13,16 @@
       "outcome_reason": "rebuild:queued \u2014 human wiped prior cycle",
       "pattern_tags": [],
       "stages": []
+    },
+    {
+      "cycle": 2,
+      "trigger": "build:queued",
+      "started_at": "2026-05-30T22:19:51Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": []
     }
   ]
 }
