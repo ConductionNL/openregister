@@ -13,7 +13,7 @@
 ## Why
 
 OpenRegister is the platform foundation. Every other Conduction app (decidesk,
-opencatalogi, docudesk, mydash, softwarecatalog, procest, pipelinq, larpingapp,
+opencatalogi, docudesk, launchpad, softwarecatalog, procest, pipelinq, larpingapp,
 zaakafhandelapp, openconnector) sits on top of OR's data layer and is expected
 to adopt the `@conduction/nextcloud-vue` app-manifest pattern per
 [ADR-024](../../../../hydra/openspec/architecture/adr-024-app-manifest.md).
@@ -50,7 +50,7 @@ stay on the existing components and are flagged `type:"custom"`.
   `type` enum question is resolved (see Open Questions in design.md).
 - Set `manifest.dependencies` to `[]` — OR has no upstream Conduction-app
   dependencies. Per ADR-024 §10, this is the only sensible value for the
-  foundation repo. (`mydash` is the other repo with `[]`; everything else
+  foundation repo. (`launchpad` is the other repo with `[]`; everything else
   depends on at least `["openregister"]`.)
 - Add **manifest entries** for the 8 schema-driven page pairs that fit
   `type:"index"`/`type:"detail"`: Registers, Schemas, Objects, Sources,

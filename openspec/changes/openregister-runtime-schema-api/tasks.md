@@ -39,12 +39,12 @@
 - [x] 6.1 Add public `searchObjectsBySlug(string $registerSlug, string $schemaSlug, array $filters = []): array` to `lib/Service/ObjectService.php`. **Implementation note: `RegisterMapper::find()` already accepts slug strings (line 209 — `string|int $id`) and applies the standard organisation filter via `applyOrganisationFilter`; same on `SchemaMapper::find()`. The helper uses the polymorphic `find()` rather than a separate `findBySlug` (which exists on SchemaMapper but not on RegisterMapper, and would require duplicating mapper-level multi-tenancy logic).**
 - [x] 6.2 On unknown slug (either side), throw `OCP\AppFramework\Db\DoesNotExistException` with a message identifying which slug failed (register-side vs schema-side).
 - [x] 6.3 Update the docblock on `ObjectService::searchObjects` to state that `@self.register` and `@self.schema` MUST be numeric IDs; link to `searchObjectsBySlug` for slug-aware callers.
-- [x] 6.4 Unit-test: known-good slug pair returns the same result as the numeric-ID equivalent; unknown register slug throws; unknown schema slug (with valid register) throws; foreign-organisation slug throws. **Implemented as `tests/Unit/Service/ObjectServiceSearchBySlugTest.php` (resolve+delegate, unknown register slug throws, unknown schema slug throws); foreign-organisation case is exercised end-to-end via the integration test in `tests/Integration/RuntimeSchemaReloadTest.php::testSearchObjectsBySlugSeesFreshSchemaInSameWorker`. Manual smoke-test in task 7.2 retains validation against bootstrap-openbuilt seed data.**
+- [x] 6.4 Unit-test: known-good slug pair returns the same result as the numeric-ID equivalent; unknown register slug throws; unknown schema slug (with valid register) throws; foreign-organisation slug throws. **Implemented as `tests/Unit/Service/ObjectServiceSearchBySlugTest.php` (resolve+delegate, unknown register slug throws, unknown schema slug throws); foreign-organisation case is exercised end-to-end via the integration test in `tests/Integration/RuntimeSchemaReloadTest.php::testSearchObjectsBySlugSeesFreshSchemaInSameWorker`. Manual smoke-test in task 7.2 retains validation against bootstrap-openbuild seed data.**
 
-## 7. Smoke-test re-run against bootstrap-openbuilt
+## 7. Smoke-test re-run against bootstrap-openbuild
 
-- [ ] 7.1 Re-run the `bootstrap-openbuilt` smoke test (the manual flow that produced commit 3138e4c) against the branch and confirm the manual `POST /api/registers` step is no longer needed.
-- [ ] 7.2 Confirm `searchObjectsBySlug('openbuilt', 'application', [])` returns the seeded objects from the smoke test, where the pre-spec slug-based call returned zero.
+- [ ] 7.1 Re-run the `bootstrap-openbuild` smoke test (the manual flow that produced commit 3138e4c) against the branch and confirm the manual `POST /api/registers` step is no longer needed.
+- [ ] 7.2 Confirm `searchObjectsBySlug('openbuild', 'application', [])` returns the seeded objects from the smoke test, where the pre-spec slug-based call returned zero.
 - [ ] 7.3 Document the smoke-test result in the PR description.
 
 ## 8. Regression coverage on dependent apps

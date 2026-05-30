@@ -187,7 +187,7 @@ class RegistersDestroySafetyTest extends TestCase
      */
     public function testDestroyWithoutForceReturns409WhenObjectsExist(): void
     {
-        $register = $this->makeRegister(7, 'openbuilt');
+        $register = $this->makeRegister(7, 'openbuild');
 
         $this->registerService
             ->expects($this->once())
@@ -228,7 +228,7 @@ class RegistersDestroySafetyTest extends TestCase
      */
     public function testDestroyWithForceTrueDeletesAndInvalidatesCache(): void
     {
-        $register = $this->makeRegister(7, 'openbuilt');
+        $register = $this->makeRegister(7, 'openbuild');
 
         $this->registerService
             ->expects($this->once())

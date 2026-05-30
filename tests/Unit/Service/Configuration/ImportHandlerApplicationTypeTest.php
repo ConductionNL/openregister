@@ -204,12 +204,12 @@ class ImportHandlerApplicationTypeTest extends TestCase
     {
         $data = [
             'info'           => [
-                'title'       => 'OpenBuilt',
+                'title'       => 'OpenBuild',
                 'description' => 'Citizen developer surface',
             ],
             'x-openregister' => [
                 'type' => 'application',
-                'app'  => 'openbuilt',
+                'app'  => 'openbuild',
             ],
         ];
 
@@ -226,18 +226,18 @@ class ImportHandlerApplicationTypeTest extends TestCase
             ->with(
                 $this->equalTo(1),
                 $this->equalTo(0),
-                $this->equalTo(['slug' => 'openbuilt'])
+                $this->equalTo(['slug' => 'openbuild'])
             )
             ->willReturn([]);
 
         // Insert is the canonical path on a fresh import.
-        $newRegister = $this->makeRegister(7, 'openbuilt', [101, 102, 103]);
+        $newRegister = $this->makeRegister(7, 'openbuild', [101, 102, 103]);
         $this->registerMapper
             ->expects($this->once())
             ->method('createFromArray')
             ->with($this->callback(function (array $obj): bool {
-                return $obj['slug'] === 'openbuilt'
-                    && $obj['title'] === 'OpenBuilt'
+                return $obj['slug'] === 'openbuild'
+                    && $obj['title'] === 'OpenBuild'
                     && $obj['description'] === 'Citizen developer surface'
                     && $obj['schemas'] === [101, 102, 103]
                     && $obj['source'] === 'import';
@@ -251,7 +251,7 @@ class ImportHandlerApplicationTypeTest extends TestCase
         $configuration->setRegisters([]);
         $result        = ['registers' => [], 'schemas' => $schemas];
 
-        $this->invokeAutoCreate($data, 'openbuilt', $schemas, $configuration, $result);
+        $this->invokeAutoCreate($data, 'openbuild', $schemas, $configuration, $result);
 
         // The new register is surfaced in the import result.
         $this->assertCount(1, $result['registers']);
@@ -273,10 +273,10 @@ class ImportHandlerApplicationTypeTest extends TestCase
     public function testReimportIsIdempotentOnSlug(): void
     {
         $data = [
-            'info'           => ['title' => 'OpenBuilt'],
+            'info'           => ['title' => 'OpenBuild'],
             'x-openregister' => [
                 'type' => 'application',
-                'app'  => 'openbuilt',
+                'app'  => 'openbuild',
             ],
         ];
 
@@ -287,7 +287,7 @@ class ImportHandlerApplicationTypeTest extends TestCase
             $this->makeSchema(103, 'page'),
         ];
 
-        $existingRegister = $this->makeRegister(7, 'openbuilt', [101, 102, 103]);
+        $existingRegister = $this->makeRegister(7, 'openbuild', [101, 102, 103]);
 
         $this->registerMapper
             ->expects($this->once())
@@ -304,7 +304,7 @@ class ImportHandlerApplicationTypeTest extends TestCase
                 // schemas[] must be unchanged in size (no duplicates).
                 $schemaIds = $r->getSchemas();
                 return $r->getId() === 7
-                    && $r->getSlug() === 'openbuilt'
+                    && $r->getSlug() === 'openbuild'
                     && count($schemaIds) === 3
                     && in_array(101, $schemaIds, true)
                     && in_array(102, $schemaIds, true)
@@ -317,7 +317,7 @@ class ImportHandlerApplicationTypeTest extends TestCase
         $configuration->setRegisters([7]);
         $result        = ['registers' => [], 'schemas' => $schemas];
 
-        $this->invokeAutoCreate($data, 'openbuilt', $schemas, $configuration, $result);
+        $this->invokeAutoCreate($data, 'openbuild', $schemas, $configuration, $result);
 
         // The existing register surfaces in the result — no second row.
         $this->assertCount(1, $result['registers']);
@@ -339,10 +339,10 @@ class ImportHandlerApplicationTypeTest extends TestCase
     public function testLibraryTypedConfigDoesNotCreateRegister(): void
     {
         $data = [
-            'info'           => ['title' => 'OpenBuilt'],
+            'info'           => ['title' => 'OpenBuild'],
             'x-openregister' => [
                 'type' => 'library',
-                'app'  => 'openbuilt',
+                'app'  => 'openbuild',
             ],
         ];
 
@@ -357,7 +357,7 @@ class ImportHandlerApplicationTypeTest extends TestCase
         $configuration->setRegisters([]);
         $result        = ['registers' => [], 'schemas' => $schemas];
 
-        $this->invokeAutoCreate($data, 'openbuilt', $schemas, $configuration, $result);
+        $this->invokeAutoCreate($data, 'openbuild', $schemas, $configuration, $result);
 
         $this->assertSame([], $result['registers']);
         $this->assertSame([], $configuration->getRegisters() ?? []);

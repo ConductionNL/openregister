@@ -157,7 +157,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
     {
         $register = new Register();
         $register->setId(7);
-        $register->setSlug('openbuilt');
+        $register->setSlug('openbuild');
 
         $schema = new Schema();
         $schema->setId(42);
@@ -166,7 +166,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
         $this->registerMapper
             ->expects($this->once())
             ->method('find')
-            ->with($this->equalTo('openbuilt'))
+            ->with($this->equalTo('openbuild'))
             ->willReturn($register);
 
         $this->schemaMapper
@@ -189,7 +189,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
             ->willReturn([]);
 
         $result = $this->service->searchObjectsBySlug(
-            'openbuilt',
+            'openbuild',
             'application',
             ['status' => 'published']
         );
@@ -241,7 +241,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
     {
         $register = new Register();
         $register->setId(7);
-        $register->setSlug('openbuilt');
+        $register->setSlug('openbuild');
 
         $this->registerMapper
             ->expects($this->once())
@@ -262,7 +262,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
         );
 
         $this->service->searchObjectsBySlug(
-            'openbuilt',
+            'openbuild',
             'ghost-schema',
             []
         );
