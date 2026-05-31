@@ -13,10 +13,7 @@ retrofit_extensions:
 @e2e exclude backend workflow/archival — covered by PHPUnit
 
 Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen. This capability builds on the archivering-vernietiging spec and integrates with the immutable audit trail and deletion audit trail for legally required evidence trails.
-
 ## Requirements
-
-
 
 ### REQ-001: DestructionCheckJob and Destruction List Generation
 
@@ -347,3 +344,21 @@ When a destruction-list rejection requires extending an object's retention, `Arc
 - **THEN** the exception MUST be caught
 - **AND** a `LoggerInterface::warning()` entry MUST be emitted containing the UUID and the exception message
 - **AND** the method MUST return normally so a batch rejection of N objects continues processing the remaining N-1
+
+### Requirement: Archival and destruction-scheduling configuration API
+The system SHALL expose an admin-gated API for reading and writing archival settings —
+destruction scheduling, selectielijst configuration, and related dials.
+`ConfigurationSettingsController` provides `getArchivalSettings` (delegating to
+`SettingsService::getArchivalSettingsOnly()`) and `updateArchivalSettings` (delegating to
+`SettingsService::updateArchivalSettingsOnly()`). Both return HTTP 500 with an `error`
+field on service failure.
+
+#### Scenario: Read archival settings
+- **WHEN** `getArchivalSettings` is called
+- **THEN** it MUST return the archival/destruction configuration from `SettingsService::getArchivalSettingsOnly()`
+
+#### Scenario: Update archival settings
+- **GIVEN** an admin posts updated destruction-scheduling values
+- **WHEN** `updateArchivalSettings` runs
+- **THEN** it MUST persist them via `SettingsService::updateArchivalSettingsOnly()` and return the result
+
