@@ -742,7 +742,7 @@ return array (
       ),
       'lib/Controller/ObjectsController.php' => 
       array (
-        'hash' => 'cbdfb529ed1b45140ddeb9fbf72ad9a1273d80a3',
+        'hash' => '8569cc1d2f381967dcd71947806fadb3934279ea',
       ),
       'lib/Controller/DeletedController.php' => 
       array (
@@ -2215,7 +2215,7 @@ return array (
       ),
       'lib/Service/Object/SaveObject.php' => 
       array (
-        'hash' => 'eb43012e874d3e2a6b26b3a2d6e16d3eefc61660',
+        'hash' => '63642b1ad8fafbd0fc53c9b703704f6a3c7c8e1a',
       ),
       'lib/Service/Object/MigrationHandler.php' => 
       array (

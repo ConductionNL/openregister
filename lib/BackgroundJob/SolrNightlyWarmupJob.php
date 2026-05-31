@@ -25,12 +25,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\BackgroundJob\TimedJob;
-use OCP\ILogger;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\BackgroundJob\TimedJob;
+use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -47,6 +47,8 @@ use Psr\Log\LoggerInterface;
  * - Detailed logging and monitoring
  * - Configurable via OpenRegister settings
  * - Automatic error handling and recovery
+ *
+ * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
  */
 class SolrNightlyWarmupJob extends TimedJob
 {
@@ -68,14 +70,23 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Constructor
      *
-     * Initializes the timed job with the time factory and sets the interval.
-     *
-     * @param ITimeFactory $time Time factory for parent class
+     * @param ITimeFactory    $time            Time factory for parent class
+     * @param IndexService    $indexService    SOLR index service
+     * @param SettingsService $settingsService Settings service
+     * @param SchemaMapper    $schemaMapper    Schema mapper
+     * @param LoggerInterface $logger          Logger
+     * @param IConfig         $config          App config
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
-    public function __construct(ITimeFactory $time)
-    {
+    public function __construct(
+        ITimeFactory $time,
+        private readonly IndexService $indexService,
+        private readonly SettingsService $settingsService,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly LoggerInterface $logger,
+        private readonly IConfig $config,
+    ) {
         parent::__construct(time: $time);
         $this->setInterval(seconds: self::DEFAULT_INTERVAL);
     }//end __construct()
@@ -96,13 +107,7 @@ class SolrNightlyWarmupJob extends TimedJob
     {
         $startTime = microtime(true);
 
-        /*
-         * @var LoggerInterface $logger
-         */
-
-        $logger = \OC::$server->get(LoggerInterface::class);
-
-        $logger->info(
+        $this->logger->info(
             message: '[SolrNightlyWarmupJob] 🌙 SOLR Nightly Warmup Job Started',
             context: [
                 'file'           => __FILE__,
@@ -114,45 +119,25 @@ class SolrNightlyWarmupJob extends TimedJob
         );
 
         try {
-            /*
-             * Get required services.
-             *
-             * @var IndexService $solrService
-             */
-
-            $solrService = \OC::$server->get(IndexService::class);
-
-            /*
-             * @var SettingsService $settingsService
-             */
-
-            $settingsService = \OC::$server->get(SettingsService::class);
-
-            /*
-             * @var SchemaMapper $schemaMapper
-             */
-
-            $schemaMapper = \OC::$server->get(SchemaMapper::class);
-
             // Check if SOLR is enabled and available.
             $isSolrAvailable = $this->isSolrEnabledAndAvailable(
-                solrService: $solrService,
-                settingsService: $settingsService,
-                logger: $logger
+                solrService: $this->indexService,
+                settingsService: $this->settingsService,
+                logger: $this->logger
             );
             if ($isSolrAvailable === false) {
                 // phpcs:ignore Generic.Files.LineLength.MaxExceeded
-                $logger->info(message: '[SolrNightlyWarmupJob] SOLR Nightly Warmup Job skipped - SOLR not enabled or available', context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(message: '[SolrNightlyWarmupJob] SOLR Nightly Warmup Job skipped - SOLR not enabled or available', context: ['file' => __FILE__, 'line' => __LINE__]);
                 return;
             }
 
             // Get warmup configuration from settings.
-            $config = $this->getWarmupConfiguration(_settingsService: $settingsService, _logger: $logger);
+            $config = $this->getWarmupConfiguration();
 
             // Get all schemas for comprehensive warmup.
-            $schemas = $schemaMapper->findAll();
+            $schemas = $this->schemaMapper->findAll();
 
-            $logger->info(
+            $this->logger->info(
                 message: '[SolrNightlyWarmupJob] Starting nightly SOLR index warmup',
                 context: [
                     'file'           => __FILE__,
@@ -165,7 +150,7 @@ class SolrNightlyWarmupJob extends TimedJob
             );
 
             // Execute the comprehensive nightly warmup.
-            $result = $solrService->warmupIndex(
+            $result = $this->indexService->warmupIndex(
                 schemas: $schemas,
                 maxObjects: $config['maxObjects'],
                 mode: $config['mode'],
@@ -175,7 +160,7 @@ class SolrNightlyWarmupJob extends TimedJob
             $executionTime = microtime(true) - $startTime;
 
             if ($result['success'] ?? false) {
-                $logger->info(
+                $this->logger->info(
                     message: '[SolrNightlyWarmupJob] ✅ SOLR Nightly Warmup Job Completed Successfully',
                     context: [
                         'file'                   => __FILE__,
@@ -199,11 +184,11 @@ class SolrNightlyWarmupJob extends TimedJob
                 );
 
                 // Log performance statistics for monitoring.
-                $this->logPerformanceStats(result: $result, executionTime: $executionTime, logger: $logger);
+                $this->logPerformanceStats(result: $result, executionTime: $executionTime, logger: $this->logger);
             }//end if
 
             if (($result['success'] ?? false) === false) {
-                $logger->error(
+                $this->logger->error(
                     message: '[SolrNightlyWarmupJob] ❌ SOLR Nightly Warmup Job Failed',
                     context: [
                         'file'                   => __FILE__,
@@ -218,7 +203,7 @@ class SolrNightlyWarmupJob extends TimedJob
         } catch (\Exception $e) {
             $executionTime = microtime(true) - $startTime;
 
-            $logger->error(
+            $this->logger->error(
                 message: '[SolrNightlyWarmupJob] 🚨 SOLR Nightly Warmup Job Exception',
                 context: [
                     'file'                   => __FILE__,
@@ -357,31 +342,18 @@ class SolrNightlyWarmupJob extends TimedJob
     }//end isSolrEnabledAndAvailable()
 
     /**
-     * Get warmup configuration from settings.
-     *
-     * @param SettingsService $_settingsService Settings service instance (unused, kept for API compatibility)
-     * @param LoggerInterface $_logger          Logger instance (unused, kept for API compatibility)
+     * Get warmup configuration from app config.
      *
      * @return array Warmup configuration array
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
      */
-    private function getWarmupConfiguration(
-        SettingsService $_settingsService,
-        LoggerInterface $_logger
-    ): array {
-        /*
-         * @var \OCP\IConfig $config
-         */
-
-        $config = \OC::$server->get(\OCP\IConfig::class);
-
+    private function getWarmupConfiguration(): array
+    {
         $defaultMaxObjects = (string) self::DEFAULT_NIGHTLY_MAX_OBJECTS;
-        $maxObjects        = $config->getAppValue('openregister', 'solr_nightly_max_objects', $defaultMaxObjects);
-        $mode          = $config->getAppValue('openregister', 'solr_nightly_mode', self::DEFAULT_NIGHTLY_MODE);
-        $collectErrors = $config->getAppValue('openregister', 'solr_nightly_collect_errors', 'false') === 'true';
+        $maxObjects        = $this->config->getAppValue('openregister', 'solr_nightly_max_objects', $defaultMaxObjects);
+        $mode          = $this->config->getAppValue('openregister', 'solr_nightly_mode', self::DEFAULT_NIGHTLY_MODE);
+        $collectErrors = $this->config->getAppValue('openregister', 'solr_nightly_collect_errors', 'false') === 'true';
 
         return [
             'maxObjects'    => (int) $maxObjects,
