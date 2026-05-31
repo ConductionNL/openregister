@@ -20,9 +20,7 @@ This spec is an extension of existing infrastructure, not a greenfield build:
 - **Payload transformation (implemented)**: `MappingService::executeMapping()` with Twig templates already enables format-agnostic payload transformation. VNG Notificaties format is achieved through Mapping configuration, not hardcoded logic.
 - **Multi-tenancy (implemented)**: Webhook entities already support organisation scoping via the `organisation` field and `MultiTenancyTrait`. Notification rules inherit this isolation.
 - **What this spec adds**: NotificationRule entity, NotificationPreference entity, NotificationHistory entity, digest/batching mechanism, user opt-in/opt-out, rate limiting, threshold/deadline/workflow triggers, and read/unread tracking.
-
 ## Requirements
-
 ### Requirement: The system MUST integrate with Nextcloud's INotificationManager for in-app notifications
 All notification delivery to Nextcloud users MUST go through Nextcloud's native `OCP\Notification\IManager` interface. The object-lifecycle subjects declared by `x-openregister-notifications` — at minimum `object_created`, `object_updated`, and an assignment/transition subject (`object_transitioned`) — MUST be rendered by a registered `INotifier`. In OpenRegister this rendering lives in `AnnotationNotifier` (registered via `registerNotifierService`), which owns those subjects plus anything carrying a pre-rendered `_text` parameter; `Notifier` (registered via `appinfo/info.xml`) continues to own `configuration_update_available`. The two notifiers are mutually exclusive by subject so Nextcloud's sequential `Manager::prepare()` never double-renders. Each object subject MUST be internationalised in Dutch (nl) and English (en) via `IFactory::get('openregister', <languageCode>)` and MUST carry a primary action link to the object detail view. Push delivery is achieved by `notify_push` auto-intercepting the same `IManager` notification — the `push` channel is declared, not coded.
 
@@ -401,6 +399,14 @@ All notification messages (subjects, bodies, action labels) MUST be translatable
 ### Requirement: The notification engine MUST support event-driven trigger types beyond CRUD
 Notifications MUST be triggerable by workflow events, threshold alerts, scheduled checks, and external triggers in addition to standard object CRUD events.
 
+The `updated` trigger MUST additionally accept an optional non-numeric field-change `condition` block, evaluated against the old-versus-new object data the dispatch already supplies for `calculatedChange`. The block names a single `field` and one `operator`:
+
+- `{"field": "status", "operator": "changed"}` — the rule fires only when the field's value differs between the old and new object data (old ≠ new).
+- `{"field": "status", "operator": "equals", "value": "<target>"}` — the rule fires only when the new value equals `value`.
+- `{"field": "status", "operator": "equals", "value": "<target>", "from": "<prior>"}` — the optional `from` additionally requires the old value to equal `<prior>`, so the rule fires only on the specific `<prior>` → `<target>` transition.
+
+The evaluator MUST fail closed: when the old-versus-new object data is unavailable in the dispatch context, a `condition`-bearing `updated` rule MUST NOT fire — consistent with the existing `calculatedChange` behaviour. An `updated` rule that declares NO `condition` MUST continue to fire on every update (back-compatible). The non-numeric field-change condition is evaluated by a string-condition evaluator distinct from the existing numeric `calculatedChange` evaluator; numeric `calculatedChange` semantics are unchanged.
+
 #### Scenario: Workflow completion triggers notification
 - GIVEN an n8n workflow `vergunning-beoordeling` completes with output `{"result": "goedgekeurd"}`
 - AND a notification rule listens for event `workflow.completed` with condition `{"workflowName": "vergunning-beoordeling"}`
@@ -428,6 +434,43 @@ Notifications MUST be triggerable by workflow events, threshold alerts, schedule
 - GIVEN notification rule 15 is configured to accept external triggers
 - WHEN an external system calls `POST /api/notification-rules/15/trigger` with payload `{"objectUuid": "abc-123", "message": "Externe update ontvangen"}`
 - THEN a notification MUST be sent to the rule's recipients with the provided message
+
+#### Scenario: updated trigger with `changed` condition fires only when the field value differs
+- GIVEN an `updated` rule whose `trigger` declares `condition` `{"field": "status", "operator": "changed"}`
+- AND the dispatch context carries the old object data `{"status": "open"}` and the new object data `{"status": "closed"}`
+- WHEN the dispatcher evaluates the rule
+- THEN the rule MUST fire because the old value (`open`) differs from the new value (`closed`)
+
+#### Scenario: updated trigger with `changed` condition does not fire when the field value is unchanged
+- GIVEN an `updated` rule whose `trigger` declares `condition` `{"field": "status", "operator": "changed"}`
+- AND the dispatch context carries the old object data `{"status": "open"}` and the new object data `{"status": "open"}`
+- WHEN the dispatcher evaluates the rule
+- THEN the rule MUST NOT fire because the old value equals the new value
+
+#### Scenario: updated trigger with `equals` condition fires only when the new value matches
+- GIVEN an `updated` rule whose `trigger` declares `condition` `{"field": "status", "operator": "equals", "value": "closed"}`
+- AND the dispatch context carries the old object data `{"status": "open"}` and the new object data `{"status": "closed"}`
+- WHEN the dispatcher evaluates the rule
+- THEN the rule MUST fire because the new value equals `closed`
+- AND GIVEN instead a new object data of `{"status": "pending"}`, the rule MUST NOT fire
+
+#### Scenario: updated trigger with optional `from` requires the prior value
+- GIVEN an `updated` rule whose `trigger` declares `condition` `{"field": "status", "operator": "equals", "value": "closed", "from": "open"}`
+- AND the dispatch context carries the old object data `{"status": "open"}` and the new object data `{"status": "closed"}`
+- WHEN the dispatcher evaluates the rule
+- THEN the rule MUST fire because the new value equals `closed` AND the old value equals `open`
+- AND GIVEN instead an old object data of `{"status": "pending"}`, the rule MUST NOT fire because the prior value does not equal `open`
+
+#### Scenario: condition-bearing updated rule fails closed when old/new data is unavailable
+- GIVEN an `updated` rule whose `trigger` declares any field-change `condition`
+- AND the dispatch context does NOT carry the old and new object data (e.g. no previous object was available)
+- WHEN the dispatcher evaluates the rule
+- THEN the rule MUST NOT fire, matching the fail-closed behaviour of `calculatedChange`
+
+#### Scenario: updated rule with no condition still fires on every update
+- GIVEN an `updated` rule whose `trigger` declares NO `condition` block
+- WHEN any update occurs on the object
+- THEN the rule MUST fire on every update, preserving backwards compatibility with existing condition-less rules
 
 ### Requirement: Notification grouping MUST reduce noise for related events
 Multiple notifications about the same object or related objects MUST be grouped to avoid flooding the user's notification panel.
