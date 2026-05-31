@@ -18,9 +18,9 @@
       "cycle": 2,
       "trigger": "build:queued",
       "started_at": "2026-05-30T22:19:51Z",
-      "ended_at": "2026-05-30T22:20:32Z",
-      "outcome": "needs-input",
-      "outcome_reason": "builder container exited non-zero",
+      "ended_at": "2026-05-31T07:30:20Z",
+      "outcome": "aborted",
+      "outcome_reason": "rebuild:queued \u2014 human wiped prior cycle",
       "pattern_tags": [],
       "stages": [
         {
