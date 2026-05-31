@@ -3614,7 +3614,6 @@ class SaveObject
         // - For background / system contexts (no IUserSession user) applyOwnerAttribution
         // only fills in owner when it is empty, so a client-supplied value would
         // persist — that is the actual attack vector closed by this change.
-
         // SECURITY (wave-11 SB1): organisation must only be accepted from @self when the
         // caller is an admin or has verified membership in that organisation.
         // Blindly applying a client-supplied organisation UUID allows any authenticated
@@ -3646,7 +3645,7 @@ class SaveObject
         // resetting archiefstatus to 'actief' for new objects, overriding any client value.
         // On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
         // Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
-        // (No setTmlo() call — the field is intentionally omitted.)
+        // No setTmlo() call — the field is intentionally omitted.
     }//end setSelfMetadata()
 
     /**
@@ -3686,7 +3685,6 @@ class SaveObject
         // mark the object destruction-eligible immediately.  On CREATE, all TMLO fields
         // are system-managed defaults set by tmloService->populateDefaults() below.
         // On UPDATE, the separate validateTmloOnUpdate() path enforces the transition matrix.
-
         // Validate field values before populating (entity may have leftover TMLO from a prior
         // update path; ensure they are valid before stamping defaults).
         $currentTmlo = $objectEntity->getTmlo();

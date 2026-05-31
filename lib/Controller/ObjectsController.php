@@ -222,8 +222,8 @@ class ObjectsController extends Controller
      * Strip server-managed @self fields from client-supplied object data.
      *
      * The top-level filter in create/update/patch/postPatch already passes @self
-     * through unchanged because certain integrations legitimately set @self.slug or
-     * @self.relations.  However, several @self sub-fields MUST NOT be accepted from
+     * through unchanged because certain integrations legitimately set @self.slug
+     * or @self.relations. However, several @self sub-fields MUST NOT be accepted from
      * client input because they are either server-authoritative (owner, organisation)
      * or carry security-sensitive semantics (authorization, groups).
      *
