@@ -176,10 +176,7 @@ return array (
       ),
       'lib/BackgroundJob/SolrNightlyWarmupJob.php' => 
       array (
-        'hash' => '9afe78c273817ca8ad27ca9ead27d8eca079935c',
-        'violations' => 
-        array (
-        ),
+        'hash' => '6ad5320846e35ea8fe3b72d350e3e2b4c43e26c5',
       ),
       'lib/BackgroundJob/ExecutionHistoryCleanupJob.php' => 
       array (
@@ -743,6 +740,9 @@ return array (
       'lib/Controller/ObjectsController.php' => 
       array (
         'hash' => '8569cc1d2f381967dcd71947806fadb3934279ea',
+        'violations' => 
+        array (
+        ),
       ),
       'lib/Controller/DeletedController.php' => 
       array (
@@ -2216,6 +2216,9 @@ return array (
       'lib/Service/Object/SaveObject.php' => 
       array (
         'hash' => '63642b1ad8fafbd0fc53c9b703704f6a3c7c8e1a',
+        'violations' => 
+        array (
+        ),
       ),
       'lib/Service/Object/MigrationHandler.php' => 
       array (
