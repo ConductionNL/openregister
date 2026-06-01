@@ -12,7 +12,7 @@ on:
 
 jobs:
   triage:
-    uses: ConductionNL/.github/.github/workflows/issue-triage.yml@feature/openspec-project-sync
+    uses: Conduction/.github/.github/workflows/issue-triage.yml@feature/openspec-project-sync
     with:
       app-name: openregister
       backlog-existing: ${{ github.event_name == 'workflow_dispatch' && inputs.backlog-existing || false }}

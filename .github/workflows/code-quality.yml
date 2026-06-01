@@ -15,7 +15,7 @@ concurrency:
 jobs:
   quality:
     if: github.event_name != 'push' || github.event.created != true
-    uses: ConductionNL/.github/.github/workflows/quality.yml@main
+    uses: Conduction/.github/.github/workflows/quality.yml@main
     with:
       app-name: openregister
       php-version: "8.3"

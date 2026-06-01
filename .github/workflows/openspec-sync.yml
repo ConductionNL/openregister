@@ -8,7 +8,7 @@ on:
 
 jobs:
   sync:
-    uses: ConductionNL/.github/.github/workflows/openspec-sync.yml@main
+    uses: Conduction/.github/.github/workflows/openspec-sync.yml@main
     with:
       app-name: openregister
     secrets:
