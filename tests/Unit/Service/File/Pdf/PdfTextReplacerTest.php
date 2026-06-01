@@ -170,43 +170,38 @@ class PdfTextReplacerTest extends TestCase
     }//end testReplaceInPdfEmptySubstitutionsIsNoOp()
 
     /**
-     * Validation gate must fail closed when residual entity text remains.
-     * Feed validateOutput a known-clean PDF that still contains "Jansen"
-     * but whose substitution map demands it absent → throws
-     * REASON_VALIDATION_FAILED.
+     * Validation gate is now diagnostic-only (parity with the docx path
+     * which also returns partial results silently). When residual entity
+     * text remains it MUST emit a PII-redacted warning to the logger and
+     * MUST NOT throw — the partial PDF reaches the caller.
      *
      * @return void
      */
-    public function testValidateOutputFailsClosedOnResidual(): void
+    public function testValidateOutputLogsWarningOnResidualWithoutThrowing(): void
     {
         $pdfContainingNeedle = self::buildFixture(bodyText: 'De heer Jansen bezocht het loket.');
 
-        $this->expectException(exception: PdfAnonymisationException::class);
-        $this->expectExceptionMessageMatches(regularExpression: '/validation gate failed/i');
+        $this->logger
+            ->expects(matcher: self::once())
+            ->method(constraint: 'warning')
+            ->with(
+                self::matchesRegularExpression(regularExpression: '/Partial anonymisation/i'),
+                self::callback(callback: function (array $context): bool {
+                    // PII redaction: context MUST NOT contain the actual entity text.
+                    if (strpos((string) json_encode($context), 'Jansen') !== false) {
+                        return false;
+                    }
 
-        try {
-            $this->replacer->validateOutput(
-                outputBytes: $pdfContainingNeedle,
-                substitutions: ['Jansen' => '[PERSON: 7]']
+                    return ($context['residual_count'] ?? 0) > 0
+                        && ($context['stage'] ?? null) === 'validate.assert';
+                })
             );
-        } catch (PdfAnonymisationException $e) {
-            $this->assertSame(
-                expected: PdfAnonymisationException::REASON_VALIDATION_FAILED,
-                actual: $e->getReason()
-            );
-            $this->assertGreaterThan(
-                expected: 0,
-                actual: ($e->getDiagnostic()['residual_count'] ?? 0)
-            );
-            // PII redaction: diagnostic surface MUST NOT contain the
-            // actual entity text — only the count.
-            $this->assertStringNotContainsString(
-                needle: 'Jansen',
-                haystack: json_encode($e->getDiagnostic())
-            );
-            throw $e;
-        }//end try
-    }//end testValidateOutputFailsClosedOnResidual()
+
+        $this->replacer->validateOutput(
+            outputBytes: $pdfContainingNeedle,
+            substitutions: ['Jansen' => '[PERSON: 7]']
+        );
+    }//end testValidateOutputLogsWarningOnResidualWithoutThrowing()
 
     /**
      * Validation gate passes silently when the PDF contains only the

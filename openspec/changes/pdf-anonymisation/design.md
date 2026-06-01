@@ -103,13 +103,24 @@ v1 uses α. Document the limitation in the spec ("residual text rendered via unu
 
 ### D6. Failure handling — v1 fails closed, no Path B yet
 
-When the validation gate fails on a v1 output, the behaviour is:
+**[Superseded 2026-05-29 — see D6-amendment below.]** When the validation gate fails on a v1 output, the original v1 behaviour was:
 
 1. Discard the output (do NOT persist or return it).
 2. Log the diagnostic surface: which entities are still in the output, which content streams produced unmatched text, what fonts were in scope.
 3. Raise `PdfAnonymisationException` with `reason = 'validation_failed'`. The controller maps to HTTP 500 with `{ "error": "pdf_anonymisation_failed", "reason": "validation_failed" }`. Operator sees the failure and knows to escalate.
 
 Path B (NC Office ODT fallback) — when added in a follow-up — slots in BETWEEN steps 1 and 3 as the next try. v1 explicitly leaves the operator with a clear failure rather than a misleadingly "successful" output.
+
+### D6-amendment. Lenient gate for docx parity (2026-05-29)
+
+Field-testing on the Notulen20190602 fixture surfaced that the v1 fail-closed policy makes PDF strictly less usable than the existing docx path: docx anonymisation uses PHPWord + `str_ireplace` with NO validation gate, so it returns a partial result silently when a needle is split across `<w:r>` runs. Failing closed on PDF while docx silently leaks meant users got contradictory feedback for the same logical content.
+
+The validation gate is now diagnostic-only:
+1. Re-extract via `smalot/pdfparser` (unchanged).
+2. If any substitution-map key remains, emit a PII-redacted `warning` log line with the structural diagnostic (residual_count + replaceStats counters). NEVER include the entity text in the log per ADR-005.
+3. Return the partial output to the caller — the file IS written.
+
+REQ:no-residual-PII is consequently **relaxed**: the requirement now reads "the pipeline MUST log a PII-free diagnostic when residual entity text is detected; the pipeline MAY return the partial output". Restoring fail-closed semantics is gated on docx receiving a matching validation gate first (otherwise the asymmetry returns).
 
 ### D7. Placeholder format
 
