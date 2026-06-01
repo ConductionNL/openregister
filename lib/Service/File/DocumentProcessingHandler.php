@@ -298,6 +298,49 @@ class DocumentProcessingHandler
                 }
             }
 
+            // PhpWord roundtrip-safety workaround for the Word2007 Numbering
+            // bug. Chain of events upstream:
+            //   1. Shared\XMLReader::getAttribute() at line 187 normalises
+            //      every empty-string attribute value to null:
+            //          return ($return == '') ? null : $return;
+            //   2. Reader\Word2007\Numbering at line 53 stores that null
+            //      verbatim into $abstract['type'] (the readLevel() helper
+            //      filters nulls; the abstract-level reader does not).
+            //   3. Style::addNumberingStyle dispatches the array through
+            //      AbstractStyle::setStyleByArray, which calls setType($value)
+            //      on each entry.
+            //   4. Style\Numbering::setType has a strict `string` typehint
+            //      since PhpWord 1.x; null → TypeError.
+            //   5. Writer\Word2007\Part\Numbering lines 68–70 unconditionally
+            //      emits <w:multiLevelType> via writeAttribute('w:val',
+            //      $style->getType()). When getType() is null PHP coerces
+            //      to "", so the writer poisons its own output:
+            //      <w:multiLevelType w:val=""/>. Re-loading that file then
+            //      triggers (1)–(4) and the read crashes.
+            //
+            // The fix here works at the OpenRegister boundary: before
+            // calling the writer we walk every Numbering style PhpWord
+            // currently knows about and ensure its $type is one of the
+            // valid enum values ('singleLevel'|'multilevel'|'hybridMultilevel').
+            // Word emits hybridMultilevel for almost every list it
+            // produces, so that's the safest default — Word readers
+            // (including PhpWord's own re-read) will treat the resulting
+            // numbering identically to what they would have for an
+            // unspecified type. Upstream fix tracked separately:
+            // the writer should gate the <w:multiLevelType> emit the
+            // same way it already gates other properties (lines
+            // 116–124 of Writer/Word2007/Part/Numbering.php).
+            foreach (\PhpOffice\PhpWord\Style::getStyles() as $style) {
+                if ($style instanceof \PhpOffice\PhpWord\Style\Numbering === false) {
+                    continue;
+                }
+
+                $currentType = $style->getType();
+                if ($currentType === null || $currentType === '') {
+                    $style->setType('hybridMultilevel');
+                }
+            }
+
             // Save the modified document to a new temp file.
             $outputTempFile = tempnam(sys_get_temp_dir(), 'openregister_word_output_');
             IOFactory::createWriter($phpWord, 'Word2007')->save($outputTempFile);
@@ -410,9 +453,11 @@ class DocumentProcessingHandler
      *
      * Routes to {@see PdfTextReplacer} (text replacement with font switch
      * + Helvetica fallback) and {@see PdfMetadataSanitizer} (/Info and
-     * XMP stripping). The output is validated post-replacement: any
-     * residual entity text triggers a {@see PdfAnonymisationException}
-     * with `REASON_VALIDATION_FAILED` and the file is NOT written.
+     * XMP stripping). The output is re-extracted post-replacement and a
+     * PII-free warning is logged if any substitution-map key remains —
+     * the partial PDF is still written, matching the docx path's
+     * behaviour. (REASON_VALIDATION_FAILED is no longer raised by the
+     * pipeline; the constant is retained for backwards compatibility.)
      *
      * Pre-dispatch: if smalot/pdfparser cannot extract any text from the
      * input, the call defers to the `ocr-document-scanning` capability
