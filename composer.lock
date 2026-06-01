@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8a0e5f3fd76e6190a7efb4a3f5a4e6b2",
+    "content-hash": "31c0608abdb4d210e956787802860452",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -306,16 +306,16 @@
         },
         {
             "name": "ddn/sapp",
-            "version": "dev-work/text-replacement",
+            "version": "dev-fix/rebuild-strip-prev-classic-xref",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ConductionNL/sapp.git",
-                "reference": "07e5a74"
+                "reference": "096c3e6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/sapp/zipball/07e5a74",
-                "reference": "07e5a74",
+                "url": "https://api.github.com/repos/ConductionNL/sapp/zipball/096c3e6",
+                "reference": "096c3e6",
                 "shasum": ""
             },
             "require": {
@@ -346,7 +346,7 @@
                 "signature"
             ],
             "support": {
-                "source": "https://github.com/ConductionNL/sapp/tree/work/text-replacement"
+                "source": "https://github.com/ConductionNL/sapp/tree/fix/rebuild-strip-prev-classic-xref"
             },
             "funding": [
                 {
@@ -354,7 +354,7 @@
                     "url": "https://paypal.me/caralla"
                 }
             ],
-            "time": "2026-05-28T14:47:39+00:00"
+            "time": "2026-05-29T15:37:17+00:00"
         },
         {
             "name": "dompdf/dompdf",
