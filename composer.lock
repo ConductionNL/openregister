@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "31c0608abdb4d210e956787802860452",
+    "content-hash": "7fd4336bfafc4e34056903bab27c8a18",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -309,13 +309,13 @@
             "version": "dev-fix/rebuild-strip-prev-classic-xref",
             "source": {
                 "type": "git",
-                "url": "https://github.com/ConductionNL/sapp.git",
-                "reference": "096c3e6"
+                "url": "https://codeberg.org/Conduction/sapp.git",
+                "reference": "b1c411d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/sapp/zipball/096c3e6",
-                "reference": "096c3e6",
+                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/b1c411d0c62fd0788862aea61f258f6dd3db23b6.zip",
+                "reference": "b1c411d",
                 "shasum": ""
             },
             "require": {
@@ -346,15 +346,10 @@
                 "signature"
             ],
             "support": {
-                "source": "https://github.com/ConductionNL/sapp/tree/fix/rebuild-strip-prev-classic-xref"
+                "source": "https://codeberg.org/Conduction/sapp/branch/fix/rebuild-strip-prev-classic-xref",
+                "issues": "https://codeberg.org/Conduction/sapp/issues"
             },
-            "funding": [
-                {
-                    "type": "custom",
-                    "url": "https://paypal.me/caralla"
-                }
-            ],
-            "time": "2026-05-29T15:37:17+00:00"
+            "time": "2026-05-29T17:37:17+02:00"
         },
         {
             "name": "dompdf/dompdf",
