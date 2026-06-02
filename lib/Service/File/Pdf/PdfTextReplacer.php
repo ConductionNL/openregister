@@ -9,9 +9,9 @@
  *
  *   - placeholder format `[<TYPE>: <id>]` (locked by spec REQ:placeholder)
  *   - post-replacement re-extraction diagnostic via smalot/pdfparser
- *     (warns on residual entity text but does NOT fail — aligned with the
- *     docx path, which also returns partial results silently. REQ:no-residual-PII
- *     was relaxed for parity; see spec change history)
+ *     (always warns on residual entity text; in strict mode — the entity-
+ *     anonymisation flow — it then fails closed with REASON_VALIDATION_FAILED,
+ *     while the lenient default returns the partial result for docx parity)
  *   - adjacent-duplicate-placeholder collapse (REQ:layout)
  *   - encrypted-PDF rejection (REQ:filter-coverage / encrypted_pdf reason)
  *
@@ -49,9 +49,9 @@ use Throwable;
  *  2. {@see replaceInPdf} loads via `PDFDoc::from_string`, calls
  *     `replace_text_in_document`, serialises with `to_pdf_file_b(rebuild=true)`.
  *  3. {@see validateOutput} re-extracts the result via `smalot/pdfparser`
- *     and emits a PII-free warning if any substitution-map key remains
- *     in the extracted text (parity with docx: partial results are
- *     returned, not blocked).
+ *     and emits a PII-free warning if any substitution-map key remains in
+ *     the extracted text; strict callers (entity anonymisation) then fail
+ *     closed, lenient callers (ad-hoc replace, docx parity) return the partial.
  *  4. {@see collapseAdjacentDuplicatePlaceholders} runs as a content-stream
  *     pre-pass (NOT on the re-extracted text — we want to mutate the PDF,
  *     not just the validation view) to fold `[P:7] [P:7]` → `[P:7]`.
@@ -95,6 +95,8 @@ class PdfTextReplacer
      * @param string $pdfBytes      Raw input PDF bytes.
      * @param array  $substitutions Map: entity-text => placeholder
      *                              (e.g. ['Jan Jansen' => '[PERSON: 7]']).
+     * @param bool   $strict        Forwarded to {@see validateOutput}: when
+     *                              true, residual entity text fails closed.
      *
      * @return string Anonymised PDF bytes.
      *
@@ -103,9 +105,11 @@ class PdfTextReplacer
      * @phpstan-param array<string, string> $substitutions
      * @psalm-param   array<string, string> $substitutions
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict forwards the fail-closed vs lenient validation policy.
+     *
      * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
      */
-    public function replaceInPdf(string $pdfBytes, array $substitutions): string
+    public function replaceInPdf(string $pdfBytes, array $substitutions, bool $strict=false): string
     {
         if (count($substitutions) === 0) {
             // No-op: nothing to anonymise.
@@ -162,7 +166,7 @@ class PdfTextReplacer
 
         // Validation gate: re-extract the output and assert no residual
         // substitution-map keys remain. Fails closed.
-        $this->validateOutput(outputBytes: $outputBytes, substitutions: $substitutions, replaceStats: $stats);
+        $this->validateOutput(outputBytes: $outputBytes, substitutions: $substitutions, replaceStats: $stats, strict: $strict);
 
         $this->logger->info(
             message: '[PdfTextReplacer] PDF anonymisation succeeded',
@@ -196,17 +200,26 @@ class PdfTextReplacer
      * @param array  $replaceStats  Stats returned by SAPP's replace API
      *                              (kept in the diagnostic surface
      *                              for ops review).
+     * @param bool   $strict        When true (the entity-anonymisation flow),
+     *                              residual entity text fails CLOSED with
+     *                              `REASON_VALIDATION_FAILED`; when false
+     *                              (ad-hoc replace, docx-parity default) it is
+     *                              logged as a partial-anonymisation warning.
      *
      * @return void
+     *
+     * @throws PdfAnonymisationException When $strict and residual entity text remains.
      *
      * @phpstan-param array<string, string> $substitutions
      * @phpstan-param array<string, mixed>  $replaceStats
      * @psalm-param   array<string, string> $substitutions
      * @psalm-param   array<string, mixed>  $replaceStats
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects fail-closed (entity anonymisation) vs lenient (ad-hoc) behaviour.
+     *
      * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
      */
-    public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats=[]): void
+    public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats=[], bool $strict=false): void
     {
         try {
             $parser    = new PdfParser();
@@ -232,7 +245,7 @@ class PdfTextReplacer
             );
 
             return;
-        }
+        }//end try
 
         $residual = [];
         foreach (array_keys($substitutions) as $needle) {
@@ -270,6 +283,19 @@ class PdfTextReplacer
                 message: '[PdfTextReplacer] Partial anonymisation — residual entity text in output',
                 context: $diagnostic
             );
+
+            // Entity-anonymisation (GDPR) callers pass $strict=true: a file
+            // that still contains the original entity text MUST NOT be written
+            // and marked anonymised. Fail closed with the structured reason
+            // (controller maps REASON_VALIDATION_FAILED → HTTP 500). Ad-hoc
+            // replacement keeps the lenient docx-parity behaviour.
+            if ($strict === true) {
+                throw new PdfAnonymisationException(
+                    reason: PdfAnonymisationException::REASON_VALIDATION_FAILED,
+                    message: 'Residual entity text remains in anonymised PDF output',
+                    diagnostic: $diagnostic
+                );
+            }
         }//end if
     }//end validateOutput()
 

@@ -4711,11 +4711,6 @@ parameters:
 			path: lib/Service/File/DocumentProcessingHandler.php
 
 		-
-			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:getContent\\(\\)\\.$#"
-			count: 2
-			path: lib/Service/File/DocumentProcessingHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\DocumentProcessingHandler\\:\\:\\$fileService is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/DocumentProcessingHandler.php

@@ -8,7 +8,7 @@ See `openspec/changes/pdf-anonymisation-discovery/discovery.md` for the eight-ap
 
 ### D1. SAPP fork strategy
 
-We work from `ConductionNL/sapp` (a GitHub fork of `dealfonso/sapp`). A long-lived `work/text-replacement` integration branch is what OpenRegister consumes during development. Each upstream-bound feature lives on its own branch off upstream `main` so the diffs stay clean and rebasable; those feature branches merge into `work/text-replacement` for downstream integration testing, and become the PRs we eventually file upstream.
+We work from `Conduction/sapp` (a GitHub fork of `dealfonso/sapp`). A long-lived `work/text-replacement` integration branch is what OpenRegister consumes during development. Each upstream-bound feature lives on its own branch off upstream `main` so the diffs stay clean and rebasable; those feature branches merge into `work/text-replacement` for downstream integration testing, and become the PRs we eventually file upstream.
 
 PoC-first sequencing: build a working end-to-end thing on `work/text-replacement` BEFORE we post upstream issues / PRs. That way we contribute working code, not promises.
 
@@ -17,7 +17,7 @@ Branch layout on the fork:
 - `work/text-replacement` — long-lived integration branch. OpenRegister `composer.json` points here.
 - `feat/<feature-name>` — one branch per upstream-bound feature. Off `main`. Squashed into `work/text-replacement` as features mature.
 
-Issue / PR drafts for each upstream-bound feature live in the fork itself under [`docs/upstream-prs/`](https://github.com/ConductionNL/sapp/tree/work/text-replacement/docs/upstream-prs). They're written in "we have this working" framing, posted only after the corresponding code is on `work/text-replacement` and a fixture demonstrates it works. The fork's `README.conduction.md` carries the PR-series index + workflow.
+Issue / PR drafts for each upstream-bound feature live in the fork itself under [`docs/upstream-prs/`](https://codeberg.org/Conduction/sapp/tree/work/text-replacement/docs/upstream-prs). They're written in "we have this working" framing, posted only after the corresponding code is on `work/text-replacement` and a fixture demonstrates it works. The fork's `README.conduction.md` carries the PR-series index + workflow.
 
 ### D2. Composer wiring
 
@@ -27,7 +27,7 @@ Issue / PR drafts for each upstream-bound feature live in the fork itself under 
 "repositories": [
     {
         "type": "vcs",
-        "url": "https://github.com/ConductionNL/sapp"
+        "url": "https://codeberg.org/Conduction/sapp"
     }
 ],
 "require": {
@@ -37,6 +37,8 @@ Issue / PR drafts for each upstream-bound feature live in the fork itself under 
 ```
 
 When upstream merges the work (release tagged `1.x`), the `repositories` entry is removed and the constraint becomes a normal version range. The diff at that point is two lines.
+
+> **Current pin (2026-06):** `composer.json`/`composer.lock` pin `ddn/sapp` to the bug-fix branch `dev-fix/rebuild-strip-prev-classic-xref#b1c411d` (a commit-SHA pin for reproducibility), not the long-lived `work/text-replacement` integration branch named above. This branch carries the `rebuild`/`strip-prev`/`classic-xref` fixes the byte-replace pipeline depends on. **Tracking:** it must fold back into `work/text-replacement` (and eventually upstream `dealfonso/sapp`) before the pin can be relaxed — see <https://codeberg.org/Conduction/sapp/branches>. Until then the SHA pin is the source of truth.
 
 ### D3. Path A pipeline
 
@@ -115,12 +117,14 @@ Path B (NC Office ODT fallback) — when added in a follow-up — slots in BETWE
 
 Field-testing on the Notulen20190602 fixture surfaced that the v1 fail-closed policy makes PDF strictly less usable than the existing docx path: docx anonymisation uses PHPWord + `str_ireplace` with NO validation gate, so it returns a partial result silently when a needle is split across `<w:r>` runs. Failing closed on PDF while docx silently leaks meant users got contradictory feedback for the same logical content.
 
-The validation gate is now diagnostic-only:
+The validation gate behaviour is **mode-dependent** (`PdfTextReplacer::validateOutput(..., bool $strict)`):
 1. Re-extract via `smalot/pdfparser` (unchanged).
 2. If any substitution-map key remains, emit a PII-redacted `warning` log line with the structural diagnostic (residual_count + replaceStats counters). NEVER include the entity text in the log per ADR-005.
-3. Return the partial output to the caller — the file IS written.
+3. Then branch on the caller's intent:
+   - **Lenient (`$strict = false`, the default — ad-hoc `replaceWords`)**: return the partial output; the file IS written. This preserves parity with the docx path, which has no validation gate (PHPWord + `str_ireplace` returns a partial result silently when a needle is split across `<w:r>` runs).
+   - **Strict (`$strict = true`, the entity-anonymisation flow `anonymizeDocument` → `replaceWords(strict: true)`)**: fail CLOSED — throw `PdfAnonymisationException(REASON_VALIDATION_FAILED)` (controller → HTTP 500). A GDPR-anonymised file marked `_anonymized` must never be written while it still contains the original entity text.
 
-REQ:no-residual-PII is consequently **relaxed**: the requirement now reads "the pipeline MUST log a PII-free diagnostic when residual entity text is detected; the pipeline MAY return the partial output". Restoring fail-closed semantics is gated on docx receiving a matching validation gate first (otherwise the asymmetry returns).
+REQ:no-residual-PII is therefore **conditional on mode**: the GDPR-critical entity-anonymisation path retains fail-closed semantics, while ad-hoc replacement is lenient. Removing the lenient default entirely is still gated on docx receiving a matching validation gate first (otherwise the asymmetry returns for ad-hoc replace).
 
 ### D7. Placeholder format
 
@@ -136,7 +140,7 @@ Discovery Q3 asked: parse + sentinel-replace, or remove entirely. Decision: pars
 
 This change DEPENDS on:
 
-- Sister fork features on `ConductionNL/sapp` `work/text-replacement` (composer dependency).
+- Sister fork features on `Conduction/sapp` `work/text-replacement` (composer dependency).
 - Existing `entity-relation-grondslagen` substitution-map convention (the `[<TYPE>: <id>]` format and the "all variants share the same placeholder id" invariant).
 
 This change DOES NOT BLOCK:
@@ -152,7 +156,7 @@ Path B's follow-up change WILL depend on this one (specifically the validation-g
 
 Anything that's a generic PDF-manipulation primitive goes upstream. Anything that's OpenRegister-specific stays here.
 
-| Goes upstream (`ConductionNL/sapp` → `dealfonso/sapp`) | Stays in OpenRegister |
+| Goes upstream (`Conduction/sapp` → `dealfonso/sapp`) | Stays in OpenRegister |
 |---------------------------------------------------------|------------------------|
 | LZWDecode / ASCII85Decode / ASCIIHexDecode / RunLengthDecode filter decoders | `[<TYPE>: <id>]` placeholder format convention |
 | ToUnicode CMap parser, per-font encoding resolver | Substitution-map shape (variants-with-shared-id rule) |
@@ -171,7 +175,7 @@ The split forces us to design the SAPP-side API generically — substitutions ar
 | Real Woo PDFs use filter / encoding combinations we haven't tested | Medium | Empirical spike on real fixtures during the PoC (discovery Q5); ruggedise the iteration backlog based on what shows up |
 | Validation gate produces false positives ("text in stream but is decorative not actual") | Low | Document in spec; manual review path; consider Choice β fall-back if real cases surface |
 | Helvetica fallback renders unexpectedly in some PDF reader | Low | Helvetica is a PDF base font; test against Adobe Acrobat / evince / Chromium / Firefox |
-| Composer wiring breaks if `ConductionNL/sapp` becomes unreachable | Low | Mirror the fork; pin to a specific commit SHA rather than the branch tip for production builds |
+| Composer wiring breaks if `Conduction/sapp` becomes unreachable | Low | Mirror the fork; pin to a specific commit SHA rather than the branch tip for production builds |
 | ddn/dealfonso reluctant to accept the larger PRs (CMap parser, text-replacement API) | Medium-High | Build maintainer trust with small PRs first (the four filter decoders + ToUnicode parser); the flagship API arrives last with the prior PRs as social proof |
 
 ## Open questions (resolved during PoC)
@@ -189,6 +193,6 @@ PoC measurements update this doc.
 
 - Discovery doc: `openspec/changes/pdf-anonymisation-discovery/discovery.md`
 - Upstream issue drafts: `upstream-issues/` (this directory)
-- SAPP fork: `https://github.com/ConductionNL/sapp` (branch `work/text-replacement`)
+- SAPP fork: `https://codeberg.org/Conduction/sapp` (branch `work/text-replacement`)
 - SAPP upstream: `https://github.com/dealfonso/sapp` (LGPL-3.0-or-later)
 - PDF 1.7 reference: §3.3 (filters), §5.3 (text-show operators), §5.5 (font encodings), §7.4.2 (ASCIIHexDecode), §7.4.3 (ASCII85Decode), §7.4.4 (LZWDecode), §7.4.5 (FlateDecode), §7.4.6 (RunLengthDecode)
