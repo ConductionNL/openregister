@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
  */

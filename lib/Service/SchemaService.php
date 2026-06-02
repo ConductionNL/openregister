@@ -6,6 +6,9 @@
  * This file contains the service class for handling schema exploration and analysis
  * operations in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -104,6 +107,8 @@ class SchemaService
      * @return array Exploration results with discovered properties
      *
      * @throws \Exception If schema not found or analysis fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-1
      */
     public function exploreSchemaProperties(int $schemaId): array
     {
@@ -1739,6 +1744,8 @@ class SchemaService
      * @throws \Exception If schema update fails
      *
      * @return Schema Updated schema entity
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-2
      */
     public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): Schema
     {

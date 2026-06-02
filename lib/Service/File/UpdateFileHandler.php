@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -105,6 +109,8 @@ class UpdateFileHandler
      * @return \OCA\OpenRegister\Db\File The persisted entity reflecting the updated state.
      *
      * @throws Exception When the FileMapper is not wired (legacy fixtures).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
      */
     public function updateFileMetadata(
         int $fileId,
@@ -178,6 +184,8 @@ class UpdateFileHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       File update requires handling many file system scenarios
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file resolution and update paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file update with logging requires extensive code
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
      */
     public function updateFile(
         string|int $filePath,

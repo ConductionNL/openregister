@@ -8,6 +8,9 @@
  *   - GET /api/urn/lookup?url=...   → URN for the URL
  *   - POST /api/urn/bulk            → batch resolve { urns: [...] }
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -34,6 +37,8 @@ use OCP\IRequest;
  * URN resolution controller.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-7
  */
 class UrnController extends Controller
 {
@@ -65,6 +70,8 @@ class UrnController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
      */
     public function resolve(?string $urn=null): JSONResponse
     {
@@ -109,6 +116,8 @@ class UrnController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
      */
     public function lookup(?string $url=null): JSONResponse
     {
@@ -145,6 +154,8 @@ class UrnController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
      */
     public function bulk(?array $urns=null): JSONResponse
     {

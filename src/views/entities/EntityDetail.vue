@@ -253,6 +253,7 @@ export default {
 		/**
 		 * Load entity from the API
 		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
 		 * @return {Promise<void>}
 		 */
 		async loadEntity() {
@@ -286,6 +287,7 @@ export default {
 		/**
 		 * Refresh entity data
 		 *
+		 * @spec exclude detail-view manual refresh plumbing
 		 * @return {void}
 		 */
 		refreshEntity() {
@@ -295,6 +297,7 @@ export default {
 		/**
 		 * Get relation type string
 		 *
+		 * @spec exclude detail-view relation-type display helper
 		 * @param {object} relation - Relation object
 		 * @return {string} Type description
 		 */
@@ -311,6 +314,7 @@ export default {
 		/**
 		 * Get relation title
 		 *
+		 * @spec exclude detail-view relation-title display helper
 		 * @param {object} relation - Relation object
 		 * @return {string} Title string
 		 */
@@ -327,6 +331,7 @@ export default {
 		/**
 		 * View object details
 		 *
+		 * @spec exclude detail-view router-navigation plumbing to a related object
 		 * @param {object} relation - Relation object
 		 * @return {void}
 		 */
@@ -339,6 +344,7 @@ export default {
 		/**
 		 * View file in Nextcloud Files app with details sidebar
 		 *
+		 * @spec exclude detail-view navigation plumbing to the Nextcloud Files app
 		 * @param {object} relation - Relation object
 		 * @return {void}
 		 */
@@ -353,6 +359,7 @@ export default {
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude detail-view date-formatting display helper
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

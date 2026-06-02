@@ -43,6 +43,7 @@ export const RTL_LANGUAGES = new Set([
 /**
  * @param {string} language - BCP 47 language code (may include region, e.g. "ar-SA")
  * @return {boolean}
+ * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
  */
 export function isRtlLanguage(language) {
 	if (typeof language !== 'string' || language === '') return false
@@ -86,6 +87,7 @@ export const useTranslationsStore = defineStore('translations', {
 		 *
 		 * @param {string} uuid - Object UUID
 		 * @param {string|number} schema - Schema id, slug, or uuid (required for completeness calc)
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
 		 */
 		async fetchByObject(uuid, schema) {
 			if (!uuid) return
@@ -117,6 +119,7 @@ export const useTranslationsStore = defineStore('translations', {
 		 * @param {string} property - Property name
 		 * @param {string} language - Language code
 		 * @param {string} status - One of TRANSLATION_STATUSES
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
 		 */
 		async setStatus(uuid, property, language, status) {
 			if (!Object.values(TRANSLATION_STATUSES).includes(status)) {
@@ -157,6 +160,7 @@ export const useTranslationsStore = defineStore('translations', {
 		 * @param {string} to - Target language
 		 * @param {string[]} [properties] - Optional property whitelist
 		 * @return {Promise<object>} - { translated: {prop: value}, skipped: {prop: reason} }
+		 * @spec exclude API passthrough to POST /api/translations/object/{uuid}/bulk-translate
 		 */
 		async bulkTranslate(uuid, from, to, properties) {
 			this.loading = true
@@ -185,6 +189,7 @@ export const useTranslationsStore = defineStore('translations', {
 		 * @param {string} [params.status]
 		 * @param {string} [params.objectUuid]
 		 * @param {number} [params.limit]
+		 * @spec exclude API passthrough to GET /api/translations/search
 		 */
 		async search(params = {}) {
 			this.loading = true

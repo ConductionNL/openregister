@@ -3,6 +3,9 @@
 /**
  * OpenRegister SOLR Management Controller
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -76,6 +79,8 @@ class SolrManagementController extends Controller
      * @return JSONResponse JSON response with SOLR field configuration
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
      */
     public function getSolrFields(): JSONResponse
     {
@@ -188,6 +193,8 @@ class SolrManagementController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
      */
     public function createMissingSolrFields(): JSONResponse
     {
@@ -322,6 +329,8 @@ class SolrManagementController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
      */
     public function fixMismatchedSolrFields(): JSONResponse
     {
@@ -412,6 +421,8 @@ class SolrManagementController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
      */
     public function deleteSolrField(string $fieldName): JSONResponse
     {
@@ -520,6 +531,8 @@ class SolrManagementController extends Controller
      * @return JSONResponse The deletion result
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function deleteSpecificSolrCollection(string $name): JSONResponse
     {
@@ -634,6 +647,8 @@ class SolrManagementController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function updateSolrCollectionAssignments(
         ?string $objectCollection=null,

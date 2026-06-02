@@ -3,6 +3,9 @@
 /**
  * Repair step to register the risk level metadata key.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Repair
  * @package  OCA\OpenRegister\Repair
  *

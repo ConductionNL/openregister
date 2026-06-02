@@ -5,6 +5,9 @@
  *
  * Controller for handling webhook management operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -37,7 +40,9 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -55,6 +60,9 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
  */
 class WebhooksController extends Controller
 {
@@ -88,14 +96,30 @@ class WebhooksController extends Controller
     private LoggerInterface $logger;
 
     /**
+     * User session for authorization gating on webhook write endpoints.
+     *
+     * @var IUserSession|null
+     */
+    private ?IUserSession $userSession;
+
+    /**
+     * Group manager for admin checks on webhook write endpoints.
+     *
+     * @var IGroupManager|null
+     */
+    private ?IGroupManager $groupManager;
+
+    /**
      * Constructor
      *
-     * @param string           $appName          Application name
-     * @param IRequest         $request          HTTP request
-     * @param WebhookMapper    $webhookMapper    Webhook mapper
-     * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-     * @param WebhookService   $webhookService   Webhook service
-     * @param LoggerInterface  $logger           Logger
+     * @param string             $appName          Application name
+     * @param IRequest           $request          HTTP request
+     * @param WebhookMapper      $webhookMapper    Webhook mapper
+     * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper
+     * @param WebhookService     $webhookService   Webhook service
+     * @param LoggerInterface    $logger           Logger
+     * @param IUserSession|null  $userSession      User session (for write-endpoint admin gate)
+     * @param IGroupManager|null $groupManager     Group manager (for admin check)
      */
     public function __construct(
         string $appName,
@@ -103,14 +127,59 @@ class WebhooksController extends Controller
         WebhookMapper $webhookMapper,
         WebhookLogMapper $webhookLogMapper,
         WebhookService $webhookService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?IUserSession $userSession=null,
+        ?IGroupManager $groupManager=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->webhookMapper    = $webhookMapper;
         $this->webhookLogMapper = $webhookLogMapper;
         $this->webhookService   = $webhookService;
         $this->logger           = $logger;
+        $this->userSession      = $userSession;
+        $this->groupManager     = $groupManager;
     }//end __construct()
+
+    /**
+     * Whether the current user is a Nextcloud administrator.
+     *
+     * Used to gate all webhook write endpoints (create, update, destroy, test,
+     * retry). Webhooks are an admin-only feature because they grant the holder
+     * the ability to direct outbound HTTP requests from the server — see C9 in
+     * the wave-3 security triage. The dependencies are constructor-injected as
+     * optional only so existing test scaffolding keeps working; in real DI both
+     * are always available, so the absent-dependency branch fails closed.
+     *
+     * @return bool True if the signed-in user is in the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        if ($this->userSession === null || $this->groupManager === null) {
+            return false;
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
+
+    /**
+     * Build a 403 response for callers without admin rights.
+     *
+     * @return JSONResponse JSON 403 response with a generic error message.
+     */
+    private function forbiddenResponse(): JSONResponse
+    {
+        return new JSONResponse(
+            data: [
+                'error' => 'Administrator privileges are required to manage webhooks',
+            ],
+            statusCode: 403
+        );
+    }//end forbiddenResponse()
 
     /**
      * List all webhooks
@@ -246,6 +315,8 @@ class WebhooksController extends Controller
      *     array{error: 'Failed to retrieve webhook'|'Webhook not found'},
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-4
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -297,6 +368,12 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
+        // Webhooks let the holder direct outbound HTTP from the server,
+        // so write access is admin-only (wave-3 C10).
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             $data = $this->request->getParams();
 
@@ -378,6 +455,11 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
     {
+        // Webhook reconfiguration is admin-only (wave-3 C10).
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             $data = $this->request->getParams();
 
@@ -452,6 +534,11 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
     {
+        // Webhook deletion is admin-only (wave-3 C10).
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             $webhook = $this->webhookMapper->find($id);
             $this->webhookMapper->delete($webhook);
@@ -511,6 +598,14 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function test(int $id): JSONResponse
     {
+        // The /test endpoint actually fires an outbound HTTP request to the
+        // configured URL, so it triggers the same SSRF surface as a normal
+        // delivery. Gate it identically to the other write endpoints
+        // (wave-3 C10).
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             $webhook = $this->webhookMapper->find($id);
 
@@ -969,6 +1064,8 @@ class WebhooksController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1032,6 +1129,8 @@ class WebhooksController extends Controller
      *     array{error?: 'Failed to retrieve webhook log statistics'|
      *     'Webhook not found', total?: int, successful?: int, failed?: int,
      *     pendingRetries?: int<0, max>}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1086,6 +1185,8 @@ class WebhooksController extends Controller
      * @NoCSRFRequired
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1209,6 +1310,12 @@ class WebhooksController extends Controller
     #[NoCSRFRequired]
     public function retry(int $logId): JSONResponse
     {
+        // The retry() endpoint re-fires an outbound webhook delivery, so it
+        // shares the outbound-HTTP surface of test(). Admin-only (wave-3 C10).
+        if ($this->isCurrentUserAdmin() === false) {
+            return $this->forbiddenResponse();
+        }
+
         try {
             // Get the log entry.
             $log = $this->webhookLogMapper->find($logId);

@@ -6,6 +6,9 @@
  * This file contains the event class dispatched when a configuration is updated
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
@@ -50,6 +53,8 @@ class ConfigurationUpdatedEvent extends Event
      * @param Configuration $oldConfiguration The configuration before update.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-4
      */
     public function __construct(Configuration $newConfiguration, Configuration $oldConfiguration)
     {

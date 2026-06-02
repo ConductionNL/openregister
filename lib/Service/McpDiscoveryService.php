@@ -5,6 +5,9 @@
  *
  * Provides AI agents with tiered discovery of OpenRegister's API capabilities.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -215,6 +218,8 @@ class McpDiscoveryService
      * Get the list of valid capability IDs
      *
      * @return array<string> List of capability IDs
+     *
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-capability-coverage
      */
     public function getCapabilityIds(): array
     {

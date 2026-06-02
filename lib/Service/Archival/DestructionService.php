@@ -7,6 +7,9 @@
  * creating destruction lists, handling approvals/rejections, executing
  * destruction, and generating destruction certificates.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Archival
  *

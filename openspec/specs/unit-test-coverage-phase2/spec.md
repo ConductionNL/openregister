@@ -4,6 +4,8 @@ status: reference
 # Unit Test Coverage — Phase 2 Inventory
 
 ## Purpose
+
+@e2e exclude test infrastructure spec — no UI surface, covered by PHPUnit
 Captures the source-file inventory and per-category test status snapshot taken on 2026-03-16 during Phase 2 of the `unit-test-coverage` initiative, plus the concrete PHPUnit patterns adopted across openregister (Event DataProvider, Entity, Service mock, Controller mock). This spec is informational and supports the canonical `unit-test-coverage` spec in `openregister/openspec/specs/unit-test-coverage/spec.md`; the normative coverage rules live there.
 
 ## Requirements

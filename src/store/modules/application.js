@@ -23,10 +23,16 @@ export const useApplicationStore = defineStore('application', {
 		getViewMode: (state) => state.viewMode,
 	},
 	actions: {
+		/**
+		 * @spec exclude Pure client UI-state setter — list/card view-mode toggle. No backend contract.
+		 */
 		setViewMode(mode) {
 			this.viewMode = mode
 			console.log('View mode set to:', mode)
 		},
+		/**
+		 * @spec exclude Client state mutator — wraps the active application in an entity. No backend contract.
+		 */
 		setApplicationItem(applicationItem) {
 			try {
 				this.loading = true
@@ -40,6 +46,9 @@ export const useApplicationStore = defineStore('application', {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Client state mutator — maps the application list to entities. No backend contract.
+		 */
 		setApplicationList(applicationList) {
 			this.applicationList = applicationList.map(
 				(applicationItem) => new Application(applicationItem),
@@ -50,6 +59,8 @@ export const useApplicationStore = defineStore('application', {
 		 * Set pagination details
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
+		 *
+		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
 		 */
 		setPagination(page, limit = 20) {
 			this.pagination = { page, limit }
@@ -58,6 +69,8 @@ export const useApplicationStore = defineStore('application', {
 		/**
 		 * Set query filters for application list
 		 * @param {object} filters - The filter criteria to apply to the application list
+		 *
+		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
@@ -69,6 +82,8 @@ export const useApplicationStore = defineStore('application', {
 		 * @param {string|null} search - Optional search term
 		 * @param {boolean} soft - If true, don't show loading state (default: false)
 		 * @return {Promise} Promise with response and data
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/applications list; observable contract owned by the applications backend capability.
 		 */
 		/* istanbul ignore next */
 		async refreshApplicationList(search = null, soft = false) {
@@ -110,6 +125,9 @@ export const useApplicationStore = defineStore('application', {
 				}
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — GET /api/applications/{id}; observable contract owned by the applications backend capability.
+		 */
 		async getApplication(id) {
 			const endpoint = `/index.php/apps/openregister/api/applications/${id}`
 			try {
@@ -133,6 +151,9 @@ export const useApplicationStore = defineStore('application', {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — DELETE /api/applications/{id}; observable contract owned by the applications backend capability.
+		 */
 		async deleteApplication(applicationItem) {
 			if (!applicationItem.id) {
 				throw new Error('No application to delete')
@@ -164,6 +185,9 @@ export const useApplicationStore = defineStore('application', {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Thin API passthrough — POST/PUT /api/applications; observable contract owned by the applications backend capability.
+		 */
 		async saveApplication(applicationItem) {
 			if (!applicationItem) {
 				throw new Error('No application to save')
@@ -213,6 +237,9 @@ export const useApplicationStore = defineStore('application', {
 			}
 		},
 		// Clean application data for saving - remove read-only fields
+		/**
+		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
+		 */
 		cleanApplicationForSave(applicationItem) {
 			const cleaned = { ...applicationItem }
 
@@ -236,6 +263,8 @@ export const useApplicationStore = defineStore('application', {
 		 * This should be called on the applications index page to preload groups
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec exclude Thin passthrough to the Nextcloud OCS groups API; observable contract owned by Nextcloud core, not OpenRegister.
 		 */
 		async loadNextcloudGroups() {
 			try {

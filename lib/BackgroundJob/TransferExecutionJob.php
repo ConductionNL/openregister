@@ -5,6 +5,9 @@
  *
  * Queued background job that executes e-Depot transfers for approved transfer lists.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -117,6 +120,8 @@ class TransferExecutionJob extends QueuedJob
      * Resolve the configured transport implementation.
      *
      * @return TransportInterface The transport to use.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-1
      */
     private function resolveTransport(): TransportInterface
     {

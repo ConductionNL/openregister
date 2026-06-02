@@ -6,6 +6,9 @@
  * CRUD + search + completeness queries against the unified
  * `openregister_translations` sidecar.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *

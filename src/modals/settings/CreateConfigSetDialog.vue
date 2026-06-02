@@ -67,6 +67,9 @@ export default {
 
 	watch: {
 		'navigationStore.dialog': {
+			/**
+			 * @spec exclude Debug-logging watcher on the dialog state; UI reactivity plumbing.
+			 */
 			handler(newValue) {
 				console.info('👁️ CreateConfigSetDialog - navigationStore.dialog changed to:', newValue)
 				console.info('👁️ Should show?', newValue === 'createConfigSet')
@@ -75,18 +78,27 @@ export default {
 		},
 	},
 
+	/**
+	 * @spec exclude Vue mounted() hook logging dialog state; modal init plumbing.
+	 */
 	mounted() {
 		console.info('✅ CreateConfigSetDialog mounted')
 		console.info('✅ navigationStore.dialog:', navigationStore.dialog)
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			this.configSetName = ''
 			this.creating = false
 		},
 
+		/**
+		 * @spec exclude Create-button handler posting a new Solr configset to the admin endpoint; platform-admin orchestration plumbing.
+		 */
 		async createConfigSet() {
 			if (!this.configSetName) return
 

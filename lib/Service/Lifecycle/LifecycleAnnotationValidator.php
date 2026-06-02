@@ -9,6 +9,9 @@
  * Per ADR-024 (hydra#202), schemas declare state machines via this annotation;
  * the implementation is in `lifecycle-annotation` change directory.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Lifecycle
  *
@@ -43,6 +46,8 @@ final class LifecycleAnnotationValidator
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-1
      */
     public function validate(array $schema): array
     {
@@ -151,7 +156,12 @@ final class LifecycleAnnotationValidator
                 ];
             }
 
-            foreach (($fromOk === true ? $from : []) as $fromState) {
+            $fromIterable = [];
+            if ($fromOk === true) {
+                $fromIterable = $from;
+            }
+
+            foreach ($fromIterable as $fromState) {
                 if (isset($enumSet[(string) $fromState]) === false) {
                     $errors[] = [
                         'code'    => 'lifecycle-from-not-in-enum',

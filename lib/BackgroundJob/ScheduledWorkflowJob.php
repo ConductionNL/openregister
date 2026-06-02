@@ -5,6 +5,9 @@
  *
  * Background job for executing scheduled workflows on their configured intervals.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -75,6 +78,8 @@ class ScheduledWorkflowJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-7
      */
     protected function run($argument): void
     {
@@ -130,7 +135,10 @@ class ScheduledWorkflowJob extends TimedJob
             $engine  = $engines[0];
             $adapter = $this->engineRegistry->resolveAdapter($engine);
 
-            $payloadData = $schedule->getPayload() !== null ? (json_decode($schedule->getPayload(), true) ?? []) : [];
+            $payloadData = [];
+            if ($schedule->getPayload() !== null) {
+                $payloadData = (json_decode($schedule->getPayload(), true) ?? []);
+            }
 
             $data = array_merge(
                     $payloadData,
@@ -155,6 +163,11 @@ class ScheduledWorkflowJob extends TimedJob
             $this->workflowMapper->update($schedule);
 
             // Persist execution history.
+            $errors = null;
+            if ($result->isError() === true) {
+                $errors = json_encode($result->getErrors());
+            }
+
             $this->executionMapper->createFromArray(
                     [
                         'hookId'     => 'scheduled-'.$schedule->getId(),
@@ -167,7 +180,7 @@ class ScheduledWorkflowJob extends TimedJob
                         'mode'       => 'sync',
                         'status'     => $result->getStatus(),
                         'durationMs' => $durationMs,
-                        'errors'     => $result->isError() === true ? json_encode($result->getErrors()) : null,
+                        'errors'     => $errors,
                         'metadata'   => json_encode($result->getMetadata()),
                         'executedAt' => $now,
                     ]

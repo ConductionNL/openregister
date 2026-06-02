@@ -47,6 +47,7 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<label for="cal-dtstart">{{ t('openregister', 'Start Date Field') }} *</label>
 				<NcSelect
+						input-label="Local Config Dtstart"
 					id="cal-dtstart"
 					v-model="localConfig.dtstart"
 					:options="datePropertyOptions"
@@ -57,6 +58,7 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<label for="cal-dtend">{{ t('openregister', 'End Date Field') }}</label>
 				<NcSelect
+						input-label="Local Config Dtend"
 					id="cal-dtend"
 					v-model="localConfig.dtend"
 					:options="datePropertyOptions"
@@ -93,6 +95,7 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<label for="cal-location">{{ t('openregister', 'Location Field') }}</label>
 				<NcSelect
+						input-label="Local Config Location Field"
 					id="cal-location"
 					v-model="localConfig.locationField"
 					:options="stringPropertyOptions"
@@ -180,6 +183,7 @@ export default {
 	computed: {
 		/**
 		 * Property names available for placeholders
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
 		propertyNames() {
@@ -190,6 +194,7 @@ export default {
 		},
 		/**
 		 * Date/datetime properties for dtstart/dtend selectors
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
 		datePropertyOptions() {
@@ -206,6 +211,7 @@ export default {
 		},
 		/**
 		 * String properties for location selector
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
 		stringPropertyOptions() {
@@ -218,6 +224,7 @@ export default {
 		},
 		/**
 		 * Validation: dtstart and titleTemplate required when enabled
+		 * @spec exclude UI plumbing — derived form-validity flag for display
 		 * @return {boolean}
 		 */
 		isValid() {
@@ -229,6 +236,13 @@ export default {
 	},
 	watch: {
 		schema: {
+			/**
+			 * Reload the calendar config when the schema prop changes.
+			 *
+			 * @param {object} newSchema The new schema.
+			 * @spec exclude UI plumbing — prop watch handler
+			 * @return {void}
+			 */
 			handler(newSchema) {
 				if (newSchema) {
 					this.loadConfig(newSchema)
@@ -241,6 +255,7 @@ export default {
 		/**
 		 * Load calendar provider config from schema configuration
 		 * @param {object} schema The schema object
+		 * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-4
 		 */
 		loadConfig(schema) {
 			const config = schema?.configuration?.calendarProvider || {}
@@ -258,6 +273,8 @@ export default {
 		},
 		/**
 		 * Save the calendar provider configuration via schema update
+		 * @spec exclude UI plumbing — save action delegates to the schema store
+		 * @return {Promise<void>}
 		 */
 		async save() {
 			this.saving = true

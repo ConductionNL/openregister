@@ -434,7 +434,8 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase
             $this->vrwMapper,
             $this->userSession,
             \OC::$server->get(\OCP\IGroupManager::class),
-            \OC::$server->get(\OCP\IDBConnection::class)
+            \OC::$server->get(\OCP\IDBConnection::class),
+            \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class)
         );
 
     }//end makeControllerWithBody()

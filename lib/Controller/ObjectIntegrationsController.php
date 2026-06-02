@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\PaginatedResult;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -85,19 +86,31 @@ class ObjectIntegrationsController extends Controller
      * Lists every linked thing the named integration exposes for the
      * given object.
      *
+     * The provider's `list()` return value is normalized into the
+     * canonical `{items, total, nextCursor}` envelope via
+     * {@see PaginatedResult::fromMixed()}. This is the backward-compatible
+     * normalization layer: a provider that returns a flat array yields
+     * `total = count(items)` and `nextCursor = null`; a provider that
+     * already returns an envelope (e.g. EmailProvider) is passed
+     * through with its real total and cursor preserved.
+     *
      * @param string $register      Register slug or numeric id.
      * @param string $schema        Schema slug or numeric id.
      * @param string $id            Object uuid.
      * @param string $integrationId Integration id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function index(string $register, string $schema, string $id, string $integrationId): JSONResponse
     {
         return $this->dispatch(
             integrationId: $integrationId,
-            callback: fn ($provider) => ['items' => $provider->list($register, $schema, $id, $this->collectFilters())]
+            callback: fn ($provider) => PaginatedResult::fromMixed(
+                $provider->list($register, $schema, $id, $this->collectFilters())
+            )->toArray()
         );
     }//end index()
 
@@ -113,6 +126,8 @@ class ObjectIntegrationsController extends Controller
      * @param string $entityId      Linked-thing id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function show(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
@@ -134,6 +149,8 @@ class ObjectIntegrationsController extends Controller
      * @param string $integrationId Integration id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function create(string $register, string $schema, string $id, string $integrationId): JSONResponse
@@ -158,6 +175,8 @@ class ObjectIntegrationsController extends Controller
      * @param string $entityId      Linked-thing id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function update(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
@@ -181,6 +200,8 @@ class ObjectIntegrationsController extends Controller
      * @param string $entityId      Linked-thing id.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse
@@ -243,7 +264,11 @@ class ObjectIntegrationsController extends Controller
         if ($provider === null) {
             $registered = $this->registry->listIds();
             sort($registered);
-            $hint = ($registered === []) ? '(no providers registered)' : implode(', ', $registered);
+            $hint = '(no providers registered)';
+            if ($registered !== []) {
+                $hint = implode(', ', $registered);
+            }
+
             throw new NotImplementedException(
                 message: sprintf("Integration '%s' is not registered. Registered: %s", $integrationId, $hint)
             );
@@ -260,6 +285,11 @@ class ObjectIntegrationsController extends Controller
      * @param string                  $integrationId Integration id.
      *
      * @return JSONResponse
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) QueryTimeContract is a final utility/value
+     *   class with only static constants and a static factory method; it has no
+     *   instance state and is not registered in the DI container, so injection
+     *   would require a needless wrapper class.
      */
     private function respondNotImplemented(NotImplementedException $exception, string $integrationId): JSONResponse
     {

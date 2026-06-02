@@ -19,6 +19,9 @@
  * window state survives across requests + (with Redis) across
  * cluster nodes.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *
@@ -130,6 +133,8 @@ class NotificationCoalescer
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-9
      */
     public function shouldDispatch(string $ruleId, string $recipient, ?array $perRuleOverride): bool
     {
@@ -218,6 +223,8 @@ class NotificationCoalescer
      * @param string $recipient Recipient identifier.
      *
      * @return array{count:int,opened:int}|null Null when no state exists.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-9
      */
     public function inspect(string $ruleId, string $recipient): ?array
     {

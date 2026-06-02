@@ -12,6 +12,9 @@
  * (user_id, register_id, schema_id) — `subscribe()` returns the
  * existing row on a duplicate insert.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -24,6 +27,11 @@
  * @spec openspec/changes/notificatie-engine/tasks.md "Users MUST be able to manage their notification preferences"
  *
  * @template-extends QBMapper<NotificationSubscription>
+ *
+ * @deprecated Superseded by override-only user-config notification preferences
+ *             (NotificationPreferenceService). Rows are migrated by the
+ *             MigrateNotificationSubscriptionsToUserConfig repair step and the
+ *             table is scheduled for removal.
  */
 
 declare(strict_types=1);

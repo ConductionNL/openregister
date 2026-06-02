@@ -6,6 +6,9 @@
  * This file contains the GitHubHandler class for interacting with the GitHub API
  * to discover, fetch, and manage OpenRegister configurations stored in GitHub repositories.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Configuration
  * @author    Conduction Development Team <info@conduction.nl>
@@ -1399,13 +1402,18 @@ class GitHubHandler
         int $perPage=30,
         ?array $labels=null
     ): array {
+        // PAT is optional for reads — GitHub's public Issues API serves anonymous
+        // requests at a lower rate limit (60/hr unauth vs 5000/hr authenticated).
+        // Supersedes the original D23 (add-features-roadmap-menu) decision to gate
+        // reads on a configured PAT.
         $token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
-        if ($token === '') {
-            return ['items' => [], 'hint' => 'github_pat_not_configured'];
-        }
 
-        $effectiveLabels = is_array($labels) === true ? array_values(array_filter($labels, static fn($l) => $l !== '')) : [];
-        $labelCount      = count($effectiveLabels);
+        $effectiveLabels = [];
+        if (is_array($labels) === true) {
+            $effectiveLabels = array_values(array_filter($labels, static fn($l) => $l !== ''));
+        }//end if
+
+        $labelCount = count($effectiveLabels);
 
         if ($labelCount >= 2) {
             // OR semantics: one request per label, merge deduped by issue number, re-sort, truncate.
@@ -1441,8 +1449,12 @@ class GitHubHandler
             return ['items' => $items];
         }//end if
 
-        $singleLabel = $labelCount === 1 ? $effectiveLabels[0] : null;
-        $items       = $this->fetchIssuesPage(
+        $singleLabel = null;
+        if ($labelCount === 1) {
+            $singleLabel = $effectiveLabels[0];
+        }//end if
+
+        $items = $this->fetchIssuesPage(
             owner: $owner,
             repo: $repo,
             state: $state,
@@ -1799,17 +1811,21 @@ class GitHubHandler
             $query['labels'] = $label;
         }
 
-        $url      = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
+        $url     = self::API_BASE.'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/issues';
+        $headers = [
+            'Accept'               => 'application/vnd.github+json',
+            'X-GitHub-Api-Version' => '2022-11-28',
+        ];
+        if ($token !== '') {
+            $headers['Authorization'] = 'Bearer '.$token;
+        }
+
         $response = $this->client->request(
             'GET',
             $url,
             [
                 'query'   => $query,
-                'headers' => [
-                    'Accept'               => 'application/vnd.github+json',
-                    'X-GitHub-Api-Version' => '2022-11-28',
-                    'Authorization'        => 'Bearer '.$token,
-                ],
+                'headers' => $headers,
             ]
         );
 

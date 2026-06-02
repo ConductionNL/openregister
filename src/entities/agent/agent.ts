@@ -45,6 +45,9 @@ export class Agent implements TAgent {
 	public created?: string
 	public updated?: string
 
+	/**
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(agent: TAgent) {
 		this.id = agent.id
 		this.uuid = agent.uuid || ''

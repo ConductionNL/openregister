@@ -65,6 +65,14 @@
 </template>
 
 <script>
+/**
+ * Objects tab — linked-objects list inside the three-tab sidebar; also acts
+ * as the drop target for Mail attachments (drops upload the file to the
+ * linked OR object via /api/objects/{r}/{s}/{id}/filesMultipart).
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-3
+ */
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -100,6 +108,9 @@ export default {
 		}
 	},
 	watch: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		messageId() {
 			this.loadObjects()
 		},
@@ -109,6 +120,9 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		objectUrl(obj) {
 			return generateUrl('/apps/openregister/registers/{register}/{schemaId}/{uuid}', {
 				register: obj.register,
@@ -116,6 +130,9 @@ export default {
 				uuid: obj.uuid,
 			})
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		async loadObjects() {
 			if (!this.accountId || !this.messageId) {
 				this.objects = []
@@ -135,6 +152,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		async unlinkObject(obj) {
 			if (!confirm(t('openregister', 'Remove link to {name}?', { name: obj.name || obj.uuid }))) {
 				return
@@ -153,11 +173,17 @@ export default {
 				console.error('[ObjectsTab] Unlink failed:', err)
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
+		 */
 		onAttachmentDragOver(event) {
 			if (event.dataTransfer) {
 				event.dataTransfer.dropEffect = 'copy'
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
+		 */
 		async onAttachmentDrop(event, obj) {
 			const raw = event.dataTransfer?.getData(ATTACHMENT_MIME)
 			if (!raw) {
@@ -182,6 +208,9 @@ export default {
 				this.uploadingObjectUuid = null
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
+		 */
 		async uploadAttachmentToObject(attachment, target) {
 			const response = await fetch(attachment.downloadUrl, { credentials: 'same-origin' })
 			if (!response.ok) {

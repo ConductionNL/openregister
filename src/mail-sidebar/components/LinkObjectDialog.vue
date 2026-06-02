@@ -67,6 +67,11 @@
 </template>
 
 <script>
+/**
+ * Link-object search dialog — drives the three-tab sidebar's Link tab.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+ */
 import { translate as t } from '@nextcloud/l10n'
 import { searchObjects } from '../api/emailLinks.js'
 
@@ -92,6 +97,9 @@ export default {
 		}
 	},
 	watch: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		visible(val) {
 			if (val) {
 				this.$nextTick(() => {
@@ -106,6 +114,9 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		onSearchInput() {
 			if (this.debounceTimer) {
 				clearTimeout(this.debounceTimer)
@@ -117,6 +128,9 @@ export default {
 			}
 			this.debounceTimer = setTimeout(() => this.doSearch(), 300)
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		async doSearch() {
 			this.searching = true
 			try {
@@ -139,12 +153,18 @@ export default {
 		isAlreadyLinked(result) {
 			return this.linkedObjectUuids.includes(result.uuid)
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		selectResult(result) {
 			if (this.isAlreadyLinked(result)) {
 				return
 			}
 			this.selectedResult = result
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		resultAriaLabel(result) {
 			const title = result.title || result.uuid
 			if (this.isAlreadyLinked(result)) {
@@ -152,15 +172,24 @@ export default {
 			}
 			return title
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		confirmLink() {
 			if (this.selectedResult) {
 				this.$emit('link', this.selectedResult)
 				this.close()
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		close() {
 			this.$emit('close')
 		},
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 */
 		reset() {
 			this.query = ''
 			this.searchResults = []

@@ -1,7 +1,6 @@
 <script>
 import { NcAppContent } from '@nextcloud/vue'
-import { CnIntegrationTab, useIntegrationRegistry } from '@conduction/nextcloud-vue'
-import { BTabs, BTab } from 'bootstrap-vue'
+import { CnIntegrationWidget, useIntegrationRegistry } from '@conduction/nextcloud-vue'
 import { computed, ref } from 'vue'
 
 /**
@@ -12,6 +11,13 @@ import { computed, ref } from 'vue'
  * Vue render won't be aborted mid-template by an unrelated race in
  * filesPlugin / auditTrailsPlugin / relationsPlugin.
  *
+ * Renders the tabbed CnIntegrationWidget (nc-vue, ADR-019/024) — the
+ * same app-faithful surface OR's object-detail page now uses — so the
+ * screenshot harness and the live detail page stay visually in sync.
+ * Supersedes the previous hand-rolled BTabs pills + `provider.tab ||
+ * CnIntegrationTab` dispatch, which produced a flat generic surface
+ * that erased each integrated app's identity.
+ *
  * Route: /integrations/:register/:schema/:objectId
  */
 export default {
@@ -19,28 +25,58 @@ export default {
 
 	components: {
 		NcAppContent,
-		CnIntegrationTab,
-		BTabs,
-		BTab,
+		CnIntegrationWidget,
 	},
 
+	/**
+	 * Composition entry wiring the integration registry into the view.
+	 *
+	 * @spec exclude UI plumbing — registry wiring for the screenshot harness; integration contract owned by ADR-019 / generic-integrations.
+	 * @return {object} exposed refs (providers, ready)
+	 */
 	setup() {
 		const { integrations } = useIntegrationRegistry()
+		// Used ONLY by the render guard / header count below;
+		// CnIntegrationWidget reads the same singleton itself.
 		const providers = computed(() => (integrations.value || []))
 		const ready = ref(true)
 		return { providers, ready }
 	},
 
 	computed: {
+		/**
+		 * Register slug from the route.
+		 *
+		 * @spec exclude UI plumbing — route-param accessor, no observable contract.
+		 * @return {string}
+		 */
 		register() {
 			return String(this.$route.params.register || '')
 		},
+		/**
+		 * Schema slug from the route.
+		 *
+		 * @spec exclude UI plumbing — route-param accessor, no observable contract.
+		 * @return {string}
+		 */
 		schema() {
 			return String(this.$route.params.schema || '')
 		},
+		/**
+		 * Object id from the route.
+		 *
+		 * @spec exclude UI plumbing — route-param accessor, no observable contract.
+		 * @return {string}
+		 */
 		objectId() {
 			return String(this.$route.params.objectId || '')
 		},
+		/**
+		 * Whether all params + providers are present to render tabs.
+		 *
+		 * @spec exclude UI plumbing — render-guard predicate, no observable contract.
+		 * @return {boolean}
+		 */
 		ok() {
 			return this.register && this.schema && this.objectId && this.providers.length > 0
 		},
@@ -75,18 +111,18 @@ export default {
 					{{ providers.length }} providers
 				</p>
 
-				<BTabs content-class="mt-3" pills>
-					<BTab v-for="provider in providers"
-						:key="provider.id"
-						:title="provider.label || provider.id"
-						:title-attr="`${provider.id} (${provider.group || 'integration'})`">
-						<CnIntegrationTab
-							:integration-id="provider.id"
-							:register="register"
-							:schema="schema"
-							:object-id="objectId" />
-					</BTab>
-				</BTabs>
+				<!--
+					Tabbed CnIntegrationWidget — one app-faithful tab per
+					registered IntegrationProvider, app icon + brand accent on
+					the active tab, per-leaf content (provider.tab) in the
+					panel, and an NcEmptyContent set-up state for unavailable /
+					unconfigured integrations (Phase J-B availability).
+				-->
+				<CnIntegrationWidget
+					:register="register"
+					:schema="schema"
+					:object-id="objectId"
+					surface="detail-page" />
 			</div>
 		</div>
 	</NcAppContent>
@@ -111,49 +147,5 @@ export default {
 .integrations-view__empty {
 	padding: 48px 32px;
 	color: var(--color-text-maxcontrast);
-}
-/* Bootstrap-vue pills layout — without these the tabs render as a plain
-   vertical link list because bootstrap CSS isn't loaded in this stack. */
-.integrations-view :deep(.nav-pills) {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px;
-	margin: 0 0 16px;
-	padding: 0;
-	list-style: none;
-	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 8px;
-}
-.integrations-view :deep(.nav-pills .nav-item) {
-	margin: 0;
-}
-.integrations-view :deep(.nav-pills .nav-link) {
-	display: inline-block;
-	padding: 6px 12px;
-	border-radius: var(--border-radius-pill, 16px);
-	background: var(--color-background-hover);
-	color: var(--color-main-text);
-	text-decoration: none;
-	font-size: 13px;
-	border: 1px solid transparent;
-	cursor: pointer;
-}
-.integrations-view :deep(.nav-pills .nav-link:hover) {
-	background: var(--color-background-dark);
-}
-.integrations-view :deep(.nav-pills .nav-link.active) {
-	background: var(--color-primary-element);
-	color: var(--color-primary-element-text);
-	font-weight: 600;
-}
-.integrations-view :deep(.tab-content) {
-	min-height: 320px;
-	padding: 16px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large, 8px);
-	background: var(--color-main-background);
-}
-.integrations-view :deep(.tab-content > .tab-pane:not(.active)) {
-	display: none;
 }
 </style>

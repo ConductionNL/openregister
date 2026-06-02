@@ -5,6 +5,9 @@
  *
  * Validates semantic version strings according to SemVer specification.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Formats
  * @package  OCA\OpenRegister\Formats
  *

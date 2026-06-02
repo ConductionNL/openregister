@@ -6,6 +6,9 @@
  * LLphant function tool for AI agents to manage applications.
  * Provides CRUD operations for applications with RBAC enforcement.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  *

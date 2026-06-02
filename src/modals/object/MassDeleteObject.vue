@@ -120,6 +120,9 @@ export default {
 		this.initializeSelection()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 */
 		initializeSelection() {
 			// Get selected objects from the store or navigation context
 			this.selectedObjects = objectStore.selectedObjects || []
@@ -127,6 +130,9 @@ export default {
 				this.closeDialog()
 			}
 		},
+		/**
+		 * @spec exclude form-state helper to deselect an object from the list
+		 */
 		removeObject(objectId) {
 			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
 			// Update the store as well
@@ -135,17 +141,26 @@ export default {
 				this.closeDialog()
 			}
 		},
+		/**
+		 * @spec exclude modal close UI handler
+		 */
 		closeDialog() {
 			clearTimeout(this.closeModalTimeout)
 			this.startClosing = true
 			navigationStore.setDialog(false)
 		},
+		/**
+		 * @spec exclude router navigation UI handler
+		 */
 		navigateToDeleted() {
 			// Close the dialog first
 			this.closeDialog()
 			// Navigate to the deleted objects section
 			this.$router.push('/deleted')
 		},
+		/**
+		 * @spec exclude modal bulk-delete submit handler delegating to objectStore.massDeleteObject
+		 */
 		async deleteObject() {
 			this.loading = true
 

@@ -85,6 +85,9 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		closeDialog() {
 			clearTimeout(this.closeModalTimeout)
 			this.success = false
@@ -92,6 +95,9 @@ export default {
 			this.error = null
 			this.$emit('close')
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to viewsStore.deleteView.
+		 */
 		async deleteView() {
 			if (!this.view) return
 

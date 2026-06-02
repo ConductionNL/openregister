@@ -5,6 +5,9 @@
  *
  * Main service for executing GraphQL queries with schema caching and complexity analysis.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  *

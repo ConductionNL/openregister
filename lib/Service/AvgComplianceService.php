@@ -20,8 +20,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -95,6 +96,8 @@ class AvgComplianceService
      * personal data, or accepts the gap with a documented rationale.
      *
      * @return array<int, array<string, mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-avg-verwerkingsregister/tasks.md#task-1
      */
     public function findUnannotatedSchemasWithPii(): array
     {
@@ -148,6 +151,9 @@ class AvgComplianceService
      * Run every check in sequence and return the aggregate envelope.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md#automated-pii-detection (aggregates every compliance check
+     *       into a single dashboard envelope with generated timestamp, per-check issues, and totals)
      */
     public function runAllChecks(): array
     {

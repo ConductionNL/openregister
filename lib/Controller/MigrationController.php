@@ -5,6 +5,9 @@
  *
  * Controller for storage migration between blob and magic tables.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -53,6 +56,8 @@ class MigrationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Storage status.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-7
      */
     public function status(string $register, string $schema): JSONResponse
     {
@@ -84,6 +89,8 @@ class MigrationController extends Controller
      * Expected body: {register, schema, direction, batchSize?, dryRun?}
      *
      * @return JSONResponse Migration report.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-7
      */
     public function migrate(): JSONResponse
     {

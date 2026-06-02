@@ -16,6 +16,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<div class="form-group">
 				<label for="namingPattern">{{ t('openregister', 'Naming pattern for copies:') }}</label>
 				<NcSelect
+						input-label="Selected Naming Pattern"
 					v-model="selectedNamingPattern"
 					:options="namingPatternOptions"
 					:disabled="loading"
@@ -143,6 +144,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -154,6 +158,9 @@ export default {
 			// Clear selection after closing
 			objectStore.selectedObjects = []
 		},
+		/**
+		 * @spec exclude computed display helper for copy-name preview
+		 */
 		getPreviewName(object) {
 			if (!object) return 'Preview Name'
 
@@ -170,10 +177,16 @@ export default {
 				.replace('{name}', originalName)
 				.replace('{id}', object['@self']?.id || object.id || 'ID')
 		},
+		/**
+		 * @spec exclude form-state UI helper to refresh preview
+		 */
 		updateCustomPreview() {
 			// Trigger reactivity for preview update
 			this.$forceUpdate()
 		},
+		/**
+		 * @spec exclude modal bulk-submit handler delegating to objectStore.saveObject
+		 */
 		async copyObjects() {
 			this.loading = true
 			this.error = false

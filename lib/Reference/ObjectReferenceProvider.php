@@ -7,6 +7,9 @@
  * to search for and insert rich references to register objects in Mail,
  * Text, Talk, Collectives, and any Nextcloud app supporting the Smart Picker.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Reference
  * @package  OCA\OpenRegister\Reference
  *
@@ -307,8 +310,13 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
             $registerTitle = $this->resolveRegisterName(registerId: $registerId);
 
             // Resolve deep link URL.
+            $selfArray = [];
+            if (is_array($selfData) === true) {
+                $selfArray = $selfData;
+            }
+
             $flatData = array_merge(
-                is_array($selfData) === true ? $selfData : [],
+                $selfArray,
                 ['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
             );
 

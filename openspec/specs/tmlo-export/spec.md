@@ -1,6 +1,8 @@
 # tmlo-export Specification
 
 ## Purpose
+
+@e2e exclude backend MDTO/XML export service — covered by PHPUnit
 TBD - created by archiving change tmlo-metadata. Update Purpose after archive.
 ## Requirements
 ### Requirement: MDTO-compliant XML export

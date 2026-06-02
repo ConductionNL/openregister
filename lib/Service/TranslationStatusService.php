@@ -7,6 +7,9 @@
  * per-object completeness queries, search, and bulk discovery
  * ("find objects missing X translation").
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -61,6 +64,8 @@ class TranslationStatusService
      * @return Translation The persisted translation row.
      *
      * @throws InvalidArgumentException When status is invalid or no slot exists.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-3
      */
     public function setStatus(string $objectUuid, string $property, string $language, string $status): Translation
     {
@@ -110,6 +115,8 @@ class TranslationStatusService
      * @param Schema $schema     The schema entity.
      *
      * @return array<string, array{translated: int, total: int, ratio: float}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-4
      */
     public function completenessForObject(string $objectUuid, Schema $schema): array
     {
@@ -142,6 +149,8 @@ class TranslationStatusService
      * @param int         $limit      Maximum number of results.
      *
      * @return array<string, mixed>[]
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-5
      */
     public function search(
         ?string $query=null,
@@ -165,6 +174,8 @@ class TranslationStatusService
      * @param string[] $candidateUuids List of object UUIDs to consider.
      *
      * @return string[] Subset of `$candidateUuids` lacking the language.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-6
      */
     public function findObjectsMissingLanguage(string $language, Schema $schema, array $candidateUuids): array
     {

@@ -6,6 +6,9 @@
  * Background job that scans for objects eligible for e-Depot transfer
  * and generates transfer lists for archivist review.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Cron
  * @package  OCA\OpenRegister\Cron
  *

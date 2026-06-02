@@ -5,6 +5,9 @@
  *
  * Controller for handling action management operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -41,8 +44,14 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Actions CRUD exposes
+ * index/show/create/update/patch/destroy/test/logs/migrateFromHooks — each maps to a distinct REST
+ * verb or utility route required by the Actions feature; collapsing routes would break the REST contract.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Controller composes ActionMapper + ActionLogMapper +
+ * ActionService + IUserSession + IGroupManager + LoggerInterface; each dependency serves a distinct
+ * responsibility (persistence, logging, business logic, auth) and cannot be removed without losing functionality.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity is spread across 9 thin public action
+ * methods; each method is independently simple. PHPMD accumulates per-method scores into the class total.
  */
 class ActionsController extends Controller
 {
@@ -119,6 +128,8 @@ class ActionsController extends Controller
      * silently re-adds `@NoAdminRequired` does not open the surface.
      *
      * @return JSONResponse|null 403 response when not admin, null when allowed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-1
      */
     private function requireAdmin(): ?JSONResponse
     {
@@ -150,10 +161,15 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)      index() handles limit/offset/page/search/filters in one
+     * pass to avoid a second DB round-trip; extracting each branch into helpers would add indirection
+     * without reducing total paths.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Branches cover five independent optional query
+     * parameters (limit, offset, page, search, field filters); each is a single isset/cast guard and
+     * cannot be split without duplicating the parameter-parsing logic.
      *
      * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-5
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -162,8 +178,15 @@ class ActionsController extends Controller
         try {
             $params = $this->request->getParams();
 
-            $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : null;
-            $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : null;
+            $limit = null;
+            if (isset($params['_limit']) === true) {
+                $limit = (int) $params['_limit'];
+            }
+
+            $offset = null;
+            if (isset($params['_offset']) === true) {
+                $offset = (int) $params['_offset'];
+            }
 
             if (isset($params['_page']) === true && $limit !== null) {
                 $offset = ((int) $params['_page'] - 1) * $limit;
@@ -291,7 +314,8 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -344,7 +368,8 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -413,7 +438,8 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -445,11 +471,14 @@ class ActionsController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-2
      */
     #[NoCSRFRequired]
     public function test(int $id): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 
@@ -488,6 +517,8 @@ class ActionsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-4
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -495,8 +526,15 @@ class ActionsController extends Controller
     {
         try {
             $params = $this->request->getParams();
-            $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : 25;
-            $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : 0;
+            $limit  = 25;
+            if (isset($params['_limit']) === true) {
+                $limit = (int) $params['_limit'];
+            }
+
+            $offset = 0;
+            if (isset($params['_offset']) === true) {
+                $offset = (int) $params['_offset'];
+            }
 
             $logs = $this->actionLogMapper->findByActionId(
                 actionId: $id,
@@ -539,11 +577,14 @@ class ActionsController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-3
      */
     #[NoCSRFRequired]
     public function migrateFromHooks(int $schemaId): JSONResponse
     {
-        if (($denial = $this->requireAdmin()) !== null) {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
             return $denial;
         }
 

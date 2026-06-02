@@ -6,6 +6,9 @@
  * Service that wraps Nextcloud's ICommentsManager for adding notes to OpenRegister objects.
  * Notes are stored as standard Nextcloud comments with objectType "openregister".
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -104,6 +107,8 @@ class NoteService
      * @param int    $offset     Number of notes to skip (default 0)
      *
      * @return array Array of note arrays in JSON-friendly format
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
      */
     public function getNotesForObject(string $objectUuid, int $limit=50, int $offset=0): array
     {
@@ -131,6 +136,8 @@ class NoteService
      * @return array The created note in JSON-friendly format
      *
      * @throws Exception If no user is logged in
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
      */
     public function createNote(string $objectUuid, string $message): array
     {
@@ -162,6 +169,8 @@ class NoteService
      * @return array The updated note in JSON-friendly format
      *
      * @throws Exception If the note is not found or user is not the author
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
      */
     public function updateNote(int $noteId, string $message): array
     {
@@ -194,6 +203,8 @@ class NoteService
      * @return void
      *
      * @throws Exception If the note is not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
      */
     public function deleteNote(int $noteId): void
     {
@@ -213,6 +224,8 @@ class NoteService
      * @param string $objectUuid The UUID of the OpenRegister object
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
      */
     public function deleteNotesForObject(string $objectUuid): void
     {

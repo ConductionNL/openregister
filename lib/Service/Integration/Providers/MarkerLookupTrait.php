@@ -50,6 +50,9 @@ trait MarkerLookupTrait
      * @param string            $idColumn     Primary-key column (default `id`).
      *
      * @return array<int,array<string,mixed>> Matching rows.
+     *
+     * @spec exclude Shared defensive LIKE-scan helper for leaf list() impls — no standalone contract;
+     *              the behavioural contract is each leaf provider's list() (annotated to its integration-* change).
      */
     protected function findByMarker(
         IDBConnection $db,

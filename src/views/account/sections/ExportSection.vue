@@ -36,6 +36,13 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * Download the signed-in user's data export as a JSON file.
+		 *
+		 * @spec exclude UI plumbing — delegates to the account export API and
+		 *   triggers a browser download
+		 * @return {Promise<void>}
+		 */
 		async exportData() {
 			this.loading = true
 			this.message = ''

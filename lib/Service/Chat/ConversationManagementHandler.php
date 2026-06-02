@@ -6,6 +6,9 @@
  * Handler for conversation lifecycle management.
  * Manages conversation titles, summaries, and history management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -16,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -111,6 +116,8 @@ class ConversationManagementHandler
      * @param LoggerInterface           $logger             Logger.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function __construct(
         ConversationMapper $conversationMapper,
@@ -139,6 +146,8 @@ class ConversationManagementHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Title generation requires multiple LLM provider paths
      * @SuppressWarnings(PHPMD.NPathComplexity)       Title generation requires multiple LLM provider paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function generateConversationTitle(string $firstMessage): string
     {
@@ -281,6 +290,8 @@ class ConversationManagementHandler
      * @param string $message Message text.
      *
      * @return string Fallback title
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function generateFallbackTitle(string $message): string
     {
@@ -311,6 +322,8 @@ class ConversationManagementHandler
      * @param int    $agentId   Agent ID.
      *
      * @return string Unique title with number suffix if needed
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
@@ -383,6 +396,8 @@ class ConversationManagementHandler
      * @param Conversation $conversation Conversation entity.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function checkAndSummarize(Conversation $conversation): void
     {
@@ -472,6 +487,8 @@ class ConversationManagementHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Summary generation requires handling multiple LLM providers
      * @SuppressWarnings(PHPMD.NPathComplexity)      Summary generation requires handling multiple LLM providers
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function generateSummary(array $messages): string
     {

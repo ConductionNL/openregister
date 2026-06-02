@@ -5,6 +5,9 @@
  *
  * Value object representing the result of a SIP transport operation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -69,6 +72,8 @@ class TransportResult
      * @param string|null                                                                      $transferReference Transfer reference.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-2
      */
     public function __construct(
         bool $success=false,
@@ -149,6 +154,8 @@ class TransportResult
      * Get the transfer reference.
      *
      * @return string|null The e-Depot transfer reference.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-2
      */
     public function getTransferReference(): ?string
     {

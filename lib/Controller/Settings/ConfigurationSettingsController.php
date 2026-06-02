@@ -3,6 +3,9 @@
 /**
  * OpenRegister Configuration Settings Controller
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -64,6 +67,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with RBAC settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-12
      */
     public function getRbacSettings(): JSONResponse
     {
@@ -81,6 +86,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated RBAC settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-12
      */
     public function updateRbacSettings(): JSONResponse
     {
@@ -99,6 +106,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with organisation settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
      */
     public function getOrganisationSettings(): JSONResponse
     {
@@ -116,6 +125,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated organisation settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
      */
     public function updateOrganisationSettings(): JSONResponse
     {
@@ -134,6 +145,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with multitenancy settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
      */
     public function getMultitenancySettings(): JSONResponse
     {
@@ -151,6 +164,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated multitenancy settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
      */
     public function updateMultitenancySettings(): JSONResponse
     {
@@ -169,6 +184,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with object settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
      */
     public function getObjectSettings(): JSONResponse
     {
@@ -197,6 +214,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated object settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
      */
     public function updateObjectSettings(): JSONResponse
     {
@@ -233,6 +252,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with patched object settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
      */
     public function patchObjectSettings(): JSONResponse
     {
@@ -245,6 +266,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with retention settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-11
      */
     public function getRetentionSettings(): JSONResponse
     {
@@ -262,6 +285,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated retention settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-11
      */
     public function updateRetentionSettings(): JSONResponse
     {
@@ -280,6 +305,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with archival settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-14
      */
     public function getArchivalSettings(): JSONResponse
     {
@@ -297,6 +324,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated archival settings
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-14
      */
     public function updateArchivalSettings(): JSONResponse
     {
@@ -315,6 +344,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with object collection fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
      */
     public function getObjectCollectionFields(): JSONResponse
     {
@@ -346,6 +377,8 @@ class ConfigurationSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with creation result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
      */
     public function createMissingObjectFields(): JSONResponse
     {

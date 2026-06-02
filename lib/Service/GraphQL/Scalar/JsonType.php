@@ -5,6 +5,9 @@
  *
  * Handles arbitrary JSON values including objects, arrays, and scalars.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL\Scalar
  *
@@ -54,6 +57,8 @@ class JsonType extends ScalarType
      * @param mixed $value The value to serialize
      *
      * @return mixed The serialized value
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-2
      */
     public function serialize(mixed $value): mixed
     {

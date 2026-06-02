@@ -11,6 +11,9 @@ export class Source implements TSource {
 	public updated: string
 	public created: string
 
+	/**
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(source: TSource) {
 		this.id = source.id || ''
 		this.title = source.title || ''

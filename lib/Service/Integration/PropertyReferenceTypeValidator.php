@@ -73,6 +73,8 @@ class PropertyReferenceTypeValidator
      *
      * @throws InvalidArgumentException When referenceType is non-string
      *                                  or refers to an unregistered id.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
      */
     public function validate(array $property, ?string $propertyName=null): void
     {
@@ -100,13 +102,18 @@ class PropertyReferenceTypeValidator
         if ($this->registry->isValidIntegrationId($value) === false) {
             $validIds = $this->registry->listIds();
             sort($validIds);
+            $idList = '(none)';
+            if ($validIds !== []) {
+                $idList = implode(', ', $validIds);
+            }
+
             throw new InvalidArgumentException(
                 $this->formatError(
                     propertyName: $propertyName,
                     detail: sprintf(
                         "refers to unregistered integration '%s'. Registered ids: %s",
                         $value,
-                        ($validIds === []) ? '(none)' : implode(', ', $validIds)
+                        $idList
                     )
                 )
             );
@@ -123,12 +130,18 @@ class PropertyReferenceTypeValidator
      * @return void
      *
      * @throws InvalidArgumentException On the first invalid property.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
      */
     public function validateAll(array $properties): void
     {
         foreach ($properties as $name => $definition) {
             if (is_array($definition) === true) {
-                $resolvedName = is_string($name) === true ? $name : null;
+                $resolvedName = null;
+                if (is_string($name) === true) {
+                    $resolvedName = $name;
+                }
+
                 $this->validate(property: $definition, propertyName: $resolvedName);
             }
         }
@@ -145,7 +158,10 @@ class PropertyReferenceTypeValidator
      */
     private function formatError(?string $propertyName, string $detail): string
     {
-        $prefix = $propertyName === null ? "referenceType" : sprintf("Property '%s' referenceType", $propertyName);
+        $prefix = 'referenceType';
+        if ($propertyName !== null) {
+            $prefix = sprintf("Property '%s' referenceType", $propertyName);
+        }
 
         return sprintf('%s %s', $prefix, $detail);
     }//end formatError()

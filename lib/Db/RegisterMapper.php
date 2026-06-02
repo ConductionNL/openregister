@@ -6,6 +6,9 @@
  * This file contains the class for handling register mapper related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -214,8 +217,15 @@ class RegisterMapper extends QBMapper
         bool $_multitenancy=true
     ): Register {
         // Check request-scoped cache to avoid redundant DB queries for the same register.
-        $rbacFlag = ($_rbac === true) ? '1' : '0';
-        $mtFlag   = ($_multitenancy === true) ? '1' : '0';
+        $rbacFlag = '0';
+        $mtFlag   = '0';
+        if ($_rbac === true) {
+            $rbacFlag = '1';
+        }
+
+        if ($_multitenancy === true) {
+            $mtFlag = '1';
+        }
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
         if (isset($this->findCache[$cacheKey]) === true) {
@@ -311,8 +321,16 @@ class RegisterMapper extends QBMapper
             $register = $this->findEntity(query: $qb);
 
             // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-            $rbacChar   = ($_rbac === true) ? '1' : '0';
-            $mtChar     = ($_multitenancy === true) ? '1' : '0';
+            $rbacChar = '0';
+            $mtChar   = '0';
+            if ($_rbac === true) {
+                $rbacChar = '1';
+            }
+
+            if ($_multitenancy === true) {
+                $mtChar = '1';
+            }
+
             $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
             $this->findCache[$cacheKey] = $register;
             $this->findCache[(string) $register->getId().$rbacSuffix]      = $register;

@@ -5,6 +5,9 @@
  *
  * This file contains the handler class for managing general configuration settings.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -130,6 +133,8 @@ class ConfigurationSettingsHandler
      * Check if multi-tenancy is enabled
      *
      * @return bool True if multi-tenancy is enabled, false otherwise
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
      */
     public function isMultiTenancyEnabled(): bool
     {
@@ -208,6 +213,8 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration defaults and overrides create multiple execution paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSettings(): array
     {
@@ -525,6 +532,8 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration sections are independently optional
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateSettings(array $data): array
     {
@@ -623,6 +632,8 @@ class ConfigurationSettingsHandler
      *     auto_publish_objects?: bool,
      *     auto_publish_attachments?: bool
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function updatePublishingOptions(array $options): array
     {
@@ -671,6 +682,8 @@ class ConfigurationSettingsHandler
      *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
      *     availableGroups: array<string, string>,
      *     availableUsers: array<string, string>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function getRbacSettingsOnly(): array
     {
@@ -723,6 +736,8 @@ class ConfigurationSettingsHandler
      *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
      *     availableGroups: array<string, string>,
      *     availableUsers: array<string, string>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function updateRbacSettingsOnly(array $rbacData): array
     {
@@ -758,6 +773,8 @@ class ConfigurationSettingsHandler
      *     default_organisation: mixed|null,
      *     auto_create_default_organisation: mixed|true
      * }}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -801,6 +818,8 @@ class ConfigurationSettingsHandler
      *     default_organisation: mixed|null,
      *     auto_create_default_organisation: mixed|true
      * }}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function updateOrganisationSettingsOnly(array $organisationData): array
     {
@@ -824,6 +843,8 @@ class ConfigurationSettingsHandler
      * Get default organisation UUID from settings
      *
      * @return string|null Default organisation UUID or null if not set
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
      */
     public function getDefaultOrganisationUuid(): ?string
     {
@@ -843,6 +864,8 @@ class ConfigurationSettingsHandler
      * Get tenant ID from multitenancy settings
      *
      * @return string|null Tenant ID (default user tenant) or null if not set
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
      */
     public function getTenantId(): ?string
     {
@@ -874,6 +897,8 @@ class ConfigurationSettingsHandler
      * @param string|null $uuid Default organisation UUID
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
      */
     public function setDefaultOrganisationUuid(?string $uuid): void
     {
@@ -904,6 +929,8 @@ class ConfigurationSettingsHandler
      * @psalm-return array{multitenancy: array{enabled: false|mixed,
      *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
      *     adminOverride: mixed|true}, availableTenants: array}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function getMultitenancySettingsOnly(): array
     {
@@ -950,6 +977,8 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If Multitenancy settings update fails
      *
      * @return array Updated multitenancy config with settings and available tenants.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function updateMultitenancySettingsOnly(array $multitenancyData): array
     {
@@ -986,6 +1015,8 @@ class ConfigurationSettingsHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Default configuration structure requires comprehensive initialization
      *     Nested else branches handle optional vector config backward compatibility
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function getLLMSettingsOnly(): array
     {
@@ -1067,6 +1098,8 @@ class ConfigurationSettingsHandler
      * @return array Updated LLM config with providers and their configurations.
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) PATCH behavior requires merging multiple nested configuration structures
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {
@@ -1128,6 +1161,8 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If File Management settings retrieval fails
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many default configuration values
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function getFileSettingsOnly(): array
     {
@@ -1158,13 +1193,13 @@ class ConfigurationSettingsHandler
                     ],
                     'ocrEnabled'               => false,
                     'maxFileSizeMB'            => 100,
-                // Text extraction settings (for FileConfiguration component).
+                    // Text extraction settings (for FileConfiguration component).
                     'extractionScope'          => 'objects',
-                // None, all, folders, objects.
+                    // None, all, folders, objects.
                     'textExtractor'            => 'llphant',
-                // Llphant, dolphin.
+                    // Llphant, dolphin.
                     'extractionMode'           => 'background',
-                // Background, immediate, manual.
+                    // Background, immediate, manual.
                     'maxFileSize'              => 100,
                     'batchSize'                => 10,
                     'dolphinApiEndpoint'       => '',
@@ -1203,6 +1238,8 @@ class ConfigurationSettingsHandler
      *     dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many configuration fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function updateFileSettingsOnly(array $fileData): array
     {
@@ -1228,13 +1265,13 @@ class ConfigurationSettingsHandler
                 ],
                 'ocrEnabled'               => $fileData['ocrEnabled'] ?? false,
                 'maxFileSizeMB'            => $fileData['maxFileSizeMB'] ?? 100,
-            // Text extraction settings (from FileConfiguration component).
+                // Text extraction settings (from FileConfiguration component).
                 'extractionScope'          => $fileData['extractionScope'] ?? 'objects',
-            // None, all, folders, objects.
+                // None, all, folders, objects.
                 'textExtractor'            => $fileData['textExtractor'] ?? 'llphant',
-            // Llphant, dolphin.
+                // Llphant, dolphin.
                 'extractionMode'           => $fileData['extractionMode'] ?? 'background',
-            // Background, immediate, manual.
+                // Background, immediate, manual.
                 'maxFileSize'              => $fileData['maxFileSize'] ?? 100,
                 'batchSize'                => $fileData['batchSize'] ?? 10,
                 'dolphinApiEndpoint'       => $fileData['dolphinApiEndpoint'] ?? '',
@@ -1261,6 +1298,8 @@ class ConfigurationSettingsHandler
      * @return array n8n configuration.
      *
      * @throws \RuntimeException If n8n settings retrieval fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function getN8nSettingsOnly(): array
     {
@@ -1295,6 +1334,8 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If n8n settings update fails.
      *
      * @psalm-return array{enabled: false|mixed, url: ''|mixed, apiKey: ''|mixed, project: 'openregister'|mixed}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function updateN8nSettingsOnly(array $n8nData): array
     {
@@ -1319,6 +1360,8 @@ class ConfigurationSettingsHandler
      * Returns version and build information for the application.
      *
      * @return array Version info with name, version, description, author, licence, timestamp, and date.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-2
      */
     public function getVersionInfoOnly(): array
     {

@@ -7,6 +7,9 @@
  * based on their next_retry_at timestamp. Uses exponential backoff
  * with increasing intervals between retries.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Cron
  * @package  OCA\OpenRegister\Cron
  *

@@ -5,6 +5,9 @@
  *
  * Listens for file creation and update events to queue asynchronous text extraction.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *

@@ -301,58 +301,139 @@ export default {
 		...mapStores(useSettingsStore),
 
 		retentionOptions: {
+			/**
+			 * Read retention options from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {object}
+			 */
 			get() {
 				return this.settingsStore.retentionOptions
 			},
+			/**
+			 * Write retention options to the store.
+			 *
+			 * @param {object} value The new retention options.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.retentionOptions = value
 			},
 		},
 
 		auditTrailsEnabled: {
+			/**
+			 * Read the audit-trails-enabled flag from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {boolean}
+			 */
 			get() {
 				return this.settingsStore.retentionOptions.auditTrailsEnabled ?? true
 			},
+			/**
+			 * Write the audit-trails-enabled flag to the store.
+			 *
+			 * @param {boolean} value The new value.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.retentionOptions.auditTrailsEnabled = value
 			},
 		},
 
 		searchTrailsEnabled: {
+			/**
+			 * Read the search-trails-enabled flag from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {boolean}
+			 */
 			get() {
 				return this.settingsStore.retentionOptions.searchTrailsEnabled ?? true
 			},
+			/**
+			 * Write the search-trails-enabled flag to the store.
+			 *
+			 * @param {boolean} value The new value.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.retentionOptions.searchTrailsEnabled = value
 			},
 		},
 
+		/**
+		 * Whether the settings store is loading, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
+		/**
+		 * Whether retention settings are saving, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
+		/**
+		 * Whether a rebase is in progress, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		rebasing() {
 			return this.settingsStore.rebasing
 		},
 
+		/**
+		 * Retention status CSS class from the store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived status-styling helper
+		 * @return {string}
+		 */
 		retentionStatusClass() {
 			return this.settingsStore.retentionStatusClass
 		},
 
+		/**
+		 * Retention status text CSS class from the store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived status-styling helper
+		 * @return {string}
+		 */
 		retentionStatusTextClass() {
 			return this.settingsStore.retentionStatusTextClass
 		},
 
+		/**
+		 * Retention status message from the store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived status message
+		 * @return {string}
+		 */
 		retentionStatusMessage() {
 			return this.settingsStore.retentionStatusMessage
 		},
 	},
 
 	methods: {
+		/**
+		 * Show the rebase confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
+		 */
 		showRebaseDialog() {
 			this.settingsStore.showRebaseDialog()
 		},
@@ -367,6 +448,7 @@ export default {
 		 * Format retention period from milliseconds to human readable format
 		 *
 		 * @param {number} ms Milliseconds
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted period
 		 */
 		formatRetentionPeriod(ms) {

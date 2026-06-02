@@ -85,6 +85,9 @@ export default {
 
 	watch: {
 		fileId: {
+			/**
+			 * @spec exclude watcher refetching objects on fileId change, UI plumbing
+			 */
 			handler(newVal) {
 				if (newVal) {
 					this.fetchObjects()
@@ -99,6 +102,7 @@ export default {
 
 		/**
 		 * Fetch objects referencing this file from the API.
+		 * @spec exclude API passthrough loading file-referencing objects; object contract owned by object capability
 		 */
 		async fetchObjects() {
 			this.loading = true
@@ -132,6 +136,7 @@ export default {
 		 *
 		 * @param {object} obj The object data
 		 * @return {string} The absolute URL to the object detail page
+		 * @spec exclude computed object-detail URL builder, UI plumbing
 		 */
 		getObjectUrl(obj) {
 			return generateUrl(
@@ -149,6 +154,7 @@ export default {
 		 *
 		 * @param {object} obj The object data
 		 * @return {string} Accessible label text
+		 * @spec exclude computed aria-label display helper, UI plumbing
 		 */
 		getAriaLabel(obj) {
 			return t('openregister', '{title} in {register} / {schema}', {

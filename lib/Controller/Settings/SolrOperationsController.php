@@ -3,6 +3,9 @@
 /**
  * OpenRegister SOLR Operations Controller
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -76,6 +79,8 @@ class SolrOperationsController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function setupSolr(): JSONResponse
     {
@@ -353,6 +358,8 @@ class SolrOperationsController extends Controller
      *     array<never, never>>|JSONResponse<422,
      *     array{success: false, message: string,
      *     details: array{exception: string}}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function testSolrConnection(): JSONResponse
     {
@@ -381,6 +388,8 @@ class SolrOperationsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Warmup operation results
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function warmupSolrIndex(): JSONResponse
     {
@@ -472,6 +481,8 @@ class SolrOperationsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function inspectSolrIndex(): JSONResponse
     {
@@ -545,6 +556,8 @@ class SolrOperationsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with memory prediction
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function getSolrMemoryPrediction(): JSONResponse
     {
@@ -622,6 +635,8 @@ class SolrOperationsController extends Controller
      *     operation?: 'clear'|'commit'|'optimize', message?: string,
      *     timestamp?: string, error_details?: mixed|null},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function manageSolr(string $operation): JSONResponse
     {

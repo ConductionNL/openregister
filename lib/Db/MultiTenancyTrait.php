@@ -6,6 +6,9 @@
  * This trait provides reusable multi-tenancy and RBAC functionality for mappers.
  * It handles organisation filtering, permission checks, and security validation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Trait
  * @package  OCA\OpenRegister\Db
  *
@@ -252,6 +255,9 @@ trait MultiTenancyTrait
      * @param bool          $allowNullOrg        Whether admins can see NULL organisation entities
      * @param string        $tableAlias          Optional table alias
      * @param bool          $multiTenancyEnabled Whether multitenancy is enabled (default: true)
+     *
+     * @spec openspec/specs/deprecate-published-metadata/spec.md#REQ-5 (MultiTenancyTrait Documentation —
+     *       published-bypass docs scoped to Register/Schema entities only; object-level published bypass removed)
      *
      * @return void
      *
@@ -502,7 +508,11 @@ trait MultiTenancyTrait
             // Audit log the admin cross-tenant override.
             if (isset($this->logger) === true) {
                 $hasGetUid = ($user !== null && method_exists($user, 'getUID'));
-                $userId    = ($hasGetUid === true) ? $user->getUID() : 'unknown';
+                $userId    = 'unknown';
+                if ($hasGetUid === true) {
+                    $userId = $user->getUID();
+                }
+
                 $this->logger->info(
                     '[MultiTenancyTrait] Admin override: cross-organisation access granted',
                     [
