@@ -222,10 +222,10 @@ class ObjectsController extends Controller
     /**
      * Strip server-managed @self fields from client-supplied object data.
      *
-     * The top-level filter in create/update/patch/postPatch already passes @self
-     * through unchanged because certain integrations legitimately set @self.slug or
-     * @self.relations.  However, several @self sub-fields MUST NOT be accepted from
-     * client input because they are either server-authoritative (owner, organisation)
+     * The top-level filter in create/update/patch/postPatch already passes `@self`
+     * through unchanged because certain integrations legitimately set `@self.slug`
+     * or `@self.relations`. However, several `@self` sub-fields MUST NOT be accepted
+     * from client input because they are either server-authoritative (owner, organisation)
      * or carry security-sensitive semantics (authorization, groups).
      *
      * The service layer (SaveObject::setSelfMetadata + applyOwnerAttribution) enforces
@@ -2502,6 +2502,12 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception so a @self.folder
+            // denial on the post-patch path returns 403 with the structured
+            // body (no folder-id oracle) — same contract as create/update/patch.
+            // See the `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         }//end try

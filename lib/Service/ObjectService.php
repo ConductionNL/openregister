@@ -1124,6 +1124,8 @@ class ObjectService
      * Before saving object data, check if user has permission to create/update specific properties
      * based on property-level authorization arrays in the schema.
      *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-3
      */
     public function saveObject(
@@ -1138,6 +1140,12 @@ class ObjectService
         ?array $uploadedFiles=null,
         ?IUser $currentUser=null
     ): ObjectEntity {
+        // Bound the folder-access revalidation cache to this single save call
+        // (not the whole FileService/request lifetime), so a cascade save that
+        // moves or trashes a folder mid-request can't be waved through on a
+        // stale "accessible" verdict from an earlier write.
+        $this->fileService->resetFolderAccessRevalidationCache();
+
         // Set register/schema context.
         $this->setContextFromParameters(
             register: $register,
@@ -1236,7 +1244,8 @@ class ObjectService
             persist: true,
             silent: $silent,
             _validation: true,
-            uploadedFiles: $uploadedFiles
+            uploadedFiles: $uploadedFiles,
+            currentUser: $currentUser
         );
 
         // Invalidate contact matching cache for objects with email properties.
@@ -1545,13 +1554,7 @@ class ObjectService
                     || (is_string($folder) === true && is_numeric($folder) === false)
                 );
 
-                if ($needsAutoCreate === true) {
-                    try {
-                        $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
-                    } catch (Exception $e) {
-                        // Log error but continue - object can function without folder.
-                    }
-                } else {
+                if ($needsAutoCreate === false) {
                     // Defense in depth (PR #1431 review concern): the
                     // `setSelfMetadata` access check only fires when the
                     // write payload includes `@self.folder`. Pre-PR
@@ -1561,12 +1564,22 @@ class ObjectService
                     // save so the check applies uniformly. Throws
                     // `FolderAccessDeniedException` → HTTP 403 at the
                     // controller layer when the acting user cannot access
-                    // the bound folder.
+                    // the bound folder. The existing binding is kept, so no
+                    // folder id is returned (auto-create is not needed).
                     $this->fileService->assertObjectFolderAccessible(
                         object: $existingObject,
                         currentUser: $currentUser
                     );
-                }//end if
+                    return null;
+                }
+
+                // Empty / legacy non-numeric binding → auto-create. The object
+                // can function without a folder, so swallow failures.
+                try {
+                    $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
+                } catch (Exception $e) {
+                    // Log error but continue - object can function without folder.
+                }
             } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
                 // Propagate folder-access denials up to the controller.
                 throw $e;
@@ -2974,6 +2987,10 @@ class ObjectService
         bool $deduplicateIds=true,
         bool $enrich=true
     ): array {
+
+        // Bound the folder-access revalidation cache to this bulk-save call
+        // (see saveObject) so mid-request folder mutations are re-validated.
+        $this->fileService->resetFolderAccessRevalidationCache();
 
         // Set register and schema context if provided.
         if ($register !== null) {

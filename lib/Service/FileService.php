@@ -923,6 +923,24 @@ class FileService
     }//end assertObjectFolderAccessible()
 
     /**
+     * Reset the per-request folder-access revalidation cache.
+     *
+     * `isReadable()` is a snapshot of mount/share/ACL/trash state. Within a
+     * single request that state CAN change — a cascade save may move or trash
+     * the parent folder. Because the cache lives for the FileService instance
+     * (≈ the whole request), a stale "accessible" verdict could otherwise
+     * survive such a mutation. Callers bound the cache to a single save API
+     * call by invoking this at the entry of `saveObject` / `saveObjects`, so
+     * each top-level write re-validates against current state.
+     *
+     * @return void
+     */
+    public function resetFolderAccessRevalidationCache(): void
+    {
+        $this->folderAccessRevalidationCache = [];
+    }//end resetFolderAccessRevalidationCache()
+
+    /**
      * Returns a share link for the given IShare object.
      *
      * @param IShare $share An IShare object we are getting the share link for

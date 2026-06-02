@@ -17,7 +17,7 @@
 
 ## 5. Controller mapping to HTTP 403
 
-- [x] 5.1 Identify every controller method that calls into `RegisterService::saveObject()` / `ObjectEntityService::saveObject()` / the underlying `SaveObjects` pipeline (start with `lib/Controller/ObjectsController.php` and grep for `saveObject(`). In each save endpoint, catch `FolderAccessDeniedException` SPECIFICALLY (before any generic exception catch to avoid absorbing it as a 500) and return a `JSONResponse` with status 403 and body `{ "error": "folder_access_denied", "folder": "<attempted-id>" }`. Prefer extending an existing shared error-handler method (e.g. `handleSaveException`) over copy-pasting the try/catch. Confirm no upstream controller or middleware catches the exception as a generic `\Exception` before the intended 403 mapping runs.
+- [x] 5.1 Identify every controller method that calls into `RegisterService::saveObject()` / `ObjectEntityService::saveObject()` / the underlying `SaveObjects` pipeline (start with `lib/Controller/ObjectsController.php` and grep for `saveObject(`). In each save endpoint, catch `FolderAccessDeniedException` SPECIFICALLY (before any generic exception catch to avoid absorbing it as a 500) and return a `JSONResponse` per the canonical spec at `specs/self-folder-access-control/spec.md` (status 403, body `{ "error": "folder_access_denied" }` — the response MUST NOT include the attempted folder ID, which would be an enumeration oracle; the ID is recorded in the audit trail only). Prefer extending an existing shared error-handler method (e.g. `handleSaveException`) over copy-pasting the try/catch. Confirm no upstream controller or middleware catches the exception as a generic `\Exception` before the intended 403 mapping runs.
 
 ## 6. Audit internal callers
 

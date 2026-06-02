@@ -131,3 +131,7 @@ The change SHALL NOT modify `FolderManagementHandler::getNodeById()`'s existing 
 - **GIVEN** `alice` POSTs with `@self.folder: "<bob's-folder-id>"` where the folder is not mounted in `alice`'s user folder
 - **WHEN** `createObjectFolderById()` attempts to resolve the ID
 - **THEN** the lookup fails (user-folder miss, no fallback), and `FolderAccessDeniedException` is thrown
+
+### Limitations
+
+- **Check-to-bind TOCTOU window.** Access is verified via `Folder::isReadable()` immediately before the bind, but a small time-of-check-to-time-of-use gap exists between that check and the subsequent file writes. An admin revoking a share in the milliseconds between check and bind would leave the object attached to a folder the actor can no longer read. The window is small and Nextcloud's share API does not expose programmatic mid-request revocation, so this is accepted rather than mitigated. Within a single request, the per-request revalidation cache is reset at the entry of each top-level `saveObject` / `saveObjects` call, so cascade-induced folder moves/trashes are re-checked.

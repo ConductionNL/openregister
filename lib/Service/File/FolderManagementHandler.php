@@ -261,13 +261,15 @@ class FolderManagementHandler
         }
 
         // Three branches per `self-folder-access-control` spec:
-        // (a) empty            → fall through to auto-create (unchanged legacy behaviour).
-        // (b) non-numeric      → legacy path-style value, fall through to auto-create.
-        // (c) non-empty numeric → caller-supplied node ID; require a positive read-access
+        // (a) empty               → fall through to auto-create (unchanged legacy behaviour).
+        // (b) non-digit-string     → legacy path-style value, fall through to auto-create.
+        // (c) bare-integer node ID → caller-supplied node ID; require a positive read-access
         // check. On failure, propagate FolderAccessDeniedException —
         // do NOT fall through to auto-create (would silently mask
         // a cross-tenant bind attempt).
-        if ($folderProperty !== null && $folderProperty !== '' && is_numeric($folderProperty) === true) {
+        // Gate on ctype_digit (not is_numeric) so "42.5"/"4e2"/"+42" don't slip
+        // through and get (int)-truncated to a different node than was validated.
+        if ($folderProperty !== null && $folderProperty !== '' && ctype_digit((string) $folderProperty) === true) {
             $existingFolder = $this->assertFolderIsAccessible(
                 folderId: $folderProperty,
                 currentUser: $currentUser,
@@ -986,17 +988,17 @@ class FolderManagementHandler
             // Version1Date20241020231700: `object` INT NOT NULL, `user_name` STR NOT NULL,
             // `session` STR NOT NULL). The audit row is about a save that was REJECTED
             // before persistence, so there is no object id to record. We use:
-            //   - `object = 0` as the documented sentinel for "no object persisted yet".
-            //     Auto-increment PKs on this schema start at 1, so 0 cannot collide with
-            //     a real ObjectEntity row. Audit-trail queries filtering on
-            //     `WHERE action = 'folder_access_denied'` are the canonical way to
-            //     find these rows; querying by `object = 0` is also safe.
-            //   - `user_name = $actorUid` so the audit UI has something to display in the
-            //     "user" column when the system actor is involved.
-            //   - `session = ''` (empty string) rather than $actorUid: the UID is already
-            //     recorded in the `user` column; duplicating it into the `session` field
-            //     adds no information and would mislead forensic correlation. We use
-            //     empty string (not null) because the column is NOT NULL.
+            // - `object = 0` as the documented sentinel for "no object persisted yet".
+            // Auto-increment PKs on this schema start at 1, so 0 cannot collide with
+            // a real ObjectEntity row. Audit-trail queries filtering on
+            // `WHERE action = 'folder_access_denied'` are the canonical way to
+            // find these rows; querying by `object = 0` is also safe.
+            // - `user_name = $actorUid` so the audit UI has something to display in the
+            // "user" column when the system actor is involved.
+            // - `session = ''` (empty string) rather than $actorUid: the UID is already
+            // recorded in the `user` column; duplicating it into the `session` field
+            // adds no information and would mislead forensic correlation. We use
+            // empty string (not null) because the column is NOT NULL.
             $auditTrail->setObject(0);
             $auditTrail->setUserName($actorUid);
             $auditTrail->setSession('');
