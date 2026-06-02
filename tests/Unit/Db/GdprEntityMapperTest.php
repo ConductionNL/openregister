@@ -110,6 +110,7 @@ class GdprEntityMapperTest extends TestCase
         $qb->method('select')->willReturnSelf();
         $qb->method('from')->willReturnSelf();
         $qb->method('where')->willReturnSelf();
+        $qb->method('orderBy')->willReturnSelf();
         $qb->method('setMaxResults')->willReturnSelf();
         $qb->method('expr')->willReturn(value: $expr);
         $qb->method('createNamedParameter')->willReturn(value: ':p');
