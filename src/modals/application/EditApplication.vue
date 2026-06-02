@@ -44,6 +44,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 							<div class="groups-select-container">
 								<label class="groups-label">Nextcloud Groups</label>
 								<NcSelect
+						input-label="Selected Groups"
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
@@ -245,14 +246,23 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI display helper — converts storage quota bytes to MB for the form.
+		 */
 		storageQuotaMB() {
 			if (!this.applicationItem.quota?.storage) return 0
 			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
 		},
+		/**
+		 * @spec exclude UI display helper — converts bandwidth quota bytes to MB for the form.
+		 */
 		bandwidthQuotaMB() {
 			if (!this.applicationItem.quota?.bandwidth) return 0
 			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
 		},
+		/**
+		 * @spec exclude UI display helper — filters available groups to those assigned to the application.
+		 */
 		filteredAvailableGroups() {
 		// Filter available groups to only show groups assigned to the application
 			if (!this.applicationItem.groups || this.applicationItem.groups.length === 0) {
@@ -261,6 +271,9 @@ export default {
 			return this.availableGroups.filter(group => this.applicationItem.groups.includes(group.id))
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — loads organisations/groups and hydrates the modal.
+	 */
 	async mounted() {
 		await this.fetchOrganisations()
 		// Use cached Nextcloud groups from store (preloaded on index page)
@@ -273,6 +286,7 @@ export default {
 		 * Fetch available organisations from the store
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
 		 */
 		async fetchOrganisations() {
 			await organisationStore.refreshOrganisationList()
@@ -283,6 +297,7 @@ export default {
 		 * Groups are preloaded on the index page for better performance
 		 *
 		 * @return {void}
+		 * @spec exclude Modal data-load plumbing — reads cached Nextcloud groups from the store.
 		 */
 		loadNextcloudGroupsFromStore() {
 			// If groups are already cached in store, use them immediately
@@ -312,6 +327,7 @@ export default {
 		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
+		 * @spec exclude Modal data-load plumbing — debounced group search via OCS API.
 		 */
 		searchGroups(searchQuery) {
 			// Clear existing debounce timer
@@ -370,6 +386,7 @@ export default {
 		 * Initialize application item from store
 		 *
 		 * @return {void}
+		 * @spec exclude Modal hydration plumbing — copies the store's applicationItem into local form state.
 		 */
 		initializeApplicationItem() {
 			if (applicationStore.applicationItem?.uuid) {
@@ -408,6 +425,7 @@ export default {
 		 *
 		 * @param {Array} groups - Selected groups
 		 * @return {void}
+		 * @spec exclude Form-field binding — maps selected groups to id array.
 		 */
 		updateGroups(groups) {
 			this.selectedGroups = groups || []
@@ -420,6 +438,7 @@ export default {
 		 *
 		 * @param {object} groupToRemove - Group to remove
 		 * @return {void}
+		 * @spec exclude Form-field binding — removes a group from the selection.
 		 */
 		removeGroup(groupToRemove) {
 			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
@@ -432,6 +451,7 @@ export default {
 		 *
 		 * @param {object} payload - Permission update payload
 		 * @return {void}
+		 * @spec exclude Form-field binding — toggles a group's CRUD permission in local authorization state.
 		 */
 		updateApplicationPermission(payload) {
 			const { groupId, action, hasPermission } = payload
@@ -473,6 +493,7 @@ export default {
 		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets storage quota (MB→bytes) in local state.
 		 */
 		updateStorageQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
@@ -488,6 +509,7 @@ export default {
 		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets bandwidth quota (MB→bytes) in local state.
 		 */
 		updateBandwidthQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
@@ -503,6 +525,7 @@ export default {
 		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets request quota in local state.
 		 */
 		updateRequestQuota(value) {
 			// 0 = unlimited
@@ -517,6 +540,7 @@ export default {
 		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets user quota in local state.
 		 */
 		updateUserQuota(value) {
 		// 0 = unlimited (not applicable for applications, but kept for consistency)
@@ -531,6 +555,7 @@ export default {
 		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets group quota in local state.
 		 */
 		updateGroupQuota(value) {
 		// 0 = unlimited
@@ -544,6 +569,7 @@ export default {
 		 * Close the modal and reset state
 		 *
 		 * @return {void}
+		 * @spec exclude Modal close plumbing — resets local state and clears modal/dialog.
 		 */
 		closeModal() {
 			this.success = false
@@ -559,6 +585,7 @@ export default {
 		 * Save the application
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Modal save plumbing — validates name then delegates to applicationStore.saveApplication.
 		 */
 		async saveApplication() {
 			this.loading = true
@@ -596,6 +623,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen - Whether the dialog is open
 		 * @return {void}
+		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
 		 */
 		handleDialogOpen(isOpen) {
 			// Only close the modal if the dialog is being closed (isOpen = false)

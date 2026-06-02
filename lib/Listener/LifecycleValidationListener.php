@@ -7,6 +7,9 @@
  * lifecycle field to a value that no declared transition allows from the
  * current value. Uses the existing StoppableEventInterface contract.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -89,6 +92,8 @@ class LifecycleValidationListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-13
      */
     public function handle(Event $event): void
     {
@@ -254,7 +259,11 @@ class LifecycleValidationListener implements IEventListener
     {
         $config     = ($schema->getConfiguration() ?? []);
         $annotation = ($config['x-openregister-lifecycle'] ?? null);
-        return is_array($annotation) === true ? $annotation : null;
+        if (is_array($annotation) === true) {
+            return $annotation;
+        }
+
+        return null;
     }//end getLifecycleAnnotation()
 
     /**

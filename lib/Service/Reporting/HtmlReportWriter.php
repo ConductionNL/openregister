@@ -14,8 +14,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service\Reporting
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -38,6 +39,8 @@ class HtmlReportWriter
      * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
      *
      * @return string Rendered HTML bytes.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-3
      */
     public function write(array $dashboard, array $resolvedWidgets): string
     {
@@ -94,7 +97,10 @@ HTML;
             $bodyHtml = $this->renderBody(widget: $widget, data: $data, type: $type);
         }
 
-        $subtitleBlock = $subtitle !== '' ? "<p class=\"widget-subtitle\">{$subtitle}</p>" : '';
+        $subtitleBlock = '';
+        if ($subtitle !== '') {
+            $subtitleBlock = "<p class=\"widget-subtitle\">{$subtitle}</p>";
+        }
 
         return <<<HTML
 <section class="widget widget-{$this->escape(value: $type)}">

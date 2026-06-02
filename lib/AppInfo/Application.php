@@ -6,6 +6,9 @@
  * This file contains the controller for handling consumer related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category AppInfo
  * @package  OCA\OpenRegister\AppInfo
  *
@@ -135,7 +138,9 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\Security\IContentSecurityPolicyManager;
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
@@ -154,6 +159,7 @@ use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
@@ -213,11 +219,54 @@ use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadH
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
 use OCA\OpenRegister\Capabilities\UrnCapability;
+use OCA\OpenRegister\Capabilities\IntegrationsCapability;
+use OCA\OpenRegister\Controller\IntegrationsController;
+use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
+use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
+use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator;
+use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
+use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
+use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
+use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
+use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
+use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
+use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
+use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Service\XwikiLinkService;
+use OCA\OpenRegister\Service\OpenProjectLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\FormsProvider;
+use OCA\OpenRegister\Service\ShareLinkService;
+use OCA\OpenRegister\Service\TalkLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\FlowProvider;
+use OCA\OpenRegister\Service\ActivityFilterService;
+use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\MapsProvider;
+use OCA\OpenRegister\Service\MapLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\PhotosProvider;
+use OCA\OpenRegister\Service\PhotoLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider;
+use OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\CospendProvider;
+use OCA\OpenRegister\Service\CospendLinkService;
+use OCA\OpenRegister\Service\CollectiveLinkService;
+use OCA\OpenRegister\Service\AnalyticsLinkService;
+use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
+use OCA\OpenRegister\Service\TimeTrackerLinkService;
 
 /**
  * Class Application
@@ -232,9 +281,17 @@ use OCA\OpenRegister\Service\Mcp\McpToolsService;
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Bootstrap class must reference every
+ *   service, mapper, event listener, and middleware registered for the entire app; the
+ *   coupling is structural and cannot be reduced without breaking the NC bootstrap contract.
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Service registration methods enumerate
+ *   all DI bindings in one place per NC bootstrap pattern; splitting them would spread
+ *   the wire-up across unrelated files and obscure the dependency graph.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Single IBootstrap implementation per NC
+ *   app-info convention; all register/boot logic must live in this one class.
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)  IBootstrap::boot(IBootContext) signature
+ *   is fixed by the NC framework contract; the $context parameter may not be used in
+ *   every version of the boot method.
  */
 class Application extends App implements IBootstrap
 {
@@ -299,6 +356,13 @@ class Application extends App implements IBootstrap
         // POST/PUT/PATCH with `?_validate=true`; pass-through otherwise.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\OasValidationMiddleware::class);
 
+        // Register the RateLimitMiddleware to wire SecurityService brute-force
+        // protection into the inbound API auth path (issue #1834). Records
+        // failed Basic/Bearer/session auth on protected endpoints (keyed on
+        // identity+trusted-IP) and pre-emptively blocks locked-out callers.
+        // Fail-OPEN: any limiter error allows the request through.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
@@ -324,7 +388,16 @@ class Application extends App implements IBootstrap
         // Pluggable-integration-registry task 4.5 (tasks.md#task-22):
         // advertise the integration registry through the OCS
         // capabilities endpoint.
-        $context->registerCapability(\OCA\OpenRegister\Capabilities\IntegrationsCapability::class);
+        $context->registerCapability(IntegrationsCapability::class);
+
+        // ADR-019 Phase E (Option B): single umbrella widget hosted on
+        // the Nextcloud user-dashboard. Iterates the integration
+        // registry client-side and mounts each leaf's `user-dashboard`
+        // widget — locked in over the 24-tile alternative because per-
+        // integration NC widgets would clutter the global dashboard.
+        $context->registerDashboardWidget(
+            \OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::class
+        );
     }//end register()
 
     /**
@@ -340,7 +413,10 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Manual DI factory closures for four
+     *   interdependent mappers/services each require 10-20 lines of constructor wiring;
+     *   the length is structural to the NC DI pattern and cannot be shortened without
+     *   obscuring the circular-dependency resolution order.
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
      */
@@ -841,18 +917,18 @@ class Application extends App implements IBootstrap
     private function registerIntegrationRegistry(IRegistrationContext $context): void
     {
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class,
+            IntegrationRegistry::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\IntegrationRegistry(
+                return new IntegrationRegistry(
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
         );
 
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+            ExternalIntegrationRouter::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter(
+                return new ExternalIntegrationRouter(
                     appManager: $container->get('OCP\App\IAppManager'),
                     container: $container,
                     logger: $container->get('Psr\Log\LoggerInterface')
@@ -866,10 +942,10 @@ class Application extends App implements IBootstrap
         // validateLinkedTypesValue path so existing schemas keep
         // validating exactly as before.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator::class,
+            PropertyReferenceTypeValidator::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator(
-                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                return new PropertyReferenceTypeValidator(
+                    registry: $container->get(IntegrationRegistry::class),
                 );
             }
         );
@@ -879,10 +955,10 @@ class Application extends App implements IBootstrap
         // ids that the registry can no longer resolve. Strictly
         // informational; never throws, never modifies data.
         $context->registerService(
-            \OCA\OpenRegister\Repair\LogDanglingLinkedTypes::class,
+            LogDanglingLinkedTypes::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Repair\LogDanglingLinkedTypes(
-                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                return new LogDanglingLinkedTypes(
+                    registry: $container->get(IntegrationRegistry::class),
                     container: $container,
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
@@ -893,12 +969,12 @@ class Application extends App implements IBootstrap
 
         // IntegrationsController — read-only API over the registry.
         $context->registerService(
-            \OCA\OpenRegister\Controller\IntegrationsController::class,
+            IntegrationsController::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Controller\IntegrationsController(
+                return new IntegrationsController(
                     appName: 'openregister',
                     request: $container->get('OCP\IRequest'),
-                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    registry: $container->get(IntegrationRegistry::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface')
@@ -909,12 +985,12 @@ class Application extends App implements IBootstrap
         // ObjectIntegrationsController — object-scoped sub-resource
         // dispatch through the registry.
         $context->registerService(
-            \OCA\OpenRegister\Controller\ObjectIntegrationsController::class,
+            ObjectIntegrationsController::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Controller\ObjectIntegrationsController(
+                return new ObjectIntegrationsController(
                     appName: 'openregister',
                     request: $container->get('OCP\IRequest'),
-                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                    registry: $container->get(IntegrationRegistry::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -929,12 +1005,13 @@ class Application extends App implements IBootstrap
         // IntegrationsCapability — surfaces the registry through the
         // Nextcloud OCS capabilities endpoint, role-redacted per AD-17.
         $context->registerService(
-            \OCA\OpenRegister\Capabilities\IntegrationsCapability::class,
+            IntegrationsCapability::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Capabilities\IntegrationsCapability(
-                    registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+                return new IntegrationsCapability(
+                    registry: $container->get(IntegrationRegistry::class),
                     userSession: $container->get('OCP\IUserSession'),
-                    groupManager: $container->get('OCP\IGroupManager')
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appManager: $container->get('OCP\App\IAppManager')
                 );
             }
         );
@@ -959,9 +1036,9 @@ class Application extends App implements IBootstrap
     private function registerBuiltinIntegrationProviders(IRegistrationContext $context): void
     {
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider::class,
+            FilesProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider(
+                return new FilesProvider(
                     fileService: $container->get(\OCA\OpenRegister\Service\FileService::class),
                     container: $container,
                     l10n: $container->get('OCP\IL10N'),
@@ -970,9 +1047,9 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider::class,
+            NotesProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider(
+                return new NotesProvider(
                     noteService: $container->get(\OCA\OpenRegister\Service\NoteService::class),
                     l10n: $container->get('OCP\IL10N'),
                 );
@@ -980,19 +1057,22 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class,
+            TasksProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider(
+                return new TasksProvider(
                     taskService: $container->get(\OCA\OpenRegister\Service\TaskService::class),
+                    registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
                     l10n: $container->get('OCP\IL10N'),
                 );
             }
         );
 
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider::class,
+            TagsProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider(
+                return new TagsProvider(
                     tagManager: $container->get('OCP\SystemTag\ISystemTagManager'),
                     objectMapper: $container->get('OCP\SystemTag\ISystemTagObjectMapper'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1001,9 +1081,9 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class,
+            AuditTrailProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider(
+                return new AuditTrailProvider(
                     mapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
                     l10n: $container->get('OCP\IL10N'),
                 );
@@ -1016,27 +1096,72 @@ class Application extends App implements IBootstrap
         // OpenConnector `xwiki` source.
         // @spec openspec/changes/integration-xwiki/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class,
+            XwikiProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider(
-                    router: $container->get(\OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class),
+                return new XwikiProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                    xwikiLinkMapper: $container->get(\OCA\OpenRegister\Db\XwikiLinkMapper::class),
+                );
+            }
+        );
+
+        // XwikiLinkService — Tier-2 link/create/unlink/picker service
+        // backing the XwikiLinksController. xWiki is external: the provider
+        // + router are resolved lazily so the service loads even when
+        // OpenConnector is absent, mirroring the unconfigured-source
+        // 503-with-cause pattern.
+        // @spec openspec/changes/integration-xwiki/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\XwikiLinkService::class,
+            function (ContainerInterface $container) {
+                return new XwikiLinkService(
+                    xwikiLinkMapper: $container->get(\OCA\OpenRegister\Db\XwikiLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
 
         // Leaf provider: OpenProject (external, OpenConnector-backed) —
         // mirrors the XwikiProvider pattern (AD-4 / AD-22). Credentials
-        // on the OpenConnector `openproject` source.
+        // on the OpenConnector `openproject` source. Tier-2: the
+        // OpenProjectLinkMapper backs the linked list so it renders from
+        // the cached link rows even when the source is temporarily down.
         // @spec openspec/changes/integration-openproject/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class,
+            OpenProjectProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider(
-                    router: $container->get(\OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class),
+                return new OpenProjectProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                    linkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
+                );
+            }
+        );
+
+        // OpenProjectLinkService — Tier-2 link/create/unlink/picker
+        // service backing the OpenProjectLinksController. OpenProject is
+        // external; the service composes the link mapper with the
+        // OpenProjectProvider + ExternalIntegrationRouter so picker /
+        // create / refresh flows go through the OpenConnector
+        // `openproject` source, degrading to a 503-with-cause when the
+        // source is missing or the upstream is unreachable (wave-5.2).
+        // @spec openspec/changes/integration-openproject/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\OpenProjectLinkService::class,
+            function (ContainerInterface $container) {
+                return new OpenProjectLinkService(
+                    openProjectLinkMapper: $container->get(\OCA\OpenRegister\Db\OpenProjectLinkMapper::class),
+                    provider: $container->get(OpenProjectProvider::class),
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
@@ -1048,21 +1173,23 @@ class Application extends App implements IBootstrap
         // provider gates on its required NC app via IAppManager.
         // @spec openspec/changes/integration-calendar/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\CalendarProvider::class,
+            CalendarProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\CalendarProvider(
+                return new CalendarProvider(
                     calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
+                    calendarLinkService: $container->get(\OCA\OpenRegister\Service\CalendarLinkService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get(\Psr\Log\LoggerInterface::class),
                 );
             }
         );
 
         // @spec openspec/changes/integration-contacts/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider::class,
+            ContactsProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider(
+                return new ContactsProvider(
                     contactService: $container->get(\OCA\OpenRegister\Service\ContactService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1072,10 +1199,10 @@ class Application extends App implements IBootstrap
 
         // @spec openspec/changes/integration-deck/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\DeckProvider::class,
+            DeckProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\DeckProvider(
-                    deckCardService: $container->get(\OCA\OpenRegister\Service\DeckCardService::class),
+                return new DeckProvider(
+                    deckLinkService: $container->get(\OCA\OpenRegister\Service\DeckLinkService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                 );
@@ -1084,10 +1211,11 @@ class Application extends App implements IBootstrap
 
         // @spec openspec/changes/integration-email/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\EmailProvider::class,
+            EmailProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\EmailProvider(
+                return new EmailProvider(
                     emailService: $container->get(\OCA\OpenRegister\Service\EmailService::class),
+                    emailLinkService: $container->get(\OCA\OpenRegister\Service\EmailLinkService::class),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                 );
@@ -1103,22 +1231,22 @@ class Application extends App implements IBootstrap
         $greenfieldProviders = [
             // @spec openspec/changes/integration-activity/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-            // @spec openspec/changes/integration-analytics/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
-            // @spec openspec/changes/integration-collectives/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
-            // @spec openspec/changes/integration-cospend/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
-            // @spec openspec/changes/integration-flow/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
-            // @spec openspec/changes/integration-forms/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
-            // @spec openspec/changes/integration-maps/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
-            // @spec openspec/changes/integration-photos/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
-            // @spec openspec/changes/integration-time-tracker/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
+            // NB: AnalyticsProvider + CollectivesProvider + CospendProvider
+            // were Tier-1 greenfield until Tier-2; each now takes its own
+            // link mapper (AnalyticsLinkMapper / CollectiveLinkMapper /
+            // CospendLinkMapper) and is registered separately below.
+            // NB: FormsProvider is NO LONGER greenfield — it has a Tier-2
+            // link-table dep (FormLinkMapper) that doesn't fit the (db,
+            // appManager, l10n) signature shared by the rest of this list.
+            // Registered separately below.
+            // NB: FlowProvider was Tier-1 greenfield until Tier-2; it now
+            // takes a FlowLinkMapper. Registered separately below.
+            // NB: MapsProvider was Tier-1 greenfield until Tier-2; it now
+            // takes a MapLinkMapper. Registered separately below.
+            // NB: PhotosProvider was Tier-1 greenfield until Tier-2; it now
+            // takes a PhotoLinkMapper. Registered separately below.
+            // NB: TimeProvider was Tier-1 greenfield until Tier-2; it now
+            // takes a TimeTrackerLinkMapper. Registered separately below.
         ];
         // Each greenfield provider now uses MarkerLookupTrait to query
         // its upstream app's main table directly via IDBConnection. All
@@ -1136,13 +1264,31 @@ class Application extends App implements IBootstrap
             );
         }
 
-        // SharesProvider — NC core (no app gate); uses MarkerLookupTrait
-        // against the `share` table's `note` column.
+        // FormsProvider — Tier-2 link-table backed. Promoted from the
+        // marker-only greenfield wave to its own factory so it gets the
+        // FormLinkMapper injected. The provider still gracefully degrades
+        // to the legacy marker scan when the link table is empty (e.g.
+        // forms that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-forms/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
+            function (ContainerInterface $container) {
+                return new FormsProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    formLinkMapper: $container->get(\OCA\OpenRegister\Db\FormLinkMapper::class),
+                );
+            }
+        );
+
+        // SharesProvider — NC core (no app gate); wraps OCP\Share\IManager
+        // (query-time, no link table — IShare is first-class NC state).
         // @spec openspec/changes/integration-shares/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\SharesProvider::class,
+            SharesProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\SharesProvider(
+                return new SharesProvider(
                     db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1150,18 +1296,34 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // BookmarksProvider needs the container (for late-bound NC
-        // Bookmarks classes — they're only on the classpath when the
-        // Bookmarks app is installed) plus IUserSession to scope the
-        // bookmark query to the current user.
+        // ShareLinkService — Tier-2 share create/revoke/list service
+        // backing the ShareLinksController. NO link table / NO cache:
+        // OCP\Share\IManager is the single source of truth, resolved
+        // lazily through the container (same pattern as SharesProvider).
+        // @spec openspec/changes/integration-shares/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\ShareLinkService::class,
+            function (ContainerInterface $container) {
+                return new ShareLinkService(
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // BookmarksProvider — Tier-2: backed by the BookmarkLinkMapper.
+        // Replaces the original `or:{uuid}` tag-marker convention with a
+        // proper persistence layer; the wrapping BookmarkLinkService owns
+        // the late-bound NC Bookmarks reads/writes. Needs the container
+        // (NC Bookmarks classes are only on the classpath when that app is
+        // installed) plus IUserSession to scope the query to the user.
         // @spec openspec/changes/integration-bookmarks/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider::class,
+            BookmarksProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider(
-                    container: $container,
+                return new BookmarksProvider(
+                    bookmarkLinkMapper: $container->get(\OCA\OpenRegister\Db\BookmarkLinkMapper::class),
                     appManager: $container->get('OCP\App\IAppManager'),
-                    userSession: $container->get('OCP\IUserSession'),
                     l10n: $container->get('OCP\IL10N'),
                 );
             }
@@ -1169,13 +1331,52 @@ class Application extends App implements IBootstrap
 
         // TalkProvider — needs container for late-bound `OCA\Talk\Manager`
         // (only on the classpath with `spreed` installed) plus
-        // IUserSession to scope `getRoomsForUser`.
+        // IUserSession to scope `getRoomsForUser`. Tier-2: the
+        // TalkLinkMapper is injected so the provider can short-circuit
+        // the legacy marker scan when the link table is populated.
         // @spec openspec/changes/integration-talk/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class,
+            TalkProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\TalkProvider(
+                return new TalkProvider(
                     container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    l10n: $container->get('OCP\IL10N'),
+                    talkLinkMapper: $container->get(\OCA\OpenRegister\Db\TalkLinkMapper::class),
+                );
+            }
+        );
+
+        // TalkLinkService — Tier-2 link/create/unlink service backing
+        // the TalkLinksController. Same late-bound Talk pattern as
+        // the provider (container for OCA\Talk\* lookups).
+        // @spec openspec/changes/integration-talk/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\TalkLinkService::class,
+            function (ContainerInterface $container) {
+                return new TalkLinkService(
+                    talkLinkMapper: $container->get(\OCA\OpenRegister\Db\TalkLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // PollsProvider — Tier-2: backed by the PollLinkMapper +
+        // direct queries against `oc_polls_*` tables. Replaces the
+        // original title-marker convention with a proper persistence
+        // layer.
+        // @spec openspec/changes/integration-polls/tasks.md.
+        $context->registerService(
+            PollsProvider::class,
+            function (ContainerInterface $container) {
+                return new PollsProvider(
+                    pollLinkMapper: $container->get(\OCA\OpenRegister\Db\PollLinkMapper::class),
+                    db: $container->get('OCP\IDBConnection'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
                     l10n: $container->get('OCP\IL10N'),
@@ -1183,19 +1384,277 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // PollsProvider — late-bound `OCA\Polls\Service\PollService`
-        // (only on classpath with the `polls` app installed) + user
-        // session for scoping. Links via the `[or:{objectUuid}]`
-        // marker in the poll title.
-        // @spec openspec/changes/integration-polls/tasks.md.
+        // FlowProvider — Tier-2: backed by FlowLinkMapper + direct
+        // queries against `oc_flow_operations`. Replaces the Tier-1
+        // `[or:{uuid}]` name-marker convention with a proper
+        // persistence layer.
+        // @spec openspec/changes/integration-flow/tasks.md.
         $context->registerService(
-            \OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class,
+            \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\Providers\PollsProvider(
+                return new FlowProvider(
+                    flowLinkMapper: $container->get(\OCA\OpenRegister\Db\FlowLinkMapper::class),
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                );
+            }
+        );
+
+        // ActivityFilterService — Tier-2 read-only filter/paginate
+        // service backing the ActivityLinksController. NC Activity
+        // entries are core-generated; this only wraps the wave-5.3
+        // MarkerLookupTrait carve-out query with type/actor/date
+        // filters + cursor pagination.
+        // @spec openspec/changes/integration-activity/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\ActivityFilterService::class,
+            function (ContainerInterface $container) {
+                return new ActivityFilterService(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                );
+            }
+        );
+
+        // FlowLinkService — Tier-2 admin-gated link/unlink/picker
+        // service backing the FlowLinksController. NC Flow operations
+        // are configured by admins only; the service enforces that
+        // gate via IGroupManager.
+        // @spec openspec/changes/integration-flow/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\FlowLinkService::class,
+            function (ContainerInterface $container) {
+                return new FlowLinkService(
+                    flowLinkMapper: $container->get(\OCA\OpenRegister\Db\FlowLinkMapper::class),
+                    db: $container->get('OCP\IDBConnection'),
                     container: $container,
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // MapsProvider — Tier-2: backed by the MapLinkMapper. The
+        // provider still gracefully degrades to the legacy `[or:{uuid}]`
+        // favorite-name marker scan when the link table is empty (POIs
+        // that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-maps/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
+            function (ContainerInterface $container) {
+                return new MapsProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
+                    mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
+                );
+            }
+        );
+
+        // MapLinkService — Tier-2 link/create/unlink/picker service
+        // backing the MapLinksController. NC Maps favorites are
+        // user-scoped; the FavoritesService is resolved lazily via the
+        // container so the service loads even when Maps is absent.
+        // @spec openspec/changes/integration-maps/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\MapLinkService::class,
+            function (ContainerInterface $container) {
+                return new MapLinkService(
+                    mapLinkMapper: $container->get(\OCA\OpenRegister\Db\MapLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // PhotosProvider — Tier-2: backed by the PhotoLinkMapper. The
+        // provider still gracefully degrades to the legacy `[or:{uuid}]`
+        // album-name marker scan when the link table is empty (albums
+        // that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-photos/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
+            function (ContainerInterface $container) {
+                return new PhotosProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    photoLinkMapper: $container->get(\OCA\OpenRegister\Db\PhotoLinkMapper::class),
+                );
+            }
+        );
+
+        // PhotoLinkService — Tier-2 link/create/unlink/picker service
+        // backing the PhotoLinksController. NC Photos albums are
+        // user-scoped; the AlbumMapper is resolved lazily via the
+        // container so the service loads even when Photos is absent.
+        // @spec openspec/changes/integration-photos/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\PhotoLinkService::class,
+            function (ContainerInterface $container) {
+                return new PhotoLinkService(
+                    photoLinkMapper: $container->get(\OCA\OpenRegister\Db\PhotoLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // CollectivesProvider — Tier-2: backed by the CollectiveLinkMapper.
+        // The provider still gracefully degrades to the legacy
+        // `[or:{uuid}]` slug-marker scan when the link table is empty
+        // (pages that pre-date the Tier-2 link table).
+        // @spec openspec/changes/integration-collectives/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
+            function (ContainerInterface $container) {
+                return new CollectivesProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    collectiveLinkMapper: $container->get(\OCA\OpenRegister\Db\CollectiveLinkMapper::class),
+                );
+            }
+        );
+
+        // AnalyticsProvider — Tier-2: backed by the AnalyticsLinkMapper.
+        // The provider still gracefully degrades to the legacy
+        // `[or:{uuid}]` report-name marker scan when the link table is
+        // empty (reports that pre-date the Tier-2 link table; wave-2.2
+        // marker-on-name convention).
+        // @spec openspec/changes/integration-analytics/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
+            function (ContainerInterface $container) {
+                return new AnalyticsProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+                );
+            }
+        );
+
+        // CospendProvider — Tier-2: backed by the CospendLinkMapper. The
+        // provider still gracefully degrades to the legacy `[or:{uuid}]`
+        // name-marker scan (projects + bills) when the link table is empty
+        // (entities that pre-date the Tier-2 link table; wave-2.3
+        // marker-on-name convention).
+        // @spec openspec/changes/integration-cospend/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
+            function (ContainerInterface $container) {
+                return new CospendProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    cospendLinkMapper: $container->get(\OCA\OpenRegister\Db\CospendLinkMapper::class),
+                );
+            }
+        );
+
+        // CospendLinkService — Tier-2 link/create/unlink/picker service
+        // backing the CospendLinksController. NC Cospend projects are
+        // user-scoped; the ProjectService is resolved lazily via the
+        // container (behind a class_exists guard) and bills/projects are
+        // read directly from the cospend_* tables, so the service loads
+        // even when Cospend is absent.
+        // @spec openspec/changes/integration-cospend/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\CospendLinkService::class,
+            function (ContainerInterface $container) {
+                return new CospendLinkService(
+                    cospendLinkMapper: $container->get(\OCA\OpenRegister\Db\CospendLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    db: $container->get('OCP\IDBConnection'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // CollectiveLinkService — Tier-2 link/create/unlink/picker service
+        // backing the CollectiveLinksController. NC Collectives pages are
+        // user-scoped; CollectiveService + PageService are resolved lazily
+        // via the container so the service loads even when Collectives is
+        // absent.
+        // @spec openspec/changes/integration-collectives/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\CollectiveLinkService::class,
+            function (ContainerInterface $container) {
+                return new CollectiveLinkService(
+                    collectiveLinkMapper: $container->get(\OCA\OpenRegister\Db\CollectiveLinkMapper::class),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // AnalyticsLinkService — Tier-2 link/create/unlink/picker service
+        // backing the AnalyticsLinksController. NC Analytics reports are
+        // user-scoped; the ReportService is resolved lazily via
+        // `\OCP\Server::get()` behind a class_exists guard so the service
+        // loads even when Analytics is absent.
+        // @spec openspec/changes/integration-analytics/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\AnalyticsLinkService::class,
+            function (ContainerInterface $container) {
+                return new AnalyticsLinkService(
+                    analyticsLinkMapper: $container->get(\OCA\OpenRegister\Db\AnalyticsLinkMapper::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // TimeProvider — Tier-2: backed by the TimeTrackerLinkMapper. The
+        // provider still gracefully degrades to the legacy
+        // `[or:{uuid}]` note/name marker scan in `timemanager_client` /
+        // `timemanager_task` when the link table is empty (entries that
+        // pre-date the Tier-2 link table; wave-2.4 marker convention). The
+        // leaf slug is `time-tracker`; the NC app id is `timemanager`.
+        // @spec openspec/changes/integration-time-tracker/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
+            function (ContainerInterface $container) {
+                return new TimeProvider(
+                    db: $container->get('OCP\IDBConnection'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    linkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                );
+            }
+        );
+
+        // TimeTrackerLinkService — Tier-2 link/create/unlink/picker service
+        // backing the TimeTrackerLinksController. NC TimeManager entries are
+        // user-scoped; ClientMapper + TaskMapper are resolved lazily via the
+        // container so the service loads even when TimeManager is absent.
+        // @spec openspec/changes/integration-time-tracker/tasks.md.
+        $context->registerService(
+            \OCA\OpenRegister\Service\TimeTrackerLinkService::class,
+            function (ContainerInterface $container) {
+                return new TimeTrackerLinkService(
+                    timeTrackerLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                    db: $container->get('OCP\IDBConnection'),
+                    container: $container,
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                 );
             }
         );
@@ -1301,10 +1760,21 @@ class Application extends App implements IBootstrap
         // FilesSidebarListener injects the sidebar tab script into the Files app.
         $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
 
-        // MailAppScriptListener injects the mail sidebar when schemas have linkedTypes: ["mail"].
+        // MailAppScriptListener injects the mail sidebar script into the Mail app
+        // (gated to the Mail app via TemplateResponse->getApp() === 'mail').
         $context->registerEventListener(
             \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
-            \OCA\OpenRegister\Listener\MailAppScriptListener::class
+            MailAppScriptListener::class
+        );
+
+        // IntegrationGlobalScriptListener loads the shared integration-registry
+        // bootstrap on EVERY full-page render so the registry is installed +
+        // populated universally — letting leaves render inside any consuming
+        // app's object detail page (e.g. an OpenCatalogi publication) without
+        // that app bootstrapping the registry itself (universal-shared-integration-registry).
+        $context->registerEventListener(
+            \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+            \OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
         );
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
@@ -1329,7 +1799,7 @@ class Application extends App implements IBootstrap
     /**
      * Register MCP tool providers (built-ins first).
      *
-     * Wires the three built-in IMcpToolProvider implementations into
+     * Wires the four built-in IMcpToolProvider implementations into
      * McpToolsService. External apps may call addProvider() after boot
      * or override the McpToolsService binding to prepend their own providers.
      *
@@ -1349,97 +1819,14 @@ class Application extends App implements IBootstrap
                     $container->get(RegistersToolProvider::class),
                     $container->get(SchemasToolProvider::class),
                     $container->get(ObjectsToolProvider::class),
+                    $container->get(IntegrationsToolProvider::class),
                 ];
 
-                // Per-app tool providers: try two discovery paths for each
-                // installed app:
-                // 1) the alias key `OCA\OpenRegister\Mcp\IMcpToolProvider::<appId>`
-                // (works only if the app registered the alias on this same
-                // container instance — NC scopes alias registration per app);
-                // 2) the canonical FQCN `OCA\<AppId>\Mcp\<AppId>ToolProvider`
-                // (resolved via NC's autoloader + DI autowiring, which works
-                // cross-app since the autoloader is process-global).
-                try {
-                    $appManager = $container->get('OCP\App\IAppManager');
-                    foreach ($appManager->getInstalledApps() as $appId) {
-                        $candidates = [
-                            'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
-                            'OCA\\'.ucfirst($appId).'\\Mcp\\'.ucfirst($appId).'ToolProvider',
-                        ];
-
-                        // Third candidate: trust <namespace> from info.xml when
-                        // the app declares one (e.g. `openbuilt` → `OpenBuilt`,
-                        // `softwarecatalog` → `SoftwareCatalog`). ucfirst() on
-                        // the appId alone mangles camel-cased namespaces.
-                        //
-                        // NC's bootstrap nulls libxml's external-entity resolver
-                        // for XXE-hardening, which makes simplexml_load_file()
-                        // return false on well-formed files. Read first, parse
-                        // the string.
-                        try {
-                            $infoPath = $appManager->getAppPath($appId).'/appinfo/info.xml';
-                            if (is_file($infoPath) === true) {
-                                $body = @file_get_contents($infoPath);
-                                if ($body !== false && $body !== '') {
-                                    $xml = @simplexml_load_string($body);
-                                    if ($xml !== false && isset($xml->namespace) === true) {
-                                        $ns = (string) $xml->namespace;
-                                        if ($ns !== '' && $ns !== ucfirst($appId)) {
-                                            $candidates[] = 'OCA\\'.$ns.'\\Mcp\\'.$ns.'ToolProvider';
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (\Throwable $e) {
-                            // Path-resolution failures are benign; the other two
-                            // candidates already cover the common case.
-                        }
-
-                        foreach ($candidates as $key) {
-                            try {
-                                if (str_contains($key, '\\') === true && str_contains($key, '::') === false) {
-                                    // FQCN — only try if the class actually
-                                    // exists; calling get() on a non-existent
-                                    // class would throw NotFoundExceptionInterface
-                                    // for every installed app (noisy).
-                                    if (class_exists($key) === false) {
-                                        $logger->warning(
-                                            '[McpToolsService] Class does not exist',
-                                            ['appId' => $appId, 'fqcn' => $key]
-                                        );
-                                        continue;
-                                    }
-                                }
-
-                                $appProvider = $container->get($key);
-                                if ($appProvider instanceof IMcpToolProvider) {
-                                    $providers[] = $appProvider;
-                                    $logger->warning(
-                                        '[McpToolsService] Discovered per-app tool provider',
-                                        ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
-                                    );
-                                    break;
-                                } else {
-                                    $resolvedClass = is_object($appProvider) === true ? get_class($appProvider) : gettype($appProvider);
-                                    $logger->warning(
-                                        '[McpToolsService] Resolved but not IMcpToolProvider',
-                                        ['appId' => $appId, 'via' => $key, 'class' => $resolvedClass]
-                                    );
-                                }
-                            } catch (\Throwable $e) {
-                                $logger->warning(
-                                    '[McpToolsService] Resolve failed',
-                                    ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
-                                );
-                                continue;
-                            }//end try
-                        }//end foreach
-                    }//end foreach
-                } catch (\Throwable $e) {
-                    $logger->warning(
-                        '[McpToolsService] Per-app provider enumeration failed: '.$e->getMessage()
-                    );
-                }//end try
+                $this->collectPerAppMcpProviders(
+                    container: $container,
+                    logger: $logger,
+                    providers: $providers
+                );
 
                 return new McpToolsService(
                     providers: $providers,
@@ -1448,6 +1835,161 @@ class Application extends App implements IBootstrap
             }
         );
     }//end registerMcpToolProviders()
+
+    /**
+     * Iterate over all installed apps and append any discovered
+     * IMcpToolProvider implementations to the $providers array.
+     *
+     * Tries up to three candidate keys per app — alias, ucfirst FQCN,
+     * and namespace-from-info.xml FQCN — stopping at the first match.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     */
+    private function collectPerAppMcpProviders(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array &$providers
+    ): void {
+        try {
+            $appManager = $container->get('OCP\App\IAppManager');
+            foreach ($appManager->getInstalledApps() as $appId) {
+                $candidates = $this->buildMcpProviderCandidates(
+                    appId: $appId,
+                    appManager: $appManager
+                );
+
+                foreach ($candidates as $key) {
+                    $resolved = $this->tryResolveMcpProviderCandidate(
+                        container: $container,
+                        logger: $logger,
+                        appId: $appId,
+                        key: $key
+                    );
+                    if ($resolved !== null) {
+                        $providers[] = $resolved;
+                        break;
+                    }
+                }//end foreach
+            }//end foreach
+        } catch (\Throwable $e) {
+            $logger->warning(
+                '[McpToolsService] Per-app provider enumeration failed: '.$e->getMessage()
+            );
+        }//end try
+    }//end collectPerAppMcpProviders()
+
+    /**
+     * Build the list of candidate lookup keys for a given app's MCP tool provider.
+     *
+     * Produces up to three candidates:
+     * 1. The alias key `OCA\OpenRegister\Mcp\IMcpToolProvider::<appId>`.
+     * 2. The canonical FQCN built from ucfirst($appId).
+     * 3. (Optional) A FQCN derived from the `<namespace>` declared in info.xml,
+     *    when the declared namespace differs from ucfirst($appId) (covers camel-cased
+     *    app names like `openbuilt` → `OpenBuilt`).
+     *
+     * @param string $appId      The Nextcloud app id.
+     * @param mixed  $appManager The IAppManager instance.
+     *
+     * @return string[] Ordered candidate key list.
+     */
+    private function buildMcpProviderCandidates(string $appId, $appManager): array
+    {
+        $candidates = [
+            'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
+            'OCA\\'.ucfirst($appId).'\\Mcp\\'.ucfirst($appId).'ToolProvider',
+        ];
+
+        // Third candidate: trust <namespace> from info.xml when the app declares
+        // one that differs from ucfirst($appId). NC's bootstrap nulls libxml's
+        // external-entity resolver for XXE-hardening, which makes
+        // simplexml_load_file() return false on well-formed files; read first,
+        // then parse the string.
+        try {
+            $infoPath = $appManager->getAppPath($appId).'/appinfo/info.xml';
+            if (is_file($infoPath) === true) {
+                $body = file_get_contents($infoPath);
+                if ($body !== false && $body !== '') {
+                    $useErrors = libxml_use_internal_errors(true);
+                    $xml       = simplexml_load_string($body);
+                    libxml_use_internal_errors($useErrors);
+                    if ($xml !== false && isset($xml->namespace) === true) {
+                        $namespace = (string) $xml->namespace;
+                        if ($namespace !== '' && $namespace !== ucfirst($appId)) {
+                            $candidates[] = 'OCA\\'.$namespace.'\\Mcp\\'.$namespace.'ToolProvider';
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Path-resolution failures are benign; the other two
+            // candidates already cover the common case.
+        }
+
+        return $candidates;
+    }//end buildMcpProviderCandidates()
+
+    /**
+     * Try to resolve a single MCP provider candidate key from the container.
+     *
+     * Returns the resolved IMcpToolProvider on success, or null when the
+     * candidate does not exist, could not be resolved, or resolved to a
+     * non-IMcpToolProvider object.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param string                   $appId     The Nextcloud app id (for logging).
+     * @param string                   $key       The candidate lookup key.
+     *
+     * @return IMcpToolProvider|null The resolved provider or null.
+     */
+    private function tryResolveMcpProviderCandidate(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        string $appId,
+        string $key
+    ): ?IMcpToolProvider {
+        try {
+            if (str_contains($key, '\\') === true && str_contains($key, '::') === false) {
+                // FQCN — only try if the class actually exists; calling get() on a
+                // non-existent class would throw NotFoundExceptionInterface for every
+                // installed app (noisy).
+                if (class_exists($key) === false) {
+                    $logger->warning(
+                        '[McpToolsService] Class does not exist',
+                        ['appId' => $appId, 'fqcn' => $key]
+                    );
+                    return null;
+                }
+            }
+
+            $appProvider = $container->get($key);
+            if ($appProvider instanceof IMcpToolProvider) {
+                $logger->warning(
+                    '[McpToolsService] Discovered per-app tool provider',
+                    ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
+                );
+                return $appProvider;
+            }
+
+            // Get_debug_type() returns the FQCN for objects and the type name for scalars.
+            $logger->warning(
+                '[McpToolsService] Resolved but not IMcpToolProvider',
+                ['appId' => $appId, 'via' => $key, 'class' => get_debug_type($appProvider)]
+            );
+        } catch (\Throwable $e) {
+            $logger->warning(
+                '[McpToolsService] Resolve failed',
+                ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
+            );
+        }//end try
+
+        return null;
+    }//end tryResolveMcpProviderCandidate()
 
     /**
      * Boot application components
@@ -1477,7 +2019,42 @@ class Application extends App implements IBootstrap
         // registry never touches a provider's wrapped service unless a
         // caller actually invokes that provider's CRUD path.
         $this->bootBuiltinIntegrationProviders(server: $server);
+
+        // Allow GitHub-hosted avatars in img-src so the CnRoadmapItem
+        // component can render submitter faces alongside the issues
+        // surfaced by the github-issue-proxy. The browser refuses
+        // `<img src="https://avatars.githubusercontent.com/...">` under
+        // Nextcloud's default img-src ('self' data: blob:), leaving a
+        // broken-image glyph next to every roadmap card. Allowlisting
+        // the host here lifts the block instance-wide for any app that
+        // proxies GitHub issues through OpenRegister.
+        $this->relaxCspForGithubAvatars(server: $server);
     }//end boot()
+
+    /**
+     * Push an `img-src https://avatars.githubusercontent.com` allowlist
+     * onto Nextcloud's default Content-Security-Policy via
+     * `IContentSecurityPolicyManager::addDefaultPolicy()`. Idempotent —
+     * NC merges policies additively, never narrowing.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/specs/features-roadmap-component/spec.md#requirement-roadmap-item-avatar
+     */
+    private function relaxCspForGithubAvatars($server): void
+    {
+        try {
+            $cspManager = $server->get(IContentSecurityPolicyManager::class);
+            $policy     = new ContentSecurityPolicy();
+            $policy->addAllowedImageDomain('https://avatars.githubusercontent.com');
+            $cspManager->addDefaultPolicy($policy);
+        } catch (\Throwable $e) {
+            // CSP manager unavailable (rare — would break far more than
+            // avatars). Stay silent rather than fail the boot.
+        }
+    }//end relaxCspForGithubAvatars()
 
     /**
      * Resolve every BuiltinProviders/* class and register it with the
@@ -1499,7 +2076,7 @@ class Application extends App implements IBootstrap
     {
         try {
             $integrationRegistry = $server->get(
-                \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class
+                IntegrationRegistry::class
             );
         } catch (\Throwable $e) {
             // Registry binding not available — skip silently; the
@@ -1508,25 +2085,25 @@ class Application extends App implements IBootstrap
         }
 
         $providerClasses = [
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider::class,
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider::class,
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class,
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider::class,
-            \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class,
+            FilesProvider::class,
+            NotesProvider::class,
+            TasksProvider::class,
+            TagsProvider::class,
+            AuditTrailProvider::class,
             // Leaves: external (OpenConnector-backed).
             // @spec openspec/changes/integration-xwiki/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class,
+            XwikiProvider::class,
             // @spec openspec/changes/integration-openproject/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class,
+            OpenProjectProvider::class,
             // Leaves: NC-native, backend-shipped (wrap existing OR services).
             // @spec openspec/changes/integration-calendar/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\CalendarProvider::class,
+            CalendarProvider::class,
             // @spec openspec/changes/integration-contacts/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider::class,
+            ContactsProvider::class,
             // @spec openspec/changes/integration-deck/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\DeckProvider::class,
+            DeckProvider::class,
             // @spec openspec/changes/integration-email/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\EmailProvider::class,
+            EmailProvider::class,
             // Leaves: NC-app-backed greenfield (registry surface only;
             // service + link table land in per-leaf follow-ups).
             // @spec openspec/changes/integration-activity/tasks.md.
@@ -1534,7 +2111,7 @@ class Application extends App implements IBootstrap
             // @spec openspec/changes/integration-analytics/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
             // @spec openspec/changes/integration-bookmarks/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider::class,
+            BookmarksProvider::class,
             // @spec openspec/changes/integration-collectives/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
             // @spec openspec/changes/integration-cospend/tasks.md.
@@ -1548,14 +2125,23 @@ class Application extends App implements IBootstrap
             // @spec openspec/changes/integration-photos/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
             // @spec openspec/changes/integration-polls/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class,
+            PollsProvider::class,
             // @spec openspec/changes/integration-shares/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\SharesProvider::class,
+            SharesProvider::class,
             // @spec openspec/changes/integration-talk/tasks.md.
-            \OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class,
+            TalkProvider::class,
             // @spec openspec/changes/integration-time-tracker/tasks.md.
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
         ];
+
+        // Resolve a logger up-front so a mis-wired factory closure or an
+        // absent wrapped service is visible in the logs instead of a
+        // silently-missing tab. Guarded so a logger-less build still boots.
+        try {
+            $logger = $server->get(\Psr\Log\LoggerInterface::class);
+        } catch (\Throwable $e) {
+            $logger = null;
+        }
 
         foreach ($providerClasses as $providerClass) {
             try {
@@ -1563,10 +2149,23 @@ class Application extends App implements IBootstrap
                 $integrationRegistry->addProvider($provider);
             } catch (\Throwable $e) {
                 // Provider construction can fail if a wrapped service
-                // is missing on this NC build — don't take the whole
-                // app down for one absent provider. The user-facing
-                // surface will simply not show the failing tab.
-            }
-        }
+                // is missing on this NC build, or — as the live-NC E2E
+                // surfaced — if the DI factory closure was not updated
+                // for a Tier-2 constructor arg. Don't take the whole app
+                // down for one absent provider; the failing tab simply
+                // won't render. But log loudly so a mis-wired factory is
+                // diagnosable rather than silently swallowed.
+                if ($logger !== null) {
+                    $logger->warning(
+                        'OpenRegister: integration provider failed to construct and was dropped from the registry: {provider} — {message}',
+                        [
+                            'provider'  => $providerClass,
+                            'message'   => $e->getMessage(),
+                            'exception' => $e,
+                        ]
+                    );
+                }
+            }//end try
+        }//end foreach
     }//end bootBuiltinIntegrationProviders()
 }//end class

@@ -6,6 +6,9 @@
  * This file contains the event class dispatched when an object is being created
  * in the OpenRegister application. Supports hook-based rejection via StoppableEventInterface.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *

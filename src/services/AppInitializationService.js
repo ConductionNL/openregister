@@ -24,6 +24,7 @@ import {
  * data that is frequently needed across the application.
  *
  * @return {Promise<void>}
+ * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
  */
 export async function initializeAppData() {
 	console.info('[AppInit] Starting application data initialization...')
@@ -63,6 +64,7 @@ export async function initializeAppData() {
  * This always fetches fresh data regardless of whether it's already loaded.
  *
  * @return {Promise<void>}
+ * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
  */
 export async function reloadAppData() {
 	console.info('[AppInit] Reloading all application data...')
@@ -323,6 +325,7 @@ async function forceLoadConversations() {
  * Check if all essential data is loaded.
  *
  * @return {boolean} True if all data is loaded
+ * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
  */
 export function isAppDataLoaded() {
 	return Boolean(

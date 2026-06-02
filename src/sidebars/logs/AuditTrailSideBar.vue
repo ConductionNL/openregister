@@ -391,6 +391,9 @@ export default {
 			this.applyFilters()
 		},
 	},
+	/**
+	 * @spec exclude Lifecycle plumbing; fire-and-forget load of lists/audit-trail data and route-seed, delegating to already-annotated methods.
+	 */
 	mounted() {
 		// Load required data
 		if (!registerStore.registerList.length) {

@@ -1076,4 +1076,116 @@ class PermissionHandlerRbacTest extends TestCase
             'Malformed rule with unknown operator MUST NOT grant access'
         );
     }
+
+    // ------------------------------------------------------------------
+    // Fail-closed object writes for ANONYMOUS callers (#1955).
+    //
+    // An anonymous principal (no IUserSession user) is denied create/update/
+    // delete unless the schema explicitly grants the `public` group that
+    // action. Authenticated users are deliberately UNCHANGED (their default-open
+    // behaviour is a separate, broader policy decision tracked in #1955).
+    // ------------------------------------------------------------------
+
+    public function testAnonymousCreateDeniedOnSchemaWithNoAuthorization(): void
+    {
+        // No authorization block anywhere → previously default-open (anonymous
+        // create returned true). Now must fail closed.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $schema   = $this->createSchema(1, null);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertFalse(
+            $this->handler->hasPermission($schema, 'create'),
+            'Anonymous create on a no-authorization schema MUST be denied (fail closed)'
+        );
+        $this->assertFalse(
+            $this->handler->hasPermission($schema, 'update'),
+            'Anonymous update on a no-authorization schema MUST be denied (fail closed)'
+        );
+        $this->assertFalse(
+            $this->handler->hasPermission($schema, 'delete'),
+            'Anonymous delete on a no-authorization schema MUST be denied (fail closed)'
+        );
+    }
+
+    public function testAnonymousCreateDeniedWhenActionNotListed(): void
+    {
+        // Authorization exists but has no `create` entry → previously default-open.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $schema   = $this->createSchema(1, ['read' => ['public']]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertFalse(
+            $this->handler->hasPermission($schema, 'create'),
+            'Anonymous create MUST be denied when the action is not explicitly granted to public'
+        );
+    }
+
+    public function testAnonymousCreateDeniedWhenCreateGrantedToOtherGroupOnly(): void
+    {
+        // `create` is listed but only for a non-public group.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $schema   = $this->createSchema(1, ['create' => ['behandelaars']]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertFalse(
+            $this->handler->hasPermission($schema, 'create'),
+            'Anonymous create MUST be denied when create is granted only to a non-public group'
+        );
+    }
+
+    public function testAnonymousCreateAllowedWhenPublicCreateExplicitlyGranted(): void
+    {
+        // Schema opted in to public submissions via a bare `public` string entry.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $schema   = $this->createSchema(1, ['create' => ['public']]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertTrue(
+            $this->handler->hasPermission($schema, 'create'),
+            'Anonymous create MUST be allowed when the schema explicitly grants public create'
+        );
+    }
+
+    public function testAnonymousCreateAllowedWhenPublicCreateGrantedAsComplexEntry(): void
+    {
+        // Public create declared as a complex entry (no match) → opt-in honoured.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $schema   = $this->createSchema(1, ['create' => [['group' => 'public']]]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertTrue(
+            $this->handler->hasPermission($schema, 'create'),
+            'Anonymous create MUST be allowed when public create is declared as a complex entry'
+        );
+    }
+
+    public function testAuthenticatedCreateUnaffectedOnNoAuthorizationSchema(): void
+    {
+        // The fail-closed write change is scoped to anonymous principals only.
+        // An authenticated user on a no-authorization schema retains the existing
+        // default-open behaviour (asserted by the sibling
+        // testNeitherSchemaNorRegisterHasAuth) — this test pins that the new
+        // anonymous gate does NOT bleed into the authenticated path.
+        $this->mockUser('user1', ['somegroup']);
+
+        $schema   = $this->createSchema(1, null);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertTrue(
+            $this->handler->hasPermission($schema, 'create'),
+            'Authenticated create behaviour MUST be unchanged by the anonymous fail-closed gate'
+        );
+    }
 }

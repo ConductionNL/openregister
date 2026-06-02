@@ -7,6 +7,9 @@
  * Provides endpoints for retrieving and managing tags used for categorizing
  * objects and files.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -85,6 +88,8 @@ class TagsController extends Controller
      * @return JSONResponse JSON response with all tags
      *
      * @psalm-return JSONResponse<200, list<string>, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function getAllTags(): JSONResponse
     {
@@ -104,6 +109,8 @@ class TagsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function index(
         string $register,
@@ -141,6 +148,8 @@ class TagsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function add(
         string $register,
@@ -189,6 +198,8 @@ class TagsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
      */
     public function remove(
         string $register,

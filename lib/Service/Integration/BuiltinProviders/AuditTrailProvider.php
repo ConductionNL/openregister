@@ -140,6 +140,8 @@ class AuditTrailProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Reserved.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-16
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -194,7 +196,12 @@ class AuditTrailProvider extends AbstractIntegrationProvider
         foreach ($entries as $entry) {
             if (is_object($entry) === true && method_exists($entry, 'jsonSerialize') === true) {
                 $serialised = $entry->jsonSerialize();
-                $rows[]     = is_array($serialised) === true ? $serialised : ['value' => $serialised];
+                $rowValue   = ['value' => $serialised];
+                if (is_array($serialised) === true) {
+                    $rowValue = $serialised;
+                }
+
+                $rows[] = $rowValue;
                 continue;
             }
 

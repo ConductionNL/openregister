@@ -17,6 +17,8 @@ import axios from '@nextcloud/axios'
  *  - DELETE /api/objects/{register}/{schema}/{id}/contacts/{contactUid}
  *
  * Spec: openspec/changes/nextcloud-entity-relations/specs/contact-relations/spec.md
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
  */
 export const useContactRelationsStore = defineStore('contactRelations', {
 	state: () => ({
@@ -27,6 +29,9 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 	}),
 
 	actions: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 */
 		_url(register, schema, id, suffix = '') {
 			return generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/contacts' + suffix, {
 				register,
@@ -35,6 +40,9 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 			})
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 */
 		async fetch(register, schema, id) {
 			const k = `${register}:${schema}:${id}`
 			this.loading = { ...this.loading, [k]: true }
@@ -66,12 +74,18 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 			}
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 */
 		async createOrLink(register, schema, id, payload) {
 			const response = await axios.post(this._url(register, schema, id), payload)
 			await this.fetch(register, schema, id)
 			return response.data
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 */
 		async unlink(register, schema, id, contactUid) {
 			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(contactUid)))
 			const k = `${register}:${schema}:${id}`
@@ -80,6 +94,9 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 			return next
 		},
 
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 */
 		get(register, schema, id) {
 			return this.byObject[`${register}:${schema}:${id}`] || []
 		},

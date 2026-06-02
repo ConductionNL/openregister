@@ -47,6 +47,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<div class="groups-select-container">
 								<label class="groups-label">{{ t('openregister', 'Nextcloud Groups') }}</label>
 								<NcSelect
+						input-label="Selected Groups"
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
@@ -299,6 +300,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
+						input-label="Selected Special Rights Object Publish"
 																v-model="selectedSpecialRights.object_publish"
 																:options="filteredAvailableGroups"
 																label="name"
@@ -317,6 +319,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
+						input-label="Selected Special Rights Agent Use"
 																v-model="selectedSpecialRights.agent_use"
 																:options="filteredAvailableGroups"
 																label="name"
@@ -335,6 +338,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
+						input-label="Selected Special Rights Dashboard View"
 																v-model="selectedSpecialRights.dashboard_view"
 																:options="filteredAvailableGroups"
 																label="name"
@@ -353,6 +357,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
+						input-label="Selected Special Rights Llm Use"
 																v-model="selectedSpecialRights.llm_use"
 																:options="filteredAvailableGroups"
 																label="name"
@@ -505,10 +510,16 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed byte-to-MB conversion of the storage quota for display; UI presentation helper.
+		 */
 		storageQuotaMB() {
 			if (!this.organisationItem.quota?.storage) return 0
 			return Math.round(this.organisationItem.quota.storage / (1024 * 1024))
 		},
+		/**
+		 * @spec exclude Computed byte-to-MB conversion of the bandwidth quota for display; UI presentation helper.
+		 */
 		bandwidthQuotaMB() {
 			if (!this.organisationItem.quota?.bandwidth) return 0
 			return Math.round(this.organisationItem.quota.bandwidth / (1024 * 1024))
@@ -517,6 +528,7 @@ export default {
 		 * Filter available groups to only show those assigned to the organisation
 		 *
 		 * @return {Array} Filtered array of groups
+		 * @spec exclude Computed filtered group list for the select; UI presentation helper.
 		 */
 		filteredAvailableGroups() {
 			// If no groups assigned yet, show all available groups
@@ -533,6 +545,9 @@ export default {
 	watch: {
 		// Watch for changes in the store's organisationItem (e.g., when clicking edit on different organisations)
 		'organisationStore.organisationItem': {
+			/**
+			 * @spec exclude Watcher re-initializing the form when the edited organisation changes; UI reactivity plumbing.
+			 */
 			handler(newVal, oldVal) {
 				// Only reinitialize if the UUID changed (different organisation) or went from null to something
 				if (newVal && (!oldVal || newVal.uuid !== oldVal?.uuid)) {
@@ -543,6 +558,9 @@ export default {
 			deep: true,
 		},
 	},
+	/**
+	 * @spec exclude Vue mounted() hook loading cached groups and initializing the form; modal init plumbing.
+	 */
 	mounted() {
 		// Use cached Nextcloud groups from store (preloaded on index page)
 		// If not available, they'll be loaded asynchronously
@@ -558,6 +576,7 @@ export default {
 		 * Groups are preloaded on the index page for better performance
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
 		 */
 		loadNextcloudGroupsFromStore() {
 			// If groups are already cached in store, use them immediately
@@ -587,6 +606,7 @@ export default {
 		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
+		 * @spec exclude Debounced group-autocomplete search; UI search plumbing.
 		 */
 		searchGroups(searchQuery) {
 			// Clear existing debounce timer
@@ -645,6 +665,7 @@ export default {
 		 * Initialize organisation item from store
 		 *
 		 * @return {void}
+		 * @spec exclude Hydrates the local form model and selected groups/users from the store; modal init plumbing.
 		 */
 		initializeOrganisationItem() {
 			if (organisationStore.organisationItem?.uuid) {
@@ -693,6 +714,7 @@ export default {
 		 *
 		 * @param {string} userId - User ID to remove
 		 * @return {void}
+		 * @spec exclude Opens the remove-user confirmation dialog; UI selection plumbing.
 		 */
 		removeUser(userId) {
 			if (!this.organisationItem.uuid || !userId) return
@@ -705,6 +727,7 @@ export default {
 		 * Cancel user removal and close dialog
 		 *
 		 * @return {void}
+		 * @spec exclude Dismisses the remove-user confirmation dialog; UI plumbing.
 		 */
 		cancelRemoveUser() {
 			this.showRemoveUserDialog = false
@@ -715,6 +738,7 @@ export default {
 		 * Confirm and execute user removal
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Posts the organisation leave request and refreshes the store; UI orchestration plumbing.
 		 */
 		async confirmRemoveUser() {
 			if (!this.organisationItem.uuid || !this.userToRemove) return
@@ -767,6 +791,7 @@ export default {
 		 * Get current user
 		 *
 		 * @return {string}
+		 * @spec exclude Placeholder current-user accessor; UI helper.
 		 */
 		getCurrentUser() {
 			// Implementation would depend on how you get current user
@@ -778,6 +803,7 @@ export default {
 		 *
 		 * @param {Array} groups - Selected groups
 		 * @return {void}
+		 * @spec exclude Reactive multi-select setter mapping selected groups to IDs; UI plumbing.
 		 */
 		updateGroups(groups) {
 			this.selectedGroups = groups || []
@@ -790,6 +816,7 @@ export default {
 		 *
 		 * @param {object} groupToRemove - Group to remove
 		 * @return {void}
+		 * @spec exclude Removes one group from the selection and re-syncs IDs; UI selection plumbing.
 		 */
 		removeGroup(groupToRemove) {
 			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
@@ -802,6 +829,7 @@ export default {
 		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
+		 * @spec exclude Reactive form-field setter converting MB to bytes on the quota model; UI plumbing.
 		 */
 		updateStorageQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
@@ -817,6 +845,7 @@ export default {
 		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
+		 * @spec exclude Reactive form-field setter converting MB to bytes on the quota model; UI plumbing.
 		 */
 		updateBandwidthQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
@@ -832,6 +861,7 @@ export default {
 		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
+		 * @spec exclude Reactive form-field setter for the request quota; UI plumbing.
 		 */
 		updateRequestQuota(value) {
 		// 0 = unlimited
@@ -846,6 +876,7 @@ export default {
 		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
+		 * @spec exclude Reactive form-field setter for the user quota; UI plumbing.
 		 */
 		updateUserQuota(value) {
 		// 0 = unlimited
@@ -860,6 +891,7 @@ export default {
 		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
+		 * @spec exclude Reactive form-field setter for the group quota; UI plumbing.
 		 */
 		updateGroupQuota(value) {
 		// 0 = unlimited
@@ -873,6 +905,7 @@ export default {
 		 * Close the modal and reset state
 		 *
 		 * @return {void}
+		 * @spec exclude Modal close handler resetting navigationStore.modal/dialog and local state; UI plumbing.
 		 */
 		closeModal() {
 			this.success = false
@@ -889,6 +922,7 @@ export default {
 		 * Save the organisation
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Save handler delegating to organisationStore.saveOrganisation and refreshing lists; entity persistence lives in the store, this is modal orchestration plumbing.
 		 */
 		async saveOrganisation() {
 			this.loading = true
@@ -963,6 +997,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen - Whether the dialog is open
 		 * @return {void}
+		 * @spec exclude Dialog open/close event handler closing the modal on dismiss; UI plumbing.
 		 */
 		handleDialogOpen(isOpen) {
 			// Only close the modal if the dialog is being closed (isOpen = false)
@@ -980,6 +1015,7 @@ export default {
 		 * @param {string} payload.action - The action (create, read, update, delete)
 		 * @param {boolean} payload.hasPermission - Whether to grant or revoke permission
 		 * @return {void}
+		 * @spec exclude Reactive setter toggling a group's entity-permission entry on the local authorization model; UI form plumbing.
 		 */
 		updateEntityPermission({ entityType, groupId, action, hasPermission }) {
 			// Initialize authorization object if it doesn't exist
@@ -1015,6 +1051,7 @@ export default {
 		 * @param {string} right - The special right (object_publish, agent_use, dashboard_view, llm_use)
 		 * @param {Array} groups - Array of group objects with {id, name}
 		 * @return {void}
+		 * @spec exclude Reactive setter writing a special-right's group IDs to the local authorization model; UI form plumbing.
 		 */
 		updateSpecialRight(right, groups) {
 			// Initialize authorization if it doesn't exist
@@ -1036,6 +1073,7 @@ export default {
 		 * Initialize special rights from organization authorization
 		 *
 		 * @return {void}
+		 * @spec exclude Seeds the special-rights UI binding from the authorization model on load; modal init plumbing.
 		 */
 		initializeSpecialRights() {
 			const auth = this.organisationItem.authorization || {}

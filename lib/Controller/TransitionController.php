@@ -7,6 +7,9 @@
  * x-openregister-lifecycle annotation no longer need to write their
  * own action endpoint per schema.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -61,6 +64,10 @@ class TransitionController extends Controller
      * @return JSONResponse JSON response with the transitioned object or an error.
      *
      * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-6
      */
     public function transition(string $id): JSONResponse
     {
@@ -111,6 +118,8 @@ class TransitionController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-6
      */
     public function availableActions(string $id): JSONResponse
     {

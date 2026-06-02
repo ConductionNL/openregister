@@ -6,6 +6,9 @@
  * Service for executing data mappings using Twig templating and dot notation.
  * Provides data transformation capabilities between different formats.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -133,6 +136,8 @@ class MappingService
      * @param string $replacement The encoded character.
      *
      * @return array The array with encoded array keys
+     *
+     * @spec exclude Pure array-key encoding helper used internally by executeMapping; no standalone behavior.
      */
     public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array
     {
@@ -165,6 +170,8 @@ class MappingService
      * @return array The result (output) of the mapping process
      *
      * @throws Exception When mapping fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-3
      */
     public function executeMapping(Mapping $mapping, array $input, bool $list=false): array
     {
@@ -281,9 +288,13 @@ class MappingService
             }
         }
 
-        // Ensure output is always an array.
+        // Ensure output is always an array — default null to [], wrap scalars.
+        if ($output === null) {
+            $output = [];
+        }
+
         if (is_array($output) === false) {
-            $output = $output === null ? [] : [$output];
+            $output = [$output];
         }
 
         return $output;
@@ -554,6 +565,8 @@ class MappingService
      * @param int|string $id The mapping ID, UUID, or slug to invalidate
      *
      * @return void
+     *
+     * @spec exclude One-line distributed-cache invalidation called by MappingMapper on write; cache plumbing.
      */
     public function invalidateMappingCache(int|string $id): void
     {
@@ -570,6 +583,8 @@ class MappingService
      * @param string $coordinates A string containing coordinates.
      *
      * @return array An array of coordinates.
+     *
+     * @spec exclude Pure coordinate-string parsing helper; no orchestration or persisted state.
      */
     public function coordinateStringToArray(string $coordinates): array
     {
@@ -607,6 +622,8 @@ class MappingService
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException          If mapping is not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple mappings found
+     *
+     * @spec exclude Cache-wrapped read delegating to MappingMapper::find; read-through caching plumbing.
      */
     public function getMapping(string $mappingId): Mapping
     {

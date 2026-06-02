@@ -411,12 +411,18 @@ export default {
 
 	watch: {
 		config: {
+			/**
+			 * @spec exclude Watcher syncing the incoming config prop into local state; UI reactivity plumbing.
+			 */
 			handler(newConfig) {
 				this.localConfig = { ...newConfig }
 			},
 			deep: true,
 		},
 		localConfig: {
+			/**
+			 * @spec exclude Watcher emitting config changes to the parent; UI reactivity plumbing.
+			 */
 			handler(newConfig) {
 				this.$emit('config-changed', newConfig)
 			},
@@ -425,14 +431,23 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
+		 */
 		startMassValidate() {
 			this.$emit('start-validate', this.localConfig)
 		},
 
+		/**
+		 * @spec exclude Emits a retry event to the parent; UI plumbing.
+		 */
 		retryValidation() {
 			this.$emit('retry')
 		},
 
+		/**
+		 * @spec exclude Emits a reset event to the parent; UI plumbing.
+		 */
 		resetModal() {
 			this.$emit('reset')
 		},
@@ -441,6 +456,7 @@ export default {
 		 * Estimate validation duration based on configuration
 		 *
 		 * @return {string} Estimated duration in human-readable format
+		 * @spec exclude Heuristic duration estimate for display; UI presentation helper.
 		 */
 		estimateValidationDuration() {
 			if (this.objectStats.totalObjects === 0) {
@@ -475,6 +491,7 @@ export default {
 		 *
 		 * @param {number} milliseconds Execution time in milliseconds
 		 * @return {string} Formatted execution time
+		 * @spec exclude Human-readable duration formatter; UI presentation helper.
 		 */
 		formatExecutionTime(milliseconds) {
 			if (!milliseconds) return 'Unknown'
@@ -494,6 +511,7 @@ export default {
 		 * Format memory prediction for display
 		 *
 		 * @return {string} Formatted memory prediction
+		 * @spec exclude Formats the memory-prediction readout for display; UI presentation helper.
 		 */
 		formatMemoryPrediction() {
 			if (!this.memoryPrediction || this.memoryPrediction.error) {
@@ -513,6 +531,7 @@ export default {
 		 *
 		 * @param {number} percentage Memory usage percentage
 		 * @return {string} CSS class
+		 * @spec exclude Maps memory-usage percentage to a CSS severity class; UI presentation helper.
 		 */
 		getMemoryUsageClass(percentage) {
 			const numPercentage = parseFloat(percentage)
@@ -525,6 +544,7 @@ export default {
 		 * Check if there are detailed error information available
 		 *
 		 * @return {boolean} True if detailed error info is available
+		 * @spec exclude Predicate for whether a detailed-error block should render; UI state helper.
 		 */
 		hasDetailedError() {
 			return !!(this.results?.error_details
@@ -535,6 +555,7 @@ export default {
 		 * Format error details for display
 		 *
 		 * @return {string} Formatted error details
+		 * @spec exclude Stringifies error details for display; UI presentation helper.
 		 */
 		formatErrorDetails() {
 			if (this.results?.error_details) {
@@ -546,6 +567,9 @@ export default {
 			return this.results?.error || 'No detailed error information available'
 		},
 
+		/**
+		 * @spec exclude Computes the success-rate percentage from results stats; UI presentation helper.
+		 */
 		getSuccessRate() {
 			if (!this.results || !this.results.stats) return 0
 			const { successfulSaves, totalObjects } = this.results.stats
@@ -553,6 +577,9 @@ export default {
 			return (successfulSaves / totalObjects) * 100
 		},
 
+		/**
+		 * @spec exclude Maps the success rate to a CSS severity class; UI presentation helper.
+		 */
 		getSuccessRateClass() {
 			const rate = this.getSuccessRate()
 			if (rate >= 95) return 'success'

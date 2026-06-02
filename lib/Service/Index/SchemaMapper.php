@@ -5,6 +5,9 @@
  *
  * Handles mapping between OpenRegister schemas and search backend schemas.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <info@conduction.nl>
@@ -60,6 +63,8 @@ class SchemaMapper
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
      * @psalm-return array<never, never>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     public function mapToBackendSchema(array $_schema): array
     {
@@ -77,6 +82,8 @@ class SchemaMapper
      * @param string $fieldType OpenRegister field type
      *
      * @return string Search backend field type
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-search-index/tasks.md#task-2
      */
     public function mapFieldType(string $fieldType): string
     {

@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.13-unstable.80</version>
+    <version>0.2.13-unstable.85</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -62,7 +62,7 @@ Vrij en open source onder de EUPL-licentie.
     </documentation>
 
     <dependencies>
-        <php min-version="8.0" min-int-size="64"/>
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
@@ -73,6 +73,7 @@ Vrij en open source onder de EUPL-licentie.
 		<post-migration>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
@@ -102,6 +103,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BatchNotificationJob</job>
+		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
 	</background-jobs>
 
     <navigations>
@@ -129,6 +131,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- <command>OCA\OpenRegister\Command\MigrateStorageCommand</command> -->
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
+		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
 	</commands>
 
 	<notification>

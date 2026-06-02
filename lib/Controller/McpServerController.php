@@ -6,6 +6,9 @@
  * Handles the MCP (Model Context Protocol) standard JSON-RPC 2.0 endpoint
  * for the OpenRegister MCP server. Provides Streamable HTTP transport.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *

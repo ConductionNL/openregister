@@ -29,6 +29,9 @@ export class AuditTrail implements TAuditTrail {
 	public retentionPeriod: string | null
 	public size: number
 
+	/**
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(auditTrail: TAuditTrail) {
 		this.id = auditTrail.id || 0
 		this.uuid = auditTrail.uuid || ''

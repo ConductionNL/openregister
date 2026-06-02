@@ -97,6 +97,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-20
      */
     public function semanticSearch(
         string $query,
@@ -199,6 +201,8 @@ class SolrController extends Controller
      * >
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-20
      */
     public function hybridSearch(
         string $query,
@@ -310,6 +314,8 @@ class SolrController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{success: bool, error?: string, stats?: mixed, timestamp?: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
     public function getVectorStats(): JSONResponse
     {
@@ -381,6 +387,8 @@ class SolrController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
     public function testVectorEmbedding(): JSONResponse
     {
@@ -544,6 +552,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function listCollections(): JSONResponse
     {
@@ -599,6 +609,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function listConfigSets(): JSONResponse
     {
@@ -661,6 +673,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function createCollection(
         string $collectionName,
@@ -734,6 +748,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function createConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
     {
@@ -795,6 +811,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function deleteConfigSet(string $name): JSONResponse
     {
@@ -858,6 +876,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-16
      */
     public function copyCollection(string $sourceCollection, string $targetCollection): JSONResponse
     {
@@ -928,6 +948,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
     public function vectorizeObject(int $objectId, ?string $provider=null): JSONResponse
     {
@@ -1013,6 +1035,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
     public function bulkVectorizeObjects(
         ?int $schemaId=null,
@@ -1144,6 +1168,8 @@ class SolrController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
     public function getVectorizationStats(): JSONResponse
     {

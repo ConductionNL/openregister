@@ -42,6 +42,7 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'HTTP Method') }}</label>
 							<NcSelect
+						input-label="Selected Method"
 								v-model="selectedMethod"
 								:options="httpMethodOptions"
 								label="label"
@@ -85,6 +86,7 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Event') }}</label>
 							<NcSelect
+						input-label="Selected Event"
 								v-model="selectedEvent"
 								:options="eventOptions"
 								label="label"
@@ -116,6 +118,7 @@
 						<div v-if="selectedEvent" class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Event Property for Payload') }}</label>
 							<NcSelect
+						input-label="Selected Event Property"
 								v-model="selectedEventProperty"
 								:options="eventPropertyOptions"
 								label="label"
@@ -170,6 +173,7 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Retry Policy') }}</label>
 							<NcSelect
+						input-label="Selected Retry Policy"
 								v-model="selectedRetryPolicy"
 								:options="retryPolicyOptions"
 								label="label"
@@ -366,12 +370,18 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI accessor — exposes the navigation store to the template.
+		 */
 		navigationStore() {
 			return navigationStore
 		},
 		isValid() {
 			return Boolean(this.webhookItem?.name?.trim() && this.webhookItem?.url?.trim())
 		},
+		/**
+		 * @spec exclude UI display helper — builds event-property select options for the selected event.
+		 */
 		eventPropertyOptions() {
 			if (!this.selectedEvent) {
 				return []
@@ -388,6 +398,9 @@ export default {
 				label: prop,
 			}))
 		},
+		/**
+		 * @spec exclude UI display helper — serializes headers object to editable text.
+		 */
 		headersText() {
 			if (!this.webhookItem?.headers || typeof this.webhookItem.headers !== 'object') {
 				return ''
@@ -401,12 +414,21 @@ export default {
 		// compiled into an actual newline character inside a single-quoted JS
 		// string in the render function output, producing an "Invalid or
 		// unexpected token" SyntaxError that breaks the entire bundle.
+		/**
+		 * @spec exclude UI display helper — placeholder text for the headers field.
+		 */
 		headersPlaceholder() {
 			return this.t('openregister', 'X-Custom-Header: value\nAuthorization: Bearer token')
 		},
+		/**
+		 * @spec exclude UI display helper — placeholder text for the filters field.
+		 */
 		filtersPlaceholder() {
 			return this.t('openregister', 'objectType: object\naction: created')
 		},
+		/**
+		 * @spec exclude UI display helper — serializes filters object to editable text.
+		 */
 		filtersText() {
 			if (!this.webhookItem?.filters || typeof this.webhookItem.filters !== 'object') {
 				return ''
@@ -429,11 +451,17 @@ export default {
 			}
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — loads events and initializes the webhook form.
+	 */
 	async created() {
 		await this.loadAvailableEvents()
 		this.initializeWebhook()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 */
 		initializeWebhook() {
 			// Get webhook item from navigation store transferData or initialize new one.
 			const transferData = navigationStore.getTransferData()
@@ -467,18 +495,27 @@ export default {
 				this.selectedEventProperty = null
 			}
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the webhook name.
+		 */
 		updateName(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.name = value
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the webhook URL.
+		 */
 		updateUrl(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.url = value
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the HTTP method.
+		 */
 		updateMethod(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -486,12 +523,18 @@ export default {
 			this.webhookItem.method = value ? value.value : 'POST'
 			this.selectedMethod = value
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the enabled flag.
+		 */
 		updateEnabled(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.enabled = value
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the subscribed event and resets event property.
+		 */
 		updateEvent(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -511,6 +554,9 @@ export default {
 				this.selectedEvent = null
 			}
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the selected event property.
+		 */
 		updateEventProperty(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -521,6 +567,9 @@ export default {
 			this.webhookItem.configuration.eventProperty = value ? value.value : null
 			this.selectedEventProperty = value
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the sendCloudEvent configuration flag.
+		 */
 		updateSendCloudEvent(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -531,6 +580,9 @@ export default {
 			this.configuration.sendCloudEvent = value
 			this.webhookItem.configuration.sendCloudEvent = value
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the waitForResponse configuration flag.
+		 */
 		updateWaitForResponse(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -541,6 +593,9 @@ export default {
 			this.configuration.waitForResponse = value
 			this.webhookItem.configuration.waitForResponse = value
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the retry policy.
+		 */
 		updateRetryPolicy(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -548,24 +603,36 @@ export default {
 			this.webhookItem.retryPolicy = value ? value.value : 'exponential'
 			this.selectedRetryPolicy = value
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the max-retries count.
+		 */
 		updateMaxRetries(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.maxRetries = parseInt(value) || 3
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the request timeout.
+		 */
 		updateTimeout(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.timeout = parseInt(value) || 30
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the webhook secret.
+		 */
 		updateSecret(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			this.webhookItem.secret = value || null
 		},
+		/**
+		 * @spec exclude Form-field binding — parses header text into a headers object.
+		 */
 		updateHeaders(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -581,6 +648,9 @@ export default {
 			}
 			this.webhookItem.headers = headers
 		},
+		/**
+		 * @spec exclude Form-field binding — parses filter text into a filters object.
+		 */
 		updateFilters(value) {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
@@ -602,6 +672,9 @@ export default {
 			}
 			this.webhookItem.filters = filters
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches subscribable webhook events.
+		 */
 		async loadAvailableEvents() {
 			this.loadingEvents = true
 			try {
@@ -626,11 +699,17 @@ export default {
 				this.loadingEvents = false
 			}
 		},
+		/**
+		 * @spec exclude UI event handler — no-op search hook (NcSelect filters internally).
+		 */
 		searchEvents(_query) {
 			// Filter events based on search query.
 			// The NcSelect component handles filtering internally.
 			// Empty query is handled by the component itself.
 		},
+		/**
+		 * @spec exclude Modal hydration plumbing — maps stored webhook values onto select inputs.
+		 */
 		loadExistingSelections() {
 			const item = this.webhookItem
 			if (item) {
@@ -666,9 +745,15 @@ export default {
 				}
 			}
 		},
+		/**
+		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
+		 */
 		handleDialogClose() {
 			this.closeModal()
 		},
+		/**
+		 * @spec exclude Modal close plumbing — resets the webhook form and closes the modal.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
@@ -685,6 +770,9 @@ export default {
 				responseMapping: {},
 			}
 		},
+		/**
+		 * @spec exclude Modal save plumbing — assembles the payload and persists the webhook.
+		 */
 		async saveWebhook() {
 			this.loading = true
 			this.error = null

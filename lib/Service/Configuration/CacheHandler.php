@@ -6,6 +6,9 @@
  * This file contains the handler for caching configurations in the user session
  * to avoid excessive database queries when checking if entities are managed by configurations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *

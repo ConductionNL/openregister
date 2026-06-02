@@ -5,6 +5,9 @@
  *
  * This file contains the controller for managing AI agents.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -55,6 +58,8 @@ use Exception;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class AgentsController extends Controller
 {
@@ -153,6 +158,8 @@ class AgentsController extends Controller
      * @return TemplateResponse Template response for agents SPA
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
+     *
+     * @spec exclude SPA-mount stub — returns the Vue `index` template; client-side router owns navigation. No HTTP contract beyond the shell.
      */
     public function page(): TemplateResponse
     {

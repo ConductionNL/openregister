@@ -6,6 +6,9 @@
  * Service that wraps Nextcloud Mail message lookups and manages email-to-object links.
  * Emails are immutable; this service only creates/removes link references.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -223,6 +226,8 @@ class EmailService
      * @return void
      *
      * @throws Exception If the link is not found.
+     *
+     * @spec exclude Legacy link-table delete by id; email link infrastructure being removed per linked-entity-types.
      */
     public function unlinkEmail(int $linkId): void
     {
@@ -348,6 +353,8 @@ class EmailService
      * @param string $objectUuid The object UUID.
      *
      * @return int Number of deleted links.
+     *
+     * @spec exclude Legacy link-table bulk cleanup delegating to EmailLinkMapper; email link infrastructure being removed per linked-entity-types.
      */
     public function deleteLinksForObject(string $objectUuid): int
     {

@@ -7,6 +7,9 @@
  * app's bundled manifest.json enriched with a `runtime.user` block built
  * from the authenticated user's OpenRegister profile object.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -83,6 +86,8 @@ class ManifestController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
+     *
+     * @spec openspec/changes/manifest-user-context/tasks.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -123,6 +128,9 @@ class ManifestController extends Controller
      * @return array<string, mixed>|null Decoded manifest, or null if not readable.
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec exclude Private helper: loads + JSON-decodes a host app's bundled manifest.json; the manifest endpoint
+     *              contract is owned by manifest-user-context/tasks.md.
      */
     private function loadBundledManifest(string $appId): ?array
     {

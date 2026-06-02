@@ -4,6 +4,8 @@ status: redirect
 # Larping Skill Widget
 
 ## Purpose
+
+@e2e exclude redirect stub owned by LarpingApp — no UI in OR
 This spec is a redirect stub. The canonical specification for the larping skill widget is owned by LarpingApp at `larpingapp/openspec/specs/larping-skill-widget/spec.md`. This stub exists to preserve the spec slug locally and MUST NOT be treated as authoritative.
 
 ## Requirements

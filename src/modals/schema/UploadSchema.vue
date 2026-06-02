@@ -101,6 +101,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — resets upload form state and closes the modal.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -113,9 +116,15 @@ export default {
 				url: '',
 			}
 		},
+		/**
+		 * @spec exclude UI helper — pretty-prints the JSON in the editor field.
+		 */
 		prettifyJson() {
 			this.schema.json = JSON.stringify(JSON.parse(this.schema.json), null, 2)
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates schema upload to schemaStore.uploadSchema.
+		 */
 		async uploadSchema() {
 			this.loading = true
 
@@ -134,6 +143,9 @@ export default {
 				this.loading = false
 			})
 		},
+		/**
+		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
+		 */
 		validateJson(json) {
 			try {
 				JSON.parse(json)

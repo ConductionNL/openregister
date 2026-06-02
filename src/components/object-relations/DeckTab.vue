@@ -139,15 +139,27 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
+		 */
 		key() {
 			return `${this.register}:${this.schema}:${this.objectId}`
 		},
+		/**
+		 * @spec exclude computed read of linked deck cards from store; deck-relations contract owned by integration-deck capability
+		 */
 		cards() {
 			return this.store.byObject[this.key] || []
 		},
+		/**
+		 * @spec exclude computed read of loading state from store, UI plumbing
+		 */
 		loading() {
 			return !!this.store.loading[this.key]
 		},
+		/**
+		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
+		 */
 		deckUnavailable() {
 			return this.store.deckUnavailable
 		},
@@ -156,6 +168,9 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @spec exclude watcher refetching deck cards on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchCards()
@@ -167,6 +182,12 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch linked Deck cards for the current object via the per-object store.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+		 * @return {Promise<void>}
+		 */
 		async fetchCards() {
 			this.error = false
 			this.errorMessage = ''
@@ -178,6 +199,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude store passthrough unlinking card + change emit; deck-relations contract owned by integration-deck capability
+		 */
 		async unlinkCard(card) {
 			const ref = card.ref || card.deckRef || card.id
 			try {
@@ -189,10 +213,16 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude emit UI handler opening add-card dialog, UI plumbing
+		 */
 		openCreateDialog() {
 			this.$emit('add-deck-card')
 		},
 
+		/**
+		 * @spec exclude computed date-format display helper, UI plumbing
+		 */
 		formatDate(value) {
 			if (!value) {
 				return ''

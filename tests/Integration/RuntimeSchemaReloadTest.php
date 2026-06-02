@@ -21,7 +21,7 @@
  *      * SchemaCacheHandler (the unit under test for cache invalidation)
  *      * SchemaMapper, MagicMapper, AuditTrailMapper, RegisterMapper
  *      * IDBConnection (writes hit the actual DB)
- *      * SchemaService, DownloadService, UploadService, OrganisationService,
+ *      * SchemaService, UploadService, OrganisationService,
  *        FacetCacheHandler, IAppConfig, LoggerInterface
  *  - MOCKED:
  *      * IRequest — used as a thin data carrier so we can inject query params
@@ -55,7 +55,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -183,7 +182,6 @@ class RuntimeSchemaReloadTest extends TestCase
             \OC::$server->get(IAppConfig::class),
             $this->schemaMapper,
             $this->objectMapper,
-            \OC::$server->get(DownloadService::class),
             \OC::$server->get(UploadService::class),
             \OC::$server->get(AuditTrailMapper::class),
             \OC::$server->get(OrganisationService::class),

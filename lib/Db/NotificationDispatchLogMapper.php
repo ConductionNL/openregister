@@ -13,6 +13,9 @@
  * Row cleanup (`pruneExpired()`) is best-effort: called lazily at
  * dispatch time and can also be invoked from a background job.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *

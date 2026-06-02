@@ -61,34 +61,81 @@ class RegistersDestroySafetyTest extends TestCase
 
     private RegistersController $controller;
 
-    /** @var IRequest&MockObject */
+    /**
+     * @var IRequest&MockObject
+     */
     private IRequest $request;
 
-    /** @var RegisterService&MockObject */
+    /**
+     * @var RegisterService&MockObject
+     */
     private RegisterService $registerService;
 
-    /** @var MagicMapper&MockObject */
+    /**
+     * @var MagicMapper&MockObject
+     */
     private MagicMapper $objectMapper;
 
-    /** @var RegisterCacheHandler&MockObject */
+    /**
+     * @var RegisterCacheHandler&MockObject
+     */
     private RegisterCacheHandler $registerCacheHandler;
 
-    /** @var LoggerInterface&MockObject */
+    /**
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface $logger;
 
+    /**
+     * @var IUserSession&MockObject
+     */
+    private IUserSession $userSession;
+
+    /**
+     * @var IGroupManager&MockObject
+     */
+    private IGroupManager $groupManager;
+
+    /**
+     * @var ContainerInterface&MockObject
+     */
+    private ContainerInterface $container;
 
     /**
      * Wire up RegistersController with every dependency mocked.
+     * Default user is an authenticated admin so all permission checks pass.
      */
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->request              = $this->createMock(IRequest::class);
-        $this->registerService      = $this->createMock(RegisterService::class);
-        $this->objectMapper         = $this->createMock(MagicMapper::class);
+        $this->request         = $this->createMock(IRequest::class);
+        $this->registerService = $this->createMock(RegisterService::class);
+        $this->objectMapper    = $this->createMock(MagicMapper::class);
         $this->registerCacheHandler = $this->createMock(RegisterCacheHandler::class);
-        $this->logger               = $this->createMock(LoggerInterface::class);
+        $this->logger       = $this->createMock(LoggerInterface::class);
+        $this->userSession  = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+
+        // Default to an authenticated admin so checkRegisterManagePermission passes.
+        $adminUser = $this->createMock(\OCP\IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($adminUser);
+        $this->groupManager->method('isAdmin')->willReturn(true);
+        $this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
+
+        // checkRegisterManagePermission() resolves IGroupManager via the container
+        // on its no-authorization (admin-only) branch — return the stubbed one.
+        $this->container = $this->createMock(ContainerInterface::class);
+        $this->container->method('get')->willReturnCallback(
+            function ($id) {
+                if ($id === \OCP\IGroupManager::class) {
+                    return $this->groupManager;
+                }
+
+                return null;
+            }
+        );
 
         $this->controller = new RegistersController(
             'openregister',
@@ -97,7 +144,7 @@ class RegistersDestroySafetyTest extends TestCase
             $this->objectMapper,
             $this->createMock(UploadService::class),
             $this->logger,
-            $this->createMock(IUserSession::class),
+            $this->userSession,
             $this->createMock(ConfigurationService::class),
             $this->createMock(AuditTrailMapper::class),
             $this->createMock(ExportService::class),
@@ -107,18 +154,17 @@ class RegistersDestroySafetyTest extends TestCase
             $this->createMock(GitHubHandler::class),
             $this->createMock(IAppManager::class),
             $this->createMock(OasService::class),
-            $this->createMock(ContainerInterface::class),
-            $this->createMock(IGroupManager::class),
+            $this->container,
+            $this->groupManager,
             $this->registerCacheHandler
         );
 
     }//end setUp()
 
-
     /**
      * Build a Register entity with injected id + slug.
      */
-    private function makeRegister(int $id, string $slug = 'test-register'): Register
+    private function makeRegister(int $id, string $slug='test-register'): Register
     {
         $register = new Register();
         $register->setSlug($slug);
@@ -132,7 +178,6 @@ class RegistersDestroySafetyTest extends TestCase
         return $register;
 
     }//end makeRegister()
-
 
     /**
      * REQ + SCENARIO: "Delete register with attached schemas-with-objects".
@@ -175,7 +220,6 @@ class RegistersDestroySafetyTest extends TestCase
 
     }//end testDestroyWithoutForceReturns409WhenObjectsExist()
 
-
     /**
      * REQ + SCENARIO: Delete register with ?force=true.
      *
@@ -217,10 +261,12 @@ class RegistersDestroySafetyTest extends TestCase
             ->method('warning')
             ->with(
                 $this->stringContains('Force-deleting register with attached objects'),
-                $this->callback(function (array $ctx): bool {
-                    return ($ctx['registerId'] ?? null) === 7
-                        && ($ctx['objectCount'] ?? null) === 4;
-                })
+                $this->callback(
+                        function (array $ctx): bool {
+                            return ($ctx['registerId'] ?? null) === 7
+                            && ($ctx['objectCount'] ?? null) === 4;
+                        }
+                        )
             );
 
         $response = $this->controller->destroy(7);
@@ -228,7 +274,6 @@ class RegistersDestroySafetyTest extends TestCase
         $this->assertSame(200, $response->getStatus());
 
     }//end testDestroyWithForceTrueDeletesAndInvalidatesCache()
-
 
     /**
      * REQ + SCENARIO: Delete unused register (regression baseline).
@@ -265,6 +310,4 @@ class RegistersDestroySafetyTest extends TestCase
         $this->assertSame(200, $response->getStatus());
 
     }//end testDestroyOnUnusedRegisterSucceeds()
-
-
 }//end class

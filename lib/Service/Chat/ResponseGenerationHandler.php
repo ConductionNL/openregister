@@ -16,6 +16,9 @@
  * exactly as before — that branch is load-bearing for the
  * non-streaming endpoint and must not regress.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -26,6 +29,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -34,6 +39,7 @@ use Exception;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Tool\StreamingToolInstanceWrapper;
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\OllamaChat;
@@ -41,7 +47,7 @@ use LLPhant\Chat\Message as LLPhantMessage;
 use LLPhant\OpenAIConfig;
 use LLPhant\OllamaConfig;
 use LLPhant\Exception\MissingFeatureException;
-use Psr\Http\Message\StreamInterface;
+use ReflectionClass;
 
 /**
  * ResponseGenerationHandler
@@ -57,6 +63,12 @@ use Psr\Http\Message\StreamInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   This class is a multi-provider LLM router that
+ *   must reference OpenAI, Ollama, and Fireworks config/chat classes plus the streaming
+ *   infrastructure (StreamYieldChannel, StreamingToolInstanceWrapper, MissingFeatureException).
+ *   Splitting into one class per provider would be the clean long-term solution; for now all
+ *   13 imported types are genuinely load-bearing and cannot be consolidated without an
+ *   architectural refactor tracked as a separate ADR task.
  */
 class ResponseGenerationHandler
 {
@@ -90,6 +102,8 @@ class ResponseGenerationHandler
      * @param LoggerInterface       $logger          Logger.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function __construct(
         SettingsService $settingsService,
@@ -143,6 +157,8 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Response generation requires many conditional API calls
      * @SuppressWarnings(PHPMD.NPathComplexity)       Response generation requires many conditional API calls
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function generateResponse(
         string $userMessage,
@@ -318,9 +334,10 @@ class ResponseGenerationHandler
                 foreach ($cnAiContext as $key => $value) {
                     if (is_scalar($value) === true) {
                         $systemPrompt .= "- {$key}: ".(string) $value."\n";
-                    } else {
-                        $systemPrompt .= "- {$key}: ".json_encode($value, JSON_UNESCAPED_SLASHES)."\n";
+                        continue;
                     }
+
+                    $systemPrompt .= "- {$key}: ".json_encode($value, JSON_UNESCAPED_SLASHES)."\n";
                 }
             }
 
@@ -497,6 +514,8 @@ class ResponseGenerationHandler
      *
      * @psalm-param  list<\LLPhant\Chat\FunctionInfo\FunctionInfo> $functionInfoObjects
      * @psalm-return list<\LLPhant\Chat\FunctionInfo\FunctionInfo>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function wrapToolsForStreaming(array $functionInfoObjects, ?StreamYieldChannel $channel): array
     {
@@ -506,7 +525,7 @@ class ResponseGenerationHandler
 
         foreach ($functionInfoObjects as $fi) {
             if (is_object($fi->instance) === true) {
-                $fi->instance = new \OCA\OpenRegister\Tool\StreamingToolInstanceWrapper(
+                $fi->instance = new StreamingToolInstanceWrapper(
                     wrapped: $fi->instance,
                     channel: $channel
                 );
@@ -526,6 +545,8 @@ class ResponseGenerationHandler
      * @param string                  $provider       Provider slug (for logging).
      *
      * @return string The assistant's textual response.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function invokeChat(
         OpenAIChat|OllamaChat $chat,
@@ -579,11 +600,13 @@ class ResponseGenerationHandler
      * @param OpenAIChat|OllamaChat $chat Configured chat instance
      *
      * @return bool True when the instance has at least one FunctionInfo registered
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function chatHasTools(OpenAIChat|OllamaChat $chat): bool
     {
         try {
-            $refl = new \ReflectionClass($chat);
+            $refl = new ReflectionClass($chat);
             if ($refl->hasProperty(name: 'tools') === false) {
                 return false;
             }
@@ -620,6 +643,8 @@ class ResponseGenerationHandler
      * @return string Assembled assistant text.
      *
      * @throws MissingFeatureException When the provider's streaming surface throws.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function streamChat(
         OpenAIChat|OllamaChat $chat,
@@ -663,6 +688,8 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  API call requires handling many response scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       API call requires handling many response scenarios
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) API error handling requires verbose code
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     private function callFireworksChatAPIWithHistory(
         string $apiKey,

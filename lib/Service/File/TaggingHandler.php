@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -84,6 +88,8 @@ class TaggingHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Tag management requires handling create/find/attach scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for tag creation and attachment
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-005
      */
     public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
@@ -202,6 +208,8 @@ class TaggingHandler
      * @phpstan-return array<int, string>
      *
      * @psalm-return list<string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-005
      */
     public function getFileTags(string $fileId): array
     {
@@ -238,6 +246,8 @@ class TaggingHandler
      * @param ObjectEntity|string $objectEntity Object entity or UUID.
      *
      * @return string The object tag (e.g., 'object:uuid').
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
@@ -258,6 +268,8 @@ class TaggingHandler
      *
      * @phpstan-return array<int, string>
      * @psalm-return   list<string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function getObjectTags(string $objectUuid): array
     {
@@ -295,6 +307,8 @@ class TaggingHandler
      * @param string $tagName    The tag name to add.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function addObjectTag(string $objectUuid, string $tagName): void
     {
@@ -315,6 +329,8 @@ class TaggingHandler
      * @return void
      *
      * @throws Exception If the tag is not found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function removeObjectTag(string $objectUuid, string $tagName): void
     {
@@ -341,6 +357,8 @@ class TaggingHandler
      * @phpstan-return array<int, string>
      *
      * @psalm-return list<string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function getAllTags(): array
     {

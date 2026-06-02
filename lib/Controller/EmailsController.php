@@ -5,6 +5,9 @@
  *
  * REST controller for email relation operations on OpenRegister objects.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -105,6 +108,8 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function index(
         string $register,
@@ -125,8 +130,15 @@ class EmailsController extends Controller
             }
 
             $params = $this->request->getParams();
-            $limit  = isset($params['limit']) === true ? (int) $params['limit'] : null;
-            $offset = isset($params['offset']) === true ? (int) $params['offset'] : null;
+            $limit  = null;
+            if (isset($params['limit']) === true) {
+                $limit = (int) $params['limit'];
+            }
+
+            $offset = null;
+            if (isset($params['offset']) === true) {
+                $offset = (int) $params['offset'];
+            }
 
             $result = $this->emailService->getEmailsForObject($object->getUuid(), $limit, $offset);
 
@@ -149,6 +161,8 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function create(
         string $register,
@@ -213,6 +227,8 @@ class EmailsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
      */
     public function destroy(
         string $register,

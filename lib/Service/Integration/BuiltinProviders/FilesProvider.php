@@ -146,6 +146,8 @@ class FilesProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Reserved for future use.
      *
      * @return array<int,array<string,mixed>> Files rows.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-12
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -203,6 +205,9 @@ class FilesProvider extends AbstractIntegrationProvider
      *
      * @throws NotImplementedException Always — write path consolidates
      *                                 in tasks 18-22.
+     *
+     * @spec exclude NotImplemented write stub — Files writes still route through FileController;
+     *              the consolidated write path is owned by pluggable-integration-registry tasks 18-22, not this stub.
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {

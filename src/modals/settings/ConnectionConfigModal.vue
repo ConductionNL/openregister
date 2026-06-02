@@ -393,6 +393,9 @@ export default {
 		config: {
 			immediate: true,
 			deep: true,
+			/**
+			 * @spec exclude watcher syncing local config copy from prop
+			 */
 			handler(newConfig) {
 				this.localConfig = { ...newConfig }
 			},
@@ -402,6 +405,8 @@ export default {
 	methods: {
 		/**
 		 * Handle modal close
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
 		 */
 		handleClose() {
 			// Reset test results when closing
@@ -411,6 +416,7 @@ export default {
 
 		/**
 		 * Handle save button click
+		 * @spec exclude modal save handler emitting config to parent
 		 */
 		handleSave() {
 			this.$emit('save', this.localConfig)
@@ -418,6 +424,7 @@ export default {
 
 		/**
 		 * Test connection with current settings
+		 * @spec exclude connection-test handler delegating to API
 		 */
 		async handleTestConnection() {
 			this.testing = true

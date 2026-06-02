@@ -7,6 +7,9 @@
  * deleting objects in configurable batches, generating audit trails and
  * destruction certificates upon completion.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -79,6 +82,7 @@ class DestructionExecutionJob extends QueuedJob
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
+     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-2
      */
     protected function run($argument): void
     {

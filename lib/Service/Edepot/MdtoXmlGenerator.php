@@ -7,6 +7,9 @@
  * Conforms to the MDTO (Metagegevens Duurzaam Toegankelijke Overheidsinformatie)
  * schema version 1.0 or later.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot
  *

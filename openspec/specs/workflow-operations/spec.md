@@ -1,6 +1,8 @@
 # workflow-operations Specification
 
 ## Purpose
+
+@e2e exclude backend workflow execution history — covered by PHPUnit
 TBD - created by archiving change workflow-operations. Update Purpose after archive.
 ## Requirements
 ### Requirement: Workflow Execution History

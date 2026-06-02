@@ -5,6 +5,9 @@
  *
  * Handles storing vector embeddings in database and Solr.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
  *
@@ -78,6 +81,8 @@ class VectorStorageHandler
      * @throws \Exception If storage fails
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
      */
     public function storeVector(
         string $entityType,
@@ -169,6 +174,8 @@ class VectorStorageHandler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple storage conditions and error handling
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
      */
     private function storeVectorInDatabase(
         string $entityType,
@@ -282,6 +289,8 @@ class VectorStorageHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple Solr storage conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple storage paths with error handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive Solr vector storage with atomic updates
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
      */
     private function storeVectorInSolr(
         string $entityType,
@@ -411,6 +420,8 @@ class VectorStorageHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Collection resolution requires multiple conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple collection determination paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
      */
     private function getSolrCollectionForEntityType(string $entityType): ?string
     {
@@ -461,6 +472,8 @@ class VectorStorageHandler
      * Get the configured Solr vector field name
      *
      * @return string Solr vector field name (default: '_embedding_')
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
      */
     private function getSolrVectorField(): string
     {
@@ -490,6 +503,8 @@ class VectorStorageHandler
      * @param string $text Text to sanitize
      *
      * @return string Sanitized text safe for UTF-8 storage
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
      */
     private function sanitizeText(string $text): string
     {

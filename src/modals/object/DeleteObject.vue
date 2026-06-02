@@ -74,6 +74,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -81,6 +84,9 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to objectStore.deleteObject (lifecycle owned elsewhere).
+		 */
 		async deleteObject() {
 			this.loading = true
 

@@ -12,6 +12,9 @@
  * delegate to this class. Direct use of `new DateTime($value)` on user data
  * is forbidden — see OpenSpec change `fix-empty-string-date-conversion`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -73,6 +76,8 @@ class DateTimeNormalizer
      * @return DateTimeImmutable|null A `DateTimeImmutable` when parseable, otherwise `null`.
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-2
      */
     public function normalize(mixed $value): ?DateTimeImmutable
     {
@@ -123,6 +128,8 @@ class DateTimeNormalizer
      * @param mixed $value Value to normalise and format.
      *
      * @return string|null `Y-m-d H:i:s`-formatted string, or `null` for empty/invalid input.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-2
      */
     public function formatForDatabase(mixed $value): ?string
     {
@@ -140,6 +147,8 @@ class DateTimeNormalizer
      * @param mixed $value Value to normalise and format.
      *
      * @return string|null ISO 8601 string with offset, or `null` for empty/invalid input.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-2
      */
     public function formatForIso8601(mixed $value): ?string
     {

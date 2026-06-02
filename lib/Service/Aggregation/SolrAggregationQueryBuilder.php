@@ -15,6 +15,9 @@
  * Pure-PHP translation — no HTTP. The Solr backend wraps a thin HTTP
  * client around this builder. Unit-testable independently.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *
@@ -25,6 +28,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/aggregations-backend-native/tasks.md "SolrSearchBackend::aggregate"
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */
 
 declare(strict_types=1);
@@ -50,6 +54,8 @@ class SolrAggregationQueryBuilder
      * @param AggregationQuery $query The cross-backend request.
      *
      * @return array<string, mixed> The Solr request parameter map.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
      */
     public function build(AggregationQuery $query): array
     {
@@ -120,6 +126,8 @@ class SolrAggregationQueryBuilder
      * @param array<string, mixed> $filter The filter map.
      *
      * @return string[] List of Solr `fq` strings.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     public function translateFilters(array $filter): array
     {
@@ -150,12 +158,18 @@ class SolrAggregationQueryBuilder
      * @param mixed  $value The operand.
      *
      * @return ?string The fq clause, or null when the op is unrecognised.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      */
     private function translateOp(string $field, string $op, mixed $value): ?string
     {
         switch ($op) {
             case 'in':
-                $list = is_array($value) === true ? $value : [];
+                $list = [];
+                if (is_array($value) === true) {
+                    $list = $value;
+                }
+
                 if (count($list) === 0) {
                     return $field.':("__or_no_match__")';
                 }
@@ -189,7 +203,11 @@ class SolrAggregationQueryBuilder
     private function quote(mixed $value): string
     {
         if (is_bool($value) === true) {
-            return $value === true ? 'true' : 'false';
+            if ($value === true) {
+                return 'true';
+            }
+
+            return 'false';
         }
 
         if (is_int($value) === true || is_float($value) === true) {

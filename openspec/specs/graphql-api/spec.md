@@ -3,18 +3,17 @@ status: implemented
 ---
 # GraphQL API
 
-
 # GraphQL API
 ## Purpose
+
+@e2e exclude GraphQL backend/schema generation — covered by PHPUnit and Newman
 
 Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE).
 
 The GraphQL layer MUST reuse existing OpenRegister services -- `PermissionHandler` for schema-level RBAC, `PropertyRbacHandler` for field-level security, `RelationHandler` for nested resolution and DataLoader batching, `AuditTrailMapper` for change logging, `SecurityService` for rate limiting, `MagicMapper` for cross-register queries, and `MultiTenancyTrait` for organisation scoping -- rather than reimplementing any of these concerns. The implementation is built on the `webonyx/graphql-php` library, with the full service stack comprising `GraphQLService` (orchestrator), `SchemaGenerator` (type generation), `GraphQLResolver` (query/mutation resolution), `QueryComplexityAnalyzer` (abuse prevention), `GraphQLErrorFormatter` (structured errors), `SubscriptionService` (SSE event buffer), and `GraphQLSubscriptionListener` (event bridge).
 
 **Source**: Gap identified in cross-platform analysis; Directus, Strapi, and Twenty CRM all provide auto-generated GraphQL APIs. See cross-references: `zoeken-filteren`, `realtime-updates`, `rbac-scopes`.
-
 ## Requirements
-
 ### Requirement: The GraphQL schema MUST be auto-generated from register schemas
 
 Each register schema MUST automatically produce corresponding GraphQL types, queries, and mutations. `SchemaGenerator.generate()` MUST load all registers via `RegisterMapper.findAll()` and all schemas via `SchemaMapper.findAll()`, then iterate over each schema calling `buildSchemaFields()` to produce query and mutation field definitions. Type generation MUST follow the same JSON Schema property type/format mapping used by `MagicMapper`, ensuring consistency between REST and GraphQL responses. Schema slugs MUST be converted to valid GraphQL names: PascalCase for type names (via `toTypeName()`) and camelCase for field names (via `toFieldName()`), with naive Dutch/English singularization (via `singularize()`) to derive single-object query names from plural schema slugs.
@@ -31,7 +30,7 @@ Each register schema MUST automatically produce corresponding GraphQL types, que
 - **WHEN** `buildQueryFields()` is called
 - **THEN** the following root query fields MUST be generated:
   - `melding(id: ID!): Melding` -- fetch single object via `GraphQLResolver.resolveSingle()`
-  - `meldingen(filter: MeldingenFilter, sort: SortInput, selfFilter: SelfFilter, search: String, fuzzy: Boolean, facets: [String], first: Int, offset: Int, after: String): MeldingenConnection` -- list with pagination via `GraphQLResolver.resolveList()`
+  - `meldingen(filter: MeldingenFilter, sort: SortInput, selfFilter: SelfFilter, search: String, fuzzy: Boolean, facets: [String], first: Int, offset: Int, after: String, groupBy: GroupByInput): MeldingenConnection` -- list with pagination via `GraphQLResolver.resolveList()`; the optional `groupBy` argument enables ad-hoc aggregation as defined under the "GraphQL list queries SHALL support an ad-hoc `groupBy` argument" requirement
 - **AND** list query arguments MUST be defined by `TypeMapperHandler.getListArgs()` with defaults: `first: 20`, `fuzzy: false`
 
 #### Scenario: Generate mutations for a schema
@@ -194,8 +193,9 @@ Connection types MUST expose facets and facetable field lists matching `FacetHan
 #### Scenario: Facets in connection type structure
 - **GIVEN** any schema `meldingen`
 - **WHEN** `TypeMapperHandler.getConnectionType()` builds the connection type
-- **THEN** it MUST include fields: `edges: [MeldingenEdge!]!`, `pageInfo: PageInfo!`, `totalCount: Int!`, `facets: JSON`, `facetable: [String]`
+- **THEN** it MUST include fields: `edges: [MeldingenEdge!]!`, `pageInfo: PageInfo!`, `totalCount: Int!`, `facets: JSON`, `facetable: [String]`, `groups: [GroupBucket!]`
 - **AND** each edge type MUST include: `cursor: String!`, `node: Melding!`, `_relevance: Float` (fuzzy search relevance score)
+- **AND** `groups` SHALL be `null` unless the client supplied a `groupBy` argument on the list query
 
 ### Requirement: GraphQL MUST support dual pagination modes
 
@@ -606,6 +606,121 @@ The `GraphQLResolver` MUST provide a `reset()` method to clear all per-request s
 #### Scenario: Resolver context creation
 - **GIVEN** `GraphQLService.createContext()` is called for each execution
 - **THEN** the context array MUST include references to: `objectService`, `permissionHandler`, `propertyRbac`, `auditTrailMapper`, `registerMapper`, `schemaMapper`, `schemaGenerator`, `operationName`, `request`, and an empty `errors` array
+
+### Requirement: GraphQL list queries SHALL support an ad-hoc `groupBy` argument with optional time-bucketing
+
+Every auto-generated list-query field on every schema SHALL accept an optional `groupBy: GroupByInput` argument. When supplied, the returned connection SHALL include a non-null `groups: [GroupBucket!]` field with the bucketed aggregation result. When `groupBy` is absent, `groups` SHALL be `null`.
+
+Type declarations (added to the auto-generated schema):
+
+```graphql
+input GroupByInput {
+  field: String!
+  interval: TimeInterval
+  from: String        # ISO-8601, required when interval is set
+  to: String          # ISO-8601, required when interval is set
+  metric: AggregationMetric = COUNT
+  metricField: String # required when metric != COUNT
+}
+
+enum TimeInterval {
+  MINUTE
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}
+
+enum AggregationMetric {
+  COUNT
+  SUM
+  AVG
+  MIN
+  MAX
+}
+
+type GroupBucket {
+  key: String!
+  value: Float!
+}
+```
+
+#### Scenario: Categorical groupBy returns one bucket per distinct value
+- **GIVEN** schema `applications` with property `status: string` and 30 rows distributed across `active|deprecated|archived`
+- **WHEN** the client issues `query { applications(groupBy: { field: "status" }) { groups { key value } } }`
+- **THEN** the response SHALL contain `groups` with exactly three entries
+- **AND** each `groups[i].key` SHALL be one of `active`, `deprecated`, `archived`
+- **AND** the sum of `groups[i].value` SHALL equal `30`
+
+#### Scenario: Time-bucketed groupBy by DAY produces ISO-keyed buckets
+- **GIVEN** schema `calllogs` with `created: date-time`
+- **WHEN** the client issues `query { calllogs(groupBy: { field: "created", interval: DAY, from: "2026-05-01T00:00:00Z", to: "2026-05-22T00:00:00Z" }) { groups { key value } } }`
+- **THEN** each `groups[i].key` SHALL be an ISO-8601-UTC string at midnight UTC on a day in the range
+- **AND** each `groups[i].value` SHALL equal the count of calllogs whose `created` falls in that day-bucket
+- **AND** days with zero rows SHALL be omitted (the client fills empties at render time)
+
+#### Scenario: groupBy SHALL coexist with filter and totalCount
+- **WHEN** the client issues `query { calllogs(filter: { status: "error" }, groupBy: { field: "created", interval: DAY, from: "...", to: "..." }) { totalCount groups { key value } } }`
+- **THEN** the response SHALL include both `totalCount` (the size of the filtered set) AND `groups` (the bucketed series of the same filtered set)
+- **AND** the sum of `groups[i].value` SHALL equal `totalCount`
+
+#### Scenario: Sub-day interval against a date-only field is rejected
+- **GIVEN** schema `meetings` with `meetingDate: { format: date }`
+- **WHEN** the client issues `query { meetings(groupBy: { field: "meetingDate", interval: HOUR, from: "...", to: "..." }) { groups { key value } } }`
+- **THEN** the response SHALL include a GraphQL field-error stating that sub-day intervals require a `date-time` field
+- **AND** the `groups` field SHALL be `null`
+
+#### Scenario: Unknown `field` produces a GraphQL field-error
+- **WHEN** the client issues `groupBy: { field: "__totally_made_up" }`
+- **THEN** the response SHALL include a GraphQL field-error referencing the unknown field
+- **AND** the `groups` field SHALL be `null`
+
+#### Scenario: Multi-tenant filter is applied before bucketing
+- **GIVEN** two tenants `tenant-a` and `tenant-b` each owning 10 rows
+- **AND** the authenticated user's active organisation is `tenant-a`
+- **WHEN** the client issues a categorical `groupBy` query
+- **THEN** the sum of `groups[i].value` SHALL be `10` (tenant-a only)
+
+#### Scenario: Non-count metric requires metricField
+- **WHEN** the client issues `groupBy: { field: "status", metric: SUM }` with no `metricField`
+- **THEN** the response SHALL include a GraphQL field-error stating `metricField` is required for non-count metrics
+
+### Requirement: The connection type SHALL include the new `groups` field
+
+`TypeMapperHandler::getConnectionType()` SHALL add a nullable `groups: [GroupBucket!]` field to every auto-generated `<Schema>Connection` type. When the resolver did not run an ad-hoc aggregation (the client did not request `groupBy`), the field SHALL be `null`.
+
+#### Scenario: Connection type structure includes `groups`
+- **GIVEN** any schema `meldingen`
+- **WHEN** `TypeMapperHandler.getConnectionType()` builds `MeldingenConnection`
+- **THEN** the type SHALL include the fields: `edges`, `pageInfo`, `totalCount`, `facets`, `facetable`, AND `groups: [GroupBucket!]`
+- **AND** existing clients that select only `edges`/`pageInfo`/`totalCount`/`facets`/`facetable` SHALL be unaffected
+
+### Requirement: The resolver MUST provide aggregation, DataLoader-flush, and cursor helpers
+
+`GraphQLResolver` MUST expose the supporting helpers that back list queries: an aggregation resolver that dispatches `groupBy` to the timeseries pipeline, a DataLoader buffer flush that batch-loads buffered relation UUIDs, and an opaque cursor encoder for Relay pagination.
+
+#### Scenario: Resolve a groupBy aggregation
+
+- **GIVEN** a list query with a `groupBy` argument and a schema bound to a register
+- **WHEN** `resolveGroupBy()` runs
+- **THEN** it MUST normalize the raw args (field, interval, from, to, metric lowercased, metricField) and validate them through the timeseries validator
+- **AND** it MUST run the aggregation via the aggregation runner and return buckets as `[{key: string, value: float}]`
+- **AND** a validation error or RBAC denial MUST be re-thrown as a GraphQL `Error` (field-level), and a schema with no register MUST return `null` rather than erroring
+
+#### Scenario: Flush the relation buffer in one batch
+
+- **GIVEN** buffered relation UUIDs collected during nested resolution
+- **WHEN** `flushRelationBuffer()` runs
+- **THEN** it MUST clear the buffer, batch-load all UUIDs via `RelationHandler::bulkLoadRelationshipsBatched()`, and store each loaded object in `relationCache` keyed by UUID
+- **AND** an empty buffer MUST be a no-op, and a load failure MUST be caught and logged as a warning rather than propagated
+
+#### Scenario: Encode an opaque pagination cursor
+
+- **GIVEN** an object UUID and an offset position
+- **WHEN** `encodeCursor()` runs
+- **THEN** it MUST return a base64-encoded JSON string containing `{uuid, offset}`
 
 ## Current Implementation Status
 

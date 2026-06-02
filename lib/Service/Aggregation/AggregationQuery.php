@@ -13,6 +13,9 @@
  * gte / lt / lte / ne (mirrors the inline magic-table SQL path that
  * lived in `AggregationRunner::tryNativeAggregation`).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *
@@ -23,6 +26,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/aggregations-backend-native/tasks.md "SearchBackendInterface::aggregate"
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
  */
 
 declare(strict_types=1);
@@ -99,6 +103,8 @@ class AggregationQuery
      *   Fail-fast validation chain: each `if` is one independent guard
      *   against bad input. Extracting them would reduce the count but
      *   obscure the per-rule error messages.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      */
     public static function create(
         string $metric,
@@ -193,6 +199,8 @@ class AggregationQuery
      * Get the groupBy field (or null when ungrouped).
      *
      * @return ?string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      */
     public function getGroupByField(): ?string
     {
@@ -200,8 +208,13 @@ class AggregationQuery
             return null;
         }
 
-        $field = ($this->groupBy['field'] ?? null);
-        return is_string($field) === true ? $field : null;
+        $field      = ($this->groupBy['field'] ?? null);
+        $fieldValue = null;
+        if (is_string($field) === true) {
+            $fieldValue = $field;
+        }
+
+        return $fieldValue;
 
     }//end getGroupByField()
 
@@ -215,4 +228,60 @@ class AggregationQuery
         return ($this->dateBucket !== null);
 
     }//end hasDateBucket()
+
+    /**
+     * Serialise the query to a stable associative array.
+     *
+     * The output is the canonical input to the ad-hoc aggregation cache
+     * key (see {@see AggregationCache::getAdhoc()}). Filter sub-arrays are
+     * recursively ksort-sorted so two structurally-equivalent queries
+     * produce identical JSON encodings — `{a: 1, b: 2}` and `{b: 2, a: 1}`
+     * hash to the same cache key.
+     *
+     * @return array{
+     *   metric: string,
+     *   field: ?string,
+     *   filter: array<string, mixed>,
+     *   groupBy: array<string, mixed>|null,
+     *   dateBucket: array<string, mixed>|null
+     * } Canonical wire shape of the query.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+     */
+    public function toArray(): array
+    {
+        return [
+            'metric'     => $this->metric,
+            'field'      => $this->field,
+            'filter'     => self::canonicaliseFilter(filter: $this->filter),
+            'groupBy'    => $this->groupBy,
+            'dateBucket' => $this->dateBucket,
+        ];
+
+    }//end toArray()
+
+    /**
+     * Recursively ksort the filter map.
+     *
+     * Operator sub-arrays (e.g. `{gt: 5, lte: 10}`) get the same treatment
+     * so the resulting JSON encoding is stable across input orderings.
+     *
+     * @param array<string, mixed> $filter Filter map to canonicalise.
+     *
+     * @return array<string, mixed> Sorted filter map.
+     */
+    private static function canonicaliseFilter(array $filter): array
+    {
+        ksort($filter);
+        foreach ($filter as $key => $value) {
+            if (is_array($value) === true) {
+                $sub = $value;
+                ksort($sub);
+                $filter[$key] = $sub;
+            }
+        }
+
+        return $filter;
+
+    }//end canonicaliseFilter()
 }//end class

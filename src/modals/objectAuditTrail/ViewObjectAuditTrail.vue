@@ -109,6 +109,9 @@ export default {
 			auditTrail: {}, // Initialize with an empty object
 		}
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — hydrates the audit-trail view modal on mount.
+	 */
 	mounted() {
 		// Assuming objectStore.auditTrailItem is a single audit trail object
 		this.auditTrail = objectStore.auditTrailItem || {}

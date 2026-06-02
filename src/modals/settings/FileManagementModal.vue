@@ -121,6 +121,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec exclude Modal data-load plumbing — loads file-vectorization config (stubbed).
+		 */
 		async loadConfiguration() {
 			try {
 				// TODO: Load vectorization config from backend
@@ -131,6 +134,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Modal save plumbing — posts file-vectorization config to the settings endpoint.
+		 */
 		async saveConfiguration() {
 			this.saving = true
 

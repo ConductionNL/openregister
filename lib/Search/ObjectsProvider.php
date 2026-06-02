@@ -5,6 +5,9 @@
  *
  * This file contains the provider class for the objects search.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Search
  * @package  OCA\OpenRegister\Search
  *
@@ -461,7 +464,11 @@ class ObjectsProvider implements IFilteringProvider
             try {
                 $schema = $this->schemaMapper->find($schemaId);
                 $title  = $schema->getTitle();
-                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $schemaId);
+                if ($title !== null && $title !== '') {
+                    $this->nameCache[$key] = $title;
+                } else {
+                    $this->nameCache[$key] = (string) $schemaId;
+                }
             } catch (\Exception $e) {
                 $this->nameCache[$key] = (string) $schemaId;
             }
@@ -486,7 +493,11 @@ class ObjectsProvider implements IFilteringProvider
             try {
                 $register = $this->registerMapper->find($registerId);
                 $title    = $register->getTitle();
-                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $registerId);
+                if ($title !== null && $title !== '') {
+                    $this->nameCache[$key] = $title;
+                } else {
+                    $this->nameCache[$key] = (string) $registerId;
+                }
             } catch (\Exception $e) {
                 $this->nameCache[$key] = (string) $registerId;
             }

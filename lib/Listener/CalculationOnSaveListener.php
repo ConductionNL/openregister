@@ -8,6 +8,9 @@
  * evaluator and patches the field into the object payload before
  * persistence.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -55,6 +58,8 @@ class CalculationOnSaveListener implements IEventListener
      * @param LoggerInterface      $logger       PSR logger for warnings.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-1
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -69,6 +74,8 @@ class CalculationOnSaveListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-2
      */
     public function handle(Event $event): void
     {
@@ -95,6 +102,8 @@ class CalculationOnSaveListener implements IEventListener
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-3
      */
     private function process(ObjectEntity $object, bool $isUpdate): void
     {
@@ -115,16 +124,26 @@ class CalculationOnSaveListener implements IEventListener
         // `@self.created`, `@self.updated`, etc. via the CalculationEvaluator's
         // dotted prop path. ObjectEntity carries these on the entity itself,
         // not in the data array.
-        $created       = $object->getCreated();
-        $updated       = $object->getUpdated();
+        $created          = $object->getCreated();
+        $updated          = $object->getUpdated();
+        $createdFormatted = null;
+        if ($created !== null) {
+            $createdFormatted = $created->format(\DateTimeInterface::ATOM);
+        }//end if
+
+        $updatedFormatted = null;
+        if ($updated !== null) {
+            $updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
+        }//end if
+
         $data['@self'] = [
             'id'       => $object->getUuid(),
             'uuid'     => $object->getUuid(),
             'register' => $object->getRegister(),
             'schema'   => $object->getSchema(),
             'owner'    => $object->getOwner(),
-            'created'  => $created !== null ? $created->format(\DateTimeInterface::ATOM) : null,
-            'updated'  => $updated !== null ? $updated->format(\DateTimeInterface::ATOM) : null,
+            'created'  => $createdFormatted,
+            'updated'  => $updatedFormatted,
         ];
 
         foreach ($calcs as $name => $spec) {
@@ -173,6 +192,8 @@ class CalculationOnSaveListener implements IEventListener
      * @param mixed $value Raw value returned by the evaluator.
      *
      * @return mixed JSON-serialisable representation of the value.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-4
      */
     private function serialise(mixed $value): mixed
     {
@@ -189,6 +210,8 @@ class CalculationOnSaveListener implements IEventListener
      * @param ObjectEntity $object Object whose schema reference to resolve.
      *
      * @return Schema|null Resolved schema, or null on lookup failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-5
      */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
@@ -210,11 +233,18 @@ class CalculationOnSaveListener implements IEventListener
      * @param Schema $schema Schema to inspect.
      *
      * @return array<string, mixed>|null Calculations map, or null when absent.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-6
      */
     private function getCalculations(Schema $schema): ?array
     {
         $config = ($schema->getConfiguration() ?? []);
         $value  = ($config['x-openregister-calculations'] ?? null);
-        return is_array($value) === true ? $value : null;
+        $result = null;
+        if (is_array($value) === true) {
+            $result = $value;
+        }
+
+        return $result;
     }//end getCalculations()
 }//end class

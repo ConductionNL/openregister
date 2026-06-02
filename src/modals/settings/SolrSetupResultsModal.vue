@@ -239,6 +239,9 @@ export default {
 	emits: ['close', 'retry', 'start-setup'],
 
 	computed: {
+		/**
+		 * @spec exclude Computed predicate matching known configset-propagation error patterns for a tailored hint; UI presentation helper.
+		 */
 		isConfigSetPropagationError() {
 			if (!this.results || this.results.success) {
 				return false
@@ -265,6 +268,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
+		 */
 		getStepStatus(step) {
 			// Handle both step.success (boolean) and step.status (string) formats
 			if (step.success === true || step.status === 'completed') return 'success'
@@ -272,6 +278,9 @@ export default {
 			return 'pending'
 		},
 
+		/**
+		 * @spec exclude Maps a step status to a display icon; UI presentation helper.
+		 */
 		getStepIcon(step) {
 			// Handle both step.success (boolean) and step.status (string) formats
 			if (step.success === true || step.status === 'completed') return '✅'
@@ -279,6 +288,9 @@ export default {
 			return '⏳'
 		},
 
+		/**
+		 * @spec exclude Maps a step status to display text; UI presentation helper.
+		 */
 		getStepStatusText(step) {
 			// Handle both step.success (boolean) and step.status (string) formats
 			if (step.success === true || step.status === 'completed') return 'Completed'
@@ -287,10 +299,16 @@ export default {
 			return 'Pending'
 		},
 
+		/**
+		 * @spec exclude Humanizes a detail key for display; UI presentation helper.
+		 */
 		formatDetailLabel(key) {
 			return key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/^\w/, c => c.toUpperCase())
 		},
 
+		/**
+		 * @spec exclude Stringifies a detail value for display; UI presentation helper.
+		 */
 		formatDetailValue(value) {
 			if (typeof value === 'boolean') {
 				return value ? 'Yes' : 'No'
@@ -301,6 +319,9 @@ export default {
 			return String(value)
 		},
 
+		/**
+		 * @spec exclude Emits a start-setup event to the parent; UI plumbing.
+		 */
 		startSetup() {
 			this.$emit('start-setup')
 		},

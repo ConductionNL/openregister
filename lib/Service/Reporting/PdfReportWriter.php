@@ -17,8 +17,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service\Reporting
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -28,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Reporting;
 
 use Dompdf\Dompdf;
+use RuntimeException;
 use Dompdf\Options;
 
 /**
@@ -52,6 +54,8 @@ class PdfReportWriter
      * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
      *
      * @return string Rendered PDF bytes.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-4
      */
     public function write(array $dashboard, array $resolvedWidgets): string
     {
@@ -87,7 +91,7 @@ class PdfReportWriter
         // CVEs (CVE-2022-41343, CVE-2023-23924); these flags are the
         // primary mitigation and must stay false.
         if ($options->getIsRemoteEnabled() !== false || $options->getIsPhpEnabled() !== false) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'PdfReportWriter sandbox configuration drifted; remote-fetch / PHP execution must remain disabled.'
             );
         }

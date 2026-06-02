@@ -58,6 +58,8 @@ class ProviderUnavailableException extends \RuntimeException
      * @param \Throwable|null $previous Optional wrapped throwable.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
      */
     public function __construct(string $message, string $cause, ?\Throwable $previous=null)
     {
@@ -70,6 +72,8 @@ class ProviderUnavailableException extends \RuntimeException
      *
      * @return string One of openconnector-down |
      *                openconnector-source-missing | upstream-service-down.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
      */
     public function getCause(): string
     {
@@ -81,6 +85,8 @@ class ProviderUnavailableException extends \RuntimeException
      * the UI renders (per AD-23: `details.cause`).
      *
      * @return array{cause: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
      */
     public function getDetails(): array
     {

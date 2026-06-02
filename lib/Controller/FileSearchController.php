@@ -5,6 +5,9 @@
  *
  * Controller for file search operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -211,6 +214,8 @@ class FileSearchController extends Controller
      *     total?: int<0, max>, results?: array<int, array<string, mixed>>,
      *     search_type?: 'semantic'},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function semanticSearch(): JSONResponse
     {
@@ -272,6 +277,8 @@ class FileSearchController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with hybrid search results or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      */
     public function hybridSearch(): JSONResponse
     {

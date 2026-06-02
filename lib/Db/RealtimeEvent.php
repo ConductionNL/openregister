@@ -8,6 +8,9 @@
  * the realtime endpoint with `?since={id}` to receive every event
  * newer than their last seen id.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -158,7 +161,11 @@ class RealtimeEvent extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        $payload = $this->payload !== null ? json_decode($this->payload, true) : null;
+        $payload = null;
+        if ($this->payload !== null) {
+            $payload = json_decode($this->payload, true);
+        }
+
         if (is_array($payload) === false) {
             $payload = [];
         }

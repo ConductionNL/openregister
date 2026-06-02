@@ -3,6 +3,9 @@
 /**
  * Listener that injects the mail sidebar script into the Nextcloud Mail app.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -105,9 +108,12 @@ class MailAppScriptListener implements IEventListener
             return;
         }
 
-        // Inject the sidebar script.
-        Util::addScript('openregister', 'openregister-mail-sidebar');
-        Util::addStyle('openregister', 'mail-sidebar');
+        // Inject the sidebar script (only if compiled JS exists).
+        $jsPath = __DIR__.'/../../js/openregister-mail-sidebar.js';
+        if (file_exists($jsPath) === true) {
+            Util::addScript('openregister', 'openregister-mail-sidebar');
+            Util::addStyle('openregister', 'mail-sidebar');
+        }
 
         $this->logger->debug(
                 'Mail sidebar script injected for user {user}',

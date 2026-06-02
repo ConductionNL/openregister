@@ -87,6 +87,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude computed display helper for default copy name
+		 */
 		defaultCopyName() {
 			const originalName = objectStore.objectItem?.['@self']?.name
 				|| objectStore.objectItem?.name
@@ -107,6 +110,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -115,6 +121,9 @@ export default {
 			this.error = false
 			this.copyName = ''
 		},
+		/**
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 */
 		async copyObject() {
 			if (!this.copyName.trim()) {
 				this.error = 'Please provide a name for the copy'

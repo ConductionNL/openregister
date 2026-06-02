@@ -38,6 +38,7 @@
 						<div class="assignment-card">
 							<label>{{ t('openregister', 'Object Collection') }}</label>
 							<NcSelect
+						input-label="Selected Object Collection"
 								v-model="selectedObjectCollection"
 								:options="collectionOptions"
 								:placeholder="t('openregister', 'Select collection for objects')"
@@ -55,6 +56,7 @@
 						<div class="assignment-card">
 							<label>{{ t('openregister', 'File Collection') }}</label>
 							<NcSelect
+						input-label="Selected File Collection"
 								v-model="selectedFileCollection"
 								:options="collectionOptions"
 								:placeholder="t('openregister', 'Select collection for files')"
@@ -197,6 +199,7 @@
 					<div class="form-group">
 						<label>{{ t('openregister', 'ConfigSet') }}*</label>
 						<NcSelect
+						input-label="New Collection Data Config Set"
 							v-model="newCollectionData.configSet"
 							:options="configSetOptions"
 							:placeholder="t('openregister', 'Select ConfigSet')"
@@ -368,6 +371,9 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed display helper for collection select options
+		 */
 		collectionOptions() {
 			return this.collections.map(col => ({
 				id: col.name,
@@ -375,6 +381,9 @@ export default {
 			}))
 		},
 
+		/**
+		 * @spec exclude computed display helper for config-set select options
+		 */
 		configSetOptions() {
 			return this.configSets.map(cs => ({
 				id: cs.name,
@@ -383,6 +392,9 @@ export default {
 		},
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook loading initial modal data
+	 */
 	async mounted() {
 		await this.loadCollections()
 		await this.loadConfigSets()
@@ -391,12 +403,18 @@ export default {
 		this.$root.$on('configset-updated', this.handleConfigSetUpdate)
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook cleaning up event listener
+	 */
 	beforeDestroy() {
 		// Clean up event listener
 		this.$root.$off('configset-updated', this.handleConfigSetUpdate)
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		async loadCollections() {
 			this.loading = true
 			this.error = false
@@ -422,6 +440,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude form-state loader for config sets via API
+		 */
 		async loadConfigSets() {
 			try {
 				const url = generateUrl('/apps/openregister/api/solr/configsets')
@@ -435,6 +456,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude form-state loader for current collection assignments
+		 */
 		async loadCurrentAssignments() {
 			try {
 				// Load settings to get current collection assignments
@@ -471,6 +495,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude modal submit handler persisting collection assignments via API
+		 */
 		async updateAssignments() {
 			try {
 				// Extract the IDs from the objects (NcSelect returns {id, label})
@@ -505,6 +532,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude sub-dialog open handler resetting create-collection form
+		 */
 		async openCreateDialog() {
 			// Show loading state on button
 			this.loadingConfigSets = true
@@ -527,11 +557,17 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude event-listener handler reloading config sets
+		 */
 		handleConfigSetUpdate() {
 			console.info('📦 ConfigSet updated, reloading ConfigSets list')
 			this.loadConfigSets()
 		},
 
+		/**
+		 * @spec exclude sub-dialog close + form-state reset handler
+		 */
 		closeCreateDialog() {
 			this.showCreateDialog = false
 			this.newCollectionData = {
@@ -543,6 +579,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude sub-dialog submit handler creating a collection via API
+		 */
 		async createCollection() {
 			this.creating = true
 
@@ -576,18 +615,27 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude sub-dialog open handler seeding copy form
+		 */
 		openCopyDialog(collection) {
 			this.collectionToCopy = collection
 			this.newCollectionName = `${collection.name}_copy`
 			this.showCopyDialog = true
 		},
 
+		/**
+		 * @spec exclude sub-dialog close + form-state reset handler
+		 */
 		closeCopyDialog() {
 			this.showCopyDialog = false
 			this.collectionToCopy = null
 			this.newCollectionName = ''
 		},
 
+		/**
+		 * @spec exclude sub-dialog submit handler copying a collection via API
+		 */
 		async copyCollection() {
 			this.copying = true
 
@@ -614,16 +662,25 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude display helper truncating name
+		 */
 		truncateName(name, maxLength = 35) {
 			if (!name || name.length <= maxLength) return name
 			return name.substring(0, maxLength) + '...'
 		},
 
+		/**
+		 * @spec exclude display helper formatting number
+		 */
 		formatNumber(num) {
 			if (typeof num !== 'number') return num
 			return num.toLocaleString()
 		},
 
+		/**
+		 * @spec exclude action handler reindexing a collection via API
+		 */
 		async reindexCollection(collection) {
 			if (!confirm(this.t('openregister', 'Are you sure you want to reindex collection "{name}"?\n\nThis will:\n• Rebuild the index with all objects\n• Take several minutes to complete\n• May impact search performance during reindexing', { name: collection.name }))) {
 				return
@@ -649,6 +706,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude action handler clearing a collection via API
+		 */
 		async clearCollection(collection) {
 			if (!confirm(this.t('openregister', 'Are you sure you want to clear all data from collection "{name}"?\n\nThis will:\n• Delete all indexed documents\n• Keep the collection structure intact\n• This action cannot be undone', { name: collection.name }))) {
 				return
@@ -670,6 +730,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude action handler deleting a collection via API
+		 */
 		async deleteCollection(collection) {
 			if (!confirm(this.t('openregister', 'Are you sure you want to DELETE collection "{name}"?\n\nThis will:\n• Permanently delete the collection and all its data\n• Remove all indexed documents\n• This action cannot be undone', { name: collection.name }))) {
 				return

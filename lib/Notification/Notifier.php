@@ -6,6 +6,9 @@
  * This file contains the notifier class for displaying notifications
  * in the Nextcloud notification center.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Notification
  * @package  OCA\OpenRegister\Notification
  *
@@ -98,7 +101,9 @@ class Notifier implements INotifier
                 return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
 
             default:
-                // Unknown subject.
+                // Unknown subject. Object-lifecycle subjects
+                // (object_created / object_updated / object_transitioned)
+                // are rendered by AnnotationNotifier, not here.
                 throw new InvalidArgumentException('Unknown subject');
         }//end switch
     }//end prepare()
@@ -122,13 +127,13 @@ class Notifier implements INotifier
         $newVersion         = $parameters['newVersion'] ?? 'unknown';
 
         $notification->setParsedSubject(
-            $l->t(text: 'Configuration update available: %s', args: [$configurationTitle])
+            $l->t('Configuration update available: %s', [$configurationTitle])
         );
 
         $notification->setParsedMessage(
             $l->t(
-                text: 'A new version (%s) of configuration "%s" is available. Current version: %s',
-                args: [$newVersion, $configurationTitle, $currentVersion]
+                'A new version (%s) of configuration "%s" is available. Current version: %s',
+                [$newVersion, $configurationTitle, $currentVersion]
             )
         );
 
@@ -139,7 +144,7 @@ class Notifier implements INotifier
         // Add action to view the configuration.
         if (($parameters['configurationId'] ?? null) !== null) {
             $action = $notification->createAction();
-            $action->setLabel($l->t(text: 'View'))
+            $action->setLabel($l->t('View'))
                 ->setPrimary(true)
                 ->setLink(
                     link: $this->urlGenerator->linkToRouteAbsolute(

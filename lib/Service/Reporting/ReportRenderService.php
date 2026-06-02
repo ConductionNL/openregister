@@ -26,8 +26,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service\Reporting
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -89,6 +90,8 @@ class ReportRenderService
      *
      * @throws InvalidArgumentException When the format is unsupported
      *                                  or the dashboard is malformed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-1
      */
     public function render($dashboard, string $format='xlsx'): array
     {
@@ -159,6 +162,8 @@ class ReportRenderService
      * @param array<string, mixed> $widget Widget descriptor with `dataSource`.
      *
      * @return array<string, mixed>|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-2
      */
     private function resolveWidgetData(array $widget): ?array
     {
@@ -227,7 +232,11 @@ class ReportRenderService
     {
         if ($dashboard instanceof ObjectEntity === true) {
             $payload = $dashboard->getObject();
-            return is_array($payload) === true ? $payload : [];
+            if (is_array($payload) === true) {
+                return $payload;
+            }
+
+            return [];
         }
 
         if (is_array($dashboard) === true) {
@@ -253,7 +262,11 @@ class ReportRenderService
         $slug = strtolower(trim($value));
         $slug = preg_replace('/[^a-z0-9]+/', '-', $slug) ?? $slug;
         $slug = trim($slug, '-');
-        return $slug !== '' ? $slug : 'dashboard';
+        if ($slug !== '') {
+            return $slug;
+        }
+
+        return 'dashboard';
 
     }//end slugify()
 

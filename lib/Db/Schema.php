@@ -6,6 +6,9 @@
  * This file contains the class for handling schema related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -1575,6 +1578,10 @@ class Schema extends Entity implements JsonSerializable
      *   Example: 'profile.avatar' (should contain base64 encoded image data)
      * - 'allowFiles': (bool) Whether this schema allows file attachments
      * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
+     * - 'defaultAutoShare': (bool) Default value for the "Automatically publish"
+     *   toggle on the attachment upload dialog. true seeds the toggle on; absent
+     *   or false keeps it off. Users can always override per upload.
+     *   See: ConductionNL/opencatalogi#577
      *
      * @param array|string|null $configuration The configuration array/string to validate and set
      *
@@ -1645,7 +1652,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields      = ['allowFiles', 'autoPublish'];
+        $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
         $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
 
         foreach ($configuration as $key => $value) {
@@ -1696,17 +1703,18 @@ class Schema extends Entity implements JsonSerializable
             if (str_starts_with((string) $key, 'x-openregister-') === true) {
                 if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
                     $validatedConfig[$key] = $value;
-                } else {
-                    // R07: track unknown `x-openregister-*` keys (almost
-                    // always typos like `x-openregister-lifecycl`) so
-                    // SchemaMapper can log them via its structured
-                    // logger after save. The entity has no DI surface
-                    // for a logger and the ADR added in F06 bans the
-                    // `\OC::$server` static accessor — collecting on
-                    // the entity and bridging through the mapper is
-                    // the cleanest path that still surfaces a signal.
-                    $this->droppedAnnotationKeys[] = (string) $key;
-                }//end if
+                    continue;
+                }
+
+                // R07: track unknown `x-openregister-*` keys (almost
+                // always typos like `x-openregister-lifecycl`) so
+                // SchemaMapper can log them via its structured
+                // logger after save. The entity has no DI surface
+                // for a logger and the ADR added in F06 bans the
+                // `\OC::$server` static accessor — collecting on
+                // the entity and bridging through the mapper is
+                // the cleanest path that still surfaces a signal.
+                $this->droppedKeys[] = (string) $key;
             }//end if
         }//end foreach
 
@@ -1714,15 +1722,15 @@ class Schema extends Entity implements JsonSerializable
     }//end validateConfigurationArray()
 
     /**
-     * R07: dropped `x-openregister-*` keys collected during the most
-     * recent `validateConfigurationArray()` pass. SchemaMapper reads
+     * Dropped `x-openregister-*` annotation keys collected during the most
+     * recent `validateConfigurationArray()` pass (R07). SchemaMapper reads
      * this after `setConfiguration()` and emits a logger->warning()
      * for each entry so operators see a signal without us having to
      * inject a logger into the entity itself.
      *
      * @var array<int, string>
      */
-    private array $droppedAnnotationKeys = [];
+    private array $droppedKeys = [];
 
     /**
      * Return + reset the list of dropped annotation keys.
@@ -1736,8 +1744,8 @@ class Schema extends Entity implements JsonSerializable
      */
     public function consumeDroppedAnnotationKeys(): array
     {
-        $dropped = $this->droppedAnnotationKeys;
-        $this->droppedAnnotationKeys = [];
+        $dropped           = $this->droppedKeys;
+        $this->droppedKeys = [];
         return $dropped;
     }//end consumeDroppedAnnotationKeys()
 
@@ -1858,6 +1866,8 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-widgets',
         'x-openregister-relations',
         'x-openregister-processing-activity',
+        'x-openregister-archival',
+        'x-openregister-seed',
     ];
 
     /**

@@ -3,6 +3,9 @@
 /**
  * OpenRegister FileUnlockedEvent
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
@@ -30,6 +33,8 @@ class FileUnlockedEvent extends Event
      * @param array  $data       Additional event data.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
      */
     public function __construct(
         private readonly string $objectUuid,

@@ -21,8 +21,9 @@
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -111,6 +112,8 @@ class ReportRenderJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-8
      */
     protected function run($argument): void
     {
@@ -244,11 +247,16 @@ class ReportRenderJob extends TimedJob
 
         $channel = (string) ($delivery['channel'] ?? 'files');
         if ($channel === 'files' || $channel === 'both') {
+            $deliveryArray = [];
+            if (is_array($delivery) === true) {
+                $deliveryArray = $delivery;
+            }
+
             $this->writeToFiles(
                 dashboard: $dashboard,
                 payload: $payload,
                 rendered: $rendered,
-                delivery: is_array($delivery) === true ? $delivery : []
+                delivery: $deliveryArray
             );
         }
 

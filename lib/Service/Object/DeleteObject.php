@@ -12,6 +12,9 @@
  * - Maintaining referential integrity
  * - Tracking deletion operations
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service
  *
@@ -174,7 +177,11 @@ class DeleteObject
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
         // Handle array input - find object with context (searches across all magic tables).
         // @psalm-suppress UndefinedInterfaceMethod.
-        $identifier = $object instanceof ObjectEntity ? $object->getUuid() : $object['id'];
+        if ($object instanceof ObjectEntity) {
+            $identifier = $object->getUuid();
+        } else {
+            $identifier = $object['id'];
+        }
 
         $includeDeleted = ($object instanceof ObjectEntity);
         $context        = $this->objectEntityMapper->findAcrossAllSources(
@@ -211,9 +218,19 @@ class DeleteObject
             $result = true;
 
             // Cache invalidation for permanent delete.
+            $registerIdForCache = null;
+            if (is_numeric($objectEntity->getRegister()) === true) {
+                $registerIdForCache = (int) $objectEntity->getRegister();
+            }
+
+            $schemaIdForCache = null;
+            if (is_numeric($objectEntity->getSchema()) === true) {
+                $schemaIdForCache = (int) $objectEntity->getSchema();
+            }
+
             $this->cacheHandler->invalidateForObjectChange(
-                registerId: is_numeric($objectEntity->getRegister()) === true ? (int) $objectEntity->getRegister() : null,
-                schemaId: is_numeric($objectEntity->getSchema()) === true ? (int) $objectEntity->getSchema() : null,
+                registerId: $registerIdForCache,
+                schemaId: $schemaIdForCache,
                 operation: 'permanent_delete'
             );
 
@@ -359,22 +376,32 @@ class DeleteObject
      * has incoming onDelete references from other schemas, walks the dependency graph
      * to detect blockers (RESTRICT) and apply actions (CASCADE, SET_NULL, SET_DEFAULT).
      *
-     * @param Register|int|string $register         The register containing the object.
-     * @param Schema|int|string   $schema           The schema of the object.
-     * @param string              $uuid             The UUID of the object to delete.
-     * @param string|null         $originalObjectId The ID of original object for cascading.
-     * @param bool                $_rbac            Whether to apply RBAC checks (default: true).
-     * @param bool                $_multitenancy    Whether to apply multitenancy filtering (default: true).
+     * @param Register|int|string|null $register         The register containing the object.
+     * @param Schema|int|string|null   $schema           The schema of the object.
+     * @param string                   $uuid             The UUID of the object to delete.
+     * @param string|null              $originalObjectId The ID of original object for cascading.
+     * @param bool                     $_rbac            Whether to apply RBAC checks (default: true).
+     * @param bool                     $_multitenancy    Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $scoped           When true, the caller has guaranteed `$register`
+     *                                                   and `$schema` resolve to a specific magic table
+     *                                                   and the lookup MUST target only that table —
+     *                                                   a UUID in another scope raises DoesNotExistException
+     *                                                   without touching any row (#1638).
+     *                                                   When false (default), legacy cross-table lookup
+     *                                                   via `findAcrossAllSources` is used.
      *
      * @return bool Whether the deletion was successful.
      *
-     * @throws ReferentialIntegrityException If deletion is blocked by RESTRICT constraints.
-     * @throws Exception If there is an error during deletion.
+     * @throws ReferentialIntegrityException                If deletion is blocked by RESTRICT constraints.
+     * @throws \OCP\AppFramework\Db\DoesNotExistException   If `$scoped` is true and the UUID is not present
+     *                                                       in the given (register, schema) magic table.
+     * @throws Exception                                    If there is an error during deletion.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/changes/scoped-object-delete-api/tasks.md#2
      */
     public function deleteObject(
         Register | int | string | null $register,
@@ -382,21 +409,29 @@ class DeleteObject
         string $uuid,
         ?string $originalObjectId=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        bool $scoped=false
     ): bool {
         // Reset cascade count for root deletions.
         if ($originalObjectId === null) {
             $this->lastCascadeCount = 0;
         }
 
-        // Find object with context (searches across all magic tables).
-        $context = $this->objectEntityMapper->findAcrossAllSources(
-            identifier: $uuid,
-            includeDeleted: true,
+        // Resolve the lookup: when the caller has guaranteed a (register, schema)
+        // scope, use the scoped `MagicMapper::find()` path which targets exactly
+        // one magic table. Otherwise fall back to the legacy cross-table scan.
+        // The scoped path raises DoesNotExistException if the UUID is not in
+        // the requested scope — this is the fix for #1638.
+        $context = $this->resolveDeletionContext(
+            register: $register,
+            schema: $schema,
+            uuid: $uuid,
+            scoped: $scoped,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
         );
-        $object  = $context['object'];
+
+        $object = $context['object'];
 
         // Root deletions: check referential integrity and handle cascade.
         if ($originalObjectId === null) {
@@ -426,6 +461,75 @@ class DeleteObject
         }//end try
 
     }//end deleteObject()
+
+    /**
+     * Resolve the lookup context for a deletion call.
+     *
+     * Centralises the branch between the scoped MagicMapper::find() path
+     * (introduced for #1638) and the legacy `findAcrossAllSources` cross-table
+     * scan. The early return on the scoped path keeps the dispatch flat and
+     * avoids an else-clause (PHPMD ElseExpression).
+     *
+     * @param Register|int|string|null $register      Register scope (object, ID, UUID, or slug).
+     * @param Schema|int|string|null   $schema        Schema scope.
+     * @param string                   $uuid          The UUID being deleted.
+     * @param bool                     $scoped        When true, the caller has guaranteed
+     *                                                $register/$schema resolve to a specific
+     *                                                magic table; lookup MUST target only that table.
+     * @param bool                     $_rbac         Whether to apply RBAC checks.
+     * @param bool                     $_multitenancy Whether to apply multitenancy filtering.
+     *
+     * @return array{object: ObjectEntity, register: Register|int|string, schema: Schema|int|string}
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If $scoped is true and the UUID is
+     *                                                     not present in the given magic table.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/scoped-object-delete-api/tasks.md#2
+     */
+    private function resolveDeletionContext(
+        Register | int | string | null $register,
+        Schema | int | string | null $schema,
+        string $uuid,
+        bool $scoped,
+        bool $_rbac,
+        bool $_multitenancy
+    ): array {
+        // Scoped path: lookup hits exactly one magic table — a UUID in a
+        // different scope raises DoesNotExistException. This is the fix for
+        // #1638 (cross-scope silent deletes).
+        if ($scoped === true
+            && $register instanceof Register === true
+            && $schema instanceof Schema === true
+        ) {
+            $scopedObject = $this->objectEntityMapper->find(
+                identifier: $uuid,
+                register: $register,
+                schema: $schema,
+                includeDeleted: true,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+
+            return [
+                'object'   => $scopedObject,
+                'register' => $register,
+                'schema'   => $schema,
+            ];
+        }
+
+        // Legacy path: cross-table scan via findAcrossAllSources — still in
+        // use by every unscoped caller. Soft-deprecated; preferred call site
+        // is the scoped branch above.
+        return $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $uuid,
+            includeDeleted: true,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+
+    }//end resolveDeletionContext()
 
     /**
      * Handle referential integrity checks and cascade deletion for root deletions.

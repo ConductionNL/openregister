@@ -6,6 +6,9 @@
  * Recurring background job that periodically processes files for text extraction.
  * This job runs at configurable intervals to handle files when extraction mode is set to 'cron'.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *

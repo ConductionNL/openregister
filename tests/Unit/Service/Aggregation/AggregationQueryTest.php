@@ -158,4 +158,78 @@ class AggregationQueryTest extends TestCase
     }//end testGroupByAndDateBucketAreMutuallyExclusive()
 
 
+    public function testToArrayIncludesAllFields(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'sum',
+            field: 'amount',
+            filter: ['status' => 'open'],
+            dateBucket: [
+                'field' => 'created',
+                'start' => '2026-01-01T00:00:00Z',
+                'end'   => '2026-02-01T00:00:00Z',
+                'gap'   => 'day',
+            ]
+        );
+        $arr = $q->toArray();
+        $this->assertSame('sum', $arr['metric']);
+        $this->assertSame('amount', $arr['field']);
+        $this->assertSame(['status' => 'open'], $arr['filter']);
+        $this->assertNull($arr['groupBy']);
+        $this->assertSame('created', $arr['dateBucket']['field']);
+        $this->assertSame('day', $arr['dateBucket']['gap']);
+
+    }//end testToArrayIncludesAllFields()
+
+
+    public function testToArrayIsStableUnderFilterKeyReordering(): void
+    {
+        $first = AggregationQuery::create(
+            metric: 'count',
+            filter: ['status' => 'open', 'priority' => 'high']
+        );
+        $second = AggregationQuery::create(
+            metric: 'count',
+            filter: ['priority' => 'high', 'status' => 'open']
+        );
+        $this->assertSame(
+            sha1((string) json_encode($first->toArray())),
+            sha1((string) json_encode($second->toArray())),
+            'toArray() output MUST be stable under filter-key reordering'
+        );
+
+    }//end testToArrayIsStableUnderFilterKeyReordering()
+
+
+    public function testToArrayCanonicalisesOperatorSubArrays(): void
+    {
+        $first = AggregationQuery::create(
+            metric: 'count',
+            filter: ['amount' => ['gt' => 0, 'lte' => 100]]
+        );
+        $second = AggregationQuery::create(
+            metric: 'count',
+            filter: ['amount' => ['lte' => 100, 'gt' => 0]]
+        );
+        $this->assertSame(
+            sha1((string) json_encode($first->toArray())),
+            sha1((string) json_encode($second->toArray())),
+            'toArray() output MUST be stable under operator-key reordering inside filter sub-arrays'
+        );
+
+    }//end testToArrayCanonicalisesOperatorSubArrays()
+
+
+    public function testToArrayReturnsNullForMissingOptionalFields(): void
+    {
+        $q   = AggregationQuery::create(metric: 'count');
+        $arr = $q->toArray();
+        $this->assertNull($arr['field']);
+        $this->assertNull($arr['groupBy']);
+        $this->assertNull($arr['dateBucket']);
+        $this->assertSame([], $arr['filter']);
+
+    }//end testToArrayReturnsNullForMissingOptionalFields()
+
+
 }//end class

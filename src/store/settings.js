@@ -305,6 +305,7 @@ export const useSettingsStore = defineStore('settings', {
 	actions: {
 		/**
 		 * Load all settings data
+		 * @spec exclude parallel fan-out wrapper over settings-load passthroughs
 		 */
 		async loadSettings() {
 			// Prevent multiple simultaneous calls
@@ -337,6 +338,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load SOLR settings
+		 * @spec exclude API passthrough to GET /api/settings/solr
 		 */
 		async loadSolrSettings() {
 			try {
@@ -372,6 +374,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Update SOLR settings
 		 * @param {object} solrData - The SOLR settings to save
+		 * @spec exclude API passthrough to PUT /api/settings/solr
 		 */
 		async updateSolrSettings(solrData) {
 			this.saving = true
@@ -417,6 +420,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Warmup SOLR index
 		 * @param {object} options - The options for the warmup operation
+		 * @spec exclude API passthrough to POST /api/settings/solr/warmup
 		 */
 		async warmupSolrIndex(options = {}) {
 			this.warmingUpSolr = true
@@ -451,6 +455,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Mass validate objects with advanced configuration
 		 * @param {object} options - The options for the mass validate operation
+		 * @spec exclude API passthrough to POST /api/settings/mass-validate
 		 */
 		async massValidate(options = {}) {
 			this.massValidating = true
@@ -504,6 +509,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Load memory prediction for mass validation
 		 * @param {number} maxObjects - The maximum number of objects to validate
+		 * @spec exclude API passthrough to POST /api/settings/mass-validate/memory-prediction
 		 */
 		async loadMassValidateMemoryPrediction(maxObjects = 0) {
 			try {
@@ -528,6 +534,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show mass validate confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showMassValidateDialog() {
 			this.showMassValidateConfirmation = true
@@ -535,6 +542,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide mass validate confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideMassValidateDialog() {
 			this.showMassValidateConfirmation = false
@@ -544,6 +552,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Confirm mass validate operation
 		 * @param {object} options - The options for the mass validate operation
+		 * @spec exclude dialog-confirm wrapper over massValidate (API passthrough)
 		 */
 		async confirmMassValidate(options = {}) {
 			this.hideMassValidateDialog()
@@ -552,6 +561,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load RBAC settings
+		 * @spec exclude API passthrough to GET /api/settings/rbac
 		 */
 		async loadRbacSettings() {
 			try {
@@ -573,6 +583,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Update RBAC settings
 		 * @param {object} rbacData - The RBAC settings to save
+		 * @spec exclude API passthrough to PUT /api/settings/rbac
 		 */
 		async updateRbacSettings(rbacData) {
 			this.saving = true
@@ -599,6 +610,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load Multitenancy settings
+		 * @spec exclude API passthrough to GET /api/settings/multitenancy
 		 */
 		async loadMultitenancySettings() {
 			try {
@@ -617,6 +629,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Update Multitenancy settings
 		 * @param {object} multitenancyData - The multitenancy settings to save
+		 * @spec exclude API passthrough to PUT /api/settings/multitenancy
 		 */
 		async updateMultitenancySettings(multitenancyData) {
 			this.saving = true
@@ -643,6 +656,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load Retention settings
+		 * @spec exclude API passthrough to GET /api/settings/retention
 		 */
 		async loadRetentionSettings() {
 			try {
@@ -658,6 +672,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Update Retention settings
 		 * @param {object} retentionData - The retention settings to save
+		 * @spec exclude API passthrough to PUT /api/settings/retention
 		 */
 		async updateRetentionSettings(retentionData) {
 			this.saving = true
@@ -684,6 +699,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get LLM settings
+		 * @spec exclude API passthrough to GET /api/settings/llm
 		 */
 		async getLlmSettings() {
 			try {
@@ -704,6 +720,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Save LLM settings (full update - use patchLlmSettings for partial updates)
 		 * @param {object} llmData - The LLM settings to save
+		 * @spec exclude API passthrough to PATCH /api/settings/llm
 		 */
 		async saveLlmSettings(llmData) {
 			try {
@@ -729,6 +746,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Patch LLM settings (partial update)
 		 * @param {object} partialData - Partial LLM data to update
+		 * @spec exclude API passthrough to PATCH /api/settings/llm (partial)
 		 */
 		async patchLlmSettings(partialData) {
 			try {
@@ -757,6 +775,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Get vector statistics
 		 * @return {Promise<object>} Vector statistics including counts by type
+		 * @spec exclude API passthrough to GET /api/vectors/stats (stat loader)
 		 */
 		async getVectorStats() {
 			try {
@@ -782,6 +801,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Test LLM connection
 		 * @param {object} connectionData - The connection data to test
+		 * @spec exclude API passthrough to POST /api/settings/llm/test
 		 */
 		async testLlmConnection(connectionData) {
 			try {
@@ -798,6 +818,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get LLM usage statistics
+		 * @spec exclude API passthrough to GET /api/settings/llm/usage
 		 */
 		async getLlmUsageStats() {
 			try {
@@ -811,6 +832,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get file settings
+		 * @spec exclude API passthrough to GET /api/settings/files
 		 */
 		async getFileSettings() {
 			try {
@@ -831,6 +853,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Save file settings
 		 * @param {object} fileData - The file settings to save
+		 * @spec exclude API passthrough to PUT /api/settings/files
 		 */
 		async saveFileSettings(fileData) {
 			try {
@@ -854,6 +877,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Get file extraction statistics
+		 * @spec exclude API passthrough to GET /api/files/stats (stat loader)
 		 */
 		async getExtractionStats() {
 			try {
@@ -869,6 +893,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Discover files in Nextcloud that aren't tracked yet
+		 * @spec exclude API passthrough to POST /api/files/discover
 		 */
 		async discoverFiles() {
 			try {
@@ -887,6 +912,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Trigger file extraction for pending or failed files
 		 * @param {string} type - 'pending' or 'failed'
+		 * @spec exclude API passthrough to POST /api/files/extract|retry-failed
 		 */
 		async triggerFileExtraction(type = 'pending') {
 			try {
@@ -907,6 +933,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Test Dolphin API connection
 		 * @param {object} connectionData - API endpoint and key
+		 * @spec exclude API passthrough to POST /api/settings/files/test-dolphin
 		 */
 		async testDolphinConnection(connectionData) {
 			try {
@@ -927,6 +954,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Test Presidio API connection
 		 * @param {object} connectionData - API endpoint
+		 * @spec exclude API passthrough to POST /api/settings/files/test-presidio
 		 */
 		async testPresidioConnection(connectionData) {
 			try {
@@ -947,6 +975,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Test OpenAnonymiser API connection
 		 * @param {object} connectionData - API endpoint
+		 * @spec exclude API passthrough to POST /api/settings/files/test-openanonymiser
 		 */
 		async testOpenAnonymiserConnection(connectionData) {
 			try {
@@ -966,6 +995,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load version information
+		 * @spec exclude API passthrough to GET /api/settings/version
 		 */
 		async loadVersionInfo() {
 			try {
@@ -983,6 +1013,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load available options (groups, users, tenants)
+		 * @spec exclude no-op placeholder (options loaded by sibling settings actions)
 		 */
 		async loadAvailableOptions() {
 			try {
@@ -995,6 +1026,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load system statistics
+		 * @spec exclude API passthrough to GET /api/settings/statistics (stat loader)
 		 */
 		async loadStats() {
 			this.loadingStats = true
@@ -1014,6 +1046,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load cache statistics
+		 * @spec exclude API passthrough to GET /api/settings/cache (stat loader)
 		 */
 		async loadCacheStats() {
 			this.loadingCacheStats = true
@@ -1034,6 +1067,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Get chat and agent statistics
 		 * @return {Promise<object>} Chat statistics including agents, conversations, and messages
+		 * @spec exclude API passthrough to GET /api/chat/stats
 		 */
 		async getChatStats() {
 			try {
@@ -1053,6 +1087,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Clear specific cache type
 		 * @param {string} type - The type of cache to clear
+		 * @spec exclude API passthrough to DELETE /api/settings/cache
 		 */
 		async clearSpecificCache(type) {
 			this.clearingCache = type
@@ -1081,6 +1116,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear all caches
+		 * @spec exclude convenience wrapper over clearSpecificCache (API passthrough)
 		 */
 		async clearAllCaches() {
 			return this.clearSpecificCache('all')
@@ -1088,6 +1124,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Warmup names cache
+		 * @spec exclude API passthrough to POST /api/settings/cache/warmup-names
 		 */
 		async warmupNamesCache() {
 			this.warmingUpCache = true
@@ -1129,6 +1166,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load cache warmup interval setting
+		 * @spec exclude API passthrough to GET /api/settings/cache/warmup-interval
 		 */
 		async loadWarmupInterval() {
 			this.loadingWarmupInterval = true
@@ -1149,6 +1187,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Save cache warmup interval setting
 		 * @param {number} interval - The interval in seconds (0 = disabled)
+		 * @spec exclude API passthrough to PUT /api/settings/cache/warmup-interval
 		 */
 		async saveWarmupInterval(interval) {
 			this.savingWarmupInterval = true
@@ -1177,6 +1216,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Rebase all objects and logs
+		 * @spec exclude API passthrough to POST /api/settings/rebase
 		 */
 		async rebase() {
 			this.rebasing = true
@@ -1204,6 +1244,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Save general settings (legacy method for backwards compatibility)
 		 * @param {object} data - The data to save
+		 * @spec exclude dispatcher over update*Settings passthroughs + legacy PUT /api/settings
 		 */
 		async saveSettings(data) {
 			this.saving = true
@@ -1234,6 +1275,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show rebase confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showRebaseDialog() {
 			this.showRebaseConfirmation = true
@@ -1241,6 +1283,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide rebase confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideRebaseDialog() {
 			this.showRebaseConfirmation = false
@@ -1248,6 +1291,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Confirm and execute rebase
+		 * @spec exclude dialog-confirm wrapper over rebase (API passthrough)
 		 */
 		async confirmRebase() {
 			this.hideRebaseDialog()
@@ -1257,6 +1301,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Clear cache of specified type
 		 * @param {string} type - The type of cache to clear
+		 * @spec exclude API passthrough to DELETE /api/settings/cache
 		 */
 		async clearCache(type = 'all') {
 			this.clearingCache = true
@@ -1280,6 +1325,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show clear audit trails confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showClearAuditTrailsDialog() {
 			this.showClearAuditTrailsConfirmation = true
@@ -1287,6 +1333,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide clear audit trails confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideClearAuditTrailsDialog() {
 			this.showClearAuditTrailsConfirmation = false
@@ -1294,6 +1341,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear all audit trails
+		 * @spec exclude API passthrough to DELETE /api/audit-trails/clear-all
 		 */
 		async clearAllAuditTrails() {
 			this.clearingAuditTrails = true
@@ -1317,6 +1365,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show clear search trails confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showClearSearchTrailsDialog() {
 			this.showClearSearchTrailsConfirmation = true
@@ -1324,6 +1373,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide clear search trails confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideClearSearchTrailsDialog() {
 			this.showClearSearchTrailsConfirmation = false
@@ -1331,6 +1381,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear all search trails
+		 * @spec exclude API passthrough to DELETE /api/search-trails/clear-all
 		 */
 		async clearAllSearchTrails() {
 			this.clearingSearchTrails = true
@@ -1354,6 +1405,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show clear blob objects confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showClearBlobObjectsDialog() {
 			this.showClearBlobObjectsConfirmation = true
@@ -1361,6 +1413,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide clear blob objects confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideClearBlobObjectsDialog() {
 			this.showClearBlobObjectsConfirmation = false
@@ -1368,6 +1421,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Clear all blob storage objects
+		 * @spec exclude API passthrough to DELETE /api/objects/clear-blob
 		 */
 		async clearAllBlobObjects() {
 			this.clearingBlobObjects = true
@@ -1391,6 +1445,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Show clear cache confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		showClearCacheDialog() {
 			this.showClearCacheConfirmation = true
@@ -1398,6 +1453,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide clear cache confirmation dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideClearCacheDialog() {
 			this.showClearCacheConfirmation = false
@@ -1405,6 +1461,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Perform cache clearing with current type selection
+		 * @spec exclude dialog-confirm wrapper over clearCache (API passthrough)
 		 */
 		async performClearCache() {
 			await this.clearCache(this.clearCacheType)
@@ -1413,6 +1470,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Retry test connection
+		 * @spec exclude retry wrapper over testSolrConnection (API passthrough)
 		 */
 		retryTest() {
 			this.testSolrConnection()
@@ -1420,6 +1478,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Load SOLR field configuration
+		 * @spec exclude API passthrough to GET /api/solr/fields (opens fields dialog)
 		 */
 		async loadSolrFields() {
 			this.loadingFields = true
@@ -1445,6 +1504,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide fields dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideFieldsDialog() {
 			this.showFieldsDialog = false
@@ -1468,6 +1528,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Create missing SOLR fields
 		 * @param {boolean} dryRun - Whether to run the operation in dry run mode
+		 * @spec exclude API passthrough to POST /api/solr/fields/create-missing
 		 */
 		async createMissingSolrFields(dryRun = false) {
 			this.creatingFields = true
@@ -1503,6 +1564,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Fix mismatched SOLR field configurations
 		 * @param {boolean} dryRun - Whether to run the operation in dry run mode
+		 * @spec exclude API passthrough to POST /api/solr/fields/fix-mismatches
 		 */
 		async fixMismatchedSolrFields(dryRun = false) {
 			this.fixingFields = true
@@ -1540,6 +1602,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Setup SOLR configuration
+		 * @spec exclude API passthrough to POST /api/solr/setup (opens setup dialog)
 		 */
 		async setupSolr() {
 			this.settingUpSolr = true
@@ -1594,6 +1657,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Test SOLR connection
+		 * @spec exclude API passthrough to POST /api/settings/solr/test (opens test dialog)
 		 */
 		async testSolrConnection() {
 			this.testingConnection = true
@@ -1628,6 +1692,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide setup dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideSetupDialog() {
 			this.showSetupDialog = false
@@ -1636,6 +1701,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Hide test dialog
+		 * @spec exclude store setter (local dialog-visibility toggle)
 		 */
 		hideTestDialog() {
 			this.showTestDialog = false
@@ -1644,6 +1710,7 @@ export const useSettingsStore = defineStore('settings', {
 
 		/**
 		 * Retry setup
+		 * @spec exclude retry wrapper over setupSolr (API passthrough)
 		 */
 		retrySetup() {
 			this.setupSolr()
@@ -1659,6 +1726,7 @@ export const useSettingsStore = defineStore('settings', {
 		 * by setting the cache timestamp to 0 (expired)
 		 * @param {string} type - Type of cache to invalidate: 'apps', 'categories', 'discover', or 'all'
 		 * @return {Promise<object>} The API response
+		 * @spec exclude API passthrough to DELETE /api/settings/cache/appstore
 		 */
 		async clearAppStoreCache(type = 'all') {
 			this.clearingAppStoreCache = true

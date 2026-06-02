@@ -8,6 +8,9 @@
  * expression changes so existing objects reflect the new shape without
  * waiting for the next user-driven save.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Command
  * @package  OCA\OpenRegister\Command
  *
@@ -18,6 +21,11 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -54,6 +62,8 @@ class RematerialiseCalculationsCommand extends Command
      * @param CalculationEvaluator $evaluator      Expression evaluator.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
@@ -69,6 +79,8 @@ class RematerialiseCalculationsCommand extends Command
      * Define command name, description, and arguments.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     protected function configure(): void
     {
@@ -92,6 +104,8 @@ class RematerialiseCalculationsCommand extends Command
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -125,13 +139,18 @@ class RematerialiseCalculationsCommand extends Command
             return Command::SUCCESS;
         }
 
+        $dryRunLabel = '';
+        if ($dryRun === true) {
+            $dryRunLabel = ' (dry run)';
+        }
+
         $output->writeln(
                 sprintf(
             '<info>Rematerialising %d calculation(s) on %s/%s%s</info>',
             count($materialiseNames),
             $register->getSlug() ?? $register->getId(),
             $schema->getSlug() ?? $schema->getId(),
-            $dryRun === true ? ' (dry run)' : ''
+            $dryRunLabel
         )
                 );
 
@@ -213,7 +232,12 @@ class RematerialiseCalculationsCommand extends Command
             $failed
         )
                 );
-        return $failed > 0 ? Command::FAILURE : Command::SUCCESS;
+        $exitCode = Command::SUCCESS;
+        if ($failed > 0) {
+            $exitCode = Command::FAILURE;
+        }
+
+        return $exitCode;
     }//end execute()
 
     /**
@@ -223,19 +247,31 @@ class RematerialiseCalculationsCommand extends Command
      * @param \OCA\OpenRegister\Db\ObjectEntity $entity Object entity providing metadata.
      *
      * @return array<string, mixed> Payload with `@self` injected.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array
     {
-        $created       = $entity->getCreated();
-        $updated       = $entity->getUpdated();
+        $created          = $entity->getCreated();
+        $updated          = $entity->getUpdated();
+        $createdFormatted = null;
+        if ($created !== null) {
+            $createdFormatted = $created->format(DateTimeInterface::ATOM);
+        }
+
+        $updatedFormatted = null;
+        if ($updated !== null) {
+            $updatedFormatted = $updated->format(DateTimeInterface::ATOM);
+        }
+
         $data['@self'] = [
             'id'       => $entity->getUuid(),
             'uuid'     => $entity->getUuid(),
             'register' => $entity->getRegister(),
             'schema'   => $entity->getSchema(),
             'owner'    => $entity->getOwner(),
-            'created'  => $created !== null ? $created->format(DateTimeInterface::ATOM) : null,
-            'updated'  => $updated !== null ? $updated->format(DateTimeInterface::ATOM) : null,
+            'created'  => $createdFormatted,
+            'updated'  => $updatedFormatted,
         ];
         return $data;
     }//end withSelf()
@@ -246,11 +282,17 @@ class RematerialiseCalculationsCommand extends Command
      * @param Schema $schema Schema to inspect.
      *
      * @return array<string, mixed>|null Calculations map, or null when absent.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
      */
     private function getCalculations(Schema $schema): ?array
     {
         $config = ($schema->getConfiguration() ?? []);
         $value  = ($config['x-openregister-calculations'] ?? null);
-        return is_array($value) === true ? $value : null;
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return null;
     }//end getCalculations()
 }//end class

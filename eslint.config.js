@@ -34,6 +34,9 @@ module.exports = defineConfig([{
 		// Allow unused i18n functions (t, n) — imported for future translation wiring
 		'no-unused-vars': ['error', { varsIgnorePattern: '^(t|n)$', argsIgnorePattern: '^_' }],
 		'jsdoc/require-jsdoc': 'off',
+		// `@spec` is the ADR-003 spec-traceability tag (links code to OpenSpec change tasks).
+		// Register it so jsdoc/check-tag-names does not flag it as an unknown tag.
+		'jsdoc/check-tag-names': ['warn', { definedTags: ['spec'] }],
 		'vue/first-attribute-linebreak': 'off',
 		'@typescript-eslint/no-explicit-any': 'off',
 		'n/no-missing-import': 'off',

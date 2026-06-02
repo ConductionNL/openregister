@@ -8,6 +8,9 @@
  * AggregationCache so the next aggregation read recomputes against
  * fresh data. The 60s TTL bounds staleness even when an evict is missed.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -18,6 +21,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -46,6 +51,8 @@ class AggregationCacheInvalidationListener implements IEventListener
      * @param AggregationCache $cache Cache holding aggregation read-models.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function __construct(
         private readonly AggregationCache $cache
@@ -58,6 +65,8 @@ class AggregationCacheInvalidationListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function handle(Event $event): void
     {
@@ -78,6 +87,8 @@ class AggregationCacheInvalidationListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return ObjectEntity|null Object instance, or null when not resolvable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     private function extractObject(Event $event): ?ObjectEntity
     {

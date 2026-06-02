@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -41,7 +40,9 @@ use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -56,27 +57,44 @@ class SchemasDestroySafetyTest extends TestCase
 
     private SchemasController $controller;
 
-    /** @var IRequest&MockObject */
+    /**
+     * @var IRequest&MockObject
+     */
     private IRequest $request;
 
-    /** @var SchemaMapper&MockObject */
+    /**
+     * @var SchemaMapper&MockObject
+     */
     private SchemaMapper $schemaMapper;
 
-    /** @var MagicMapper&MockObject */
+    /**
+     * @var MagicMapper&MockObject
+     */
     private MagicMapper $objectMapper;
 
-    /** @var SchemaCacheHandler&MockObject */
+    /**
+     * @var SchemaCacheHandler&MockObject
+     */
     private SchemaCacheHandler $schemaCacheService;
 
-    /** @var FacetCacheHandler&MockObject */
+    /**
+     * @var FacetCacheHandler&MockObject
+     */
     private FacetCacheHandler $facetCacheSvc;
 
-    /** @var LoggerInterface&MockObject */
+    /**
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface $logger;
 
+    /**
+     * @var ContainerInterface&MockObject
+     */
+    private ContainerInterface $container;
 
     /**
      * Wire up SchemasController with every dependency mocked.
+     * Default user is an authenticated admin so all permission checks pass.
      */
     protected function setUp(): void
     {
@@ -87,7 +105,35 @@ class SchemasDestroySafetyTest extends TestCase
         $this->objectMapper       = $this->createMock(MagicMapper::class);
         $this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
         $this->facetCacheSvc      = $this->createMock(FacetCacheHandler::class);
-        $this->logger             = $this->createMock(LoggerInterface::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
+
+        // SchemasController resolves IUserSession + IGroupManager lazily via the
+        // container (checkSchemaManagePermission). Default to an authenticated admin
+        // so all write-permission checks pass.
+        $adminUser = $this->createMock(\OCP\IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($adminUser);
+
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+        $groupManager->method('getUserGroupIds')->willReturn(['admin']);
+
+        $this->container = $this->createMock(ContainerInterface::class);
+        $this->container->method('get')->willReturnCallback(
+            function ($id) use ($userSession, $groupManager) {
+                if ($id === \OCP\IUserSession::class) {
+                    return $userSession;
+                }
+
+                if ($id === \OCP\IGroupManager::class) {
+                    return $groupManager;
+                }
+
+                return null;
+            }
+        );
 
         $this->controller = new SchemasController(
             'openregister',
@@ -95,7 +141,6 @@ class SchemasDestroySafetyTest extends TestCase
             $this->createMock(IAppConfig::class),
             $this->schemaMapper,
             $this->objectMapper,
-            $this->createMock(DownloadService::class),
             $this->createMock(UploadService::class),
             $this->createMock(AuditTrailMapper::class),
             $this->createMock(OrganisationService::class),
@@ -103,16 +148,15 @@ class SchemasDestroySafetyTest extends TestCase
             $this->facetCacheSvc,
             $this->createMock(SchemaService::class),
             $this->logger,
-            $this->createMock(ContainerInterface::class)
+            $this->container
         );
 
     }//end setUp()
 
-
     /**
      * Build a Schema entity with injected id + slug.
      */
-    private function makeSchema(int $id, string $slug = 'test-schema'): Schema
+    private function makeSchema(int $id, string $slug='test-schema'): Schema
     {
         $schema = new Schema();
         $schema->setSlug($slug);
@@ -126,7 +170,6 @@ class SchemasDestroySafetyTest extends TestCase
         return $schema;
 
     }//end makeSchema()
-
 
     /**
      * REQ + SCENARIO: "Delete a schema with objects, no force flag".
@@ -172,7 +215,6 @@ class SchemasDestroySafetyTest extends TestCase
         $this->assertSame(5, $data['objectCount']);
 
     }//end testDestroyWithoutForceReturns409WhenObjectsExist()
-
 
     /**
      * REQ + SCENARIO: "Delete a schema with objects and force=true".
@@ -220,10 +262,12 @@ class SchemasDestroySafetyTest extends TestCase
             ->method('warning')
             ->with(
                 $this->stringContains('Force-deleting schema with attached objects'),
-                $this->callback(function (array $ctx): bool {
-                    return ($ctx['schemaId'] ?? null) === 42
-                        && ($ctx['objectCount'] ?? null) === 7;
-                })
+                $this->callback(
+                        function (array $ctx): bool {
+                            return ($ctx['schemaId'] ?? null) === 42
+                            && ($ctx['objectCount'] ?? null) === 7;
+                        }
+                        )
             );
 
         $response = $this->controller->destroy(42);
@@ -232,7 +276,6 @@ class SchemasDestroySafetyTest extends TestCase
         $this->assertSame(200, $response->getStatus());
 
     }//end testDestroyWithForceTrueDeletesAndInvalidatesCache()
-
 
     /**
      * REQ + SCENARIO: "Delete an unused schema" (regression baseline).
@@ -271,6 +314,4 @@ class SchemasDestroySafetyTest extends TestCase
         $this->assertSame(200, $response->getStatus());
 
     }//end testDestroyOnUnusedSchemaSucceeds()
-
-
 }//end class

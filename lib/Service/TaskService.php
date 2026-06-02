@@ -7,6 +7,9 @@
  * Tasks are stored as standard VTODO items in the user's Nextcloud calendar with
  * X-OPENREGISTER-* properties for linking and an RFC 9253 LINK property.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -101,6 +104,8 @@ class TaskService
      * @return array{results: array, total: int} Task results with total count
      *
      * @throws Exception If no user is logged in
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
      */
     public function getAllUserTasks(
         ?string $status=null,
@@ -220,12 +225,16 @@ class TaskService
             return stripos($components, 'VTODO') !== false;
         } else if (is_iterable($components) === true) {
             foreach ($components as $comp) {
-                $compName = (is_string($comp) === true) ? $comp : (string) $comp;
+                $compName = (string) $comp;
+                if (is_string($comp) === true) {
+                    $compName = $comp;
+                }
+
                 if (strtoupper($compName) === 'VTODO') {
                     return true;
                 }
             }
-        }
+        }//end if
 
         return false;
     }//end calendarSupportsVtodo()
@@ -399,6 +408,8 @@ class TaskService
      * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
      *
      * @throws Exception If the task is not found or update fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
      */
     public function updateTask(string $calendarId, string $taskUri, array $data): ?array
     {
@@ -462,6 +473,8 @@ class TaskService
      * @return void
      *
      * @throws Exception If the task is not found or deletion fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
      */
     public function deleteTask(string $calendarId, string $taskUri): void
     {

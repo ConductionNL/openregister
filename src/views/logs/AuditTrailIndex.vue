@@ -302,6 +302,12 @@ export default {
 			deep: false,
 		},
 	},
+	/**
+	 * Lifecycle hook: load audit trails and subscribe to sidebar events on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch and event wiring
+	 * @return {void}
+	 */
 	mounted() {
 		// Initialize with safe defaults
 		try {
@@ -320,6 +326,12 @@ export default {
 			this.updateCounts()
 		})
 	},
+	/**
+	 * Lifecycle hook: unsubscribe from sidebar events before teardown.
+	 *
+	 * @spec exclude UI plumbing — event-listener teardown
+	 * @return {void}
+	 */
 	beforeDestroy() {
 		this.$root.$off('audit-trail-filters-changed')
 		this.$root.$off('audit-trail-export')

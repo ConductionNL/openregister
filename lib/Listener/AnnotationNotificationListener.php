@@ -7,6 +7,9 @@
  * ObjectTransitionedEvent and asks the dispatcher to fire any matching
  * notifications declared on the schema.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -55,6 +58,9 @@ class AnnotationNotificationListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec exclude Dispatch-only event router that delegates verbatim to AnnotationNotificationDispatcher;
+     *              the dispatcher carries the notification behaviour.
      */
     public function handle(Event $event): void
     {
@@ -84,7 +90,19 @@ class AnnotationNotificationListener implements IEventListener
             $newObject = $event->getNewObject();
             $oldObject = $event->getOldObject();
 
-            $this->dispatcher->dispatch(object: $newObject, trigger: 'updated');
+            // Forward old/new data on the plain `updated` dispatch too (when an
+            // old object is available) so rules declaring a field-change
+            // `condition` can compare without re-reading versioned history.
+            // Condition-less `updated` rules ignore this context.
+            $updatedContext = [];
+            if ($oldObject !== null) {
+                $updatedContext = [
+                    '_newData' => $newObject->getObject() ?? [],
+                    '_oldData' => $oldObject->getObject() ?? [],
+                ];
+            }
+
+            $this->dispatcher->dispatch(object: $newObject, trigger: 'updated', context: $updatedContext);
 
             // Also evaluate calculatedChange rules when both old and new
             // objects are available. Pass the previous and new calculated

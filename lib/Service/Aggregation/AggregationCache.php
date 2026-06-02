@@ -7,6 +7,9 @@
  * schema + name + resolved-filters hash + RBAC scope hash. Evicted
  * by the existing object-write event listeners.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *
@@ -17,12 +20,16 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUserSession;
@@ -32,8 +39,9 @@ use Psr\Log\LoggerInterface;
  * Aggregation result cache.
  *
  * Reads are content-addressed by the resolved filter shape + the
- * caller's RBAC scope (current user uid + active organisation), so two
- * users in different orgs see independently scoped cached values.
+ * caller's RBAC scope (current user uid + active organisation UUID), so
+ * two users in different orgs — or the same user with a different active
+ * organisation — see independently scoped cached values.
  *
  * Writes are evicted globally for a (register, schema) pair on any
  * object-write event (Created/Updated/Deleted/Transitioned). The
@@ -59,16 +67,20 @@ class AggregationCache
     /**
      * Constructor.
      *
-     * @param ICacheFactory   $cacheFactory Factory used to create the distributed cache.
-     * @param IUserSession    $userSession  Current user session, used to scope the cache key.
-     * @param LoggerInterface $logger       Logger for backend-unavailable warnings.
+     * @param ICacheFactory       $cacheFactory        Factory used to create the distributed cache.
+     * @param IUserSession        $userSession         Current user session, used to scope the cache key.
+     * @param LoggerInterface     $logger              Logger for backend-unavailable warnings.
+     * @param OrganisationService $organisationService Organisation service, used to include active organisation in cache key.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function __construct(
         ICacheFactory $cacheFactory,
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly OrganisationService $organisationService
     ) {
         try {
             $this->cache = $cacheFactory->createDistributed('openregister_aggregations');
@@ -92,6 +104,8 @@ class AggregationCache
      * @param array<string, mixed> $filter       Resolved filter (placeholders concrete).
      *
      * @return array<string, mixed>|null Cached result or null on miss.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     public function get(string $registerSlug, string $schemaSlug, string $name, array $filter): ?array
     {
@@ -113,10 +127,14 @@ class AggregationCache
             }
 
             $decoded = json_decode($blob, true);
-            return is_array($decoded) === true ? $decoded : null;
+            if (is_array($decoded) === true) {
+                return $decoded;
+            }
+
+            return null;
         } catch (\Throwable $e) {
             return null;
-        }
+        }//end try
     }//end get()
 
     /**
@@ -129,6 +147,8 @@ class AggregationCache
      * @param array<string, mixed> $result       Result envelope to store.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
      */
     public function set(string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void
     {
@@ -153,6 +173,83 @@ class AggregationCache
     }//end set()
 
     /**
+     * Look up a cached ad-hoc aggregation result.
+     *
+     * Mirrors {@see get()} but derives the name slot from the query value
+     * object. The literal `adhoc:` prefix keeps ad-hoc entries visually
+     * distinct from named-aggregation entries in cache dumps.
+     *
+     * @param string           $registerSlug Register slug component of the cache key.
+     * @param string           $schemaSlug   Schema slug component of the cache key.
+     * @param AggregationQuery $query        Query value object hashed into the cache key.
+     *
+     * @return array<string, mixed>|null Cached envelope or null on miss.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
+     */
+    public function getAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query): ?array
+    {
+        return $this->get(
+            registerSlug: $registerSlug,
+            schemaSlug: $schemaSlug,
+            name: $this->adhocName(query: $query),
+            filter: $query->filter
+        );
+
+    }//end getAdhoc()
+
+    /**
+     * Store an ad-hoc aggregation result.
+     *
+     * Mirrors {@see set()} for the ad-hoc path. The stored envelope is
+     * rewritten on read (`cached: true`) by callers — see
+     * {@see \OCA\OpenRegister\Service\Aggregation\AggregationRunner::runAdhoc()}.
+     *
+     * @param string               $registerSlug Register slug component of the cache key.
+     * @param string               $schemaSlug   Schema slug component of the cache key.
+     * @param AggregationQuery     $query        Query value object hashed into the cache key.
+     * @param array<string, mixed> $result       Result envelope to store.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+     */
+    public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void
+    {
+        $this->set(
+            registerSlug: $registerSlug,
+            schemaSlug: $schemaSlug,
+            name: $this->adhocName(query: $query),
+            filter: $query->filter,
+            result: $result
+        );
+
+    }//end setAdhoc()
+
+    /**
+     * Derive the cache name slot for an ad-hoc query.
+     *
+     * Computes `'adhoc:'.sha1(json_encode($query->toArray()))`. The
+     * `AggregationQuery::toArray()` output is ksort-stable so two
+     * structurally-equivalent queries produce identical hashes.
+     *
+     * @param AggregationQuery $query The ad-hoc query value object.
+     *
+     * @return string The cache name slot, prefixed with `adhoc:`.
+     */
+    private function adhocName(AggregationQuery $query): string
+    {
+        $encoded    = json_encode($query->toArray());
+        $encodedStr = '';
+        if ($encoded !== false) {
+            $encodedStr = $encoded;
+        }
+
+        return 'adhoc:'.sha1($encodedStr);
+
+    }//end adhocName()
+
+    /**
      * Evict every cached aggregation for a (register, schema). Called by
      * the object-write listeners.
      *
@@ -167,6 +264,8 @@ class AggregationCache
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
      */
     public function evictForSchema(string $registerSlug, string $schemaSlug): void
     {
@@ -198,23 +297,41 @@ class AggregationCache
      * @param array<string, mixed> $filter       Resolved filter map.
      *
      * @return string The cache key string.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
      */
     private function key(string $registerSlug, string $schemaSlug, string $name, array $filter): string
     {
         ksort($filter);
-        $filterHash = sha1(json_encode($filter) === false ? '' : json_encode($filter));
+        $filterEncoded = json_encode($filter);
+        $filterStr     = '';
+        if ($filterEncoded !== false) {
+            $filterStr = $filterEncoded;
+        }
+
+        $filterHash = sha1($filterStr);
         $rbacHash   = $this->rbacScopeHash();
         return sprintf('agg:%s:%s:%s:%s:%s', $registerSlug, $schemaSlug, $name, $filterHash, $rbacHash);
     }//end key()
 
     /**
-     * Hash the current RBAC scope (currently: the user UID).
+     * Hash the current RBAC scope (user UID + active organisation).
      *
-     * @return string SHA-1 hash of the user UID, or of "anonymous" when no user is logged in.
+     * Including both dimensions prevents a cache hit when the same user
+     * switches active organisation between requests, or when two users in
+     * different organisations would otherwise share a cache key.
+     *
+     * @return string SHA-1 hash of "uid:orgUuid" (or "anonymous:none" for unauthenticated callers).
      */
     private function rbacScopeHash(): string
     {
-        $uid = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
-        return sha1($uid);
+        $uid   = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
+        $org   = $this->organisationService->getActiveOrganisation();
+        $orgId = 'none';
+        if ($org !== null) {
+            $orgId = $org->getUuid();
+        }
+
+        return sha1($uid.':'.$orgId);
     }//end rbacScopeHash()
 }//end class

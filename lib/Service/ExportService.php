@@ -5,6 +5,9 @@
  *
  * This file contains the class for handling data export operations in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -267,6 +270,9 @@ class ExportService
      * @param IUser|null    $currentUser Current user (drives admin metadata column inclusion)
      *
      * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
+     *
+     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (builds a header-only
+     *       template spreadsheet from a schema's properties, with register-context per-language column expansion)
      */
     public function buildTemplateSpreadsheet(
         ?Register $register,
@@ -302,6 +308,9 @@ class ExportService
      * @param IUser|null    $currentUser Current user (drives admin metadata column inclusion)
      *
      * @return string CSV content with a UTF-8 BOM prefix and a single header row
+     *
+     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (renders the per-schema
+     *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
      */
     public function buildTemplateCsv(
         ?Register $register,
@@ -877,7 +886,11 @@ class ExportService
         }
 
         $slotValue = $value[$lang];
-        return is_scalar($slotValue) === true ? (string) $slotValue : null;
+        if (is_scalar($slotValue) === true) {
+            return (string) $slotValue;
+        }
+
+        return null;
     }//end extractLanguageSlot()
 
     /**

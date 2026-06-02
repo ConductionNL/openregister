@@ -43,6 +43,9 @@
  * - Time complexity: O(N*M*P) → O(N*M)
  * - Processing speed: 2-3x faster for large datasets
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Service\ObjectHandlers
  * @author    Conduction Development Team <info@conduction.nl>
@@ -822,9 +825,15 @@ class SaveObjects
             $selfData['id']   = $providedId;
         }
 
-        // PERFORMANCE: Use pre-calculated metadata values.
-        $selfData['owner']        = $selfData['owner'] ?? $defaultOwner;
-        $selfData['organisation'] = $selfData['organisation'] ?? $defaultOrganisation;
+        // SECURITY (wave-11 SB2): owner and organisation MUST NOT be accepted from
+        // client-supplied @self data on the bulk path.  The wave-9 fix (#2008) added
+        // stripping for the single-object MagicMapper path but the bulk pipeline
+        // (SaveObjects → MagicBulkHandler::prepareObjectsForDynamicTable) is a
+        // completely separate code path that was not covered.  Always stamp the
+        // authoritative values from the session / active organisation, regardless of
+        // what the client sent in @self.owner or @self.organisation.
+        $selfData['owner']        = $defaultOwner;
+        $selfData['organisation'] = $defaultOrganisation;
 
         // Update object's @self data before hydration.
         $object['@self'] = $selfData;

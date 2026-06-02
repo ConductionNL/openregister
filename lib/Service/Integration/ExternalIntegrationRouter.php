@@ -35,10 +35,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use LogicException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Routes external integrations' CRUD calls through OpenConnector.
@@ -60,7 +62,7 @@ class ExternalIntegrationRouter
      *
      * @var boolean|null
      */
-    private ?bool $openConnectorAvailable = null;
+    private ?bool $connectorAvailable = null;
 
     /**
      * Constructor.
@@ -106,6 +108,8 @@ class ExternalIntegrationRouter
      *                                      `getCause()` /
      *                                      `getDetails()` to pick
      *                                      the right user message.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-4
      */
     public function call(
         IntegrationProvider $provider,
@@ -158,6 +162,8 @@ class ExternalIntegrationRouter
      * @param IntegrationProvider $provider Provider to check.
      *
      * @return array{status: string, authStatus: string, message: ?string}
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-4
      */
     public function probe(IntegrationProvider $provider): array
     {
@@ -207,7 +213,7 @@ class ExternalIntegrationRouter
     private function assertProviderIsExternal(IntegrationProvider $provider): void
     {
         if ($provider->getStorageStrategy() !== 'external') {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf(
                     'ExternalIntegrationRouter::call() invoked with non-external provider %s (storage=%s)',
                     $provider->getId(),
@@ -254,12 +260,12 @@ class ExternalIntegrationRouter
      */
     private function isOpenConnectorAvailable(): bool
     {
-        if ($this->openConnectorAvailable === null) {
-            $this->openConnectorAvailable = $this->appManager->isInstalled('openconnector')
+        if ($this->connectorAvailable === null) {
+            $this->connectorAvailable = $this->appManager->isInstalled('openconnector')
                 && $this->appManager->isEnabledForUser('openconnector');
         }
 
-        return $this->openConnectorAvailable;
+        return $this->connectorAvailable;
     }//end isOpenConnectorAvailable()
 
     /**
@@ -293,7 +299,7 @@ class ExternalIntegrationRouter
             }
 
             if ($source === null) {
-                throw new \RuntimeException(sprintf('OpenConnector source "%s" not found', $sourceId));
+                throw new RuntimeException(sprintf('OpenConnector source "%s" not found', $sourceId));
             }
 
             return $source;
@@ -343,7 +349,7 @@ class ExternalIntegrationRouter
             return $this->decodeResponse(response: $response);
         }
 
-        throw new \RuntimeException(
+        throw new RuntimeException(
             'OpenConnector\\Service\\CallService does not expose a known call/request method.'
         );
     }//end invoke()
@@ -371,10 +377,9 @@ class ExternalIntegrationRouter
             return;
         }
 
+        $cause = ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN;
         if ($status === 401 || $status === 403) {
             $cause = ProviderUnavailableException::CAUSE_PROVIDER_AUTH;
-        } else {
-            $cause = ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN;
         }
 
         throw new ProviderUnavailableException(
@@ -398,6 +403,13 @@ class ExternalIntegrationRouter
      * @param mixed $response The raw return from CallService.
      *
      * @return array<string,mixed>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles four distinct OpenConnector response shapes
+     * (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required
+     * shape check.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Handles four distinct OpenConnector response shapes
+     * (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required
+     * shape check.
      */
     private function decodeResponse($response): array
     {
@@ -424,7 +436,11 @@ class ExternalIntegrationRouter
 
         if (is_object($response) === true && method_exists($response, 'jsonSerialize') === true) {
             $data = $response->jsonSerialize();
-            return is_array($data) === true ? $data : ['body' => $data];
+            if (is_array($data) === true) {
+                return $data;
+            }
+
+            return ['body' => $data];
         }
 
         if (is_string($response) === true) {

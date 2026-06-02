@@ -272,17 +272,29 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude list-view client-side pagination slice (computed)
+		 */
 		paginatedApplications() {
 			const start = ((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
 			const end = start + (this.pagination.limit || 20)
 			return applicationStore.applicationList.slice(start, end)
 		},
+		/**
+		 * @spec exclude list-view select-all checkbox state (computed)
+		 */
 		allSelected() {
 			return applicationStore.applicationList.length > 0 && applicationStore.applicationList.every(application => this.selectedApplications.includes(application.id))
 		},
+		/**
+		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
+		 */
 		someSelected() {
 			return this.selectedApplications.length > 0 && !this.allSelected
 		},
+		/**
+		 * @spec exclude list-view empty-state title text helper (computed)
+		 */
 		emptyContentName() {
 			if (applicationStore.loading) {
 				return t('openregister', 'Loading applications...')
@@ -293,6 +305,9 @@ export default {
 			}
 			return ''
 		},
+		/**
+		 * @spec exclude list-view empty-state description text helper (computed)
+		 */
 		emptyContentDescription() {
 			if (applicationStore.loading) {
 				return t('openregister', 'Please wait while we fetch your applications.')
@@ -304,6 +319,9 @@ export default {
 			return ''
 		},
 	},
+	/**
+	 * @spec exclude list-view lifecycle group preload + soft-refresh of the application list on mount
+	 */
 	async mounted() {
 		// Load Nextcloud groups into store first (needed for edit modal)
 		await applicationStore.loadNextcloudGroups()
@@ -311,6 +329,13 @@ export default {
 		applicationStore.refreshApplicationList(null, true)
 	},
 	methods: {
+		/**
+		 * Toggle selection state for every application in the current list.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-1
+		 * @param {boolean} checked - true selects all, false clears the selection
+		 * @return {void}
+		 */
 		toggleSelectAll(checked) {
 			if (checked) {
 				this.selectedApplications = applicationStore.applicationList.map(application => application.id)
@@ -318,6 +343,9 @@ export default {
 				this.selectedApplications = []
 			}
 		},
+		/**
+		 * @spec exclude list-view single-row selection toggle plumbing
+		 */
 		toggleApplicationSelection(applicationId, checked) {
 			if (checked) {
 				this.selectedApplications.push(applicationId)
@@ -325,9 +353,15 @@ export default {
 				this.selectedApplications = this.selectedApplications.filter(id => id !== applicationId)
 			}
 		},
+		/**
+		 * @spec exclude list-view pagination page-change handler
+		 */
 		onPageChanged(page) {
 			this.pagination.page = page
 		},
+		/**
+		 * @spec exclude list-view pagination page-size-change handler
+		 */
 		onPageSizeChanged(pageSize) {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
