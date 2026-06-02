@@ -1212,7 +1212,23 @@ class MagicMapper extends AbstractObjectMapper
                 // Translate field name to column name.
                 $columnName = $this->sanitizeColumnName(name: $field);
                 if (str_starts_with($field, '@self.') === true) {
-                    $columnName = self::METADATA_PREFIX.substr($field, 6);
+                    // Metadata fields: sanitize the bare name, then validate against
+                    // the known METADATA_PREFIX column allowlist before quoting.
+                    // Without this allowlist, raw user input was concatenated into
+                    // the UNION SQL (SQL injection via ORDER BY).
+                    $rawMetaName     = substr($field, 6);
+                    $sanitizedMeta   = $this->sanitizeColumnName(name: $rawMetaName);
+                    $candidateColumn = self::METADATA_PREFIX.$sanitizedMeta;
+                    $allowedMetadata = array_keys($this->getMetadataColumns());
+                    if (in_array($candidateColumn, $allowedMetadata, true) === false) {
+                        // Unknown metadata column - skip this ORDER BY clause entirely.
+                        continue;
+                    }
+
+                    $columnName = $this->quoteIdentifier(
+                        name: $candidateColumn,
+                        isPostgres: $isPostgres
+                    );
                 } else if (str_starts_with($field, '_') === false) {
                     // Non-metadata fields - property columns are included in UNION queries.
                     // The column must exist in the SELECT for ordering to work.
@@ -1221,7 +1237,7 @@ class MagicMapper extends AbstractObjectMapper
                         name: $this->sanitizeColumnName(name: $field),
                         isPostgres: $isPostgres
                     );
-                }
+                }//end if
 
                 $dir = 'ASC';
                 if (strtoupper($direction) === 'DESC') {
@@ -1240,8 +1256,10 @@ class MagicMapper extends AbstractObjectMapper
         }//end if
 
         // Apply LIMIT/OFFSET to final UNION result.
-        $limit     = $query['_limit'] ?? 100;
-        $offset    = $query['_offset'] ?? 0;
+        // Cast + clamp at the boundary so raw user input cannot reach the
+        // interpolated SQL string (SQL injection via _limit / _offset).
+        $limit     = max(1, min(1000, (int) ($query['_limit'] ?? 100)));
+        $offset    = max(0, (int) ($query['_offset'] ?? 0));
         $unionSql .= " LIMIT {$limit} OFFSET {$offset}";
 
         // Execute the combined query.
@@ -2692,7 +2710,12 @@ class MagicMapper extends AbstractObjectMapper
             foreach ($uniqueConstraints as $uniqueCol) {
                 $rawCol         = trim($uniqueCol, '`"');
                 $constraintName = $tableName.'_'.ltrim($rawCol, '_').'_uq';
-                $quote        = $isPostgres === true ? '"' : '`';
+                if ($isPostgres === true) {
+                    $quote = '"';
+                } else {
+                    $quote = '`';
+                }
+
                 $sql .= ', CONSTRAINT '.$quote.$constraintName.$quote.' UNIQUE ('.$uniqueCol.')';
             }
 
@@ -3044,14 +3067,46 @@ class MagicMapper extends AbstractObjectMapper
         $data     = $objectData;
         unset($data['@self']);
 
-        // Ensure register and schema IDs are set correctly.
-        if (empty($metadata['register']) === true) {
-            $metadata['register'] = $register->getId();
-        }
+        // SECURITY (wave-7 CRITICAL C2 — @self allowlist enforcement):
+        // Clients must not be able to overwrite server-controlled fields via the @self
+        // block. The primary defence for field-level injection lives in
+        // SaveObject::setSelfMetadata (which now strips owner/authorization from raw
+        // client $selfData before applying them to the entity). This layer adds
+        // defense-in-depth at the DB write boundary for fields that can be reached by
+        // any code path, not just the REST request path.
+        //
+        // Fields handled here:
+        //
+        // owner        – stripped from client @self to prevent ownership hijacking.
+        // For the internal entity-serialization path the owner was
+        // stamped by SaveObject::applyOwnerAttribution before
+        // jsonSerialize() was called. Stripping it here prevents any
+        // residual client value from persisting. The DB column will
+        // receive the value set by the entity's setter (not @self).
+        // Note: this means that for any path that does NOT go through
+        // applyOwnerAttribution, _owner will be null. That is safer
+        // than persisting an attacker-controlled value.
+        //
+        // authorization – per-object RBAC rules must not be writable by ordinary
+        // object-create/update calls. Management of per-object
+        // authorization is intentionally limited to the dedicated
+        // authorization management endpoint.
+        //
+        // register / schema – always derived from the authoritative $register and
+        // $schema method parameters. Unconditional override (extends
+        // the previous conditional-on-empty guard to be absolute).
+        //
+        // The following fields are intentionally NOT stripped here because they carry
+        // legitimate values set by the server before this function is reached:
+        // version, created, updated, deleted, locked, retention, uuid, slug, uri
+        // Those fields must be fixed at the SaveObject/controller level if client
+        // injection is possible for any of them.
+        unset($metadata['owner'], $metadata['authorization']);
 
-        if (empty($metadata['schema']) === true) {
-            $metadata['schema'] = $schema->getId();
-        }
+        // Always force register and schema from the authoritative server parameters —
+        // never accept client-supplied values, even when non-empty.
+        $metadata['register'] = $register->getId();
+        $metadata['schema']   = $schema->getId();
 
         // Map metadata fields with prefix.
         $metadataFields = [

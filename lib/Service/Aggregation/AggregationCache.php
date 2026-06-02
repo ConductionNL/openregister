@@ -67,9 +67,9 @@ class AggregationCache
     /**
      * Constructor.
      *
-     * @param ICacheFactory      $cacheFactory        Factory used to create the distributed cache.
-     * @param IUserSession       $userSession         Current user session, used to scope the cache key.
-     * @param LoggerInterface    $logger              Logger for backend-unavailable warnings.
+     * @param ICacheFactory       $cacheFactory        Factory used to create the distributed cache.
+     * @param IUserSession        $userSession         Current user session, used to scope the cache key.
+     * @param LoggerInterface     $logger              Logger for backend-unavailable warnings.
      * @param OrganisationService $organisationService Organisation service, used to include active organisation in cache key.
      *
      * @return void
@@ -325,9 +325,13 @@ class AggregationCache
      */
     private function rbacScopeHash(): string
     {
-        $uid    = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
-        $org    = $this->organisationService->getActiveOrganisation();
-        $orgId  = ($org !== null ? $org->getUuid() : 'none');
+        $uid   = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
+        $org   = $this->organisationService->getActiveOrganisation();
+        $orgId = 'none';
+        if ($org !== null) {
+            $orgId = $org->getUuid();
+        }
+
         return sha1($uid.':'.$orgId);
     }//end rbacScopeHash()
 }//end class

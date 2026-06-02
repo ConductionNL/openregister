@@ -57,10 +57,10 @@ class TimeTrackerLinksController extends Controller
     /**
      * Constructor.
      *
-     * @param string                 $appName                App id.
-     * @param IRequest               $request                HTTP request.
-     * @param TimeTrackerLinkService $linkService Backing service.
-     * @param ObjectService          $objectService          OR object resolver.
+     * @param string                 $appName       App id.
+     * @param IRequest               $request       HTTP request.
+     * @param TimeTrackerLinkService $linkService   Backing service.
+     * @param ObjectService          $objectService OR object resolver.
      */
     public function __construct(
         string $appName,
@@ -310,7 +310,8 @@ class TimeTrackerLinksController extends Controller
      *
      * @return ObjectEntity|null
      *
-     * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route parameter; renaming would break consistency with caller method signatures.
+     * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route parameter;
+     * renaming would break consistency with caller method signatures.
      */
     private function validateObject(string $register, string $schema, string $id): ?ObjectEntity
     {

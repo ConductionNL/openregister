@@ -9,8 +9,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author  Conduction Development Team <info@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -210,7 +211,7 @@ class AuthorizationService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
-    public function authorizeJwt(string $authorization): void
+    protected function authorizeJwt(string $authorization): void
     {
         $token = substr(string: $authorization, offset: strlen(string: 'Bearer '));
 
@@ -302,7 +303,7 @@ class AuthorizationService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
-    public function authorizeBasic(string $header, array $users=[], array $groups=[]): void
+    protected function authorizeBasic(string $header, array $users=[], array $groups=[]): void
     {
         $header = substr(string: $header, offset: strlen(string: 'Basic '));
         $decode = base64_decode(string: $header);
@@ -331,7 +332,7 @@ class AuthorizationService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
-    public function authorizeOAuth(string $header, array $users=[], array $groups=[]): void
+    protected function authorizeOAuth(string $header, array $users=[], array $groups=[]): void
     {
         if (str_starts_with(haystack: $header, needle: 'Bearer') === false) {
             throw new AuthenticationException(
@@ -395,7 +396,7 @@ class AuthorizationService
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-5
      */
-    public function authorizeApiKey(string $header, array $keys): void
+    protected function authorizeApiKey(string $header, array $keys): void
     {
         if (array_key_exists(key: $header, array: $keys) === false) {
             throw new AuthenticationException(message: 'Invalid API key', details: []);

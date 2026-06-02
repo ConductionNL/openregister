@@ -26,13 +26,20 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 
 /**
@@ -47,19 +54,143 @@ class BulkController extends Controller
     /**
      * Constructor for the BulkController
      *
-     * @param string        $appName       The name of the app
-     * @param IRequest      $request       The request object
-     * @param ObjectService $objectService The object service
+     * @param string         $appName        The name of the app
+     * @param IRequest       $request        The request object
+     * @param ObjectService  $objectService  The object service
+     * @param RegisterMapper $registerMapper Mapper for resolving registers (RBAC gates)
+     * @param SchemaMapper   $schemaMapper   Mapper for resolving schemas (RBAC gates)
+     * @param IUserSession   $userSession    User session for admin/manage checks
+     * @param IGroupManager  $groupManager   Group manager for admin/manage checks
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly ObjectService $objectService
+        private readonly ObjectService $objectService,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Check if the current user has 'manage' permission on a schema.
+     *
+     * Default-SECURE mirror of `SchemasController::checkSchemaManagePermission()`:
+     * a schema with no `manage` authorization rule can only be managed by
+     * administrators. When manage rules are present, membership of one of the
+     * listed groups grants permission (admins always pass). Deliberately NOT
+     * `PermissionHandler::hasPermission()`, which is default-OPEN for object
+     * data RBAC and therefore unsuitable for gating schema-definition writes.
+     *
+     * @param Schema $schema The schema to check manage permission for.
+     *
+     * @return bool True if the current user may manage this schema.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function checkSchemaManagePermission(Schema $schema): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        // Admins always pass.
+        if ($this->groupManager->isAdmin($user->getUID()) === true) {
+            return true;
+        }
+
+        $authorization = $schema->getAuthorization();
+
+        // Default-secure: no manage rule defined → admin-only (already failed above).
+        if (empty($authorization) === true || isset($authorization['manage']) === false) {
+            return false;
+        }
+
+        try {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        $manageRules = $authorization['manage'];
+        foreach ($userGroups as $groupId) {
+            foreach ($manageRules as $entry) {
+                if (is_string($entry) === true && $entry === $groupId) {
+                    return true;
+                }
+
+                if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+    }//end checkSchemaManagePermission()
+
+    /**
+     * Check if the current user has 'manage' permission on a register.
+     *
+     * Default-SECURE: a register with no `manage` authorization rule can only
+     * be managed by administrators. When manage rules are present, membership
+     * of one of the listed groups grants permission (admins always pass).
+     * Mirrors `RegistersController::checkRegisterManagePermission()`.
+     *
+     * @param Register $register The register to check manage permission for.
+     *
+     * @return bool True if the current user may manage this register.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function checkRegisterManagePermission(Register $register): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        // Admins always pass.
+        if ($this->groupManager->isAdmin($user->getUID()) === true) {
+            return true;
+        }
+
+        $authorization = $register->getAuthorization();
+
+        // Default-secure: no manage rule defined → admin-only (already failed above).
+        if (empty($authorization) === true || isset($authorization['manage']) === false) {
+            return false;
+        }
+
+        try {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        $manageRules = $authorization['manage'];
+        foreach ($userGroups as $groupId) {
+            foreach ($manageRules as $entry) {
+                if (is_string($entry) === true && $entry === $groupId) {
+                    return true;
+                }
+
+                if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+    }//end checkRegisterManagePermission()
 
     /**
      * Resolve register and schema slugs/IDs to numeric IDs.
@@ -211,6 +342,33 @@ class BulkController extends Controller
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
             }
 
+            // AUTHORIZATION (wave-11 WF1 / wave-3 C4 pattern): bulk-writing objects is a
+            // potentially high-impact write that any authenticated user could otherwise use
+            // to spray validation work or flood the audit trail.  Gate on manage-permission
+            // for the target schema (default-SECURE: admin-only when no manage rule exists).
+            // Mixed-schema (schema=0) bulk operations skip this gate because there is no
+            // single schema entity to check against — the per-object RBAC flag (_rbac:true)
+            // still runs inside saveObjects for individual object writes.
+            $isMixedSchema = ($resolved['schema'] === 0);
+
+            if ($isMixedSchema === false) {
+                try {
+                    $schemaEntityForGate = $this->schemaMapper->find((int) $resolved['schema']);
+                } catch (\Throwable $e) {
+                    return new JSONResponse(
+                        data: ['error' => 'Schema not found'],
+                        statusCode: Http::STATUS_NOT_FOUND
+                    );
+                }
+
+                if ($this->checkSchemaManagePermission(schema: $schemaEntityForGate) === false) {
+                    return new JSONResponse(
+                        data: ['error' => 'User does not have permission to bulk-write objects on this schema'],
+                        statusCode: Http::STATUS_FORBIDDEN
+                    );
+                }
+            }//end if
+
             // Get request data.
             $data    = $this->request->getParams();
             $objects = $data['objects'] ?? [];
@@ -222,10 +380,6 @@ class BulkController extends Controller
                     statusCode: Http::STATUS_BAD_REQUEST
                 );
             }
-
-            // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations.
-            // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas.
-            $isMixedSchema = ($resolved['schema'] === 0);
 
             // Determine schema to use (null for mixed-schema, resolved for single-schema).
             $schemaToUse = $resolved['schema'];
@@ -253,6 +407,18 @@ class BulkController extends Controller
                     'saved_objects'   => $savedObjects,
                     'requested_count' => count($objects),
                 ]
+            );
+        } catch (UniqueConstraintViolationException $e) {
+            // WF3 (wave-11): a client-supplied UUID collided with an existing row at a
+            // non-upsert boundary (e.g. unique-slug constraint, or concurrent insert race).
+            // Surface a human-readable 422 instead of leaking a raw DBAL trace.
+            return new JSONResponse(
+                data: [
+                    'error'      => 'One or more objects contain a UUID or unique field that conflicts with an existing record.',
+                    'error_code' => 'uuid_conflict',
+                    'detail'     => $e->getMessage(),
+                ],
+                statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
             );
         } catch (Exception $e) {
             return new JSONResponse(
@@ -283,6 +449,26 @@ class BulkController extends Controller
                 return new JSONResponse(
                     data: ['error' => 'Invalid schema ID. Must be numeric.'],
                     statusCode: Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Authorization: bulk-deleting every object in a schema is a
+            // destructive data-model write. Gate on manage-permission for the
+            // target schema (default-SECURE: admin-only when no manage rule
+            // exists). Mirrors the wave-1 #1949 controller gate pattern.
+            try {
+                $schemaEntity = $this->schemaMapper->find((int) $schema);
+            } catch (\Throwable $e) {
+                return new JSONResponse(
+                    data: ['error' => 'Schema not found'],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            if ($this->checkSchemaManagePermission(schema: $schemaEntity) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this schema'],
+                    statusCode: Http::STATUS_FORBIDDEN
                 );
             }
 
@@ -350,6 +536,27 @@ class BulkController extends Controller
                 return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
             }
 
+            // Authorization: bulk-deleting every object for a register/schema
+            // combination is a destructive data-model write. Gate on
+            // manage-permission for the target schema (default-SECURE:
+            // admin-only when no manage rule exists). Mirrors the wave-1
+            // #1949 controller gate pattern.
+            try {
+                $schemaEntity = $this->schemaMapper->find($resolved['schema']);
+            } catch (\Throwable $e) {
+                return new JSONResponse(
+                    data: ['error' => 'Schema not found'],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            if ($this->checkSchemaManagePermission(schema: $schemaEntity) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this schema'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
             // Get request data.
             $data       = $this->request->getParams();
             $hardDelete = $data['hardDelete'] ?? false;
@@ -407,6 +614,26 @@ class BulkController extends Controller
                 );
             }
 
+            // Authorization: bulk-deleting every object in a register is a
+            // destructive data-model write. Gate on manage-permission for the
+            // target register (default-SECURE: admin-only when no manage rule
+            // exists). Mirrors the wave-1 #1949 controller gate pattern.
+            try {
+                $registerEntity = $this->registerMapper->find((int) $register);
+            } catch (\Throwable $e) {
+                return new JSONResponse(
+                    data: ['error' => 'Register not found'],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            if ($this->checkRegisterManagePermission(register: $registerEntity) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this register'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
             // Set register context.
             $this->objectService->setRegister($register);
 
@@ -431,7 +658,7 @@ class BulkController extends Controller
     }//end deleteRegister()
 
     /**
-     * Validate all objects belonging to a specific schema
+     * Run validation for all objects belonging to a specific schema.
      *
      * @param string $schema The schema identifier
      *
@@ -442,7 +669,7 @@ class BulkController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
      */
-    public function validateSchema(string $schema): JSONResponse
+    public function runSchemaValidation(string $schema): JSONResponse
     {
         try {
             // Validate input.
@@ -464,5 +691,5 @@ class BulkController extends Controller
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-    }//end validateSchema()
+    }//end runSchemaValidation()
 }//end class

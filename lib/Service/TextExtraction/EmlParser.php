@@ -61,7 +61,7 @@ use ZBateson\MailMimeParser\Message\IMessagePart;
 /**
  * Parser for `message/rfc822` files.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) MIME parsing requires several collaborating types
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   MIME parsing requires several collaborating types
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex MIME/RFC 2822 parsing logic
  */
 class EmlParser
@@ -166,7 +166,7 @@ class EmlParser
      * @return string Flat plain-text output.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Mostly attachment-loop branching
-     * @SuppressWarnings(PHPMD.NPathComplexity) Nested attachment-tree traversal
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Nested attachment-tree traversal
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
@@ -267,7 +267,7 @@ class EmlParser
      * @return array<int, string>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) RFC 2822 address-list parsing state machine
-     * @SuppressWarnings(PHPMD.NPathComplexity) RFC 2822 address-list parsing state machine
+     * @SuppressWarnings(PHPMD.NPathComplexity)      RFC 2822 address-list parsing state machine
      */
     private function splitAddressList(?string $raw): array
     {

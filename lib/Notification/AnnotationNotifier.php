@@ -126,8 +126,8 @@ class AnnotationNotifier implements INotifier
         // The schema's custom per-locale subject (already interpolated by the
         // dispatcher for this recipient) wins; otherwise render the canonical
         // localised string with the object title + register name substituted.
-        $objectTitle  = (string) ($params['objectTitle'] ?? $l->t('object'));
-        $registerName = (string) ($params['registerName'] ?? ($params['registerId'] ?? ''));
+        $objectTitle   = (string) ($params['objectTitle'] ?? $l->t('object'));
+        $registerName  = (string) ($params['registerName'] ?? ($params['registerId'] ?? ''));
         $parsedSubject = $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName]);
         if ($hasText === true) {
             $parsedSubject = $text;

@@ -661,6 +661,11 @@ class RetentionService
                     continue;
                 }
 
+                // Skip objects in an immutable archival status (vernietigd, overgebracht).
+                if ($this->validateNotImmutable(object: $object) !== null) {
+                    continue;
+                }
+
                 // Skip objects with active legal hold.
                 if (($retention['legalHold']['active'] ?? false) === true) {
                     continue;

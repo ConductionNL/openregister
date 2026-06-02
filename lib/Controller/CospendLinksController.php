@@ -325,7 +325,8 @@ class CospendLinksController extends Controller
      *
      * @return ObjectEntity|null
      *
-     * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route parameter; renaming would break consistency with caller method signatures.
+     * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route
+     * parameter; renaming would break consistency with caller method signatures.
      */
     private function validateObject(string $register, string $schema, string $id): ?ObjectEntity
     {

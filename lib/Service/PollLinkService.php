@@ -35,7 +35,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes PollLinkMapper, IDBConnection,
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes PollLinkMapper, IDBConnection,
  *   IAppManager, IUserSession, and LoggerInterface; each is a distinct orchestration
  *   concern for direct-DB poll creation and user-session handling.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Direct SQL inserts into oc_polls_polls
@@ -314,7 +314,7 @@ class PollLinkService
      *
      * @throws Exception On missing user, Polls unavailable, or create failure.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) PHPMD 2.x accumulates the complexity
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   PHPMD 2.x accumulates the complexity
      *   of insertPollRecord and buildPollLink (extracted helpers) into this orchestrator;
      *   the method itself only validates preconditions and delegates to those helpers.
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Poll creation requires seven distinct
@@ -397,7 +397,10 @@ class PollLinkService
         ?DateTimeInterface $deadline
     ): int {
         $now    = time();
-        $expire = ($deadline !== null) ? $deadline->getTimestamp() : 0;
+        $expire = 0;
+        if ($deadline !== null) {
+            $expire = $deadline->getTimestamp();
+        }
 
         try {
             $insert = $this->db->getQueryBuilder();
@@ -447,15 +450,15 @@ class PollLinkService
     /**
      * Assemble an unsaved PollLink entity from poll creation data.
      *
-     * @param string                 $objectUuid    Parent OR object uuid.
-     * @param int                    $registerId    OR register id.
-     * @param int                    $schemaId      OR schema id.
-     * @param int                    $pollId        Newly created Polls poll id.
-     * @param string                 $title         Poll title.
+     * @param string                 $objectUuid     Parent OR object uuid.
+     * @param int                    $registerId     OR register id.
+     * @param int                    $schemaId       OR schema id.
+     * @param int                    $pollId         Newly created Polls poll id.
+     * @param string                 $title          Poll title.
      * @param string                 $normalisedType Normalised poll type.
-     * @param array<int,string>      $options       Option labels.
-     * @param DateTimeInterface|null $deadline      Optional deadline.
-     * @param string                 $uid           Owner user id.
+     * @param array<int,string>      $options        Option labels.
+     * @param DateTimeInterface|null $deadline       Optional deadline.
+     * @param string                 $uid            Owner user id.
      *
      * @return PollLink The unsaved entity.
      *

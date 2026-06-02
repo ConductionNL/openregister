@@ -62,8 +62,12 @@ use Psr\Log\LoggerInterface;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter) testChat() declares ($provider, $config, $_testMessage) matching the public contract expected by callers and the backup implementation; the simplified stub body doesn't use all three but changing the signature would break callers.
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facade orchestrates eight dependencies (ConversationMapper, MessageMapper, AgentMapper, and five handler classes); each handler is a separate concern extracted per SOLID, and removing any would lose a capability.
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)  testChat() declares ($provider, $config, $_testMessage)
+ * matching the public contract expected by callers and the backup implementation; the simplified stub
+ * body doesn't use all three but changing the signature would break callers.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facade orchestrates eight dependencies
+ * (ConversationMapper, MessageMapper, AgentMapper, and five handler classes); each handler is a
+ * separate concern extracted per SOLID, and removing any would lose a capability.
  */
 class ChatService
 {

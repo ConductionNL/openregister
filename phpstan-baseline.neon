@@ -312,11 +312,21 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 1
+			count: 2
 			path: lib/Controller/BulkController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/BulkController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/BulkController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, error_code\\: string, detail\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/BulkController.php
 
@@ -1071,27 +1081,32 @@ parameters:
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, errors\\: array\\<string, mixed\\>\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, errors\\: array\\<string, mixed\\>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ObjectsController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|401\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<401, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
@@ -6789,3 +6804,75 @@ parameters:
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Tool/SchemaTool.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<201, OCA\\\\OpenRegister\\\\Db\\\\Configuration, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Configuration, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<204, null, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<400\\|500, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<201, OCA\\\\OpenRegister\\\\Db\\\\Endpoint, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/EndpointsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\EndpointsController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<404\\|500, array\\{error: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Endpoint, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/EndpointsController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FilesController\\:\\:resolveParentObjectForFile\\(\\) never returns OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity so it can be removed from the return type\\.$#"
+			count: 1
+			path: lib/Controller/FilesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array\\{results: array<OCA\\\\OpenRegister\\\\Db\\\\Source>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array\\{results: array<array<string, mixed>>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array<string, mixed>, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array<string, mixed>, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		# wave-3 admin-gating cascade: 403 union with declared <200, T> return docblock
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse<200, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse<403, array\\{error: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SourcesController.php

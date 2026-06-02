@@ -103,6 +103,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								</template>
 								<template v-else>
 									<NcSelect
+						input-label="Property Selections[Property]"
 										v-model="propertySelections[property]"
 										:options="getMergeOptions(property)"
 										label="label"

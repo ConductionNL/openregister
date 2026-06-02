@@ -219,6 +219,52 @@ class ObjectsController extends Controller
     }//end normalizeFormDataValues()
 
     /**
+     * Strip server-managed @self fields from client-supplied object data.
+     *
+     * The top-level filter in create/update/patch/postPatch already passes @self
+     * through unchanged because certain integrations legitimately set @self.slug or
+     * @self.relations.  However, several @self sub-fields MUST NOT be accepted from
+     * client input because they are either server-authoritative (owner, organisation)
+     * or carry security-sensitive semantics (authorization, groups).
+     *
+     * The service layer (SaveObject::setSelfMetadata + applyOwnerAttribution) enforces
+     * the same rules; this controller-level strip is an additional defense-in-depth
+     * boundary that catches injections before they even reach the service (wave-11 WF2).
+     *
+     * Allowed @self keys for client input (non-exhaustive; extend as features are added):
+     *   slug, name, description, summary, image, relations, tmlo (update path only)
+     *
+     * Rejected at this layer (server-managed or security-sensitive):
+     *   owner, organisation, authorization, groups, application, folder
+     *
+     * @param array $data The raw request data (may contain a '@self' key)
+     *
+     * @return array The data with dangerous @self sub-keys stripped
+     */
+    private function sanitiseSelfMetadata(array $data): array
+    {
+        if (isset($data['@self']) === false || is_array($data['@self']) === false) {
+            return $data;
+        }
+
+        // Fields that clients must never supply — they are set server-side.
+        $serverManagedKeys = [
+            'owner',
+            'organisation',
+            'authorization',
+            'groups',
+            'application',
+            'folder',
+        ];
+
+        foreach ($serverManagedKeys as $key) {
+            unset($data['@self'][$key]);
+        }
+
+        return $data;
+    }//end sanitiseSelfMetadata()
+
+    /**
      * Extract all uploaded files from the current request.
      *
      * Uses IRequest::getUploadedFile() to retrieve files by known field names.
@@ -1823,9 +1869,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @PublicPage
-     *
-     * @psalm-return JSONResponse<201|403|404,
+     * @psalm-return JSONResponse<201|401|403|404,
      *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
      *     message?: mixed|string, error?: mixed|string,...},
      *     array<never, never>>|JSONResponse<400, string, array<never, never>>
@@ -1842,6 +1886,16 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
+        // Defense-in-depth: ensure a session user is present even though
+        // @NoAdminRequired already restricts this to authenticated callers.
+        // Guards against any future middleware changes that could bypass NC auth.
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required to create objects'],
+                statusCode: 401
+            );
+        }
+
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -1890,6 +1944,10 @@ class ObjectsController extends Controller
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $object = $this->normalizeFormDataValues(data: $object);
+
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields so they
+        // cannot be injected via the single-object create path.
+        $object = $this->sanitiseSelfMetadata(data: $object);
 
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
@@ -2004,6 +2062,9 @@ class ObjectsController extends Controller
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $object = $this->normalizeFormDataValues(data: $object);
+
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $object = $this->sanitiseSelfMetadata(data: $object);
 
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
@@ -2170,6 +2231,9 @@ class ObjectsController extends Controller
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $patchData = $this->normalizeFormDataValues(data: $patchData);
 
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $patchData = $this->sanitiseSelfMetadata(data: $patchData);
+
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
         $rbac    = $isAdmin === false;
@@ -2320,8 +2384,6 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the updated object
      *
-     * @PublicPage
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
@@ -2334,6 +2396,16 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
+        // Defense-in-depth: ensure a session user is present even though
+        // @NoAdminRequired already restricts this to authenticated callers.
+        // Guards against any future middleware changes that could bypass NC auth.
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Authentication required to update objects'],
+                statusCode: 401
+            );
+        }
+
         try {
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
@@ -2352,6 +2424,9 @@ class ObjectsController extends Controller
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $patchData = $this->normalizeFormDataValues(data: $patchData);
+
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $patchData = $this->sanitiseSelfMetadata(data: $patchData);
 
         // Extract uploaded files — works because this is a POST request.
         $uploadedFiles = $this->extractAllUploadedFiles();
@@ -2886,17 +2961,36 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{
-     *     message: 'Object unlocked successfully', locked: false, uuid: string
-     * }, array<never, never>>
-     *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
-        $this->objectService->setRegister(register: $register);
-        $this->objectService->setSchema(schema: $schema);
-        $this->objectService->unlockObject($id);
+        // Authorization: anonymous callers cannot unlock anything; the
+        // per-object permission check (lock-holder OR owner OR schema-manage
+        // OR admin) lives in LockHandler::unlock and surfaces a permission
+        // error message we map to 403 here. This closes the wave-3 C14
+        // "any authenticated user can unlock anything" finding.
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not authenticated'],
+                statusCode: 401
+            );
+        }
+
+        try {
+            $this->objectService->setRegister(register: $register);
+            $this->objectService->setSchema(schema: $schema);
+            $this->objectService->unlockObject($id);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            if (str_contains($message, 'does not have permission to unlock') === true) {
+                return new JSONResponse(data: ['error' => $message], statusCode: 403);
+            }
+
+            return new JSONResponse(data: ['error' => $message], statusCode: 500);
+        }
 
         // Return response with locked status for test compatibility.
         return new JSONResponse(

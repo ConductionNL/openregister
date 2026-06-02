@@ -393,7 +393,10 @@ class FormLinksController extends Controller
     {
         try {
             $rawObjectUuid = $this->request->getParam('objectUuid');
-            $objectUuid    = ($rawObjectUuid !== null && $rawObjectUuid !== '') ? (string) $rawObjectUuid : null;
+            $objectUuid    = null;
+            if ($rawObjectUuid !== null && $rawObjectUuid !== '') {
+                $objectUuid = (string) $rawObjectUuid;
+            }
 
             $results = $this->formLinkService->getAvailableForms(objectUuid: $objectUuid);
 

@@ -60,7 +60,7 @@ class ExternalIntegrationRouter
      *
      * Null means "not yet checked" — the first call resolves it.
      *
-     * @var bool|null
+     * @var boolean|null
      */
     private ?bool $connectorAvailable = null;
 
@@ -404,8 +404,12 @@ class ExternalIntegrationRouter
      *
      * @return array<string,mixed>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles four distinct OpenConnector response shapes (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required shape check.
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Handles four distinct OpenConnector response shapes (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required shape check.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles four distinct OpenConnector response shapes
+     * (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required
+     * shape check.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Handles four distinct OpenConnector response shapes
+     * (CallLog, array, jsonSerialize, string) across multiple OC versions; each branch is a required
+     * shape check.
      */
     private function decodeResponse($response): array
     {

@@ -13,8 +13,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service\Reporting
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -238,7 +239,11 @@ class SpreadsheetReportWriter
             return $bytes;
         }
 
-        $writer = ($format === 'ods') ? new Ods($spreadsheet) : new Xlsx($spreadsheet);
+        if ($format === 'ods') {
+            $writer = new Ods($spreadsheet);
+        } else {
+            $writer = new Xlsx($spreadsheet);
+        }
 
         ob_start();
         $writer->save('php://output');

@@ -1744,7 +1744,7 @@ class Schema extends Entity implements JsonSerializable
      */
     public function consumeDroppedAnnotationKeys(): array
     {
-        $dropped = $this->droppedKeys;
+        $dropped           = $this->droppedKeys;
         $this->droppedKeys = [];
         return $dropped;
     }//end consumeDroppedAnnotationKeys()

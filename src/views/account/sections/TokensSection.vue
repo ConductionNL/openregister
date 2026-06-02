@@ -28,43 +28,20 @@
 			</p>
 		</div>
 
-		<NcModal v-if="showCreateModal" @close="showCreateModal = false">
-			<div class="tokens-section__modal">
-				<h3>{{ t('openregister', 'Create API Token') }}</h3>
-				<div class="section__field">
-					<label for="token-name">{{ t('openregister', 'Token name') }}</label>
-					<NcTextField id="token-name"
-						v-model="newTokenName"
-						:label="t('openregister', 'Token name')" />
-				</div>
-				<div class="section__field">
-					<label for="token-expires">{{ t('openregister', 'Expires in (e.g., 90d)') }}</label>
-					<NcTextField id="token-expires"
-						v-model="newTokenExpires"
-						:label="t('openregister', 'Expiration')" />
-				</div>
-				<NcButton type="primary"
-					:disabled="!newTokenName"
-					@click="createToken">
-					{{ t('openregister', 'Create') }}
-				</NcButton>
-			</div>
-		</NcModal>
+		<CreateTokenModal
+			v-if="showCreateModal"
+			:token-name="newTokenName"
+			:token-expires="newTokenExpires"
+			@close="showCreateModal = false"
+			@create="createToken"
+			@update:tokenName="newTokenName = $event"
+			@update:tokenExpires="newTokenExpires = $event" />
 
-		<NcModal v-if="createdToken" @close="createdToken = null">
-			<div class="tokens-section__modal">
-				<h3>{{ t('openregister', 'Token Created') }}</h3>
-				<p class="tokens-section__warning">
-					{{ t('openregister', 'This token will only be shown once. Copy it now.') }}
-				</p>
-				<div class="tokens-section__token-display">
-					<code>{{ createdToken }}</code>
-					<NcButton @click="copyToken">
-						{{ t('openregister', 'Copy to clipboard') }}
-					</NcButton>
-				</div>
-			</div>
-		</NcModal>
+		<CreatedTokenModal
+			v-if="createdToken"
+			:token="createdToken"
+			@close="createdToken = null"
+			@copy="copyToken" />
 
 		<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
 			{{ message }}
@@ -77,12 +54,12 @@ import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import CreateTokenModal from '../../../modals/account/CreateTokenModal.vue'
+import CreatedTokenModal from '../../../modals/account/CreatedTokenModal.vue'
 
 export default {
 	name: 'TokensSection',
-	components: { NcButton, NcModal, NcTextField },
+	components: { NcButton, CreateTokenModal, CreatedTokenModal },
 	data() {
 		return {
 			tokens: [],
@@ -203,8 +180,4 @@ export default {
 .tokens-section__info { display: flex; flex-direction: column; gap: 4px; }
 .tokens-section__preview { font-family: monospace; color: var(--color-text-maxcontrast); }
 .tokens-section__expires { font-size: 0.85em; color: var(--color-text-maxcontrast); }
-.tokens-section__modal { padding: 24px; }
-.tokens-section__warning { color: var(--color-warning); font-weight: bold; margin-bottom: 12px; }
-.tokens-section__token-display { display: flex; gap: 8px; align-items: center; }
-.tokens-section__token-display code { background: var(--color-background-dark); padding: 8px; border-radius: 4px; word-break: break-all; flex: 1; }
 </style>

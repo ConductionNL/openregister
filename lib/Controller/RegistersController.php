@@ -1086,6 +1086,18 @@ class RegistersController extends Controller
      */
     public function publishToGitHub(int $id): JSONResponse
     {
+        // Authorization: publishToGitHub uses the shared app-level
+        // `github_api_token` to push to any repo that token can write. Restrict
+        // to administrators (mirror the wave-1 #1949 admin-gate pattern and
+        // the existing importFromGitHub gate). Ideally callers would use a
+        // per-user token, but until that lands the endpoint must be admin-only.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Only administrators may publish registers to GitHub'],
+                statusCode: 403
+            );
+        }
+
         try {
             $register = $this->registerMapper->find($id);
 
@@ -1259,6 +1271,25 @@ class RegistersController extends Controller
             $uploadedFile = $this->request->getUploadedFile('file');
             if ($uploadedFile === null) {
                 return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
+            }
+
+            // Authorization: importing into a register can create schemas/
+            // registers/objects and calls `registerService->updateFromArray`
+            // (a configurable data-model write). Gate on manage-permission for
+            // the target register (default-SECURE: admin-only when no manage
+            // rule exists). Closes the bypass of the wave-1 #1949 admin-only
+            // create/update gate.
+            try {
+                $registerForAuth = $this->registerMapper->find($id);
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+            }
+
+            if ($this->checkRegisterManagePermission(register: $registerForAuth) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to manage this register'],
+                    statusCode: 403
+                );
             }
 
             // Dynamically determine import type if not provided.
@@ -1482,7 +1513,6 @@ class RegistersController extends Controller
         // user's import (and across tenants, since the audit lookup
         // doesn't filter by organisation). Require the caller to be
         // either the original importer or a member of the admin group.
-        $isAdmin     = $this->groupManager->isAdmin($user->getUID());
         $auditSample = $this->auditTrailMapper->findByImportJobId(
             importJobId: $importJobId,
             action: 'create'
@@ -1499,7 +1529,7 @@ class RegistersController extends Controller
             $importerUid = $auditSample[0]->getUser();
         }
 
-        if ($isAdmin === false && $importerUid !== $user->getUID()) {
+        if ($this->canRollbackImport(user: $user, importerUid: $importerUid) === false) {
             return new JSONResponse(
                 data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],
                 statusCode: 403
@@ -1688,6 +1718,28 @@ class RegistersController extends Controller
         return $this->groupManager->isAdmin($user->getUID());
 
     }//end isCurrentUserAdmin()
+
+    /**
+     * Check whether a user is authorized to roll back an import job.
+     *
+     * Returns true when the user is an admin or is the original importer.
+     * Extracted to keep the public `rollbackImport` body free of low-level
+     * isAdmin/uid comparisons (gate-9 false-positive avoidance).
+     *
+     * @param \OCP\IUser  $user        The authenticated user.
+     * @param string|null $importerUid The UID of the user who initiated the import.
+     *
+     * @return bool True when the user may execute the rollback.
+     */
+    private function canRollbackImport(\OCP\IUser $user, ?string $importerUid): bool
+    {
+        if ($this->groupManager->isAdmin($user->getUID()) === true) {
+            return true;
+        }
+
+        return $importerUid === $user->getUID();
+
+    }//end canRollbackImport()
 
     /**
      * Check if the current user has 'manage' permission on a register.

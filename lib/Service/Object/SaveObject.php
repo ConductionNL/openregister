@@ -3425,7 +3425,7 @@ class SaveObject
         $this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema, $preparedData);
 
         // Populate TMLO archival metadata defaults if register has TMLO enabled.
-        $this->populateTmloDefaults(objectEntity: $objectEntity, schema: $schema, selfData: $selfData);
+        $this->populateTmloDefaults(objectEntity: $objectEntity, schema: $schema);
 
         // Set owner from the active user session, or fall back to the system
         // identifier when no session is active. See applyOwnerAttribution()
@@ -3433,11 +3433,11 @@ class SaveObject
         $this->applyOwnerAttribution(objectEntity: $objectEntity);
 
         // Set organisation from active organisation if not already set.
-        // Always respect user's active organisation regardless of multitenancy settings.
-        // BUT: Don't override if organisation was explicitly set via @self metadata (e.g., for organization activation).
-        if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')
-            && isset($selfData['organisation']) === false
-        ) {
+        // setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
+        // value when the caller was admin or a verified member of that organisation (SB1 fix).
+        // If setOrganisation() was NOT called there (non-member caller, or no @self.organisation
+        // provided at all), stamp the caller's active organisation here as the authoritative value.
+        if ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') {
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
         }
@@ -3604,32 +3604,66 @@ class SaveObject
             $objectEntity->setSlug($slug);
         }
 
-        if (array_key_exists('owner', $selfData) === true && empty($selfData['owner']) === false) {
-            $objectEntity->setOwner($selfData['owner']);
+        // SECURITY (wave-7 CRITICAL C2): owner must NOT be set from client-supplied
+        // @self input. The sole authoritative setter is applyOwnerAttribution() which
+        // stamps the session user's UID (or the configured system identifier for
+        // background jobs) AFTER this method returns. Accepting an owner value here
+        // would allow any caller to forge object ownership:
+        // - For authenticated REST requests applyOwnerAttribution() would override it,
+        // but the defence-in-depth is still worthwhile.
+        // - For background / system contexts (no IUserSession user) applyOwnerAttribution
+        // only fills in owner when it is empty, so a client-supplied value would
+        // persist — that is the actual attack vector closed by this change.
+
+        // SECURITY (wave-11 SB1): organisation must only be accepted from @self when the
+        // caller is an admin or has verified membership in that organisation.
+        // Blindly applying a client-supplied organisation UUID allows any authenticated
+        // user to plant data inside another tenant's view (cross-tenant data injection).
+        if (array_key_exists('organisation', $selfData) === true
+            && empty($selfData['organisation']) === false
+        ) {
+            $currentUser = $this->userSession->getUser();
+            $isAdmin     = $currentUser !== null
+                && $this->groupManager !== null
+                && $this->groupManager->isAdmin($currentUser->getUID()) === true;
+
+            // Only allow admin, or callers who actually belong to the requested organisation.
+            if ($isAdmin === true
+                || $this->organisationService->hasAccessToOrganisation($selfData['organisation']) === true
+            ) {
+                $objectEntity->setOrganisation($selfData['organisation']);
+            }
+
+            // Non-member callers silently fall through; prepareObjectForCreation() will
+            // stamp the caller's active organisation via getOrganisationForNewEntity().
         }
 
-        if (array_key_exists('organisation', $selfData) === true && empty($selfData['organisation']) === false) {
-            $objectEntity->setOrganisation($selfData['organisation']);
-        }
-
-        // Set TMLO metadata from @self if provided.
-        if (array_key_exists('tmlo', $selfData) === true && is_array($selfData['tmlo']) === true) {
-            $objectEntity->setTmlo($selfData['tmlo']);
-        }
+        // SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
+        // from client input on CREATE.  The destruction pipeline keys off archiefstatus;
+        // a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
+        // destruction-eligible bypassing the validated state machine.  populateTmloDefaults()
+        // (called after this method) will apply the correct system defaults including
+        // resetting archiefstatus to 'actief' for new objects, overriding any client value.
+        // On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
+        // Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
+        // (No setTmlo() call — the field is intentionally omitted.)
     }//end setSelfMetadata()
 
     /**
      * Populate TMLO defaults on a new object if the register has TMLO enabled.
      *
+     * Client-supplied @self.tmlo is intentionally NOT accepted here (wave-11 WF1 fix).
+     * All TMLO fields on CREATE are system-managed defaults applied by TmloService.
+     * On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix instead.
+     *
      * @param ObjectEntity $objectEntity The object entity being created
      * @param Schema       $schema       The schema for TMLO defaults
-     * @param array        $selfData     The @self metadata from the request
      *
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
-    private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema, array $selfData): void
+    private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema): void
     {
         $registerId = $objectEntity->getRegister();
         if ($registerId === null) {
@@ -3646,12 +3680,15 @@ class SaveObject
             return;
         }
 
-        // If TMLO data was explicitly provided via @self, use it as the starting point.
-        if (array_key_exists('tmlo', $selfData) === true && is_array($selfData['tmlo']) === true) {
-            $objectEntity->setTmlo($selfData['tmlo']);
-        }
+        // SECURITY (wave-11 WF1): Do NOT seed TMLO from client-supplied @self.tmlo on CREATE.
+        // The destruction pipeline keys off archiefstatus; a client-submitted
+        // {"archiefstatus":"vernietigd"} would bypass the validated state machine and
+        // mark the object destruction-eligible immediately.  On CREATE, all TMLO fields
+        // are system-managed defaults set by tmloService->populateDefaults() below.
+        // On UPDATE, the separate validateTmloOnUpdate() path enforces the transition matrix.
 
-        // Validate field values before populating.
+        // Validate field values before populating (entity may have leftover TMLO from a prior
+        // update path; ensure they are valid before stamping defaults).
         $currentTmlo = $objectEntity->getTmlo();
         if (is_array($currentTmlo) === true && empty($currentTmlo) === false) {
             $errors = $this->tmloService->validateFieldValues($currentTmlo);

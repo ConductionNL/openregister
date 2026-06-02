@@ -42,6 +42,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\IRequest;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -137,10 +139,36 @@ class WebhookService
     }//end __construct()
 
     /**
+     * Maximum response body size accepted from a webhook target, in bytes (1 MB).
+     *
+     * Larger bodies are truncated before being persisted in the webhook log to
+     * prevent log-storage exhaustion when a misconfigured endpoint returns a
+     * huge response.
+     *
+     * @var integer
+     */
+    private const MAX_RESPONSE_BODY_BYTES = 1048576;
+
+    /**
+     * Maximum response body length kept in structured log context, in bytes (1 KB).
+     *
+     * Webhook responses are echoed into the application log to aid debugging,
+     * but full bodies can expose internal data when SSRF probing succeeded and
+     * also bloat the log. The persisted `WebhookLog.responseBody` is capped at
+     * MAX_RESPONSE_BODY_BYTES separately; this constant limits only the
+     * `response_body` field on log-context arrays.
+     *
+     * @var integer
+     */
+    private const LOG_BODY_PREVIEW_BYTES = 1024;
+
+    /**
      * Initialize HTTP client with default configuration
      *
-     * Creates a GuzzleHttp\Client instance with appropriate defaults for webhook delivery.
-     * Allows self-signed certificates and configures timeouts appropriately.
+     * Creates a GuzzleHttp\Client instance with secure defaults for webhook delivery.
+     * Enforces TLS verification, blocks SSRF-prone redirects, and refuses to follow
+     * redirects to internal/loopback/link-local IP ranges (the same allowlist used
+     * by ConfigurationController::fetchConfigFromUrl).
      *
      * @return void
      *
@@ -148,19 +176,392 @@ class WebhookService
      */
     private function initializeHttpClient(): void
     {
-        // Prepare Guzzle client configuration.
-        // Allow self-signed certificates for webhook endpoints.
-        // Don't throw exceptions for 4xx/5xx responses (we handle them manually).
+        // Prepare Guzzle client configuration with TLS verification ON.
+        // Redirects are followed but every Location must pass the same
+        // SSRF guard that gates the initial URL — see assertSafeWebhookUri()
+        // and the on_redirect callback below.
+        // http_errors stays off because we handle 4xx/5xx manually downstream.
         $clientConfig = [
             'timeout'         => 30,
             'connect_timeout' => 10,
-            'verify'          => false,
-            'allow_redirects' => true,
+            'verify'          => true,
             'http_errors'     => false,
+            'allow_redirects' => [
+                'max'             => 5,
+                'strict'          => true,
+                'referer'         => false,
+                'protocols'       => ['http', 'https'],
+                'track_redirects' => true,
+                'on_redirect'     => function (
+                    RequestInterface $request,
+                    ResponseInterface $response,
+                    \Psr\Http\Message\UriInterface $uri
+                ): void {
+                    // Re-validate every redirect target through the same SSRF
+                    // allowlist used for the initial URL. Throwing here aborts
+                    // the redirect chain and propagates a RequestException to
+                    // deliverWebhook(), which logs it as a delivery failure.
+                    $this->assertSafeWebhookUri(uri: (string) $uri);
+                },
+            ],
         ];
 
         $this->client = new GuzzleClient($clientConfig);
     }//end initializeHttpClient()
+
+    /**
+     * Validate a webhook target URI against the SSRF allowlist.
+     *
+     * Webhook URLs are user-controlled, so a tenant could point a webhook at
+     * an internal service (cloud-metadata endpoints, internal IPs, loopback)
+     * and use the side effects (TLS handshake, body echo into logs) as an
+     * exfiltration channel. This guard mirrors the policy that
+     * ConfigurationController::fetchConfigFromUrl applies to inbound
+     * configuration URLs.
+     *
+     * Rules:
+     *  - Only http/https schemes are permitted.
+     *  - The host's resolved IPv4 must not fall in loopback (127.0.0.0/8),
+     *    RFC-1918 (10/8, 172.16/12, 192.168/16) or link-local (169.254/16,
+     *    which includes the cloud metadata endpoint 169.254.169.254).
+     *  - IPv6 literals and AAAA DNS results are checked against loopback
+     *    (::1/128), unique-local (fc00::/7), link-local (fe80::/10),
+     *    documentation (2001:db8::/32), unspecified (::/128) and
+     *    IPv4-mapped (::ffff:0:0/96) ranges; the mapped IPv4 address is
+     *    additionally re-validated against the IPv4 block list.
+     *  - Unresolvable hosts are allowed through so that DNS failures surface
+     *    as the normal Guzzle ConnectException, not a 400 here.
+     *
+     * @param string $uri Full request URI to validate.
+     *
+     * @return void
+     *
+     * @throws \RuntimeException When the URI is blocked.
+     */
+    private function assertSafeWebhookUri(string $uri): void
+    {
+        $parsed = parse_url($uri);
+        if ($parsed === false) {
+            throw new \RuntimeException('Webhook target URL is not parseable');
+        }
+
+        $scheme = strtolower($parsed['scheme'] ?? '');
+        if (in_array($scheme, ['http', 'https'], true) === false) {
+            throw new \RuntimeException(
+                'Webhook target URL must use http or https scheme; got "'.$scheme.'"'
+            );
+        }
+
+        $host = strtolower($parsed['host'] ?? '');
+        if ($host === '') {
+            throw new \RuntimeException('Webhook target URL is missing a host');
+        }
+
+        // ── IPv6 literal detection ──────────────────────────────────────
+        // parse_url() keeps the surrounding brackets when the host is an IPv6
+        // literal (e.g. "http://[::1]/" yields $host = "[::1]"). Strip them
+        // before validation. A colon anywhere in $host (brackets or not) is
+        // the reliable heuristic that we have an IPv6 address rather than a
+        // plain hostname.
+        $bareHost      = trim($host, '[]');
+        $isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
+            || strpos($host, ':') !== false;
+
+        if ($isIpv6Literal === true) {
+            $reason = $this->blockedIpv6Reason(ip: $bareHost);
+            if ($reason !== null) {
+                throw new \RuntimeException(
+                    'Webhook target URL resolves to a blocked IP range ('.$reason.')'
+                );
+            }
+
+            // Valid, non-blocked IPv6 literal — nothing more to check.
+            return;
+        }
+
+        // ── IPv6 DNS (AAAA) resolution ──────────────────────────────────
+        // gethostbyname() / gethostbynamel() only return A records.  Use
+        // dns_get_record() to pick up AAAA answers as well.
+        $aaaaRecords = @dns_get_record($host, DNS_AAAA);
+        if (is_array($aaaaRecords) === true) {
+            foreach ($aaaaRecords as $record) {
+                $ipv6 = $record['ipv6'] ?? '';
+                if ($ipv6 === '') {
+                    continue;
+                }
+
+                $reason = $this->blockedIpv6Reason(ip: $ipv6);
+                if ($reason !== null) {
+                    throw new \RuntimeException(
+                        'Webhook target URL resolves to a blocked IP range ('.$reason.')'
+                    );
+                }
+            }
+        }
+
+        // ── IPv4 resolution and range checks ───────────────────────────
+        // Resolve to IPv4 for range checks. gethostbyname() returns the input
+        // host unchanged on failure or when given an IP literal. To handle
+        // raw IP literals (the classic SSRF case), fall back to validating
+        // the host string directly when it looks like an IPv4 address.
+        $resolvedIp = gethostbyname($host);
+        $longIp     = ip2long($resolvedIp);
+        if ($longIp === false) {
+            // The gethostbyname() call returned a non-IP (real DNS failure);
+            // try the host string directly so http://127.0.0.1/ still
+            // resolves to a long-IP we can range-check.
+            $longIp = ip2long($host);
+        }
+
+        if ($longIp === false) {
+            // Couldn't resolve at all — let the request through so a real
+            // DNS error surfaces as a delivery failure rather than a guard
+            // rejection.
+            return;
+        }
+
+        // Loopback 127.0.0.0/8.
+        if (($longIp & 0xFF000000) === 0x7F000000) {
+            throw new \RuntimeException(
+                'Webhook target URL resolves to a blocked IP range (loopback)'
+            );
+        }
+
+        // RFC-1918 10.0.0.0/8.
+        if (($longIp & 0xFF000000) === 0x0A000000) {
+            throw new \RuntimeException(
+                'Webhook target URL resolves to a blocked IP range (RFC-1918)'
+            );
+        }
+
+        // RFC-1918 172.16.0.0/12.
+        if (($longIp & 0xFFF00000) === 0xAC100000) {
+            throw new \RuntimeException(
+                'Webhook target URL resolves to a blocked IP range (RFC-1918)'
+            );
+        }
+
+        // RFC-1918 192.168.0.0/16.
+        if (($longIp & 0xFFFF0000) === 0xC0A80000) {
+            throw new \RuntimeException(
+                'Webhook target URL resolves to a blocked IP range (RFC-1918)'
+            );
+        }
+
+        // Link-local 169.254.0.0/16 — includes cloud metadata 169.254.169.254.
+        if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
+            throw new \RuntimeException(
+                'Webhook target URL resolves to a blocked IP range (link-local/metadata)'
+            );
+        }
+    }//end assertSafeWebhookUri()
+
+    /**
+     * Return the block-list reason for a given IPv6 address, or null if safe.
+     *
+     * Checks the following RFC-defined ranges:
+     *  - ::1/128            IPv6 loopback
+     *  - ::/128             Unspecified address
+     *  - fc00::/7           Unique local (includes fd00::/8)
+     *  - fe80::/10          Link-local unicast
+     *  - 2001:db8::/32      Documentation / example range (RFC 3849)
+     *  - ::ffff:0:0/96      IPv4-mapped IPv6 — the embedded IPv4 is further
+     *                       re-checked against the existing IPv4 block list so
+     *                       ::ffff:127.0.0.1 is also rejected.
+     *
+     * Binary range comparisons use inet_pton() for byte-level accuracy so
+     * no risk of the ip2long() sign-extension quirks that affect IPv4.
+     *
+     * @param string $ip IPv6 address string (no surrounding brackets).
+     *
+     * @return string|null Human-readable range label, or null when the address is safe.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential CIDR checks require multiple branches.
+     */
+    private function blockedIpv6Reason(string $ip): ?string
+    {
+        $bin = @inet_pton($ip);
+        if ($bin === false || strlen($bin) !== 16) {
+            // Not a valid IPv6 address; let caller decide whether to block.
+            return null;
+        }
+
+        // ::1/128 — loopback.
+        if ($bin === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01") {
+            return 'loopback';
+        }
+
+        // ::/128 — unspecified.
+        if ($bin === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") {
+            return 'unspecified';
+        }
+
+        // Fc00::/7 — unique local (covers fc00:: and fd00:: blocks).
+        // First byte with mask 0xFE must equal 0xFC.
+        if ((ord($bin[0]) & 0xFE) === 0xFC) {
+            return 'unique-local';
+        }
+
+        // Fe80::/10 — link-local unicast.
+        // First byte 0xFE, second byte upper 6 bits = 0x80 → mask 0xC0.
+        if (ord($bin[0]) === 0xFE && (ord($bin[1]) & 0xC0) === 0x80) {
+            return 'link-local';
+        }
+
+        // 2001:db8::/32 — documentation/example range (RFC 3849).
+        if (substr($bin, 0, 4) === "\x20\x01\x0d\xb8") {
+            return 'documentation';
+        }
+
+        // ::ffff:0:0/96 — IPv4-mapped IPv6.
+        // Bytes 0-9 are zero, bytes 10-11 are 0xFFFF.
+        if (substr($bin, 0, 10) === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            && substr($bin, 10, 2) === "\xff\xff"
+        ) {
+            // Extract the embedded IPv4 address (bytes 12-15) and re-validate
+            // it against the IPv4 block list so ::ffff:127.0.0.1 is also caught.
+            $embeddedIpv4 = inet_ntop(substr($bin, 12, 4));
+            if ($embeddedIpv4 !== false) {
+                $longIp = ip2long($embeddedIpv4);
+                if ($longIp !== false) {
+                    if (($longIp & 0xFF000000) === 0x7F000000) {
+                        return 'IPv4-mapped loopback';
+                    }
+
+                    if (($longIp & 0xFF000000) === 0x0A000000
+                        || ($longIp & 0xFFF00000) === 0xAC100000
+                        || ($longIp & 0xFFFF0000) === 0xC0A80000
+                    ) {
+                        return 'IPv4-mapped RFC-1918';
+                    }
+
+                    if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
+                        return 'IPv4-mapped link-local/metadata';
+                    }
+                }
+            }
+
+            // The mapped address is itself a public IPv4 — still block the
+            // IPv4-mapped form to prevent protocol-confusion attacks.
+            return 'IPv4-mapped';
+        }//end if
+
+        return null;
+    }//end blockedIpv6Reason()
+
+    /**
+     * Detect whether a host resolves to an internal/private address.
+     *
+     * Used to decide whether the captured response body is safe to echo into
+     * the application log. When the target is private we redact rather than
+     * preview, so an SSRF probe cannot tunnel internal data through the log
+     * pipeline.
+     *
+     * Covers both IPv4 and IPv6 (literals and DNS A/AAAA records).
+     *
+     * @param string $host Hostname extracted from the webhook URL.
+     *
+     * @return bool True if the host resolves to a private/loopback/link-local IP.
+     */
+    private function isPrivateHost(string $host): bool
+    {
+        $host = strtolower($host);
+        if ($host === '') {
+            return false;
+        }
+
+        // ── IPv6 literal ────────────────────────────────────────────────
+        // Strip brackets that parse_url() may leave around IPv6 literals.
+        $bareHost      = trim($host, '[]');
+        $isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
+            || strpos($host, ':') !== false;
+
+        if ($isIpv6Literal === true) {
+            return $this->blockedIpv6Reason(ip: $bareHost) !== null;
+        }
+
+        // ── IPv6 DNS (AAAA) ─────────────────────────────────────────────
+        $aaaaRecords = @dns_get_record($host, DNS_AAAA);
+        if (is_array($aaaaRecords) === true) {
+            foreach ($aaaaRecords as $record) {
+                $ipv6 = $record['ipv6'] ?? '';
+                if ($ipv6 !== '' && $this->blockedIpv6Reason(ip: $ipv6) !== null) {
+                    return true;
+                }
+            }
+        }
+
+        // ── IPv4 resolution ─────────────────────────────────────────────
+        // Same dual-path as assertSafeWebhookUri(): resolve via DNS first,
+        // then fall back to validating the host string directly so IP
+        // literals (127.0.0.1, 192.168.x.y …) are matched too.
+        $resolvedIp = gethostbyname($host);
+        $longIp     = ip2long($resolvedIp);
+        if ($longIp === false) {
+            $longIp = ip2long($host);
+        }
+
+        if ($longIp === false) {
+            return false;
+        }
+
+        // Match each blocked CIDR range against the resolved IP.
+        // 127/8 loopback, 10/8, 172.16/12, 192.168/16, 169.254/16 link-local.
+        return (($longIp & 0xFF000000) === 0x7F000000)
+            || (($longIp & 0xFF000000) === 0x0A000000)
+            || (($longIp & 0xFFF00000) === 0xAC100000)
+            || (($longIp & 0xFFFF0000) === 0xC0A80000)
+            || (($longIp & 0xFFFF0000) === 0xA9FE0000);
+    }//end isPrivateHost()
+
+    /**
+     * Truncate a response body for log-context use.
+     *
+     * Persistent storage (WebhookLog.responseBody) is capped at
+     * MAX_RESPONSE_BODY_BYTES. The shorter LOG_BODY_PREVIEW_BYTES cap applies
+     * here because log lines flow into shared aggregation and shouldn't carry
+     * full bodies. When the webhook target is internal/private, the preview
+     * is redacted entirely to avoid creating an SSRF exfiltration channel.
+     *
+     * @param string $body Raw response body.
+     * @param string $url  Webhook target URL (for private-host detection).
+     *
+     * @return string The truncated/redacted preview.
+     */
+    private function previewResponseBody(string $body, string $url): string
+    {
+        $parsedHost = parse_url($url, PHP_URL_HOST);
+        if (is_string($parsedHost) === false) {
+            $parsedHost = '';
+        }
+
+        $host = strtolower($parsedHost);
+        if ($host !== '' && $this->isPrivateHost(host: $host) === true) {
+            return '[redacted: webhook target is on an internal/private network]';
+        }
+
+        if (strlen($body) <= self::LOG_BODY_PREVIEW_BYTES) {
+            return $body;
+        }
+
+        return substr($body, 0, self::LOG_BODY_PREVIEW_BYTES).'... [truncated]';
+    }//end previewResponseBody()
+
+    /**
+     * Cap a response body to MAX_RESPONSE_BODY_BYTES for persistent storage.
+     *
+     * @param string $body Raw response body.
+     *
+     * @return string Body limited to the response-body cap.
+     */
+    private function capResponseBody(string $body): string
+    {
+        if (strlen($body) <= self::MAX_RESPONSE_BODY_BYTES) {
+            return $body;
+        }
+
+        return substr($body, 0, self::MAX_RESPONSE_BODY_BYTES).'... [truncated]';
+    }//end capResponseBody()
 
     /**
      * Dispatch event to all matching webhooks
@@ -331,8 +732,16 @@ class WebhookService
 
                 try {
                     $responseBody = (string) $response->getBody();
-                    $webhookLog->setResponseBody($responseBody);
-                    $errorDetails['response_body'] = $responseBody;
+                    // Cap the body before persisting it in the webhook log so
+                    // a hostile endpoint can't bloat log storage. The version
+                    // we echo into structured logs is shorter still and is
+                    // redacted when the target is an internal/private IP — see
+                    // previewResponseBody().
+                    $webhookLog->setResponseBody($this->capResponseBody(body: $responseBody));
+                    $errorDetails['response_body'] = $this->previewResponseBody(
+                        body: $responseBody,
+                        url: $webhook->getUrl()
+                    );
 
                     // Try to parse JSON response for better error message.
                     $jsonResponse = json_decode($responseBody, true);
@@ -343,7 +752,7 @@ class WebhookService
                     }
                 } catch (\Exception $bodyException) {
                     // Ignore body reading errors.
-                }
+                }//end try
             }//end if
 
             // Add request details to error message.
@@ -653,6 +1062,11 @@ class WebhookService
      */
     private function sendRequest(Webhook $webhook, array $payload): array
     {
+        // SSRF guard: validate the webhook target before issuing the request.
+        // Redirects are re-validated by the on_redirect callback in
+        // initializeHttpClient().
+        $this->assertSafeWebhookUri(uri: $webhook->getUrl());
+
         $headers = array_merge(
             [
                 'Content-Type' => 'application/json',
@@ -686,9 +1100,11 @@ class WebhookService
             options: $options
         );
 
+        // Cap the response body so a misbehaving (or hostile) endpoint cannot
+        // exhaust log storage by returning multi-MB responses.
         return [
             'status_code' => $response->getStatusCode(),
-            'body'        => (string) $response->getBody(),
+            'body'        => $this->capResponseBody(body: (string) $response->getBody()),
         ];
     }//end sendRequest()
 

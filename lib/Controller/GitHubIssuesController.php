@@ -215,11 +215,14 @@ class GitHubIssuesController extends Controller
 
         $uid = $user->getUID();
 
-        $repo    = (string) $this->request->getParam('repo', '');
-        $title   = (string) $this->request->getParam('title', '');
-        $body    = (string) $this->request->getParam('body', '');
+        $repo       = (string) $this->request->getParam('repo', '');
+        $title      = (string) $this->request->getParam('title', '');
+        $body       = (string) $this->request->getParam('body', '');
         $specRefRaw = $this->request->getParam('specRef');
-        $specRef    = ($specRefRaw !== null && $specRefRaw !== '') ? (string) $specRefRaw : null;
+        $specRef    = null;
+        if ($specRefRaw !== null && $specRefRaw !== '') {
+            $specRef = (string) $specRefRaw;
+        }
 
         $guardError = $this->guards->runGuards(
             $this->writeGuardPipeline(repo: $repo, title: $title, body: $body, specRef: $specRef, uid: $uid)

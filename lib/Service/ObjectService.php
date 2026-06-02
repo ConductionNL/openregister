@@ -1243,6 +1243,10 @@ class ObjectService
             // any transitive DI failure) doesn't abort the save path.
         }
 
+        // Ensure the object has a file-storage folder (belt-and-suspenders for
+        // new objects that bypassed the pre-save ensureObjectFolder path).
+        $this->ensureObjectFolderExists(entity: $savedObject);
+
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
             entity: $savedObject,

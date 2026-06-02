@@ -78,6 +78,7 @@
 				<div class="form-group">
 					<label for="openai-model">{{ t('openregister', 'Embedding Model') }}</label>
 					<NcSelect
+						input-label="Openai Config Model"
 						v-model="openaiConfig.model"
 						:options="openaiModelOptions"
 						label="name"
@@ -121,6 +122,7 @@
 				<div class="form-group">
 					<label for="ollama-model">{{ t('openregister', 'Model Name') }}</label>
 					<NcSelect
+						input-label="Ollama Config Model"
 						id="ollama-model"
 						v-model="ollamaConfig.model"
 						:options="ollamaModelOptions"
@@ -158,6 +160,7 @@
 				<div class="form-group">
 					<label for="fireworks-embedding-model">{{ t('openregister', 'Embedding Model') }}</label>
 					<NcSelect
+						input-label="Fireworks Config Embedding Model"
 						v-model="fireworksConfig.embeddingModel"
 						:options="fireworksEmbeddingModelOptions"
 						label="name"
@@ -203,6 +206,7 @@
 				<div class="form-group">
 					<label for="openai-chat-model">{{ t('openregister', 'Chat Model') }}</label>
 					<NcSelect
+						input-label="Openai Config Chat Model"
 						v-model="openaiConfig.chatModel"
 						:options="openaiChatModelOptions"
 						label="name"
@@ -236,6 +240,7 @@
 				<div class="form-group">
 					<label for="fireworks-chat-model">{{ t('openregister', 'Chat Model') }}</label>
 					<NcSelect
+						input-label="Fireworks Config Chat Model"
 						v-model="fireworksConfig.chatModel"
 						:options="fireworksChatModelOptions"
 						label="name"
@@ -269,6 +274,7 @@
 				<div class="form-group">
 					<label for="ollama-chat-model">{{ t('openregister', 'Chat Model') }}</label>
 					<NcSelect
+						input-label="Ollama Config Chat Model"
 						id="ollama-chat-model"
 						v-model="ollamaConfig.chatModel"
 						:options="ollamaModelOptions"
@@ -298,6 +304,7 @@
 				<div class="form-group">
 					<label for="vector-backend">{{ t('openregister', 'Search Method') }}</label>
 					<NcSelect
+						input-label="Selected Vector Backend"
 						v-model="selectedVectorBackend"
 						:options="vectorBackendOptions"
 						label="name"

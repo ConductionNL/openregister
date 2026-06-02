@@ -594,23 +594,30 @@ class MagicMapperTest extends TestCase
     public function testObjectDataPreparationForTable(): void
     {
         $schema = new TestableSchema();
+        $schema->setId(42);
         $schema->testProperties = [
-            'name' => ['type' => 'string'],
-            'age' => ['type' => 'integer'],
-            'settings' => ['type' => 'object']
+            'name'     => ['type' => 'string'],
+            'age'      => ['type' => 'integer'],
+            'settings' => ['type' => 'object'],
         ];
 
         $objectData = [
             '@self' => [
-                'uuid' => 'test-uuid-123',
-                'register' => 'test-register',
-                'schema' => 'test-schema',
-                'owner' => 'testuser',
-                'organisation' => 'test-org'
+                'uuid'         => 'test-uuid-123',
+                // register and schema are intentionally supplied with wrong values to
+                // verify that the security fix forces them from the authoritative
+                // $register/$schema parameters instead (wave-7 CRITICAL C2).
+                'register'     => 'client-supplied-register',
+                'schema'       => 'client-supplied-schema',
+                // owner is intentionally supplied to verify that the security fix strips
+                // it — owner must only reach the DB via applyOwnerAttribution, not via
+                // raw @self input.
+                'owner'        => 'client-supplied-owner',
+                'organisation' => 'test-org',
             ],
-            'name' => 'John Doe',
-            'age' => 30,
-            'settings' => ['theme' => 'dark', 'language' => 'en']
+            'name'     => 'John Doe',
+            'age'      => 30,
+            'settings' => ['theme' => 'dark', 'language' => 'en'],
         ];
 
         $reflection = new \ReflectionClass($this->magicMapper);
@@ -621,9 +628,16 @@ class MagicMapperTest extends TestCase
 
         // Verify metadata fields are prefixed.
         $this->assertEquals('test-uuid-123', $result['_uuid']);
-        $this->assertEquals('test-register', $result['_register']);
-        $this->assertEquals('test-schema', $result['_schema']);
-        $this->assertEquals('testuser', $result['_owner']);
+
+        // SECURITY (wave-7 C2): register and schema must come from the authoritative
+        // method parameters, NOT from client-supplied @self values.
+        $this->assertEquals(1, $result['_register']);
+        $this->assertEquals(42, $result['_schema']);
+
+        // SECURITY (wave-7 C2): owner must be stripped from @self — it is controlled
+        // exclusively by SaveObject::applyOwnerAttribution, not via raw @self input.
+        $this->assertNull($result['_owner']);
+
         $this->assertEquals('test-org', $result['_organisation']);
 
         // Verify schema properties are included.

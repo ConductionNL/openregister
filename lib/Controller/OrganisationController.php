@@ -39,7 +39,10 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Exception;
 
@@ -100,6 +103,20 @@ class OrganisationController extends Controller
     private TenantUsageMapper $tenantUsageMapper;
 
     /**
+     * User session for authorization checks
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * Group manager for admin/group membership checks
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
      * OrganisationController constructor
      *
      * @param string                 $appName                Application name
@@ -109,6 +126,8 @@ class OrganisationController extends Controller
      * @param LoggerInterface        $logger                 Logger service
      * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
      * @param TenantUsageMapper      $tenantUsageMapper      Usage mapper
+     * @param IUserSession           $userSession            User session for authorization checks
+     * @param IGroupManager          $groupManager           Group manager for admin checks
      *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
@@ -119,7 +138,9 @@ class OrganisationController extends Controller
         OrganisationMapper $organisationMapper,
         LoggerInterface $logger,
         TenantLifecycleService $tenantLifecycleService,
-        TenantUsageMapper $tenantUsageMapper
+        TenantUsageMapper $tenantUsageMapper,
+        IUserSession $userSession,
+        IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->organisationService = $organisationService;
@@ -127,7 +148,66 @@ class OrganisationController extends Controller
         $this->logger = $logger;
         $this->tenantLifecycleService = $tenantLifecycleService;
         $this->tenantUsageMapper      = $tenantUsageMapper;
+        $this->userSession            = $userSession;
+        $this->groupManager           = $groupManager;
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+
+    }//end isCurrentUserAdmin()
+
+    /**
+     * Check whether the current user may manage another user's membership in
+     * the given organisation.
+     *
+     * A caller may modify another user's membership only when they are:
+     *  - a Nextcloud administrator, OR
+     *  - the owner of the organisation (see `Organisation::getOwner()`).
+     *
+     * Self-service (target user === current user) is handled at the call site
+     * and not gated here.
+     *
+     * @param string $organisationUuid Organisation UUID being modified.
+     *
+     * @return bool True if the current user may manage other users in this org.
+     */
+    private function canManageOrganisationMembers(string $organisationUuid): bool
+    {
+        if ($this->isCurrentUserAdmin() === true) {
+            return true;
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        try {
+            $organisation = $this->organisationMapper->findByUuid(uuid: $organisationUuid);
+        } catch (DoesNotExistException $e) {
+            return false;
+        }
+
+        $owner = $organisation->getOwner();
+        if ($owner === null || $owner === '') {
+            return false;
+        }
+
+        return $owner === $user->getUID();
+
+    }//end canManageOrganisationMembers()
 
     /**
      * Get user's organisations and active organisation
@@ -384,10 +464,6 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400,
-     *     array{error?: string, message?: 'Successfully joined organisation'},
-     *     array<never, never>>
-     *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function join(string $uuid): JSONResponse
@@ -396,6 +472,28 @@ class OrganisationController extends Controller
             // Get optional userId from request body.
             $requestData = $this->request->getParams();
             $userId      = $requestData['userId'] ?? null;
+
+            // Authorization: enrolling another user is privileged. A caller may
+            // only enroll themselves; admins or organisation owners may enroll
+            // arbitrary users. This blocks the cross-user enroll vector where
+            // any authenticated user could otherwise add anyone (incl. admins)
+            // to an organisation whose UUID they know.
+            $currentUser = $this->userSession->getUser();
+            if ($currentUser === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Not authenticated'],
+                    statusCode: Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            if ($userId !== null && $userId !== $currentUser->getUID()
+                && $this->canManageOrganisationMembers(organisationUuid: $uuid) === false
+            ) {
+                return new JSONResponse(
+                    data: ['error' => 'Only admins or organisation owners may enroll other users'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
 
             // Join organisation with optional userId parameter.
             $success = $this->organisationService->joinOrganisation(organisationUuid: $uuid, targetUserId: $userId);
@@ -447,11 +545,6 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400,
-     *     array{error?: string,
-     *     message?: 'Successfully left organisation'|
-     *     'Successfully removed user from organisation'}, array<never, never>>
-     *
      * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-16
      */
     public function leave(string $uuid): JSONResponse
@@ -460,6 +553,29 @@ class OrganisationController extends Controller
             // Check if a specific userId is provided in the request body.
             $data   = $this->request->getParams();
             $userId = $data['userId'] ?? null;
+
+            // Authorization: removing another user from an organisation is
+            // privileged. A caller may only remove themselves; admins or
+            // organisation owners may remove arbitrary users. This blocks the
+            // cross-user removal vector where any authenticated user could
+            // otherwise kick anyone (incl. admins) out of an organisation
+            // whose UUID they know.
+            $currentUser = $this->userSession->getUser();
+            if ($currentUser === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Not authenticated'],
+                    statusCode: Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            if ($userId !== null && $userId !== $currentUser->getUID()
+                && $this->canManageOrganisationMembers(organisationUuid: $uuid) === false
+            ) {
+                return new JSONResponse(
+                    data: ['error' => 'Only admins or organisation owners may remove other users'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
 
             $success = $this->organisationService->leaveOrganisation(organisationUuid: $uuid, targetUserId: $userId);
 

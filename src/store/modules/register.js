@@ -2,6 +2,16 @@
 import { defineStore } from 'pinia'
 import { Register } from '../../entities/index.js'
 
+// Module-scoped single-flight token for refreshRegisterList. The endpoint is
+// expensive (~5-16s with _extend=schemas + @self.stats on dev envs with 100+
+// registers), and every sidebar mount + AppInitializationService both call
+// refreshRegisterList on app boot. Without coalescing, callers issue 2-4
+// identical parallel fetches that race the SearchSideBar's `:loading` /
+// `:disabled` flags past the e2e tests' 30s budget (see
+// tests/e2e/spec-coverage/saved-search-views.spec.ts). Holding the in-flight
+// promise here lets every caller await the same fetch.
+let inFlightRefresh = null
+
 export const useRegisterStore = defineStore('register', {
 	state: () => ({
 		registerItem: null,
@@ -89,21 +99,29 @@ export const useRegisterStore = defineStore('register', {
 		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
 		async refreshRegisterList(search = null) {
+			// Single-flight: callers that pass the same `search` (or none)
+			// while a fetch is in flight share the same promise. CRUD-driven
+			// callers that pass a custom search bypass the cache.
+			if (search === null && inFlightRefresh) {
+				return inFlightRefresh
+			}
 			console.log('RegisterStore: Starting refreshRegisterList')
 			let endpoint = '/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
 			}
-			const response = await fetch(endpoint, {
-				method: 'GET',
-			})
-
-			const data = (await response.json()).results
-
-			this.setRegisterList(data)
-			console.log('RegisterStore: refreshRegisterList completed, got', data.length, 'registers')
-
-			return { response, data }
+			const work = (async () => {
+				const response = await fetch(endpoint, { method: 'GET' })
+				const data = (await response.json()).results
+				this.setRegisterList(data)
+				console.log('RegisterStore: refreshRegisterList completed, got', data.length, 'registers')
+				return { response, data }
+			})()
+			if (search === null) {
+				inFlightRefresh = work.finally(() => { inFlightRefresh = null })
+				return inFlightRefresh
+			}
+			return work
 		},
 		// New function to get a single register
 		/**

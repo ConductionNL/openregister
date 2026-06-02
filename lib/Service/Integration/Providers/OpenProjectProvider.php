@@ -69,9 +69,9 @@ class OpenProjectProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param ExternalIntegrationRouter  $router                External-call router.
-     * @param IAppManager                $appManager            NC app manager.
-     * @param IL10N                      $l10n                  Localisation.
+     * @param ExternalIntegrationRouter  $router     External-call router.
+     * @param IAppManager                $appManager NC app manager.
+     * @param IL10N                      $l10n       Localisation.
      * @param OpenProjectLinkMapper|null $linkMapper Tier-2 link table (optional).
      *
      * @return void

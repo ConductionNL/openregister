@@ -156,14 +156,14 @@ class NotifyPushListener implements IEventListener
      *   extracted private helper methods (resolveEventAction, resolveQueue, dispatchPushes,
      *   accumulateBatchEntry) into this orchestrator's score; handle() itself only contains
      *   lightweight guard checks and delegates to those helpers.
-     * @SuppressWarnings(PHPMD.NPathComplexity) NPath inflation mirrors the CC accumulation
+     * @SuppressWarnings(PHPMD.NPathComplexity)      NPath inflation mirrors the CC accumulation
      *   issue; the orchestrator cannot be simplified further without removing necessary guards.
      *
      * @spec openspec/changes/add-live-updates/tasks.md#task-4
      */
     public function handle(Event $event): void
     {
-        $resolved = $this->resolveEventAction($event);
+        $resolved = $this->resolveEventAction(event: $event);
         if ($resolved === null) {
             return;
         }

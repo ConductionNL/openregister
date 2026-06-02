@@ -47,14 +47,14 @@ class SourcesController extends Controller
     /**
      * Constructor for the SourcesController
      *
-     * @param string       $appName      The name of the app
-     * @param IRequest     $request      The request object
-     * @param IAppConfig   $config       The app configuration object
-     * @param SourceMapper $sourceMapper The source mapper
-     * @param IL10N        $l10n         The localization service
-     * @param IUserSession $userSession  User session for admin checks
+     * @param string        $appName      The name of the app
+     * @param IRequest      $request      The request object
+     * @param IAppConfig    $config       The app configuration object
+     * @param SourceMapper  $sourceMapper The source mapper
+     * @param IL10N         $l10n         The localization service
+     * @param IUserSession  $userSession  User session for admin checks
      * @param IGroupManager $groupManager Group manager for admin checks
-     * @param ICrypto      $crypto       Crypto service for databaseUrl encryption
+     * @param ICrypto       $crypto       Crypto service for databaseUrl encryption
      *
      * @return void
      */
@@ -146,7 +146,7 @@ class SourcesController extends Controller
         );
         return new JSONResponse(
             data: [
-                'results' => array_map(fn(Source $s) => $this->serializeSource($s), $sources),
+                'results' => array_map(fn(Source $s) => $this->serializeSource(source: $s), $sources),
             ]
         );
     }//end index()
@@ -170,7 +170,7 @@ class SourcesController extends Controller
         try {
             // Try to find the source by ID.
             $source = $this->sourceMapper->find(id: (int) $id);
-            return new JSONResponse(data: $this->serializeSource($source));
+            return new JSONResponse(data: $this->serializeSource(source: $source));
         } catch (DoesNotExistException $exception) {
             // Return a 404 error if the source doesn't exist.
             return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
@@ -220,7 +220,7 @@ class SourcesController extends Controller
 
         // Create a new source from the data.
         $source = $this->sourceMapper->createFromArray(object: $data);
-        return new JSONResponse(data: $this->serializeSource($source));
+        return new JSONResponse(data: $this->serializeSource(source: $source));
     }//end create()
 
     /**
@@ -269,7 +269,7 @@ class SourcesController extends Controller
 
         // Update the source with the provided data.
         $source = $this->sourceMapper->updateFromArray(id: $id, object: $data);
-        return new JSONResponse(data: $this->serializeSource($source));
+        return new JSONResponse(data: $this->serializeSource(source: $source));
     }//end update()
 
     /**

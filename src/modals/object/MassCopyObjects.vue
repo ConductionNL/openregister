@@ -16,6 +16,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<div class="form-group">
 				<label for="namingPattern">{{ t('openregister', 'Naming pattern for copies:') }}</label>
 				<NcSelect
+						input-label="Selected Naming Pattern"
 					v-model="selectedNamingPattern"
 					:options="namingPatternOptions"
 					:disabled="loading"

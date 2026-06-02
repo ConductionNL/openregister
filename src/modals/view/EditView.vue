@@ -57,6 +57,7 @@
 							<div class="groups-select-container">
 								<label class="groups-label">{{ t('openregister', 'Share with Groups') }}</label>
 								<NcSelect
+						input-label="Selected Groups"
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
@@ -86,6 +87,7 @@
 							<div class="groups-select-container">
 								<label class="groups-label">{{ t('openregister', 'Share with Users') }}</label>
 								<NcSelect
+						input-label="Selected Users"
 									v-model="selectedUsers"
 									:disabled="loading || loadingUsers"
 									:options="availableUsers"

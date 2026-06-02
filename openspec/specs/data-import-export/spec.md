@@ -574,6 +574,151 @@ register portability" requirement and are not redefined here.
 - **THEN** the response MUST list the configuration files in that repository
 - **AND** repositories or files the caller cannot access MUST NOT be returned
 
+### Requirement: Configurations MUST be publishable to and discoverable from remote GitHub, GitLab, and URL sources
+
+`ConfigurationController` MUST support a remote configuration-package
+portability surface that complements the local OpenAPI 3.0.0 export/import:
+discovering OpenRegister configurations hosted on GitHub or GitLab, listing
+their branches, importing a configuration from a GitHub/GitLab repository or an
+arbitrary URL, and publishing a local configuration to a GitHub repository.
+Discovery MUST validate the `source` against `github`/`gitlab`. Import-from-source
+MUST construct a `Configuration` entity and run it through the standard import
+flow. Publishing MUST validate the configuration is publishable, prepare the
+OpenAPI payload, detect an existing file SHA for updates, and update the local
+configuration with the resulting GitHub source information.
+
+> NOTE: several of these methods were mislabeled in the upstream coverage scan as
+> "triaged DROP from chat-ai / actions / object-lifecycle / geo-metadata". That
+> triage is incorrect — they are configuration-package GitHub/GitLab publishing
+> and belong to this capability.
+
+#### Scenario: Discover configurations on GitHub
+- **GIVEN** a discover request with `source=github` and a `_search` term
+- **WHEN** `ConfigurationController::discover()` runs
+- **THEN** the GitHub handler's `searchConfigurations()` MUST be invoked and the results returned (HTTP 200)
+
+#### Scenario: Reject an invalid discovery source
+- **GIVEN** a discover request with `source` that is neither `github` nor `gitlab`
+- **WHEN** `discover()` validates the source
+- **THEN** the response MUST be HTTP 400 with `error: 'Invalid source. Must be "github" or "gitlab"'`
+
+#### Scenario: List repository branches
+- **GIVEN** a request supplying `owner` and `repo`
+- **WHEN** `getGitHubBranches()` (or `getGitLabBranches()`) runs
+- **THEN** the response MUST contain the branch list; a missing `owner` or `repo` MUST return HTTP 400
+
+#### Scenario: Import a configuration from a remote source
+- **GIVEN** an import-from-source request (GitHub, GitLab, or URL)
+- **WHEN** `importFromGitHub()` / `importFromGitLab()` / `importFromUrl()` runs
+- **THEN** a `Configuration` entity MUST be constructed from the fetched config and run through the standard import flow
+
+#### Scenario: Publish a local configuration to GitHub
+- **GIVEN** a publishable local configuration and valid GitHub publish parameters
+- **WHEN** `publishToGitHub()` runs
+- **THEN** the configuration MUST be exported, an existing file SHA detected for updates, the content published to the target repository, and the local configuration updated with the GitHub source info
+
+#### Scenario: Reject publishing with missing parameters
+- **GIVEN** a publish request missing required GitHub parameters
+- **WHEN** `extractGitHubPublishParams()` returns an error
+- **THEN** the response MUST be HTTP 400 with the error message
+
+### Requirement: The system MUST support bulk delete of objects scoped by register and schema
+
+`BulkController` MUST expose mass-delete operations scoped by register and/or
+schema: `deleteSchema()` and `deleteSchemaObjects()` delete all objects for a
+register+schema combination, and `deleteRegister()` deletes all objects for a
+register. These endpoints MUST accept an optional `hardDelete` flag (soft delete
+by default), resolve slug/numeric identifiers to numeric IDs, and return a
+`{success, message, deleted_count, deleted_uuids, ...scope ids, hard_delete}`
+envelope. Invalid (non-numeric where required) identifiers MUST return HTTP 400;
+unresolvable register/schema MUST return HTTP 404; failures MUST return HTTP 500.
+
+#### Scenario: Bulk delete all objects for a register+schema
+- **GIVEN** a register and schema with objects and an optional `hardDelete` flag
+- **WHEN** `BulkController::deleteSchemaObjects()` runs
+- **THEN** the register/schema identifiers MUST be resolved to numeric IDs and `deleteObjectsBySchema()` invoked
+- **AND** the response MUST include `success: true`, `deleted_count`, `deleted_uuids`, `register_id`, `schema_id`, and `hard_delete`
+
+#### Scenario: Bulk delete rejects a non-numeric schema id where one is required
+- **GIVEN** a `deleteSchema()` request with a non-numeric `schema`
+- **WHEN** the controller validates the input
+- **THEN** the response MUST be HTTP 400 with `error: "Invalid schema ID. Must be numeric."`
+
+#### Scenario: Bulk delete all objects for a register
+- **GIVEN** a numeric register id
+- **WHEN** `deleteRegister()` runs
+- **THEN** `deleteObjectsByRegister()` MUST be invoked and the response MUST include `deleted_count`, `deleted_uuids`, and `register_id`
+
+#### Scenario: Unresolvable register/schema returns 404
+- **GIVEN** a `deleteSchemaObjects()` request whose register or schema cannot be resolved
+- **WHEN** `resolveRegisterSchemaIds()` throws
+- **THEN** the response MUST be HTTP 404 with the error message
+
+### Requirement: ConfigurationService MUST provide the public facade over the configuration import/export handlers
+
+`ConfigurationService` MUST expose the public entry points for register
+configuration portability, delegating to the dedicated handlers (which own the
+detailed import/export contract): `exportConfig()` → `Configuration/ExportHandler`,
+`getUploadedJson()` → `Configuration/UploadHandler`, `importFromFilePath()` /
+`importFromApp()` / `importFromJson()` → `Configuration/ImportHandler`,
+`fetchRemoteConfiguration()` → `Configuration/FetchHandler`,
+`previewConfigurationChanges()` / `importConfigurationWithSelection()` →
+`Configuration/PreviewHandler`. The facade MUST pass through the handler results
+unchanged and MUST be the single service consuming apps inject for
+configuration import/export.
+
+#### Scenario: App imports its bundled configuration through the facade
+- **GIVEN** a consuming app calls `ConfigurationService::importFromApp('opencatalogi', $data, $version)`
+- **WHEN** the facade runs
+- **THEN** it MUST delegate to `Configuration/ImportHandler::importFromApp()` with the same arguments
+- **AND** the returned summary MUST carry the handler's `registers`, `schemas`, `objects`, `endpoints`, `sources`, `mappings`, `jobs`, `synchronizations`, and `rules` keys unchanged
+
+#### Scenario: Export configuration through the facade
+- **GIVEN** a `Configuration` entity
+- **WHEN** `ConfigurationService::exportConfig($config, includeObjects: true)` is called
+- **THEN** the facade MUST delegate to `Configuration/ExportHandler::exportConfig()`, supplying the OpenConnector configuration service only when OpenConnector is installed (`hasOpenConnector()` true)
+- **AND** return the OpenAPI 3.0.0 export array unchanged
+
+#### Scenario: Upload resolution accepts file, URL, or inline JSON
+- **GIVEN** a request whose body carries one of an uploaded file, a `url`, or an inline `json` dump
+- **WHEN** `ConfigurationService::getUploadedJson($data, $uploadedFiles)` is called
+- **THEN** it MUST delegate to `Configuration/UploadHandler::getUploadedJson()` which resolves the payload in that precedence order
+- **AND** return either the parsed array or a `JSONResponse` error
+
+### Requirement: ConfigurationService MUST track and compare imported-configuration versions
+
+The system MUST support remote-version awareness for imported configurations.
+`checkRemoteVersion()` MUST fetch a remote-sourced configuration, extract its
+`version` (or `info.version`), and persist `remoteVersion` + `lastChecked` on the
+`Configuration` entity; it MUST be a no-op returning `null` for non-remote
+configurations or configurations without a source URL. `compareVersions()` MUST
+use `version_compare()` to report `hasUpdate` with a human-readable message.
+`getConfiguredAppVersion()` / `setConfiguredAppVersion()` MUST read/write the
+last-imported version per app in appconfig.
+
+#### Scenario: Remote version check persists the discovered version
+- **GIVEN** a `Configuration` that `isRemoteSource()` with a valid source URL serving `{"version": "1.4.0"}`
+- **WHEN** `checkRemoteVersion()` runs
+- **THEN** the configuration's `remoteVersion` MUST be set to `1.4.0` and `lastChecked` MUST be updated
+- **AND** the method MUST return `1.4.0`
+
+#### Scenario: Version check is a no-op for non-remote configurations
+- **GIVEN** a `Configuration` whose `isRemoteSource()` is false
+- **WHEN** `checkRemoteVersion()` runs
+- **THEN** the method MUST return `null` without performing an HTTP fetch
+
+#### Scenario: Version comparison reports an available update
+- **GIVEN** a configuration with `localVersion = 1.2.0` and `remoteVersion = 1.3.0`
+- **WHEN** `compareVersions()` runs
+- **THEN** the result MUST report `hasUpdate: true`
+- **AND** the message MUST read `Update available: 1.2.0 → 1.3.0`
+
+#### Scenario: Missing version information is reported, not assumed
+- **GIVEN** a configuration with a `localVersion` but no `remoteVersion`
+- **WHEN** `compareVersions()` runs
+- **THEN** the result MUST report `hasUpdate: false`
+- **AND** the message MUST indicate the remote version is unknown and prompt checking it first
+
 ## Current Implementation Status
 - **Implemented:**
   - `ImportService` (`lib/Service/ImportService.php`) with `importFromCsv()` and `importFromExcel()` methods for batch import with ReactPHP optimization

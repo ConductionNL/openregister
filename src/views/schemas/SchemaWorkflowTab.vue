@@ -44,7 +44,7 @@
 import { NcAppContentDetails } from '@nextcloud/vue'
 import HookList from '../../components/workflow/HookList.vue'
 import HookForm from '../../components/workflow/HookForm.vue'
-import TestHookDialog from '../../components/workflow/TestHookDialog.vue'
+import TestHookDialog from '../../dialogs/TestHookDialog.vue'
 import WorkflowExecutionPanel from '../../components/workflow/WorkflowExecutionPanel.vue'
 import ScheduledWorkflowPanel from '../../components/workflow/ScheduledWorkflowPanel.vue'
 import ApprovalChainPanel from '../../components/workflow/ApprovalChainPanel.vue'

@@ -182,6 +182,14 @@ return [
         
         ['name' => 'Settings\ConfigurationSettings#getRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'GET'],
         
+        // Settings — additional endpoints.
+        ['name' => 'settings#load',                     'url' => '/api/settings/load',                            'verb' => 'GET'],
+        ['name' => 'settings#updatePublishingOptions',  'url' => '/api/settings/publishing-options',              'verb' => 'PUT'],
+        ['name' => 'settings#testSetupHandler',         'url' => '/api/settings/test-setup',                      'verb' => 'POST'],
+        ['name' => 'settings#reindexSpecificCollection','url' => '/api/settings/reindex/{name}',                  'verb' => 'POST',   'requirements' => ['name' => '[^/]+']],
+        ['name' => 'settings#testSchemaMapping',        'url' => '/api/settings/test-schema-mapping',             'verb' => 'POST'],
+        ['name' => 'settings#semanticSearch',           'url' => '/api/settings/search/semantic',                 'verb' => 'GET'],
+        ['name' => 'settings#hybridSearch',             'url' => '/api/settings/search/hybrid',                   'verb' => 'GET'],
         // Debug endpoints for type filtering issue.
         ['name' => 'settings#debugTypeFiltering', 'url' => '/api/debug/type-filtering', 'verb' => 'GET'],
         ['name' => 'Settings\ConfigurationSettings#updateRetentionSettings', 'url' => '/api/settings/retention', 'verb' => 'PATCH'],
@@ -313,6 +321,9 @@ return [
         // surface is served by the Tier-2 `emailLinks` controller which adds
         // idempotent upsert + composite-key uniqueness; the picker step
         // routes (accounts/mailboxes/messages) live alongside.
+        ['name' => 'emails#index',    'url' => '/api/objects/{register}/{schema}/{id}/emails/list',  'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emails#create',   'url' => '/api/objects/{register}/{schema}/{id}/emails/send',  'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emails#destroy',  'url' => '/api/objects/{register}/{schema}/{id}/emails/direct/{emailId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'emailId' => '[^/]+']],
         ['name' => 'emails#search',   'url' => '/api/emails/search',                                'verb' => 'GET'],
         ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender',                             'verb' => 'GET'],
         ['name' => 'emailLinks#index',   'url' => '/api/objects/{register}/{schema}/{id}/emails',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -352,6 +363,9 @@ return [
         ['name' => 'deckLinks#destroy',   'url' => '/api/objects/{register}/{schema}/{id}/deck/{cardId}',     'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'cardId' => '[0-9]+']],
         ['name' => 'deckLinks#boards',    'url' => '/api/integrations/deck/boards',                           'verb' => 'GET'],
         ['name' => 'deckLinks#stacks',    'url' => '/api/integrations/deck/boards/{boardId}/stacks',          'verb' => 'GET',    'requirements' => ['boardId' => '[0-9]+']],
+        // Tier-1 legacy endpoints (superseded by deckLinks; kept for back-compat).
+        ['name' => 'deck#index',          'url' => '/api/objects/{register}/{schema}/{id}/deck/cards',         'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deck#create',         'url' => '/api/objects/{register}/{schema}/{id}/deck/cards',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         // Reverse lookup — keep on Tier-1 controller (not in Tier-2 scope).
         ['name' => 'deck#objects',        'url' => '/api/deck/boards/{boardId}/objects',                      'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
 
@@ -598,8 +612,9 @@ return [
         ['name' => 'objects#migrate', 'url' => '/api/migrate', 'verb' => 'POST'],
         // Relations.
         ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'objects#uses', 'url' => '/api/objects/{register}/{schema}/{id}/uses', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'objects#used', 'url' => '/api/objects/{register}/{schema}/{id}/used', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#uses',      'url' => '/api/objects/{register}/{schema}/{id}/uses',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#used',      'url' => '/api/objects/{register}/{schema}/{id}/used',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#logs',      'url' => '/api/objects/{register}/{schema}/{id}/logs',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Locks.
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -609,7 +624,7 @@ return [
         ['name' => 'bulk#deleteSchema', 'url' => '/api/bulk/{register}/{schema}/delete-schema', 'verb' => 'POST'],
         ['name' => 'bulk#deleteSchemaObjects', 'url' => '/api/bulk/{register}/{schema}/delete-objects', 'verb' => 'POST'],
         ['name' => 'bulk#deleteRegister', 'url' => '/api/bulk/{register}/delete-register', 'verb' => 'POST'],
-        ['name' => 'bulk#validateSchema', 'url' => '/api/bulk/schema/{schema}/validate', 'verb' => 'POST'],
+        ['name' => 'bulk#runSchemaValidation', 'url' => '/api/bulk/schema/{schema}/validate', 'verb' => 'POST'],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
@@ -718,8 +733,14 @@ return [
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
+        // Configurations - CRUD (singular ConfigurationController — richer implementation than the resource-routed ConfigurationsController).
+        ['name' => 'configuration#index',  'url' => '/api/configuration',         'verb' => 'GET'],
+        ['name' => 'configuration#show',   'url' => '/api/configuration/{id}',    'verb' => 'GET',    'requirements' => ['id' => '\d+']],
+        ['name' => 'configuration#create', 'url' => '/api/configuration',         'verb' => 'POST'],
+        ['name' => 'configuration#update', 'url' => '/api/configuration/{id}',    'verb' => 'PUT',    'requirements' => ['id' => '\d+']],
+        ['name' => 'configuration#destroy','url' => '/api/configuration/{id}',    'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
         // Configurations - Management.
-        ['name' => 'configuration#checkVersion', 'url' => '/api/configurations/{id}/check-version', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'configuration#versionStatus', 'url' => '/api/configurations/{id}/check-version', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'configuration#preview', 'url' => '/api/configurations/{id}/preview', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         ['name' => 'configuration#import', 'url' => '/api/configurations/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],

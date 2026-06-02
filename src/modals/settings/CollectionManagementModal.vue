@@ -38,6 +38,7 @@
 						<div class="assignment-card">
 							<label>{{ t('openregister', 'Object Collection') }}</label>
 							<NcSelect
+						input-label="Selected Object Collection"
 								v-model="selectedObjectCollection"
 								:options="collectionOptions"
 								:placeholder="t('openregister', 'Select collection for objects')"
@@ -55,6 +56,7 @@
 						<div class="assignment-card">
 							<label>{{ t('openregister', 'File Collection') }}</label>
 							<NcSelect
+						input-label="Selected File Collection"
 								v-model="selectedFileCollection"
 								:options="collectionOptions"
 								:placeholder="t('openregister', 'Select collection for files')"
@@ -197,6 +199,7 @@
 					<div class="form-group">
 						<label>{{ t('openregister', 'ConfigSet') }}*</label>
 						<NcSelect
+						input-label="New Collection Data Config Set"
 							v-model="newCollectionData.configSet"
 							:options="configSetOptions"
 							:placeholder="t('openregister', 'Select ConfigSet')"

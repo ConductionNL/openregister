@@ -133,6 +133,8 @@ class ApprovalController extends Controller
      * @return JSONResponse
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+     *
+     * @NoAdminRequired
      */
     public function create(): JSONResponse
     {
@@ -160,6 +162,8 @@ class ApprovalController extends Controller
      * @return JSONResponse
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+     *
+     * @NoAdminRequired
      */
     public function update(int $id): JSONResponse
     {
@@ -188,6 +192,8 @@ class ApprovalController extends Controller
      * @return JSONResponse
      *
      * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+     *
+     * @NoAdminRequired
      */
     public function destroy(int $id): JSONResponse
     {

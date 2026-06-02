@@ -13,7 +13,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 			<h2>{{ t('openregister', 'Add Attachment') }}</h2>
 
 			<div class="labelAndShareContainer">
-				<NcSelect v-bind="labelOptions"
+				<NcSelect
+						input-label="Label Options Value" v-bind="labelOptions"
 					v-model="labelOptions.value"
 					:disabled="loading || tagsLoading"
 					:loading="tagsLoading"

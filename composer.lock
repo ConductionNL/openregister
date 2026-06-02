@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8a0e5f3fd76e6190a7efb4a3f5a4e6b2",
+    "content-hash": "7870f305631ed38f1213d9b14f7175b8",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -309,12 +309,12 @@
             "version": "dev-work/text-replacement",
             "source": {
                 "type": "git",
-                "url": "https://github.com/ConductionNL/sapp.git",
+                "url": "https://codeberg.org/Conduction/sapp.git",
                 "reference": "07e5a74"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/sapp/zipball/07e5a74",
+                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/07e5a741a2dea2be509e4dbf29369f8a63f114d1.zip",
                 "reference": "07e5a74",
                 "shasum": ""
             },
@@ -346,7 +346,8 @@
                 "signature"
             ],
             "support": {
-                "source": "https://github.com/ConductionNL/sapp/tree/work/text-replacement"
+                "source": "https://codeberg.org/Conduction/sapp/branch/work/text-replacement",
+                "issues": "https://codeberg.org/Conduction/sapp/issues"
             },
             "funding": [
                 {
@@ -6137,16 +6138,16 @@
         },
         {
             "name": "twig/twig",
-            "version": "v3.26.0",
+            "version": "v3.27.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/twigphp/Twig.git",
-                "reference": "1fcae487b180d78e6351f4e0afa91f9eab96a2bc"
+                "reference": "04ae1bfe9463c816cf72ca0abe7eae2c77a9a9ed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/twigphp/Twig/zipball/1fcae487b180d78e6351f4e0afa91f9eab96a2bc",
-                "reference": "1fcae487b180d78e6351f4e0afa91f9eab96a2bc",
+                "url": "https://api.github.com/repos/twigphp/Twig/zipball/04ae1bfe9463c816cf72ca0abe7eae2c77a9a9ed",
+                "reference": "04ae1bfe9463c816cf72ca0abe7eae2c77a9a9ed",
                 "shasum": ""
             },
             "require": {
@@ -6201,7 +6202,7 @@
             ],
             "support": {
                 "issues": "https://github.com/twigphp/Twig/issues",
-                "source": "https://github.com/twigphp/Twig/tree/v3.26.0"
+                "source": "https://github.com/twigphp/Twig/tree/v3.27.0"
             },
             "funding": [
                 {
@@ -6213,7 +6214,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-05-20T07:31:59+00:00"
+            "time": "2026-05-27T13:05:51+00:00"
         },
         {
             "name": "web-token/jwt-framework",

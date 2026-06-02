@@ -42,6 +42,7 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'HTTP Method') }}</label>
 							<NcSelect
+						input-label="Selected Method"
 								v-model="selectedMethod"
 								:options="httpMethodOptions"
 								label="label"
@@ -85,6 +86,7 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Event') }}</label>
 							<NcSelect
+						input-label="Selected Event"
 								v-model="selectedEvent"
 								:options="eventOptions"
 								label="label"
@@ -116,6 +118,7 @@
 						<div v-if="selectedEvent" class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Event Property for Payload') }}</label>
 							<NcSelect
+						input-label="Selected Event Property"
 								v-model="selectedEventProperty"
 								:options="eventPropertyOptions"
 								label="label"
@@ -170,6 +173,7 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Retry Policy') }}</label>
 							<NcSelect
+						input-label="Selected Retry Policy"
 								v-model="selectedRetryPolicy"
 								:options="retryPolicyOptions"
 								label="label"

@@ -28,11 +28,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
+use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -58,30 +63,46 @@ class LockHandler
      * @param MagicMapper      $magicMapper      Magic mapper for magic table operations
      * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging actions
      * @param LoggerInterface  $logger           PSR-3 logger
+     * @param IUserSession     $userSession      User session for authorization checks
+     * @param IGroupManager    $groupManager     Group manager for admin checks
+     * @param SchemaMapper     $schemaMapper     Schema mapper for resolving manage rules
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
+        private readonly SchemaMapper $schemaMapper
     ) {
     }//end __construct()
 
     /**
      * Find an object and get its register/schema context.
      *
-     * @param string $identifier Object ID or UUID
+     * The `$_rbacBypass` flag is reserved for unlock paths that perform their
+     * own caller-vs-lock-holder/owner/manage authorization check on top (see
+     * `unlock()`); for lock/isLocked/getLockInfo it stays false so the regular
+     * RBAC + multitenancy boundary is respected.
+     *
+     * @param string $identifier  Object ID or UUID
+     * @param bool   $_rbacBypass When true, skip RBAC + multitenancy in the
+     *                            mapper lookup (caller MUST perform its own
+     *                            authorization gate).
      *
      * @return array{object: \OCA\OpenRegister\Db\ObjectEntity, register: Register|null, schema: Schema|null}
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC bypass flag follows established API patterns.
      */
-    private function findObjectWithContext(string $identifier): array
+    private function findObjectWithContext(string $identifier, bool $_rbacBypass=false): array
     {
         $result = $this->magicMapper->findAcrossAllSources(
             identifier: $identifier,
             includeDeleted: false,
-            _rbac: false,
-            _multitenancy: false
+            _rbac: ($_rbacBypass === false),
+            _multitenancy: ($_rbacBypass === false)
         );
 
         return [
@@ -90,6 +111,119 @@ class LockHandler
             'schema'   => $result['schema'],
         ];
     }//end findObjectWithContext()
+
+    /**
+     * Check if the current user has schema-manage permission on the schema
+     * owning the given object.
+     *
+     * Default-SECURE: a schema with no `manage` authorization rule can only be
+     * managed by administrators (admins always pass). When manage rules are
+     * present, group-membership grants permission.
+     *
+     * @param ObjectEntity $object The object whose owning schema is checked.
+     *
+     * @return bool True if the current user may manage the owning schema.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function callerHasSchemaManagePermission(ObjectEntity $object): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        // Admins always pass.
+        if ($this->groupManager->isAdmin($user->getUID()) === true) {
+            return true;
+        }
+
+        $schemaId = $object->getSchema();
+        if ($schemaId === null || $schemaId === '') {
+            return false;
+        }
+
+        try {
+            $schema        = $this->schemaMapper->find((int) $schemaId);
+            $authorization = $schema->getAuthorization();
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        if (empty($authorization) === true || isset($authorization['manage']) === false) {
+            // Default-secure: no manage rule defined → admin-only (failed above).
+            return false;
+        }
+
+        try {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        $manageRules = $authorization['manage'];
+        foreach ($userGroups as $groupId) {
+            foreach ($manageRules as $entry) {
+                if (is_string($entry) === true && $entry === $groupId) {
+                    return true;
+                }
+
+                if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+    }//end callerHasSchemaManagePermission()
+
+    /**
+     * Authorize an unlock request.
+     *
+     * The caller may unlock the object only when one of:
+     *  - the caller is the lock holder (the user recorded in the lock payload), OR
+     *  - the caller is the object owner (see `ObjectEntity::getOwner()`), OR
+     *  - the caller has schema-manage permission on the owning schema, OR
+     *  - the caller is a Nextcloud administrator.
+     *
+     * Anonymous callers are always refused. This closes the wave-3 C14
+     * finding where any authenticated user could unlock any locked object.
+     *
+     * @param ObjectEntity $object The locked object the caller wants to unlock.
+     *
+     * @return bool True if the caller may unlock this object.
+     */
+    private function callerMayUnlock(ObjectEntity $object): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        $userId = $user->getUID();
+
+        // Admins always pass.
+        if ($this->groupManager->isAdmin($userId) === true) {
+            return true;
+        }
+
+        // Lock holder.
+        $lockInfo = $object->getLockInfo();
+        if (is_array($lockInfo) === true && ($lockInfo['user'] ?? null) === $userId) {
+            return true;
+        }
+
+        // Object owner.
+        if ($object->getOwner() === $userId) {
+            return true;
+        }
+
+        // Schema-manage permission.
+        return $this->callerHasSchemaManagePermission(object: $object);
+
+    }//end callerMayUnlock()
 
     /**
      * Lock an object
@@ -200,8 +334,29 @@ class LockHandler
 
         try {
             // Find the object and its register/schema context.
-            $context      = $this->findObjectWithContext(identifier: $identifier);
+            //
+            // SECURITY: bypass RBAC + multitenancy on the read so we can
+            // resolve cross-tenant lock holders, but perform an explicit
+            // authorization check before mutating state. Without the bypass
+            // a non-owner who was nonetheless the lock holder could not
+            // resolve the object at all and would be blocked from
+            // releasing their own lock; the explicit `callerMayUnlock`
+            // gate replaces the wave-3 C14 "any authenticated user can
+            // unlock anything" behavior.
+            $context      = $this->findObjectWithContext(identifier: $identifier, _rbacBypass: true);
             $objectBefore = $context['object'];
+
+            if ($this->callerMayUnlock(object: $objectBefore) === false) {
+                $this->logger->warning(
+                    message: '[LockHandler] Unauthorized unlock attempt',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'identifier' => $identifier,
+                    ]
+                );
+                throw new Exception('User does not have permission to unlock this object');
+            }
 
             // Use MagicMapper for unlock operation.
             $objectAfter = $this->magicMapper->unlockObjectEntity(
