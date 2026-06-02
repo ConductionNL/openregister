@@ -170,10 +170,9 @@ class PdfTextReplacerTest extends TestCase
     }//end testReplaceInPdfEmptySubstitutionsIsNoOp()
 
     /**
-     * Validation gate is now diagnostic-only (parity with the docx path
-     * which also returns partial results silently). When residual entity
-     * text remains it MUST emit a PII-redacted warning to the logger and
-     * MUST NOT throw — the partial PDF reaches the caller.
+     * Lenient default ($strict = false, ad-hoc replace — docx parity): when
+     * residual entity text remains the gate MUST emit a PII-redacted warning
+     * to the logger and MUST NOT throw — the partial PDF reaches the caller.
      *
      * @return void
      */
@@ -185,7 +184,7 @@ class PdfTextReplacerTest extends TestCase
             ->expects(matcher: self::once())
             ->method(constraint: 'warning')
             ->with(
-                self::matchesRegularExpression(regularExpression: '/Partial anonymisation/i'),
+                self::matchesRegularExpression('/Partial anonymisation/i'),
                 self::callback(callback: function (array $context): bool {
                     // PII redaction: context MUST NOT contain the actual entity text.
                     if (strpos((string) json_encode($context), 'Jansen') !== false) {
@@ -202,6 +201,36 @@ class PdfTextReplacerTest extends TestCase
             substitutions: ['Jansen' => '[PERSON: 7]']
         );
     }//end testValidateOutputLogsWarningOnResidualWithoutThrowing()
+
+    /**
+     * Strict mode ($strict = true, entity anonymisation): when residual entity
+     * text remains the gate MUST fail closed with
+     * `PdfAnonymisationException(REASON_VALIDATION_FAILED)` — a file marked
+     * anonymised must never be written while it still contains the entity text.
+     *
+     * @return void
+     */
+    public function testValidateOutputThrowsOnResidualWhenStrict(): void
+    {
+        $pdfContainingNeedle = self::buildFixture(bodyText: 'De heer Jansen bezocht het loket.');
+
+        try {
+            $this->replacer->validateOutput(
+                outputBytes: $pdfContainingNeedle,
+                substitutions: ['Jansen' => '[PERSON: 7]'],
+                replaceStats: [],
+                strict: true
+            );
+            self::fail(message: 'Expected PdfAnonymisationException on residual entity text in strict mode');
+        } catch (PdfAnonymisationException $e) {
+            self::assertSame(
+                expected: PdfAnonymisationException::REASON_VALIDATION_FAILED,
+                actual: $e->getReason()
+            );
+            // ADR-005: the exception message MUST NOT echo the entity text.
+            self::assertStringNotContainsString(needle: 'Jansen', haystack: $e->getMessage());
+        }
+    }//end testValidateOutputThrowsOnResidualWhenStrict()
 
     /**
      * Validation gate passes silently when the PDF contains only the
