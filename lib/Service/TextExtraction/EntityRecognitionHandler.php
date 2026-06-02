@@ -7,6 +7,9 @@
  * from text chunks for GDPR compliance and data classification.
  * This handler is invoked after chunks are created to detect and store entities.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
@@ -126,6 +129,8 @@ class EntityRecognitionHandler
      * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chunk processing requires multiple condition checks
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
      */
     public function processSourceChunks(string $sourceType, int $sourceId, array $options=[]): array
     {
@@ -210,6 +215,8 @@ class EntityRecognitionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity extraction requires multiple condition checks
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple entity detection paths with error handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity extraction with logging
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
      */
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {

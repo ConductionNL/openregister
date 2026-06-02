@@ -22,6 +22,9 @@
  * - Admin override capabilities
  * - Unauthenticated user handling
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -78,6 +81,18 @@ use Psr\Log\LoggerInterface;
  */
 class MagicRbacHandler
 {
+
+    /**
+     * Raw-SQL impossible predicate used to fail closed on the SQL-string RBAC path.
+     *
+     * Emitted when a `match` rule's dynamic variable resolves to null so the
+     * predicate is NOT silently dropped from the AND (#1953). Mirrors the
+     * QueryBuilder path's {@see impossibleCondition()} and ConditionMatcher's
+     * fail-closed semantics.
+     *
+     * @var string
+     */
+    private const IMPOSSIBLE_SQL_CONDITION = '1 = 0';
 
     /**
      * Cached active organisation UUID
@@ -178,6 +193,17 @@ class MagicRbacHandler
         // Condition: User is the owner of the object (owners always have access).
         if ($userId !== null) {
             $conditions[] = $qb->expr()->eq('t._owner', $qb->createNamedParameter($userId));
+        }
+
+        // Condition: User is in a configured system-reader group - grant
+        // visibility on rows owned by the system identifier (e.g. cron-written
+        // rows). See openregister#1617. Admins already returned at line 147 so
+        // this branch only fires for non-admin reader-group members.
+        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
+            $conditions[] = $qb->expr()->eq(
+                't._owner',
+                $qb->createNamedParameter($this->getSystemUserId())
+            );
         }
 
         // Process each authorization rule.
@@ -364,6 +390,24 @@ class MagicRbacHandler
     }//end buildMatchConditions()
 
     /**
+     * Build an IMPOSSIBLE SQL predicate (`1 = 0`) for the QueryBuilder path.
+     *
+     * Used to fail closed when a `match` rule's dynamic variable resolves to null
+     * (#1953): the predicate is included in the AND but can never be satisfied, so
+     * the rule grants no rows — matching the PHP/find path verdict rather than
+     * silently dropping the condition. Mirrors the existing impossible predicate in
+     * applyRbacFilters().
+     *
+     * @param IQueryBuilder $qb Query builder.
+     *
+     * @return mixed An always-false SQL expression.
+     */
+    private function impossibleCondition(IQueryBuilder $qb): mixed
+    {
+        return $qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0));
+    }//end impossibleCondition()
+
+    /**
      * Resolve dynamic variable values in match conditions
      *
      * Supports special variables:
@@ -446,9 +490,15 @@ class MagicRbacHandler
         // Resolve dynamic variables in the value.
         $resolvedValue = $this->resolveDynamicValue(value: $value);
 
-        // If dynamic variable resolved to null, this condition cannot be met.
+        // Fail closed when a dynamic variable resolves to null (#1953): emit an
+        // IMPOSSIBLE predicate (1 = 0) for this property rather than returning null.
+        // Returning null would let buildMatchConditions() silently DROP the predicate
+        // from the AND, degrading a multi-condition match rule to its surviving
+        // static predicates and leaking objects on the LIST path that the PHP/find
+        // path (ConditionMatcher) denies. The impossible predicate makes the LIST and
+        // FIND verdicts identical (both deny) for unresolved variables.
         if ($value !== $resolvedValue && $resolvedValue === null) {
-            return null;
+            return $this->impossibleCondition(qb: $qb);
         }
 
         // Simple value: equals comparison.
@@ -754,6 +804,8 @@ class MagicRbacHandler
      * @return array{bypass: bool, conditions: string[]} Result with:
      *               - 'bypass' => true means no filtering needed (user has full access)
      *               - 'conditions' => SQL conditions to OR together, empty array means deny all
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Mirrors applyRbacFilters dispatch; carries the system-owner carve-out (openregister#1617).
      */
     public function buildRbacConditionsSql(Schema $schema, string $action='read'): array
     {
@@ -794,6 +846,14 @@ class MagicRbacHandler
         if ($userId !== null) {
             $quotedUserId = $this->quoteValue(value: $userId);
             $conditions[] = "_owner = {$quotedUserId}";
+        }
+
+        // Condition: User is in a configured system-reader group - grant
+        // visibility on rows owned by the system identifier. See
+        // openregister#1617. Admins already returned at line 781.
+        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
+            $quotedSystemId = $this->quoteValue(value: $this->getSystemUserId());
+            $conditions[]   = "_owner = {$quotedSystemId}";
         }
 
         // Process each authorization rule.
@@ -928,9 +988,12 @@ class MagicRbacHandler
         // Resolve dynamic variables in the value.
         $resolvedValue = $this->resolveDynamicValue(value: $value);
 
-        // If dynamic variable resolved to null, this condition cannot be met.
+        // Fail closed when a dynamic variable resolves to null (#1953): emit an
+        // IMPOSSIBLE predicate (1 = 0) rather than returning null, which would let
+        // buildMatchConditionsSql() drop the predicate from the AND and leak objects
+        // on this LIST path. Mirrors the QueryBuilder path and ConditionMatcher.
         if ($value !== $resolvedValue && $resolvedValue === null) {
-            return null;
+            return self::IMPOSSIBLE_SQL_CONDITION;
         }
 
         // Simple value: equals comparison.
@@ -1060,9 +1123,10 @@ class MagicRbacHandler
         $sqlOperator     = $comparisonMap[$operator];
         $resolvedOperand = $this->resolveDynamicValue(value: $operand);
 
-        // If dynamic variable resolved to null, this condition cannot be met.
+        // Fail closed when a dynamic variable resolves to null (#1953): emit an
+        // IMPOSSIBLE predicate (1 = 0) rather than dropping the condition.
         if ($operand !== $resolvedOperand && $resolvedOperand === null) {
-            return null;
+            return self::IMPOSSIBLE_SQL_CONDITION;
         }
 
         $quotedValue = $this->quoteValue(value: $resolvedOperand);
@@ -1328,4 +1392,72 @@ class MagicRbacHandler
             return $schema->getAuthorization();
         }
     }//end resolveSchemaAuthorization()
+
+    /**
+     * Decide whether the current user qualifies for the system-row visibility
+     * carve-out (openregister#1617).
+     *
+     * Admins are NOT handled here — they bypass RBAC entirely at the top of
+     * the filter methods. This helper exists for non-admin users in groups
+     * configured under `openregister.systemReaderGroups`.
+     *
+     * @param string[] $userGroups The current user's group IDs.
+     *
+     * @return bool True if the user should see rows owned by the system identifier.
+     */
+    private function shouldGrantSystemRowVisibility(array $userGroups): bool
+    {
+        if (empty($userGroups) === true) {
+            return false;
+        }
+
+        $readerGroups = $this->resolveOrganisationService()?->getSystemReaderGroups() ?? [];
+        if (empty($readerGroups) === true) {
+            return false;
+        }
+
+        return count(array_intersect($userGroups, $readerGroups)) > 0;
+    }//end shouldGrantSystemRowVisibility()
+
+    /**
+     * Get the configured system identifier used as `_owner` for session-less
+     * writes.
+     *
+     * Falls back to {@see OrganisationService::SYSTEM_USER_ID_DEFAULT} when
+     * the OrganisationService is not available in the container (defensive
+     * default; matches the helper's own fallback path).
+     *
+     * @return string The system identifier.
+     */
+    private function getSystemUserId(): string
+    {
+        $service = $this->resolveOrganisationService();
+        if ($service === null) {
+            return \OCA\OpenRegister\Service\OrganisationService::SYSTEM_USER_ID_DEFAULT;
+        }
+
+        return $service->getSystemUserId();
+    }//end getSystemUserId()
+
+    /**
+     * Lazy-load OrganisationService from the container.
+     *
+     * Matches the lazy-load pattern already in use elsewhere in this class
+     * (see e.g. line 415) — avoids constructor-level circular DI dependencies.
+     *
+     * @return \OCA\OpenRegister\Service\OrganisationService|null The service or
+     *         null if the container cannot resolve it (defensive).
+     */
+    private function resolveOrganisationService(): ?\OCA\OpenRegister\Service\OrganisationService
+    {
+        try {
+            return $this->container->get(\OCA\OpenRegister\Service\OrganisationService::class);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                message: '[MagicRbacHandler] OrganisationService unavailable - skipping system-owner carve-out',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+            return null;
+        }
+    }//end resolveOrganisationService()
 }//end class

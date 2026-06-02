@@ -8,6 +8,8 @@ status: in-progress
 - `unify-rbac-condition-matching` (active) — collapses `PermissionHandler::evaluateMatchConditions` and `MagicRbacHandler`'s private PHP-side condition matcher onto the shared `ConditionMatcher` service, so schema-level RBAC honours the full operator set (`$eq/$ne/$gt/$gte/$lt/$lte/$in/$nin/$exists`) and dynamic variables (`$organisation/$userId/$now`) that the SQL and property layers already support. Fixes OpenCatalogi `PublicationsController::attachments` throwing on schemas with operator-based `public`-with-match rules.
 
 ## Purpose
+
+@e2e exclude backend RBAC OAS scope builder — covered by PHPUnit
 Validate and extend OpenRegister's existing three-level RBAC system. The core RBAC is already implemented via PermissionHandler (schema-level), MagicRbacHandler (row-level SQL filtering), and PropertyRbacHandler (field-level). This spec documents the existing behavior as requirements and identifies extensions needed for scope management APIs, caching, and audit. Specifically, it maps the existing hierarchical RBAC model (register, schema, object, property) to standard OAuth2 scopes in the generated OpenAPI Specification, and validates that per-operation security requirements are correctly enforced so that API consumers can discover and request the precise group-based permissions they need. The scope system bridges Nextcloud's native group management with standardised OAuth2/OAS security semantics, enabling external API consumers, ZGW-compliant systems, and MCP clients to understand and negotiate access programmatically.
 
 **Source**: Core OpenRegister capability; 67% of tenders require SSO/identity integration; 86% require RBAC per zaaktype; ZGW Autorisaties API compliance.
@@ -22,9 +24,7 @@ This spec primarily documents and validates existing functionality, with targete
 - **Scope caching (fully implemented)**: `MagicRbacHandler.$cachedActiveOrg`, `ConditionMatcher.$cachedActiveOrg`, `OasService.$schemaRbacMap`.
 - **Consumer identity mapping (fully implemented)**: `Consumer` entity with `userId` field, `AuthorizationService` resolving all auth methods to Nextcloud users.
 - **What this spec adds as extensions**: Register-level default authorization cascade, permission matrix UI for administrators, scope migration tooling for group renames, and explicit RBAC policy change audit logging.
-
 ## Requirements
-
 ### Requirement: Scope Model Hierarchy (Register > Schema > Object > Property)
 The RBAC scope model SHALL follow a four-level hierarchy: register-level scopes govern access to an entire register and serve as defaults for schemas without their own authorization, schema-level scopes control CRUD operations per schema (zaaktype/objecttype), object-level scopes apply to individual records via conditional matching, and property-level scopes restrict visibility and mutability of specific fields. Each level MUST be independently configurable via the `authorization` JSON structure. Register-level authorization SHALL cascade to schemas that do not define their own authorization block. Named roles defined at register level SHALL be expandable in authorization blocks at any level.
 
@@ -540,6 +540,94 @@ The frontend MUST be able to determine the current user's effective permissions 
 - **WHEN** it inspects the `security` block of the POST operation for schema `meldingen`
 - **THEN** it MUST find the OAuth2 scopes required for creating objects
 - **AND** it can compare these against the current user's groups to determine if the "Create" button should be shown
+
+### Requirement: Effective-Scope Discovery API
+
+The system MUST expose an effective-scope discovery endpoint so clients
+(frontend feature gates, OAuth2 token exchange, downstream apps) can learn which
+`(register, schema, action)` tuples the current user may perform without probing
+every endpoint. `ScopesController::index()` (`GET /api/scopes`) MUST return an
+envelope `{user, isAdmin, groups, scopes}` where `scopes` is a list of
+`{register, schema, actions}` entries keyed by slug. For each in-scope
+(register, schema) pair the controller MUST probe `PermissionHandler::hasPermission()`
+for the five canonical actions (`read`, `create`, `update`, `delete`, `list`)
+and include only the granted ones, omitting pairs with no granted actions. Admin
+callers MUST short-circuit to the full action vocabulary for every pair,
+mirroring the admin-bypass in `PermissionHandler`. Unauthenticated callers MUST
+be supported with `user: null`. Optional `register` and `schema` query
+parameters (id|uuid|slug) MUST narrow the response, and resolution MUST keep the
+multitenancy filter on so the endpoint cannot enumerate across tenants.
+
+#### Scenario: Authenticated user discovers effective scopes
+- **GIVEN** an authenticated non-admin user in groups `users` and `hr`
+- **WHEN** a GET request is sent to `/api/scopes`
+- **THEN** the response MUST include `user`, `isAdmin: false`, `groups`, and a `scopes` list
+- **AND** each scope entry MUST list only the actions granted by `PermissionHandler::hasPermission()` for that (register, schema) pair
+- **AND** pairs with no granted action MUST be omitted
+
+#### Scenario: Admin receives the full action vocabulary
+- **GIVEN** a caller in the `admin` group
+- **WHEN** `index()` builds the response
+- **THEN** `isAdmin` MUST be `true`
+- **AND** `collectActionsForUser()` MUST short-circuit to `["read", "create", "update", "delete", "list"]` for every (register, schema) pair
+
+#### Scenario: Filter discovery by register and schema
+- **GIVEN** a GET request to `/api/scopes?register=decidesk&schema=meeting`
+- **WHEN** `resolveRegisters()` and `resolveSchemas()` apply the filters
+- **THEN** only the matching register/schema MUST be evaluated
+- **AND** the multitenancy filter MUST remain on so cross-tenant enumeration is not possible
+
+#### Scenario: Unauthenticated caller is supported
+- **GIVEN** no active user session
+- **WHEN** a GET request is sent to `/api/scopes`
+- **THEN** the response MUST set `user: null` and `isAdmin: false`
+- **AND** only scopes reachable by the `public` pseudo-group MUST be returned
+
+### Requirement: RBAC settings configuration API
+The system SHALL expose an admin-gated API for reading and writing the RBAC enablement and
+configuration dials that govern scope enforcement. `ConfigurationSettingsController`
+provides `getRbacSettings` (delegating to `SettingsService::getRbacSettingsOnly()`) and
+`updateRbacSettings` (delegating to `SettingsService::updateRbacSettingsOnly()`). Both
+return HTTP 500 with an `error` field on service failure.
+
+#### Scenario: Read RBAC settings
+- **WHEN** `getRbacSettings` is called
+- **THEN** it MUST return the RBAC settings document from `SettingsService::getRbacSettingsOnly()`
+
+#### Scenario: Update RBAC settings
+- **GIVEN** an admin toggles RBAC enforcement and posts the change
+- **WHEN** `updateRbacSettings` runs
+- **THEN** it MUST persist the change via `SettingsService::updateRbacSettingsOnly()` and return the updated settings
+
+### Requirement: Custom (non-canonical) action verbs MUST be resolvable via a voting event pair
+When `PermissionHandler` evaluates an action that is NOT one of the canonical five (`read`, `create`, `update`, `delete`, `list`), it MUST dispatch a `CustomScopeEvaluatingEvent` so consuming apps that declare custom action verbs on a register can contribute a verdict. The verdict is first-vote-wins: the first listener to call `allow()` OR `deny()` decides, and subsequent votes are ignored so the outcome is deterministic regardless of listener registration order. When no listener votes, the handler MUST fall through to the standard rule chain. After a listener-driven verdict, a paired telemetry `CustomScopeEvaluatedEvent` MUST be dispatched for observers (audit, dashboards, analytics) without participating in the decision.
+
+#### Scenario: Custom verb dispatches the evaluating event with full context
+- **GIVEN** a register declares a custom action verb `approve` and a user `jan` (groups `["behandelaars"]`) attempts it on schema `besluiten`
+- **WHEN** `PermissionHandler` evaluates the `approve` action
+- **THEN** a `CustomScopeEvaluatingEvent` MUST be dispatched
+- **AND** `getSchema()` MUST return the `besluiten` schema, `getAction()` MUST return `"approve"`, `getUserId()` MUST return `"jan"`, and `getUserGroups()` MUST return `["behandelaars"]`
+- **AND** `getObject()` MUST return the target `ObjectEntity` when one was supplied, otherwise `null`
+
+#### Scenario: First listener vote wins and short-circuits
+- **GIVEN** two listeners are registered for `CustomScopeEvaluatingEvent`
+- **WHEN** the first listener calls `allow()` and the second calls `deny()`
+- **THEN** `getVerdict()` MUST return `true` (the first vote)
+- **AND** `hasVerdict()` MUST return `true`
+- **AND** the second listener's `deny()` MUST be ignored
+
+#### Scenario: No listener votes falls through to the standard rule chain
+- **GIVEN** no listener casts a verdict on the `CustomScopeEvaluatingEvent`
+- **WHEN** evaluation completes
+- **THEN** `hasVerdict()` MUST return `false` and `getVerdict()` MUST return `null`
+- **AND** `PermissionHandler` MUST evaluate the action against the standard static rule chain
+- **AND** no `CustomScopeEvaluatedEvent` MUST be dispatched (the standard rule-chain audit paths capture that outcome)
+
+#### Scenario: Telemetry event reports the resolved verdict and its origin
+- **GIVEN** a listener resolved a custom-scope evaluation to `true`
+- **WHEN** the paired `CustomScopeEvaluatedEvent` is dispatched
+- **THEN** `getVerdict()` MUST return `true` and `isFromListener()` MUST return `true`
+- **AND** `getSchema()`, `getAction()`, and `getUserId()` MUST mirror the evaluating event's context
 
 ## ZGW Autorisaties Mapping Guide
 

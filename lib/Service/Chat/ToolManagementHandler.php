@@ -5,6 +5,9 @@
  *
  * Handler for LLM tool/function calling management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -15,6 +18,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -72,6 +77,8 @@ class ToolManagementHandler
      * @param LoggerInterface $logger       Logger.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function __construct(
         AgentMapper $agentMapper,
@@ -95,6 +102,15 @@ class ToolManagementHandler
      * @return array Array of ToolInterface instances
      *
      * @psalm-return list<ToolInterface>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) getAgentTools() iterates tool ids, tries multiple
+     * candidate key formats (raw / prefixed) per id, and logs both found and not-found results — each
+     * branch is a required backward-compatibility guard for agent records from different schema eras.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Three independent early-returns (null agent, empty
+     * enabledToolIds, filtered-to-empty selection) plus the two-candidate loop expand the NPath count
+     * without adding logical complexity.
      */
     public function getAgentTools(?Agent $agent, array $selectedTools=[]): array
     {
@@ -186,6 +202,8 @@ class ToolManagementHandler
      * @return array Array of function definitions for OpenAI
      *
      * @psalm-return list<array>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
      */
     public function convertToolsToFunctions(array $tools): array
     {
@@ -214,6 +232,8 @@ class ToolManagementHandler
      * @return array Array of FunctionInfo objects
      *
      * @psalm-return list<FunctionInfo>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-chat-ai/tasks.md#task-1
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Function conversion requires handling multiple parameter types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Function conversion requires handling multiple parameter types

@@ -324,6 +324,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 				<div class="filterGroup">
 					<label for="activityPeriodSelect">{{ t('openregister', 'Activity Period') }}</label>
 					<NcSelect
+						input-label="Selected Activity Period"
 						id="activityPeriodSelect"
 						v-model="selectedActivityPeriod"
 						:options="activityPeriodOptions"
@@ -485,6 +486,11 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Build the register dropdown options for the search-trail filter.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for registers
+		 */
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -500,6 +506,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Build the schema dropdown options scoped to the selected register.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for schemas
+		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
@@ -519,6 +530,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Resolve the currently-selected register into NcSelect value shape.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected register option, or null
+		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
 			const register = registerStore.registerItem
@@ -529,6 +545,11 @@ export default {
 				register,
 			}
 		},
+		/**
+		 * Resolve the currently-selected schema into NcSelect value shape.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected schema option, or null
+		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
 			const schema = schemaStore.schemaItem
@@ -539,6 +560,11 @@ export default {
 				schema,
 			}
 		},
+		/**
+		 * Derive the user filter options from the search-trail list.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Array} User filter options
+		 */
 		userOptions() {
 			if (!searchTrailStore.searchTrailList || !searchTrailStore.searchTrailList.length) {
 				return []
@@ -554,6 +580,9 @@ export default {
 	watch: {
 		// Keep component/store in sync with URL query params (single source of truth)
 		'$route.query': {
+			/**
+			 * @spec exclude Vue watch handler plumbing; re-syncs sidebar state from the route query on /search-trails.
+			 */
 			handler() {
 				if (this.$route.path !== '/search-trails') return
 				this.applyQueryParamsFromRoute()
@@ -571,6 +600,12 @@ export default {
 			this.applyFilters()
 		},
 	},
+	/**
+	 * Load every search-trail analytics dataset on mount and seed state from the route.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+	 * @return {void}
+	 */
 	mounted() {
 		// Load required data
 		if (!registerStore.registerList.length) {
@@ -606,6 +641,7 @@ export default {
 	methods: {
 		/**
 		 * Load search trail data and update filtered count
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @return {Promise<void>}
 		 */
 		async loadSearchTrailData() {
@@ -618,6 +654,7 @@ export default {
 		},
 		/**
 		 * Clear all filters
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		clearAllFilters() {
@@ -647,6 +684,7 @@ export default {
 		},
 		/**
 		 * Clear filters (alias for clearAllFilters for template compatibility)
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		clearFilters() {
@@ -654,6 +692,7 @@ export default {
 		},
 		/**
 		 * Handle search term filter change with debouncing
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @param {string} value - The filter value
 		 * @return {void}
 		 */
@@ -663,6 +702,7 @@ export default {
 		},
 		/**
 		 * Handle execution time filter change with debouncing
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		handleExecutionTimeChange() {
@@ -670,6 +710,7 @@ export default {
 		},
 		/**
 		 * Handle result count filter change with debouncing
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		handleResultCountChange() {
@@ -677,6 +718,7 @@ export default {
 		},
 		/**
 		 * Apply filters and emit to parent components
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		applyFilters() {
@@ -746,6 +788,7 @@ export default {
 		},
 		/**
 		 * Debounced version of applyFilters for text input
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		debouncedApplyFilters() {
@@ -756,6 +799,7 @@ export default {
 		},
 		/**
 		 * Update filtered count from store
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @return {void}
 		 */
 		updateFilteredCount() {
@@ -763,6 +807,7 @@ export default {
 		},
 		/**
 		 * Load statistics
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @return {Promise<void>}
 		 */
 		async loadStatistics() {
@@ -797,6 +842,7 @@ export default {
 		},
 		/**
 		 * Load popular search terms
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @return {Promise<void>}
 		 */
 		async loadPopularTerms() {
@@ -810,6 +856,7 @@ export default {
 		},
 		/**
 		 * Load register schema statistics
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @return {Promise<void>}
 		 */
 		async loadRegisterSchemaStats() {
@@ -823,6 +870,7 @@ export default {
 		},
 		/**
 		 * Load user agent statistics
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @return {Promise<void>}
 		 */
 		async loadUserAgentStats() {
@@ -836,6 +884,7 @@ export default {
 		},
 		/**
 		 * Load activity data for selected period
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @return {Promise<void>}
 		 */
 		async loadActivityData() {
@@ -852,6 +901,7 @@ export default {
 		},
 		/**
 		 * Get complexity percentage for progress bar
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @param {string} type - The complexity type
 		 * @return {number} The percentage
 		 */
@@ -862,6 +912,7 @@ export default {
 		},
 		/**
 		 * Format activity period for display
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @param {string} period - The period string
 		 * @return {string} Formatted period
 		 */
@@ -883,7 +934,8 @@ export default {
 			}
 		},
 		/**
-		 * Handle register change
+		 * Handle register change (cascade: set register, clear schema, re-apply filters).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object} register - Selected register
 		 * @return {void}
 		 */
@@ -893,7 +945,8 @@ export default {
 			this.applyFilters()
 		},
 		/**
-		 * Handle schema change
+		 * Handle schema change (set schema, re-apply filters).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object} schema - Selected schema
 		 * @return {void}
 		 */
@@ -903,6 +956,7 @@ export default {
 		},
 		/**
 		 * Get register/schema name for display
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @param {object} stat - The register/schema stat object
 		 * @return {string} The display name
 		 */
@@ -917,6 +971,7 @@ export default {
 		},
 		/**
 		 * Get browser name for display
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
 		 * @param {object} agent - The user agent stat object
 		 * @return {string} The browser name
 		 */
@@ -928,7 +983,11 @@ export default {
 			}
 			return agent.user_agent || 'Unknown Browser'
 		},
-		// Build URL query from current component/store state
+		/**
+		 * Build URL query from current component/store state.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {object} Query object derived from sidebar filter state
+		 */
 		buildQueryFromState() {
 			const query = {}
 			// Filters
@@ -946,7 +1005,13 @@ export default {
 			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
 			return query
 		},
-		// Shallow compare queries
+		/**
+		 * Shallow-compare two query objects (keys and stringified values).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @param {object} a - First query object
+		 * @param {object} b - Second query object
+		 * @return {boolean} Whether the queries are equal
+		 */
 		queriesEqual(a, b) {
 			const ka = Object.keys(a).sort()
 			const kb = Object.keys(b || {}).sort()
@@ -958,14 +1023,22 @@ export default {
 			}
 			return true
 		},
-		// Write current state into URL
+		/**
+		 * Write current sidebar state into the URL query (only on /search-trails).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
 		updateRouteQueryFromState() {
 			if (this.$route.path !== '/search-trails') return
 			const nextQuery = this.buildQueryFromState()
 			if (this.queriesEqual(nextQuery, this.$route.query)) return
 			this.$router.replace({ path: this.$route.path, query: nextQuery })
 		},
-		// Read URL query and apply to component/store
+		/**
+		 * Read the URL query and apply it to component/store state.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/search-trails') return
 			const q = this.$route.query || {}

@@ -5,6 +5,9 @@
  *
  * This file contains the controller for managing applications.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -47,6 +50,8 @@ use Exception;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
  */
 class ApplicationsController extends Controller
 {
@@ -121,6 +126,9 @@ class ApplicationsController extends Controller
      * @return TemplateResponse Template response for applications SPA
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
+     *
+     * @spec exclude Trivial SPA-mount route stub: returns the Vue index template for client-side routing.
+     *              SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
      */
     public function page(): TemplateResponse
     {
@@ -148,6 +156,8 @@ class ApplicationsController extends Controller
      *     array{error?: 'Failed to retrieve applications',
      *     results?: array<\OCA\OpenRegister\Db\Application>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function index(): JSONResponse
     {
@@ -224,6 +234,8 @@ class ApplicationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Application not found'}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function show(int $id): JSONResponse
     {
@@ -267,6 +279,8 @@ class ApplicationsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created application
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function create(): JSONResponse
     {
@@ -316,6 +330,8 @@ class ApplicationsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated application
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function update(int $id): JSONResponse
     {
@@ -374,6 +390,8 @@ class ApplicationsController extends Controller
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function patch(int $id): JSONResponse
     {
@@ -398,6 +416,8 @@ class ApplicationsController extends Controller
      * @psalm-return JSONResponse<200|400,
      *     array{error?: 'Failed to delete application',
      *     message?: 'Application deleted successfully'}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
      */
     public function destroy(int $id): JSONResponse
     {
@@ -441,6 +461,9 @@ class ApplicationsController extends Controller
      * @return int|null Limit value or null if not provided
      *
      * @psalm-return int|null
+     *
+     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
+     *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
      */
     private function extractLimit(array $params): ?int
     {
@@ -464,6 +487,9 @@ class ApplicationsController extends Controller
      * @return int|null Offset value or null if not provided
      *
      * @psalm-return int|null
+     *
+     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
+     *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
      */
     private function extractOffset(array $params): ?int
     {
@@ -487,6 +513,9 @@ class ApplicationsController extends Controller
      * @return int|null Page value or null if not provided
      *
      * @psalm-return int|null
+     *
+     * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
+     *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
      */
     private function extractPage(array $params): ?int
     {

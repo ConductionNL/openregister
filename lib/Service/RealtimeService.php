@@ -21,6 +21,9 @@
  *   - debounce / batch coalescing
  *   - frontend reactive store wiring
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -85,6 +88,8 @@ class RealtimeService
      * @param array<string, mixed> $extra     Trigger-specific extras (e.g. transition action/from/to).
      *
      * @return RealtimeEvent|null The persisted event entity, or null on failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-35
      */
     public function record(string $eventType, ObjectEntity $object, array $extra=[]): ?RealtimeEvent
     {

@@ -398,10 +398,16 @@ export default {
 			if (!this.facetsData || !this.facetsData.facets) return 0
 			return this.metadataCount + this.objectFieldCount
 		},
+		/**
+		 * @spec exclude UI display helper — counts metadata (@self) facets.
+		 */
 		metadataCount() {
 			if (!this.facetsData || !this.facetsData.facets || !this.facetsData.facets['@self']) return 0
 			return Object.keys(this.facetsData.facets['@self']).length
 		},
+		/**
+		 * @spec exclude UI display helper — counts object-field facets.
+		 */
 		objectFieldCount() {
 			if (!this.facetsData || !this.facetsData.facets || !this.facetsData.facets.object_fields) return 0
 			return Object.keys(this.facetsData.facets.object_fields).length
@@ -409,6 +415,9 @@ export default {
 	},
 	watch: {
 		show: {
+			/**
+			 * @spec exclude UI watcher — loads facets when shown, resets when hidden.
+			 */
 			handler(newVal) {
 				if (newVal) {
 					this.loadFacets()
@@ -568,6 +577,7 @@ export default {
 		/**
 		 * Toggle facet expanded state
 		 * @param {object} facet - The facet to toggle
+		 * @spec exclude UI state helper — toggles a facet row's expanded flag.
 		 */
 		toggleFacetExpanded(facet) {
 			facet.expanded = !facet.expanded
@@ -575,6 +585,7 @@ export default {
 
 		/**
 		 * Reset modal state
+		 * @spec exclude Modal state plumbing — resets local facet state.
 		 */
 		resetModal() {
 			this.facetsData = null

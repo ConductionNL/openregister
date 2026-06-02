@@ -16,6 +16,9 @@
  * (INSERT race conditions surface as unique-violation, which we map to
  * "already read").
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *

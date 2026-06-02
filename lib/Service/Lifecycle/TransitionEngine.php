@@ -9,6 +9,9 @@
  * eventing, and audit machinery runs unchanged), and dispatches the
  * typed ObjectTransitionedEvent.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Lifecycle
  *
@@ -54,6 +57,8 @@ class TransitionEngine
      * @param IEventDispatcher  $eventDispatcher   Dispatcher used to fire ObjectTransitionedEvent.
      * @param IUserSession      $userSession       Current user session, for actor attribution.
      * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -75,6 +80,8 @@ class TransitionEngine
      * @throws RuntimeException When the object/schema/transition is missing,
      *                          the action is not allowed from the current
      *                          state, or the underlying save is rejected.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
      */
     public function transition(string $objectId, string $action): ObjectEntity
     {
@@ -131,9 +138,9 @@ class TransitionEngine
             );
         }
 
-        $spec = $transitions[$action];
-        $to   = (string) ($spec['to'] ?? '');
-        $from = (array) ($spec['from'] ?? []);
+        $spec        = $transitions[$action];
+        $targetState = (string) ($spec['to'] ?? '');
+        $from        = (array) ($spec['from'] ?? []);
 
         $data         = $object->getObject() ?? [];
         $currentValue = (string) ($data[$field] ?? '');
@@ -150,7 +157,7 @@ class TransitionEngine
 
         // Mutate the lifecycle field. The validator listener will re-check
         // the transition on save; the guard (if any) will run there too.
-        $data[$field] = $to;
+        $data[$field] = $targetState;
 
         // Forward the session user explicitly to the save path so the
         // @self.folder access check in `ensureObjectFolder` resolves to a
@@ -175,7 +182,7 @@ class TransitionEngine
                 object: $saved,
                 action: $action,
                 from: $currentValue,
-                to: $to,
+                to: $targetState,
                 userId: $userId,
                 register: (string) $object->getRegister(),
                 schema: (string) $object->getSchema()
@@ -191,6 +198,15 @@ class TransitionEngine
      * @param string $objectId Object id/uuid/slug.
      *
      * @return array<int, array{action: string, to: string, requires: ?string, description: ?string}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent
+     * guard + per-transition from/requires/description checks each add one branch; none can be removed
+     * without losing safety or fidelity.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      RBAC check + missing-object guard + annotation-absent
+     * guard + per-transition from/requires/description checks each add one branch; none can be removed
+     * without losing safety or fidelity.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
      */
     public function availableActions(string $objectId): array
     {
@@ -246,13 +262,23 @@ class TransitionEngine
                 continue;
             }
 
+            $requires    = null;
+            $description = null;
+            if (isset($spec['requires']) === true) {
+                $requires = (string) $spec['requires'];
+            }
+
+            if (isset($spec['description']) === true) {
+                $description = (string) $spec['description'];
+            }
+
             $available[] = [
                 'action'      => (string) $action,
                 'to'          => (string) ($spec['to'] ?? ''),
-                'requires'    => isset($spec['requires']) === true ? (string) $spec['requires'] : null,
-                'description' => isset($spec['description']) === true ? (string) $spec['description'] : null,
+                'requires'    => $requires,
+                'description' => $description,
             ];
-        }
+        }//end foreach
 
         return $available;
     }//end availableActions()
@@ -289,6 +315,10 @@ class TransitionEngine
     {
         $config     = ($schema->getConfiguration() ?? []);
         $annotation = ($config['x-openregister-lifecycle'] ?? null);
-        return is_array($annotation) === true ? $annotation : null;
+        if (is_array($annotation) === true) {
+            return $annotation;
+        }
+
+        return null;
     }//end getLifecycleAnnotation()
 }//end class

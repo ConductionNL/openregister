@@ -33,15 +33,27 @@ export default {
 		},
 	},
 	computed: {
+		/**
+		 * @spec exclude computed status-metadata lookup; translation-status contract owned by register-i18n capability
+		 */
 		meta() {
 			return STATUS_META[this.status] ?? { icon: '?', label: this.status }
 		},
+		/**
+		 * @spec exclude computed icon-char display helper, UI plumbing
+		 */
 		iconChar() {
 			return this.meta.icon
 		},
+		/**
+		 * @spec exclude computed status-label display helper, UI plumbing
+		 */
 		labelText() {
 			return this.meta.label
 		},
+		/**
+		 * @spec exclude computed tooltip display helper, UI plumbing
+		 */
 		tooltipText() {
 			const lang = this.language ? ` (${this.language.toUpperCase()})` : ''
 			return `Translation status: ${this.labelText}${lang}`

@@ -6,6 +6,9 @@
  * Processes organisations in 'deprovisioning' state by soft-deleting their
  * objects and transitioning them to 'archived' state.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *

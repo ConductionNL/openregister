@@ -80,6 +80,8 @@ final class OasValidationReport
      * @param string $code    Stable machine code (one of the CODE_* constants).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
      */
     public function addError(string $path, string $message, string $code): void
     {
@@ -100,6 +102,8 @@ final class OasValidationReport
      * @param string $code    Stable machine code (one of the CODE_* constants).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
      */
     public function addWarning(string $path, string $message, string $code): void
     {
@@ -120,6 +124,8 @@ final class OasValidationReport
      * @param string $code    Stable machine code (one of the CODE_* constants).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
      */
     public function addAutoCorrection(string $path, string $message, string $code): void
     {
@@ -191,6 +197,8 @@ final class OasValidationReport
      * True when no error-severity issues have been recorded.
      *
      * @return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
      */
     public function passed(): bool
     {
@@ -219,6 +227,8 @@ final class OasValidationReport
      *   warnings       (int)          Count of warning-severity issues.
      *   autoCorrected  (int)          Count of auto-corrected issues.
      *   issues         (list<array>)  Full issue list with path/message/code/severity.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
      */
     public function toSummary(): array
     {

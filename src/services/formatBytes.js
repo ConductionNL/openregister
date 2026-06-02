@@ -1,3 +1,6 @@
+/**
+ * @spec exclude Stateless byte-size formatting helper; pure presentation utility with no domain contract.
+ */
 export default function formatBytes(bytes) {
 	if (!bytes || bytes === 0) {
 		return '0 KB'

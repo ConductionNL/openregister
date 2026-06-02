@@ -44,6 +44,16 @@ use OCA\OpenRegister\Exception\NotImplementedException;
  * getLabel, getIcon, getRequiredApp, getStorageStrategy) and the
  * read-path list(). They MAY override get/create/update/delete when
  * their storage strategy supports those operations.
+ *
+ * @SuppressWarnings(PHPMD.NumberOfChildren) ADR-019's pluggable integration
+ *   registry is built around exactly this template-method base — each leaf
+ *   (Calendar/Talk/Email/Bookmarks/Collectives/Deck/Polls/Activity/Photos/
+ *   Maps/Forms/Cospend/Shares/TimeTracker/OpenProject/Flow/Analytics/Files/
+ *   Notes/Tags/Tasks/AuditTrail/Xwiki, …) extends it; the count grows with
+ *   the integration catalog, not from a design smell. Redesigning the base
+ *   into composition would require redesigning the registry contract used
+ *   by `useIntegrationRegistry`/`CnObjectSidebar`/`CnDashboardPage` across
+ *   nextcloud-vue + every fleet app.
  */
 abstract class AbstractIntegrationProvider implements IntegrationProvider
 {
@@ -61,6 +71,10 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      * Permission required to use this integration.
      *
      * @return string|null Default null (inherits from object RBAC).
+     *
+     * @spec exclude Base-class default (trivial `return null`) — RBAC gating contract is owned by
+     *              pluggable-integration-registry task-2/generic-integrations Permission Inheritance;
+     *              concrete overrides carry the behaviour.
      */
     public function requiresPermission(): ?string
     {
@@ -72,6 +86,9 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      *
      * @return array<string,mixed> Default `['type' => 'none']` for
      *                             integrations that need no credentials.
+     *
+     * @spec exclude Base-class default (static `['type' => 'none']`) — the auth-requirements contract is owned by
+     *              pluggable-integration-registry task-2; external providers override with real descriptors.
      */
     public function authRequirements(): array
     {
@@ -104,6 +121,12 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      * @return array<string,mixed>
      *
      * @throws NotImplementedException Always, unless overridden.
+     *
+     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
+     *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
+     *   this abstract stub intentionally throws — concrete providers override and use all parameters.
      */
     public function get(string $register, string $schema, string $objectId, string $entityId): array
     {
@@ -123,6 +146,12 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      * @return array<string,mixed>
      *
      * @throws NotImplementedException Always, unless overridden.
+     *
+     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
+     *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
+     *   this abstract stub intentionally throws — concrete providers override and use all parameters.
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -143,6 +172,12 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      * @return array<string,mixed>
      *
      * @throws NotImplementedException Always, unless overridden.
+     *
+     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
+     *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
+     *   this abstract stub intentionally throws — concrete providers override and use all parameters.
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -162,6 +197,12 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      * @return void
      *
      * @throws NotImplementedException Always, unless overridden.
+     *
+     * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
+     *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
+     *   this abstract stub intentionally throws — concrete providers override and use all parameters.
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
@@ -178,6 +219,9 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider
      * and the OCS capabilities response for discovery.
      *
      * @return array<string,mixed>
+     *
+     * @spec exclude Base-class default health descriptor (static ok/configured) — the health/OCS-capabilities
+     *              contract is owned by pluggable-integration-registry task-2; external providers override with a real probe.
      */
     public function health(): array
     {

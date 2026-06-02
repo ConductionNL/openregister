@@ -1,5 +1,11 @@
 ---
 retrofit: true
+retrofit_extensions:
+  - REQ-006
+  - REQ-007
+  - REQ-008
+  - REQ-009
+  - REQ-010
 ---
 # Actions Specification
 
@@ -7,8 +13,11 @@ retrofit: true
 **Scope**: openregister
 **OpenSpec changes**:
 - [retrofit-2026-05-01-actions](../../changes/retrofit-2026-05-01-actions/) _(archived 2026-05-01)_
+- [retrofit-2026-05-24-actions](../../changes/retrofit-2026-05-24-actions/) _(pending archive)_
 
 ## Purpose
+
+@e2e exclude backend service/entity — covered by PHPUnit
 
 Actions are schema-attached, administrator-configured workflow triggers that execute external workflow engine payloads in response to object lifecycle events. Unlike inline schema hooks (which are attached to a schema's `hooks` array and execute sequentially), Actions are standalone entities that can target multiple schemas and registers, support both synchronous and asynchronous execution, and carry configurable failure handling and retry policies. Actions coexist with inline hooks via `ActionListener` and `HookListener` — hooks execute first, then Actions run, both respecting event propagation stop signals.
 

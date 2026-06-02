@@ -6,6 +6,9 @@
  * Controller for MCP (Model Context Protocol) discovery endpoints.
  * Provides AI agents with tiered API discovery for OpenRegister.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
  *

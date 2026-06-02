@@ -258,6 +258,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testUnlockReturnsUnlockedObject(): void
     {
+        $this->setupAdminUser();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('unlockObject')->willReturn(true);
@@ -269,6 +270,33 @@ class ObjectsControllerTest extends TestCase
         $this->assertFalse($data['locked']);
         $this->assertSame('uuid-123', $data['uuid']);
         $this->assertSame('Object unlocked successfully', $data['message']);
+    }
+
+    public function testUnlockAnonymousRejected(): void
+    {
+        // Wave-3 C14 regression guard: anonymous callers must not be able
+        // to release a lock.
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->objectService->expects($this->never())->method('unlockObject');
+
+        $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testUnlockPermissionDeniedReturns403(): void
+    {
+        // Wave-3 C14 regression guard: when LockHandler raises a permission
+        // error, the controller maps it to 403 (not 500).
+        $this->setupRegularUser();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('unlockObject')
+            ->willThrowException(new \Exception('User does not have permission to unlock this object'));
+
+        $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(403, $result->getStatus());
     }
 
     public function testMergeReturnsMergedObject(): void
@@ -768,15 +796,17 @@ class ObjectsControllerTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue($register, 1);
 
+        // Excel upload routes through ImportService::importFromExcel
+        // (no schema param required — Excel auto-resolves per sheet).
         $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'import.csv',
-            'tmp_name' => '/tmp/import.csv',
+            'name' => 'import.xlsx',
+            'tmp_name' => '/tmp/import.xlsx',
             'size' => 1024,
         ]);
         $this->request->method('getParam')->willReturn(null);
 
         $this->registerMapper->method('find')->willReturn($register);
-        $this->objectService->method('importObjects')->willReturn([
+        $this->importService->expects($this->once())->method('importFromExcel')->willReturn([
             'imported' => 10,
             'failed' => 0,
         ]);
@@ -1130,7 +1160,10 @@ class ObjectsControllerTest extends TestCase
             'size' => 1024,
             'error' => 0,
         ]);
-        $this->request->method('getParam')->willReturn(null);
+        // CSV import requires a schema; provide one so the import proceeds.
+        $this->request->method('getParam')->willReturnMap([
+            ['schema', null, '5'],
+        ]);
 
         $register = new \OCA\OpenRegister\Db\Register();
         $ref = new \ReflectionClass($register);
@@ -1139,8 +1172,11 @@ class ObjectsControllerTest extends TestCase
         $prop->setValue($register, 1);
         $register->setTitle('Test Register');
 
+        $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
+
         $this->registerMapper->method('find')->willReturn($register);
-        $this->objectService->method('importObjects')->willReturn([
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->importService->expects($this->once())->method('importFromCsv')->willReturn([
             'created' => 5,
             'updated' => 2,
             'errors' => 0,
@@ -2365,27 +2401,26 @@ class ObjectsControllerTest extends TestCase
     }
 
     /**
-     * Test create() with no user session (returns isAdmin=false, rbac=true).
+     * Test create() with no user session — anonymous writes must be rejected.
+     *
+     * Pre-wave-3-C13 this test asserted 201 (anonymous create succeeded).
+     * The C13 fix short-circuits anonymous writes with 401 BEFORE the webhook
+     * intercept runs — see ObjectsController::create(). The test is preserved
+     * as a regression guard: if someone accidentally removes the auth guard,
+     * this test (and testCreateRejectsAnonymousWith401) will catch it.
      */
-    public function testCreateWithNoUserSessionReturns201OnSuccess(): void
+    public function testCreateWithNoUserSessionReturns401(): void
     {
         $this->userSession->method('getUser')->willReturn(null);
 
-        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-        $objectEntity->setUuid('new-uuid');
-        $objectEntity->setObject(['title' => 'Created']);
-
+        // The mocks below are intentionally left untouched — none of them
+        // should be reached because the anonymous guard short-circuits.
         $this->request->method('getParams')->willReturn(['title' => 'Public']);
         $this->request->method('getHeader')->willReturn('application/json');
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('getRegister')->willReturn(1);
-        $this->objectService->method('getSchema')->willReturn(2);
-        $this->objectService->method('saveObject')->willReturn($objectEntity);
 
         $result = $this->controller->create('1', '2', $this->objectService);
 
-        $this->assertSame(201, $result->getStatus());
+        $this->assertSame(401, $result->getStatus());
     }
 
     // =========================================================================
@@ -2609,13 +2644,15 @@ class ObjectsControllerTest extends TestCase
 
     public function testUnlockReturns404WhenObjectNotFound(): void
     {
+        $this->setupAdminUser();
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('unlockObject')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
-        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-        $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+        $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(404, $result->getStatus());
     }
 
     // =========================================================================
@@ -2756,9 +2793,16 @@ class ObjectsControllerTest extends TestCase
 
         $this->registerMapper->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
-        $this->objectService->method('importObjects')->willReturn([
-            'imported' => 8,
-        ]);
+        // CSV upload with explicit schema routes through importFromCsv,
+        // forwarding the resolved register + schema.
+        $this->importService->expects($this->once())
+            ->method('importFromCsv')
+            ->with(
+                $this->equalTo('/tmp/data.csv'),
+                $this->identicalTo($register),
+                $this->identicalTo($schema)
+            )
+            ->willReturn(['imported' => 8]);
 
         $user = $this->createMock(\OCP\IUser::class);
         $this->userSession->method('getUser')->willReturn($user);
@@ -5409,9 +5453,12 @@ class ObjectsControllerTest extends TestCase
         $prop->setAccessible(true);
         $prop->setValue($register, 1);
 
+        // Excel upload (no schema needed) so we can assert that the
+        // request's boolean params are parsed and forwarded verbatim to
+        // ImportService::importFromExcel.
         $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.csv',
-            'tmp_name' => '/tmp/data.csv',
+            'name' => 'data.xlsx',
+            'tmp_name' => '/tmp/data.xlsx',
             'size' => 1024,
         ]);
         $this->request->method('getParam')->willReturnMap([
@@ -5424,9 +5471,21 @@ class ObjectsControllerTest extends TestCase
         ]);
 
         $this->registerMapper->method('find')->willReturn($register);
-        $this->objectService->method('importObjects')->willReturn([
-            'imported' => 3,
-        ]);
+        // Signature: (filePath, register, schema, validation, events,
+        // _rbac, _multitenancy, publish, currentUser, enrich).
+        $this->importService->expects($this->once())
+            ->method('importFromExcel')
+            ->with(
+                $this->equalTo('/tmp/data.xlsx'),
+                $this->identicalTo($register),
+                $this->isNull(),
+                $this->isTrue(),   // validation
+                $this->isTrue(),   // events
+                $this->isFalse(),  // _rbac
+                $this->isFalse(),  // _multitenancy
+                $this->isTrue()    // publish
+            )
+            ->willReturn(['imported' => 3]);
 
         $user = $this->createMock(\OCP\IUser::class);
         $this->userSession->method('getUser')->willReturn($user);
@@ -7055,5 +7114,86 @@ class ObjectsControllerTest extends TestCase
         $data = $result->getData();
         // registerEntity is null (DI mapper throws), so registers is empty and stripped
         $this->assertArrayHasKey('@self', $data);
+    }
+
+    // =========================================================================
+    // Wave-3 C13: anonymous-write must not reach the webhook intercept
+    //
+    // ObjectsController::create() and postPatch() are #[PublicPage] so that
+    // anonymous reads can survive an app-group restriction (per
+    // /openspec/.../register-schema-read-accessibility). The bug: writes
+    // shared that public attribute, AND the create() handler invoked
+    // webhookService->interceptRequest() before any auth/RBAC check. Result:
+    // an anonymous POST would fire the pre-event webhook (with side effects
+    // in n8n flows, file ingest, audit logs) BEFORE the request was rejected.
+    //
+    // The fix short-circuits anonymous callers at the top of create() and
+    // postPatch() with a 401, BEFORE the webhook intercept runs. These tests
+    // verify (a) anonymous gets 401, (b) the webhook is never invoked.
+    // =========================================================================
+
+    /**
+     * Configure userSession to report an anonymous (no signed-in) caller.
+     */
+    private function setupAnonymousUser(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+    }
+
+    public function testCreateRejectsAnonymousWith401(): void
+    {
+        $this->setupAnonymousUser();
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    public function testCreateAnonymousDoesNotInvokeWebhookIntercept(): void
+    {
+        // The whole point of the C13 fix: webhook MUST NOT fire for
+        // unauthenticated writes — even though the endpoint is @PublicPage.
+        $this->setupAnonymousUser();
+
+        $this->webhookService->expects($this->never())->method('interceptRequest');
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testCreateAnonymousDoesNotInvokeSaveObject(): void
+    {
+        $this->setupAnonymousUser();
+
+        // Sanity: the request short-circuits before any business logic.
+        $this->objectService->expects($this->never())->method('saveObject');
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testPostPatchRejectsAnonymousWith401(): void
+    {
+        $this->setupAnonymousUser();
+
+        $result = $this->controller->postPatch('reg', 'schema', 'uuid-1', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testPostPatchAnonymousDoesNotInvokeSaveObject(): void
+    {
+        $this->setupAnonymousUser();
+
+        $this->objectService->expects($this->never())->method('saveObject');
+        $this->objectService->expects($this->never())->method('findSilent');
+
+        $result = $this->controller->postPatch('reg', 'schema', 'uuid-1', $this->objectService);
+
+        $this->assertSame(401, $result->getStatus());
     }
 }

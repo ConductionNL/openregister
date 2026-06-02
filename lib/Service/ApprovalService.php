@@ -3,6 +3,9 @@
 /**
  * OpenRegister ApprovalService
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -76,7 +79,10 @@ class ApprovalService
         $createdSteps = [];
 
         foreach ($steps as $index => $stepDef) {
-            $status = ($index === 0) ? 'pending' : 'waiting';
+            $status = 'waiting';
+            if ($index === 0) {
+                $status = 'pending';
+            }
 
             $step = $this->stepMapper->createFromArray(
                     [

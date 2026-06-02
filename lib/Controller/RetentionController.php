@@ -6,6 +6,9 @@
  * Handles API endpoints for destruction list management, legal holds,
  * and archival workflow operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -123,7 +126,10 @@ class RetentionController extends Controller
             }
 
             $user   = $this->userSession->getUser();
-            $userId = $user !== null ? $user->getUID() : 'unknown';
+            $userId = 'unknown';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
 
             // Handle partial approval: exclude specified objects.
             $excluded     = $this->request->getParam('excluded', []);
@@ -290,7 +296,10 @@ class RetentionController extends Controller
             }
 
             $user   = $this->userSession->getUser();
-            $userId = $user !== null ? $user->getUID() : 'unknown';
+            $userId = 'unknown';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
 
             $listData['status']          = 'rejected';
             $listData['rejectedBy']      = $userId;

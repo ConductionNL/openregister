@@ -620,6 +620,7 @@ import { translate as t } from '@nextcloud/l10n'
 									:placeholder="t('openregister', 'Filter fields...')"
 									class="field-filter">
 								<NcSelect
+						input-label="Field Type Filter"
 									v-model="fieldTypeFilter"
 									:options="fieldTypeOptions"
 									:placeholder="t('openregister', 'Filter by type')"
@@ -1228,14 +1229,33 @@ export default {
 		...mapStores(useSettingsStore),
 
 		// Access the settings store
+		/**
+		 * Resolve the settings store instance.
+		 *
+		 * @spec exclude UI plumbing — store accessor, no observable contract.
+		 * @return {object}
+		 */
 		settingsStore() {
 			return useSettingsStore()
 		},
 
 		solrOptions: {
+			/**
+			 * Read Solr options from the settings store.
+			 *
+			 * @spec exclude UI plumbing — store passthrough getter; search config owned by zoeken-filteren / faceting-configuration.
+			 * @return {object}
+			 */
 			get() {
 				return this.settingsStore.solrOptions
 			},
+			/**
+			 * Write Solr options to the settings store.
+			 *
+			 * @spec exclude UI plumbing — store passthrough setter; search config owned by zoeken-filteren / faceting-configuration.
+			 * @param {object} value - new options
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.solrOptions = value
 			},
@@ -1243,9 +1263,15 @@ export default {
 
 		// Computed property for SOLR enabled toggle with auto-save
 		solrEnabled: {
+			/**
+			 * @spec exclude computed v-model accessor
+			 */
 			get() {
 				return Boolean(this.solrOptions?.enabled)
 			},
+			/**
+			 * @spec exclude computed v-model accessor
+			 */
 			async set(newValue) {
 				// Update the store
 				this.solrOptions.enabled = newValue
@@ -1260,78 +1286,192 @@ export default {
 			},
 		},
 
+		/**
+		 * Solr connection status from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {*}
+		 */
 		solrConnectionStatus() {
 			return this.settingsStore.solrConnectionStatus
 		},
 
+		/**
+		 * Loading flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
+		/**
+		 * Saving flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
+		/**
+		 * Testing-connection flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		testingConnection() {
 			return this.settingsStore.testingConnection
 		},
 
+		/**
+		 * Warming-up flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		warmingUpSolr() {
 			return this.settingsStore.warmingUpSolr
 		},
 
+		/**
+		 * Setting-up flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		settingUpSolr() {
 			return this.settingsStore.settingUpSolr
 		},
 
+		/**
+		 * Scheme options from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {Array}
+		 */
 		schemeOptions() {
 			return this.settingsStore.schemeOptions
 		},
 
+		/**
+		 * Test-dialog visibility from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		showTestDialog() {
 			return this.settingsStore.showTestDialog
 		},
 
+		/**
+		 * Setup-dialog visibility from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		showSetupDialog() {
 			return this.settingsStore.showSetupDialog
 		},
 
+		/**
+		 * Test results from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {*}
+		 */
 		testResults() {
 			return this.settingsStore.testResults
 		},
 
+		/**
+		 * Setup results from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {*}
+		 */
 		setupResults() {
 			return this.settingsStore.setupResults
 		},
 
+		/**
+		 * Fields-dialog visibility from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		showFieldsDialog() {
 			return this.settingsStore.showFieldsDialog
 		},
 
+		/**
+		 * Loading-fields flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		loadingFields() {
 			return this.settingsStore.loadingFields
 		},
 
+		/**
+		 * Field info from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {*}
+		 */
 		fieldsInfo() {
 			return this.settingsStore.fieldsInfo
 		},
 
+		/**
+		 * Field comparison from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {*}
+		 */
 		fieldComparison() {
 			return this.settingsStore.fieldComparison
 		},
 
+		/**
+		 * Creating-fields flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		creatingFields() {
 			return this.settingsStore.creatingFields
 		},
 
+		/**
+		 * Fixing-fields flag from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {boolean}
+		 */
 		fixingFields() {
 			return this.settingsStore.fixingFields
 		},
 
+		/**
+		 * Field creation result from the settings store.
+		 *
+		 * @spec exclude UI plumbing — store passthrough computed.
+		 * @return {*}
+		 */
 		fieldCreationResult() {
 			return this.settingsStore.fieldCreationResult
 		},
 
+		/**
+		 * Fields filtered by the active text/type filters.
+		 *
+		 * @spec exclude UI plumbing — client-side display filter, no observable contract.
+		 * @return {object}
+		 */
 		filteredFields() {
 			if (!this.fieldsInfo || !this.fieldsInfo.fields) {
 				return {}
@@ -1361,6 +1501,12 @@ export default {
 			return fields
 		},
 
+		/**
+		 * Distinct field-type options for the type filter.
+		 *
+		 * @spec exclude UI plumbing — derived select options for display filtering.
+		 * @return {Array}
+		 */
 		fieldTypeOptions() {
 			if (!this.fieldsInfo || !this.fieldsInfo.fields) {
 				return []
@@ -1374,6 +1520,12 @@ export default {
 		},
 
 		// Dashboard computed properties
+		/**
+		 * CSS class reflecting connection status.
+		 *
+		 * @spec exclude UI plumbing — derived display class, no observable contract.
+		 * @return {string}
+		 */
 		connectionStatusClass() {
 			if (!this.solrStats || !this.solrStats.available) {
 				return 'status-error'
@@ -1385,6 +1537,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Load settings and (if enabled) Solr + object stats on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to loaders; search config owned by zoeken-filteren / faceting-configuration.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		// Wait for settings store to load first
 		try {
@@ -1408,6 +1566,12 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Smooth-scroll to the field-mismatches section.
+		 *
+		 * @spec exclude UI plumbing — DOM scroll helper, no observable contract.
+		 * @return {void}
+		 */
 		scrollToMismatches() {
 			const element = document.getElementById('field-mismatches')
 			if (element) {
@@ -1415,12 +1579,24 @@ export default {
 			}
 		},
 
+		/**
+		 * Open the Solr setup confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — store-flag dialog toggle.
+		 * @return {Promise<void>}
+		 */
 		async setupSolr() {
 			// Just show the setup dialog - it will start with confirmation screen
 			this.settingsStore.showSetupDialog = true
 			this.settingsStore.setupResults = null
 		},
 
+		/**
+		 * Run the Solr setup with the loading animation.
+		 *
+		 * @spec exclude UI plumbing — store-delegated setup wrapped in loading animation; search config owned by zoeken-filteren.
+		 * @return {Promise<void>}
+		 */
 		async startSolrSetup() {
 			// Start the game-style loading
 			this.startGameLoading()
@@ -1432,6 +1608,12 @@ export default {
 			this.stopGameLoading()
 		},
 
+		/**
+		 * Start the game-style loading tip animation.
+		 *
+		 * @spec exclude UI plumbing — loading-screen animation, no observable contract.
+		 * @return {void}
+		 */
 		startGameLoading() {
 			this.visibleTips = []
 			this.tipIndex = 0
@@ -1447,6 +1629,12 @@ export default {
 			}, 3000)
 		},
 
+		/**
+		 * Stop the game-style loading tip animation.
+		 *
+		 * @spec exclude UI plumbing — loading-screen animation teardown, no observable contract.
+		 * @return {void}
+		 */
 		stopGameLoading() {
 			if (this.loadingInterval) {
 				clearInterval(this.loadingInterval)
@@ -1454,6 +1642,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Reveal the next loading tip.
+		 *
+		 * @spec exclude UI plumbing — loading-screen animation step, no observable contract.
+		 * @return {void}
+		 */
 		showNextTip() {
 			if (this.tipIndex < this.loadingTips.length) {
 				this.visibleTips.push({
@@ -1469,6 +1663,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Pick a random loading message.
+		 *
+		 * @spec exclude UI plumbing — loading-screen animation copy, no observable contract.
+		 * @return {void}
+		 */
 		updateLoadingMessage() {
 			const messages = [
 				'Connecting to SOLR cluster...',
@@ -1485,6 +1685,13 @@ export default {
 			this.currentLoadingMessage = randomMessage
 		},
 
+		/**
+		 * Format a timestamp as a local time string.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {string|number} timestamp - value to format
+		 * @return {string}
+		 */
 		formatTime(timestamp) {
 			if (!timestamp) return 'Unknown'
 
@@ -1496,38 +1703,93 @@ export default {
 			}
 		},
 
+		/**
+		 * Test the Solr connection.
+		 *
+		 * @spec exclude UI plumbing — store passthrough; connection contract owned by zoeken-filteren.
+		 * @return {Promise<void>}
+		 */
 		async testSolrConnection() {
 			await this.settingsStore.testSolrConnection()
 		},
 
+		/**
+		 * Persist Solr settings.
+		 *
+		 * @spec exclude UI plumbing — store delegation; search config owned by zoeken-filteren / faceting-configuration.
+		 * @return {Promise<void>}
+		 */
 		async saveSettings() {
 			await this.settingsStore.updateSolrSettings(this.solrOptions)
 		},
 
+		/**
+		 * Hide the test dialog.
+		 *
+		 * @spec exclude UI plumbing — store passthrough dialog toggle.
+		 * @return {void}
+		 */
 		hideTestDialog() {
 			this.settingsStore.hideTestDialog()
 		},
 
+		/**
+		 * Retry the connection test.
+		 *
+		 * @spec exclude UI plumbing — store passthrough.
+		 * @return {void}
+		 */
 		retryTest() {
 			this.settingsStore.retryTest()
 		},
 
+		/**
+		 * Hide the setup dialog.
+		 *
+		 * @spec exclude UI plumbing — store passthrough dialog toggle.
+		 * @return {void}
+		 */
 		hideSetupDialog() {
 			this.settingsStore.hideSetupDialog()
 		},
 
+		/**
+		 * Retry the Solr setup.
+		 *
+		 * @spec exclude UI plumbing — store passthrough.
+		 * @return {void}
+		 */
 		retrySetup() {
 			this.settingsStore.retrySetup()
 		},
 
+		/**
+		 * Load Solr field info for inspection.
+		 *
+		 * @spec exclude UI plumbing — store passthrough; field schema contract owned by zoeken-filteren.
+		 * @return {Promise<void>}
+		 */
 		async inspectFields() {
 			await this.settingsStore.loadSolrFields()
 		},
 
+		/**
+		 * Hide the fields dialog.
+		 *
+		 * @spec exclude UI plumbing — store passthrough dialog toggle.
+		 * @return {void}
+		 */
 		hideFieldsDialog() {
 			this.settingsStore.hideFieldsDialog()
 		},
 
+		/**
+		 * Create missing Solr fields (optionally dry-run).
+		 *
+		 * @spec exclude UI plumbing — store delegation + toast; field schema contract owned by zoeken-filteren.
+		 * @param {boolean} dryRun - preview without applying
+		 * @return {Promise<void>}
+		 */
 		async createMissingFields(dryRun = false) {
 			try {
 				await this.settingsStore.createMissingSolrFields(dryRun)
@@ -1546,6 +1808,13 @@ export default {
 			}
 		},
 
+		/**
+		 * Fix mismatched Solr fields (optionally dry-run).
+		 *
+		 * @spec exclude UI plumbing — store delegation + toast; field schema contract owned by zoeken-filteren.
+		 * @param {boolean} dryRun - preview without applying
+		 * @return {Promise<void>}
+		 */
 		async fixMismatchedFields(dryRun = false) {
 			try {
 				// Use the dedicated fix-mismatches endpoint (automatically detects and fixes all mismatches)
@@ -1568,10 +1837,23 @@ export default {
 			}
 		},
 
+		/**
+		 * Retry loading Solr fields.
+		 *
+		 * @spec exclude UI plumbing — delegates to inspectFields.
+		 * @return {void}
+		 */
 		retryLoadFields() {
 			this.inspectFields()
 		},
 
+		/**
+		 * Map a Solr field type to a CSS class.
+		 *
+		 * @spec exclude UI plumbing — static class lookup for display.
+		 * @param {string} type - field type
+		 * @return {string}
+		 */
 		getTypeClass(type) {
 			const typeMap = {
 				string: 'type-string',
@@ -1586,14 +1868,35 @@ export default {
 			return typeMap[type] || 'type-unknown'
 		},
 
+		/**
+		 * Humanize a component name for display.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {string} name - raw name
+		 * @return {string}
+		 */
 		formatComponentName(name) {
 			return name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
 		},
 
+		/**
+		 * Humanize a detail label for display.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {string} key - raw key
+		 * @return {string}
+		 */
 		formatDetailLabel(key) {
 			return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
 		},
 
+		/**
+		 * Stringify a detail value for display.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {*} value - raw value
+		 * @return {string}
+		 */
 		formatDetailValue(value) {
 			if (typeof value === 'object') {
 				return JSON.stringify(value, null, 2)
@@ -1602,6 +1905,12 @@ export default {
 		},
 
 		// Dashboard methods
+		/**
+		 * Load Solr dashboard stats.
+		 *
+		 * @spec exclude UI plumbing — stats load hydrating local display state; dashboard contract owned by built-in-dashboards.
+		 * @return {Promise<void>}
+		 */
 		async loadSolrStats() {
 			this.loadingStats = true
 			this.solrError = false
@@ -1636,11 +1945,24 @@ export default {
 			}
 		},
 
+		/**
+		 * Format a number with locale separators.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {number} num - value to format
+		 * @return {string|number}
+		 */
 		formatNumber(num) {
 			if (typeof num !== 'number') return num
 			return num.toLocaleString()
 		},
 
+		/**
+		 * Open the warmup modal after loading stats/schemas.
+		 *
+		 * @spec exclude UI plumbing — loaders + dialog toggle.
+		 * @return {Promise<void>}
+		 */
 		async openWarmupModal() {
 			// Load object stats before opening the modal
 			await this.loadObjectStats()
@@ -1648,10 +1970,22 @@ export default {
 			this.showWarmupDialog = true
 		},
 
+		/**
+		 * Open the file-warmup dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog toggle.
+		 * @return {void}
+		 */
 		openFileWarmup() {
 			this.showFileWarmupDialog = true
 		},
 
+		/**
+		 * Load available schemas with object counts for warmup.
+		 *
+		 * @spec exclude UI plumbing — list load hydrating local schema options.
+		 * @return {Promise<void>}
+		 */
 		async loadAvailableSchemas() {
 			this.schemasLoading = true
 			try {
@@ -1696,6 +2030,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Close the warmup modal and reset its state.
+		 *
+		 * @spec exclude UI plumbing — dialog close + local state reset.
+		 * @return {void}
+		 */
 		closeWarmupModal() {
 			this.showWarmupDialog = false
 			// Reset warmup state when modal is closed
@@ -1712,22 +2052,53 @@ export default {
 			}
 		},
 
+		/**
+		 * Open the clear-index dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog toggle.
+		 * @return {void}
+		 */
 		openClearModal() {
 			this.showClearDialog = true
 		},
 
+		/**
+		 * Open the inspect dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog toggle.
+		 * @return {void}
+		 */
 		openInspectModal() {
 			this.showInspectDialog = true
 		},
 
+		/**
+		 * Open the delete-collection dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog toggle.
+		 * @return {void}
+		 */
 		openDeleteCollectionModal() {
 			this.showDeleteCollectionDialog = true
 		},
 
+		/**
+		 * Close the delete-collection dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog toggle.
+		 * @return {void}
+		 */
 		closeDeleteCollectionModal() {
 			this.showDeleteCollectionDialog = false
 		},
 
+		/**
+		 * Refresh stats after a collection is deleted.
+		 *
+		 * @spec exclude UI plumbing — dialog close + stats refresh.
+		 * @param {*} _result - deletion result (unused)
+		 * @return {Promise<void>}
+		 */
 		async handleCollectionDeleted(_result) {
 			// Close the modal
 			this.closeDeleteCollectionModal()
@@ -1736,6 +2107,12 @@ export default {
 			await this.loadSolrStats()
 		},
 
+		/**
+		 * Clear the Solr index and refresh stats.
+		 *
+		 * @spec exclude UI plumbing — thin POST + stats refresh; index contract owned by zoeken-filteren.
+		 * @return {Promise<void>}
+		 */
 		async handleClearIndex() {
 			try {
 				const url = generateUrl('/apps/openregister/api/settings/solr/clear')
@@ -1750,6 +2127,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Load object stats + memory prediction for warmup.
+		 *
+		 * @spec exclude UI plumbing — stats load hydrating local display state; dashboard contract owned by built-in-dashboards.
+		 * @return {Promise<void>}
+		 */
 		async loadObjectStats() {
 			this.objectStats.loading = true
 
@@ -1782,6 +2165,13 @@ export default {
 			}
 		},
 
+		/**
+		 * Load a memory prediction for a given object cap.
+		 *
+		 * @spec exclude UI plumbing — thin POST hydrating local prediction state.
+		 * @param {number} maxObjects - object cap
+		 * @return {Promise<void>}
+		 */
 		async loadMemoryPrediction(maxObjects = 0) {
 			try {
 				const url = generateUrl('/apps/openregister/api/settings/solr/memory-prediction')
@@ -1796,6 +2186,13 @@ export default {
 			}
 		},
 
+		/**
+		 * Start a Solr warmup run with the given config.
+		 *
+		 * @spec exclude UI plumbing — thin POST + progress state; warmup contract owned by zoeken-filteren.
+		 * @param {object} config - warmup configuration
+		 * @return {Promise<void>}
+		 */
 		async handleStartWarmup(config) {
 			// Store the config so it can be displayed in the modal
 			this.warmupConfig = { ...config }
@@ -1851,6 +2248,13 @@ export default {
 		 * Delete a SOLR field
 		 * @param {string} fieldName - The name of the field to delete
 		 */
+		/**
+		 * Delete a Solr field after confirmation.
+		 *
+		 * @spec exclude UI plumbing — confirm + thin DELETE + field reload; field schema contract owned by zoeken-filteren.
+		 * @param {string} fieldName - field to delete
+		 * @return {Promise<void>}
+		 */
 		async deleteField(fieldName) {
 			if (!fieldName) {
 				this.$toast.error('Invalid field name')
@@ -1887,6 +2291,9 @@ export default {
 
 		/**
 		 * Start SOLR reindex operation
+		 *
+		 * @spec exclude UI plumbing — confirm + thin POST + stats refresh; reindex contract owned by zoeken-filteren.
+		 * @return {Promise<void>}
 		 */
 		async startReindex() {
 			// Confirm reindex operation
@@ -1928,6 +2335,9 @@ export default {
 
 		/**
 		 * Open facet configuration modal
+		 *
+		 * @spec exclude UI plumbing — dialog toggle; facet config contract owned by faceting-configuration.
+		 * @return {void}
 		 */
 		openFacetConfigModal() {
 			this.showFacetConfigDialog = true
@@ -1936,7 +2346,9 @@ export default {
 		/**
 		 * Handle connection settings save
 		 *
+		 * @spec exclude UI plumbing — merges config + delegates to saveSettings + closes dialog.
 		 * @param {object} updatedConfig - Updated connection configuration
+		 * @return {Promise<void>}
 		 */
 		async handleConnectionSave(updatedConfig) {
 			// Update the local configuration

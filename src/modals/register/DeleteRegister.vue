@@ -82,6 +82,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — closes the delete-register dialog and resets state.
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -89,6 +92,9 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to registerStore.deleteRegister.
+		 */
 		async deleteRegister() {
 			if (registerStore.registerItem?.schemas.length > 0) {
 				return

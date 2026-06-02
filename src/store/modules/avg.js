@@ -73,6 +73,9 @@ export const useAvgStore = defineStore('avg', {
 			state.activities.find((a) => a.uuid === uuid) ?? null,
 	},
 	actions: {
+		/**
+		 * @spec exclude Pure client UI-state mutator — clears the store error flag. No backend contract.
+		 */
 		clearError() {
 			this.error = null
 		},
@@ -81,6 +84,8 @@ export const useAvgStore = defineStore('avg', {
 		 * Fetch all verwerkingsactiviteiten.
 		 *
 		 * @param {object} params Optional `?status=` and `?organisation=` query filters.
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/avg/verwerkingsactiviteiten; observable contract owned by avg-verwerkingsregister.
 		 */
 		async fetchActivities(params = {}) {
 			this.loading = true
@@ -102,6 +107,8 @@ export const useAvgStore = defineStore('avg', {
 		 * Fetch one activity by id (numeric), uuid, or short readable code.
 		 *
 		 * @param {string|number} identifier
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/avg/verwerkingsactiviteiten/{id}; observable contract owned by avg-verwerkingsregister.
 		 */
 		async fetchActivity(identifier) {
 			if (!identifier) return null
@@ -126,6 +133,8 @@ export const useAvgStore = defineStore('avg', {
 		 * Create a new verwerkingsactiviteit. Admin-only on the backend.
 		 *
 		 * @param {object} payload Mirrors the entity's `set*` accepting fields.
+		 *
+		 * @spec exclude Thin API passthrough — POST /api/avg/verwerkingsactiviteiten; observable contract owned by avg-verwerkingsregister.
 		 */
 		async createActivity(payload) {
 			this.loading = true
@@ -153,6 +162,8 @@ export const useAvgStore = defineStore('avg', {
 		 *
 		 * @param {string|number} identifier id|uuid|code
 		 * @param {object}        payload    Fields to overwrite.
+		 *
+		 * @spec exclude Thin API passthrough — PUT /api/avg/verwerkingsactiviteiten/{id}; observable contract owned by avg-verwerkingsregister.
 		 */
 		async updateActivity(identifier, payload) {
 			this.loading = true
@@ -184,6 +195,8 @@ export const useAvgStore = defineStore('avg', {
 		 * audit-trail FKs need the row to remain resolvable.
 		 *
 		 * @param {string|number} identifier id|uuid|code
+		 *
+		 * @spec exclude Thin API passthrough — DELETE /api/avg/verwerkingsactiviteiten/{id} (soft-archive); observable contract owned by avg-verwerkingsregister.
 		 */
 		async archiveActivity(identifier) {
 			this.loading = true
@@ -211,6 +224,8 @@ export const useAvgStore = defineStore('avg', {
 		/**
 		 * Fetch the Art 30 §4 verantwoordingsdocument — joins activities
 		 * with audit-trail row counts per processing activity.
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/avg/verantwoording (Art 30 §4); observable contract owned by avg-verwerkingsregister.
 		 */
 		async fetchVerantwoording() {
 			this.loading = true
@@ -232,6 +247,8 @@ export const useAvgStore = defineStore('avg', {
 		 * Run a DSAR inzageverzoek (Art 15) for the given subject.
 		 *
 		 * @param {object} params {subject, type?, mode?}
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/avg/inzage (Art 15 DSAR); observable contract owned by avg-verwerkingsregister.
 		 */
 		async runInzage({ subject, type, mode }) {
 			if (!subject) return null
@@ -258,6 +275,8 @@ export const useAvgStore = defineStore('avg', {
 		 * preview the matched set before committing.
 		 *
 		 * @param {object} params {subject, type?, dryRun?}
+		 *
+		 * @spec exclude Thin API passthrough — POST /api/avg/vergetelheid (Art 17 erasure); observable contract owned by avg-verwerkingsregister.
 		 */
 		async runVergetelheid({ subject, type, dryRun = false }) {
 			if (!subject) return null
@@ -283,6 +302,8 @@ export const useAvgStore = defineStore('avg', {
 		 * Fetch the Art 20 portabiliteit envelope for the given subject.
 		 *
 		 * @param {object} params {subject, type?}
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/avg/portabiliteit (Art 20 portability); observable contract owned by avg-verwerkingsregister.
 		 */
 		async runPortabiliteit({ subject, type }) {
 			if (!subject) return null
@@ -306,6 +327,8 @@ export const useAvgStore = defineStore('avg', {
 		 * Apply a rectificatie change set to a single object.
 		 *
 		 * @param {object} payload {objectId, changes}
+		 *
+		 * @spec exclude Thin API passthrough — POST /api/avg/rectificatie (Art 16 rectification); observable contract owned by avg-verwerkingsregister.
 		 */
 		async runRectificatie(payload) {
 			this.loading = true
@@ -325,6 +348,8 @@ export const useAvgStore = defineStore('avg', {
 		/**
 		 * Fetch the compliance report (currently: schemas with PII but
 		 * no `x-openregister-processing-activity` annotation).
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/avg/compliance; observable contract owned by avg-verwerkingsregister.
 		 */
 		async fetchCompliance() {
 			this.loading = true

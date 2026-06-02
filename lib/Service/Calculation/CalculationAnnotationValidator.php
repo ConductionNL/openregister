@@ -5,6 +5,9 @@
  *
  * Schema-save validation for the `x-openregister-calculations` annotation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Calculation
  *
@@ -33,6 +36,8 @@ namespace OCA\OpenRegister\Service\Calculation;
  *
  * Cross-calculation:
  * - Cycle detection across {prop:calcA, prop:calcB} dependency graph.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
  */
 final class CalculationAnnotationValidator
 {
@@ -84,6 +89,8 @@ final class CalculationAnnotationValidator
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
      */
     public function validate(array $schema): array
     {
@@ -102,9 +109,13 @@ final class CalculationAnnotationValidator
         }
 
         $properties = ($schema['properties'] ?? []);
-        $propKeys   = is_array($properties) === true ? array_keys($properties) : [];
-        $calcNames  = array_keys($calcs);
-        $allRefs    = array_merge($propKeys, $calcNames);
+        $propKeys   = [];
+        if (is_array($properties) === true) {
+            $propKeys = array_keys($properties);
+        }
+
+        $calcNames = array_keys($calcs);
+        $allRefs   = array_merge($propKeys, $calcNames);
 
         $errors = [];
         $deps   = [];
@@ -207,7 +218,13 @@ final class CalculationAnnotationValidator
 
         $args = $expr[$op];
         if ($op === 'prop') {
-            $name = is_string($args) === true ? $args : (is_array($args) === true ? (string) ($args[0] ?? '') : '');
+            $name = '';
+            if (is_string($args) === true) {
+                $name = $args;
+            } else if (is_array($args) === true) {
+                $name = (string) ($args[0] ?? '');
+            }
+
             if ($name === '') {
                 $errors[] = [
                     'code'    => 'calculation-prop-unknown',
@@ -336,6 +353,8 @@ final class CalculationAnnotationValidator
      * @param array<string, array<int, string>> $deps Dependency map.
      *
      * @return array<int, string>|null A cycle path if found, else null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
      */
     private function findCycle(array $deps): ?array
     {

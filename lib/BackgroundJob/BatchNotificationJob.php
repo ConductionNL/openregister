@@ -18,6 +18,9 @@
  * to enqueue a notification call `NotificationDigest::enqueue()`
  * instead of dispatching immediately; this job is the consumer side.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -94,6 +97,8 @@ class BatchNotificationJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-1
      */
     protected function run(mixed $argument): void
     {

@@ -15,6 +15,9 @@
  * - Object-specific file operations
  * - Audit trails and data aggregation
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -23,6 +26,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
 
 declare(strict_types=1);
@@ -577,6 +583,8 @@ class FileService
      *
      * @psalm-return   array{cleanPath: string, fileName: string}
      * @phpstan-return array{cleanPath: string, fileName: string}
+     *
+     * @spec exclude Pure string/path-splitting utility; no business logic.
      */
     public function extractFileNameFromPath(string $filePath): array
     {
@@ -674,6 +682,9 @@ class FileService
      * @throws NotFoundException If parent folders do not exist
      *
      * @phpstan-return Node|null
+     *
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (unified entry: provisions the backing folder for a Register or ObjectEntity, degrading to null on failure)
      */
     public function createEntityFolder(Register | ObjectEntity $entity): ?Node
     {
@@ -782,6 +793,9 @@ class FileService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag is intentional for simple filter toggle
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File retrieval requires entity type checking
+     *
+     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
+     *   (unified file listing for a Register or ObjectEntity via the stored folder, with optional shared-only filter)
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
@@ -835,6 +849,8 @@ class FileService
      *
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
@@ -967,6 +983,8 @@ class FileService
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @spec exclude Ownership-guard delegation; throws when the current user does not own the node, no standalone business logic.
      */
     public function checkOwnership(Node $file): void
     {
@@ -982,6 +1000,8 @@ class FileService
      *
      * @psalm-return   array{labels: list<string>,...}
      * @phpstan-return array<string, mixed>
+     *
+     * @spec exclude File JSON formatting; deferred to the file-actions FileFormattingHandler follow-up pass (see file-actions tasks.md DROP list).
      */
     public function formatFile(Node $file): array
     {
@@ -998,6 +1018,9 @@ class FileService
      * @throws NotFoundException If files are not found.
      *
      * @return array Formatted file data with pagination
+     *
+     * @spec exclude File JSON formatting + pagination; deferred to the file-actions FileFormattingHandler
+     *   follow-up pass (see file-actions tasks.md DROP list).
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
@@ -1045,6 +1068,8 @@ class FileService
      *
      * @psalm-return   array<IShare>
      * @phpstan-return array<int, IShare>
+     *
+     * @spec exclude File sharing; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
      */
     public function findShares(Node $file, int $shareType=3): array
     {
@@ -1144,6 +1169,8 @@ class FileService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Share link creation requires handling multiple scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Share link creation has multiple error paths
+     *
+     * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
      */
     public function createShareLink(string $path, ?int $shareType=3, ?int $permissions=null): string
     {
@@ -1210,6 +1237,9 @@ class FileService
      * @throws Exception If creating the folder is not permitted
      *
      * @return Node The Node object for the folder (existing or newly created), or null on failure
+     *
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (idempotent get-or-create of a folder at the given path under the OpenRegister root)
      */
     public function createFolder(string $folderPath): Node
     {
@@ -1235,6 +1265,8 @@ class FileService
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+     *
+     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (updates a file's content and tags within an object's folder)
      */
     public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
     {
@@ -1288,6 +1320,8 @@ class FileService
      * @return bool True if successful, false if the file didn't exist.
      *
      * @throws Exception If deleting the file is not permitted or file operations fail.
+     *
+     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (deletes a file resolved by node/path/id, with object-folder context)
      */
     public function deleteFile(Node | string | int $file, ?ObjectEntity $object=null): bool
     {
@@ -1309,6 +1343,8 @@ class FileService
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+     *
+     * @spec openspec/specs/file-actions/spec.md#object-tagging-via-nextcloud-system-tags (attaches NC system tags to a file by id)
      */
     public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
@@ -1329,6 +1365,8 @@ class FileService
      *
      * @psalm-return   string
      * @phpstan-return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
@@ -1358,6 +1396,8 @@ class FileService
      * @psalm-param   array<int, string> $tags
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
      */
     public function addFile(
         ObjectEntity | string $objectEntity,
@@ -1401,6 +1441,9 @@ class FileService
      * @psalm-param   array<int, string> $tags
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+     *
+     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
+     *   (creates/writes a file into an object's folder with optional tags and share toggle)
      */
     public function saveFile(
         ObjectEntity $objectEntity,
@@ -1429,6 +1472,8 @@ class FileService
      *
      * @psalm-return   list<string>
      * @phpstan-return array<int, string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
      */
     public function getAllTags(): array
     {
@@ -1465,6 +1510,9 @@ class FileService
      * @phpstan-return array<int, Node>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
+     *
+     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
+     *   (lists an object's files via its stored folder, with optional shared-only filter)
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly=false): array
     {
@@ -1515,6 +1563,8 @@ class FileService
      *
      * @phpstan-param  int $fileId
      * @phpstan-return File|null
+     *
+     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (resolves a single file node by NC file id, null on miss)
      */
     public function getFileById(int $fileId): ?File
     {
@@ -1565,6 +1615,8 @@ class FileService
      * @phpstan-return \OCP\AppFramework\Http\StreamResponse
      *
      * @psalm-return \OCP\AppFramework\Http\StreamResponse<200, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
      */
     public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse
     {
@@ -1593,6 +1645,9 @@ class FileService
      *
      * @psalm-return   File
      * @phpstan-return File
+     *
+     * @spec exclude File publish via public share; deferred to the file-actions FilePublishingHandler
+     *   follow-up pass (see file-actions tasks.md DROP list).
      */
     public function publishFile(ObjectEntity | string $object, string | int $file): File
     {
@@ -1616,6 +1671,9 @@ class FileService
      *
      * @psalm-return   File
      * @phpstan-return File
+     *
+     * @spec exclude File unpublish (remove public share); deferred to the file-actions FilePublishingHandler
+     *   follow-up pass (see file-actions tasks.md DROP list).
      */
     public function unpublishFile(ObjectEntity | string $object, string|int $filePath): File
     {
@@ -1643,6 +1701,8 @@ class FileService
      *
      * @psalm-return   array{path: string, filename: string, size: int, mimeType: 'application/zip'}
      * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
+     *
+     * @spec exclude Object-files ZIP build; deferred to the file-actions FilePublishingHandler follow-up pass (see file-actions tasks.md DROP list).
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {
@@ -1663,6 +1723,8 @@ class FileService
      * @psalm-return array{id: int, name: string, path: string,
      *     type: string, mimetype: string, size: float|int,
      *     parent_id: int, parent_path: string}|null
+     *
+     * @spec exclude Diagnostic/debug helper for troubleshooting file lookups; not a product behavior.
      */
     public function debugFindFileById(int $fileId): array|null
     {
@@ -1725,6 +1787,8 @@ class FileService
      *
      * @psalm-return list<array{id: int, mimetype: string, name: string,
      *     path: string, size: float|int, type: string}>
+     *
+     * @spec exclude Diagnostic/debug helper for troubleshooting object-file listings; not a product behavior.
      */
     public function debugListObjectFiles(ObjectEntity $object): array
     {
@@ -1793,6 +1857,9 @@ class FileService
      * @throws NotFoundException If parent folders do not exist
      *
      * @return int The created folder ID
+     *
+     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     *   (provisions an object's folder and returns its id without writing the id back onto the entity)
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
@@ -1815,6 +1882,8 @@ class FileService
      * @return File The processed file
      *
      * @throws Exception If replacement fails
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::replaceWords; no facade-owned logic.
      */
     public function replaceWords(Node $node, array $replacements, ?string $outputName=null): File
     {
@@ -1837,6 +1906,8 @@ class FileService
      * @throws Exception If anonymization fails.
      *
      * @return Node The anonymized file node.
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
      */
     public function anonymizeDocument(Node $node, array $entities): Node
     {
@@ -1850,6 +1921,8 @@ class FileService
      * Get the file versioning handler.
      *
      * @return FileVersioningHandler The versioning handler.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
      */
     public function getVersioningHandler(): FileVersioningHandler
     {
@@ -1906,6 +1979,8 @@ class FileService
      * @return File The renamed file.
      *
      * @throws Exception If the rename fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function renameFile(ObjectEntity $object, int $fileId, string $newName): File
     {
@@ -1959,6 +2034,8 @@ class FileService
      * @return File The new file copy.
      *
      * @throws Exception If the copy fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
@@ -2062,6 +2139,8 @@ class FileService
      * @return File The moved file.
      *
      * @throws Exception If the move fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {

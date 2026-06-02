@@ -3,11 +3,15 @@
 /**
  * LinkedEntityEnricher
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -212,13 +216,17 @@ class LinkedEntityEnricher
 
         foreach ($ids as $id) {
             try {
-                $comment = $this->commentsManager->get($id);
-                $actor   = $this->userManager->get($comment->getActorId());
+                $comment    = $this->commentsManager->get($id);
+                $actor      = $this->userManager->get($comment->getActorId());
+                $authorName = $comment->getActorId();
+                if ($actor !== null) {
+                    $authorName = $actor->getDisplayName();
+                }
 
                 $results[] = [
                     'id'      => $id,
                     'message' => $comment->getMessage(),
-                    'author'  => $actor !== null ? $actor->getDisplayName() : $comment->getActorId(),
+                    'author'  => $authorName,
                     'date'    => $comment->getCreationDateTime()->format('c'),
                 ];
             } catch (\Exception $e) {

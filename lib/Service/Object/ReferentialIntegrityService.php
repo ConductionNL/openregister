@@ -8,6 +8,9 @@
  * blockers (RESTRICT) and cascade targets, and applies mutations (CASCADE, SET_NULL,
  * SET_DEFAULT) when deletion proceeds.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Object
  *
@@ -376,7 +379,11 @@ class ReferentialIntegrityService
             // in unit tests) degrades to the MySQL syntax rather than fatal-erroring.
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
-            $schemaFn   = $isPostgres === true ? 'current_schema()' : 'DATABASE()';
+            $schemaFn   = 'DATABASE()';
+            if ($isPostgres === true) {
+                $schemaFn = 'current_schema()';
+            }//end if
+
             // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
             $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = {$schemaFn}";
             $stmt = $this->db->prepare($sql);
@@ -939,7 +946,12 @@ class ReferentialIntegrityService
                     $decoded = json_decode($deleted, true);
                 }
 
-                $entity->setDeleted(is_array($decoded) === true ? $decoded : []);
+                $deletedValue = [];
+                if (is_array($decoded) === true) {
+                    $deletedValue = $decoded;
+                }
+
+                $entity->setDeleted($deletedValue);
             }
 
             // Set object with at least the property that matched.

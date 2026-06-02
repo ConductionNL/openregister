@@ -8,6 +8,9 @@
  * the chat backend is configured and reachable — without requiring a
  * Nextcloud session (PublicPage).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -99,6 +102,8 @@ class ChatHealthController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse 200 or 503 JSON response
+     *
+     * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#health-probe-endpoint-get-apichathealth
      */
     #[PublicPage]
     #[NoCSRFRequired]

@@ -169,18 +169,27 @@ export default {
 		}
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook loading config sets
+	 */
 	mounted() {
 		this.loadConfigSets()
 		// Listen for updates from Create/Delete dialogs
 		this.$root.$on('configset-updated', this.loadConfigSets)
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook cleaning up event listener
+	 */
 	beforeDestroy() {
 		// Clean up event listener
 		this.$root.$off('configset-updated', this.loadConfigSets)
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-4
+		 */
 		async loadConfigSets() {
 			this.loading = true
 			this.error = false
@@ -205,12 +214,18 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude dialog-open UI handler for config-set creation
+		 */
 		openCreateDialog() {
 			console.info('🔵 Opening create dialog, setting navigationStore.dialog to "createConfigSet"')
 			navigationStore.setDialog('createConfigSet')
 			console.info('🔵 navigationStore.dialog is now:', navigationStore.dialog)
 		},
 
+		/**
+		 * @spec exclude dialog-open UI handler for config-set deletion
+		 */
 		openDeleteDialog(configSet) {
 			console.info('🔴 Opening delete dialog for configSet:', configSet)
 			navigationStore.setTransferData(configSet)

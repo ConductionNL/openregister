@@ -9,6 +9,8 @@ priority: high
 
 ## Purpose
 
+@e2e exclude backend migration/config deprecation — covered by PHPUnit
+
 Remove the dedicated `published`/`depublished` object metadata system from OpenRegister. The RBAC `$now` dynamic variable replaces this functionality, allowing publication control via authorization rules rather than dedicated metadata columns. This eliminates a parallel publication-state mechanism that overlapped with — and frequently conflicted with — the existing RBAC time-based access controls.
 
 ## Requirements

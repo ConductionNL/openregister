@@ -53,6 +53,7 @@ class _ControllerStubProvider extends AbstractIntegrationProvider
         private string $storage = 'magic-column',
         private bool $listThrowsNotImplemented = false,
         private bool $createThrowsUnavailable = false,
+        private ?array $listEnvelope = null,
     ) {
     }//end __construct()
 
@@ -91,6 +92,9 @@ class _ControllerStubProvider extends AbstractIntegrationProvider
         $this->listCalled = compact('register', 'schema', 'objectId', 'filters');
         if ($this->listThrowsNotImplemented === true) {
             throw new NotImplementedException('list not supported');
+        }
+        if ($this->listEnvelope !== null) {
+            return $this->listEnvelope;
         }
         return [['id' => 'a'], ['id' => 'b']];
     }//end list()
@@ -158,9 +162,65 @@ class ObjectIntegrationsControllerTest extends TestCase
 
         $response = $controller->index('r', 's', 'o', 'stub');
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame([['id' => 'a'], ['id' => 'b']], $response->getData()['items']);
+        $body = $response->getData();
+        // Flat-array provider output is normalized into the canonical
+        // {items, total, nextCursor} envelope; total defaults to count.
+        $this->assertSame([['id' => 'a'], ['id' => 'b']], $body['items']);
+        $this->assertSame([['id' => 'a'], ['id' => 'b']], $body['results']);
+        $this->assertSame(2, $body['total']);
+        $this->assertNull($body['nextCursor']);
         $this->assertSame(['_limit' => '5'], $stub->listCalled['filters']);
     }//end testIndexDispatchesAndReturnsItems()
+
+    public function testIndexPassesThroughProviderEnvelope(): void
+    {
+        $registry = new IntegrationRegistry(new NullLogger());
+        $registry->addProvider(
+            new _ControllerStubProvider(
+                id: 'stub',
+                listEnvelope: [
+                    'items'      => [['id' => 'a']],
+                    'total'      => 42,
+                    'nextCursor' => '1',
+                ]
+            )
+        );
+
+        $controller = $this->buildController($registry);
+        $response   = $controller->index('r', 's', 'o', 'stub');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $body = $response->getData();
+        // A provider that already returns an envelope keeps its real
+        // total + cursor — they are not flattened to count().
+        $this->assertSame([['id' => 'a']], $body['items']);
+        $this->assertSame(42, $body['total']);
+        $this->assertSame('1', $body['nextCursor']);
+    }//end testIndexPassesThroughProviderEnvelope()
+
+    public function testIndexNormalizesResultsKeyedEnvelope(): void
+    {
+        $registry = new IntegrationRegistry(new NullLogger());
+        $registry->addProvider(
+            new _ControllerStubProvider(
+                id: 'stub',
+                listEnvelope: [
+                    'results' => [['id' => 'x'], ['id' => 'y']],
+                    'total'   => 2,
+                ]
+            )
+        );
+
+        $controller = $this->buildController($registry);
+        $response   = $controller->index('r', 's', 'o', 'stub');
+
+        $body = $response->getData();
+        // The legacy `results`-keyed shape is coerced to canonical
+        // `items` while preserving the provided total.
+        $this->assertSame([['id' => 'x'], ['id' => 'y']], $body['items']);
+        $this->assertSame(2, $body['total']);
+        $this->assertNull($body['nextCursor']);
+    }//end testIndexNormalizesResultsKeyedEnvelope()
 
     public function testShowDispatchesAndReturnsEntity(): void
     {

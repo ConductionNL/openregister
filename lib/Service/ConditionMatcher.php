@@ -9,6 +9,9 @@
  *
  * Extracted from PropertyRbacHandler to keep class complexity manageable.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -18,6 +21,8 @@
  * @link      https://www.OpenRegister.app
  *
  * @since 2.0.0 Extracted from PropertyRbacHandler
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -68,6 +73,8 @@ class ConditionMatcher
      * @param array $match  Match conditions
      *
      * @return bool True if object matches all conditions
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-conditional-scopes-with-dynamic-variables
      */
     public function objectMatchesConditions(array $object, array $match): bool
     {
@@ -89,6 +96,8 @@ class ConditionMatcher
      * @param array $match Match conditions
      *
      * @return array Filtered match conditions
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
      */
     public function filterOrganisationMatchForCreate(array $match): array
     {
@@ -118,6 +127,8 @@ class ConditionMatcher
      * @param mixed  $value    Expected value or operator expression
      *
      * @return bool True if the condition is satisfied
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
      */
     private function singleConditionMatches(array $object, string $property, mixed $value): bool
     {
@@ -274,6 +285,8 @@ class ConditionMatcher
      * Get the current user's active organisation UUID
      *
      * @return string|null The active organisation UUID or null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
      */
     private function getActiveOrganisationUuid(): ?string
     {

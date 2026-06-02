@@ -138,15 +138,27 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
+		 */
 		key() {
 			return `${this.register}:${this.schema}:${this.objectId}`
 		},
+		/**
+		 * @spec exclude computed read of linked contacts from store; contact-relations contract owned by integration-contacts capability
+		 */
 		contacts() {
 			return this.store.byObject[this.key] || []
 		},
+		/**
+		 * @spec exclude computed read of loading state from store, UI plumbing
+		 */
 		loading() {
 			return !!this.store.loading[this.key]
 		},
+		/**
+		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
+		 */
 		contactsUnavailable() {
 			return this.store.contactsUnavailable
 		},
@@ -155,6 +167,9 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @spec exclude watcher refetching contacts on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchContacts()
@@ -166,6 +181,17 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch the contact list for the current object via the per-object
+		 * `GET /api/objects/{register}/{schema}/{id}/contacts` endpoint. Sets
+		 * `error` / `errorMessage` on failure; the 501 graceful-degradation
+		 * path is handled inside the store and surfaces as
+		 * `store.contactsUnavailable`.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 *
+		 * @return {Promise<void>}
+		 */
 		async fetchContacts() {
 			this.error = false
 			this.errorMessage = ''
@@ -177,6 +203,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude store passthrough unlinking contact + change emit; contact-relations contract owned by integration-contacts capability
+		 */
 		async unlinkContact(contact) {
 			const uid = contact.uid || contact.contactUid || contact.id
 			try {
@@ -188,6 +217,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude emit UI handler opening add-contact dialog, UI plumbing
+		 */
 		openCreateDialog() {
 			this.$emit('add-contact')
 		},

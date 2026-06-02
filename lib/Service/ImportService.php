@@ -5,6 +5,9 @@
  *
  * This file contains the class for handling data import operations in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -17,6 +20,7 @@
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
  * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
  */
 
 declare(strict_types=1);
@@ -202,6 +206,10 @@ class ImportService
      *     softDeleted: list<string>,
      *     errors: list<array{uuid: string, error: string}>
      * }
+     *
+     * @spec openspec/specs/data-import-export/spec.md#import-rollback-on-critical-failure (rolls back an import
+     *       unit: finds every create-audited object for the import job UUID and soft-deletes them, reporting
+     *       per-object outcomes)
      */
     public function softDeleteByImportJobId(string $importJobId): array
     {
@@ -548,6 +556,8 @@ class ImportService
      * }>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */
     private function processMultiSchemaSpreadsheetAsync(
         Spreadsheet $spreadsheet,
@@ -669,6 +679,9 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Spreadsheet batch processing requires many validation branches
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple row/column validation paths needed for data integrity
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing consolidates related operations for performance
+     * @SuppressWarnings(PHPMD.StaticAccess)          NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -856,6 +869,9 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  CSV processing requires many conditional branches for data handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       CSV processing requires many conditional row/column handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) CSV processing consolidates related operations for performance
+     * @SuppressWarnings(PHPMD.StaticAccess)          NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1632,6 +1648,8 @@ class ImportService
      * Clear all internal caches to prevent issues between imports
      *
      * @return void
+     *
+     * @spec exclude One-line reset of the internal schema-properties cache; no business logic.
      */
     public function clearCaches(): void
     {
@@ -1676,6 +1694,8 @@ class ImportService
      * @param int    $maxObjects    Maximum objects to index during warmup (default: 5000)
      *
      * @return bool True if job was scheduled successfully
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-3
      */
     public function scheduleSolrWarmup(
         array $importSummary,
@@ -1777,6 +1797,8 @@ class ImportService
      * @return string Recommended warmup mode
      *
      * @psalm-return 'balanced'|'fast'|'safe'
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-3
      */
     public function getRecommendedWarmupMode(int $totalImported): string
     {
@@ -1808,6 +1830,8 @@ class ImportService
      * @psalm-suppress PossiblyUnusedReturnValue
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Immediate flag controls scheduling timing
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-3
      */
     public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate=false): bool
     {
@@ -1933,7 +1957,11 @@ class ImportService
         $csv = stream_get_contents($stream);
         fclose($stream);
 
-        return $csv === false ? '' : $csv;
+        if ($csv === false) {
+            return '';
+        }
+
+        return $csv;
 
     }//end serializeErrorsToCsv()
 
@@ -1961,7 +1989,11 @@ class ImportService
 
         if (is_array($value) === true || is_object($value) === true) {
             $encoded = json_encode($value, (JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-            return $encoded === false ? '' : $encoded;
+            if ($encoded === false) {
+                return '';
+            }
+
+            return $encoded;
         }
 
         return '';

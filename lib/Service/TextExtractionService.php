@@ -6,6 +6,9 @@
  * This service handles all text extraction logic for files in the system.
  * It consolidates extraction workflows, file tracking, and re-extraction detection.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -14,6 +17,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
  */
 
 declare(strict_types=1);
@@ -60,10 +65,13 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Text extraction requires comprehensive document parsing methods
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-format document extraction logic
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple document parsing libraries
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Text extraction requires comprehensive document parsing methods.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-format document extraction logic.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple document parsing libraries and mapper types for multi-format extraction.
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Individual extraction methods for PDF/DOCX/XLSX/EML each require format-specific logic.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           One private extraction method per supported MIME group
+ * (PDF/DOCX/XLSX/EML/text/object/file) plus chunking strategies; splitting into sub-services would
+ * break the encapsulated extraction workflow.
  */
 class TextExtractionService
 {
@@ -130,7 +138,8 @@ class TextExtractionService
      *                                                       surface that DocuDesk's `eml-pdf-assembly`
      *                                                       consumes; see `text-extraction-eml`).
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection for all document-type parsers and entity mappers.
+     * @SuppressWarnings(PHPMD.ShortVariable)          $db is a well-known PHP idiom for a database connection parameter.
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -167,6 +176,8 @@ class TextExtractionService
      * @throws Exception If extraction fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for force re-extraction behavior
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
@@ -308,6 +319,8 @@ class TextExtractionService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive object extraction requires detailed processing
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
@@ -1012,6 +1025,8 @@ class TextExtractionService
      * @return (int|string)[] Statistics about discovery: {discovered, failed, total}
      *
      * @psalm-return array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function discoverUntrackedFiles(int $limit=100): array
     {
@@ -1095,6 +1110,8 @@ class TextExtractionService
      * @return int[] Statistics about the extraction process: {processed, failed, total}
      *
      * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function extractPendingFiles(int $limit=100): array
     {
@@ -1174,6 +1191,8 @@ class TextExtractionService
      * @return int[] Statistics about the retry process
      *
      * @psalm-return array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function retryFailedExtractions(int $limit=50): array
     {
@@ -1224,6 +1243,8 @@ class TextExtractionService
      *     totalObjects: int,
      *     totalEntities: int
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function getStats(): array
     {
@@ -1246,6 +1267,8 @@ class TextExtractionService
      * @param string $tableName Table name without prefix
      *
      * @return int
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $qb is a well-known NC/Doctrine idiom for a QueryBuilder instance.
      */
     private function getTableCountSafe(string $tableName): int
     {
@@ -1652,6 +1675,11 @@ class TextExtractionService
      * @param \OCP\Files\File $file The EML file.
      *
      * @return string|null Flat plain-text, or null when the file cannot be parsed.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) EmlParser::sanitisePiiForLogging is a stateless utility;
+     * making it non-static would not improve testability or DI.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     private function extractEml(\OCP\Files\File $file): ?string
     {
@@ -1689,6 +1717,8 @@ class TextExtractionService
      * @return \OCA\OpenRegister\Service\TextExtraction\EmlStructure
      *
      * @throws \OCA\OpenRegister\Exception\EmlParseException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
      */
     public function parseEmlStructured(\OCP\Files\File $file): \OCA\OpenRegister\Service\TextExtraction\EmlStructure
     {
@@ -1707,6 +1737,8 @@ class TextExtractionService
      * @return (int|mixed|string)[][] Array of text chunks
      *
      * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function chunkDocument(string $text, array $options=[]): array
     {
@@ -1862,8 +1894,8 @@ class TextExtractionService
 
         return array_filter(
             $chunks,
-            function ($c) {
-                $trimmed = trim($c['text']);
+            function ($chunk) {
+                $trimmed = trim($chunk['text']);
                 return $trimmed !== '' && $trimmed !== null;
             }
         );
@@ -1970,7 +2002,10 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
-            $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
+            $testChunk = $currentChunk.$separator.$split;
+            if ($currentChunk === '') {
+                $testChunk = $split;
+            }
 
             if (strlen($testChunk) <= $chunkSize) {
                 // Can add to current chunk.
@@ -2041,8 +2076,8 @@ class TextExtractionService
 
         return array_filter(
             $chunks,
-            function ($c) {
-                $trimmed = trim($c['text']);
+            function ($chunk) {
+                $trimmed = trim($chunk['text']);
                 return $trimmed !== '' && $trimmed !== null;
             }
         );

@@ -1733,38 +1733,7 @@ class ObjectServiceTest extends TestCase
 		$this->assertSame(20, $result['_limit']);
 	}
 
-	// ── 39. exportObjects / importObjects / downloadObjectFiles — disabled ──
-
-	public function testExportObjectsThrowsDisabledException(): void
-	{
-		$register = new Register();
-		$schema = new Schema();
-
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Export temporarily disabled');
-
-		$this->service->exportObjects($register, $schema);
-	}
-
-	public function testImportObjectsThrowsDisabledException(): void
-	{
-		$register = new Register();
-
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Import temporarily disabled');
-
-		$this->service->importObjects($register, ['name' => 'test.csv', 'tmp_name' => '/tmp/test']);
-	}
-
-	public function testDownloadObjectFilesThrowsDisabledException(): void
-	{
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('File download temporarily disabled');
-
-		$this->service->downloadObjectFiles('uuid-123');
-	}
-
-	// ── 40. vectorization methods — disabled ────────────────────────────
+	// ── 39. vectorization methods — disabled ────────────────────────────
 
 	public function testVectorizeBatchObjectsThrowsDisabledException(): void
 	{

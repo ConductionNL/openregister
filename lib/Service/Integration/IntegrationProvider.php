@@ -152,6 +152,9 @@ interface IntegrationProvider
      * (AD-16).
      *
      * @return string|null Permission string or null.
+     *
+     * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
+     *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
      */
     public function requiresPermission(): ?string;
 
@@ -165,6 +168,9 @@ interface IntegrationProvider
      * credential management (AD-15).
      *
      * @return array<string,mixed> Auth-requirements descriptor.
+     *
+     * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
+     *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
      */
     public function authRequirements(): array;
 
@@ -175,12 +181,30 @@ interface IntegrationProvider
      * are `_limit` (int), `_page` (int), `_search` (string). Unknown
      * filters MUST be ignored, not rejected.
      *
+     * Return shape: implementations MAY return either
+     *   - a flat list `array<int,array<string,mixed>>`, or
+     *   - the paginated envelope `{items|results: array, total: int,
+     *     nextCursor: ?string}` (a `PaginatedResult` or its array form)
+     *     when the provider knows the cross-page total and/or can
+     *     produce a cursor for the next page.
+     *
+     * Either shape is accepted: `ObjectIntegrationsController` runs the
+     * value through {@see PaginatedResult::fromMixed()} and always emits
+     * the canonical `{items, total, nextCursor}` envelope to the client.
+     * Returning the envelope is preferred for providers backed by a
+     * counted/paged store, because the flat-list fallback sets
+     * `total = count(items)`, which disables frontend load-more.
+     *
      * @param string              $register Register slug or numeric id.
      * @param string              $schema   Schema slug or numeric id.
      * @param string              $objectId Object uuid.
      * @param array<string,mixed> $filters  Optional list filters.
      *
-     * @return array<int,array<string,mixed>> List of linked things.
+     * @return array<int,array<string,mixed>>|array<string,mixed> Flat list
+     *         of linked things, or a `{items, total, nextCursor}` envelope.
+     *
+     * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
+     *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array;
 
@@ -202,6 +226,9 @@ interface IntegrationProvider
      * @param string $entityId Linked-thing id.
      *
      * @return array<string,mixed> The linked thing.
+     *
+     * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
+     *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
      */
     public function get(string $register, string $schema, string $objectId, string $entityId): array;
 
@@ -217,6 +244,9 @@ interface IntegrationProvider
      * @param array<string,mixed> $payload  New linked-thing fields.
      *
      * @return array<string,mixed> The created linked thing.
+     *
+     * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
+     *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array;
 
@@ -233,6 +263,9 @@ interface IntegrationProvider
      * @param array<string,mixed> $payload  Update payload.
      *
      * @return array<string,mixed> The updated linked thing.
+     *
+     * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
+     *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array;
 
@@ -248,6 +281,9 @@ interface IntegrationProvider
      * @param string $entityId Linked-thing id.
      *
      * @return void
+     *
+     * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
+     *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void;
 
@@ -262,6 +298,9 @@ interface IntegrationProvider
      * for discovery (AD-17).
      *
      * @return array<string,mixed> Health + auth descriptor.
+     *
+     * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
+     *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
      */
     public function health(): array;
 }//end interface

@@ -58,12 +58,24 @@ export default {
 	},
 	watch: {
 		'$route.params.id': {
+			/**
+			 * Re-prime the object when the route id changes.
+			 *
+			 * @spec exclude UI plumbing — route watcher delegating to loadFromRoute; object contract owned by object-lifecycle.
+			 * @return {void}
+			 */
 			handler() {
 				this.loadFromRoute()
 			},
 		},
 	},
 	methods: {
+		/**
+		 * Fetch the deep-linked object and prime the store for ObjectDetails.
+		 *
+		 * @spec exclude UI plumbing — deep-link prime for the screenshot harness; object fetch contract owned by object-lifecycle.
+		 * @return {Promise<void>}
+		 */
 		// Fetch the object referenced by /objects/:register/:schema/:id and
 		// prime the store so ObjectDetails (with its registry-driven
 		// integration tabs) renders. Used by the per-leaf screenshot harness
@@ -101,6 +113,12 @@ export default {
 				console.error('[ObjectsIndex] deep-link fetch failed', e)
 			}
 		},
+		/**
+		 * Open the add-object modal with register/schema context.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch; object creation contract owned by object-lifecycle.
+		 * @return {void}
+		 */
 		addObject() {
 			// Clear any existing object and open the add object modal
 			objectStore.setObjectItem(null)

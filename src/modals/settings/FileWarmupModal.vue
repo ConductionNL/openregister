@@ -62,7 +62,8 @@ import { translate as t } from '@nextcloud/l10n'
 				<!-- File Type Filter -->
 				<div class="form-group">
 					<label>{{ t('openregister', 'File Types to Process') }}</label>
-					<NcSelect v-model="config.selectedFileTypes"
+					<NcSelect
+						input-label="Config Selected File Types" v-model="config.selectedFileTypes"
 						:options="fileTypeOptions"
 						:multiple="true"
 						:label-outside="true"
@@ -241,6 +242,9 @@ export default {
 	watch: {
 		open: {
 			immediate: true,
+			/**
+			 * @spec exclude watcher syncing dialog state and loading stats
+			 */
 			handler(newVal) {
 				console.info('🔍 FileWarmupModal: open prop changed to:', newVal)
 				this.showDialog = newVal
@@ -255,6 +259,7 @@ export default {
 	methods: {
 		/**
 		 * Load file processing statistics
+		 * @spec exclude form-state loader for warmup stats via API
 		 */
 		async loadStats() {
 			try {
@@ -282,6 +287,7 @@ export default {
 
 		/**
 		 * Refresh statistics
+		 * @spec exclude stats-refresh UI handler
 		 */
 		async refreshStats() {
 			await this.loadStats()
@@ -290,6 +296,7 @@ export default {
 
 		/**
 		 * Start file warmup process
+		 * @spec exclude modal submit handler triggering file warmup via API
 		 */
 		async startWarmup() {
 			this.isProcessing = true
@@ -344,6 +351,7 @@ export default {
 		/**
 		 * Handle dialog open/close state update
 		 * @param {boolean} isOpen - The new state of the dialog
+		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogUpdate(isOpen) {
 			console.info('🔄 FileWarmupModal: Dialog update event, isOpen:', isOpen)
@@ -354,6 +362,7 @@ export default {
 
 		/**
 		 * Handle dialog close
+		 * @spec exclude modal close handler emitting close events
 		 */
 		handleClose() {
 			console.info('❌ FileWarmupModal: Closing dialog...')

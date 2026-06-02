@@ -19,8 +19,9 @@
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -63,6 +64,8 @@ class ReferenceValidationException extends ValidationException
      * @param Throwable|null $previous         The previous exception
      *                                         that triggered this
      *                                         one.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function __construct(
         private readonly string $propertyName,
@@ -94,6 +97,8 @@ class ReferenceValidationException extends ValidationException
      * Schema property name that holds the broken reference.
      *
      * @return string Property name as declared on the schema.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function getPropertyName(): string
     {
@@ -105,6 +110,8 @@ class ReferenceValidationException extends ValidationException
      * The UUID value that failed to resolve.
      *
      * @return string The unresolved UUID.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function getReferencedUuid(): string
     {
@@ -116,6 +123,8 @@ class ReferenceValidationException extends ValidationException
      * Slug (or raw `$ref`) of the schema the reference targets.
      *
      * @return string Target schema slug or raw `$ref`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function getTargetSchemaSlug(): string
     {
@@ -128,6 +137,8 @@ class ReferenceValidationException extends ValidationException
      *
      * @return string|null Register identifier or null when no register
      *                     context applied to the lookup.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function getTargetRegister(): ?string
     {
@@ -150,6 +161,8 @@ class ReferenceValidationException extends ValidationException
      *     message: string,
      *     code: int
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
      */
     public function toArray(): array
     {

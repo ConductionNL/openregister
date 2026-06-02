@@ -57,6 +57,7 @@
 							<div class="groups-select-container">
 								<label class="groups-label">{{ t('openregister', 'Share with Groups') }}</label>
 								<NcSelect
+						input-label="Selected Groups"
 									v-model="selectedGroups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
@@ -86,6 +87,7 @@
 							<div class="groups-select-container">
 								<label class="groups-label">{{ t('openregister', 'Share with Users') }}</label>
 								<NcSelect
+						input-label="Selected Users"
 									v-model="selectedUsers"
 									:disabled="loading || loadingUsers"
 									:options="availableUsers"
@@ -199,6 +201,9 @@ export default {
 	watch: {
 		view: {
 			immediate: true,
+			/**
+			 * @spec exclude Watcher hydrating the local form model from the view prop; UI reactivity plumbing.
+			 */
 			handler(newView) {
 				if (newView) {
 					this.viewData = {
@@ -233,6 +238,7 @@ export default {
 		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
 		 */
 		searchGroups(searchQuery) {
 			// Clear existing debounce timer
@@ -291,6 +297,7 @@ export default {
 		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
+		 * @spec exclude Debounced user-autocomplete search via OCS; UI search plumbing.
 		 */
 		searchUsers(searchQuery) {
 			// Clear existing debounce timer
@@ -343,6 +350,9 @@ export default {
 				}
 			}, 300)
 		},
+		/**
+		 * @spec exclude Save handler delegating to viewsStore.updateView and refreshing the list; entity persistence lives in the store, this is modal orchestration plumbing.
+		 */
 		async saveView() {
 			if (!this.viewData.name.trim()) {
 				this.nameTouched = true
@@ -381,6 +391,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Modal close handler resetting local state and emitting close; UI plumbing.
+		 */
 		handleClose() {
 			this.success = false
 			this.error = null

@@ -5,6 +5,9 @@
  *
  * Manages search queries and execution for Elasticsearch.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Elasticsearch
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -72,6 +75,8 @@ class ElasticsearchQueryExecutor
      * @param array $query Query parameters
      *
      * @return array Search results
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — builds ES query DSL and POSTs /_search
      */
     public function search(array $query): array
     {
@@ -164,6 +169,8 @@ class ElasticsearchQueryExecutor
      * Get document count.
      *
      * @return int Number of documents
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — GETs /_count
      */
     public function getDocumentCount(): int
     {

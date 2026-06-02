@@ -6,6 +6,9 @@
  * Handles file chunk indexing to Solr/Elasticsearch.
  * Reads chunks from database (created by TextExtractionService) and indexes them.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Index
  *
@@ -74,6 +77,8 @@ class FileHandler
      * @throws Exception If fileCollection is not configured
      *
      * @psalm-return array{success: bool, indexed: int<0, max>, collection: 'files'}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-3
      */
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
@@ -128,6 +133,8 @@ class FileHandler
      * @return array Statistics including document count, collection info
      *
      * @psalm-return array{available: bool, collection?: string, document_count?: int, error?: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-3
      */
     public function getFileStats(): array
     {
@@ -175,6 +182,8 @@ class FileHandler
      * @param int|null $limit Maximum number of files to process
      *
      * @return array Result with success status and stats including processed, indexed, failed counts.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-3
      */
     public function processUnindexedChunks(?int $limit=null): array
     {
@@ -280,6 +289,8 @@ class FileHandler
      *
      * @psalm-return array{total_chunks: int, indexed_chunks: int,
      *     unindexed_chunks: int, vectorized_chunks: int}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-3
      */
     public function getChunkingStats(): array
     {
@@ -305,6 +316,8 @@ class FileHandler
      * @param string|null $collectionName Optional collection name.
      *
      * @return array Indexing results.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-3
      */
     public function indexFiles(array $fileIds, ?string $collectionName=null): array
     {
@@ -348,6 +361,8 @@ class FileHandler
      * Returns statistics about indexed files.
      *
      * @return array File indexing statistics.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-index/tasks.md#task-3
      */
     public function getFileIndexStats(): array
     {

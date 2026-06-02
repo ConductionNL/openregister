@@ -36,10 +36,12 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 				:value.sync="properties.title" />
 
 			<div class="ASP-selectContainer">
-				<NcSelect v-bind="typeOptions"
+				<NcSelect
+						input-label="Properties Type" v-bind="typeOptions"
 					v-model="properties.type" />
 
 				<NcSelect
+						input-label="Properties Format"
 					v-bind="formatOptions"
 					v-model="properties.format"
 					:disabled="properties.type !== 'string'" />
@@ -50,6 +52,7 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 					{{ t('openregister', 'Object Configuration:') }}
 				</div>
 				<NcSelect
+						input-label="Properties Object Configuration Handling"
 					v-model="properties.objectConfiguration.handling"
 					v-bind="objectConfiguration.handling" />
 				<NcSelect
@@ -104,6 +107,7 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 			<!-- File configuration -->
 			<div v-if="properties.type === 'file'" class="ASP-selectContainer">
 				<NcSelect
+						input-label="Properties File Configuration Handling"
 					v-bind="fileConfiguration.handling"
 					v-model="properties.fileConfiguration.handling"
 					:label="t('openregister', 'File Handling')" />
@@ -453,7 +457,8 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 				</h5>
 
 				<div class="ASP-selectContainer">
-					<NcSelect v-bind="itemsTypeOptions"
+					<NcSelect
+						input-label="Properties Items Type" v-bind="itemsTypeOptions"
 						v-model="properties.items.type" />
 				</div>
 
@@ -463,6 +468,7 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 						{{ t('openregister', 'Array Object Configuration:') }}
 					</div>
 					<NcSelect
+						input-label="Properties Object Configuration Handling"
 						v-model="properties.objectConfiguration.handling"
 						v-bind="objectConfiguration.handling" />
 					<NcSelect
@@ -725,10 +731,16 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI state helper — reports whether the property is a date/date-time type.
+		 */
 		isDateProperty() {
 			return this.properties.type === 'string'
 				&& (this.properties.format === 'date' || this.properties.format === 'date-time')
 		},
+		/**
+		 * @spec exclude UI display helper — static facet-type select options.
+		 */
 		facetTypeOptions() {
 			return [
 				{ value: 'date_histogram', label: 'Date Histogram (group by interval)' },
@@ -736,9 +748,15 @@ export default {
 				{ value: 'terms', label: 'Terms (exact values)' },
 			]
 		},
+		/**
+		 * @spec exclude UI display helper — resolves the selected facet-type option.
+		 */
 		facetTypeOption() {
 			return this.facetTypeOptions.find(opt => opt.value === this.facetType) || this.facetTypeOptions[0]
 		},
+		/**
+		 * @spec exclude UI display helper — static facet-interval select options.
+		 */
 		facetIntervalOptions() {
 			return [
 				{ value: 'day', label: 'Day' },
@@ -748,9 +766,15 @@ export default {
 				{ value: 'year', label: 'Year' },
 			]
 		},
+		/**
+		 * @spec exclude UI display helper — resolves the selected facet-interval option.
+		 */
 		facetIntervalOption() {
 			return this.facetIntervalOptions.find(opt => opt.value === this.facetInterval) || this.facetIntervalOptions[2]
 		},
+		/**
+		 * @spec exclude UI display helper — static object-handling select configuration.
+		 */
 		objectConfiguration() {
 			return {
 				handling: {
@@ -784,21 +808,33 @@ export default {
 				},
 			}
 		},
+		/**
+		 * @spec exclude UI display helper — maps available schemas to select options.
+		 */
 		availableSchemas() {
 			return schemaStore.schemaList.map(schema => ({
 				id: schema.id,
 				label: schema.title || schema.name || schema.id,
 			}))
 		},
+		/**
+		 * @spec exclude UI display helper — maps available registers to select options.
+		 */
 		availableRegisters() {
 			return registerStore.registerList.map(register => ({
 				id: register.id,
 				label: register.title || register.name || register.id,
 			}))
 		},
+		/**
+		 * @spec exclude UI display helper — static list of selectable MIME types.
+		 */
 		mimeTypes() {
 			return ['image/jpeg', 'image/png', 'application/pdf', 'text/plain'] // Add more MIME types as needed
 		},
+		/**
+		 * @spec exclude UI display helper — static file-handling select configuration.
+		 */
 		fileConfiguration() {
 			return {
 				handling: {
@@ -809,6 +845,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude UI display helper — builds inversedBy property options from the selected schema.
+		 */
 		// Dynamic inversedBy options based on selected schema
 		inversedByOptions() {
 			const schema = this.selectedSchema || this.getSchemaFromRef(this.properties.$ref) || this.getSchemaFromRef(this.properties.items.$ref)
@@ -836,6 +875,9 @@ export default {
 	watch: {
 		schemaProperty: {
 			deep: true,
+			/**
+			 * @spec exclude UI watcher — resets type-specific form fields when the property type changes.
+			 */
 			handler(newVal, oldVal) {
 				if (newVal.type !== oldVal.type) {
 					// switch types between boolean and non boolean, as boolean type expects a boolean, but others expect a string
@@ -856,28 +898,49 @@ export default {
 			},
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — hydrates the property form and loads registers/schemas.
+	 */
 	mounted() {
 		this.initializeSchemaItem()
 		this.loadRegistersAndSchemas()
 	},
 	methods: {
+		/**
+		 * @spec exclude Form-field binding — appends a blank oneOf entry.
+		 */
 		addOneOfEntry() {
 			// Push a new default object into the oneOf array
 			this.properties.oneOf.push({ type: '', format: '' })
 		},
+		/**
+		 * @spec exclude Form-field binding — removes a oneOf entry by index.
+		 */
 		removeOneOfEntry(index) {
 			// Remove the entry at the specified index
 			this.properties.oneOf.splice(index, 1)
 		},
+		/**
+		 * @spec exclude Form-field binding — sets the active facet type.
+		 */
 		updateFacetType(option) {
 			this.facetType = option.value
 		},
+		/**
+		 * @spec exclude Form-field binding — appends a blank custom facet range.
+		 */
 		addCustomRange() {
 			this.facetCustomRanges.push({ label: '', from: '', to: '' })
 		},
+		/**
+		 * @spec exclude Form-field binding — removes a custom facet range by index.
+		 */
 		removeCustomRange(index) {
 			this.facetCustomRanges.splice(index, 1)
 		},
+		/**
+		 * @spec exclude Modal hydration plumbing — loads existing property values into the form.
+		 */
 		initializeSchemaItem() {
 			if (schemaStore.schemaPropertyKey) {
 				const schemaProperty = schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
@@ -957,16 +1020,23 @@ export default {
 		 * returns true if it exists, false if it doesn't.
 		 *
 		 * When dealing with a key which is the same key as you are editing return false
+		 * @spec exclude UI validation helper — checks for a duplicate property key.
 		 */
 		keyExists() {
 			if (this.propertyTitle === schemaStore.schemaPropertyKey) return false
 			return Object.keys(schemaStore.schemaItem.properties).includes(this.propertyTitle)
 		},
+		/**
+		 * @spec exclude Modal close plumbing — clears modal and property-key state.
+		 */
 		closeModal() {
 			navigationStore.setModal(null)
 			schemaStore.setSchemaPropertyKey(null)
 			clearTimeout(this.closeModalTimeout)
 		},
+		/**
+		 * @spec exclude Modal save plumbing — assembles the property payload and delegates to schemaStore.saveSchema.
+		 */
 		addSchemaProperty() {
 			this.loading = true
 
@@ -1078,6 +1148,9 @@ export default {
 					this.loading = false
 				})
 		},
+		/**
+		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
+		 */
 		verifyJsonValidity(jsonInput) {
 			if (jsonInput === '') return true
 			try {
@@ -1087,6 +1160,9 @@ export default {
 				return false
 			}
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — refreshes register/schema lists for the pickers.
+		 */
 		async loadRegistersAndSchemas() {
 			this.registerLoading = true
 			this.schemaLoading = true
@@ -1109,6 +1185,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude UI lookup helper — resolves a schema object from a $ref string.
+		 */
 		getSchemaFromRef(ref) {
 			if (!ref) return null
 
@@ -1121,6 +1200,9 @@ export default {
 			)
 		},
 
+		/**
+		 * @spec exclude Form-field binding — sets register ref and clears dependent fields.
+		 */
 		handleRegisterChange(register) {
 			// Store the register ID, not the whole object
 			const registerId = typeof register === 'object' ? register.id : register
@@ -1140,6 +1222,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Form-field binding — sets schema ref and clears dependent fields.
+		 */
 		handleSchemaChange(schema) {
 			// Store the schema ID, not the whole object
 			const schemaId = typeof schema === 'object' ? schema.id : schema
@@ -1157,6 +1242,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
+		 */
 		handleInversedByChange(property) {
 			const propertyName = typeof property === 'object' ? property.value || property.id : property
 			this.properties.inversedBy = propertyName

@@ -212,8 +212,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase
 
         $this->schemaMapper->method('find')
             ->willReturnMap([
-                ['regulation', [], null, true, true, $parentSchema],
-                ['scholiq-enrolment', [], null, true, true, $targetSchema],
+                ['regulation', [], null, true, false, $parentSchema],
+                ['scholiq-enrolment', [], null, true, false, $targetSchema],
             ]);
 
         $this->registerMapper->method('findAll')
@@ -265,8 +265,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase
         $this->registerMapper->method('find')->willReturn($parentRegister);
         $this->schemaMapper->method('find')
             ->willReturnMap([
-                ['regulation', [], null, true, true, $parentSchema],
-                ['scholiq-enrolment', [], null, true, true, $targetSchema],
+                ['regulation', [], null, true, false, $parentSchema],
+                ['scholiq-enrolment', [], null, true, false, $targetSchema],
             ]);
         $this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
         $this->permissionHandler->method('hasPermission')->willReturn(true);
@@ -372,8 +372,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase
         $this->registerMapper->method('find')->willReturn($parentRegister);
         $this->schemaMapper->method('find')
             ->willReturnMap([
-                ['regulation', [], null, true, true, $parentSchema],
-                ['scholiq-enrolment', [], null, true, true, $targetSchema],
+                ['regulation', [], null, true, false, $parentSchema],
+                ['scholiq-enrolment', [], null, true, false, $targetSchema],
             ]);
         $this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
         $this->permissionHandler->method('hasPermission')->willReturn(true);
@@ -446,8 +446,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase
         $this->permissionHandler->method('hasPermission')->willReturn(true);
         $this->schemaMapper->method('find')
             ->willReturnMap([
-                ['regulation', [], null, true, true, $parentSchema],
-                ['orphan-schema', [], null, true, true, $targetSchema],
+                ['regulation', [], null, true, false, $parentSchema],
+                ['orphan-schema', [], null, true, false, $targetSchema],
             ]);
         // findAll returns only registers that don't contain schema 99.
         $this->registerMapper->method('findAll')->willReturn([$parentRegister]);
@@ -480,8 +480,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase
         $this->registerMapper->method('find')->willReturn($parentRegister);
         $this->schemaMapper->method('find')
             ->willReturnMap([
-                ['regulation', [], null, true, true, $parentSchema],
-                ['scholiq-enrolment', [], null, true, true, $targetSchema],
+                ['regulation', [], null, true, false, $parentSchema],
+                ['scholiq-enrolment', [], null, true, false, $targetSchema],
             ]);
         $this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
         $this->permissionHandler->method('hasPermission')->willReturn(true);
@@ -514,8 +514,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase
         $this->registerMapper->method('find')->willReturn($parentRegister);
         $this->schemaMapper->method('find')
             ->willReturnMap([
-                ['regulation', [], null, true, true, $parentSchema],
-                ['scholiq-enrolment', [], null, true, true, $targetSchema],
+                ['regulation', [], null, true, false, $parentSchema],
+                ['scholiq-enrolment', [], null, true, false, $targetSchema],
             ]);
         $this->registerMapper->method('findAll')->willReturn([$parentRegister, $targetRegister]);
 

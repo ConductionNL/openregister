@@ -14,6 +14,9 @@
  * NotificationCoalescer (already in the codebase) for content-side
  * deduplication.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *
@@ -50,6 +53,8 @@ class NotificationDigest
      * @param array  $event       The event payload (free-form).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-6
      */
     public function enqueue(string $recipientId, array $event): void
     {
@@ -65,6 +70,8 @@ class NotificationDigest
      * Number of recipients currently buffered.
      *
      * @return int
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-6
      */
     public function recipientCount(): int
     {
@@ -78,6 +85,8 @@ class NotificationDigest
      * @param string $recipientId The recipient identifier.
      *
      * @return int
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-6
      */
     public function pendingCount(string $recipientId): int
     {
@@ -89,6 +98,8 @@ class NotificationDigest
      * Total pending events across all recipients.
      *
      * @return int
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-6
      */
     public function totalPending(): int
     {
@@ -106,6 +117,8 @@ class NotificationDigest
      * pending events, in original enqueue order. Clears state.
      *
      * @return array<string, array<int, array>> recipientId → list of events
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-6
      */
     public function flush(): array
     {

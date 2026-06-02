@@ -5,6 +5,9 @@
  *
  * This file contains the ConversationMapper class for database operations on conversations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Mapper
  * @package  OCA\OpenRegister\Db
  *

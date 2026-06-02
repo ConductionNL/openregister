@@ -129,26 +129,44 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude Presentation glue: exposes the translate helper to the template; no standalone behavioural contract.
+		 */
 		t() {
 			return t
 		},
+		/**
+		 * @spec exclude Presentation glue: edit-vs-create dialog title string; no standalone behavioural contract.
+		 */
 		dialogTitle() {
 			return this.activity
 				? t('openregister', 'Edit verwerkingsactiviteit')
 				: t('openregister', 'New verwerkingsactiviteit')
 		},
+		/**
+		 * @spec exclude Presentation glue: maps the rechtsgrond vocabulary to select options; no standalone behavioural contract.
+		 */
 		rechtsgrondOptions() {
 			return RECHTSGROND_VOCABULARY.map((v) => ({ value: v, label: v.replace(/_/g, ' ') }))
 		},
+		/**
+		 * @spec exclude Presentation glue: maps the status vocabulary to select options; no standalone behavioural contract.
+		 */
 		statusOptions() {
 			return STATUS_VOCABULARY.map((v) => ({ value: v, label: v }))
 		},
 		categorieenBetrokkenenText: {
+			/**
+			 * @spec exclude Presentation glue: textarea getter joining a string array into newline-separated text; no standalone behavioural contract.
+			 */
 			get() {
 				return Array.isArray(this.form.categorieenBetrokkenen)
 					? this.form.categorieenBetrokkenen.join('\n')
 					: ''
 			},
+			/**
+			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
+			 */
 			set(value) {
 				this.form.categorieenBetrokkenen = (value ?? '')
 					.split('\n')
@@ -157,11 +175,17 @@ export default {
 			},
 		},
 		categorieenPersoonsgegevensText: {
+			/**
+			 * @spec exclude Presentation glue: textarea getter joining a string array into newline-separated text; no standalone behavioural contract.
+			 */
 			get() {
 				return Array.isArray(this.form.categorieenPersoonsgegevens)
 					? this.form.categorieenPersoonsgegevens.join('\n')
 					: ''
 			},
+			/**
+			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
+			 */
 			set(value) {
 				this.form.categorieenPersoonsgegevens = (value ?? '')
 					.split('\n')
@@ -172,6 +196,11 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Seed the form from an existing activity or with Art-30 defaults.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-7
+		 */
 		makeForm(activity) {
 			return {
 				naam: activity?.naam ?? '',
@@ -188,6 +217,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Strip empty optional fields before writing the activity.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-7
+		 */
 		buildPayload() {
 			const payload = { ...this.form }
 			// Strip empty optional fields so we don't override server-side defaults.
@@ -197,6 +231,11 @@ export default {
 			return payload
 		},
 
+		/**
+		 * Dispatch create vs update of the processing activity against avgStore.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-7
+		 */
 		async onSave() {
 			this.saving = true
 			this.error = null

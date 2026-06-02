@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -74,6 +78,8 @@ class FileValidationHandler
      * @phpstan-return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive list of dangerous extensions requires extensive code
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
      */
     public function blockExecutableFile(string $fileName, string $fileContent): void
     {
@@ -185,6 +191,8 @@ class FileValidationHandler
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
      */
     public function detectExecutableMagicBytes(string $content, string $fileName): void
     {
@@ -264,6 +272,8 @@ class FileValidationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) The method fans out across
      * readability, owner-drift detection, and best-effort repair with a nested
      * try/catch; splitting further would obscure the ownership-repair intent.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
      */
     public function checkOwnership(Node $file): void
     {
@@ -316,6 +326,8 @@ class FileValidationHandler
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
      */
     public function ownFile(Node $file): bool
     {

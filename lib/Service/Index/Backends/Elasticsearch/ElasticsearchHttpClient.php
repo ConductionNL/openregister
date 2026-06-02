@@ -5,6 +5,9 @@
  *
  * Handles HTTP client configuration and basic HTTP operations for Elasticsearch.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Elasticsearch
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -117,6 +120,8 @@ class ElasticsearchHttpClient
      * Build Elasticsearch base URL.
      *
      * @return string Base URL
+     *
+     * @spec exclude boilerplate URL builder — scheme/host/port concatenation
      */
     public function buildBaseUrl(): string
     {
@@ -146,6 +151,8 @@ class ElasticsearchHttpClient
      * @param string $url The URL to request.
      *
      * @return array Response data
+     *
+     * @spec exclude thin Guzzle GET wrapper — request/json-decode/log-and-rethrow
      */
     public function get(string $url): array
     {
@@ -179,6 +186,8 @@ class ElasticsearchHttpClient
      * @param array  $data The data to send as JSON.
      *
      * @return array Response data
+     *
+     * @spec exclude thin Guzzle POST wrapper — request/json-decode/log-and-rethrow
      */
     public function post(string $url, array $data): array
     {
@@ -217,6 +226,8 @@ class ElasticsearchHttpClient
      * @param string $data The raw data to send.
      *
      * @return array Response data
+     *
+     * @spec exclude thin Guzzle POST wrapper — ndjson bulk body/json-decode/log-and-rethrow
      */
     public function postRaw(string $url, string $data): array
     {
@@ -258,6 +269,8 @@ class ElasticsearchHttpClient
      * @param array  $data The data to send as JSON.
      *
      * @return array Response data
+     *
+     * @spec exclude thin Guzzle PUT wrapper — request/json-decode/log-and-rethrow
      */
     public function put(string $url, array $data): array
     {
@@ -295,6 +308,8 @@ class ElasticsearchHttpClient
      * @param string $url The URL to request.
      *
      * @return array Response data
+     *
+     * @spec exclude thin Guzzle DELETE wrapper — request/json-decode/log-and-rethrow
      */
     public function delete(string $url): array
     {

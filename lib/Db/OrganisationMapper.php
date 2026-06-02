@@ -7,6 +7,9 @@
  * Handles database operations for Organisation entities including
  * multi-tenancy user-organisation relationships.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *

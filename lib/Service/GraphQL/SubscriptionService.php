@@ -6,6 +6,9 @@
  * Manages server-sent event (SSE) subscriptions for GraphQL real-time updates.
  * Bridges OpenRegister's event system to GraphQL subscription delivery.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  *

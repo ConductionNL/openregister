@@ -5,11 +5,17 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
  */
 
 declare(strict_types=1);
@@ -48,6 +54,8 @@ class FileVersioningHandler
      * @param IAppManager     $appManager  App manager to check if files_versions is enabled.
      * @param IUserSession    $userSession User session for current user context.
      * @param LoggerInterface $logger      Logger for logging operations.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -117,18 +125,23 @@ class FileVersioningHandler
                 if ($versionManager !== null && $user !== null) {
                     $fileVersions = $versionManager->getVersionsForFile($user, $file);
                     foreach ($fileVersions as $version) {
+                        $label = null;
+                        if (method_exists($version, 'getLabel') === true) {
+                            $label = $version->getLabel();
+                        }
+
                         $versions[] = [
                             'versionId'         => 'v-'.$version->getTimestamp(),
                             'timestamp'         => (new DateTime())->setTimestamp($version->getTimestamp())->format('c'),
                             'size'              => $version->getSize(),
                             'author'            => $version->getSourceFileName(),
                             'authorDisplayName' => $version->getSourceFileName(),
-                            'label'             => method_exists($version, 'getLabel') === true ? $version->getLabel() : null,
+                            'label'             => $label,
                             'isCurrent'         => false,
                         ];
                     }
                 }
-            }
+            }//end if
 
             return ['versions' => $versions];
         } catch (Exception $e) {
@@ -208,6 +221,10 @@ class FileVersioningHandler
     private function getCurrentUserId(): string
     {
         $user = $this->userSession->getUser();
-        return $user !== null ? $user->getUID() : 'system';
+        if ($user !== null) {
+            return $user->getUID();
+        }
+
+        return 'system';
     }//end getCurrentUserId()
 }//end class

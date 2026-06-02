@@ -5,6 +5,9 @@
  *
  * Handles document indexing operations to Elasticsearch.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index\Backends\Elasticsearch
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -87,6 +90,8 @@ class ElasticsearchDocumentIndexer
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — builds doc and PUTs it to ES
      */
     public function indexObject(ObjectEntity $object, bool $refresh=false): bool
     {
@@ -151,6 +156,8 @@ class ElasticsearchDocumentIndexer
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex multi-step bulk indexing process
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Bulk indexing requires handling multiple object and error scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for document building and indexing results
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — builds ndjson bulk body and POSTs it
      */
     public function bulkIndexObjects(array $objects, bool $refresh=false): array
     {
@@ -273,6 +280,8 @@ class ElasticsearchDocumentIndexer
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec exclude thin delegation to ElasticsearchHttpClient — DELETEs the document by id
      */
     public function deleteObject(string|int $objectId, bool $refresh=false): bool
     {
@@ -319,6 +328,8 @@ class ElasticsearchDocumentIndexer
      * Clear all documents from index.
      *
      * @return bool True if successful
+     *
+     * @spec exclude thin delegation to ElasticsearchIndexManager — delete-and-recreate index
      */
     public function clearIndex(): bool
     {

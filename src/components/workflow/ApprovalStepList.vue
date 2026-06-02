@@ -30,6 +30,9 @@ import { generateUrl } from '@nextcloud/router'
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
+ */
 export default {
 	name: 'ApprovalStepList',
 	components: { NcButton },
@@ -46,6 +49,9 @@ export default {
 		this.fetchSteps()
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
+		 */
 		async fetchSteps() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-steps')
@@ -55,9 +61,15 @@ export default {
 				console.error('Failed to fetch steps:', error)
 			}
 		},
+		/**
+		 * @spec exclude computed decide-permission display flag (stub returns true), UI plumbing
+		 */
 		canDecide() {
 			return true
 		},
+		/**
+		 * @spec exclude API passthrough approving step + refetch; approval contract owned by approval-workflow capability
+		 */
 		async approve(step) {
 			try {
 				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/approve`)
@@ -67,6 +79,9 @@ export default {
 				console.error('Failed to approve:', error)
 			}
 		},
+		/**
+		 * @spec exclude API passthrough rejecting step + refetch; approval contract owned by approval-workflow capability
+		 */
 		async reject(step) {
 			try {
 				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/reject`)

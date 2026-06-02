@@ -138,6 +138,8 @@ class TagsProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Reserved.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-15
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -182,6 +184,9 @@ class TagsProvider extends AbstractIntegrationProvider
      *
      * @throws NotImplementedException Always — write path lives at
      *                                 `/api/tags/{...}` controllers.
+     *
+     * @spec exclude NotImplemented write stub — tag writes still route through TagsController;
+     *   the consolidated write path is owned by pluggable-integration-registry tasks 18-22, not this stub.
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {

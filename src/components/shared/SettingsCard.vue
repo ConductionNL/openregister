@@ -67,6 +67,13 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Toggle the collapsed state when the section is configured as collapsible
+		 * and emit a `toggle` event carrying the new collapsed state.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-components/tasks.md#task-3
+		 */
 		toggleCollapsed() {
 			if (this.collapsible) {
 				this.isCollapsed = !this.isCollapsed

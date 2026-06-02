@@ -6,6 +6,9 @@
  * This file contains the class for handling read-only file operations
  * on the oc_filecache table with share information from oc_share table.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *

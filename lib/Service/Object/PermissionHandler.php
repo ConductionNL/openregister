@@ -7,6 +7,9 @@
  * This handler centralizes authorization logic that was previously scattered
  * throughout ObjectService, making security policies more maintainable.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *
@@ -62,10 +65,10 @@ use Psr\Container\ContainerInterface;
  * @package  OCA\OpenRegister\Service\Objects
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Permission evaluation requires per-action and per-role branching
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.NPathComplexity)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    RBAC methods are cohesive units; splitting scatters the security policy without reducing it
+ * @SuppressWarnings(PHPMD.NPathComplexity)          RBAC rules handle user/group/owner/public/conditional combos - cartesian product drives NPath
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   RBAC needs IUserSession, IUserManager, IGroupManager, ConditionMatcher, Register/Schema mappers
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     All RBAC logic is centralised per ADR-011; splitting would re-scatter the security policy
  */
 class PermissionHandler
 {
@@ -124,6 +127,24 @@ class PermissionHandler
         'update',
         'delete',
         'list',
+    ];
+
+    /**
+     * Write actions that fail closed for anonymous callers.
+     *
+     * For an anonymous principal (no resolved Nextcloud user), these actions are
+     * denied unless the schema's `authorization` explicitly grants the `public`
+     * group the action. This closes the implicit default-open write hole (#1955)
+     * while preserving schemas that opt in to public submissions. Object reads are
+     * intentionally NOT listed here — read default-open is a separate policy
+     * question and is unchanged by this constant.
+     *
+     * @var string[]
+     */
+    private const ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS = [
+        'create',
+        'update',
+        'delete',
     ];
 
     /**
@@ -304,6 +325,8 @@ class PermissionHandler
      *
      * @return bool True when at least one authorization entry carries
      *              a non-empty `match` block.
+     *
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable) `$_` is the conventional ignore name for the unused foreach key
      */
     private function schemaHasMatchRule(Schema $schema): bool
     {
@@ -312,7 +335,7 @@ class PermissionHandler
             return false;
         }
 
-        foreach ($authorization as $action => $entries) {
+        foreach ($authorization as $entries) {
             if (is_array($entries) === false) {
                 continue;
             }
@@ -372,6 +395,19 @@ class PermissionHandler
         if ($userId === null) {
             $user = $this->userSession->getUser();
             if ($user === null) {
+                // Fail-closed object writes for anonymous callers (#1955): a write
+                // action (create/update/delete) is denied for an anonymous principal
+                // unless the schema explicitly grants the `public` group that action.
+                // This scopes the new denial strictly to anonymous principals —
+                // authenticated users are unaffected (their default-open behaviour is
+                // a separate, broader policy decision). Declared public-submission
+                // schemas (public create/update rule) still allow anonymous writes.
+                if (in_array(needle: $action, haystack: self::ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS, strict: true) === true
+                    && $this->publicGroupExplicitlyGranted(authorization: $authorization, action: $action) === false
+                ) {
+                    return false;
+                }//end if
+
                 // For unauthenticated requests, check if 'public' group has permission.
                 return $this->hasGroupPermission(
                     authorization: $authorization,
@@ -383,10 +419,10 @@ class PermissionHandler
                     objectData: $objectData,
                     objectOrganisation: $objectOrganisation
                 );
-            }
+            }//end if
 
             $userId = $user->getUID();
-        }
+        }//end if
 
         // Get user object from user ID.
         $userObj = $this->userManager->get($userId);
@@ -885,7 +921,7 @@ class PermissionHandler
      *
      * @return bool True if the group has permission
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Rule entries: string, object, conditional, or nested group - each type is a distinct RBAC branch
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
@@ -964,6 +1000,47 @@ class PermissionHandler
 
         return false;
     }//end hasGroupPermission()
+
+    /**
+     * Determine whether the `public` group is EXPLICITLY granted an action.
+     *
+     * Unlike {@see hasGroupPermission()}, this does NOT treat a missing
+     * `authorization` block or a missing action entry as a grant (the
+     * default-open behaviour that {@see hasGroupPermission()} relies on for
+     * authenticated users). It returns true only when the schema's
+     * `authorization[$action]` list contains a `public` reference — either as a
+     * bare string entry (`"public"`) or as a complex entry whose `group` is
+     * `public` (with or without a `match` clause). This is the opt-in signal for
+     * anonymous-write fail-closed scoping (#1955): the conditional `match`, if
+     * present, is still evaluated downstream by {@see hasGroupPermission()}.
+     *
+     * @param array|null $authorization The schema's authorization array.
+     * @param string     $action        The CRUD action being checked.
+     *
+     * @return bool True only when `public` is explicitly listed for the action.
+     */
+    private function publicGroupExplicitlyGranted(?array $authorization, string $action): bool
+    {
+        if (empty($authorization) === true || isset($authorization[$action]) === false) {
+            return false;
+        }
+
+        if (is_array($authorization[$action]) === false) {
+            return false;
+        }
+
+        foreach ($authorization[$action] as $entry) {
+            if (is_string($entry) === true && $entry === 'public') {
+                return true;
+            }
+
+            if (is_array($entry) === true && ($entry['group'] ?? null) === 'public') {
+                return true;
+            }
+        }
+
+        return false;
+    }//end publicGroupExplicitlyGranted()
 
     /**
      * Get all groups that have permission for a specific action
@@ -1053,53 +1130,14 @@ class PermissionHandler
         }//end try
 
         $authorization = $this->resolveAuthorization(schema: $schema);
+        $groupIds      = $this->resolveReadGroupIds(authorization: $authorization);
 
-        // No authorization means the schema is open to everyone — treat as broadcast.
-        if (empty($authorization) === true) {
+        // Null means "open / broadcast" — no targeted user list.
+        if ($groupIds === null) {
             return [];
         }
 
-        // No read rule means everyone can read — treat as broadcast.
-        if (isset($authorization['read']) === false) {
-            return [];
-        }
-
-        $readEntries = $authorization['read'];
-        if (is_array($readEntries) === false || $readEntries === []) {
-            return [];
-        }
-
-        // Extract group identifiers from the read rule entries.
-        $authorisedGroupIds = [];
-        foreach ($readEntries as $entry) {
-            if (is_string($entry) === true) {
-                $authorisedGroupIds[] = $entry;
-            } else if (is_array($entry) === true && isset($entry['group']) === true && is_string($entry['group']) === true) {
-                $authorisedGroupIds[] = $entry['group'];
-            }
-        }
-
-        $authorisedGroupIds = array_unique($authorisedGroupIds);
-
-        // If public or admin is in the read list, treat as open broadcast.
-        if (in_array('public', $authorisedGroupIds, true) === true
-            || in_array('admin', $authorisedGroupIds, true) === true
-        ) {
-            return [];
-        }
-
-        // Collect user IDs from each authorised group.
-        $userIds = [];
-        foreach ($authorisedGroupIds as $groupId) {
-            $group = $this->groupManager->get($groupId);
-            if ($group === null) {
-                continue;
-            }
-
-            foreach ($group->getUsers() as $user) {
-                $userIds[] = $user->getUID();
-            }
-        }
+        $userIds = $this->collectUsersFromGroups(groupIds: $groupIds);
 
         // Include the object owner regardless of group membership.
         $owner = $object->getOwner();
@@ -1110,6 +1148,96 @@ class PermissionHandler
         return array_values(array_unique($userIds));
 
     }//end getReadableByUsers()
+
+    /**
+     * Resolve the list of authorised group IDs from an authorization block.
+     *
+     * Returns null (meaning "open / broadcast") when:
+     *   - the authorization block is empty
+     *   - no `read` key is present
+     *   - the read entry list is empty
+     *   - `public` or `admin` appears in the group list
+     *
+     * @param array<string,mixed>|null $authorization Resolved authorization array.
+     *
+     * @return array<string>|null Unique group IDs, or null when broadcast.
+     */
+    private function resolveReadGroupIds(?array $authorization): ?array
+    {
+        if (empty($authorization) === true) {
+            return null;
+        }
+
+        if (isset($authorization['read']) === false) {
+            return null;
+        }
+
+        $readEntries = $authorization['read'];
+        if (is_array($readEntries) === false || $readEntries === []) {
+            return null;
+        }
+
+        $groupIds = array_unique($this->extractGroupIdsFromReadEntries(readEntries: $readEntries));
+
+        $isBroadcast = in_array('public', $groupIds, true) || in_array('admin', $groupIds, true);
+        if ($isBroadcast === true) {
+            return null;
+        }
+
+        return $groupIds;
+    }//end resolveReadGroupIds()
+
+    /**
+     * Extract group identifier strings from a read-rule entry list.
+     *
+     * Each entry is either a plain group-id string or an array with a `group` key.
+     *
+     * @param array<mixed> $readEntries Raw entries from the `read` authorization key.
+     *
+     * @return array<string> Group identifier strings (may contain duplicates).
+     */
+    private function extractGroupIdsFromReadEntries(array $readEntries): array
+    {
+        $groupIds = [];
+        foreach ($readEntries as $entry) {
+            if (is_string($entry) === true) {
+                $groupIds[] = $entry;
+                continue;
+            }
+
+            if (is_array($entry) === true && isset($entry['group']) === true && is_string($entry['group']) === true) {
+                $groupIds[] = $entry['group'];
+            }
+        }
+
+        return $groupIds;
+    }//end extractGroupIdsFromReadEntries()
+
+    /**
+     * Collect the user IDs of all members of the given Nextcloud groups.
+     *
+     * Groups that cannot be resolved are silently skipped.
+     *
+     * @param array<string> $groupIds List of Nextcloud group identifiers.
+     *
+     * @return array<string> Flat list of user IDs (may contain duplicates).
+     */
+    private function collectUsersFromGroups(array $groupIds): array
+    {
+        $userIds = [];
+        foreach ($groupIds as $groupId) {
+            $group = $this->groupManager->get($groupId);
+            if ($group === null) {
+                continue;
+            }
+
+            foreach ($group->getUsers() as $user) {
+                $userIds[] = $user->getUID();
+            }
+        }
+
+        return $userIds;
+    }//end collectUsersFromGroups()
 
     /**
      * Resolve the effective authorization for a schema.
@@ -1256,7 +1384,7 @@ class PermissionHandler
      *
      * @return array The authorization with roles expanded to action-level entries.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Role expansion: validate defs, resolve `extends` chains, merge action sets, guard malformed data
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
@@ -1348,7 +1476,7 @@ class PermissionHandler
      *
      * @return array<string, array<int, string>> Flat `name => actions` map.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Role hierarchy: missing-name guard, visited-node cycle check, and parent action set merging
      */
     private function resolveRoleHierarchy(array $rawRoleMap, Schema $schema): array
     {
@@ -1377,7 +1505,7 @@ class PermissionHandler
      *
      * @return array<int, string> Deduplicated action list.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Collects actions: existence check, cycle guard, extends string/array, parent recursion, merging
      */
     private function collectRoleActions(
         string $roleName,
@@ -1411,7 +1539,11 @@ class PermissionHandler
         // override (or just live alongside) inherited entries.
         $extends = $definition['extends'] ?? null;
         if ($extends !== null) {
-            $parents = is_array($extends) === true ? $extends : [$extends];
+            $parents = [$extends];
+            if (is_array($extends) === true) {
+                $parents = $extends;
+            }
+
             foreach ($parents as $parent) {
                 if (is_string($parent) === false || $parent === '') {
                     continue;
@@ -1427,9 +1559,9 @@ class PermissionHandler
                     if (in_array($inheritedAction, $actions, true) === false) {
                         $actions[] = $inheritedAction;
                     }
-                }
-            }
-        }
+                }//end foreach
+            }//end foreach
+        }//end if
 
         // Own actions on top.
         $ownActions = $definition['actions'] ?? [];

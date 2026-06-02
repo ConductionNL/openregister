@@ -63,6 +63,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude computed display helper listing other schemas for extension
+		 */
 		computedAvailableSchemas() {
 			const currentId = schemaStore.schemaItem?.id
 			const currentUuid = schemaStore.schemaItem?.uuid
@@ -81,12 +84,18 @@ export default {
 					reference: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
 				}))
 		},
+		/**
+		 * @spec exclude computed display helper listing registers for select
+		 */
 		computedAvailableRegisters() {
 			return registerStore.registerList.map(register => ({
 				id: register.id,
 				label: register.title || register.name || register.id,
 			}))
 		},
+		/**
+		 * @spec exclude computed display helper merging inherited schema properties
+		 */
 		computedInheritedProperties() {
 			const allOf = schemaStore.schemaItem?.allOf || []
 			if (!allOf.length) return {}
@@ -104,12 +113,18 @@ export default {
 			return merged
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook loading initial modal data
+	 */
 	mounted() {
 		this.loadRegistersAndSchemas()
 		this.loadUserGroups()
 		this.fetchAvailableTags()
 	},
 	methods: {
+		/**
+		 * @spec exclude form-state loader for registers and schemas
+		 */
 		async loadRegistersAndSchemas() {
 			try {
 				if (!registerStore.registerList.length) {
@@ -122,6 +137,9 @@ export default {
 				console.error('Error loading registers and schemas:', error)
 			}
 		},
+		/**
+		 * @spec exclude form-state loader for user groups via OCS API
+		 */
 		async loadUserGroups() {
 			this.loadingGroups = true
 			try {
@@ -149,6 +167,9 @@ export default {
 				this.loadingGroups = false
 			}
 		},
+		/**
+		 * @spec exclude form-state fallback group defaults
+		 */
 		setFallbackGroups() {
 			this.userGroups = [
 				{ id: 'users', displayname: 'All Users' },
@@ -157,6 +178,9 @@ export default {
 				{ id: 'viewers', displayname: 'Viewers' },
 			]
 		},
+		/**
+		 * @spec exclude form-state loader for available tags
+		 */
 		async fetchAvailableTags() {
 			try {
 				const response = await fetch('/index.php/apps/openregister/api/tags')
@@ -171,6 +195,9 @@ export default {
 				this.availableTags = []
 			}
 		},
+		/**
+		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
+		 */
 		async onConfirm(schemaData) {
 			try {
 				const { response } = await schemaStore.saveSchema(schemaData)
@@ -184,10 +211,16 @@ export default {
 				})
 			}
 		},
+		/**
+		 * @spec exclude modal close UI handler
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			navigationStore.setDialog(false)
 		},
+		/**
+		 * @spec exclude form-state helper seeding an extending schema
+		 */
 		extendSchema() {
 			const currentItem = schemaStore.schemaItem
 			const newSchema = {
@@ -199,18 +232,33 @@ export default {
 			}
 			schemaStore.setSchemaItem(newSchema)
 		},
+		/**
+		 * @spec exclude dialog-open UI handler for schema analysis
+		 */
 		analyzeProperties() {
 			navigationStore.setDialog('exploreSchema')
 		},
+		/**
+		 * @spec exclude dialog-open UI handler for object validation
+		 */
 		validateObjects() {
 			navigationStore.setDialog('validateSchema')
 		},
+		/**
+		 * @spec exclude dialog-open UI handler for object deletion
+		 */
 		deleteObjects() {
 			navigationStore.setDialog('deleteSchemaObjects')
 		},
+		/**
+		 * @spec exclude dialog-open UI handler for object publication
+		 */
 		publishObjects() {
 			navigationStore.setDialog('publishSchemaObjects')
 		},
+		/**
+		 * @spec exclude dialog-open UI handler for schema deletion
+		 */
 		deleteSchema() {
 			navigationStore.setDialog('deleteSchema')
 		},

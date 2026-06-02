@@ -444,6 +444,9 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude UI display helper — resolves selected schema ids to detail objects.
+		 */
 		selectedSchemasDetails() {
 			if (!this.localConfig.selectedSchemas || !this.availableSchemas) {
 				return []
@@ -461,6 +464,7 @@ export default {
 		/**
 		 * Calculate the total number of objects based on selected schemas
 		 * If no schemas are selected, use the total from objectStats
+		 * @spec exclude UI display helper — sums object counts across selected schemas.
 		 */
 		effectiveTotalObjects() {
 			if (!this.localConfig.selectedSchemas || this.localConfig.selectedSchemas.length === 0) {
@@ -477,12 +481,18 @@ export default {
 
 	watch: {
 		config: {
+			/**
+			 * @spec exclude UI watcher — syncs the incoming config prop into local state.
+			 */
 			handler(newConfig) {
 				this.localConfig = { ...newConfig }
 			},
 			deep: true,
 		},
 		localConfig: {
+			/**
+			 * @spec exclude UI watcher — emits config changes to the parent.
+			 */
 			handler(newConfig) {
 				this.$emit('config-changed', newConfig)
 			},
@@ -491,10 +501,16 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
+		 */
 		startWarmup() {
 			this.$emit('start-warmup', this.localConfig)
 		},
 
+		/**
+		 * @spec exclude Modal state plumbing — emits a reset event to the parent.
+		 */
 		resetModal() {
 			this.$emit('reset')
 		},
@@ -504,6 +520,7 @@ export default {
 		 *
 		 * @param {string} mode Mode value
 		 * @return {string} Display name
+		 * @spec exclude UI display helper — maps a warmup mode to a display name.
 		 */
 		getModeDisplayName(mode) {
 			const modeNames = {
@@ -518,6 +535,7 @@ export default {
 		 * Estimate warmup duration based on configuration
 		 *
 		 * @return {string} Estimated duration in human-readable format
+		 * @spec exclude UI display helper — estimates warmup duration from config.
 		 */
 		estimateWarmupDuration() {
 			if (this.effectiveTotalObjects === 0) {
@@ -557,6 +575,7 @@ export default {
 		 *
 		 * @param {number} seconds Duration in seconds
 		 * @return {string} Formatted duration
+		 * @spec exclude UI display helper — formats a seconds duration for display.
 		 */
 		formatDuration(seconds) {
 			if (seconds < 1) {
@@ -575,6 +594,7 @@ export default {
 		 *
 		 * @param {number} milliseconds Execution time in milliseconds
 		 * @return {string} Formatted execution time
+		 * @spec exclude UI display helper — formats a milliseconds execution time for display.
 		 */
 		formatExecutionTime(milliseconds) {
 			if (milliseconds < 1000) {
@@ -593,6 +613,7 @@ export default {
 		 *
 		 * @param {boolean|number} status Operation status
 		 * @return {string} CSS class
+		 * @spec exclude UI display helper — maps an operation status to a CSS class.
 		 */
 		getOperationStatus(status) {
 			if (status === true || status === 1) return 'success'
@@ -605,6 +626,7 @@ export default {
 		 *
 		 * @param {boolean|number} status Operation status
 		 * @return {string} Icon character
+		 * @spec exclude UI display helper — maps an operation status to an icon glyph.
 		 */
 		getOperationIcon(status) {
 			if (status === true || status === 1) return '✅'
@@ -617,6 +639,7 @@ export default {
 		 *
 		 * @param {boolean|number} status Operation status
 		 * @return {string} Status text
+		 * @spec exclude UI display helper — maps an operation status to a status label.
 		 */
 		getOperationStatusText(status) {
 			if (status === true || status === 1) return 'Success'
@@ -629,6 +652,7 @@ export default {
 		 *
 		 * @param {string} operation Operation key
 		 * @return {string} Formatted operation name
+		 * @spec exclude UI display helper — maps an operation key to a display name.
 		 */
 		formatOperationName(operation) {
 			const operationNames = {
@@ -656,6 +680,7 @@ export default {
 		 * @param {string} operation Operation key
 		 * @param {boolean|number} status Operation status/value
 		 * @return {string|null} Details text
+		 * @spec exclude UI display helper — builds details text for an operation row.
 		 */
 		getOperationDetails(operation, status) {
 			if (typeof status === 'number' && status > 1) {
@@ -675,6 +700,7 @@ export default {
 		 * Format memory prediction for display
 		 *
 		 * @return {string} Formatted memory prediction
+		 * @spec exclude UI display helper — formats the memory-prediction summary.
 		 */
 		formatMemoryPrediction() {
 			if (!this.memoryPrediction || this.memoryPrediction.error) {
@@ -694,6 +720,7 @@ export default {
 		 *
 		 * @param {number} percentage Memory usage percentage
 		 * @return {string} CSS class
+		 * @spec exclude UI display helper — maps a memory-usage percentage to a CSS class.
 		 */
 		getMemoryUsageClass(percentage) {
 			const numPercentage = parseFloat(percentage)
@@ -706,6 +733,7 @@ export default {
 		 * Check if there are detailed error information available
 		 *
 		 * @return {boolean} True if detailed error info is available
+		 * @spec exclude UI state helper — reports whether detailed error info is present.
 		 */
 		hasDetailedError() {
 			return !!(this.results?.error_details
@@ -716,6 +744,7 @@ export default {
 		 * Format error details for display
 		 *
 		 * @return {string} Formatted error details
+		 * @spec exclude UI display helper — formats error details for display.
 		 */
 		formatErrorDetails() {
 			if (this.results?.error_details) {

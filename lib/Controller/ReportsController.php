@@ -20,10 +20,14 @@
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-9
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-10
  */
 
 declare(strict_types=1);
@@ -76,6 +80,8 @@ class ReportsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-9
      */
     public function render(string $id)
     {
@@ -144,6 +150,8 @@ class ReportsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-10
      */
     public function preview(string $id)
     {
@@ -184,11 +192,16 @@ class ReportsController extends Controller
      * @return ObjectEntity
      *
      * @throws DoesNotExistException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-10
      */
     private function loadDashboard(string $identifier): ObjectEntity
     {
         $identifier = trim($identifier);
-        $arg        = ctype_digit($identifier) === true ? (int) $identifier : $identifier;
+        $arg        = $identifier;
+        if (ctype_digit($identifier) === true) {
+            $arg = (int) $identifier;
+        }
 
         // SECURITY: standard RBAC + multitenancy filtering must apply on every
         // dashboard load — render/preview surface user-controlled HTML/XLSX/PDF

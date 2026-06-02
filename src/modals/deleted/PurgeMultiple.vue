@@ -115,6 +115,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed passthrough exposing the selected-objects list to the template; UI state helper.
+		 */
 		objectsToDelete() {
 			return this.selectedObjects
 		},
@@ -133,6 +136,7 @@ export default {
 		/**
 		 * Initialize selection from transfer data
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
 		 */
 		initializeSelection() {
 			const data = deletedStore.selectedForBulkAction || []
@@ -145,6 +149,7 @@ export default {
 		 * Remove object from selection
 		 * @param {string} objectId - ID of object to remove
 		 * @return {void}
+		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
 		 */
 		removeObject(objectId) {
 			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
@@ -155,6 +160,7 @@ export default {
 		/**
 		 * Close the dialog and reset state
 		 * @return {void}
+		 * @spec exclude Modal close handler resetting navigationStore.dialog and local state; UI plumbing.
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -169,6 +175,7 @@ export default {
 		/**
 		 * Permanently delete multiple objects
 		 * @return {Promise<void>}
+		 * @spec exclude Bulk-purge confirm handler delegating to deletedStore.permanentlyDeleteMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
 		async permanentlyDeleteMultiple() {
 			if (!this.objectsToDelete || this.objectsToDelete.length === 0) {

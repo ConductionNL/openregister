@@ -6,6 +6,9 @@
  * This file contains the class for handling audit trail related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -45,6 +48,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
+use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
@@ -232,8 +236,15 @@ class SchemaMapper extends QBMapper
         bool $_multitenancy=true
     ): Schema {
         // Check request-scoped cache to avoid redundant DB queries for the same schema.
-        $rbacFlag = ($_rbac === true) ? '1' : '0';
-        $mtFlag   = ($_multitenancy === true) ? '1' : '0';
+        $rbacFlag = '0';
+        if ($_rbac === true) {
+            $rbacFlag = '1';
+        }
+
+        $mtFlag = '0';
+        if ($_multitenancy === true) {
+            $mtFlag = '1';
+        }
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
         if (isset($this->findCache[$cacheKey]) === true) {
@@ -304,8 +315,16 @@ class SchemaMapper extends QBMapper
         $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-        $rbacChar   = ($_rbac === true) ? '1' : '0';
-        $mtChar     = ($_multitenancy === true) ? '1' : '0';
+        $rbacChar = '0';
+        if ($_rbac === true) {
+            $rbacChar = '1';
+        }
+
+        $mtChar = '0';
+        if ($_multitenancy === true) {
+            $mtChar = '1';
+        }
+
         $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
         $this->findCache[$cacheKey] = $schema;
         $this->findCache[(string) $schema->getId().$rbacSuffix]      = $schema;
@@ -609,6 +628,7 @@ class SchemaMapper extends QBMapper
         $this->validateCalculationsAnnotation(schema: $schema);
         $this->validateNotificationsAnnotation(schema: $schema);
         $this->validateWidgetsAnnotation(schema: $schema);
+        $this->validateArchivalAnnotation(schema: $schema);
         $this->logDroppedAnnotationKeys(schema: $schema);
     }//end cleanObject()
 
@@ -801,6 +821,40 @@ class SchemaMapper extends QBMapper
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
         throw new Exception('x-openregister-widgets: '.implode(' ', $messages));
     }//end validateWidgetsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-archival` annotation.
+     *
+     * The annotation is stored under `configuration['x-openregister-archival']`.
+     * Errors are aggregated by ArchivalAnnotationValidator and thrown here as
+     * a single message so callers see a clear schema-save failure.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2
+     */
+    private function validateArchivalAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-archival'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = ['x-openregister-archival' => $annotation];
+
+        $errors = (new ArchivalAnnotationValidator())->validate(schema: $shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-archival: '.implode(' ', $messages));
+    }//end validateArchivalAnnotation()
 
     /**
      * Clean $ref properties to ensure they are strings

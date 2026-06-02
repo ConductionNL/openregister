@@ -67,6 +67,8 @@ class McpProviderBridge implements ToolInterface
      * @param LoggerInterface  $logger   PSR logger.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
      */
     public function __construct(
         private readonly IMcpToolProvider $provider,
@@ -80,6 +82,8 @@ class McpProviderBridge implements ToolInterface
      * @param string $mcpId MCP function id to whitelist.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
      */
     public function setOnlyMcpId(string $mcpId): void
     {
@@ -90,6 +94,8 @@ class McpProviderBridge implements ToolInterface
      * LLM-facing identifier for the tool group (the app id).
      *
      * @return string The provider's appId, used as the tool-group name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
      */
     public function getName(): string
     {
@@ -102,6 +108,8 @@ class McpProviderBridge implements ToolInterface
      * Short description shown in tool listings.
      *
      * @return string Human-readable description of the bridged tool group.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
      */
     public function getDescription(): string
     {
@@ -112,6 +120,8 @@ class McpProviderBridge implements ToolInterface
      * Each MCP descriptor becomes one LLphant function definition.
      *
      * @return array<int,array<string,mixed>> LLphant-shaped function descriptors.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
      */
     public function getFunctions(): array
     {
@@ -150,6 +160,8 @@ class McpProviderBridge implements ToolInterface
      * @param array<string,mixed> $schema JSON-Schema-shaped parameter schema.
      *
      * @return array<string,mixed> Sanitised schema.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
      */
     private function sanitiseSchema(array $schema): array
     {
@@ -174,6 +186,8 @@ class McpProviderBridge implements ToolInterface
      * @param array<int,mixed> $types JSON-Schema type-list.
      *
      * @return string The first non-null string type, or `string` as fallback.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
      */
     private function collapseType(array $types): string
     {
@@ -194,6 +208,8 @@ class McpProviderBridge implements ToolInterface
      * @param string|null         $userId       Optional acting user id.
      *
      * @return array<string,mixed> MCP-shaped response or error envelope.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
@@ -233,6 +249,8 @@ class McpProviderBridge implements ToolInterface
      * @param \OCA\OpenRegister\Db\Agent|null $agent Acting agent or null.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
      */
     public function setAgent(?\OCA\OpenRegister\Db\Agent $agent): void
     {
@@ -252,6 +270,8 @@ class McpProviderBridge implements ToolInterface
      * @param array<int,mixed> $args         Positional or single-array argument list.
      *
      * @return mixed Whatever executeFunction() returned.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
      */
     public function __call(string $functionName, array $args): mixed
     {
@@ -274,6 +294,8 @@ class McpProviderBridge implements ToolInterface
      * @param string $mcpId Raw MCP function id (dotted).
      *
      * @return string Safe function name with dots replaced by underscores.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
      */
     private function safeFunctionName(string $mcpId): string
     {
@@ -288,6 +310,8 @@ class McpProviderBridge implements ToolInterface
      * @param string $functionName LLphant-side function name (safe or raw).
      *
      * @return string|null Original MCP id, or null when no match is found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
      */
     private function resolveMcpId(string $functionName): ?string
     {

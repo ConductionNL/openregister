@@ -5,6 +5,9 @@
  *
  * This file contains the format class for the Bsn format.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Format
  * @package  OCA\OpenRegister\Formats
  *

@@ -1,6 +1,8 @@
 # files-render-extension Specification
 
 ## Purpose
+
+@e2e exclude backend @self.files renderer — covered by PHPUnit
 TBD - created by archiving change opt-in-files-extend. Update Purpose after archive.
 ## Requirements
 ### Requirement: `@self.files` SHALL be present on every rendered object

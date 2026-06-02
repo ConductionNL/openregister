@@ -184,6 +184,7 @@ export default {
 		/**
 		 * Get current page number
 		 *
+		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -193,6 +194,7 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -208,6 +210,7 @@ export default {
 		/**
 		 * Toggle sidebar visibility
 		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-2
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -217,6 +220,7 @@ export default {
 		/**
 		 * Load templates from the API
 		 *
+		 * @spec exclude UI plumbing — list load hydrating local state (stubbed pending API); list contract owned by admin-list-views.
 		 * @return {Promise<void>}
 		 */
 		async loadTemplates() {
@@ -254,6 +258,7 @@ export default {
 		/**
 		 * Refresh the templates list
 		 *
+		 * @spec exclude UI plumbing — delegates to loadTemplates.
 		 * @return {void}
 		 */
 		refreshTemplates() {
@@ -263,6 +268,7 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
 		 * @return {void}
 		 */
 		previousPage() {
@@ -275,6 +281,7 @@ export default {
 		/**
 		 * Go to next page
 		 *
+		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
 		 * @return {void}
 		 */
 		nextPage() {
@@ -287,6 +294,7 @@ export default {
 		/**
 		 * View template details
 		 *
+		 * @spec exclude UI plumbing — unimplemented navigation stub, no observable contract.
 		 * @param {object} _template - Template object
 		 * @return {void}
 		 */
@@ -298,6 +306,7 @@ export default {
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

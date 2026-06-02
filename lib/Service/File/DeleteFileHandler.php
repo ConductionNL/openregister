@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -78,11 +82,16 @@ class DeleteFileHandler
      * @throws Exception If deleting the file is not permitted or file operations fail.
      *
      * @psalm-param Node|string|int $file
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
     {
         // Determine file name for error logging.
-        $fileName = ($file instanceof Node === true) ? $file->getName() : (string) $file;
+        $fileName = (string) $file;
+        if ($file instanceof Node === true) {
+            $fileName = $file->getName();
+        }
 
         if ($file instanceof Node === false) {
             $file = $this->readFileHandler->getFile(object: $object, file: $file);
@@ -132,6 +141,8 @@ class DeleteFileHandler
      * @return (Node|bool|int|mixed|string)[][] Array of deletion results.
      *
      * @psalm-return list<array{error?: string, file: Node|int|mixed|string, success: bool}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
      */
     public function deleteFiles(array $files, ?ObjectEntity $object=null): array
     {

@@ -7,6 +7,9 @@
  * to the schema's declared `initial` value when the caller did not
  * supply a value. Apps don't need to remember to set it.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -61,6 +64,8 @@ class LifecycleInitialStateListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-12
      */
     public function handle(Event $event): void
     {
@@ -135,6 +140,10 @@ class LifecycleInitialStateListener implements IEventListener
     {
         $config     = ($schema->getConfiguration() ?? []);
         $annotation = ($config['x-openregister-lifecycle'] ?? null);
-        return is_array($annotation) === true ? $annotation : null;
+        if (is_array($annotation) === true) {
+            return $annotation;
+        }
+
+        return null;
     }//end getLifecycleAnnotation()
 }//end class

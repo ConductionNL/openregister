@@ -97,24 +97,6 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 						</template>
 						Edit
 					</NcActionButton>
-					<NcActionButton
-						v-if="!row.published || (row.depublished && new Date(row.depublished) <= new Date())"
-						close-after-click
-						@click="publishSchema(row)">
-						<template #icon>
-							<Publish :size="20" />
-						</template>
-						Publish
-					</NcActionButton>
-					<NcActionButton
-						v-if="row.published && (!row.depublished || new Date(row.depublished) > new Date())"
-						close-after-click
-						@click="depublishSchema(row)">
-						<template #icon>
-							<PublishOff :size="20" />
-						</template>
-						Depublish
-					</NcActionButton>
 					<NcActionButton v-tooltip="row.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 						close-after-click
 						:disabled="row.stats?.objects?.total > 0"
@@ -137,8 +119,6 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import Publish from 'vue-material-design-icons/Publish.vue'
-import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 
@@ -153,8 +133,6 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		CogOutline,
-		Publish,
-		PublishOff,
 		RegisterSchemaCard,
 	},
 	data() {
@@ -164,6 +142,12 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Column definitions for the schemas table.
+		 *
+		 * @spec exclude UI plumbing — static table column list for display
+		 * @return {Array<object>}
+		 */
 		tableColumns() {
 			return [
 				{ key: 'title', label: t('openregister', 'Title'), sortable: true },
@@ -172,6 +156,12 @@ export default {
 				{ key: 'updated', label: t('openregister', 'Updated'), sortable: true },
 			]
 		},
+		/**
+		 * Pagination state derived from the schema store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived pagination view state
+		 * @return {object}
+		 */
 		paginationData() {
 			const page = schemaStore.pagination.page || 1
 			const limit = schemaStore.pagination.limit || 20
@@ -179,6 +169,12 @@ export default {
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
+		/**
+		 * Empty-content label shown when the schema list is empty or loading.
+		 *
+		 * @spec exclude UI plumbing — derived empty-state label
+		 * @return {string}
+		 */
 		emptyContentName() {
 			if (!schemaStore.schemaList.length) {
 				return t('openregister', 'No schemas found')
@@ -186,6 +182,12 @@ export default {
 			return t('openregister', 'Loading schemas...')
 		},
 	},
+	/**
+	 * Lifecycle hook: load schemas and configurations on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		try {
 			await Promise.all([
@@ -197,6 +199,12 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Reload the schema list from the store.
+		 *
+		 * @spec exclude UI plumbing — refresh button delegates to the store
+		 * @return {Promise<void>}
+		 */
 		async handleRefresh() {
 			this.isRefreshing = true
 			try {
@@ -206,18 +214,46 @@ export default {
 			}
 		},
 
+		/**
+		 * Update store pagination when the page changes.
+		 *
+		 * @param {number} page The new page number.
+		 * @spec exclude UI plumbing — pagination handler delegates to the store
+		 * @return {void}
+		 */
 		onPageChanged(page) {
 			schemaStore.setPagination(page, schemaStore.pagination.limit)
 		},
 
+		/**
+		 * Update store pagination when the page size changes.
+		 *
+		 * @param {number} pageSize The new page size.
+		 * @spec exclude UI plumbing — pagination handler delegates to the store
+		 * @return {void}
+		 */
 		onPageSizeChanged(pageSize) {
 			schemaStore.setPagination(1, pageSize)
 		},
 
+		/**
+		 * Track the selected schema ids for bulk actions.
+		 *
+		 * @param {Array} ids The selected schema ids.
+		 * @spec exclude UI plumbing — local selection state update
+		 * @return {void}
+		 */
 		onSelect(ids) {
 			this.selectedSchemas = ids
 		},
 
+		/**
+		 * Compute the CSS row class reflecting a schema's managed/in-use state.
+		 *
+		 * @param {object} schema The schema row.
+		 * @spec exclude UI plumbing — derived row-styling helper
+		 * @return {string}
+		 */
 		getRowClass(schema) {
 			if (this.isManagedByExternalConfig(schema)) return 'viewTableRow--managed'
 			if (this.isManagedByLocalConfig(schema)) return 'viewTableRow--local'
@@ -225,10 +261,24 @@ export default {
 			return ''
 		},
 
+		/**
+		 * Whether a schema has any objects.
+		 *
+		 * @param {object} schema The schema row.
+		 * @spec exclude UI plumbing — display predicate helper
+		 * @return {boolean}
+		 */
 		hasObjects(schema) {
 			return schema.stats?.objects?.total > 0
 		},
 
+		/**
+		 * Find the configuration that manages a given schema, if any.
+		 *
+		 * @param {object} schema The schema row.
+		 * @spec exclude UI plumbing — display lookup helper
+		 * @return {(object|null)}
+		 */
 		getManagingConfiguration(schema) {
 			if (!schema || !schema.id) return null
 			return configurationStore.configurationList.find(
@@ -236,37 +286,32 @@ export default {
 			) || null
 		},
 
+		/**
+		 * Whether a schema is managed by an external (git/url) configuration.
+		 *
+		 * @param {object} schema The schema row.
+		 * @spec exclude UI plumbing — display predicate helper
+		 * @return {boolean}
+		 */
 		isManagedByExternalConfig(schema) {
 			const config = this.getManagingConfiguration(schema)
 			if (!config) return false
 			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
 		},
 
+		/**
+		 * Whether a schema is managed by a local/manual configuration.
+		 *
+		 * @param {object} schema The schema row.
+		 * @spec exclude UI plumbing — display predicate helper
+		 * @return {boolean}
+		 */
 		isManagedByLocalConfig(schema) {
 			const config = this.getManagingConfiguration(schema)
 			if (!config) return false
 			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
 		},
 
-		async publishSchema(schema) {
-			try {
-				await schemaStore.publishSchema(schema.id)
-				showSuccess(t('openregister', 'Schema published successfully'))
-			} catch (error) {
-				console.error('Error publishing schema:', error)
-				showError(t('openregister', 'Failed to publish schema: {error}', { error: error.message }))
-			}
-		},
-
-		async depublishSchema(schema) {
-			try {
-				await schemaStore.depublishSchema(schema.id)
-				showSuccess(t('openregister', 'Schema depublished successfully'))
-			} catch (error) {
-				console.error('Error depublishing schema:', error)
-				showError(t('openregister', 'Failed to depublish schema: {error}', { error: error.message }))
-			}
-		},
 	},
 }
 </script>
