@@ -124,6 +124,12 @@ class GdprEntityMapper extends QBMapper
                     $qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR))
                 )
             )
+            // Deterministic ordering so that when the dedup invariant is
+            // violated (two rows for one (value, type) — design §D4) the
+            // SAME canonical row wins on every call. Without this the
+            // storage engine's arbitrary order could flip the chosen row
+            // between retries, yielding unstable `[<TYPE>: <id>]` placeholders.
+            ->orderBy('id', 'ASC')
             ->setMaxResults(2);
 
         $matches = $this->findEntities(query: $qb);

@@ -451,8 +451,8 @@ class ManualEntityServiceTest extends TestCase
     }//end testFileNotExtractedThrows()
 
     /**
-     * File is read-only for the actor → 403 / REASON_INTERNAL_ERROR
-     * with `forbidden:` message prefix. No transaction.
+     * File is read-only for the actor → REASON_FORBIDDEN (controller
+     * maps to HTTP 403). No transaction.
      *
      * @return void
      */
@@ -475,10 +475,9 @@ class ManualEntityServiceTest extends TestCase
             $this->fail(message: 'Expected ManualEntityException');
         } catch (ManualEntityException $e) {
             $this->assertSame(
-                expected: ManualEntityException::REASON_INTERNAL_ERROR,
+                expected: ManualEntityException::REASON_FORBIDDEN,
                 actual: $e->getReason()
             );
-            $this->assertStringStartsWith(prefix: 'forbidden:', string: $e->getMessage());
         }
 
     }//end testReadOnlyFileForbidden()

@@ -14,6 +14,7 @@
  *   REASON_FILE_NOT_EXTRACTED      → 422 Unprocessable Entity
  *   REASON_UNSUPPORTED_ENTITY_TYPE → 400 Bad Request
  *   REASON_REGEX_COMPILE_FAILURE   → 400 Bad Request
+ *   REASON_FORBIDDEN               → 403 Forbidden
  *   REASON_INTERNAL_ERROR          → 500 Internal Server Error
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -60,6 +61,12 @@ class ManualEntityException extends Exception
      * pattern (malformed Unicode).
      */
     public const REASON_REGEX_COMPILE_FAILURE = 'regex_compile_failure';
+
+    /**
+     * The acting user lacks write access to the target file (read-only
+     * node, or not an updateable file). Mapped to HTTP 403.
+     */
+    public const REASON_FORBIDDEN = 'forbidden';
 
     /**
      * Catch-all for unexpected runtime failures (DB error,

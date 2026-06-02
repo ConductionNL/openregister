@@ -259,7 +259,7 @@ class FileTextControllerManualEntityTest extends TestCase
     }//end testRequestLogRedactsValue()
 
     /**
-     * Service throws `REASON_INTERNAL_ERROR` with `forbidden:` prefix → 403.
+     * Service throws `REASON_FORBIDDEN` → 403.
      *
      * @return void
      */
@@ -270,8 +270,8 @@ class FileTextControllerManualEntityTest extends TestCase
 
         $this->manualEntityService->method('addManualEntity')->willThrowException(
             exception: new ManualEntityException(
-                reason: ManualEntityException::REASON_INTERNAL_ERROR,
-                message: 'forbidden: write access to file required'
+                reason: ManualEntityException::REASON_FORBIDDEN,
+                message: 'write access to file required'
             )
         );
 

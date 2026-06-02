@@ -61,11 +61,15 @@ use Throwable;
 class ManualEntityService
 {
     /**
-     * Chunk overlap used by `TextExtractionService` (chars). Needles
-     * longer than this cannot reliably be matched per-chunk and are
-     * rejected upstream by `ChunkTextMatcher`.
+     * Fallback chunk overlap (chars) used only when a file's persisted
+     * chunks carry no `overlap_size` (legacy rows written before the field
+     * existed). The effective overlap is normally read per-file from the
+     * chunk rows so it tracks whatever `chunk_overlap` the extractor used;
+     * see {@see TextExtractionService::DEFAULT_CHUNK_OVERLAP} for the
+     * matching default. Needles longer than the effective overlap cannot be
+     * reliably matched per-chunk and are rejected by `ChunkTextMatcher`.
      */
-    private const CHUNK_OVERLAP_CHARS = 200;
+    private const FALLBACK_CHUNK_OVERLAP_CHARS = 200;
 
     /**
      * Source-type tag used by `ChunkMapper::findBySource` for file-
@@ -148,6 +152,16 @@ class ManualEntityService
             );
         }
 
+        // Derive the effective overlap from the file's own chunks so the
+        // matcher's needle-length bound and cross-boundary invariant track
+        // whatever `chunk_overlap` the extractor actually used (the value is
+        // persisted per chunk). Fall back to the default only for legacy
+        // rows that predate the `overlap_size` column.
+        $chunkOverlap = $chunks[0]->getOverlapSize();
+        if ($chunkOverlap <= 0) {
+            $chunkOverlap = self::FALLBACK_CHUNK_OVERLAP_CHARS;
+        }
+
         // Run the matcher BEFORE opening the transaction — a regex
         // compile failure here aborts the operation without any DB
         // writes to roll back.
@@ -157,7 +171,7 @@ class ManualEntityService
                 needle: $value,
                 wholeWord: $wholeWord,
                 caseSensitive: $caseSensitive,
-                chunkOverlap: self::CHUNK_OVERLAP_CHARS
+                chunkOverlap: $chunkOverlap
             );
         } catch (ChunkMatcherException $e) {
             // Translate to the orchestration-layer exception. Both
@@ -203,19 +217,26 @@ class ManualEntityService
                 throw $error;
             }
 
-            // Log the root cause with a stack trace before we wrap. The
-            // controller's translated-exception log only carries the reason
-            // code; without this log a 500 leaves no debuggable trail.
+            // Log the root cause before we wrap. The controller's
+            // translated-exception log only carries the reason code; without
+            // this log a 500 leaves no debuggable trail.
+            //
+            // ADR-005: do NOT log the exception message or trace. Both can
+            // surface the operator-supplied `value` (PII) — getTraceAsString()
+            // formats call-frame arguments (which include `$value`), and a DB
+            // driver may embed bound parameters into the wrapped exception's
+            // message. Record only PII-safe structural fields here; the audit
+            // trail (ADR-022 forensic exception) is the sole place `value` lives.
             $this->logger->error(
                 '[ManualEntityService] Transactional manual-entity write failed; rolled back',
                 [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'fileId'    => $fileId,
-                    'actor'     => $actor->getUID(),
-                    'errorType' => $error::class,
-                    'error'     => $error->getMessage(),
-                    'trace'     => $error->getTraceAsString(),
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
+                    'fileId'        => $fileId,
+                    'actor'         => $actor->getUID(),
+                    'errorClass'    => $error::class,
+                    'errorCode'     => $error->getCode(),
+                    'errorLocation' => $error->getFile().':'.$error->getLine(),
                 ]
             );
 
@@ -297,9 +318,9 @@ class ManualEntityService
 
         $node = $nodes[0];
         if (($node instanceof NcFile) === false || $node->isUpdateable() === false) {
-            // Read-only access. The `forbidden:` message prefix tells the
-            // controller layer to map this to HTTP 403 (vs the default
-            // 500 for REASON_INTERNAL_ERROR).
+            // Read-only access. REASON_FORBIDDEN is the type-checked signal
+            // the controller maps to HTTP 403 (vs the default 500 for
+            // REASON_INTERNAL_ERROR).
             $this->logger->info(
                 '[ManualEntityService] Write-access denied on target file',
                 [
@@ -312,8 +333,8 @@ class ManualEntityService
                 ]
             );
             throw new ManualEntityException(
-                reason: ManualEntityException::REASON_INTERNAL_ERROR,
-                message: 'forbidden: write access to file required'
+                reason: ManualEntityException::REASON_FORBIDDEN,
+                message: 'write access to file required'
             );
         }
 

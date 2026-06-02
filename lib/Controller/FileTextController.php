@@ -647,6 +647,7 @@ class FileTextController extends Controller
      * @return JSONResponse 201 on matches found, 200 on zero matches, 4xx/5xx on failure.
      *
      * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function addManualEntity(int $fileId): JSONResponse
     {
@@ -748,9 +749,8 @@ class FileTextController extends Controller
      *   file_not_extracted      → 422 (operator must run extraction first)
      *   regex_compile_failure   → 400 (malformed needle)
      *   unsupported_entity_type → 400
-     *   internal_error          → 500, OR 403 when the message carries the
-     *                             `forbidden:` sentinel from the service-side
-     *                             write-access check.
+     *   forbidden               → 403 (service-side write-access check failed)
+     *   internal_error          → 500
      *
      * @param ManualEntityException $exception Source exception.
      * @param int                   $fileId    Target file id (used for logging).
@@ -761,9 +761,7 @@ class FileTextController extends Controller
     {
         $reason = $exception->getReason();
 
-        if ($reason === ManualEntityException::REASON_INTERNAL_ERROR
-            && str_starts_with($exception->getMessage(), 'forbidden:') === true
-        ) {
+        if ($reason === ManualEntityException::REASON_FORBIDDEN) {
             return new JSONResponse(
                 data: [
                     'error'  => 'forbidden',
