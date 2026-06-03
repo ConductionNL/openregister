@@ -81,6 +81,7 @@ class SaveObjectCircularReferenceTest extends TestCase
             translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
             logger: $this->createMock(LoggerInterface::class),
             tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+            folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             arrayLoader: new ArrayLoader(),
             groupManager: $this->createMock(IGroupManager::class),
             appConfig: $this->createMock(IAppConfig::class),

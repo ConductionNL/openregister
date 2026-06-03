@@ -88,6 +88,7 @@ use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Async;
+use OCP\IUser;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -383,6 +384,9 @@ class ObjectService
                     // Save the entity with the new folder ID.
                     $this->objectMapper->update($entity);
                 }
+            } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
+                // Access denials must propagate to the controller for HTTP 403 mapping.
+                throw $e;
             } catch (Exception $e) {
                 // Log the error but don't fail the object creation/update.
                 // The object can still function without a folder.
@@ -1105,6 +1109,12 @@ class ObjectService
      * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true)
      * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
      * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
+     * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
+     *                                                (forwarded to `ensureObjectFolder` → `assertObjectFolderAccessible`).
+     *                                                Defaults to null → `IUserSession::getUser()` resolution.
+     *                                                Non-HTTP callers (cron, import pipelines, event listeners)
+     *                                                MUST pass an explicit user to avoid the
+     *                                                default-deny fall-through on every folder-bound save.
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -1113,6 +1123,8 @@ class ObjectService
      * @TODO Add property-level RBAC validation here
      * Before saving object data, check if user has permission to create/update specific properties
      * based on property-level authorization arrays in the schema.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-3
      */
@@ -1125,8 +1137,15 @@ class ObjectService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $silent=false,
-        ?array $uploadedFiles=null
+        ?array $uploadedFiles=null,
+        ?IUser $currentUser=null
     ): ObjectEntity {
+        // Bound the folder-access revalidation cache to this single save call
+        // (not the whole FileService/request lifetime), so a cascade save that
+        // moves or trashes a folder mid-request can't be waved through on a
+        // stale "accessible" verdict from an earlier write.
+        $this->fileService->resetFolderAccessRevalidationCache();
+
         // Set register/schema context.
         $this->setContextFromParameters(
             register: $register,
@@ -1207,7 +1226,7 @@ class ObjectService
         $this->validateObjectIfRequired(object: $object);
 
         // Ensure folder exists for the object.
-        $folderId = $this->ensureObjectFolder(uuid: $uuid);
+        $folderId = $this->ensureObjectFolder(uuid: $uuid, currentUser: $currentUser);
 
         // Clear request-scoped caches before starting a new top-level save operation.
         // This ensures cascade operations benefit from caching while avoiding stale data.
@@ -1225,7 +1244,8 @@ class ObjectService
             persist: true,
             silent: $silent,
             _validation: true,
-            uploadedFiles: $uploadedFiles
+            uploadedFiles: $uploadedFiles,
+            currentUser: $currentUser
         );
 
         // Invalidate contact matching cache for objects with email properties.
@@ -1499,11 +1519,16 @@ class ObjectService
     /**
      * Ensure object folder exists, create if needed.
      *
-     * @param string|null $uuid Object UUID
+     * @param string|null $uuid        Object UUID
+     * @param IUser|null  $currentUser Explicit acting user forwarded to the
+     *                                 defense-in-depth re-validation; falls
+     *                                 back to `IUserSession::getUser()`.
+     *                                 Non-HTTP callers (cron, import
+     *                                 pipelines) MUST pass an explicit user.
      *
      * @return int|null Folder ID if created/exists, null otherwise
      */
-    private function ensureObjectFolder(?string $uuid): ?int
+    private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): ?int
     {
         // Handle folder creation for existing objects or new objects with UUIDs.
         $folderId = null;
@@ -1513,21 +1538,57 @@ class ObjectService
             try {
                 $existingObject = $this->objectMapper->find($uuid);
                 $folder         = $existingObject->getFolder();
-                $isString       = is_string($folder) === true;
 
-                if ($folder === null || $folder === '' || $isString === true) {
-                    try {
-                        $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
-                    } catch (Exception $e) {
-                        // Log error but continue - object can function without folder.
-                    }
+                // The `_folder` column is `varchar(255)` — every populated
+                // value is a string. The earlier `is_string($folder) === true`
+                // clause matched ANY non-empty string and so triggered an
+                // auto-create on every update, overwriting valid folder
+                // bindings with freshly-generated auto-folders under the
+                // register's storage tree. The intent of the string branch
+                // was to handle LEGACY non-numeric string paths that
+                // pre-date the integer-id storage convention; restrict the
+                // check to that case.
+                $needsAutoCreate = (
+                    $folder === null
+                    || $folder === ''
+                    || (is_string($folder) === true && is_numeric($folder) === false)
+                );
+
+                if ($needsAutoCreate === false) {
+                    // Defense in depth (PR #1431 review concern): the
+                    // `setSelfMetadata` access check only fires when the
+                    // write payload includes `@self.folder`. Pre-PR
+                    // cross-tenant bindings (or any subsequent save that
+                    // touches other fields) would otherwise pass through
+                    // unchecked. Re-validate the existing binding on every
+                    // save so the check applies uniformly. Throws
+                    // `FolderAccessDeniedException` → HTTP 403 at the
+                    // controller layer when the acting user cannot access
+                    // the bound folder. The existing binding is kept, so no
+                    // folder id is returned (auto-create is not needed).
+                    $this->fileService->assertObjectFolderAccessible(
+                        object: $existingObject,
+                        currentUser: $currentUser
+                    );
+                    return null;
                 }
+
+                // Empty / legacy non-numeric binding → auto-create. The object
+                // can function without a folder, so swallow failures.
+                try {
+                    $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
+                } catch (Exception $e) {
+                    // Log error but continue - object can function without folder.
+                }
+            } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
+                // Propagate folder-access denials up to the controller.
+                throw $e;
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, will create new one with the specified UUID.
                 // Let SaveObject handle the creation with the provided UUID.
             } catch (Exception $e) {
                 // Other errors - let SaveObject handle the creation.
-            }
+            }//end try
         }//end if
 
         return $folderId;
@@ -2926,6 +2987,10 @@ class ObjectService
         bool $deduplicateIds=true,
         bool $enrich=true
     ): array {
+
+        // Bound the folder-access revalidation cache to this bulk-save call
+        // (see saveObject) so mid-request folder mutations are re-validated.
+        $this->fileService->resetFolderAccessRevalidationCache();
 
         // Set register and schema context if provided.
         if ($register !== null) {

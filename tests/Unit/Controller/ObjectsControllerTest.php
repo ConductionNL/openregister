@@ -1529,6 +1529,109 @@ class ObjectsControllerTest extends TestCase
         $this->assertSame(403, $result->getStatus());
     }
 
+    /**
+     * Per the `self-folder-access-control` capability: when the save pipeline
+     * throws `FolderAccessDeniedException`, the controller MUST return HTTP 403
+     * with a minimal structured body `{ "error": "folder_access_denied" }`.
+     *
+     * The body MUST NOT echo the attempted folder ID — doing so would create
+     * an enumeration oracle distinguishing "folder exists but inaccessible"
+     * from "folder does not exist" by response shape.
+     */
+    public function testCreateReturns403WithStructuredBodyOnFolderAccessDenied(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Fail', '@self' => ['folder' => '99']]);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')->willThrowException(
+            new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '99')
+        );
+
+        $result = $this->controller->create('1', '2', $this->objectService);
+        $body   = $result->getData();
+
+        $this->assertSame(403, $result->getStatus());
+        $this->assertSame('folder_access_denied', $body['error']);
+        $this->assertArrayNotHasKey('folder', $body, 'Response body MUST NOT echo the attempted folder ID (enumeration oracle).');
+    }
+
+    /**
+     * update() — same FolderAccessDeniedException → 403 contract as create().
+     *
+     * Regression-tests the catch-block ordering in `update()`: a catch
+     * placed AFTER the generic `\Exception` block would absorb the
+     * denial and return 500, silently breaking the access-control
+     * contract for the update path.
+     */
+    public function testUpdateReturns403WithStructuredBodyOnFolderAccessDenied(): void
+    {
+        $this->setupAdminUser();
+
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-123');
+        $existingObject->setRegister(1);
+        $existingObject->setSchema(2);
+        $existingObject->setObject(['title' => 'Old']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Updated', '@self' => ['folder' => '99']]);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+        $this->objectService->method('saveObject')->willThrowException(
+            new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '99')
+        );
+
+        $result = $this->controller->update('1', '2', 'uuid-123', $this->objectService);
+        $body   = $result->getData();
+
+        $this->assertSame(403, $result->getStatus());
+        $this->assertSame('folder_access_denied', $body['error']);
+        $this->assertArrayNotHasKey('folder', $body);
+    }
+
+    /**
+     * postPatch() — same FolderAccessDeniedException → 403 contract.
+     *
+     * Regression-tests the catch-block ordering in `postPatch()` for
+     * the third covered save endpoint.
+     */
+    public function testPostPatchReturns403WithStructuredBodyOnFolderAccessDenied(): void
+    {
+        $this->setupAdminUser();
+
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-123');
+        $existingObject->setRegister(1);
+        $existingObject->setSchema(2);
+        $existingObject->setObject(['title' => 'Old']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Patched', '@self' => ['folder' => '99']]);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+        $this->objectService->method('saveObject')->willThrowException(
+            new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '99')
+        );
+
+        $result = $this->controller->postPatch('1', '2', 'uuid-123', $this->objectService);
+        $body   = $result->getData();
+
+        $this->assertSame(403, $result->getStatus());
+        $this->assertSame('folder_access_denied', $body['error']);
+        $this->assertArrayNotHasKey('folder', $body);
+    }
+
     // =========================================================================
     // update() — success and error paths
     // =========================================================================
