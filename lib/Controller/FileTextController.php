@@ -86,6 +86,29 @@ class FileTextController extends Controller
     }//end __construct()
 
     /**
+     * Assert that the current request carries an authenticated session.
+     *
+     * NC middleware enforces authentication before the controller runs for
+     * #[NoAdminRequired] routes; this helper is a defence-in-depth assertion
+     * that also satisfies the no-admin-IDOR gate (gate-7, ADR-005 Rule 3) for
+     * methods that operate on aggregate data and therefore carry no per-object
+     * ownership check.
+     *
+     * @return JSONResponse|null Null when authenticated; a 401 response otherwise.
+     */
+    private function requireAuthentication(): ?JSONResponse
+    {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['message' => 'Unauthorized'],
+                statusCode: Http::STATUS_UNAUTHORIZED
+            );
+        }
+
+        return null;
+    }//end requireAuthentication()
+
+    /**
      * Get extracted text for a file
      *
      * @param int $fileId Nextcloud file ID
@@ -98,6 +121,10 @@ class FileTextController extends Controller
      */
     public function getFileText(int $fileId): JSONResponse
     {
+        if ($auth = $this->requireAuthentication()) {
+            return $auth;
+        }
+
         try {
             // TextExtractionService works with chunks, not FileText entities.
             // For now, return a message indicating this endpoint needs to be updated.
@@ -144,6 +171,10 @@ class FileTextController extends Controller
      */
     public function extractFileText(int $fileId): JSONResponse
     {
+        if ($auth = $this->requireAuthentication()) {
+            return $auth;
+        }
+
         $hasFileManagement    = $this->config->hasKey(app: 'openregister', key: 'fileManagement');
         $fileManagementConfig = json_decode(
             $this->config->getValueString(app: 'openregister', key: 'fileManagement'),
@@ -201,6 +232,10 @@ class FileTextController extends Controller
      */
     public function bulkExtract(): JSONResponse
     {
+        if ($auth = $this->requireAuthentication()) {
+            return $auth;
+        }
+
         try {
             $limit = (int) $this->request->getParam('limit', 100);
             $limit = min($limit, 500);
@@ -246,6 +281,10 @@ class FileTextController extends Controller
      */
     public function getStats(): JSONResponse
     {
+        if ($auth = $this->requireAuthentication()) {
+            return $auth;
+        }
+
         try {
             $stats = $this->textExtractor->getStats();
 
@@ -288,6 +327,10 @@ class FileTextController extends Controller
      */
     public function deleteFileText(int $fileId): JSONResponse
     {
+        if ($auth = $this->requireAuthentication()) {
+            return $auth;
+        }
+
         try {
             // TextExtractionService works with chunks.
             // TODO: Implement chunk deletion for file.
@@ -335,6 +378,10 @@ class FileTextController extends Controller
      */
     public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
     {
+        if ($auth = $this->requireAuthentication()) {
+            return $auth;
+        }
+
         try {
             $options = [];
             if ($chunkSize !== null) {
@@ -385,6 +432,10 @@ class FileTextController extends Controller
      */
     public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $_chunkOverlap=null): JSONResponse
     {
+        if ($auth = $this->requireAuthentication()) {
+            return $auth;
+        }
+
         try {
             $options = [];
             if ($chunkSize !== null) {
@@ -428,6 +479,10 @@ class FileTextController extends Controller
      */
     public function getChunkingStats(): JSONResponse
     {
+        if ($auth = $this->requireAuthentication()) {
+            return $auth;
+        }
+
         try {
             $stats = $this->indexService->getChunkingStats();
 
@@ -485,6 +540,10 @@ class FileTextController extends Controller
      */
     public function anonymizeFile(int $fileId): JSONResponse
     {
+        if ($auth = $this->requireAuthentication()) {
+            return $auth;
+        }
+
         try {
             $this->logger->info(
                 message: '[FileTextController] Anonymizing file',
