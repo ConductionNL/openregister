@@ -75,6 +75,7 @@ use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
@@ -1449,18 +1450,31 @@ class ObjectService
     /**
      * Delete an object.
      *
-     * @param string $uuid          The UUID of the object to delete
-     * @param bool   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool   $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param string $uuid            The UUID of the object to delete
+     * @param bool   $_rbac           Whether to apply RBAC checks (default: true).
+     * @param bool   $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool   $_retentionSweep Internal flag: when true, bypasses the archival
+     *                                immutability gate. ONLY the
+     *                                ArchivalRetentionTask cron may set this to true
+     *                                — no controller or route exposes it.
      *
      * @return bool Whether the deletion was successful
      *
-     * @throws \Exception If user does not have delete permission
+     * @throws \Exception              If user does not have delete permission
+     * @throws ArchivalImmutableException When the schema declares x-openregister-archival
+     *                                    and $_retentionSweep is false.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3.2
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3.3
      */
-    public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
-    {
+    public function deleteObject(
+        string $uuid,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $_retentionSweep=false
+    ): bool {
         // Reject deletion of transferred objects (archiefstatus = overgebracht).
         $this->rejectIfTransferred(uuid: $uuid);
 
@@ -1499,6 +1513,18 @@ class ObjectService
                 );
             }
         }//end try
+
+        // Archival immutability gate: schemas that declare x-openregister-archival
+        // forbid user-driven deletes. The retention sweep cron is the only exempt caller.
+        if ($_retentionSweep === false && $this->currentSchema !== null) {
+            $config = $this->currentSchema->getConfiguration() ?? [];
+            if (isset($config['x-openregister-archival']) === true) {
+                throw new ArchivalImmutableException(
+                    schema: $this->currentSchema->getSlug() ?? $this->currentSchema->getUuid() ?? 'unknown',
+                    operation: 'delete'
+                );
+            }
+        }
 
         return $this->deleteHandler->deleteObject(
             register: $this->currentRegister,

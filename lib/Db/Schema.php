@@ -111,6 +111,26 @@ class Schema extends Entity implements JsonSerializable
 {
 
     /**
+     * Recognised x-openregister-* annotation keys.
+     *
+     * Any key present here survives validateConfigurationArray() and is stored
+     * under configuration['<key>']. Keys absent from this list are silently
+     * dropped with a warning (see SchemaMapper::validateAndStoreConfiguration).
+     *
+     * @var string[]
+     */
+    public const ANNOTATION_VOCABULARY = [
+        'x-openregister-lifecycle',
+        'x-openregister-aggregations',
+        'x-openregister-calculations',
+        'x-openregister-notifications',
+        'x-openregister-relations',
+        'x-openregister-widgets',
+        'x-openregister-archival',
+        'x-openregister-seed',
+    ];
+
+    /**
      * Unique identifier for the schema
      *
      * @var string|null Unique identifier for the schema
@@ -1648,6 +1668,14 @@ class Schema extends Entity implements JsonSerializable
             }
 
             if (in_array($key, $passThrough, true) === true) {
+                $validatedConfig[$key] = $value;
+                continue;
+            }
+
+            // Pass through any recognised x-openregister-* annotation keys unchanged.
+            // Validation of their internal structure is handled by dedicated validators
+            // in SchemaMapper (e.g. ArchivalAnnotationValidator).
+            if (in_array($key, self::ANNOTATION_VOCABULARY, true) === true) {
                 $validatedConfig[$key] = $value;
             }
         }//end foreach

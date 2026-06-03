@@ -43,6 +43,7 @@ use OCP\IUserSession;
 use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 
 /**
  * SchemaMapper handles database operations for Schema entities
@@ -589,9 +590,48 @@ class SchemaMapper extends QBMapper
         $this->cleanRefProperties(schema: $schema);
         $this->ensureSchemaIdentifiers(schema: $schema);
         $this->validateConfigurationFields(schema: $schema);
+        $this->validateArchivalAnnotation(schema: $schema);
         $this->buildRequiredFieldsArray(schema: $schema);
         $this->autoPopulateConfigurationFields(schema: $schema);
     }//end cleanObject()
+
+    /**
+     * Validate the x-openregister-archival annotation on a schema, if present.
+     *
+     * Errors from ArchivalAnnotationValidator are aggregated into a single
+     * Exception whose message starts with "x-openregister-archival: " (mirrors
+     * the lifecycle validator convention).
+     *
+     * @param Schema $schema The schema to validate.
+     *
+     * @throws \Exception When the annotation contains validation errors.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2.2
+     */
+    private function validateArchivalAnnotation(Schema $schema): void
+    {
+        $config = $schema->getConfiguration() ?? [];
+
+        // Fast-exit when the annotation is absent.
+        if (isset($config['x-openregister-archival']) === false) {
+            return;
+        }
+
+        $validator = new ArchivalAnnotationValidator();
+        $errors    = $validator->validate(schemaConfiguration: $config);
+
+        if (empty($errors) === false) {
+            $messages = array_map(
+                static fn(array $e): string => "[{$e['code']}] {$e['message']}",
+                $errors
+            );
+            throw new \Exception(
+                'x-openregister-archival: '.implode('; ', $messages)
+            );
+        }
+    }//end validateArchivalAnnotation()
 
     /**
      * Clean $ref properties to ensure they are strings

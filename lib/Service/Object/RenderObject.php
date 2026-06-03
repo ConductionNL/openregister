@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
@@ -140,6 +141,7 @@ class RenderObject
      * @param ComputedFieldHandler   $computedFieldHandler Handler for computed field evaluation.
      * @param TranslationHandler     $translationHandler   Handler for translatable property resolution.
      * @param LinkedEntityEnricher   $linkedEntityEnricher Enricher for linked entity metadata.
+     * @param RetentionEvaluator     $retentionEvaluator   Computes archival _retention blocks on read.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      *
@@ -160,6 +162,7 @@ class RenderObject
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
         private readonly LinkedEntityEnricher $linkedEntityEnricher,
+        private readonly RetentionEvaluator $retentionEvaluator,
     ) {
     }//end __construct()
 
@@ -1338,6 +1341,23 @@ class RenderObject
                 schema: $renderSchema,
                 register: $renderRegister
             );
+        }
+
+        // Compute and attach the archival _retention block when the schema declares it.
+        $archivalSchema = $renderSchema ?? $this->getSchema(id: $entity->getSchema());
+        if ($archivalSchema !== null) {
+            $config = $archivalSchema->getConfiguration() ?? [];
+            if (isset($config['x-openregister-archival']) === true) {
+                $createdAt = $entity->getCreated();
+                if ($createdAt !== null) {
+                    $retentionBlock = $this->retentionEvaluator->evaluate(
+                        annotation: $config['x-openregister-archival'],
+                        row: $objectData,
+                        createdAt: $createdAt
+                    );
+                    $entity->setArchivalRetention(retention: $retentionBlock);
+                }
+            }
         }
 
         $entity->setObject($objectData);

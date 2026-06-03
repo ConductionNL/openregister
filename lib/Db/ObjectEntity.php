@@ -487,6 +487,19 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?float $relevance = null;
 
     /**
+     * Archival retention metadata — computed, not persisted.
+     *
+     * Set by the render layer (RenderObject) when the schema declares
+     * x-openregister-archival. Contains the result of RetentionEvaluator::evaluate()
+     * for the current row, surfaced as _retention in @self.
+     *
+     * Shape: { effectiveRetention: string, matchedRule: int|null, expiresAt: string }
+     *
+     * @var array{effectiveRetention: string, matchedRule: int|null, expiresAt: string}|null
+     */
+    private ?array $archivalRetention = null;
+
+    /**
      * Initialize the entity and define field types
      */
     public function __construct()
@@ -776,6 +789,12 @@ class ObjectEntity extends Entity implements JsonSerializable
         // Only included when a search was performed with _fuzzy=true.
         if ($this->relevance !== null) {
             $objectArray['relevance'] = $this->relevance;
+        }
+
+        // Add archival retention block when schema declares x-openregister-archival.
+        // Computed at read time by RetentionEvaluator; absent for non-archival schemas.
+        if ($this->archivalRetention !== null) {
+            $objectArray['_retention'] = $this->archivalRetention;
         }
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
@@ -1083,6 +1102,32 @@ class ObjectEntity extends Entity implements JsonSerializable
     {
         $this->source = $source;
     }//end setSource()
+
+    /**
+     * Return the computed archival retention block, or null when not set.
+     *
+     * @return array{effectiveRetention: string, matchedRule: int|null, expiresAt: string}|null
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-6.1
+     */
+    public function getArchivalRetention(): ?array
+    {
+        return $this->archivalRetention;
+    }//end getArchivalRetention()
+
+    /**
+     * Set the computed archival retention block (called by the render layer).
+     *
+     * @param array{effectiveRetention: string, matchedRule: int|null, expiresAt: string}|null $retention The computed block.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-6.1
+     */
+    public function setArchivalRetention(?array $retention): void
+    {
+        $this->archivalRetention = $retention;
+    }//end setArchivalRetention()
 
     /**
      * String representation of the object entity
