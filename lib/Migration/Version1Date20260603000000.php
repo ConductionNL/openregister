@@ -38,7 +38,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20260603000000 extends SimpleMigrationStep
 {
-
     /**
      * Change the database schema.
      *
@@ -50,7 +49,7 @@ class Version1Date20260603000000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_entity_relations') === false) {

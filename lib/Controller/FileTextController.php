@@ -121,7 +121,8 @@ class FileTextController extends Controller
      */
     public function getFileText(int $fileId): JSONResponse
     {
-        if ($auth = $this->requireAuthentication()) {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
             return $auth;
         }
 
@@ -171,7 +172,8 @@ class FileTextController extends Controller
      */
     public function extractFileText(int $fileId): JSONResponse
     {
-        if ($auth = $this->requireAuthentication()) {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
             return $auth;
         }
 
@@ -232,7 +234,8 @@ class FileTextController extends Controller
      */
     public function bulkExtract(): JSONResponse
     {
-        if ($auth = $this->requireAuthentication()) {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
             return $auth;
         }
 
@@ -281,7 +284,8 @@ class FileTextController extends Controller
      */
     public function getStats(): JSONResponse
     {
-        if ($auth = $this->requireAuthentication()) {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
             return $auth;
         }
 
@@ -327,7 +331,8 @@ class FileTextController extends Controller
      */
     public function deleteFileText(int $fileId): JSONResponse
     {
-        if ($auth = $this->requireAuthentication()) {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
             return $auth;
         }
 
@@ -378,7 +383,8 @@ class FileTextController extends Controller
      */
     public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
     {
-        if ($auth = $this->requireAuthentication()) {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
             return $auth;
         }
 
@@ -432,7 +438,8 @@ class FileTextController extends Controller
      */
     public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $_chunkOverlap=null): JSONResponse
     {
-        if ($auth = $this->requireAuthentication()) {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
             return $auth;
         }
 
@@ -479,7 +486,8 @@ class FileTextController extends Controller
      */
     public function getChunkingStats(): JSONResponse
     {
-        if ($auth = $this->requireAuthentication()) {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
             return $auth;
         }
 
@@ -540,7 +548,8 @@ class FileTextController extends Controller
      */
     public function anonymizeFile(int $fileId): JSONResponse
     {
-        if ($auth = $this->requireAuthentication()) {
+        $auth = $this->requireAuthentication();
+        if ($auth !== null) {
             return $auth;
         }
 
@@ -829,12 +838,14 @@ class FileTextController extends Controller
         $auditTrail->setAction(action: 'entity_relation_bases_set');
         $auditTrail->setObject(object: $relation->getId());
         $auditTrail->setObjectUuid(objectUuid: (string) $relation->getId());
-        $auditTrail->setChanged(changed: [
-            'bases' => [
-                'old' => $previousBases,
-                'new' => $newBases,
-            ],
-        ]);
+        $auditTrail->setChanged(
+                changed: [
+                    'bases' => [
+                        'old' => $previousBases,
+                        'new' => $newBases,
+                    ],
+                ]
+                );
         $auditTrail->setUser(user: $user !== null ? $user->getUID() : 'System');
         $auditTrail->setUserName(userName: $user !== null ? $user->getDisplayName() : 'System');
         $auditTrail->setCreated(created: new DateTime());
