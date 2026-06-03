@@ -1891,7 +1891,7 @@ class Application extends App implements IBootstrap
      * 2. The canonical FQCN built from ucfirst($appId).
      * 3. (Optional) A FQCN derived from the `<namespace>` declared in info.xml,
      *    when the declared namespace differs from ucfirst($appId) (covers camel-cased
-     *    app names like `openbuilt` → `OpenBuilt`).
+     *    app names like `openbuild` → `OpenBuild`).
      *
      * @param string $appId      The Nextcloud app id.
      * @param mixed  $appManager The IAppManager instance.

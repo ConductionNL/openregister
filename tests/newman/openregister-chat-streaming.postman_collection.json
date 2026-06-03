@@ -163,7 +163,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\"message\":\"reply ok\",\"context\":{\"app\":\"openbuilt\",\"slug\":\"newman-smoke\"}}"
+          "raw": "{\"message\":\"reply ok\",\"context\":{\"app\":\"openbuild\",\"slug\":\"newman-smoke\"}}"
         },
         "url": {
           "raw": "{{base_url}}/index.php/apps/openregister/api/chat/stream",
@@ -183,7 +183,7 @@
             "  pm.expect(m, 'no final event found in body').to.not.eql(null);",
             "  const payload = JSON.parse(m[1]);",
             "  pm.expect(payload).to.have.property('context');",
-            "  pm.expect(payload.context).to.eql({ app: 'openbuilt', slug: 'newman-smoke' });",
+            "  pm.expect(payload.context).to.eql({ app: 'openbuild', slug: 'newman-smoke' });",
             "});"
           ]
         }

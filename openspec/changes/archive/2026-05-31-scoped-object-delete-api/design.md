@@ -26,7 +26,7 @@ The fix has to remain backward-compatible: dozens of call sites pass `(string $u
 - Bulk delete (`deleteObjects(array $uuids)`) — same defect pattern but adds transaction-boundary concerns; a separate change.
 - Cascading-delete reachability across scopes — keep that with the existing dependency tracking flow.
 - A hard signature break of `deleteObject($uuid)` — out; we keep the single-arg form as a legacy fallback for at least one release cycle.
-- Fleet-wide migration of caller sites (decidesk, mydash, procest, pipelinq, openconnector#843) — that is per-app follow-up work and is tracked separately.
+- Fleet-wide migration of caller sites (decidesk, launchpad, procest, pipelinq, openconnector#843) — that is per-app follow-up work and is tracked separately.
 - Refusing the unscoped form when multiple matches exist across magic tables (the "optional" bullet in the issue) — out for this change; documented as a future tightening once all call sites are migrated, otherwise we'd break legitimate cross-table fallback callers today.
 
 ## Decisions
@@ -78,7 +78,7 @@ Adding `@deprecated` to the single-arg form is the right marker for the next mig
 ### Alternatives considered
 
 - **A new sibling `deleteScoped()`**: rejected — see Decision 1. Doubles the public surface and forces callers to choose; the optional-parameter extension is the path the rest of the public API already follows.
-- **Auto-derive scope from `currentRegister` / `currentSchema`**: the current code already does this for permissions, but it relies on a service-instance side effect set by `setRegister()`/`setSchema()`. Past bugs (openbuilt#75 / openregister#1520: `TransitionController` 500 from inherited stale schema) show this is fragile. Make the scope explicit at the call site or accept the unscoped fallback; do not silently inherit.
+- **Auto-derive scope from `currentRegister` / `currentSchema`**: the current code already does this for permissions, but it relies on a service-instance side effect set by `setRegister()`/`setSchema()`. Past bugs (openbuild#75 / openregister#1520: `TransitionController` 500 from inherited stale schema) show this is fragile. Make the scope explicit at the call site or accept the unscoped fallback; do not silently inherit.
 - **Refuse unscoped + multi-match**: rejected for this change. Pre-existing callers may legitimately rely on the cross-table fallback (notably MCP and import paths). Tightening that would be a behaviour break disguised as a defensive check. Revisit once all known call sites are migrated.
 
 ## Risks / Trade-offs

@@ -114,7 +114,7 @@ SHALL document in its docblock that `@self.register` and
 
 #### Scenario: Search by slug-pair
 - **WHEN** a caller invokes
-  `searchObjectsBySlug('openbuilt', 'application', ['status' => 'published'])`
+  `searchObjectsBySlug('openbuild', 'application', ['status' => 'published'])`
 - **THEN** the method resolves both slugs to numeric IDs and the
   resulting query is identical to
   `searchObjects(['@self.register' => 7, '@self.schema' => 42, 'status' => 'published'])`
@@ -143,17 +143,17 @@ update the existing register rather than insert a duplicate. Every
 schema imported in the same call MUST be appended to the resulting
 Register's `schemas[]` field if not already present.
 
-#### Scenario: First import of an OpenBuilt application config
+#### Scenario: First import of an OpenBuild application config
 - **WHEN** `ImportHandler::importFromApp` runs against an OAS document
-  with `x-openregister.type=application`, `x-openregister.app=openbuilt`,
-  `info.title='OpenBuilt'`, and 3 schemas
-- **THEN** a new Register row with slug=`openbuilt`, title=`OpenBuilt`,
+  with `x-openregister.type=application`, `x-openregister.app=openbuild`,
+  `info.title='OpenBuild'`, and 3 schemas
+- **THEN** a new Register row with slug=`openbuild`, title=`OpenBuild`,
   and `schemas` containing the 3 newly-created schema IDs is persisted
 
 #### Scenario: Re-import of the same application config
 - **WHEN** the same import runs a second time against the same
   organisation
-- **THEN** the existing Register row is found by `(slug=openbuilt, org)`,
+- **THEN** the existing Register row is found by `(slug=openbuild, org)`,
   its `schemas[]` is reconciled (no duplicates), and no second Register
   row is created
 
