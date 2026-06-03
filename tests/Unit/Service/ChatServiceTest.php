@@ -13,6 +13,7 @@ use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
+use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Service\ChatService;
 use PHPUnit\Framework\TestCase;
@@ -322,5 +323,50 @@ class ChatServiceTest extends TestCase
         $result = $this->service->testChat('ollama', ['model' => 'llama2'], 'Custom test');
 
         $this->assertTrue($result['success']);
+    }
+
+    // --- channel forwarding (task 3.3) ---
+
+    public function testProcessMessageForwardsChannelToResponseHandler(): void
+    {
+        $conversation = new Conversation();
+        $reflection   = new \ReflectionClass($conversation);
+        $idProp       = $reflection->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($conversation, 42);
+        $conversation->setUserId('user1');
+        $conversation->setTitle('Existing Title');
+
+        $this->conversationMapper->method('find')->willReturn($conversation);
+        $this->historyHandler->method('storeMessage')->willReturn(new Message());
+        $this->conversationHandler->method('checkAndSummarize');
+        $this->contextHandler->method('retrieveContext')
+            ->willReturn(['sources' => [], 'text' => '']);
+        $this->historyHandler->method('buildMessageHistory')->willReturn([]);
+        $this->messageMapper->method('countByConversation')->willReturn(5);
+
+        $channel = new StreamYieldChannel();
+
+        $this->responseHandler
+            ->expects($this->once())
+            ->method('generateResponse')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $channel
+            )
+            ->willReturn('streamed response');
+
+        $result = $this->service->processMessage(
+            conversationId: 42,
+            userId: 'user1',
+            userMessage: 'stream this',
+            channel: $channel
+        );
+
+        $this->assertSame('streamed response', $result['message']);
     }
 }

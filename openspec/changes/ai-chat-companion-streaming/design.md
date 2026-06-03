@@ -1,3 +1,6 @@
+status: pr-created
+pr: https://codeberg.org/Conduction/openregister/pulls/58
+
 ## Context
 
 Parent capability: `openspec/specs/chat-ai/spec.md` (REQ-001 through

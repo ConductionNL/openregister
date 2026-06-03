@@ -17,7 +17,7 @@
 
 - [x] 3.1 Add `?StreamYieldChannel $channel = null` as the last optional parameter on `processMessage()`. Update docblock + @psalm-return is unaffected (return shape doesn't change).
 - [x] 3.2 Forward `$channel` into `$this->responseHandler->generateResponse(... , channel: $channel)`. No other paths reference `$channel` — it bypasses RAG context retrieval, history building, and the Message persistence write.
-- [ ] 3.3 Update the existing `ChatServiceTest.php` to add ONE test that verifies `processMessage(channel: $channel)` forwards the same channel instance to the response handler mock. No new behaviour, regression guard only. **Deferred:** ChatServiceTest setup wires a heavy bag of mappers + handlers; the regression is already covered indirectly by `ResponseGenerationHandlerStreamingTest::testNullChannelAlwaysUsesBlockingCall` and the live Newman + harness sweep. Worth a tiny follow-up issue.
+- [x] 3.3 Update the existing `ChatServiceTest.php` to add ONE test that verifies `processMessage(channel: $channel)` forwards the same channel instance to the response handler mock. No new behaviour, regression guard only. **Implemented** as `testProcessMessageForwardsChannelToResponseHandler` in `ChatServiceTest.php`.
 
 ## 4. ChatStreamController consumes the channel
 
