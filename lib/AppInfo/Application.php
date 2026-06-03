@@ -143,6 +143,7 @@ use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\HookListener;
+use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\Comments\CommentsEntityEvent;
@@ -790,6 +791,11 @@ class Application extends App implements IBootstrap
 
         // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+
+        // AggregationCacheInvalidationListener evicts aggregation cache on object lifecycle events.
+        $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
 
         // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
         $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
