@@ -42,6 +42,9 @@ use OCA\OpenRegister\Service\OasService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -240,6 +243,10 @@ class RegistersController extends Controller
      */
     public function index(): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         // Get request parameters for filtering and searching.
         $params = $this->request->getParams();
 
@@ -313,6 +320,10 @@ class RegistersController extends Controller
      */
     public function show($id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         $extend = $this->request->getParam(key: '_extend', default: []);
         if (is_string($extend) === true) {
             $extend = [$extend];
@@ -351,6 +362,10 @@ class RegistersController extends Controller
      */
     public function create(): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         // Get request parameters.
         $data = $this->request->getParams();
 
@@ -443,7 +458,7 @@ class RegistersController extends Controller
                 if ($manageAllowed === false) {
                     return new JSONResponse(
                         data: ['error' => 'User does not have permission to manage authorization for this register'],
-                        statusCode: 403
+                        statusCode: Http::STATUS_FORBIDDEN
                     );
                 }
             } catch (DoesNotExistException $e) {
@@ -521,6 +536,10 @@ class RegistersController extends Controller
      */
     public function patch(int $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         // PATCH works the same as PUT for this resource.
         // The service layer handles partial updates automatically.
         return $this->update(id: $id);
@@ -546,6 +565,10 @@ class RegistersController extends Controller
      */
     public function destroy(int $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             // Find the register by ID and delete it.
             $register = $this->registerService->find($id);
@@ -580,6 +603,10 @@ class RegistersController extends Controller
      */
     public function schemas(int|string $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             // Find the register first to validate it exists and get its ID.
             $register   = $this->registerService->find($id);
@@ -622,6 +649,10 @@ class RegistersController extends Controller
      */
     public function objects(int $register, int $schema): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         // Find objects by register and schema IDs.
         $query = [
             '@self' => [
@@ -650,6 +681,10 @@ class RegistersController extends Controller
      */
     public function export(int $id): JSONResponse|DataDownloadResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             // Get export format from query parameter.
             $format          = $this->request->getParam(key: 'format', default: 'configuration');
@@ -738,6 +773,10 @@ class RegistersController extends Controller
      */
     public function publishToGitHub(int $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             $register = $this->registerMapper->find($id);
 
@@ -904,6 +943,10 @@ class RegistersController extends Controller
      */
     public function import(int $id, bool $force=false): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             // Get the uploaded file.
             $uploadedFile = $this->request->getUploadedFile('file');
@@ -1146,8 +1189,14 @@ class RegistersController extends Controller
      *     array<never, never>
      * >
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function stats(int $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             // Get the register with stats.
             $register = $this->registerService->find($id);
@@ -1263,8 +1312,14 @@ class RegistersController extends Controller
      *     array<never, never>
      * >
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function publish(int $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             // Get the publication date from request if provided, otherwise use now.
             $date = new DateTime();
@@ -1365,8 +1420,14 @@ class RegistersController extends Controller
      *     array<never, never>
      * >
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function depublish(int $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             // Get the depublication date from request if provided, otherwise use now.
             $date = new DateTime();
