@@ -14,6 +14,7 @@ export const useConfigurationStore = defineStore('configuration', {
 	}),
 	actions: {
 		/**
+		 * @param configurationItem
 		 * @spec exclude Client state mutator — wraps the active configuration in an entity. No backend contract.
 		 */
 		setConfigurationItem(configurationItem) {
@@ -21,6 +22,7 @@ export const useConfigurationStore = defineStore('configuration', {
 			console.log('Active configuration item set to ' + (configurationItem?.title || 'null'))
 		},
 		/**
+		 * @param configurationList
 		 * @spec exclude Client state mutator — maps the configuration list to entities. No backend contract.
 		 */
 		setConfigurationList(configurationList) {
@@ -79,6 +81,7 @@ export const useConfigurationStore = defineStore('configuration', {
 			return { response, data }
 		},
 		/**
+		 * @param id
 		 * @spec exclude Thin API passthrough — GET /api/configurations/{id}; observable contract owned by data-import-export.
 		 */
 		async getConfiguration(id) {
@@ -96,6 +99,7 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		/**
+		 * @param configurationItem
 		 * @spec exclude Thin API passthrough — DELETE /api/configurations/{id}; observable contract owned by data-import-export.
 		 */
 		async deleteConfiguration(configurationItem) {
@@ -126,6 +130,7 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		/**
+		 * @param configurationItem
 		 * @spec exclude Thin API passthrough — POST/PUT /api/configurations; observable contract owned by data-import-export.
 		 */
 		async saveConfiguration(configurationItem) {
@@ -179,6 +184,7 @@ export const useConfigurationStore = defineStore('configuration', {
 		},
 		// Clean configuration data for saving - remove read-only fields
 		/**
+		 * @param configurationItem
 		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
 		 */
 		cleanConfigurationForSave(configurationItem) {
@@ -193,6 +199,7 @@ export const useConfigurationStore = defineStore('configuration', {
 			return cleaned
 		},
 		/**
+		 * @param configuration
 		 * @spec exclude Thin API passthrough — POST/PUT /api/configurations/upload; observable contract owned by data-import-export.
 		 */
 		async uploadConfiguration(configuration) {
@@ -242,6 +249,8 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		/**
+		 * @param file
+		 * @param includeObjects
 		 * @spec exclude Thin API passthrough — POST /api/configurations/import; observable contract owned by data-import-export.
 		 */
 		async importConfiguration(file, includeObjects = false) {
@@ -288,6 +297,8 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		/**
+		 * @param source
+		 * @param search
 		 * @spec exclude Thin API passthrough — GET /api/configurations/discover; observable contract owned by data-import-export.
 		 */
 		async discoverConfigurations(source, search = '') {
@@ -319,6 +330,8 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		/**
+		 * @param source
+		 * @param params
 		 * @spec exclude Thin API passthrough — GET /api/configurations/{source}/branches; observable contract owned by data-import-export.
 		 */
 		async getBranches(source, params) {
@@ -343,6 +356,8 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		/**
+		 * @param source
+		 * @param params
 		 * @spec exclude Thin API passthrough — GET /api/configurations/{source}/files; observable contract owned by data-import-export.
 		 */
 		async getConfigurationFiles(source, params) {
@@ -367,6 +382,7 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		/**
+		 * @param params
 		 * @spec exclude Thin API passthrough — POST /api/configurations/import/github; observable contract owned by data-import-export.
 		 */
 		async importFromGitHub(params) {
@@ -396,6 +412,7 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		/**
+		 * @param params
 		 * @spec exclude Thin API passthrough — POST /api/configurations/import/gitlab; observable contract owned by data-import-export.
 		 */
 		async importFromGitLab(params) {
@@ -425,6 +442,7 @@ export const useConfigurationStore = defineStore('configuration', {
 			}
 		},
 		/**
+		 * @param params
 		 * @spec exclude Thin API passthrough — POST /api/configurations/import/url; observable contract owned by data-import-export.
 		 */
 		async importFromUrl(params) {

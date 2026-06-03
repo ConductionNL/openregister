@@ -34,25 +34,38 @@ use PHPUnit\Framework\TestCase;
  */
 class IntegrationGlobalScriptListenerTest extends TestCase
 {
+
+    /**
+     * The listener under test.
+     *
+     * @var IntegrationGlobalScriptListener
+     */
     private IntegrationGlobalScriptListener $listener;
 
+    /**
+     * Set up the listener instance before each test.
+     *
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->listener = new IntegrationGlobalScriptListener();
-    }
+    }//end setUp()
 
     /**
      * Non-BeforeTemplateRenderedEvent events must be ignored silently.
+     *
+     * @return void
      */
     public function testIgnoresNonBeforeTemplateRenderedEvent(): void
     {
-        $event = $this->createMock(Event::class);
+        $event = $this->createMock(originalClassName: Event::class);
 
-        $this->listener->handle($event);
+        $this->listener->handle(event: $event);
 
-        $this->assertTrue(true);
-    }
+        $this->assertTrue(condition: true);
+    }//end testIgnoresNonBeforeTemplateRenderedEvent()
 
     /**
      * A BeforeTemplateRenderedEvent must be handled without throwing.
@@ -60,28 +73,32 @@ class IntegrationGlobalScriptListenerTest extends TestCase
      * OCP\Util::addInitScript is a static NC framework helper; full
      * invocation behaviour is verified in e2e tests. Here we confirm
      * the listener does not raise on a valid event.
+     *
+     * @return void
      */
     public function testHandlesBeforeTemplateRenderedEventWithoutException(): void
     {
-        $event = $this->createMock(BeforeTemplateRenderedEvent::class);
+        $event = $this->createMock(originalClassName: BeforeTemplateRenderedEvent::class);
 
         try {
-            $this->listener->handle($event);
-            $this->assertTrue(true);
+            $this->listener->handle(event: $event);
+            $this->assertTrue(condition: true);
         } catch (\Throwable $e) {
             // Allow only OC-not-bootstrapped errors so pure-unit mode passes.
             $allowed = str_contains($e->getMessage(), 'OC')
                 || str_contains($e->getMessage(), 'Nextcloud')
                 || str_contains($e->getMessage(), 'app');
-            $this->assertTrue($allowed, sprintf('Unexpected exception: %s', $e->getMessage()));
+            $this->assertTrue(condition: $allowed, message: sprintf('Unexpected exception: %s', $e->getMessage()));
         }
-    }
+    }//end testHandlesBeforeTemplateRenderedEventWithoutException()
 
     /**
      * The listener must implement IEventListener.
+     *
+     * @return void
      */
     public function testImplementsIEventListener(): void
     {
-        $this->assertInstanceOf(IEventListener::class, $this->listener);
-    }
-}
+        $this->assertInstanceOf(expected: IEventListener::class, actual: $this->listener);
+    }//end testImplementsIEventListener()
+}//end class

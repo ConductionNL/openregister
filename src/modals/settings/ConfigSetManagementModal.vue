@@ -224,6 +224,7 @@ export default {
 		},
 
 		/**
+		 * @param configSet
 		 * @spec exclude dialog-open UI handler for config-set deletion
 		 */
 		openDeleteDialog(configSet) {

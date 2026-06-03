@@ -196,6 +196,7 @@ export default {
 			}
 		},
 		/**
+		 * @param schemaData
 		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
 		 */
 		async onConfirm(schemaData) {

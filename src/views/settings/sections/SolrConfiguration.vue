@@ -620,8 +620,8 @@ import { translate as t } from '@nextcloud/l10n'
 									:placeholder="t('openregister', 'Filter fields...')"
 									class="field-filter">
 								<NcSelect
-						input-label="Field Type Filter"
 									v-model="fieldTypeFilter"
+									input-label="Field Type Filter"
 									:options="fieldTypeOptions"
 									:placeholder="t('openregister', 'Filter by type')"
 									:clearable="true"
@@ -1270,6 +1270,7 @@ export default {
 				return Boolean(this.solrOptions?.enabled)
 			},
 			/**
+			 * @param newValue
 			 * @spec exclude computed v-model accessor
 			 */
 			async set(newValue) {

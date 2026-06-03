@@ -3,7 +3,7 @@
  *
  * Uses the generic linked entity API instead of email-specific endpoints.
  *
- * @package OpenRegister
+ * @package
  *
  * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-47
  * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1

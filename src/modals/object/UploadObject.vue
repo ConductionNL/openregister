@@ -279,6 +279,7 @@ export default {
 			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
 		},
 		/**
+		 * @param json
 		 * @spec exclude client-side JSON validation helper
 		 */
 		validateJson(json) {

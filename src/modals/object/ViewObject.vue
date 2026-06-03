@@ -23,9 +23,9 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableRegisters.length > 1" class="field-group">
 								<label for="register-select">{{ t('openregister', 'Register') }}</label>
 								<NcSelect
-						input-label="Selected Register For New Object"
 									id="register-select"
 									v-model="selectedRegisterForNewObject"
+									input-label="Selected Register For New Object"
 									:options="availableRegisters"
 									label="title"
 									track-by="id"
@@ -36,9 +36,9 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableSchemas.length > 1" class="field-group">
 								<label for="schema-select">{{ t('openregister', 'Schema') }}</label>
 								<NcSelect
-						input-label="Selected Schema For New Object"
 									id="schema-select"
 									v-model="selectedSchemaForNewObject"
+									input-label="Selected Schema For New Object"
 									:options="availableSchemas"
 									label="title"
 									track-by="id"
@@ -1064,6 +1064,7 @@ export default {
 	watch: {
 		objectStore: {
 			/**
+			 * @param newValue
 			 * @spec exclude watcher re-initializing data on store change
 			 */
 			handler(newValue) {
@@ -1076,6 +1077,7 @@ export default {
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
 			/**
+			 * @param newSchema
 			 * @spec exclude watcher re-resolving schema and re-initializing data
 			 */
 			async handler(newSchema) {
@@ -1113,6 +1115,7 @@ export default {
 		// Watch for register changes to re-initialize data
 		currentRegister: {
 			/**
+			 * @param newRegister
 			 * @spec exclude watcher re-initializing data on register change
 			 */
 			handler(newRegister) {
@@ -1126,6 +1129,7 @@ export default {
 		},
 		jsonData: {
 			/**
+			 * @param newValue
 			 * @spec exclude watcher syncing form from JSON editor
 			 */
 			handler(newValue) {
@@ -1136,6 +1140,7 @@ export default {
 		},
 		formData: {
 			/**
+			 * @param _newValue
 			 * @spec exclude watcher syncing JSON editor from form
 			 */
 			handler(_newValue) {
@@ -1298,6 +1303,7 @@ export default {
 			navigationStore.setDialog(null)
 		},
 		/**
+		 * @param isOpen
 		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose(isOpen) {
@@ -1342,6 +1348,7 @@ export default {
 			return fileName.substring(0, 22) + '...'
 		},
 		/**
+		 * @param value
 		 * @spec exclude client-side date validation helper
 		 */
 		isValidDate(value) {
@@ -1350,6 +1357,7 @@ export default {
 			return date instanceof Date && !isNaN(date)
 		},
 		/**
+		 * @param val
 		 * @spec exclude display helper formatting value as JSON
 		 */
 		formatValue(val) {
@@ -1358,6 +1366,7 @@ export default {
 
 		getTheme,
 		/**
+		 * @param text
 		 * @spec exclude clipboard UI helper
 		 */
 		async copyToClipboard(text) {
@@ -1537,6 +1546,7 @@ export default {
 		},
 
 		/**
+		 * @param str
 		 * @spec exclude client-side JSON validation helper
 		 */
 		isValidJson(str) {
@@ -1569,6 +1579,9 @@ export default {
 			this.formData[key] = value
 		},
 		/**
+		 * @param key
+		 * @param index
+		 * @param value
 		 * @spec exclude form-state helper updating an array item
 		 */
 		updateArrayItem(key, index, value) {
@@ -1578,15 +1591,18 @@ export default {
 			this.formData[key][index] = value
 		},
 		/**
+		 * @param v
 		 * @spec exclude display/payload coercion helper for null values
 		 */
 		toDisplay(v) { return v === null ? '' : v },
 		/**
+		 * @param v
 		 * @spec exclude display/payload coercion helper for empty values
 		 */
 		toPayload(v) { return v === '' ? null : v },
 
 		/**
+		 * @param key
 		 * @spec exclude form-state helper adding an array item
 		 */
 		addArrayItem(key) {
@@ -1596,6 +1612,8 @@ export default {
 			this.formData[key].push('')
 		},
 		/**
+		 * @param key
+		 * @param i
 		 * @spec exclude form-state helper removing an array item
 		 */
 		removeArrayItem(key, i) {
@@ -1604,6 +1622,8 @@ export default {
 			}
 		},
 		/**
+		 * @param key
+		 * @param val
 		 * @spec exclude form-state helper updating an object-typed field
 		 */
 		updateObjectField(key, val) {
@@ -1615,6 +1635,7 @@ export default {
 			}
 		},
 		/**
+		 * @param checked
 		 * @spec exclude file-selection UI toggle (select all)
 		 */
 		toggleSelectAllFiles(checked) {
@@ -1632,6 +1653,8 @@ export default {
 			}
 		},
 		/**
+		 * @param fileId
+		 * @param checked
 		 * @spec exclude file-selection UI toggle (single file)
 		 */
 		toggleFileSelection(fileId, checked) {
@@ -1644,12 +1667,14 @@ export default {
 			}
 		},
 		/**
+		 * @param page
 		 * @spec exclude files pagination UI handler
 		 */
 		onFilesPageChanged(page) {
 			this.filesCurrentPage = page
 		},
 		/**
+		 * @param pageSize
 		 * @spec exclude files page-size UI handler
 		 */
 		onFilesPageSizeChanged(pageSize) {
@@ -1669,6 +1694,8 @@ export default {
 		// back to N sequential single-file calls when the runtime store
 		// doesn't expose batchFiles yet (older @conduction/nextcloud-vue).
 		/**
+		 * @param action
+		 * @param perFileFallback
 		 * @spec exclude file batch-action dispatch helper delegating to objectStore.batchFiles
 		 */
 		async _runBatchAction(action, perFileFallback) {
@@ -1707,6 +1734,7 @@ export default {
 			}
 		},
 		/**
+		 * @param file
 		 * @spec exclude single file-delete handler delegating to objectStore.deleteFile
 		 */
 		async deleteFile(file) {
@@ -1722,6 +1750,7 @@ export default {
 			}
 		},
 		/**
+		 * @param file
 		 * @spec exclude form-state handler entering file-label edit mode
 		 */
 		async editFileLabels(file) {
@@ -1744,6 +1773,7 @@ export default {
 		// API call shape is implemented in services/fileMetadata.js so it
 		// can be unit-tested without mounting this modal.
 		/**
+		 * @param file
 		 * @spec exclude file-label save handler delegating to services/fileMetadata
 		 */
 		async saveFileLabels(file) {
@@ -1784,6 +1814,8 @@ export default {
 			}
 		},
 		/**
+		 * @param key
+		 * @param value
 		 * @spec exclude computed CSS-class helper for property validation state
 		 */
 		getPropertyValidationClass(key, value) {
@@ -1816,6 +1848,9 @@ export default {
 			}
 		},
 		/**
+		 * @param key
+		 * @param value
+		 * @param schemaProperty
 		 * @spec exclude client-side property-value validation helper
 		 */
 		isValidPropertyValue(key, value, schemaProperty) {
@@ -1857,6 +1892,8 @@ export default {
 			}
 		},
 		/**
+		 * @param key
+		 * @param value
 		 * @spec exclude display helper building property error message
 		 */
 		getPropertyErrorMessage(key, value) {
@@ -1925,6 +1962,8 @@ export default {
 			return String(value)
 		},
 		/**
+		 * @param key
+		 * @param event
 		 * @spec exclude table-row click UI handler for inline edit
 		 */
 		handleRowClick(key, event) {
@@ -1962,6 +2001,7 @@ export default {
 			}
 		},
 		/**
+		 * @param key
 		 * @spec exclude form-state handler selecting/focusing a property for edit
 		 */
 		selectProperty(key) {
@@ -1979,6 +2019,8 @@ export default {
 			})
 		},
 		/**
+		 * @param key
+		 * @param newValue
 		 * @spec exclude form-state handler updating a property value with type coercion
 		 */
 		updatePropertyValue(key, newValue) {
@@ -2055,6 +2097,9 @@ export default {
 			})
 		},
 		/**
+		 * @param key
+		 * @param oldValue
+		 * @param newValue
 		 * @spec exclude toast notification UI helper for property changes
 		 */
 		showPropertyChangeNotification(key, oldValue, newValue) {
@@ -2089,6 +2134,7 @@ export default {
 			}, 3000)
 		},
 		/**
+		 * @param key
 		 * @spec exclude display helper checking string-typed property
 		 */
 		isStringProperty(key) {
@@ -2096,6 +2142,8 @@ export default {
 			return schemaProperty?.type === 'string'
 		},
 		/**
+		 * @param key
+		 * @param value
 		 * @spec exclude display helper checking property editability (const/immutable)
 		 */
 		isPropertyEditable(key, value) {
@@ -2117,6 +2165,8 @@ export default {
 			return true
 		},
 		/**
+		 * @param key
+		 * @param value
 		 * @spec exclude display helper building editability warning text
 		 */
 		getEditabilityWarning(key, value) {
@@ -2133,12 +2183,15 @@ export default {
 			return null
 		},
 		/**
+		 * @param value
+		 * @param format
 		 * @spec exclude display helper delegating to dateUtils.stringToDate
 		 */
 		stringToDate(value, format) {
 			return stringToDate(value, format)
 		},
 		/**
+		 * @param key
 		 * @spec exclude display helper mapping schema type to input type
 		 */
 		getPropertyInputType(key) {
@@ -2168,6 +2221,7 @@ export default {
 			}
 		},
 		/**
+		 * @param key
 		 * @spec exclude display helper mapping schema type to input component
 		 */
 		getPropertyInputComponent(key) {
@@ -2261,6 +2315,8 @@ export default {
 			return undefined
 		},
 		/**
+		 * @param key
+		 * @param value
 		 * @spec exclude display helper resolving value to show for a property
 		 */
 		getDisplayValue(key, value) {
@@ -2285,6 +2341,7 @@ export default {
 			return value
 		},
 		/**
+		 * @param warning
 		 * @spec exclude toast notification UI helper for warnings
 		 */
 		showWarningNotification(warning) {

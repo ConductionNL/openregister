@@ -33,6 +33,10 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 
 	actions: {
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param suffix
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		_url(register, schema, id, suffix = '') {
@@ -44,6 +48,9 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 		},
 
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		async fetch(register, schema, id) {
@@ -72,6 +79,10 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 		},
 
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param payload
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		async create(register, schema, id, payload) {
@@ -81,6 +92,10 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 		},
 
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param payload
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		async link(register, schema, id, payload) {
@@ -90,6 +105,10 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 		},
 
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param eventId
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		async unlink(register, schema, id, eventId) {
@@ -101,6 +120,9 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 		},
 
 		/**
+		 * @param register
+		 * @param schema
+		 * @param id
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
 		 */
 		get(register, schema, id) {

@@ -35,6 +35,10 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		/**
 		 * Build the Deck endpoint URL for an object.
 		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param suffix
 		 * @spec exclude private URL-builder helper (no client state)
 		 */
 		_url(register, schema, id, suffix = '') {
@@ -49,6 +53,9 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * Fetch and cache Deck links for an object, falling back to an empty
 		 * state when the Deck app is unavailable (HTTP 501).
 		 *
+		 * @param register
+		 * @param schema
+		 * @param id
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
 		 */
 		async fetch(register, schema, id) {
@@ -84,6 +91,10 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * Create or link a Deck card to an object, then refresh the cached
 		 * list for that object key.
 		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param payload
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
 		 */
 		async createOrLink(register, schema, id, payload) {
@@ -96,6 +107,10 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * Unlink a Deck card, optimistically pruning it from the cached list
 		 * for that object key without refetching.
 		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param deckRef
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
 		 */
 		async unlink(register, schema, id, deckRef) {
@@ -109,6 +124,9 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		/**
 		 * Read the cached Deck links for an object key.
 		 *
+		 * @param register
+		 * @param schema
+		 * @param id
 		 * @spec exclude store getter (reads local per-key cache)
 		 */
 		get(register, schema, id) {
