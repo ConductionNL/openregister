@@ -52,6 +52,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAnonymized(bool $anonymized)
  * @method string|null getAnonymizedValue()
  * @method void setAnonymizedValue(?string $anonymizedValue)
+ * @method array|null getBases()
+ * @method void setBases(?array $bases)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  *
@@ -152,6 +154,17 @@ class EntityRelation extends Entity implements JsonSerializable
     protected ?string $anonymizedValue = null;
 
     /**
+     * Legal bases (grondslagen) for the anonymisation decision.
+     *
+     * JSON array of UUID-shaped strings referencing base objects in the consumer
+     * app's register. OpenRegister stores the values verbatim; UUID validation is
+     * the consumer app's responsibility.
+     *
+     * @var array|null
+     */
+    protected ?array $bases = null;
+
+    /**
      * Created at timestamp.
      *
      * @var DateTime|null
@@ -176,20 +189,22 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'context', type: 'string');
         $this->addType(fieldName: 'anonymized', type: 'boolean');
         $this->addType(fieldName: 'anonymizedValue', type: 'string');
+        $this->addType(fieldName: 'bases', type: 'json');
         $this->addType(fieldName: 'createdAt', type: 'datetime');
     }//end __construct()
 
     /**
      * JSON serialization.
      *
-     * @return (null|scalar)[]
+     * @return (array|null|scalar)[]
      *
      * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
      *     role: null|string, fileId: int|null, objectId: int|null,
      *     emailId: int|null, positionStart: int, positionEnd: int,
      *     confidence: float, detectionMethod: null|string,
      *     context: null|string, anonymized: bool,
-     *     anonymizedValue: null|string, createdAt: null|string}
+     *     anonymizedValue: null|string, bases: array|null,
+     *     createdAt: null|string}
      */
     public function jsonSerialize(): array
     {
@@ -208,6 +223,7 @@ class EntityRelation extends Entity implements JsonSerializable
             'context'         => $this->context,
             'anonymized'      => $this->anonymized,
             'anonymizedValue' => $this->anonymizedValue,
+            'bases'           => $this->bases,
             'createdAt'       => $this->createdAt?->format(DateTime::ATOM),
         ];
     }//end jsonSerialize()

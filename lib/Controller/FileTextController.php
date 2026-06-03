@@ -21,7 +21,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTime;
 use OCP\AppFramework\Http;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -30,7 +34,9 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * FileTextController
@@ -46,6 +52,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class FileTextController extends Controller
 {
@@ -58,6 +65,8 @@ class FileTextController extends Controller
      * @param IndexService          $indexService         Index service for file operations
      * @param FileService           $fileService          File service for file operations
      * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
+     * @param AuditTrailMapper      $auditTrailMapper     Audit trail mapper
+     * @param IUserSession          $userSession          User session for acting-user UID
      * @param LoggerInterface       $logger               Logger
      * @param IAppConfig            $config               Application configuration
      */
@@ -68,6 +77,8 @@ class FileTextController extends Controller
         private readonly IndexService $indexService,
         private readonly FileService $fileService,
         private readonly EntityRelationMapper $entityRelationMapper,
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config
     ) {
@@ -453,6 +464,12 @@ class FileTextController extends Controller
      * replaced by placeholders in the format [ENTITY_TYPE: key].
      * The original file remains unchanged.
      *
+     * Optional request body: `{ "entities": [{ "id": <relationId>, "bases": ["uuid-a"] }] }`.
+     * Per-entity `bases` (absent | null | string[]) are persisted on each EntityRelation row
+     * BEFORE the anonymization call; bases are stripped from the payload forwarded to the
+     * document processor. Authorization: existing per-file write-access check only (ADR-005
+     * + ADR-023 — no additional group/role check for `bases` writes; see spec decision D3.5).
+     *
      * @param int $fileId Nextcloud file ID to anonymize
      *
      * @NoAdminRequired
@@ -460,6 +477,11 @@ class FileTextController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with anonymization result
+     *
+     * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-3.1
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function anonymizeFile(int $fileId): JSONResponse
     {
@@ -493,6 +515,33 @@ class FileTextController extends Controller
                 );
             }
 
+            // Parse optional per-entity bases from request body.
+            $requestEntities = $this->request->getParam('entities');
+            if ($requestEntities !== null && is_array($requestEntities) === false) {
+                return new JSONResponse(
+                    data: [
+                        'success' => false,
+                        'message' => "'entities' must be an array",
+                    ],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Validate shape of bases per entity entry.
+            if ($requestEntities !== null) {
+                $validationError = $this->validateEntityBases(entities: $requestEntities);
+                if ($validationError !== null) {
+                    return new JSONResponse(
+                        data: [
+                            'success' => false,
+                            'message' => $validationError['error'],
+                            'index'   => $validationError['index'],
+                        ],
+                        statusCode: Http::STATUS_BAD_REQUEST
+                    );
+                }
+            }
+
             // Get detected entities for this file.
             $entityData = $this->entityRelationMapper->findEntitiesForFile($fileId);
 
@@ -506,15 +555,36 @@ class FileTextController extends Controller
                 );
             }
 
-            // Build entities array in the format expected by anonymizeDocument.
-            // Format: [['text' => 'value', 'entityType' => 'TYPE', 'key' => 'unique_key'], ...].
+            // Build a map of EntityRelation ID → per-entity request data for bases lookup.
+            $requestBasesMap = [];
+            if ($requestEntities !== null) {
+                foreach ($requestEntities as $entry) {
+                    if (isset($entry['id']) === true) {
+                        $requestBasesMap[(int) $entry['id']] = $entry;
+                    }
+                }
+            }
+
+            // Persist bases on EntityRelation rows BEFORE the document processing call (D3).
+            if (empty($requestBasesMap) === false) {
+                $allRelations = $this->entityRelationMapper->findByFileId(fileId: $fileId);
+                foreach ($allRelations as $relation) {
+                    $relationId = $relation->getId();
+                    if (isset($requestBasesMap[$relationId]) === true) {
+                        $this->applyBasesToRelation(
+                            relation: $relation,
+                            entryData: $requestBasesMap[$relationId]
+                        );
+                    }
+                }
+            }
+
+            // Build entities array for document processing WITHOUT bases (strip step, D3).
             $entities        = [];
             $processedValues = [];
-            // Track unique values to avoid duplicates.
             foreach ($entityData as $entity) {
                 $value = $entity['entity_value'];
 
-                // Skip if we've already processed this value.
                 if (isset($processedValues[$value]) === true) {
                     continue;
                 }
@@ -524,6 +594,7 @@ class FileTextController extends Controller
                     'text'       => $value,
                     'entityType' => $entity['entity_type'],
                     'key'        => substr(md5($value.$entity['entity_type']), 0, 8),
+                    // `bases` is intentionally absent — stripped before forwarding.
                 ];
             }
 
@@ -537,7 +608,7 @@ class FileTextController extends Controller
                 ]
             );
 
-            // Perform anonymization.
+            // Perform anonymization (document processing — bases already stripped above).
             $anonymizedFile = $this->fileService->anonymizeDocument($fileNode, $entities);
 
             // Mark entity relations as anonymized.
@@ -589,4 +660,127 @@ class FileTextController extends Controller
             );
         }//end try
     }//end anonymizeFile()
+
+    /**
+     * Validate the shape of `bases` on each entry in an entities array.
+     *
+     * Accepts: absent, null, or array-of-strings. Rejects anything else.
+     * Returns an error descriptor (with 'error' message and 'index') or null on success.
+     *
+     * @param array $entities Array of per-entity request entries.
+     *
+     * @return array{error: string, index: int}|null Null on success; error descriptor on failure.
+     *
+     * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-3.1
+     */
+    private function validateEntityBases(array $entities): ?array
+    {
+        foreach ($entities as $index => $entry) {
+            if (array_key_exists(key: 'bases', array: $entry) === false) {
+                continue;
+            }
+
+            $bases = $entry['bases'];
+
+            if ($bases === null) {
+                continue;
+            }
+
+            if (is_array($bases) === false) {
+                return [
+                    'error' => "Entity at index {$index}: 'bases' must be null or an array of strings",
+                    'index' => $index,
+                ];
+            }
+
+            foreach ($bases as $i => $base) {
+                if (is_string($base) === false) {
+                    return [
+                        'error' => "Entity at index {$index}: 'bases[{$i}]' must be a string",
+                        'index' => $index,
+                    ];
+                }
+            }
+        }//end foreach
+
+        return null;
+    }//end validateEntityBases()
+
+    /**
+     * Apply retry-omit bases logic to an EntityRelation row and emit an audit entry.
+     *
+     * Three caller intents (per spec D4 / task 3.4):
+     *   - `bases` key absent   → reuse persisted value, no write, no audit.
+     *   - `bases` key present, value null → explicit clear; write + audit.
+     *   - `bases` key present, value []   → explicit empty; write + audit.
+     *   - `bases` key present, value string[] → set; write + audit.
+     *
+     * @param EntityRelation $relation  The entity relation row to update.
+     * @param array          $entryData The request entry that may contain a `bases` key.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-3.2
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern.
+     */
+    private function applyBasesToRelation(EntityRelation $relation, array $entryData): void
+    {
+        if (array_key_exists(key: 'bases', array: $entryData) === false) {
+            return;
+        }
+
+        $previousBases = $relation->getBases();
+        $newBases      = $entryData['bases'];
+
+        $relation->setBases(bases: $newBases);
+        $this->entityRelationMapper->update(entity: $relation);
+
+        $this->emitBasesAuditEntry(
+            relation: $relation,
+            previousBases: $previousBases,
+            newBases: $newBases
+        );
+    }//end applyBasesToRelation()
+
+    /**
+     * Write an immutable audit-trail entry for a `bases` mutation on an EntityRelation row.
+     *
+     * Uses the acting user's UID (never display name) per ADR-005. Reads are never audited.
+     *
+     * @param EntityRelation $relation      The affected entity relation.
+     * @param array|null     $previousBases Value before the mutation.
+     * @param array|null     $newBases      Value after the mutation.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/entity-relation-grondslagen/tasks.md#task-3.3
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern.
+     */
+    private function emitBasesAuditEntry(
+        EntityRelation $relation,
+        ?array $previousBases,
+        ?array $newBases
+    ): void {
+        $user = $this->userSession->getUser();
+
+        $auditTrail = new AuditTrail();
+        $auditTrail->setUuid(uuid: (string) Uuid::v4());
+        $auditTrail->setAction(action: 'entity_relation_bases_set');
+        $auditTrail->setObject(object: $relation->getId());
+        $auditTrail->setObjectUuid(objectUuid: (string) $relation->getId());
+        $auditTrail->setChanged(changed: [
+            'bases' => [
+                'old' => $previousBases,
+                'new' => $newBases,
+            ],
+        ]);
+        $auditTrail->setUser(user: $user !== null ? $user->getUID() : 'System');
+        $auditTrail->setUserName(userName: $user !== null ? $user->getDisplayName() : 'System');
+        $auditTrail->setCreated(created: new DateTime());
+        $auditTrail->setExpires(expires: new DateTime('+30 days'));
+
+        $this->auditTrailMapper->insert(entity: $auditTrail);
+    }//end emitBasesAuditEntry()
 }//end class
