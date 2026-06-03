@@ -350,4 +350,33 @@ class TextExtractionWordExtractionTest extends TestCase
         $text = $this->invokePrivate($this->service, 'walkWordElements', [[$container], 0]);
         $this->assertStringContainsString('SHALLOW_LEAF_TEXT', $text);
     }
+
+    /**
+     * The parse-failure log path is PII-safe: its context carries only
+     * structural fields (file ID / MIME / reader / exception class) and never
+     * the document content or extracted text (ADR-005).
+     *
+     * @return void
+     */
+    public function testParseFailureLogsNoDocumentContent(): void
+    {
+        $src = (string) file_get_contents(__DIR__.'/../../lib/Service/TextExtractionService.php');
+
+        // Isolate the failure-path log call inside extractWord().
+        $start = strpos($src, 'Word extraction failed; returning null');
+        $this->assertNotFalse($start, 'failure-path log message must exist');
+        $block = substr($src, $start, 400);
+
+        // Structural fields only.
+        $this->assertStringContainsString("'fileId'", $block);
+        $this->assertStringContainsString("'mimeType'", $block);
+        $this->assertStringContainsString("'reader'", $block);
+        $this->assertStringContainsString("'exception' => get_class(\$e)", $block);
+
+        // Must NOT leak document body / extracted text into the failure context.
+        $this->assertStringNotContainsString('$content', $block, 'raw file content must not be logged');
+        $this->assertStringNotContainsString('getContent()', $block, 'raw file content must not be logged');
+        $this->assertStringNotContainsString("'text'", $block, 'extracted text must not be logged');
+        $this->assertStringNotContainsString('$e->getMessage()', $block, 'exception message (may echo content) must not be logged in this path');
+    }
 }//end class

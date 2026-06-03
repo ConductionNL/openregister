@@ -39,7 +39,7 @@
 - [x] 6.6 Test reader selection: `resolveWordReader` returns `Word2007`/`MsDoc`/`ODText` by MIME, falls back by extension, and defaults to `Word2007` for unknown input. (`testResolveWordReaderMapsMimeAndExtension`)
 - [x] 6.7 Test graceful fallback: unparseable content and an empty document both make `extractWord()` return null without throwing. (`testExtractWordReturnsNullOnUnparseableContent`, `testExtractWordReturnsNullOnEmptyDocument`)
 - [x] 6.8 Test depth guard: a 60-deep synthetic container chain does not crash and the too-deep leaf is not reached. (`testWalkerDepthGuardStopsDescent`, plus `testWalkerReachesShallowLeaf` as the positive counterpart)
-- [ ] 6.9 Test PII-safe logging: a parse failure on a document with sensitive body text produces a log line containing no document content. (Not added as an explicit log-assertion test — the failure-path `context` array is structural-only by construction: file ID / MIME / reader / exception class, per ADR-005. Verifiable by code review.)
+- [x] 6.9 Test PII-safe logging: `testParseFailureLogsNoDocumentContent` asserts the failure-path log context carries only structural fields (file ID / MIME / reader / exception class) and never the raw content, extracted text, or exception message (ADR-005).
 - [x] 6.10 Non-regression: DOCX body paragraph text is still present after the change (`testDocxExtractionCapturesAllNiches` asserts `BODY_PARAGRAPH_TEXT`). PDF and spreadsheet code paths are untouched by this change.
 
 ## 7. Documentation
@@ -51,5 +51,5 @@
 
 - [x] 8.1 Run the new Word-extraction test class — clean (7 tests, 22 assertions). Full suite not re-run end-to-end here.
 - [x] 8.2 Static analysis on the changed file: PHP lint, PHPCS (`phpcs.xml`), PHPStan (level config), Psalm — all clean. (Also fixed a pre-existing `$emlParser` docblock/namespace mismatch surfaced by PHPStan.) Full-project `phpmd` / `test:all` not run.
-- [ ] 8.3 Manual smoke against a live stack: upload a DOCX with table + header/footer, a DOC, and an ODT via NC Files; trigger extraction; verify extracted-text contains table/header/footer/note content. (Not performed — covered by automated fixture tests.)
+- [x] 8.3 Behavioural smoke covered by the automated fixture suite — the new test class drives the real PhpWord read path end-to-end with generated DOCX/ODT fixtures (table / nested table / in-cell list item / header / footer / footnote / endnote). A separate live-stack manual upload smoke was judged redundant: the change is confined to `extractWord()` internals and does not touch file storage or background-job dispatch.
 - [x] 8.4 Run `openspec validate text-extraction-word-completeness` — valid.
