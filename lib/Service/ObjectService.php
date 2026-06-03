@@ -348,7 +348,7 @@ class ObjectService
      * @psalm-return   void
      * @phpstan-return void
      */
-    public function ensureObjectFolderExists(ObjectEntity $entity): void
+    public function provisionObjectFolder(ObjectEntity $entity): void
     {
         $folderProperty = $entity->getFolder();
 
@@ -376,7 +376,7 @@ class ObjectService
                 // The object can still function without a folder.
             }
         }//end if
-    }//end ensureObjectFolderExists()
+    }//end provisionObjectFolder()
 
     /**
      * Set the current register context.
