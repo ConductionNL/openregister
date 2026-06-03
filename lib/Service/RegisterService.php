@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -110,6 +111,15 @@ class RegisterService
     private readonly LoggerInterface $logger;
 
     /**
+     * Register serializer
+     *
+     * Assembles extended register payloads (schema expansion, stats).
+     *
+     * @var RegisterSerializer Register serializer instance
+     */
+    private readonly RegisterSerializer $registerSerializer;
+
+    /**
      * Constructor
      *
      * Initializes service with required dependencies for register operations.
@@ -120,8 +130,11 @@ class RegisterService
      * @param FileService         $fileService         File service for file operations
      * @param OrganisationService $organisationService Organisation service for permissions
      * @param LoggerInterface     $logger              Logger for error tracking
+     * @param RegisterSerializer  $registerSerializer  Serializer for extended register payloads
      *
      * @return void
+     *
+     * @spec openspec/changes/extend-schemas-in-register-service/tasks.md#task-2
      */
     public function __construct(
         RegisterMapper $registerMapper,
@@ -129,7 +142,8 @@ class RegisterService
         IDBConnection $db,
         FileService $fileService,
         OrganisationService $organisationService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        RegisterSerializer $registerSerializer
     ) {
         $this->logger = $logger;
         $this->logger->debug(
@@ -142,6 +156,7 @@ class RegisterService
         $this->db          = $db;
         $this->fileService = $fileService;
         $this->organisationService = $organisationService;
+        $this->registerSerializer  = $registerSerializer;
         $this->logger->debug(
             message: '[RegisterService] RegisterService constructor completed.',
             context: ['file' => __FILE__, 'line' => __LINE__]
@@ -166,7 +181,8 @@ class RegisterService
      */
     public function find(int | string $id, array $_extend=[], bool $_multitenancy=true): Register
     {
-        return $this->registerMapper->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+        // $_extend is declared for signature compatibility; expansion is handled via findSerialized().
+        return $this->registerMapper->find(id: $id, _multitenancy: $_multitenancy);
     }//end find()
 
     /**
@@ -200,14 +216,13 @@ class RegisterService
         ?array $_extend=[],
         bool $_multitenancy=true
     ): array {
-        // Find all registers with optional filtering, pagination, and extensions.
+        // $_extend is declared for signature compatibility; expansion is handled via findAllSerialized().
         return $this->registerMapper->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
             searchConditions: $searchConditions,
             searchParams: $searchParams,
-            _extend: $_extend,
             _multitenancy: $_multitenancy
         );
     }//end findAll()
@@ -490,4 +505,112 @@ class RegisterService
             'size'    => 0,
         ];
     }//end getZeroCountStats()
+
+    /**
+     * Find a register by ID and return a serialized array with _extend applied.
+     *
+     * Calls find() to get the entity, pre-computes schema stats when both 'schemas'
+     * and '@self.stats' are requested, then delegates to RegisterSerializer::serialize().
+     * The entity-returning find() method is unaffected.
+     *
+     * @param int|string $id            The ID, UUID, or slug of the register.
+     * @param array      $_extend       Extension keys to apply ('schemas', '@self.stats').
+     * @param bool       $_multitenancy Whether to apply multitenancy filtering.
+     *
+     * @return array Serialized register array with _extend transformations applied.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException  If register not found.
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple found.
+     * @throws \OCP\DB\Exception If database error occurs.
+     *
+     * @spec openspec/changes/extend-schemas-in-register-service/tasks.md#task-2.1
+     */
+    public function findSerialized(
+        int | string $id,
+        array $_extend=[],
+        bool $_multitenancy=true
+    ): array {
+        $register = $this->find(id: $id, _extend: [], _multitenancy: $_multitenancy);
+
+        $schemaStats = null;
+        if (in_array(needle: '@self.stats', haystack: $_extend, strict: true) === true
+            && in_array(needle: 'schemas', haystack: $_extend, strict: true) === true
+        ) {
+            $baseData    = $register->jsonSerialize();
+            $schemaIds   = $baseData['schemas'] ?? [];
+            $schemaStats = $this->getSchemaObjectCounts(
+                registerId: $register->getId(),
+                schemas: array_map(fn($id) => ['id' => $id], $schemaIds)
+            );
+        }
+
+        return $this->registerSerializer->serialize(
+            register: $register,
+            extend: $_extend,
+            schemaStats: $schemaStats
+        );
+    }//end findSerialized()
+
+    /**
+     * Find all registers and return serialized arrays with _extend applied.
+     *
+     * Calls findAll() to get entities, pre-computes per-register schema stats when both
+     * 'schemas' and '@self.stats' are requested, then delegates to
+     * RegisterSerializer::serializeMany(). The entity-returning findAll() is unaffected.
+     *
+     * @param int|null   $limit            Maximum number of results (null = no limit).
+     * @param int|null   $offset           Number of results to skip for pagination.
+     * @param array|null $filters          Filters to apply.
+     * @param array|null $searchConditions Search conditions for advanced filtering.
+     * @param array|null $searchParams     Search parameters for query building.
+     * @param array      $_extend          Extension keys ('schemas', '@self.stats').
+     * @param bool       $_multitenancy    Whether to apply multitenancy filtering.
+     *
+     * @return array Array of serialized register arrays with extensions applied.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Optional parameters for security/pagination.
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors findAll() signature for consistency.
+     *
+     * @spec openspec/changes/extend-schemas-in-register-service/tasks.md#task-2.2
+     */
+    public function findAllSerialized(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        array $_extend=[],
+        bool $_multitenancy=true
+    ): array {
+        $registers = $this->findAll(
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            searchConditions: $searchConditions,
+            searchParams: $searchParams,
+            _multitenancy: $_multitenancy
+        );
+
+        $addStats = in_array(needle: '@self.stats', haystack: $_extend, strict: true)
+            && in_array(needle: 'schemas', haystack: $_extend, strict: true);
+
+        $schemaStatsByRegisterId = null;
+        if ($addStats === true) {
+            $schemaStatsByRegisterId = [];
+            foreach ($registers as $register) {
+                $baseData  = $register->jsonSerialize();
+                $schemaIds = $baseData['schemas'] ?? [];
+                $schemaStatsByRegisterId[$register->getId()] = $this->getSchemaObjectCounts(
+                    registerId: $register->getId(),
+                    schemas: array_map(fn($id) => ['id' => $id], $schemaIds)
+                );
+            }
+        }
+
+        return $this->registerSerializer->serializeMany(
+            registers: $registers,
+            extend: $_extend,
+            schemaStatsByRegisterId: $schemaStatsByRegisterId
+        );
+    }//end findAllSerialized()
 }//end class
