@@ -10,12 +10,16 @@ on:
     - cron: "0 4 * * *"
 
 jobs:
-  docs:
-    uses: https://codeberg.org/Conduction/.github/.forgejo/workflows/documentation.yml@main
+  build:
+    uses: Conduction/.github/.forgejo/workflows/documentation-build.yml@main
+    with:
+      source-folder: docs
+    secrets: inherit
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    uses: Conduction/.github/.forgejo/workflows/documentation-deploy.yml@main
     with:
       cf-project-name: openregister-docs
-      source-folder: docs
-    secrets:
-      CF_API_TOKEN:   ${{ secrets.CF_API_TOKEN }}
-      CF_ACCOUNT_ID:  ${{ secrets.CF_ACCOUNT_ID }}
-      CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+    secrets: inherit
