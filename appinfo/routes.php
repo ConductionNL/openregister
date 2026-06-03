@@ -420,6 +420,10 @@ return [
 		['name' => 'chat#clearHistory', 'url' => '/api/chat/history', 'verb' => 'DELETE'],
 		['name' => 'chat#getChatStats', 'url' => '/api/chat/stats', 'verb' => 'GET'],
 		['name' => 'chat#sendFeedback', 'url' => '/api/conversations/{conversationUuid}/messages/{messageId}/feedback', 'verb' => 'POST', 'requirements' => ['conversationUuid' => '[^/]+', 'messageId' => '\\d+']],
+
+		// Chat streaming — SSE token-by-token endpoint and LLM health check.
+		['name' => 'chatStream#stream', 'url' => '/api/chat/stream', 'verb' => 'POST'],
+		['name' => 'chatStream#health', 'url' => '/api/chat/health', 'verb' => 'GET'],
 		
 		// Conversations - AI Conversation management.
 		['name' => 'conversation#index', 'url' => '/api/conversations', 'verb' => 'GET'],

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -173,26 +174,28 @@ class ChatService
      *
      * Main orchestration method that coordinates all handlers.
      *
-     * @param int    $conversationId Conversation ID.
-     * @param string $userId         User ID.
-     * @param string $userMessage    User message text.
-     * @param array  $selectedViews  View filters for multitenancy (optional).
-     * @param array  $selectedTools  Tool UUIDs to use (optional).
-     * @param array  $ragSettings    RAG configuration overrides (optional).
+     * @param int                     $conversationId Conversation ID.
+     * @param string                  $userId         User ID.
+     * @param string                  $userMessage    User message text.
+     * @param array                   $selectedViews  View filters for multitenancy (optional).
+     * @param array                   $selectedTools  Tool UUIDs to use (optional).
+     * @param array                   $ragSettings    RAG configuration overrides (optional).
+     * @param StreamYieldChannel|null $channel        Streaming channel; null = blocking response.
      *
-     * @return ((array|string)[]|string)[]
+     * @return array
      *
      * @throws \Exception If processing fails
      *
      * @psalm-return array{message: string, sources: list<array>,
-     *     timings: array{context: string, history: string, llm: string,
-     *     total: string}}
+     *     timings: array{context: string, history: string, llm: string, total: string},
+     *     messageId: int|null, messageUuid: string|null}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Chat processing involves multiple handler coordination steps
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
      *
      * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+     * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#task-3
      */
     public function processMessage(
         int $conversationId,
@@ -200,7 +203,8 @@ class ChatService
         string $userMessage,
         array $selectedViews=[],
         array $selectedTools=[],
-        array $ragSettings=[]
+        array $ragSettings=[],
+        ?StreamYieldChannel $channel=null
     ): array {
         $this->logger->info(
             message: '[ChatService] Processing message',
@@ -251,19 +255,20 @@ class ChatService
             $messageHistory   = $this->historyHandler->buildMessageHistory($conversationId);
             $historyTime      = microtime(true) - $historyStartTime;
 
-            // Generate LLM response.
+            // Generate LLM response (streaming when channel provided).
             $llmStartTime = microtime(true);
             $aiResponse   = $this->responseHandler->generateResponse(
                 userMessage: $userMessage,
                 context: $context,
                 messageHistory: $messageHistory,
                 agent: $agent,
-                selectedTools: $selectedTools
+                selectedTools: $selectedTools,
+                channel: $channel
             );
             $llmTime      = microtime(true) - $llmStartTime;
 
             // Store AI response with sources.
-            $this->historyHandler->storeMessage(
+            $storedMessage = $this->historyHandler->storeMessage(
                 conversationId: $conversationId,
                 role: Message::ROLE_ASSISTANT,
                 content: $aiResponse,
@@ -295,14 +300,16 @@ class ChatService
             $totalTime = $contextTime + $historyTime + $llmTime;
 
             return [
-                'message' => $aiResponse,
-                'sources' => $context['sources'],
-                'timings' => [
+                'message'     => $aiResponse,
+                'sources'     => $context['sources'],
+                'timings'     => [
                     'context' => round($contextTime, 2).'s',
                     'history' => round($historyTime, 3).'s',
                     'llm'     => round($llmTime, 2).'s',
                     'total'   => round($totalTime, 2).'s',
                 ],
+                'messageId'   => $storedMessage->getId(),
+                'messageUuid' => $storedMessage->getUuid(),
             ];
         } catch (Exception $e) {
             $this->logger->error(
