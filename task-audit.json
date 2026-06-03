@@ -1,0 +1,29 @@
+{
+  "spec": "openspec/changes/add-archival-annotation-support",
+  "verified": [
+    {"task": "1.1", "file": "lib/Db/Schema.php", "ok": true},
+    {"task": "1.2", "file": "tests/Unit/Db/SchemaAnnotationVocabularyTest.php", "ok": true},
+    {"task": "2.1", "file": "lib/Service/Archival/ArchivalAnnotationValidator.php", "ok": true},
+    {"task": "2.2", "file": "lib/Db/SchemaMapper.php", "ok": true},
+    {"task": "2.3", "file": "tests/Unit/Service/Archival/ArchivalAnnotationValidatorTest.php", "ok": true},
+    {"task": "3.1", "file": "lib/Exception/ArchivalImmutableException.php", "ok": true},
+    {"task": "3.2", "file": "lib/Service/ObjectService.php", "ok": true},
+    {"task": "3.3", "file": "lib/Service/ObjectService.php", "ok": true},
+    {"task": "3.4", "file": "tests/Unit/Service/Archival/ArchivalDeleteGateTest.php", "ok": true},
+    {"task": "3.5", "file": "tests/Unit/Service/Archival/ArchivalDeleteGateTest.php", "ok": true},
+    {"task": "4.1", "file": "lib/Service/Archival/RetentionConditionEvaluator.php", "ok": true},
+    {"task": "4.2", "file": "lib/Service/Archival/RetentionEvaluator.php", "ok": true},
+    {"task": "4.3", "file": "tests/Unit/Service/Archival/RetentionConditionEvaluatorTest.php", "ok": true},
+    {"task": "5.1", "file": "lib/Cron/ArchivalRetentionTask.php", "ok": true},
+    {"task": "5.2", "file": "lib/Cron/ArchivalRetentionTask.php", "ok": true},
+    {"task": "5.3", "file": "lib/Cron/ArchivalRetentionTask.php", "ok": true},
+    {"task": "5.4", "file": "lib/Cron/ArchivalRetentionTask.php", "ok": true},
+    {"task": "5.5", "file": "lib/Cron/ArchivalRetentionTask.php", "ok": true},
+    {"task": "5.6", "file": "appinfo/info.xml", "ok": true},
+    {"task": "5.7", "file": "tests/Unit/Cron/ArchivalRetentionTaskTest.php", "ok": true},
+    {"task": "6.1", "file": "lib/Service/Object/RenderObject.php", "ok": true},
+    {"task": "6.2", "file": "tests/Unit/Db/ObjectEntityArchivalRetentionTest.php", "ok": true}
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
