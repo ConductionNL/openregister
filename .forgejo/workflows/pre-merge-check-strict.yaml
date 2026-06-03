@@ -15,7 +15,7 @@ on:
 
 jobs:
   quality-gates:
-    runs-on: docker
+    runs-on: codeberg-small
     container:
       image: code.forgejo.org/oci/ci-php:8.3
     steps:
