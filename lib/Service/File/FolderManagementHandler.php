@@ -8,6 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license  https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @link     https://github.com/ConductionNL/openregister
  */
@@ -50,6 +51,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license  https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0

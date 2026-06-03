@@ -13,6 +13,7 @@
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  * @author   Conduction B.V. <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://OpenRegister.app
  *

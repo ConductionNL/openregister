@@ -8,6 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
@@ -30,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license  AGPL-3.0
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
