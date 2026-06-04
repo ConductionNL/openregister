@@ -321,6 +321,11 @@ class ManualEntityService
             // Read-only access. REASON_FORBIDDEN is the type-checked signal
             // the controller maps to HTTP 403 (vs the default 500 for
             // REASON_INTERNAL_ERROR).
+            $isUpdateable = false;
+            if ($node instanceof NcFile) {
+                $isUpdateable = $node->isUpdateable();
+            }
+
             $this->logger->info(
                 '[ManualEntityService] Write-access denied on target file',
                 [
@@ -329,14 +334,14 @@ class ManualEntityService
                     'fileId'       => $fileId,
                     'actor'        => $actor->getUID(),
                     'isFile'       => ($node instanceof NcFile),
-                    'isUpdateable' => ($node instanceof NcFile ? $node->isUpdateable() : false),
+                    'isUpdateable' => $isUpdateable,
                 ]
             );
             throw new ManualEntityException(
                 reason: ManualEntityException::REASON_FORBIDDEN,
                 message: 'write access to file required'
             );
-        }
+        }//end if
 
     }//end assertFileWriteAccess()
 
