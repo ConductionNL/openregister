@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "spec_slug": "openregister-legacy-quality-cleanup",
+  "repo": "https://codeberg.org/Conduction/openregister",
+  "issue": 25,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-06-04T17:18:35Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": []
+    }
+  ]
+}
