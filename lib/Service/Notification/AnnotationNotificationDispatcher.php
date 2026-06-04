@@ -64,6 +64,8 @@ use Psr\Log\LoggerInterface;
  * webhook, talk), each gate (rate-limit, coalesce, preference, subscription, organisation), each helper
  * (recipient resolve, locale, history record, idempotency) requires its own method per the
  * single-responsibility principle.
+ *
+ * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
  */
 class AnnotationNotificationDispatcher
 {
@@ -142,6 +144,36 @@ class AnnotationNotificationDispatcher
             return;
         }
 
+        $this->dispatchWithSchema(object: $object, trigger: $trigger, context: $context, schema: $schema);
+
+    }//end dispatch()
+
+    /**
+     * Fire notifications declared on a pre-resolved Schema.
+     *
+     * Called by dispatch() after schema resolution, and directly by the
+     * SystemEntityNotificationBridge for system entities whose schema is not in
+     * the SchemaMapper but is instead provided by SystemSchemaRules::buildSchema().
+     *
+     * This is the single entry point for the notification pipeline: every
+     * dispatch path (stored objects and system entities) goes through here.
+     *
+     * @param ObjectEntity         $object  The object (or virtual adapter) the event happened on.
+     * @param string               $trigger 'created' | 'updated' | 'transition' | 'calculatedChange'.
+     * @param array<string, mixed> $context Trigger-specific extras.
+     * @param Schema               $schema  Pre-resolved schema carrying the rules.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.LongVariable)
+     *
+     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
+     */
+    public function dispatchWithSchema(ObjectEntity $object, string $trigger, array $context, Schema $schema): void
+    {
         $notifications = $this->getAnnotation(schema: $schema);
         if ($notifications === null) {
             return;
@@ -446,7 +478,7 @@ class AnnotationNotificationDispatcher
             }//end foreach
         }//end foreach
 
-    }//end dispatch()
+    }//end dispatchWithSchema()
 
     /**
      * Helper to dispatch a broadcast-style channel (webhook / talk).

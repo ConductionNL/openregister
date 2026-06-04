@@ -63,15 +63,29 @@ dispatcher. Two pieces of engine wiring are required:
 | Source unhealthy | `threshold` (consecutive failures) **or** `updated`+`condition` health field | numeric threshold preferred if a failure counter exists |
 | Agent unhealthy | `threshold` / `updated`+`condition` heartbeat field | |
 
-## Open questions (resolve in implementation)
+## Implementation decisions (resolved)
 
-1. Synthetic system schemas (a) vs system-rule registry (b)?
-2. Canonical slug/identifier for each system schema.
-3. Which system entities already emit create/update/transition signals vs need
-   new event emission (esp. Synchronization/Import run outcomes, Source/Agent
-   health checks).
-4. Whether Source/Agent health is best modelled as `threshold` (needs a numeric
-   failure counter) or `updated`+`condition` on a health field.
+1. **System-schema rule source: (b) in-code registry.** `SystemSchemaRules`
+   (`lib/Service/Notification/SystemSchemaRules.php`) holds rules keyed by
+   canonical slug and produces synthetic `Schema` objects via `buildSchema()`.
+   Option (a) — synthetic schema rows — was rejected: system entities are not
+   schema-backed objects; adding synthetic rows would require DB migrations and
+   distort the data model.
+
+2. **Canonical slugs:** `openregister_register`, `openregister_schema`,
+   `openregister_configuration`, `openregister_source`, `openregister_agent`,
+   `openregister_webhook`.
+
+3. **Existing event coverage:** Register, Schema, Configuration, Source, and
+   Agent already emit Created/Updated events and are bridged by
+   `SystemEntityNotificationListener`. `Synchronization` and `Import` do not
+   exist as DB entities in the current codebase; rule coverage for those is
+   deferred to when those entities are introduced.
+
+4. **Source/Agent health:** modelled as `updated`+`condition` on a `status`
+   field (`equals`:`error`). No separate numeric failure counter is required.
+
+5. **status: pr-created** (set below)
 
 ## Non-goals
 

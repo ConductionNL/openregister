@@ -156,6 +156,7 @@ use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\RealtimeEventListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
@@ -1727,6 +1728,20 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
+
+        // System-entity notification bridge — routes create/update signals from
+        // OpenRegister's own system entities through the same annotation-notification
+        // pipeline used for stored register objects (spec: openregister-system-notifications).
+        $context->registerEventListener(RegisterCreatedEvent::class,       SystemEntityNotificationListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class,       SystemEntityNotificationListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class,         SystemEntityNotificationListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class,         SystemEntityNotificationListener::class);
+        $context->registerEventListener(ConfigurationCreatedEvent::class,  SystemEntityNotificationListener::class);
+        $context->registerEventListener(ConfigurationUpdatedEvent::class,  SystemEntityNotificationListener::class);
+        $context->registerEventListener(SourceCreatedEvent::class,         SystemEntityNotificationListener::class);
+        $context->registerEventListener(SourceUpdatedEvent::class,         SystemEntityNotificationListener::class);
+        $context->registerEventListener(AgentCreatedEvent::class,          SystemEntityNotificationListener::class);
+        $context->registerEventListener(AgentUpdatedEvent::class,          SystemEntityNotificationListener::class);
 
         // Aggregation cache eviction on every object write.
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
