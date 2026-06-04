@@ -1,3 +1,6 @@
+status: pr-created
+pr: https://codeberg.org/Conduction/openregister/pulls/62
+
 ## Context
 
 This design document describes the OpenRegister-side **HOW** for the `ai-chat-companion-orchestrator` change. The cross-app contracts (what must be built) are defined in:

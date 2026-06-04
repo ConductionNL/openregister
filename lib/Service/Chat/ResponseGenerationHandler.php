@@ -324,9 +324,9 @@ class ResponseGenerationHandler
 
             // Inject the CnAiContext snapshot the widget sends with each
             // message. Without this the LLM has no idea which app the user
-            // is in — so on /apps/openbuilt/ it would call decidesk tools
+            // is in — so on /apps/openbuild/ it would call decidesk tools
             // (or default to OpenRegister-platform language) instead of
-            // routing to openbuilt.*. The snapshot is small and free-form
+            // routing to openbuild.*. The snapshot is small and free-form
             // (typically {app, slug, view, objectId}); we render it as a
             // bullet list so the model can quote individual fields.
             if (empty($cnAiContext) === false) {

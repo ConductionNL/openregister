@@ -43,8 +43,8 @@ This capability sits between `mcp-discovery` (the JSON-RPC MCP server — see `o
 `ToolRegistry::registerTool` MUST enforce a two-part dotted id format with a lowercase Nextcloud app id on the left and a mixed-case identifier on the right (regex `^[a-z0-9_]+\.[a-zA-Z0-9_]+$`), rejecting ids that fail the pattern. Registrations MUST NOT silently overwrite — re-registering an already-known id MUST throw `InvalidArgumentException`. The metadata array MUST contain the four required keys `name`, `description`, `icon`, `app`; missing any key MUST also throw `InvalidArgumentException`.
 
 #### Scenario: Valid dotted id with camelCase right side is accepted
-- **GIVEN** the registry has not yet seen tool id `openbuilt.createApp`
-- **WHEN** a listener calls `registerTool('openbuilt.createApp', $tool, $fullMetadata)`
+- **GIVEN** the registry has not yet seen tool id `openbuild.createApp`
+- **WHEN** a listener calls `registerTool('openbuild.createApp', $tool, $fullMetadata)`
 - **THEN** the registry MUST store the tool under that id
 - **AND** the registry MUST log `'[ToolRegistry] Tool registered'` at info level with id, name, app fields
 
@@ -69,7 +69,7 @@ This capability sits between `mcp-discovery` (the JSON-RPC MCP server — see `o
 - **THEN** `registerTool` MUST throw `InvalidArgumentException` with message `"Missing required metadata field: {fieldName}"` for the first missing field detected
 
 #### Notes
-- The right-hand side of the dotted id accepts both camelCase and snake_case to match the MCP convention used by per-app providers (e.g., `decidesk.listRecentMeetings`, `openbuilt.create_app`).
+- The right-hand side of the dotted id accepts both camelCase and snake_case to match the MCP convention used by per-app providers (e.g., `decidesk.listRecentMeetings`, `openbuild.create_app`).
 - The validation order is: id format → duplicate check → metadata fields. The duplicate check uses `null`-coalescence rather than `isset()` to treat explicit `null` entries the same as missing entries.
 
 ### Requirement: REQ-003 — Id-keyed agent tool selection with warn-and-skip
@@ -77,8 +77,8 @@ This capability sits between `mcp-discovery` (the JSON-RPC MCP server — see `o
 `ToolRegistry::getTools(array $ids)` MUST return an associative map `[id => ToolInterface]` containing only the tools whose ids are known to the registry. For any requested id that is not registered, the registry MUST log a `'[ToolRegistry] Tool not found'` warning with the missing id and MUST omit the entry from the result (no exception). `getTool($id)` MUST return `null` when the id is unknown (no exception). `getAllTools()` MUST return the full metadata map keyed by id without including the `ToolInterface` instances themselves.
 
 #### Scenario: Multi-id selection returns the known intersection
-- **GIVEN** the registry has tools `decidesk.listMeetings` and `openbuilt.createApp` registered
-- **WHEN** an agent configuration calls `getTools(['decidesk.listMeetings', 'openbuilt.createApp', 'ghost.gone'])`
+- **GIVEN** the registry has tools `decidesk.listMeetings` and `openbuild.createApp` registered
+- **WHEN** an agent configuration calls `getTools(['decidesk.listMeetings', 'openbuild.createApp', 'ghost.gone'])`
 - **THEN** the result MUST contain exactly two entries: the two known tools
 - **AND** the registry MUST log `'[ToolRegistry] Tool not found'` at warning level with `id: 'ghost.gone'`
 - **AND** no exception MUST be thrown

@@ -58,6 +58,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUser(?string $user)
  * @method string|null getUserName()
  * @method void setUserName(?string $userName)
+ * @method string|null getSession()
+ * @method void setSession(?string $session)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method string|null getOrganisation()

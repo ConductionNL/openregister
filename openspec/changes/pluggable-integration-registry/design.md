@@ -149,7 +149,7 @@ Three layers decide what the user actually sees. They already exist in skeletal 
 
 **Decision**: The current `CnObjectSidebar` prop surface (`hidden-tabs`, `files-label`, named slots like `tab-notes`) continues to work. New consumers use the registry-driven behaviour by default; existing consumers opt out via an `integrations` prop or continue relying on slots, which still override registry-resolved components.
 
-**Why**: Required by the shared-library contract ("NEVER break existing prop interfaces"). Every consuming app — OpenCatalogi, Procest, Pipelinq, MyDash — must keep working unchanged on upgrade.
+**Why**: Required by the shared-library contract ("NEVER break existing prop interfaces"). Every consuming app — OpenCatalogi, Procest, Pipelinq, LaunchPad — must keep working unchanged on upgrade.
 
 **Trade-off**: Slightly more complex rendering logic inside `CnObjectSidebar`. Offset by extensive tests.
 
