@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\FileService;
@@ -66,18 +67,49 @@ class DocumentProcessingHandler
     private ?FileService $fileService = null;
 
     /**
+     * The most recent sanitisation report produced during anonymisation.
+     *
+     * Office (DOCX / ODT) anonymisation runs the sanitiser ahead of the
+     * entity walker; the resulting audit report is retained here so the
+     * caller can persist or surface it (there is no dedicated log table).
+     * Null when the last anonymisation did not involve a sanitisable format.
+     *
+     * @var SanitizationReport|null
+     */
+    private ?SanitizationReport $lastSanitizationReport = null;
+
+    /**
      * Constructor for DocumentProcessingHandler.
      *
-     * @param IRootFolder     $rootFolder  Root folder for file access.
-     * @param IUserSession    $userSession User session for getting current user.
-     * @param LoggerInterface $logger      Logger for logging operations.
+     * @param IRootFolder                               $rootFolder           Root folder for file access.
+     * @param IUserSession                              $userSession          User session for getting current user.
+     * @param LoggerInterface                           $logger               Logger for logging operations.
+     * @param \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper Used to honour skip-anonymization
+     *                                                                        flags during the redaction pass
+     *                                                                        (see `entity-relation-grondslagen`).
+     * @param OfficeDocumentSanitizer                   $sanitizer            Office document sanitiser (DOCX / ODT).
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
+        private readonly OfficeDocumentSanitizer $sanitizer
     ) {
     }//end __construct()
+
+    /**
+     * Get the sanitisation report from the most recent anonymisation, if any.
+     *
+     * @return SanitizationReport|null The report, or null when the last
+     *                                 anonymisation did not sanitise an Office document.
+     *
+     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     */
+    public function getLastSanitizationReport(): ?SanitizationReport
+    {
+        return $this->lastSanitizationReport;
+    }//end getLastSanitizationReport()
 
     /**
      * Set the FileService instance for cross-handler coordination.
@@ -174,17 +206,66 @@ class DocumentProcessingHandler
      */
     public function anonymizeDocument(Node $node, array $entities): File
     {
+        // Reset any report from a prior call on this (potentially reused) handler.
+        $this->lastSanitizationReport = null;
+
+        // Resolve the source file id once — the substitution placeholder
+        // format and the post-redaction audit flag both key off it.
+        $fileId = 0;
+        if (method_exists($node, 'getId') === true) {
+            $candidate = $node->getId();
+            if (is_int($candidate) === true && $candidate > 0) {
+                $fileId = $candidate;
+            }
+        }
+
+        // Defensive filter — per the `entity-relation-grondslagen` change,
+        // the DI anonymise path MUST honour the operator's skip decisions
+        // even when the caller's entities[] array includes flagged
+        // occurrences. The OR contract is "skipped relations are never
+        // redacted, full stop", regardless of caller filtering behaviour.
+        $skippedValues = [];
+        if ($fileId > 0) {
+            $skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
+        }
+
+        // Resolve the existing entity-id map for this file so substitutions
+        // use the stable `[<TYPE>: <entity_id>]` placeholder format —
+        // matches what DocuDesk's grondslagen-summary report shows and
+        // makes re-runs of anonymise on the same document idempotent
+        // (the previous UUID-prefix fallback produced a fresh placeholder
+        // per call, so re-anonymising the same file produced byte-divergent
+        // output despite identical inputs).
+        $entityIdMap = [];
+        if ($fileId > 0) {
+            $entityIdMap = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
+        }
+
         // Build replacements array from entities.
         $replacements = [];
         foreach ($entities as $entity) {
             $originalText = $entity['text'] ?? '';
             $entityType   = $entity['entityType'] ?? 'UNKNOWN';
-            $key          = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
 
-            if (empty($originalText) === false) {
+            if (empty($originalText) === true
+                || in_array($originalText, $skippedValues, true) === true
+            ) {
+                continue;
+            }
+
+            // Prefer stable per-entity placeholder. Fall back to the
+            // legacy UUID-prefix only when there is no matching entity
+            // row on the file (shouldn't happen in the normal
+            // extract → review → anonymise flow, but defensive against
+            // direct DI callers that bypass extraction).
+            if (isset($entityIdMap[$originalText]) === true) {
+                $stableId = $entityIdMap[$originalText]['id'];
+                $replacements[$originalText] = '['.$entityType.': '.$stableId.']';
+            } else {
+                $key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
                 $replacements[$originalText] = '['.$entityType.': '.$key.']';
             }
-        }
+        }//end foreach
 
         // Generate anonymized file name.
         $fileName      = $node->getName();
@@ -196,11 +277,194 @@ class DocumentProcessingHandler
             $anonymizedFileName .= '.'.$fileExtension;
         }
 
-        // Entity anonymisation is GDPR-critical: fail closed if any original
-        // entity text survives in the output (PDF path) rather than writing a
-        // file marked '_anonymized' that still contains it.
-        return $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName, strict: true);
+        // Office (DOCX / ODT) documents carry PII in non-text structures the
+        // walker cannot reach (comments, tracked changes, metadata, custom XML,
+        // person field codes, hyperlink URLs). Sanitise to a clean derivative
+        // BEFORE the entity walker pass. The original NC file is untouched.
+        // Both branches assign $anonymizedFile so the markAsAnonymized audit
+        // flag below runs for every path (per `entity-relation-grondslagen`).
+        if (($node instanceof File) === true
+            && $this->sanitizer->isSanitizable($node->getMimeType()) === true
+        ) {
+            $anonymizedFile = $this->anonymizeSanitizableDocument(
+                node: $node,
+                replacements: $replacements,
+                outputName: $anonymizedFileName
+            );
+        } else {
+            // Entity anonymisation is GDPR-critical: fail closed (strict) if any
+            // original entity text survives in the output rather than writing a
+            // file marked '_anonymized' that still contains it.
+            $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName, strict: true);
+        }
+
+        // Flip the source's EntityRelation rows to `anonymized = 1` so the
+        // anonymised state is queryable downstream. `markAsAnonymized`
+        // skips rows where `skip_anonymization = 1` per the
+        // `entity-relation-grondslagen` contract — operator skips are
+        // preserved. The placeholder value is a generic "[REDACTED]"
+        // because each entity got its own per-row replacement key earlier
+        // in this method; the column stores a single representative value
+        // per anonymise call, not the full per-entity placeholder list.
+        if ($fileId > 0 && empty($replacements) === false) {
+            try {
+                $this->entityRelationMapper->markAsAnonymized($fileId, '[REDACTED]');
+            } catch (\Throwable $e) {
+                // Persistence-side failure on the audit flag MUST NOT mask
+                // the successful redaction; the file is already written.
+                // Surface via warning log; downstream summary reports
+                // simply won't see this file until the next anonymise
+                // call retries the mark.
+                $this->logger->warning(
+                    'DocumentProcessingHandler: markAsAnonymized failed after redaction',
+                    ['fileId' => $fileId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        return $anonymizedFile;
     }//end anonymizeDocument()
+
+    /**
+     * Anonymise a sanitisable Office document (DOCX / ODT).
+     *
+     * Runs the document sanitiser to produce a cleaned derivative, then runs
+     * the existing PhpWord entity walker over the cleaned bytes. The walker's
+     * output is written to the original file's parent folder under $outputName.
+     * The sanitisation audit report is retained on {@see getLastSanitizationReport}.
+     *
+     * @param File   $node         The Office file to anonymise.
+     * @param array  $replacements Entity-text => placeholder replacement map.
+     * @param string $outputName   Name for the anonymised output file.
+     *
+     * @throws Exception If sanitisation or the walker pass fails.
+     *
+     * @phpstan-param array<string, string> $replacements
+     * @psalm-param   array<string, string> $replacements
+     *
+     * @return File The anonymised document.
+     *
+     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     */
+    private function anonymizeSanitizableDocument(File $node, array $replacements, string $outputName): File
+    {
+        try {
+            $result = $this->sanitizer->sanitize($node->getId());
+        } catch (SanitizationException $e) {
+            if ($e->getReason() === SanitizationException::REASON_ENCRYPTED) {
+                // Caller-correctable: cannot anonymise an encrypted document.
+                throw new Exception('Cannot anonymise an encrypted document', 0, $e);
+            }
+
+            $this->logger->error(
+                message: '[DocumentProcessingHandler] Office document sanitisation failed: '.$e->getReason(),
+                context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
+                    'reason' => $e->getReason(),
+                ]
+            );
+            throw new Exception('Document sanitisation failed', 0, $e);
+        }//end try
+
+        $this->lastSanitizationReport = $result->report;
+
+        $fileExtension = strtolower(pathinfo($node->getName(), PATHINFO_EXTENSION));
+
+        // ODT and other non-DOCX office text route through the text replacer;
+        // DOCX runs the PhpWord walker. Both read the sanitised temp file.
+        if ($fileExtension === 'docx') {
+            return $this->replaceWordsInWordDocument(
+                node: $node,
+                replacements: $replacements,
+                outputName: $outputName,
+                sanitizedSourcePath: $result->path
+            );
+        }
+
+        return $this->replaceWordsInOfficeContainer(
+            node: $node,
+            replacements: $replacements,
+            outputName: $outputName,
+            sanitizedSourcePath: $result->path
+        );
+    }//end anonymizeSanitizableDocument()
+
+    /**
+     * Replace words inside a sanitised Office ZIP container's text parts.
+     *
+     * Used for the ODT path: the sanitised derivative is a valid ODT ZIP, so
+     * entity replacement is applied to the textual content parts in-place and
+     * the container is written to the original file's parent folder. This
+     * avoids the legacy raw-string-on-ZIP corruption path.
+     *
+     * @param File   $node                The original Office file (for parent folder).
+     * @param array  $replacements        Entity-text => placeholder replacement map.
+     * @param string $outputName          Name for the output file.
+     * @param string $sanitizedSourcePath Path to the sanitised ZIP container.
+     *
+     * @throws Exception If replacement fails.
+     *
+     * @phpstan-param array<string, string> $replacements
+     * @psalm-param   array<string, string> $replacements
+     *
+     * @return File The anonymised document.
+     *
+     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     */
+    private function replaceWordsInOfficeContainer(
+        File $node,
+        array $replacements,
+        string $outputName,
+        string $sanitizedSourcePath
+    ): File {
+        $zip = new \ZipArchive();
+        if ($zip->open($sanitizedSourcePath) !== true) {
+            throw new Exception('Failed to open sanitised Office container');
+        }
+
+        // ODT text content lives in content.xml; styles/headers may also carry
+        // visible text. Apply replacements to the text-bearing parts.
+        $textParts = ['content.xml', 'styles.xml'];
+        foreach ($textParts as $part) {
+            $xml = $zip->getFromName($part);
+            if ($xml === false) {
+                continue;
+            }
+
+            foreach ($replacements as $original => $replacement) {
+                $xml = str_ireplace((string) $original, $replacement, $xml);
+            }
+
+            $zip->addFromString($part, $xml);
+        }
+
+        $zip->close();
+
+        $parentFolder = $node->getParent();
+        if ($parentFolder->nodeExists($outputName) === true) {
+            $parentFolder->get($outputName)->delete();
+        }
+
+        $outputStream = fopen($sanitizedSourcePath, 'r');
+        if ($outputStream === false) {
+            throw new Exception('Failed to read sanitised Office container');
+        }
+
+        $newFile = $parentFolder->newFile(path: $outputName, content: $outputStream);
+
+        $this->logger->info(
+            message: '[DocumentProcessingHandler] Office container anonymised',
+            context: [
+                'file'         => __FILE__,
+                'line'         => __LINE__,
+                'outputFile'   => $newFile->getPath(),
+                'replacements' => count($replacements),
+            ]
+        );
+
+        return $newFile;
+    }//end replaceWordsInOfficeContainer()
 
     /**
      * Replace words in a Word document.
@@ -209,9 +473,12 @@ class DocumentProcessingHandler
      * (including headers, footers, tables, lists), apply text replacements, and save
      * the result as a new file in the same parent folder.
      *
-     * @param Node   $node         The file node to process.
-     * @param array  $replacements Array of replacement mappings (search => replace).
-     * @param string $outputName   Name for the output file.
+     * @param Node        $node                The file node to process.
+     * @param array       $replacements        Array of replacement mappings (search => replace).
+     * @param string      $outputName          Name for the output file.
+     * @param string|null $sanitizedSourcePath Optional pre-sanitised source file path; when
+     *                                         provided, the walker reads these cleaned bytes
+     *                                         instead of the original node content.
      *
      * @return File The new file node with replaced content.
      *
@@ -230,25 +497,33 @@ class DocumentProcessingHandler
     private function replaceWordsInWordDocument(
         Node $node,
         array $replacements,
-        string $outputName
+        string $outputName,
+        ?string $sanitizedSourcePath=null
     ): File {
-        // Get the file content as a stream and save to a temp file (@var File $fileNode).
-        $fileNode = $node;
-        $stream   = $fileNode->fopen('r');
         $tempFile = tempnam(sys_get_temp_dir(), 'openregister_word_');
         if ($tempFile === false) {
             throw new Exception('Failed to create temporary file');
         }
 
-        $tempStream = fopen($tempFile, 'w');
-        if ($tempStream === false) {
-            unlink($tempFile);
-            throw new Exception('Failed to open temporary file for writing');
-        }
+        if ($sanitizedSourcePath !== null) {
+            // Walker reads the sanitised derivative, not the original bytes.
+            if (copy($sanitizedSourcePath, $tempFile) === false) {
+                unlink($tempFile);
+                throw new Exception('Failed to copy sanitised source for processing');
+            }
+        } else {
+            // Get the file content as a stream and save to a temp file.
+            $stream     = $node->fopen('r');
+            $tempStream = fopen($tempFile, 'w');
+            if ($tempStream === false) {
+                unlink($tempFile);
+                throw new Exception('Failed to open temporary file for writing');
+            }
 
-        stream_copy_to_stream($stream, $tempStream);
-        fclose($tempStream);
-        fclose($stream);
+            stream_copy_to_stream($stream, $tempStream);
+            fclose($tempStream);
+            fclose($stream);
+        }//end if
 
         try {
             // Snapshot the process-static PhpWord style names BEFORE loading

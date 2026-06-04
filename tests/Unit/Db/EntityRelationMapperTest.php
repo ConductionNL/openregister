@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\DetectionMethod;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
@@ -30,9 +31,12 @@ use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -92,12 +96,15 @@ class TestableEntityRelationMapper extends EntityRelationMapper
 
 
 /**
- * Verifies the construction wiring + the public surface added by
+ * Verifies the construction wiring (which now includes `AuditTrailMapper`,
+ * `IUserSession`, `IEventDispatcher`, and `LoggerInterface` per the
+ * `entity-relation-grondslagen` change) + the public surface added by
  * the `manual-entity-anonymisation` change.
  *
  * DB-heavy query behaviour (SQL semantics, JOIN correctness) is
  * covered by integration tests; these tests focus on the entity-row
- * mapping + return-value contract.
+ * mapping + return-value contract. The audited write path's logic is
+ * covered by `EntityRelationMapperUpdateDecisionMetadataTest`.
  */
 class EntityRelationMapperTest extends TestCase
 {
@@ -108,6 +115,34 @@ class EntityRelationMapperTest extends TestCase
      */
     private IDBConnection&MockObject $db;
 
+    /**
+     * Audit-trail persistence mock (used by updateDecisionMetadata).
+     *
+     * @var AuditTrailMapper&MockObject
+     */
+    private AuditTrailMapper&MockObject $auditTrailMapper;
+
+    /**
+     * Session user lookup mock for the audit-trail actor.
+     *
+     * @var IUserSession&MockObject
+     */
+    private IUserSession&MockObject $userSession;
+
+    /**
+     * Event dispatcher mock (used by updateDecisionMetadata).
+     *
+     * @var IEventDispatcher&MockObject
+     */
+    private IEventDispatcher&MockObject $eventDispatcher;
+
+    /**
+     * Structured log sink mock.
+     *
+     * @var LoggerInterface&MockObject
+     */
+    private LoggerInterface&MockObject $logger;
+
 
     /**
      * Wire fresh mocks for every test.
@@ -116,7 +151,11 @@ class EntityRelationMapperTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->db = $this->createMock(originalClassName: IDBConnection::class);
+        $this->db               = $this->createMock(originalClassName: IDBConnection::class);
+        $this->auditTrailMapper = $this->createMock(originalClassName: AuditTrailMapper::class);
+        $this->userSession      = $this->createMock(originalClassName: IUserSession::class);
+        $this->eventDispatcher  = $this->createMock(originalClassName: IEventDispatcher::class);
+        $this->logger           = $this->createMock(originalClassName: LoggerInterface::class);
 
     }//end setUp()
 
@@ -127,7 +166,13 @@ class EntityRelationMapperTest extends TestCase
      */
     private function makeMapper(): TestableEntityRelationMapper
     {
-        return new TestableEntityRelationMapper(db: $this->db);
+        return new TestableEntityRelationMapper(
+            db: $this->db,
+            auditTrailMapper: $this->auditTrailMapper,
+            userSession: $this->userSession,
+            eventDispatcher: $this->eventDispatcher,
+            logger: $this->logger
+        );
 
     }//end makeMapper()
 
@@ -138,7 +183,13 @@ class EntityRelationMapperTest extends TestCase
      */
     public function testConstructsWithInjectedDependencies(): void
     {
-        $mapper = new EntityRelationMapper(db: $this->db);
+        $mapper = new EntityRelationMapper(
+            db: $this->db,
+            auditTrailMapper: $this->auditTrailMapper,
+            userSession: $this->userSession,
+            eventDispatcher: $this->eventDispatcher,
+            logger: $this->logger
+        );
 
         $this->assertInstanceOf(expected: EntityRelationMapper::class, actual: $mapper);
 

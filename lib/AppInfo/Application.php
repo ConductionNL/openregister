@@ -527,6 +527,25 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // EntityRelationMapper is registered explicitly because it constructor-injects
+        // `IEventDispatcher` to dispatch `EntityRelationDecisionUpdatedEvent`. Every
+        // other event-dispatcher-dependent mapper in this method (SchemaMapper,
+        // RegisterMapper, MagicMapper, WebhookMapper) is wired explicitly to avoid
+        // depending on NC's autowirer resolution of framework-interface keys, which
+        // has historically been version-sensitive.
+        $context->registerService(
+            EntityRelationMapper::class,
+            function (ContainerInterface $container) {
+                return new EntityRelationMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
     }//end registerMappersWithCircularDependencies()
 
     /**

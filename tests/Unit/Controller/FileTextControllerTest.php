@@ -652,9 +652,14 @@ class FileTextControllerTest extends TestCase
                     )
             ->willReturn($anonymizedFileNode);
 
-        $this->entityRelationMapper->expects($this->once())
-            ->method('markAsAnonymized')
-            ->with(10, $this->stringStartsWith('anonymized_'));
+        // Per PR #1503 review: the controller MUST NOT call
+        // markAsAnonymized — it's the redaction path's responsibility
+        // (DocumentProcessingHandler::anonymizeDocument, which is mocked
+        // here via $this->fileService). A controller-side mark would
+        // race the redaction-path mark on this same fileId and clobber
+        // the per-entity placeholder values.
+        $this->entityRelationMapper->expects($this->never())
+            ->method('markAsAnonymized');
 
         $result = $this->controller->anonymizeFile(10);
 
@@ -709,7 +714,9 @@ class FileTextControllerTest extends TestCase
                     )
             ->willReturn($anonymizedFileNode);
 
-        $this->entityRelationMapper->expects($this->once())
+        // Same as above: marking ownership belongs to the redaction
+        // path (mocked via $this->fileService), not the controller.
+        $this->entityRelationMapper->expects($this->never())
             ->method('markAsAnonymized');
 
         $result = $this->controller->anonymizeFile(5);

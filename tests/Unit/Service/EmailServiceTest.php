@@ -28,8 +28,7 @@ class EmailServiceTest extends TestCase
     {
         $this->emailLinkMapper = $this->getMockBuilder(EmailLinkMapper::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['findByObjectUuid', 'countByObjectUuid', 'findBySender', 'findByObjectAndMessage', 'deleteByObjectUuid', 'insert', 'delete'])
-            ->addMethods(['find'])
+            ->onlyMethods(['findByObjectUuid', 'countByObjectUuid', 'findBySender', 'findByObjectAndMessage', 'deleteByObjectUuid', 'insert', 'delete', 'find'])
             ->getMock();
         $this->appManager = $this->createMock(IAppManager::class);
         $this->db = $this->createMock(IDBConnection::class);
