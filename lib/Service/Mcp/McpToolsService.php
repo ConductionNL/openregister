@@ -240,25 +240,24 @@ class McpToolsService
     /**
      * Find the first provider that owns the given tool id.
      *
-     * A provider owns a tool id when the tool's id starts with
-     * `{provider->getAppId()}.` AND the provider lists that tool in getTools().
+     * Resolves against the descriptor's full namespaced `id`
+     * (e.g. "openregister.registers") OR its short MCP `name`
+     * (e.g. "registers"). The MCP protocol's tools/call uses
+     * the descriptor's `name`, so accepting both keeps spec-
+     * compliant clients and any chat-side caller that already
+     * uses the namespaced id working through the same path.
      *
-     * @param string $toolId Namespaced tool id
+     * @param string $toolId Tool identifier as sent by the client.
      *
      * @return IMcpToolProvider|null The matching provider, or null if not found
      */
     private function findProviderForTool(string $toolId): ?IMcpToolProvider
     {
         foreach ($this->providers as $provider) {
-            $appId = $provider->getAppId();
-
-            if (str_starts_with($toolId, $appId.'.') === false) {
-                continue;
-            }
-
-            // Confirm the provider actually lists this tool.
             foreach ($provider->getTools() as $descriptor) {
-                if (($descriptor['id'] ?? '') === $toolId) {
+                if (($descriptor['id'] ?? '') === $toolId
+                    || ($descriptor['name'] ?? '') === $toolId
+                ) {
                     return $provider;
                 }
             }
