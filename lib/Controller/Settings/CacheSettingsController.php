@@ -3,6 +3,9 @@
 /**
  * OpenRegister Cache Settings Controller
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -74,6 +77,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with cache statistics or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
      */
     public function getCacheStats(): JSONResponse
     {
@@ -94,6 +99,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with clear cache result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
      */
     public function clearCache(): JSONResponse
     {
@@ -117,6 +124,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with warmup result or error
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
      */
     public function warmupNamesCache(): JSONResponse
     {
@@ -136,6 +145,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with warmup interval config
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
      */
     public function getWarmupInterval(): JSONResponse
     {
@@ -178,6 +189,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated interval config
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
      */
     public function setWarmupInterval(): JSONResponse
     {
@@ -226,57 +239,6 @@ class CacheSettingsController extends Controller
     }//end setWarmupInterval()
 
     /**
-     * Clear a specific SOLR collection by name
-     *
-     * @param string $name The name of the collection to clear
-     *
-     * @return JSONResponse The clear result
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|422, array{success: bool, message: mixed|string, collection: string},
-     *     array<never, never>>
-     */
-    public function clearSpecificCollection(string $name): JSONResponse
-    {
-        try {
-            $guzzleSolrService = $this->indexService;
-
-            // Clear the specific collection.
-            $result = $guzzleSolrService->clearIndex($name);
-
-            if ($result['success'] === true) {
-                return new JSONResponse(
-                    data: [
-                        'success'    => true,
-                        'message'    => 'Collection cleared successfully',
-                        'collection' => $name,
-                    ],
-                    statusCode: 200
-                );
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success'    => false,
-                    'message'    => $result['message'] ?? 'Failed to clear collection',
-                    'collection' => $name,
-                ],
-                statusCode: 422
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success'    => false,
-                    'message'    => 'Collection clear failed: '.$e->getMessage(),
-                    'collection' => $name,
-                ],
-                statusCode: 422
-            );
-        }//end try
-    }//end clearSpecificCollection()
-
-    /**
      * Invalidate the Nextcloud app store cache.
      *
      * This forces Nextcloud to fetch fresh app data from apps.nextcloud.com
@@ -293,6 +255,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with invalidation result
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
      */
     public function clearAppStoreCache(): JSONResponse
     {
