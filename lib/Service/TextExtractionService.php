@@ -14,6 +14,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
  */
 
 declare(strict_types=1);
@@ -33,7 +35,10 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\EmlParseException;
 use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Service\TextExtraction\EmlStructure;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -101,6 +106,13 @@ class TextExtractionService
      * @var string
      */
     private const RECURSIVE_CHARACTER = 'RECURSIVE_CHARACTER';
+
+    /**
+     * Lazy-loaded EmlParser instance (avoids circular DI dependency).
+     *
+     * @var EmlParser|null
+     */
+    private ?EmlParser $emlParser = null;
 
     /**
      * Fixed size splitting strategy
@@ -957,6 +969,9 @@ class TextExtractionService
             } else if ($this->isSpreadsheet(mimeType: $mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet(file: $file);
+            } else if ($mimeType === 'message/rfc822') {
+                // Extract flat plain-text from EML file.
+                $extractedText = $this->extractEml(file: $file);
             }//end if
 
             if (isset($extractedText) === false) {
@@ -2017,6 +2032,237 @@ class TextExtractionService
 
         return in_array($mimeType, $spreadsheetTypes, true) === true;
     }//end isSpreadsheet()
+
+    /**
+     * Extract flat plain-text from an EML (message/rfc822) file.
+     *
+     * Delegates to EmlParser::parse() then EmlParser::flatten().
+     * On EmlParseException the error is logged (with PII-safe message per ADR-005)
+     * and null is returned — matching the existing extraction-failure pattern.
+     *
+     * @param \OCP\Files\File $file Nextcloud file node.
+     *
+     * @return string|null Flat plain-text or null on failure.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     */
+    private function extractEml(\OCP\Files\File $file): ?string
+    {
+        try {
+            $emlParser = $this->getEmlParser();
+            $structure = $emlParser->parse(file: $file);
+
+            return $emlParser->flatten(
+                structure: $structure,
+                depth: 0,
+                fileId: $file->getId(),
+                bytesExtractor: fn(string $bytes, string $mimeType) => $this->extractTextFromContent(
+                    content: $bytes,
+                    mimeType: $mimeType
+                )
+            );
+        } catch (EmlParseException $e) {
+            $sanitised = $this->getEmlParser()->sanitiseExceptionMessage($e->getMessage());
+            $this->logger->error(
+                message: '[TextExtractionService] EML extraction failed',
+                context: [
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
+                    'fileId'         => $file->getId(),
+                    'mimeType'       => 'message/rfc822',
+                    'exceptionClass' => get_class($e),
+                    'detail'         => $sanitised,
+                ]
+            );
+            return null;
+        }//end try
+    }//end extractEml()
+
+    /**
+     * Parse an EML file into a structured EmlStructure value object.
+     *
+     * Throws EmlParseException on irrecoverable parse failure. Callers should
+     * catch EmlParseException and handle their fallback path (e.g. DocuDesk's
+     * eml-pdf-assembly falls back to the flat extractEml text on failure).
+     *
+     * @param \OCP\Files\File $file Nextcloud file node.
+     *
+     * @return EmlStructure Parsed EML structure.
+     *
+     * @throws EmlParseException On irrecoverable parse failure.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     */
+    public function parseEmlStructured(\OCP\Files\File $file): EmlStructure
+    {
+        return $this->getEmlParser()->parse(file: $file);
+    }//end parseEmlStructured()
+
+    /**
+     * Extract plain text from raw content bytes given a MIME type.
+     *
+     * Used by EmlParser to extract text from attachment bytes (PDF, Word, text)
+     * without requiring a Nextcloud File object. Writes bytes to a temp file
+     * and calls the appropriate extractor.
+     *
+     * @param string $content  Raw content bytes.
+     * @param string $mimeType MIME type of the content.
+     *
+     * @return string|null Extracted text, or null if not extractable.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple MIME-type branches required
+     */
+    public function extractTextFromContent(string $content, string $mimeType): ?string
+    {
+        // For text/* types, the bytes are already plain text.
+        if (strpos($mimeType, 'text/') === 0) {
+            return $this->ensureUtf8Content(content: $content);
+        }
+
+        // Write to temp file for parsers that require a file path.
+        $tempFile = tmpfile();
+        if ($tempFile === false) {
+            return null;
+        }
+
+        $tempPath = stream_get_meta_data($tempFile)['uri'];
+        fwrite($tempFile, $content);
+
+        try {
+            if ($mimeType === 'application/pdf') {
+                return $this->extractPdfFromPath(path: $tempPath);
+            }
+
+            if ($this->isWordDocument(mimeType: $mimeType) === true) {
+                return $this->extractWordFromPath(path: $tempPath);
+            }
+        } finally {
+            fclose($tempFile);
+        }
+
+        return null;
+    }//end extractTextFromContent()
+
+    /**
+     * Extract text from a PDF file given its filesystem path.
+     *
+     * @param string $path Filesystem path to the PDF file.
+     *
+     * @return string|null Extracted text, or null on failure.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) PdfParser instantiation is the standard pattern
+     */
+    private function extractPdfFromPath(string $path): ?string
+    {
+        if (class_exists('Smalot\PdfParser\Parser') === false) {
+            return null;
+        }
+
+        try {
+            $parser = new \Smalot\PdfParser\Parser();
+            $pdf    = $parser->parseFile($path);
+            $text   = $pdf->getText();
+            return $text !== '' ? $text : null;
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[TextExtractionService] PDF attachment extraction failed',
+                context: ['exceptionClass' => get_class($e)]
+            );
+            return null;
+        }
+    }//end extractPdfFromPath()
+
+    /**
+     * Extract text from a Word document given its filesystem path.
+     *
+     * @param string $path Filesystem path to the Word document.
+     *
+     * @return string|null Extracted text, or null on failure.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex document structure traversal
+     */
+    private function extractWordFromPath(string $path): ?string
+    {
+        if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
+            return null;
+        }
+
+        try {
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($path);
+            $text    = '';
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText') === true) {
+                        $text .= $element->getText()."\n";
+                    }
+                }
+            }
+
+            return trim($text) !== '' ? $text : null;
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[TextExtractionService] Word attachment extraction failed',
+                context: ['exceptionClass' => get_class($e)]
+            );
+            return null;
+        }
+    }//end extractWordFromPath()
+
+    /**
+     * Ensure raw bytes are valid UTF-8 for text/* content.
+     *
+     * @param string $content Raw content bytes.
+     *
+     * @return string UTF-8 string.
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     */
+    private function ensureUtf8Content(string $content): string
+    {
+        if (mb_check_encoding(value: $content, encoding: 'UTF-8') === true) {
+            return $content;
+        }
+
+        $detected = mb_detect_encoding(string: $content, encodings: null, strict: false);
+        if ($detected !== false) {
+            try {
+                return mb_convert_encoding(string: $content, to_encoding: 'UTF-8', from_encoding: $detected);
+            } catch (\Exception $e) {
+                // Best-effort fallback.
+            }
+        }
+
+        return mb_convert_encoding(string: $content, to_encoding: 'UTF-8', from_encoding: 'UTF-8');
+    }//end ensureUtf8Content()
+
+    /**
+     * Get or lazily create the EmlParser instance.
+     *
+     * EmlParser is not injected via DI to avoid a circular dependency:
+     * EmlParser → TextExtractionService (for attachment text extraction).
+     * Instead, we pass a resolver closure that provides $this lazily.
+     *
+     * @return EmlParser
+     *
+     * @spec openspec/changes/text-extraction-eml/tasks.md#task-4.1
+     */
+    private function getEmlParser(): EmlParser
+    {
+        if ($this->emlParser === null) {
+            $this->emlParser = new EmlParser(
+                logger: $this->logger
+            );
+        }
+
+        return $this->emlParser;
+    }//end getEmlParser()
 
     /**
      * Get detection method name based on language
