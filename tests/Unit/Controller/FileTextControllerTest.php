@@ -564,7 +564,7 @@ class FileTextControllerTest extends TestCase
         $fileNode = $this->createMock(\OCP\Files\File::class);
         $fileNode->method('getName')->willReturn('test.pdf');
         $this->fileService->method('getFileById')->willReturn($fileNode);
-        $this->entityRelationMapper->method('findEntitiesForFile')->willReturn([]);
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')->willReturn([]);
 
         $result = $this->controller->anonymizeFile(1);
 
@@ -590,7 +590,7 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'SSN',
             ],
         ];
-        $this->entityRelationMapper->method('findEntitiesForFile')
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')
             ->with(10)
             ->willReturn($entityData);
 
@@ -610,9 +610,14 @@ class FileTextControllerTest extends TestCase
             }))
             ->willReturn($anonymizedFileNode);
 
-        $this->entityRelationMapper->expects($this->once())
-            ->method('markAsAnonymized')
-            ->with(10, $this->stringStartsWith('anonymized_'));
+        // Per PR #1503 review: the controller MUST NOT call
+        // markAsAnonymized — it's the redaction path's responsibility
+        // (DocumentProcessingHandler::anonymizeDocument, which is mocked
+        // here via $this->fileService). A controller-side mark would
+        // race the redaction-path mark on this same fileId and clobber
+        // the per-entity placeholder values.
+        $this->entityRelationMapper->expects($this->never())
+            ->method('markAsAnonymized');
 
         $result = $this->controller->anonymizeFile(10);
 
@@ -647,7 +652,7 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'ORGANIZATION',
             ],
         ];
-        $this->entityRelationMapper->method('findEntitiesForFile')
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')
             ->willReturn($entityData);
 
         $anonymizedFileNode = $this->createMock(\OCP\Files\File::class);
@@ -662,7 +667,9 @@ class FileTextControllerTest extends TestCase
             }))
             ->willReturn($anonymizedFileNode);
 
-        $this->entityRelationMapper->expects($this->once())
+        // Same as above: marking ownership belongs to the redaction
+        // path (mocked via $this->fileService), not the controller.
+        $this->entityRelationMapper->expects($this->never())
             ->method('markAsAnonymized');
 
         $result = $this->controller->anonymizeFile(5);
@@ -701,7 +708,7 @@ class FileTextControllerTest extends TestCase
                 'entity_type'  => 'PERSON',
             ],
         ];
-        $this->entityRelationMapper->method('findEntitiesForFile')
+        $this->entityRelationMapper->method('findEntitiesForAnonymization')
             ->willReturn($entityData);
 
         $this->fileService->method('anonymizeDocument')

@@ -514,8 +514,11 @@ class FileTextController extends Controller
                 );
             }
 
-            // Get detected entities for this file.
-            $entityData = $this->entityRelationMapper->findEntitiesForFile($fileId);
+            // Get detected entities for this file, excluding those the operator
+            // has flagged with skip_anonymization=true. Per the
+            // `entity-relation-grondslagen` change, the anonymise pass MUST NOT
+            // redact rows that carry an operator skip decision.
+            $entityData = $this->entityRelationMapper->findEntitiesForAnonymization($fileId);
 
             if (empty($entityData) === true) {
                 return new JSONResponse(
@@ -558,14 +561,18 @@ class FileTextController extends Controller
                 ]
             );
 
-            // Perform anonymization.
+            // Perform anonymization. `anonymizeDocument` is the canonical
+            // caller of `EntityRelationMapper::markAsAnonymized` per the
+            // `entity-relation-grondslagen` Requirement on canonical
+            // marking ownership: marking the source's relation rows is the
+            // responsibility of the redaction path itself (which exists on
+            // every entry point — HTTP, DI, event listeners), not the
+            // controller (which is bypassed by the non-HTTP paths). A
+            // controller-side mark would conflict with the DocumentProcessingHandler's
+            // mark on this same fileId (second UPDATE overwrites
+            // `anonymized_value`), so this controller MUST NOT call
+            // `markAsAnonymized` directly.
             $anonymizedFile = $this->fileService->anonymizeDocument($fileNode, $entities);
-
-            // Mark entity relations as anonymized.
-            $this->entityRelationMapper->markAsAnonymized(
-                fileId: $fileId,
-                anonymizedValue: 'anonymized_'.date('Y-m-d_H-i-s')
-            );
 
             $this->logger->info(
                 message: '[FileTextController] File anonymized successfully',

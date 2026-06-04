@@ -81,15 +81,19 @@ class DocumentProcessingHandler
     /**
      * Constructor for DocumentProcessingHandler.
      *
-     * @param IRootFolder             $rootFolder  Root folder for file access.
-     * @param IUserSession            $userSession User session for getting current user.
-     * @param LoggerInterface         $logger      Logger for logging operations.
-     * @param OfficeDocumentSanitizer $sanitizer   Office document sanitiser (DOCX / ODT).
+     * @param IRootFolder                               $rootFolder           Root folder for file access.
+     * @param IUserSession                              $userSession          User session for getting current user.
+     * @param LoggerInterface                           $logger               Logger for logging operations.
+     * @param \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper Used to honour skip-anonymization
+     *                                                                        flags during the redaction pass
+     *                                                                        (see `entity-relation-grondslagen`).
+     * @param OfficeDocumentSanitizer                   $sanitizer            Office document sanitiser (DOCX / ODT).
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
+        private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
         private readonly OfficeDocumentSanitizer $sanitizer
     ) {
     }//end __construct()
@@ -205,17 +209,63 @@ class DocumentProcessingHandler
         // Reset any report from a prior call on this (potentially reused) handler.
         $this->lastSanitizationReport = null;
 
+        // Resolve the source file id once — the substitution placeholder
+        // format and the post-redaction audit flag both key off it.
+        $fileId = 0;
+        if (method_exists($node, 'getId') === true) {
+            $candidate = $node->getId();
+            if (is_int($candidate) === true && $candidate > 0) {
+                $fileId = $candidate;
+            }
+        }
+
+        // Defensive filter — per the `entity-relation-grondslagen` change,
+        // the DI anonymise path MUST honour the operator's skip decisions
+        // even when the caller's entities[] array includes flagged
+        // occurrences. The OR contract is "skipped relations are never
+        // redacted, full stop", regardless of caller filtering behaviour.
+        $skippedValues = [];
+        if ($fileId > 0) {
+            $skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
+        }
+
+        // Resolve the existing entity-id map for this file so substitutions
+        // use the stable `[<TYPE>: <entity_id>]` placeholder format —
+        // matches what DocuDesk's grondslagen-summary report shows and
+        // makes re-runs of anonymise on the same document idempotent
+        // (the previous UUID-prefix fallback produced a fresh placeholder
+        // per call, so re-anonymising the same file produced byte-divergent
+        // output despite identical inputs).
+        $entityIdMap = [];
+        if ($fileId > 0) {
+            $entityIdMap = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
+        }
+
         // Build replacements array from entities.
         $replacements = [];
         foreach ($entities as $entity) {
             $originalText = $entity['text'] ?? '';
             $entityType   = $entity['entityType'] ?? 'UNKNOWN';
-            $key          = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
 
-            if (empty($originalText) === false) {
+            if (empty($originalText) === true
+                || in_array($originalText, $skippedValues, true) === true
+            ) {
+                continue;
+            }
+
+            // Prefer stable per-entity placeholder. Fall back to the
+            // legacy UUID-prefix only when there is no matching entity
+            // row on the file (shouldn't happen in the normal
+            // extract → review → anonymise flow, but defensive against
+            // direct DI callers that bypass extraction).
+            if (isset($entityIdMap[$originalText]) === true) {
+                $stableId = $entityIdMap[$originalText]['id'];
+                $replacements[$originalText] = '['.$entityType.': '.$stableId.']';
+            } else {
+                $key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
                 $replacements[$originalText] = '['.$entityType.': '.$key.']';
             }
-        }
+        }//end foreach
 
         // Generate anonymized file name.
         $fileName      = $node->getName();
@@ -231,20 +281,48 @@ class DocumentProcessingHandler
         // walker cannot reach (comments, tracked changes, metadata, custom XML,
         // person field codes, hyperlink URLs). Sanitise to a clean derivative
         // BEFORE the entity walker pass. The original NC file is untouched.
+        // Both branches assign $anonymizedFile so the markAsAnonymized audit
+        // flag below runs for every path (per `entity-relation-grondslagen`).
         if (($node instanceof File) === true
             && $this->sanitizer->isSanitizable($node->getMimeType()) === true
         ) {
-            return $this->anonymizeSanitizableDocument(
+            $anonymizedFile = $this->anonymizeSanitizableDocument(
                 node: $node,
                 replacements: $replacements,
                 outputName: $anonymizedFileName
             );
+        } else {
+            // Entity anonymisation is GDPR-critical: fail closed (strict) if any
+            // original entity text survives in the output rather than writing a
+            // file marked '_anonymized' that still contains it.
+            $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName, strict: true);
         }
 
-        // Entity anonymisation is GDPR-critical: fail closed if any original
-        // entity text survives in the output (PDF path) rather than writing a
-        // file marked '_anonymized' that still contains it.
-        return $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName, strict: true);
+        // Flip the source's EntityRelation rows to `anonymized = 1` so the
+        // anonymised state is queryable downstream. `markAsAnonymized`
+        // skips rows where `skip_anonymization = 1` per the
+        // `entity-relation-grondslagen` contract — operator skips are
+        // preserved. The placeholder value is a generic "[REDACTED]"
+        // because each entity got its own per-row replacement key earlier
+        // in this method; the column stores a single representative value
+        // per anonymise call, not the full per-entity placeholder list.
+        if ($fileId > 0 && empty($replacements) === false) {
+            try {
+                $this->entityRelationMapper->markAsAnonymized($fileId, '[REDACTED]');
+            } catch (\Throwable $e) {
+                // Persistence-side failure on the audit flag MUST NOT mask
+                // the successful redaction; the file is already written.
+                // Surface via warning log; downstream summary reports
+                // simply won't see this file until the next anonymise
+                // call retries the mark.
+                $this->logger->warning(
+                    'DocumentProcessingHandler: markAsAnonymized failed after redaction',
+                    ['fileId' => $fileId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        return $anonymizedFile;
     }//end anonymizeDocument()
 
     /**
