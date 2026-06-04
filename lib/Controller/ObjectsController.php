@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
@@ -221,10 +222,17 @@ class ObjectsController extends Controller
     /**
      * Strip server-managed @self fields from client-supplied object data.
      *
+<<<<<<< HEAD
      * The top-level filter in create/update/patch/postPatch already passes @self
      * through unchanged because certain integrations legitimately set @self.slug
      * or @self.relations. However, several @self sub-fields MUST NOT be accepted from
      * client input because they are either server-authoritative (owner, organisation)
+=======
+     * The top-level filter in create/update/patch/postPatch already passes `@self`
+     * through unchanged because certain integrations legitimately set `@self.slug`
+     * or `@self.relations`. However, several `@self` sub-fields MUST NOT be accepted
+     * from client input because they are either server-authoritative (owner, organisation)
+>>>>>>> origin/development
      * or carry security-sensitive semantics (authorization, groups).
      *
      * The service layer (SaveObject::setSelfMetadata + applyOwnerAttribution) enforces
@@ -1996,6 +2004,10 @@ class ObjectsController extends Controller
                 ],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception to avoid being absorbed as a 403 with
+            // a non-structured body. See the `self-folder-access-control` capability spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -2174,6 +2186,9 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception. See `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -2355,6 +2370,9 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception. See `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             $this->logger->error(
@@ -2491,6 +2509,12 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception so a @self.folder
+            // denial on the post-patch path returns 403 with the structured
+            // body (no folder-id oracle) — same contract as create/update/patch.
+            // See the `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         }//end try
@@ -3857,4 +3881,50 @@ class ObjectsController extends Controller
 
         return $result;
     }//end stripEmptyValues()
+
+    /**
+     * Build the structured HTTP 403 response for a folder-access denial.
+     *
+     * Per the `self-folder-access-control` capability spec, every save
+     * endpoint that propagates `FolderAccessDeniedException` MUST return
+     * status 403 with body `{ "error": "folder_access_denied" }`.
+     *
+     * The body does NOT echo the attempted folder ID. Doing so would add
+     * an enumeration oracle: a caller probing `@self.folder` with sequential
+     * integers could distinguish "folder exists but I can't read it" (403)
+     * from "folder does not exist" (auto-create / no-op) just by observing
+     * the response shape. Returning a uniform 403 with no folder context
+     * forces the attacker to rely on the status code alone — which is already
+     * a documented privacy property of the spec — and removes the body-level
+     * confirmation. The caller already knows which folder ID they sent.
+     *
+     * The exception's `getAttemptedFolderId()` still carries the ID for
+     * server-side logging and the audit trail.
+     *
+     * Centralised here so the three save endpoints (create / update / postPatch)
+     * stay in sync without copy-pasting the response shape.
+     *
+     * @param FolderAccessDeniedException $exception The denial exception carrying the attempted folder ID.
+     *
+     * @return JSONResponse HTTP 403 with the structured body.
+     */
+    private function folderAccessDeniedResponse(FolderAccessDeniedException $exception): JSONResponse
+    {
+        // Side-effect: ensure the attempted ID is recorded server-side
+        // (visible in the audit trail via logFolderAccessDenied + the
+        // exception message) even though we do NOT echo it back to the
+        // caller. `$exception` is referenced only to make the audit
+        // intent clear; the structured body is intentionally minimal.
+        $this->logger?->info(
+            '[ObjectsController] Folder access denied — returning 403',
+            [
+                'attemptedFolderId' => $exception->getAttemptedFolderId(),
+            ]
+        );
+
+        return new JSONResponse(
+            data: ['error' => 'folder_access_denied'],
+            statusCode: FolderAccessDeniedException::HTTP_STATUS
+        );
+    }//end folderAccessDeniedResponse()
 }//end class

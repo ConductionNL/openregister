@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
 use OCA\OpenRegister\Formats\SemVerFormat;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -1482,6 +1483,11 @@ class ValidateObject
         // Register custom format validators using our helper method that supports named parameters.
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'bsn', resolver: new BsnFormat());
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'semver', resolver: new SemVerFormat());
+
+        // Accept ISO 8601 date-time input (optional seconds/timezone), overriding the
+        // opis built-in date-time format whose regex mandates seconds. Storage still
+        // normalises to a DATETIME column and reads emit RFC 3339.
+        $this->registerCustomFormat(validator: $validator, type: 'string', format: 'date-time', resolver: new Iso8601DateTimeFormat());
 
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 

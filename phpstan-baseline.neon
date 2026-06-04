@@ -2761,11 +2761,6 @@ parameters:
 			path: lib/Db/AuditTrailMapper.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setSession\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/AuditTrailMapper.php
-
-		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setSize\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
@@ -4707,11 +4702,6 @@ parameters:
 
 		-
 			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:fopen\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/File/DocumentProcessingHandler.php
-
-		-
-			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:getContent\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/File/DocumentProcessingHandler.php
 

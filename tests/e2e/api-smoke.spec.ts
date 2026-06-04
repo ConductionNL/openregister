@@ -11,7 +11,7 @@
  *
  * Closes the api-test-coverage spec's "automated Playwright tests"
  * track at the smoke level — deeper UI flows live in the per-app
- * Playwright suites (opencatalogi, mydash, etc.) per the cross-app
+ * Playwright suites (opencatalogi, launchpad, etc.) per the cross-app
  * hand-off pattern.
  */
 import { test, expect } from '@playwright/test'

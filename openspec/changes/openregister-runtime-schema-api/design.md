@@ -4,7 +4,7 @@ OpenRegister already exposes CRUD routes on `/api/schemas` and
 `/api/registers`. They were originally built for the OpenRegister admin
 UI, which is used by Nextcloud admins to inspect data — not for runtime
 schema authoring by non-admin citizen developers. Three things break
-when the OpenBuilt builder UI (`openbuilt-schema-editor`, chain spec #4)
+when the OpenBuild builder UI (`openbuild-schema-editor`, chain spec #4)
 starts hitting these routes:
 
 1. `SchemaCacheHandler` warms a per-request `array` cache from
@@ -23,14 +23,14 @@ starts hitting these routes:
    builder UI, the installer's `repair` step does not run, so the
    Register row never appears.
 
-The 2026-05-11 `bootstrap-openbuilt` smoke test (commit 3138e4c titled
+The 2026-05-11 `bootstrap-openbuild` smoke test (commit 3138e4c titled
 *"Runtime smoke test — fix 5 real bugs"*) caught these gaps end-to-end.
 Two of the five bugs are platform-level concerns that this spec resolves
-in OpenRegister; the other three were OpenBuilt-local fixes already
+in OpenRegister; the other three were OpenBuild-local fixes already
 landed on the apply branch.
 
 The reference is at:
-`apps-extra/openbuilt/openspec/changes/bootstrap-openbuilt/design.md`
+`apps-extra/openbuild/openspec/changes/bootstrap-openbuild/design.md`
 sections **Decision 4** (in-memory manifest workaround) and **OQ-1**
 (on_state lifecycle hooks vs PHP listener). OQ-1 in particular is the
 upstream question this spec answers for the lifecycle engine: per-schema
@@ -44,7 +44,7 @@ reload is the supported in-process path.
   correct on the first request after mutation in any PHP worker —
   no stale cache reads, no stale engine bindings.
 - Ship a documented, idempotent auto-Register step in
-  `importFromApp` so runtime callers (OpenBuilt, future builders)
+  `importFromApp` so runtime callers (OpenBuild, future builders)
   get a complete (Configuration, Schemas, Register) triple from one
   call.
 - Bridge slug-aware callers to the numeric-ID `searchObjects`
@@ -57,7 +57,7 @@ reload is the supported in-process path.
 **Non-Goals:**
 
 - Frontend / UI work: the builder UI lives in chain spec #4 in the
-  openbuilt repo, not here.
+  openbuild repo, not here.
 - Permission model overhaul: `openregister.schema.write` already
   guards the existing routes; per-organisation RBAC on runtime schema
   authoring is chain spec #7.
@@ -127,10 +127,10 @@ absent ID and is a no-op if no entry exists.
   alive for minutes-to-hours; a builder UI cannot wait for a worker
   recycle to see its own schema edit.
 
-This is the upstream answer to `bootstrap-openbuilt` OQ-1: the
+This is the upstream answer to `bootstrap-openbuild` OQ-1: the
 lifecycle engine grows a real `reloadForSchema` hook, and the
 ADR-031 fallback `BuiltAppRouteSyncListener` becomes unnecessary on
-the OpenBuilt side.
+the OpenBuild side.
 
 ### Decision 3 — Auto-Register creation: idempotent on `(slug, organisationId)`
 

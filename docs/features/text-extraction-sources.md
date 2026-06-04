@@ -303,7 +303,7 @@ flowchart TD
     Local --> Parse{File Format?}
     Parse -->|TXT/HTML| Direct[Direct Read]
     Parse -->|PDF| PDFLib[PDF Parser Library]
-    Parse -->|DOCX| DOCXLib[PhpOffice Library]
+    Parse -->|DOCX/DOC/ODT| DOCXLib[PhpOffice Library]
     Parse -->|Image| NotSupported[Not Supported]
     
     API --> DolphinProcess[AI Processing + OCR]
@@ -327,6 +327,19 @@ flowchart TD
     style Chunk fill:#4caf50
     style Error fill:#f44336
 ```
+
+### Word-family extraction (DOCX / DOC / ODT)
+
+Word documents are parsed with PhpOffice/PhpWord. The reader is selected from the
+file's MIME type / extension — `.docx` → `Word2007`, legacy `.doc` → `MsDoc`,
+`.odt` → `ODText` — so all three formats load (previously only `.docx` did).
+
+Extraction is **content-complete**: a recursive element walker captures the full
+document body **including tables** (and nested tables, in-cell text-runs and list
+items), plus section **headers and footers** and document-level **footnotes and
+endnotes**. A per-document parse failure (e.g. a legacy `.doc` the limited `MsDoc`
+reader cannot read) is logged with structural detail only — no document content,
+per ADR-005 — and yields an empty result rather than aborting the batch.
 
 ### File Metadata Preserved
 

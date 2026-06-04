@@ -303,7 +303,7 @@ class EntityRecognitionHandler
                 $entity = $this->findOrCreateEntity(
                     type: $detected['type'],
                     value: $detected['value'],
-                    category: $detected['category'] ?? $this->getCategoryForType(type: $detected['type'])
+                    category: $detected['category'] ?? self::getCategoryForType(type: $detected['type'])
                 );
 
                 // Create entity relation.
@@ -779,7 +779,7 @@ class EntityRecognitionHandler
             $entities[] = [
                 'type'           => $entityType,
                 'value'          => $value,
-                'category'       => $this->getCategoryForType(type: $entityType),
+                'category'       => self::getCategoryForType(type: $entityType),
                 'position_start' => $start,
                 'position_end'   => $end,
                 'confidence'     => $score,
@@ -949,11 +949,19 @@ class EntityRecognitionHandler
     /**
      * Get category for entity type.
      *
-     * @param string $type Entity type.
+     * Lifted to `public static` so flows that produce GdprEntity rows
+     * outside the detector pipeline (notably the manual-entity endpoint
+     * in `ManualEntityService`) can derive the same category mapping
+     * without taking on this handler's DI graph. The `oc_openregister_entities.category`
+     * column is NOT NULL with no default — every insert path MUST set it,
+     * and consistency with detector-produced rows is desirable so the
+     * catalogue stays homogeneous.
      *
-     * @return string Category.
+     * @param string $type Entity type tag (e.g. `PERSON`, `IBAN`).
+     *
+     * @return string One of the `CATEGORY_*` constants on this class.
      */
-    private function getCategoryForType(string $type): string
+    public static function getCategoryForType(string $type): string
     {
         return match ($type) {
             self::ENTITY_TYPE_PERSON,

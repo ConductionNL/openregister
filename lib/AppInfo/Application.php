@@ -527,6 +527,25 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // EntityRelationMapper is registered explicitly because it constructor-injects
+        // `IEventDispatcher` to dispatch `EntityRelationDecisionUpdatedEvent`. Every
+        // other event-dispatcher-dependent mapper in this method (SchemaMapper,
+        // RegisterMapper, MagicMapper, WebhookMapper) is wired explicitly to avoid
+        // depending on NC's autowirer resolution of framework-interface keys, which
+        // has historically been version-sensitive.
+        $context->registerService(
+            EntityRelationMapper::class,
+            function (ContainerInterface $container) {
+                return new EntityRelationMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
     }//end registerMappersWithCircularDependencies()
 
     /**
@@ -568,6 +587,7 @@ class Application extends App implements IBootstrap
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
                     fileService: null
                 );
             }
@@ -1890,7 +1910,7 @@ class Application extends App implements IBootstrap
      * 2. The canonical FQCN built from ucfirst($appId).
      * 3. (Optional) A FQCN derived from the `<namespace>` declared in info.xml,
      *    when the declared namespace differs from ucfirst($appId) (covers camel-cased
-     *    app names like `openbuilt` → `OpenBuilt`).
+     *    app names like `openbuild` → `OpenBuild`).
      *
      * @param string $appId      The Nextcloud app id.
      * @param mixed  $appManager The IAppManager instance.

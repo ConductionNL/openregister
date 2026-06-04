@@ -81,6 +81,8 @@ class TransitionEngine
      *                          the action is not allowed from the current
      *                          state, or the underlying save is rejected.
      *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Linear resolve→guard→mutate→save flow; splitting would obscure the transition contract.
+     *
      * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
      */
     public function transition(string $objectId, string $action): ObjectEntity
@@ -159,14 +161,22 @@ class TransitionEngine
         // the transition on save; the guard (if any) will run there too.
         $data[$field] = $targetState;
 
+        // Snapshot the session user at the transition boundary and forward it
+        // explicitly to the save path, so the @self.folder check uses the SAME
+        // identity that authorised this transition. Note this does NOT rescue
+        // the null-session case: with no session user $actingUser is null and
+        // the downstream check default-denies — as intended (PR #1431 4th-pass).
+        $actingUser = $this->userSession->getUser();
+
         $saved = $this->objectService->saveObject(
             object: $data,
             register: $object->getRegister(),
             schema: $object->getSchema(),
-            uuid: $object->getUuid()
+            uuid: $object->getUuid(),
+            currentUser: $actingUser
         );
 
-        $userId = $this->userSession->getUser()?->getUID();
+        $userId = $actingUser?->getUID();
 
         $this->eventDispatcher->dispatchTyped(
             new ObjectTransitionedEvent(

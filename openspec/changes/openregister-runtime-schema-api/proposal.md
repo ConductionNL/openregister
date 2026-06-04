@@ -3,12 +3,12 @@ kind: mixed
 depends_on: []
 chain:
   - openregister-runtime-schema-api   # THIS spec
-  - openbuilt-schema-editor           # consumer (lives in openbuilt repo)
+  - openbuild-schema-editor           # consumer (lives in openbuild repo)
 ---
 
-## OpenBuilt chain context
+## OpenBuild chain context
 
-This is spec #3 of the 9-spec OpenBuilt chain. OpenBuilt is the in-Nextcloud
+This is spec #3 of the 9-spec OpenBuild chain. OpenBuild is the in-Nextcloud
 citizen-developer app that lets a non-admin author a fully-functional app —
 including its data model — without shipping a PHP register PR. Today every
 new schema must be added to `lib/Settings/{app}_register.json` on disk and
@@ -16,19 +16,19 @@ imported on install, which means a citizen developer cannot create a new
 domain entity at runtime. This spec closes that gap by completing the
 runtime CRUD on `/api/schemas` and `/api/registers`, hardening cache and
 declarative-engine reload on mutation, and folding two real bugs found
-during the `bootstrap-openbuilt` smoke test (commit 3138e4c) back into
+during the `bootstrap-openbuild` smoke test (commit 3138e4c) back into
 the platform: importFromApp must auto-create the Register entity, and
 slug-aware searches must resolve slugs before reaching `ObjectService`.
 
-The consumer in spec #4 (`openbuilt-schema-editor`, lives in the openbuilt
+The consumer in spec #4 (`openbuild-schema-editor`, lives in the openbuild
 repo) will be the first caller; OpenCatalogi and softwarecatalog will
 adopt the same path once they grow their own runtime schema editors.
 
 ## Why
 
-OpenBuilt cannot ship a runtime schema authoring surface while OpenRegister
+OpenBuild cannot ship a runtime schema authoring surface while OpenRegister
 treats schema/register creation as an install-time, on-disk concern. The
-current code path has three concrete gaps that the `bootstrap-openbuilt`
+current code path has three concrete gaps that the `bootstrap-openbuild`
 smoke test exposed on 2026-05-11:
 
 1. **No cache invalidation on mutation.** `SchemaCacheHandler` warms a
@@ -54,7 +54,7 @@ smoke test exposed on 2026-05-11:
 
 This change is **not** about exposing new endpoints; the routes already
 exist. It is about making the runtime path correct, observable, and
-documented so OpenBuilt — and every future runtime-authoring caller —
+documented so OpenBuild — and every future runtime-authoring caller —
 can rely on it.
 
 ## What Changes
@@ -131,7 +131,7 @@ can rely on it.
 - **APIs:** No new endpoints; behaviour clarified on existing routes. DELETE
   gains a documented `?force=true` query flag.
 - **Consumers:**
-  - OpenBuilt (chain spec #4 `openbuilt-schema-editor`) — first caller
+  - OpenBuild (chain spec #4 `openbuild-schema-editor`) — first caller
   - OpenCatalogi / softwarecatalog — unchanged today; adopt later
   - Any client calling `ObjectService::searchObjects` directly is unchanged
 - **Database:** No migrations. No schema changes on the core tables.

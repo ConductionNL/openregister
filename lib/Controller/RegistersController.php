@@ -1248,8 +1248,8 @@ class RegistersController extends Controller
      *
      * This method imports data into a register in the specified format and returns a detailed summary.
      *
-     * @param int  $id    The ID of the register to import into
-     * @param bool $force Force import even if the same or newer version already exists
+     * @param int|string $id    The ID, UUID or slug of the register to import into
+     * @param bool       $force Force import even if the same or newer version already exists
      *
      * @return JSONResponse JSON response with import result or error
      *
@@ -1264,7 +1264,7 @@ class RegistersController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
      */
-    public function import(int $id, bool $force=false): JSONResponse
+    public function import(int|string $id, bool $force=false): JSONResponse
     {
         try {
             // Get the uploaded file.

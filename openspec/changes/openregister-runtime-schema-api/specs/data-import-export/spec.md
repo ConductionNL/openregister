@@ -22,18 +22,18 @@ Register wiring.
 
 #### Scenario: Application import without an existing register
 - **WHEN** `importFromApp` runs against a configuration carrying
-  `x-openregister.type=application`, `x-openregister.app=openbuilt`,
-  `info.title='OpenBuilt'`, `info.description='Citizen developer surface'`,
-  and 3 schemas where no Register row exists for `(openbuilt, currentOrg)`
-- **THEN** a new Register row is inserted with slug=`openbuilt`,
-  title=`OpenBuilt`, description=`Citizen developer surface`, and
+  `x-openregister.type=application`, `x-openregister.app=openbuild`,
+  `info.title='OpenBuild'`, `info.description='Citizen developer surface'`,
+  and 3 schemas where no Register row exists for `(openbuild, currentOrg)`
+- **THEN** a new Register row is inserted with slug=`openbuild`,
+  title=`OpenBuild`, description=`Citizen developer surface`, and
   `schemas` set to the 3 newly-created schema IDs
 
 #### Scenario: Application re-import on the same organisation
 - **WHEN** `importFromApp` runs against the same configuration in the
   same organisation a second time
 - **THEN** the existing Register row identified by
-  `(slug=openbuilt, organisationId=currentOrg)` is loaded, its
+  `(slug=openbuild, organisationId=currentOrg)` is loaded, its
   `schemas[]` field is reconciled to include any newly-imported schema
   IDs without duplicating existing entries, and no second Register row
   is inserted

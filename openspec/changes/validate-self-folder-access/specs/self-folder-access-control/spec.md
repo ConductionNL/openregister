@@ -12,7 +12,7 @@ Every non-empty numeric `@self.folder` write SHALL be denied by default unless a
 
 ### Requirement: Definition of "self"
 
-In this capability, "self" — the actor whose access governs the bind — is defined precisely as:
+The implementation MUST resolve "self" — the actor whose access governs the bind — using the following precedence, in order:
 
 1. The `IUser` explicitly passed to `FolderManagementHandler::createObjectFolderById()` via the `?IUser $currentUser` parameter, **if non-null**;
 2. Otherwise, the session user retrieved via `IUserSession::getUser()`, **if non-null**;
@@ -75,16 +75,21 @@ When `ObjectEntity::getFolder()` is empty OR is a non-numeric string (legacy pat
 
 ### Requirement: `FolderAccessDeniedException` is the canonical denial signal
 
-The system SHALL define a new exception class `FolderAccessDeniedException` in `lib/Exception/` that extends `\Exception`. Every denial path defined in the preceding requirement — unreadable folder, non-existent node, file instead of folder, trashed folder — SHALL throw this exception and no other. Controllers and services calling the save pipeline SHALL catch `FolderAccessDeniedException` specifically (not generic `\Exception`) and map it to HTTP 403 with a structured error body containing at minimum `{ "error": "folder_access_denied", "folder": "<requested-id>" }`.
+The system SHALL define a new exception class `FolderAccessDeniedException` in `lib/Exception/` that extends `\Exception`. Every denial path defined in the preceding requirement — unreadable folder, non-existent node, file instead of folder, trashed folder — SHALL throw this exception and no other. Controllers and services calling the save pipeline SHALL catch `FolderAccessDeniedException` specifically (not generic `\Exception`) and map it to HTTP 403 with a minimal structured error body: `{ "error": "folder_access_denied" }`. The response body SHALL NOT include the attempted folder ID — echoing it would constitute an enumeration oracle distinguishing "exists but inaccessible" from "does not exist" purely by response shape; the caller already knows which ID they sent, and the attempted ID is recorded server-side in the audit trail.
+
+The HTTP status code SHALL be exposed as a class constant `FolderAccessDeniedException::HTTP_STATUS = 403`. Controllers SHALL use this constant for the HTTP mapping. The exception's `code` value (`Exception::getCode()`) SHALL NOT be used to convey HTTP-status semantics — `getCode()` defaults to `0` and is reserved for application-level error codes, not HTTP statuses.
 
 #### Scenario: Exception class exists and extends `\Exception`
 - **WHEN** the codebase is analysed
 - **THEN** `OCA\OpenRegister\Exception\FolderAccessDeniedException` exists, extends `\Exception`, and is the parent class (no deeper hierarchy)
+- **AND** `FolderAccessDeniedException::HTTP_STATUS` is defined as the integer `403`
 
-#### Scenario: Controller returns HTTP 403 with structured body
-- **GIVEN** any save path throws `FolderAccessDeniedException`
+#### Scenario: Controller returns HTTP 403 with minimal structured body
+- **GIVEN** any save path (`create`, `update`, or `postPatch`) throws `FolderAccessDeniedException`
 - **WHEN** the HTTP controller returns its response
-- **THEN** the status is 403 and the body contains `error: "folder_access_denied"` and the requested folder ID
+- **THEN** the status is 403
+- **AND** the body contains `error: "folder_access_denied"`
+- **AND** the body MUST NOT contain the attempted folder ID under a `folder` key or any other key
 
 ### Requirement: Denial produces an audit-trail entry
 
@@ -126,3 +131,7 @@ The change SHALL NOT modify `FolderManagementHandler::getNodeById()`'s existing 
 - **GIVEN** `alice` POSTs with `@self.folder: "<bob's-folder-id>"` where the folder is not mounted in `alice`'s user folder
 - **WHEN** `createObjectFolderById()` attempts to resolve the ID
 - **THEN** the lookup fails (user-folder miss, no fallback), and `FolderAccessDeniedException` is thrown
+
+### Limitations
+
+- **Check-to-bind TOCTOU window.** Access is verified via `Folder::isReadable()` immediately before the bind, but a small time-of-check-to-time-of-use gap exists between that check and the subsequent file writes. An admin revoking a share in the milliseconds between check and bind would leave the object attached to a folder the actor can no longer read. The window is small and Nextcloud's share API does not expose programmatic mid-request revocation, so this is accepted rather than mitigated. Within a single request, the per-request revalidation cache is reset at the entry of each top-level `saveObject` / `saveObjects` call, so cascade-induced folder moves/trashes are re-checked.

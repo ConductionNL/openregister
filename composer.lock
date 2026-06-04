@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "74fbef263382676f4d61f6f55f0270ef",
+    "content-hash": "b3752fb3cd7b3b490ef89f7fe23672b5",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -303,6 +303,59 @@
                 "source": "https://github.com/cweagans/composer-patches/tree/1.7.3"
             },
             "time": "2022-12-20T22:53:13+00:00"
+        },
+        {
+            "name": "ddn/sapp",
+            "version": "dev-feat/cross-line-matching",
+            "source": {
+                "type": "git",
+                "url": "https://codeberg.org/Conduction/sapp.git",
+                "reference": "8952dfe"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://codeberg.org/api/v1/repos/Conduction/sapp/archive/8952dfe5a5c60f5b83de748afde5ae333f0b008f.zip",
+                "reference": "8952dfe",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": ">=7.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ddn\\sapp\\": "src/"
+                }
+            },
+            "license": [
+                "LGPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos A.",
+                    "email": "caralla@upv.es"
+                }
+            ],
+            "description": "Simple and Agnostic PDF Parser (SAPP): Edit, manipulate and sign PDF documents usign PHP",
+            "keywords": [
+                "electronic signature",
+                "pdf",
+                "php",
+                "sign",
+                "signature"
+            ],
+            "support": {
+                "source": "https://codeberg.org/Conduction/sapp/branch/feat/cross-line-matching",
+                "issues": "https://codeberg.org/Conduction/sapp/issues"
+            },
+            "funding": [
+                {
+                    "type": "custom",
+                    "url": "https://paypal.me/caralla"
+                }
+            ],
+            "time": "2026-05-29T15:37:17+00:00"
         },
         {
             "name": "dompdf/dompdf",
@@ -12685,6 +12738,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
+        "ddn/sapp": 20,
         "roave/security-advisories": 20
     },
     "prefer-stable": false,
@@ -12692,9 +12746,9 @@
     "platform": {
         "php": "^8.3"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.3"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

@@ -614,7 +614,7 @@ services:
       - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
       - ../softwarecatalog:/var/www/html/custom_apps/softwarecatalog
       - ../nldesign:/var/www/html/custom_apps/nldesign
-      - ../mydash:/var/www/html/custom_apps/mydash
+      - ../launchpad:/var/www/html/custom_apps/launchpad
       - ../opentalk:/var/www/html/custom_apps/opentalk
       - ../valtimo:/var/www/html/custom_apps/valtimo
       - ../openzaak:/var/www/html/custom_apps/openzaak

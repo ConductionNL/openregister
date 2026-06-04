@@ -326,6 +326,25 @@ class FileService
     private FileAuditHandler $fileAuditHandler;
 
     /**
+     * Per-request memoization for the defense-in-depth folder-access
+     * re-validation done by `assertObjectFolderAccessible`.
+     *
+     * Keyed `"{uid}:{folderId}"` (or `"__no_user__:{folderId}"` when no
+     * acting user resolves). Only successful re-validations are cached;
+     * denials re-throw and re-check on retry. The cache lives for the
+     * lifetime of the FileService instance — i.e. one HTTP request — so
+     * bulk imports / cascade saves stop re-running
+     * `getUserFolder() + getById()` filesystem I/O on every iteration.
+     * PR #1431 concern.
+     *
+     * Access changes are not propagated mid-request anyway, so a cache
+     * hit here returns the same verdict the live check would.
+     *
+     * @var array<string, true>
+     */
+    private array $folderAccessRevalidationCache = [];
+
+    /**
      * Root folder name for all OpenRegister files.
      *
      * @var            string
@@ -678,6 +697,9 @@ class FileService
             }
 
             return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
+        } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
+            // Access denials must propagate to the controller for HTTP 403 with structured body.
+            throw $e;
         } catch (exception $e) {
             $this->logger->error(
                 message: '[FileService] Failed to create folder for entity: {message}',
@@ -689,7 +711,7 @@ class FileService
                 ]
             );
             return null;
-        }
+        }//end try
     }//end createEntityFolder()
 
     /**
@@ -837,6 +859,86 @@ class FileService
             registerId: $registerId
         );
     }//end getObjectFolder()
+
+    /**
+     * Re-validate the access check on an existing object's bound folder.
+     *
+     * Used by `ObjectService::ensureObjectFolder` to close the
+     * defense-in-depth gap flagged on PR #1431: pre-PR cross-tenant
+     * bindings (rows where `_folder` references a node the current
+     * actor cannot read) would otherwise pass through subsequent
+     * saves that don't touch `@self.folder` because `setSelfMetadata`
+     * only fires when `@self.folder` is present in the write payload.
+     *
+     * Re-running `assertFolderIsAccessible` on every save through
+     * `ensureObjectFolder` makes the check apply uniformly. A
+     * denial throws `FolderAccessDeniedException` (HTTP 403) at the
+     * controller layer.
+     *
+     * No-op when the object has no folder bound or the bound value
+     * is non-numeric (legacy path-style folder, handled by the
+     * auto-create branch in ensureObjectFolder).
+     *
+     * **Acting user resolution.** `$currentUser` is forwarded verbatim
+     * to `assertFolderIsAccessible` and follows that method's
+     * documented precedence: when non-null it is used as-is, otherwise
+     * `IUserSession::getUser()` is consulted, otherwise the bind is
+     * denied. Non-HTTP callers (cron, import pipelines, event listeners)
+     * MUST pass an explicit `$currentUser` to avoid the
+     * session-user-is-null → default-deny path; HTTP callers can omit
+     * the argument and rely on session resolution.
+     *
+     * @param ObjectEntity $object      The existing object whose folder must be re-validated.
+     * @param IUser|null   $currentUser Explicit acting user; falls back to session resolution.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the acting user cannot access the bound folder.
+     */
+    public function assertObjectFolderAccessible(ObjectEntity $object, ?IUser $currentUser=null): void
+    {
+        $folder = $object->getFolder();
+        if ($folder === null || $folder === '' || is_numeric($folder) === false) {
+            return;
+        }
+
+        // Per-request memoization. Resolve the acting user the same way
+        // `FolderManagementHandler::assertFolderIsAccessible` will (explicit
+        // arg → session → null) so the cache key matches the access-grant
+        // tuple the inner method actually evaluates.
+        $actingUser = ($currentUser ?? $this->userSession->getUser());
+        $cacheKey   = (($actingUser?->getUID() ?? '__no_user__').':'.$folder);
+        if (isset($this->folderAccessRevalidationCache[$cacheKey]) === true) {
+            return;
+        }
+
+        $this->folderManagementHandler->assertFolderIsAccessible(
+            folderId: (string) $folder,
+            currentUser: $currentUser,
+            objectEntity: $object
+        );
+
+        // Only cache successes — failures re-throw and re-check on retry.
+        $this->folderAccessRevalidationCache[$cacheKey] = true;
+    }//end assertObjectFolderAccessible()
+
+    /**
+     * Reset the per-request folder-access revalidation cache.
+     *
+     * `isReadable()` is a snapshot of mount/share/ACL/trash state. Within a
+     * single request that state CAN change — a cascade save may move or trash
+     * the parent folder. Because the cache lives for the FileService instance
+     * (≈ the whole request), a stale "accessible" verdict could otherwise
+     * survive such a mutation. Callers bound the cache to a single save API
+     * call by invoking this at the entry of `saveObject` / `saveObjects`, so
+     * each top-level write re-validates against current state.
+     *
+     * @return void
+     */
+    public function resetFolderAccessRevalidationCache(): void
+    {
+        $this->folderAccessRevalidationCache = [];
+    }//end resetFolderAccessRevalidationCache()
 
     /**
      * Returns a share link for the given IShare object.

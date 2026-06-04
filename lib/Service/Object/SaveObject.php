@@ -63,6 +63,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -256,28 +257,29 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param MagicMapper                 $objectEntityMapper   Object entity mapper
-     * @param MagicMapper                 $unifiedObjectMapper  Unified object mapper for object operations
-     * @param MetadataHydrationHandler    $metaHydrationHandler Handler for metadata extraction
-     * @param FilePropertyHandler         $filePropertyHandler  Handler for file property operations
-     * @param LinkedEntityPropertyHandler $linkedEntityHandler  Linked entity property handler
-     * @param IUserSession                $userSession          User session service
-     * @param AuditTrailMapper            $auditTrailMapper     Audit trail mapper for logging changes
-     * @param SchemaMapper                $schemaMapper         Schema mapper for schema operations
-     * @param RegisterMapper              $registerMapper       Register mapper for register operations
-     * @param IURLGenerator               $urlGenerator         URL generator service
-     * @param OrganisationService         $organisationService  Service for organisation operations
-     * @param CacheHandler                $cacheHandler         Object cache service for entity and query caching
-     * @param SettingsService             $settingsService      Settings service for accessing trail settings
-     * @param PropertyRbacHandler         $propertyRbacHandler  Property-level RBAC handler
-     * @param ComputedFieldHandler        $computedFieldHandler Handler for computed field evaluation
-     * @param TranslationHandler          $translationHandler   Handler for translation operations
-     * @param LoggerInterface             $logger               Logger interface for logging operations
-     * @param TmloService                 $tmloService          TMLO archival metadata service
-     * @param ArrayLoader                 $arrayLoader          Twig array loader for template rendering
-     * @param IGroupManager|null          $groupManager         Group manager for admin-bypass detection
-     * @param IAppConfig|null             $appConfig            App-config reader for the admin-bypass toggle
-     * @param IEventDispatcher|null       $eventDispatcher      Event dispatcher for reference validation events
+     * @param MagicMapper                                            $objectEntityMapper      Object entity mapper
+     * @param MagicMapper                                            $unifiedObjectMapper     Unified object mapper for object operations
+     * @param MetadataHydrationHandler                               $metaHydrationHandler    Handler for metadata extraction
+     * @param FilePropertyHandler                                    $filePropertyHandler     Handler for file property operations
+     * @param LinkedEntityPropertyHandler                            $linkedEntityHandler     Linked entity property handler
+     * @param IUserSession                                           $userSession             User session service
+     * @param AuditTrailMapper                                       $auditTrailMapper        Audit trail mapper for logging changes
+     * @param SchemaMapper                                           $schemaMapper            Schema mapper for schema operations
+     * @param RegisterMapper                                         $registerMapper          Register mapper for register operations
+     * @param IURLGenerator                                          $urlGenerator            URL generator service
+     * @param OrganisationService                                    $organisationService     Service for organisation operations
+     * @param CacheHandler                                           $cacheHandler            Object cache service for entity and query caching
+     * @param SettingsService                                        $settingsService         Settings service for accessing trail settings
+     * @param PropertyRbacHandler                                    $propertyRbacHandler     Property-level RBAC handler
+     * @param ComputedFieldHandler                                   $computedFieldHandler    Handler for computed field evaluation
+     * @param TranslationHandler                                     $translationHandler      Handler for translation operations
+     * @param LoggerInterface                                        $logger                  Logger interface for logging operations
+     * @param TmloService                                            $tmloService             TMLO archival metadata service
+     * @param \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler Folder access-control gateway (cross-tenant denial)
+     * @param ArrayLoader                                            $arrayLoader             Twig array loader for template rendering
+     * @param IGroupManager|null                                     $groupManager            Group manager for admin-bypass detection
+     * @param IAppConfig|null                                        $appConfig               App-config reader for the admin-bypass toggle
+     * @param IEventDispatcher|null                                  $eventDispatcher         Event dispatcher for reference validation events
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
@@ -302,6 +304,7 @@ class SaveObject
         private readonly TranslationHandler $translationHandler,
         private readonly LoggerInterface $logger,
         private readonly TmloService $tmloService,
+        private readonly \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler,
         ArrayLoader $arrayLoader,
         private readonly ?IGroupManager $groupManager=null,
         private readonly ?IAppConfig $appConfig=null,
@@ -2636,6 +2639,7 @@ class SaveObject
      * @param bool                     $silent        Whether to skip audit trail creation and events (default: false).
      * @param bool                     $_validation   Whether to validate the object (default: true).
      * @param array|null               $uploadedFiles Uploaded files array (optional).
+     * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks; falls back to the session user when null.
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -2657,7 +2661,8 @@ class SaveObject
         bool $persist=true,
         bool $silent=false,
         bool $_validation=true,
-        ?array $uploadedFiles=null
+        ?array $uploadedFiles=null,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Extract UUID and @self metadata from data.
         [$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -2782,7 +2787,8 @@ class SaveObject
                         selfData: $selfData,
                         folderId: $folderId,
                         persist: $persist,
-                        silent: $silent
+                        silent: $silent,
+                        currentUser: $currentUser
                     );
                 } finally {
                     $this->popSaveCallFrame(key: $frameKey);
@@ -2827,7 +2833,8 @@ class SaveObject
                 folderId: $folderId,
                 persist: $persist,
                 silent: $silent,
-                _multitenancy: $_multitenancy
+                _multitenancy: $_multitenancy,
+                currentUser: $currentUser
             );
         } finally {
             $this->popSaveCallFrame(key: $frameKey);
@@ -3018,6 +3025,7 @@ class SaveObject
      * @param int|null     $folderId       Folder ID
      * @param bool         $persist        Whether to persist changes
      * @param bool         $silent         Whether to skip audit trail
+     * @param IUser|null   $currentUser    Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
      *
      * @return ObjectEntity Updated object
      *
@@ -3031,7 +3039,8 @@ class SaveObject
         array $selfData,
         ?int $folderId,
         bool $persist,
-        bool $silent
+        bool $silent,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Check archival immutability: destroyed and transferred objects cannot be modified.
         $retention    = $existingObject->getRetention() ?? [];
@@ -3062,7 +3071,8 @@ class SaveObject
             schema: $schema,
             data: $data,
             selfData: $selfData,
-            folderId: $folderId
+            folderId: $folderId,
+            currentUser: $currentUser
         );
 
         // If not persisting, return the prepared object.
@@ -3096,6 +3106,7 @@ class SaveObject
      * @param bool        $persist       Whether to persist changes
      * @param bool        $silent        Whether to skip audit trail
      * @param bool        $_multitenancy Whether to apply multitenancy
+     * @param IUser|null  $currentUser   Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
      *
      * @return ObjectEntity Created object
      *
@@ -3116,7 +3127,8 @@ class SaveObject
         ?int $folderId,
         bool $persist,
         bool $silent,
-        bool $_multitenancy
+        bool $_multitenancy,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Create a new object entity.
         $objectEntity = new ObjectEntity();
@@ -3140,7 +3152,8 @@ class SaveObject
             schema: $schema,
             data: $data,
             selfData: $selfData,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            currentUser: $currentUser
         );
 
         // Apply archival metadata from schema archive configuration.
@@ -3364,6 +3377,7 @@ class SaveObject
      * @param array        $data          The object data.
      * @param array        $selfData      The @self metadata.
      * @param bool         $_multitenancy Whether to apply multitenancy filtering.
+     * @param IUser|null   $currentUser   Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
      *
      * @return ObjectEntity The prepared object entity.
      *
@@ -3380,10 +3394,11 @@ class SaveObject
         Schema $schema,
         array $data,
         array $selfData,
-        bool $_multitenancy
+        bool $_multitenancy,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Set @self metadata properties.
-        $this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data);
+        $this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
 
         // Set UUID if provided, otherwise generate a new one.
         if ($objectEntity->getUuid() === null) {
@@ -3503,6 +3518,7 @@ class SaveObject
      * @param array        $data           The updated object data.
      * @param array        $selfData       The @self metadata.
      * @param int|null     $folderId       The folder ID to set on the object.
+     * @param IUser|null   $currentUser    Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
      *
      * @return ObjectEntity The prepared object entity.
      *
@@ -3515,10 +3531,11 @@ class SaveObject
         Schema $schema,
         array $data,
         array $selfData,
-        ?int $folderId
+        ?int $folderId,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Set @self metadata properties.
-        $this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data);
+        $this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
 
         // Set folder ID if provided.
         if ($folderId !== null) {
@@ -3588,6 +3605,7 @@ class SaveObject
      * @param ObjectEntity $objectEntity The object entity to set metadata on.
      * @param array        $selfData     The @self metadata.
      * @param array        $data         The object data (for generated values like slug).
+     * @param IUser|null   $currentUser  Explicit acting user for the `@self.folder` access check; falls back to the session user when null.
      *
      * @return void
      *
@@ -3596,8 +3614,12 @@ class SaveObject
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
-    private function setSelfMetadata(ObjectEntity $objectEntity, array $selfData, array $data=[]): void
-    {
+    private function setSelfMetadata(
+        ObjectEntity $objectEntity,
+        array $selfData,
+        array $data=[],
+        ?IUser $currentUser=null
+    ): void {
         // Extract and set slug property if present (check both @self and data).
         $slug = $selfData['slug'] ?? $data['slug'] ?? null;
         if (empty($slug) === false) {
@@ -3621,10 +3643,10 @@ class SaveObject
         if (array_key_exists('organisation', $selfData) === true
             && empty($selfData['organisation']) === false
         ) {
-            $currentUser = $this->userSession->getUser();
-            $isAdmin     = $currentUser !== null
+            $sessionUser = $this->userSession->getUser();
+            $isAdmin     = $sessionUser !== null
                 && $this->groupManager !== null
-                && $this->groupManager->isAdmin($currentUser->getUID()) === true;
+                && $this->groupManager->isAdmin($sessionUser->getUID()) === true;
 
             // Only allow admin, or callers who actually belong to the requested organisation.
             if ($isAdmin === true
@@ -3637,6 +3659,46 @@ class SaveObject
             // stamp the caller's active organisation via getOrganisationForNewEntity().
         }
 
+        // Propagate @self.folder so the access-control check governs the bind
+        // (numeric → access-checked, empty/legacy → auto-create). Without
+        // propagation a user-supplied @self.folder is silently dropped —
+        // defeating the whole `self-folder-access-control` capability.
+        if (array_key_exists('folder', $selfData) === true && empty($selfData['folder']) === false) {
+            $folderValue = (string) $selfData['folder'];
+
+            // For folder values that are a bare positive integer node id (the
+            // format produced by explicit `@self.folder` writes), require that
+            // the acting user can read the target folder — otherwise reject the
+            // bind with `FolderAccessDeniedException`. We gate on `ctype_digit`
+            // rather than `is_numeric` so floats / scientific-notation / signed
+            // strings (e.g. "42.5", "4e2", "+42") don't slip through and then
+            // get `(int)`-truncated to a *different* node than was validated.
+            // Legacy non-numeric values fall through to the auto-create path.
+            if (ctype_digit($folderValue) === true) {
+                // Pass `$currentUser` through so the access check uses the
+                // SAME user identity that the downstream
+                // `createObjectFolderById` check uses on the lazy-init path.
+                // When `$currentUser` is null (HTTP path), both checks fall
+                // back to `IUserSession::getUser()` and agree by default.
+                // When `$currentUser` is non-null (DI / event listener path),
+                // both checks use it explicitly — no chance of one site
+                // passing while another denies because of session vs explicit
+                // user disagreement.
+                $this->folderManagementHandler->assertFolderIsAccessible(
+                    folderId: $folderValue,
+                    currentUser: $currentUser,
+                    objectEntity: $objectEntity
+                );
+
+                // Normalise to the canonical integer string so the persisted
+                // value matches the node that was validated (no "42.5" vs "42"
+                // drift in audit / analytics / equality checks).
+                $folderValue = (string) (int) $folderValue;
+            }//end if
+
+            $objectEntity->setFolder($folderValue);
+        }//end if
+
         // SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
         // from client input on CREATE.  The destruction pipeline keys off archiefstatus;
         // a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
@@ -3645,7 +3707,11 @@ class SaveObject
         // resetting archiefstatus to 'actief' for new objects, overriding any client value.
         // On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
         // Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
+<<<<<<< HEAD
         // No setTmlo() call — the field is intentionally omitted.
+=======
+        // (No setTmlo() call — the field is intentionally omitted).
+>>>>>>> origin/development
     }//end setSelfMetadata()
 
     /**

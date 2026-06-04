@@ -80,7 +80,7 @@ their PAT is configured and via the server PAT with attribution otherwise.
   audit log) — all in `add-github-issue-proxy`.
 - GitHub Discussions integration.
 - "Accept feature → specter spec proposal" automation.
-- Adoption PRs in opencatalogi, docudesk, openconnector, mydash,
+- Adoption PRs in opencatalogi, docudesk, openconnector, launchpad,
   zaakafhandelapp, procest, pipelinq, softwarecatalog, larpingapp,
   decidesk, nldesign — separate ADR-019 + per-app PRs.
 - Webpack-plugin wrapper for the manifest generator.

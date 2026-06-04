@@ -4,7 +4,7 @@
 
 Discovered in openconnector while porting #733 → #843 (`SynchronizationService::updateTargetOpenRegister`): the call site has a UUID in hand but does not pass register/schema. A buggy or compromised payload from a foreign sync can delete an object in a completely unrelated app's magic table. The original #733 workaround was a per-candidate scope-check via `ObjectService::find($uuid, $register, $schema)` before the unscoped delete — works, but every caller has to remember.
 
-Same pattern lives across the fleet (decidesk, mydash, procest, pipelinq do equivalent housekeeping). A scoped API turns this from "every caller's responsibility" into "the storage layer refuses cross-scope deletes by construction".
+Same pattern lives across the fleet (decidesk, launchpad, procest, pipelinq do equivalent housekeeping). A scoped API turns this from "every caller's responsibility" into "the storage layer refuses cross-scope deletes by construction".
 
 ## What Changes
 
@@ -30,4 +30,4 @@ Same pattern lives across the fleet (decidesk, mydash, procest, pipelinq do equi
 - **lib/Service/ObjectServiceMapperAdapter.php** — `delete($criteria)` now forwards `$this->register` / `$this->schema` to `objectService->deleteObject()`.
 - **tests/Unit/Service/Object/DeleteObjectTest.php** — scope-honouring + cross-magic-table-collision test cases.
 - **No callers break** — all existing positional/named-arg calls keep the same behaviour because the new parameters default to `null` (which preserves the old `findAcrossAllSources` lookup).
-- **Cross-app**: this is the API openconnector#843, decidesk, mydash, procest, pipelinq will migrate onto; this change does not change their code, only enables the migration.
+- **Cross-app**: this is the API openconnector#843, decidesk, launchpad, procest, pipelinq will migrate onto; this change does not change their code, only enables the migration.
