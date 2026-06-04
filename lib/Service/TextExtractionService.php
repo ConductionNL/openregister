@@ -2055,11 +2055,24 @@ class TextExtractionService
 
             $chunkLength = strlen($chunk);
 
-            if (strlen(trim($chunk)) >= self::MIN_CHUNK_SIZE) {
-                $chunks[] = [
-                    'text'         => trim($chunk),
-                    'start_offset' => $offset,
-                    'end_offset'   => $offset + $chunkLength,
+            $trimmedChunk = trim($chunk);
+            if (strlen($trimmedChunk) >= self::MIN_CHUNK_SIZE) {
+                // Align the persisted absolute offset with the trimmed text we
+                // store. trim() drops leading whitespace, so the first char of
+                // `text_content` sits `leadingWhitespace` bytes after the raw
+                // window start ($offset). Persisting the raw $offset would make
+                // every regex offset computed against `text_content` (and added
+                // to start_offset by ChunkTextMatcher) wrong by that amount —
+                // and two overlapping chunks with different leading-whitespace
+                // counts would then derive DIFFERENT absolute positions for the
+                // same occurrence, defeating absolute-position dedup and
+                // inserting duplicate EntityRelation rows (design §D2).
+                $leadingWhitespace = (strlen($chunk) - strlen(ltrim($chunk)));
+                $trimmedStart      = ($offset + $leadingWhitespace);
+                $chunks[]          = [
+                    'text'         => $trimmedChunk,
+                    'start_offset' => $trimmedStart,
+                    'end_offset'   => ($trimmedStart + strlen($trimmedChunk)),
                 ];
             }
 
