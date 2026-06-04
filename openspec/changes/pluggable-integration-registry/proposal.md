@@ -15,7 +15,7 @@ Two further problems sit underneath that gap:
 1. **The mechanism is not extensible.** `LinkedEntityService::TYPE_COLUMN_MAP` is a hardcoded PHP constant. `CnObjectSidebar` hardcodes its five tabs with inline imports. Adding an integration today requires changes to the core of both OpenRegister and `@conduction/nextcloud-vue`.
 2. **External services have no path.** Consumers have asked for OpenProject, XWiki, and similar integrations. The current design gives them nowhere to plug in — the `TYPE_COLUMN_MAP` is NC-native by construction.
 
-The consuming apps (OpenCatalogi, Procest, Pipelinq, ZaakAfhandelApp, MyDash, Softwarecatalog, Decidesk, DocuDesk, Larpingapp) would all benefit from a richer, consistent set of integrations on every detail page and dashboard — but the current architecture makes every new integration a core-library change.
+The consuming apps (OpenCatalogi, Procest, Pipelinq, ZaakAfhandelApp, LaunchPad, Softwarecatalog, Decidesk, DocuDesk, Larpingapp) would all benefit from a richer, consistent set of integrations on every detail page and dashboard — but the current architecture makes every new integration a core-library change.
 
 ## Context
 
@@ -40,7 +40,7 @@ The consuming apps (OpenCatalogi, Procest, Pipelinq, ZaakAfhandelApp, MyDash, So
   - NL Design System theming (components use Nextcloud CSS variables only)
 - **Org-wide ADRs that constrain this:** ADR-004 (Frontend — Vue 2, axios, components), ADR-007 (i18n — nl + en required), ADR-010 (NL Design System), ADR-011 (Schema standards), ADR-017 (Component composition).
 - **Meta-ADR question (raised during exploration, pending):** Conduction apps should *consume* OpenRegister's abstractions (registers, schemas, objects, integrations) rather than build parallel mechanisms. No org-wide ADR currently codifies this principle. A companion org-wide ADR ("Apps consume OpenRegister abstractions") is recommended but lives outside this umbrella in `hydra/openspec/architecture/`.
-- **Consuming apps with case / detail views that will gain from this:** Procest (zaakafhandeling), Pipelinq (kanban), ZaakAfhandelApp (ZGW), OpenCatalogi (catalog entries), Decidesk (decisions/minutes), DocuDesk (document workflows), MyDash (personal dashboard), Softwarecatalog, Larpingapp.
+- **Consuming apps with case / detail views that will gain from this:** Procest (zaakafhandeling), Pipelinq (kanban), ZaakAfhandelApp (ZGW), OpenCatalogi (catalog entries), Decidesk (decisions/minutes), DocuDesk (document workflows), LaunchPad (personal dashboard), Softwarecatalog, Larpingapp.
 
 ## Proposed Solution
 

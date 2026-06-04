@@ -41,5 +41,5 @@
 ## 7. Documentation
 
 - [x] 7.1 Reference openregister#1638 in the commit message and PR body.
-- [x] 7.2 Note in the PR body that openconnector#843, decidesk, mydash, procest, and pipelinq become candidates for a follow-up migration sweep (out of scope for this PR).
+- [x] 7.2 Note in the PR body that openconnector#843, decidesk, launchpad, procest, and pipelinq become candidates for a follow-up migration sweep (out of scope for this PR).
 - [x] 7.3 PR labels: `ready-for-code-review`, `ready-for-security-review`.

@@ -2,7 +2,7 @@
 
 ## Why
 
-OpenRegister is the foundation for every Conduction app — opencatalogi, docudesk, softwarecatalog, zaakafhandelapp, mydash, larpingapp, procest, pipelinq — meaning every undetected regression in `lib/` cascades into the entire product line. The codebase has ~708 PHP source files with only ~422 unit tests today, leaving the largest classes (MagicMapper, ObjectService, organisation/multi-tenancy paths, webhook delivery, format converters) under-covered on error branches and edge cases. ADR-008 already mandates a 75% coverage gate but it is not enforced in CI, so coverage drifts. This change writes the missing tests, locks in the gate, and standardises how unit tests are written across the codebase.
+OpenRegister is the foundation for every Conduction app — opencatalogi, docudesk, softwarecatalog, zaakafhandelapp, launchpad, larpingapp, procest, pipelinq — meaning every undetected regression in `lib/` cascades into the entire product line. The codebase has ~708 PHP source files with only ~422 unit tests today, leaving the largest classes (MagicMapper, ObjectService, organisation/multi-tenancy paths, webhook delivery, format converters) under-covered on error branches and edge cases. ADR-008 already mandates a 75% coverage gate but it is not enforced in CI, so coverage drifts. This change writes the missing tests, locks in the gate, and standardises how unit tests are written across the codebase.
 
 ## What Changes
 

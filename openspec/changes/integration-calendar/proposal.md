@@ -12,7 +12,7 @@ OpenRegister can already link CalDAV VEVENT entries to objects via `CalendarEven
 - **Required NC app:** `calendar` (and CalDAV backend, always present in NC core)
 - **Storage strategy:** `link-table` augmented by CalDAV custom properties (X-OPENREGISTER-*) for reverse discovery
 - **Depends on:** `pluggable-integration-registry` (umbrella) — the registry contract, parity gate, surface model
-- **Cross-app demand:** Procest (case meetings), Pipelinq (kanban deadlines), Decidesk (council meetings), ZaakAfhandelApp (zaak afspraken), MyDash (personal agenda overview)
+- **Cross-app demand:** Procest (case meetings), Pipelinq (kanban deadlines), Decidesk (council meetings), ZaakAfhandelApp (zaak afspraken), LaunchPad (personal agenda overview)
 
 ## Proposed Solution
 

@@ -30,7 +30,7 @@ or duplicate the schema.
 The manifest's `dependencies` field SHALL be an empty array `[]`. OpenRegister
 is the platform foundation; it has no upstream Conduction-app dependencies.
 This matches ADR-024 §10's explicit guidance for the foundation repo (the
-only other app with `dependencies: []` is `mydash`, per the same ADR).
+only other app with `dependencies: []` is `launchpad`, per the same ADR).
 
 #### Scenario: Foundation declares no dependencies
 

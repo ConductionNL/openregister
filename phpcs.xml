@@ -9,7 +9,7 @@
     <exclude-pattern>*/vendor-bin/*</exclude-pattern>
     <exclude-pattern>*/node_modules/*</exclude-pattern>
     <exclude-pattern>composer-setup.php</exclude-pattern>
-    <!-- Apps that ship a verbatim template snapshot under lib/Resources/template/ (e.g. openbuilt)
+    <!-- Apps that ship a verbatim template snapshot under lib/Resources/template/ (e.g. openbuild)
          keep it out of lint scope; no-op for apps without the directory. -->
     <exclude-pattern>lib/Resources/template/*</exclude-pattern>
 
