@@ -217,6 +217,21 @@ class DocumentProcessingHandler
             }
         }
 
+        // Order needles longest-first so overlapping entities cannot clobber
+        // each other: with insertion order, a bare "Amsterdam" [LOCATION]
+        // earlier in the map rewrites "De gemeente Amsterdam" to
+        // "De gemeente [LOCATION: …]" before the longer needle
+        // "gemeente Amsterdam" gets a chance to match, leaving it
+        // unmatched and mis-typed. Longest-first guarantees every needle
+        // sees the still-untouched text it was detected in. Equal lengths
+        // tie-break bytewise for deterministic (idempotent re-run) output.
+        uksort(
+            $replacements,
+            static function (string $left, string $right): int {
+                return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
+            }
+        );
+
         // Generate anonymized file name.
         $fileName      = $node->getName();
         $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);

@@ -247,16 +247,32 @@ class PdfTextReplacer
             return;
         }//end try
 
+        // Whitespace-normalise the haystack so entity text that the PDF
+        // splits across line breaks ("14 mei\n2026") is still detected —
+        // smalot re-extraction inserts the line structure, but the entity
+        // is semantically present either way. Needles get the same
+        // treatment below so both sides compare in collapsed-space form.
+        $normalisedExtracted = (string) preg_replace('/\s+/u', ' ', $extracted);
+
         $residual = [];
         foreach (array_keys($substitutions) as $needle) {
             if ($needle === '') {
                 continue;
             }
 
-            // Case-insensitive, multibyte-safe substring check via
-            // `mb_stripos` — Conduction entities can include non-ASCII
-            // characters (e.g. Dutch surnames with diacritics).
-            if (mb_stripos($extracted, (string) $needle) !== false) {
+            $normalisedNeedle = trim((string) preg_replace('/\s+/u', ' ', (string) $needle));
+            if ($normalisedNeedle === '') {
+                continue;
+            }
+
+            // Case-SENSITIVE, multibyte-safe substring check via `mb_strpos`
+            // — mirrors the replacement engine's guarantee. SAPP replaces
+            // exact-case needles only, so a case-insensitive probe here
+            // flagged text that was never a detected entity (e.g. the
+            // lowercase domain in "www.amsterdam.nl" tripping on the
+            // LOCATION needle "Amsterdam") and failed runs that were in
+            // fact fully anonymised.
+            if (mb_strpos($normalisedExtracted, $normalisedNeedle) !== false) {
                 $residual[] = (string) $needle;
             }
         }
