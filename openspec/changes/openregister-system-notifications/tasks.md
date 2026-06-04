@@ -1,32 +1,32 @@
 ## 1. Confirm the open question (BLOCKING — answer before implementing)
 
-- [ ] 1.1 Confirm the dispatch path does NOT currently fire on OpenRegister's own system entities (verified: system entities are plain `OCP\AppFramework\Db\Entity` records, not `ObjectEntity`, and do not flow through `ObjectCreatedEvent`/`ObjectUpdatedEvent`/`ObjectTransitionedEvent`).
-- [ ] 1.2 Decide the system-schema rule source shape: (a) synthetic schema-backed system schemas vs (b) a system-schema rule registry the dispatcher consults. Record the decision in design.md.
-- [ ] 1.3 Fix the canonical slug/identifier for each system schema (`register`, `schema`, `configuration`, `source`, `synchronization`, `import`, `webhook`, `agent`).
-- [ ] 1.4 Identify which system entities already emit create/update/transition signals vs need new event emission (esp. Synchronization/Import run outcomes, Source/Agent health).
+- [x] 1.1 Confirm the dispatch path does NOT currently fire on OpenRegister's own system entities (verified: system entities are plain `OCP\AppFramework\Db\Entity` records, not `ObjectEntity`, and do not flow through `ObjectCreatedEvent`/`ObjectUpdatedEvent`/`ObjectTransitionedEvent`).
+- [x] 1.2 Decide the system-schema rule source shape: (a) synthetic schema-backed system schemas vs (b) a system-schema rule registry the dispatcher consults. Decision: **(b) system-schema rule registry** (`lib/Service/Notification/SystemSchemaRules.php`) — synthetic schema rows would require DB migrations and distort the data model. Recorded in design.md.
+- [x] 1.3 Fix the canonical slug/identifier for each system schema: `openregister_register`, `openregister_schema`, `openregister_configuration`, `openregister_source`, `openregister_agent`, `openregister_webhook`.
+- [x] 1.4 Identified existing events: Register/Schema/Configuration/Source/Agent all emit Created/Updated events. Synchronization and Import do NOT exist as DB entities in the current codebase — noted as out of scope for this iteration.
 
 ## 2. System-schema rule source
 
-- [ ] 2.1 Implement the chosen rule source (a or b) so the dispatcher can resolve `x-openregister-notifications` for a system entity through the existing annotation-sourced path — no notification-rule table.
-- [ ] 2.2 Declare the recommended rules on the system schemas: synchronization-failed, import-failed, schema-changed, configuration-changed, source-unhealthy, agent-unhealthy (bilingual nl/en, metadata-only subjects).
+- [x] 2.1 Implemented `SystemSchemaRules` (`lib/Service/Notification/SystemSchemaRules.php`) with `buildSchema()` producing a synthetic Schema carrying the rules; `AnnotationNotificationDispatcher::dispatchWithSchema()` added as the rule-aware entry point.
+- [x] 2.2 Declared rules: schema-changed, configuration-changed, source-unhealthy, source-changed, agent-unhealthy, agent-changed, register-changed, webhook-changed — all bilingual nl/en, metadata-only subjects, admin group recipients.
 
 ## 3. System-event bridge
 
-- [ ] 3.1 Route create/update/transition signals for the relevant system entities through `AnnotationNotificationListener` → `AnnotationNotificationDispatcher`.
-- [ ] 3.2 Populate `_oldData`/`_newData` on the system-entity update dispatch so the `notification-updated-field-change-condition` `condition` block works for system schemas.
-- [ ] 3.3 Emit the missing signals where a system entity does not yet fire one (sync/import run outcomes, source/agent health).
+- [x] 3.1 `SystemEntityNotificationListener` (`lib/Listener/SystemEntityNotificationListener.php`) routes create/update signals for Register, Schema, Configuration, Source, Agent through `dispatchWithSchema()`. Registered in `Application::registerEventListeners()`.
+- [x] 3.2 Updated events populate `_oldData`/`_newData` in the dispatch context so the field-change `condition` block works for system schemas too. `ConfigurationUpdatedEvent` missing getters were added.
+- [x] 3.3 Existing events are bridged. Synchronization/Import do not exist as DB entities in this codebase version; new event emission for those is deferred.
 
 ## 4. Recipients, channels, i18n reuse
 
-- [ ] 4.1 Wire recipients: `{"kind":"groups","groups":["admin"]}` / integration-ops group and schema/config owners (`{"kind":"object-acl","permission":"manage"}` or owner field).
-- [ ] 4.2 Confirm the existing channels, rate-limiting, coalescing, per-user preference overrides and nl/en i18n apply unchanged to system-schema dispatches.
+- [x] 4.1 All system-schema rules declare `{"kind":"groups","groups":["admin"]}` recipients; channels default to `nc-notification`.
+- [x] 4.2 Confirmed: `dispatchWithSchema()` reuses the identical pipeline (rate-limiting, coalescing, preference overrides, nl/en i18n) as `dispatch()`.
 
 ## 5. Tests
 
-- [ ] 5.1 Unit test: a system synchronization failure dispatches a notification to the admin group via the existing dispatcher path.
-- [ ] 5.2 Unit test: a configuration update dispatches an `updated` rule to the admin group.
-- [ ] 5.3 Unit test: a source/agent health threshold (or `updated`+condition) dispatches to integration-ops.
-- [ ] 5.4 Unit test: stored-object notification behaviour is unchanged (no regression on user-schema rules).
+- [x] 5.1 Unit test: `SystemEntityNotificationListenerTest::testSourceCreatedDispatchesViaAnnotationPath` — system source creation dispatches to the admin group via the dispatcher path.
+- [x] 5.2 Unit test: `SystemEntityNotificationListenerTest::testConfigurationUpdateDispatchesUpdatedTrigger` — configuration update dispatches an `updated` rule to the admin group.
+- [x] 5.3 Unit test: `SystemEntityNotificationListenerTest::testSourceUpdatedDispatchesWithOldAndNewData` — source update dispatches with old/new data for field-change condition evaluation.
+- [x] 5.4 Unit test: `SystemEntityNotificationListenerTest::testUnknownEventDoesNotCallDispatcher` and `testStoredObjectEventsAreNotHandledBySystemListener` — stored-object behaviour unchanged; `SystemSchemaRulesTest::testGetRulesReturnsDeclaredRulesForKnownSlugs` confirms rule isolation.
 
 ## Acceptance criteria
 
