@@ -267,6 +267,30 @@ class DocumentProcessingHandler
             }
         }//end foreach
 
+        // Order needles longest-first so overlapping entities cannot clobber
+        // each other: with insertion order, a bare "Amsterdam" [LOCATION]
+        // earlier in the map rewrites "De gemeente Amsterdam" to
+        // "De gemeente [LOCATION: …]" before the longer needle
+        // "gemeente Amsterdam" gets a chance to match, leaving it
+        // unmatched and mis-typed. Longest-first guarantees every needle
+        // sees the still-untouched text it was detected in for the
+        // str_ireplace branches (docx/odt/txt), which consume the map in
+        // insertion order; the PDF branch re-asserts the same ordering
+        // inside PdfTextReplacer::replaceInPdf so the guarantee survives
+        // SAPP-side changes. Equal lengths tie-break bytewise for
+        // deterministic (idempotent re-run) output. Params deliberately
+        // untyped: PHP coerces purely-numeric needle text ("2026", a
+        // spaceless BSN) to INT array keys, which would fatal a
+        // string-typed closure.
+        uksort(
+            $replacements,
+            static function ($left, $right): int {
+                $left  = (string) $left;
+                $right = (string) $right;
+                return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
+            }
+        );
+
         // Generate anonymized file name.
         $fileName      = $node->getName();
         $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
