@@ -1,0 +1,95 @@
+{
+  "spec": "openspec/changes/openregister-system-notifications",
+  "verified": [
+    {
+      "task": "1.1",
+      "file": "lib/Event/ObjectCreatedEvent.php",
+      "ok": true,
+      "note": "System entities confirmed not flowing through ObjectCreatedEvent/ObjectUpdatedEvent"
+    },
+    {
+      "task": "1.2",
+      "file": "lib/Service/SystemSchemaNotificationRegistry.php",
+      "ok": true,
+      "note": "Decision (b) implemented: system-rule registry"
+    },
+    {
+      "task": "1.3",
+      "file": "lib/Service/SystemSchemaNotificationRegistry.php",
+      "ok": true,
+      "note": "Slugs: register, schema, configuration, source, agent, webhook"
+    },
+    {
+      "task": "1.4",
+      "file": "lib/Event/",
+      "ok": true,
+      "note": "All 6 entity types have existing *Created/*Updated events, no new emission needed"
+    },
+    {
+      "task": "2.1",
+      "file": "lib/Service/SystemSchemaNotificationRegistry.php",
+      "ok": true
+    },
+    {
+      "task": "2.2",
+      "file": "lib/Service/SystemSchemaNotificationRegistry.php",
+      "ok": true,
+      "note": "Bilingual nl/en rules for register, schema, configuration (+syncStatus=failed), source, agent, webhook"
+    },
+    {
+      "task": "3.1",
+      "file": "lib/Listener/AnnotationNotificationListener.php",
+      "ok": true
+    },
+    {
+      "task": "3.2",
+      "file": "lib/Service/AnnotationNotificationDispatcher.php",
+      "ok": true,
+      "note": "Condition evaluator: changed/equals/from operators; fail-closed when oldData=null"
+    },
+    {
+      "task": "3.3",
+      "file": "lib/AppInfo/Application.php",
+      "ok": true,
+      "note": "10 event listener registrations added"
+    },
+    {
+      "task": "4.1",
+      "file": "lib/Service/SystemSchemaNotificationRegistry.php",
+      "ok": true,
+      "note": "Recipients declared as {kind:groups,groups:[admin]}"
+    },
+    {
+      "task": "4.2",
+      "file": "lib/Notification/Notifier.php",
+      "ok": true,
+      "note": "prepareSystemEntityNotification() renders bilingual template; INotificationManager reused"
+    },
+    {
+      "task": "5.1",
+      "file": "tests/Unit/Service/SystemSchemaNotificationRegistryTest.php",
+      "ok": true,
+      "note": "7 tests, all green"
+    },
+    {
+      "task": "5.2",
+      "file": "tests/Unit/Service/AnnotationNotificationDispatcherTest.php",
+      "ok": true,
+      "note": "11 tests, all green"
+    },
+    {
+      "task": "5.3",
+      "file": "tests/Unit/Service/AnnotationNotificationDispatcherTest.php",
+      "ok": true,
+      "note": "testSourceHealthConditionDispatchesToGroup covers integration-ops group dispatch"
+    },
+    {
+      "task": "5.4",
+      "file": "tests/Unit/Service/AnnotationNotificationDispatcherTest.php",
+      "ok": true,
+      "note": "testStoredObjectRulePathUnaffected: empty rules → 0 notifications, no errors"
+    }
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
