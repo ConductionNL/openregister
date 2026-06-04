@@ -279,6 +279,7 @@ export default {
 
 	watch: {
 		/**
+		 * @param newValue
 		 * @spec exclude watcher reloading file types when modal opens
 		 */
 		show(newValue) {

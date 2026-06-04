@@ -27,6 +27,7 @@ export class Conversation implements TConversation {
 	public messageCount?: number
 
 	/**
+	 * @param conversation
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(conversation: TConversation) {

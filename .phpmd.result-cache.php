@@ -1700,10 +1700,7 @@ return array (
       ),
       'lib/Event/ConfigurationUpdatedEvent.php' => 
       array (
-        'hash' => 'c1f0fc59ee531acaf4d19bf8c74c8a11d38d7027',
-        'violations' => 
-        array (
-        ),
+        'hash' => '72cf51bc28a9d31c075556f3a7c5293ce3a460c8',
       ),
       'lib/Event/RegisterUpdatedEvent.php' => 
       array (
@@ -5191,10 +5188,7 @@ return array (
       ),
       'lib/Service/Notification/AnnotationNotificationDispatcher.php' => 
       array (
-        'hash' => '79fc1b59984169381e65699cf137eb8148776925',
-        'violations' => 
-        array (
-        ),
+        'hash' => '2c78f7fd86766beb186d14ebded774c486454f68',
       ),
       'lib/Service/Notification/VngNotificatiesEnvelope.php' => 
       array (
@@ -5205,10 +5199,7 @@ return array (
       ),
       'lib/Service/Notification/SystemSchemaRules.php' => 
       array (
-        'hash' => 'dec099598e69518d336e633f60cbdb069ead3110',
-        'violations' => 
-        array (
-        ),
+        'hash' => '5f6c0a28af10141f94c82e782313789f0c06dadf',
       ),
       'lib/Service/Notification/NotificationReadState.php' => 
       array (
@@ -5233,7 +5224,7 @@ return array (
       ),
       'lib/Service/Notification/SystemEntityObjectAdapter.php' => 
       array (
-        'hash' => '2c408fc1186cde35e683ff4d18121c769733a454',
+        'hash' => '37e2fac61ab3567ee53ac8c2bc918971e8c0aee1',
         'violations' => 
         array (
           0 => 
@@ -5243,8 +5234,8 @@ return array (
             'className' => 'SystemEntityObjectAdapter',
             'methodName' => '__construct',
             'functionName' => NULL,
-            'beginLine' => 58,
-            'endLine' => 109,
+            'beginLine' => 59,
+            'endLine' => 110,
             'description' => 'The method __construct() has a Cyclomatic Complexity of 10. The configured cyclomatic complexity threshold is 10.',
             'args' => 
             array (
@@ -6603,7 +6594,7 @@ return array (
       ),
       'lib/Listener/SystemEntityNotificationListener.php' => 
       array (
-        'hash' => '19536e26bb393b41233749d915945b523cd84c5f',
+        'hash' => '042516e9c2d0c417d339756e5be189efd23fba93',
         'violations' => 
         array (
           0 => 
@@ -6613,8 +6604,8 @@ return array (
             'className' => 'SystemEntityNotificationListener',
             'methodName' => 'extractEventData',
             'functionName' => NULL,
-            'beginLine' => 142,
-            'endLine' => 196,
+            'beginLine' => 147,
+            'endLine' => 221,
             'description' => 'The method extractEventData() has an NPath complexity of 7776. The configured NPath complexity threshold is 200.',
             'args' => 
             array (

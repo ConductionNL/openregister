@@ -173,6 +173,7 @@ export default {
 				return this.settingsStore.rbacOptions
 			},
 			/**
+			 * @param value
 			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
 			 */
 			set(value) {

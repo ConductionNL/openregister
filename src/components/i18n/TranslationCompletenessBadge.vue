@@ -71,6 +71,7 @@ export default {
 	},
 	methods: {
 		/**
+		 * @param lang
 		 * @spec exclude computed percent display helper; completeness contract owned by register-i18n capability
 		 */
 		ratioPercent(lang) {
@@ -79,6 +80,7 @@ export default {
 			return `${Math.round(c.ratio * 100)}%`
 		},
 		/**
+		 * @param lang
 		 * @spec exclude computed pill CSS-class display helper, UI plumbing
 		 */
 		completenessClassFor(lang) {

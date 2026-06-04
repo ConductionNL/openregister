@@ -16,8 +16,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<div class="form-group">
 				<label for="namingPattern">{{ t('openregister', 'Naming pattern for copies:') }}</label>
 				<NcSelect
-						input-label="Selected Naming Pattern"
 					v-model="selectedNamingPattern"
+					input-label="Selected Naming Pattern"
 					:options="namingPatternOptions"
 					:disabled="loading"
 					label="label"
@@ -159,6 +159,7 @@ export default {
 			objectStore.selectedObjects = []
 		},
 		/**
+		 * @param object
 		 * @spec exclude computed display helper for copy-name preview
 		 */
 		getPreviewName(object) {

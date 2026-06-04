@@ -103,8 +103,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								</template>
 								<template v-else>
 									<NcSelect
-						input-label="Property Selections[Property]"
 										v-model="propertySelections[property]"
+										input-label="Property Selections[Property]"
 										:options="getMergeOptions(property)"
 										label="label"
 										track-by="value"
@@ -577,6 +577,7 @@ export default {
 			}
 		},
 		/**
+		 * @param obj
 		 * @spec exclude Records the chosen merge target in local state; UI selection plumbing.
 		 */
 		selectTargetObject(obj) {
@@ -645,6 +646,7 @@ export default {
 			console.log('Initial propertySelections after setup:', this.propertySelections)
 		},
 		/**
+		 * @param property
 		 * @spec exclude Builds the source/target/custom option list for a property dropdown; UI presentation helper.
 		 */
 		getMergeOptions(property) {
@@ -674,6 +676,8 @@ export default {
 		},
 
 		/**
+		 * @param property
+		 * @param selectedOption
 		 * @spec exclude Updates merged-data state when a per-property dropdown changes; UI reactivity plumbing.
 		 */
 		onPropertySelectionChange(property, selectedOption) {
@@ -693,6 +697,8 @@ export default {
 			}
 		},
 		/**
+		 * @param value
+		 * @param maxLength
 		 * @spec exclude Stringifying/truncating value formatter for property display; UI presentation helper.
 		 */
 		displayValue(value, maxLength = 100) {
@@ -715,6 +721,8 @@ export default {
 			return displayText
 		},
 		/**
+		 * @param text
+		 * @param maxLength
 		 * @spec exclude Simple string-truncation helper for display; UI presentation helper.
 		 */
 		truncateText(text, maxLength) {
@@ -816,6 +824,7 @@ export default {
 			this.showReferenceList = !this.showReferenceList
 		},
 		/**
+		 * @param bytes
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
 		 */
 		formatFileSize(bytes) {
@@ -825,6 +834,7 @@ export default {
 			return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
 		},
 		/**
+		 * @param filename
 		 * @spec exclude Maps a filename extension to a friendly type label; UI presentation helper.
 		 */
 		getFileType(filename) {

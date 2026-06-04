@@ -54,6 +54,9 @@ class SystemEntityObjectAdapter extends ObjectEntity
      * @param Entity $entity     The system entity (Source, Agent, Configuration, etc.).
      * @param string $systemSlug The canonical system schema slug (SystemSchemaRules::SLUG_*).
      *
+     * @psalm-suppress ConstructorSignatureMismatch Adapter adds required params on top of the
+     * no-arg parent constructor intentionally; it is never constructed through the parent type.
+     *
      * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
      */
     public function __construct(Entity $entity, string $systemSlug)

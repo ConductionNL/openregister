@@ -4,12 +4,16 @@
 		<div class="form-group">
 			<label>Event Type</label>
 			<NcSelect
-						input-label="Form Event" v-model="form.event" :options="eventTypes" />
+				v-model="form.event"
+				input-label="Form Event"
+				:options="eventTypes" />
 		</div>
 		<div class="form-group">
 			<label>Engine</label>
 			<NcSelect
-						input-label="Form Engine" v-model="form.engine" :options="engineOptions" />
+				v-model="form.engine"
+				input-label="Form Engine"
+				:options="engineOptions" />
 		</div>
 		<div class="form-group">
 			<label>Workflow ID</label>
@@ -18,7 +22,9 @@
 		<div class="form-group">
 			<label>Mode</label>
 			<NcSelect
-						input-label="Form Mode" v-model="form.mode" :options="['sync', 'async']" />
+				v-model="form.mode"
+				input-label="Form Mode"
+				:options="['sync', 'async']" />
 		</div>
 		<div class="form-group">
 			<label>Order</label>
@@ -31,17 +37,23 @@
 		<div class="form-group">
 			<label>On Failure</label>
 			<NcSelect
-						input-label="Form On Failure" v-model="form.onFailure" :options="failureModes" />
+				v-model="form.onFailure"
+				input-label="Form On Failure"
+				:options="failureModes" />
 		</div>
 		<div class="form-group">
 			<label>On Timeout</label>
 			<NcSelect
-						input-label="Form On Timeout" v-model="form.onTimeout" :options="failureModes" />
+				v-model="form.onTimeout"
+				input-label="Form On Timeout"
+				:options="failureModes" />
 		</div>
 		<div class="form-group">
 			<label>On Engine Down</label>
 			<NcSelect
-						input-label="Form On Engine Down" v-model="form.onEngineDown" :options="failureModes" />
+				v-model="form.onEngineDown"
+				input-label="Form On Engine Down"
+				:options="failureModes" />
 		</div>
 		<div class="form-group">
 			<NcCheckboxRadioSwitch :checked.sync="form.enabled">
