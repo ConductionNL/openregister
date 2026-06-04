@@ -316,7 +316,12 @@ class ManualEntityService
             );
         }//end if
 
-        $node = $nodes[0];
+        $node         = $nodes[0];
+        $isUpdateable = false;
+        if ($node instanceof NcFile) {
+            $isUpdateable = $node->isUpdateable();
+        }
+
         if (($node instanceof NcFile) === false || $node->isUpdateable() === false) {
             // Read-only access. REASON_FORBIDDEN is the type-checked signal
             // the controller maps to HTTP 403 (vs the default 500 for
@@ -329,7 +334,7 @@ class ManualEntityService
                     'fileId'       => $fileId,
                     'actor'        => $actor->getUID(),
                     'isFile'       => ($node instanceof NcFile),
-                    'isUpdateable' => ($node instanceof NcFile ? $node->isUpdateable() : false),
+                    'isUpdateable' => $isUpdateable,
                 ]
             );
             throw new ManualEntityException(

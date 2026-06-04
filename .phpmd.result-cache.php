@@ -1701,6 +1701,9 @@ return array (
       'lib/Event/ConfigurationUpdatedEvent.php' => 
       array (
         'hash' => '72cf51bc28a9d31c075556f3a7c5293ce3a460c8',
+        'violations' => 
+        array (
+        ),
       ),
       'lib/Event/RegisterUpdatedEvent.php' => 
       array (
@@ -5189,6 +5192,9 @@ return array (
       'lib/Service/Notification/AnnotationNotificationDispatcher.php' => 
       array (
         'hash' => '2c78f7fd86766beb186d14ebded774c486454f68',
+        'violations' => 
+        array (
+        ),
       ),
       'lib/Service/Notification/VngNotificatiesEnvelope.php' => 
       array (
@@ -5200,6 +5206,9 @@ return array (
       'lib/Service/Notification/SystemSchemaRules.php' => 
       array (
         'hash' => '5f6c0a28af10141f94c82e782313789f0c06dadf',
+        'violations' => 
+        array (
+        ),
       ),
       'lib/Service/Notification/NotificationReadState.php' => 
       array (
@@ -5224,7 +5233,7 @@ return array (
       ),
       'lib/Service/Notification/SystemEntityObjectAdapter.php' => 
       array (
-        'hash' => '37e2fac61ab3567ee53ac8c2bc918971e8c0aee1',
+        'hash' => '2a8d3bc78b62a28d0a7ebb70369371ae2f50a88e',
         'violations' => 
         array (
           0 => 
@@ -5234,8 +5243,8 @@ return array (
             'className' => 'SystemEntityObjectAdapter',
             'methodName' => '__construct',
             'functionName' => NULL,
-            'beginLine' => 59,
-            'endLine' => 110,
+            'beginLine' => 62,
+            'endLine' => 113,
             'description' => 'The method __construct() has a Cyclomatic Complexity of 10. The configured cyclomatic complexity threshold is 10.',
             'args' => 
             array (

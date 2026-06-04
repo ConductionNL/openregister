@@ -223,7 +223,10 @@ class EntityRelationMapper extends QBMapper
         foreach ($rows as &$row) {
             if (isset($row['bases']) === true && is_string($row['bases']) === true) {
                 $decoded      = json_decode($row['bases'], associative: true);
-                $row['bases'] = is_array($decoded) === true ? $decoded : null;
+                $row['bases'] = null;
+                if (is_array($decoded) === true) {
+                    $row['bases'] = $decoded;
+                }
             }
 
             // Normalise boolean-as-int values returned by some DB drivers.
@@ -470,11 +473,21 @@ class EntityRelationMapper extends QBMapper
         }
 
         if (array_key_exists('context', $row) === true) {
-            $relation->setContext($row['context'] !== null ? (string) $row['context'] : null);
+            $context = null;
+            if ($row['context'] !== null) {
+                $context = (string) $row['context'];
+            }
+
+            $relation->setContext($context);
         }
 
         if (array_key_exists('role', $row) === true) {
-            $relation->setRole($row['role'] !== null ? (string) $row['role'] : null);
+            $role = null;
+            if ($row['role'] !== null) {
+                $role = (string) $row['role'];
+            }
+
+            $relation->setRole($role);
         }
 
         if (array_key_exists('anonymized', $row) === true) {
@@ -799,7 +812,10 @@ class EntityRelationMapper extends QBMapper
         ?IUser $actingUser=null
     ): void {
         $user   = $actingUser ?? $this->userSession->getUser();
-        $userId = $user !== null ? $user->getUID() : 'system';
+        $userId = 'system';
+        if ($user !== null) {
+            $userId = $user->getUID();
+        }
 
         $auditTrail = new AuditTrail();
         $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());

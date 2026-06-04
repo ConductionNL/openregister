@@ -337,7 +337,7 @@ class MagicMapper extends AbstractObjectMapper
         // (CacheHandler→RegisterMapper→MagicMapper, SettingsService→MagicMapper)
         // were since broken via lazy container resolution + the
         // `objectMapper`-removed-from-SettingsService fix.
-        //
+
         /*
          * Verification trail for future readers (PR #1431 review minor):
          *
@@ -356,6 +356,7 @@ class MagicMapper extends AbstractObjectMapper
          * static `$constructCount` is the documented escape hatch — see
          * issue #1564 for the original trigger conditions.
          */
+
         $this->initializeHandlers();
     }//end __construct()
 
