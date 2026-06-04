@@ -23,6 +23,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableRegisters.length > 1" class="field-group">
 								<label for="register-select">{{ t('openregister', 'Register') }}</label>
 								<NcSelect
+						input-label="Selected Register For New Object"
 									id="register-select"
 									v-model="selectedRegisterForNewObject"
 									:options="availableRegisters"
@@ -35,6 +36,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableSchemas.length > 1" class="field-group">
 								<label for="schema-select">{{ t('openregister', 'Schema') }}</label>
 								<NcSelect
+						input-label="Selected Schema For New Object"
 									id="schema-select"
 									v-model="selectedSchemaForNewObject"
 									:options="availableSchemas"
@@ -61,7 +63,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<div v-else>
 					<div class="tabContainer">
 						<BTabs v-model="activeTab" content-class="mt-3" justified>
-							<BTab title="Properties" active>
+							<BTab :title="t('openregister', 'Properties')" active>
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
@@ -175,13 +177,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									</table>
 								</div>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Metadata">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Metadata')">
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
 											<tr class="viewTableRow">
 												<th class="tableColumnConstrained">
-													Metadata
+													{{ t('openregister', 'Metadata') }}
 												</th>
 												<th class="tableColumnExpanded">
 													Value
@@ -220,9 +222,9 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									</table>
 								</div>
 							</BTab>
-							<BTab title="Data">
+							<BTab :title="t('openregister', 'Data')">
 								<NcNoteCard v-if="success" type="success" class="note-card">
-									<p>Object successfully modified</p>
+									<p>{{ t('openregister', 'Object successfully modified') }}</p>
 								</NcNoteCard>
 								<div class="json-editor">
 									<div :class="`codeMirrorContainer ${getTheme()}`">
@@ -249,7 +251,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									</span>
 								</div>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Uses">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Uses')">
 								<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -285,7 +287,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No uses found for this object</p>
 								</NcNoteCard>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Used by">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Used by')">
 								<div v-if="objectStore.used.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -321,7 +323,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No objects are using this object</p>
 								</NcNoteCard>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Contracts">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Contracts')">
 								<div v-if="objectStore.contracts.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -357,7 +359,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No contracts found for this object</p>
 								</NcNoteCard>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Files">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Files')">
 								<div v-if="paginatedFiles.length > 0" class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
@@ -389,24 +391,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														<template #icon>
 															<FormatListChecks :size="20" />
 														</template>
-														<NcActionButton
-															:disabled="publishLoading.length > 0 || selectedAttachments.length === 0"
-															@click="publishSelectedFiles">
-															<template #icon>
-																<NcLoadingIcon v-if="publishLoading.length > 0" :size="20" />
-																<FileOutline v-else :size="20" />
-															</template>
-															Publish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
-														</NcActionButton>
-														<NcActionButton
-															:disabled="depublishLoading.length > 0 || selectedAttachments.length === 0"
-															@click="depublishSelectedFiles">
-															<template #icon>
-																<NcLoadingIcon v-if="depublishLoading.length > 0" :size="20" />
-																<LockOutline v-else :size="20" />
-															</template>
-															Depublish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
-														</NcActionButton>
 														<NcActionButton
 															:disabled="fileIdsLoading.length > 0 || selectedAttachments.length === 0"
 															@click="deleteSelectedFiles">
@@ -463,7 +447,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															:taggable="true"
 															:multiple="true"
 															:disabled="labelsLoading"
-															input-label="Labels" />
+															:input-label="t('openregister', 'Labels')" />
 														<div class="fileLabelsEditActions">
 															<NcButton :disabled="labelsLoading" type="primary" @click="saveFileLabels(attachment)">
 																<template #icon>
@@ -492,26 +476,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 																<Tag :size="20" />
 															</template>
 															Labels
-														</NcActionButton>
-														<NcActionButton
-															v-if="!attachment.accessUrl && !attachment.downloadUrl"
-															:disabled="publishLoading.includes(attachment.id)"
-															@click="publishFile(attachment)">
-															<template #icon>
-																<NcLoadingIcon v-if="publishLoading.includes(attachment.id)" :size="20" />
-																<FileOutline v-else :size="20" />
-															</template>
-															Publish
-														</NcActionButton>
-														<NcActionButton
-															v-else
-															:disabled="depublishLoading.includes(attachment.id)"
-															@click="depublishFile(attachment)">
-															<template #icon>
-																<NcLoadingIcon v-if="depublishLoading.includes(attachment.id)" :size="20" />
-																<LockOutline v-else :size="20" />
-															</template>
-															Depublish
 														</NcActionButton>
 														<NcActionButton
 															:disabled="fileIdsLoading.includes(attachment.id)"
@@ -546,6 +510,36 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									:min-items-to-show="5"
 									@page-changed="onFilesPageChanged"
 									@page-size-changed="onFilesPageSizeChanged" />
+							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Emails">
+								<EmailsTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
+							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Events">
+								<EventsTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
+							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Contacts">
+								<ContactsTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
+							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Deck">
+								<DeckTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
+							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Relations">
+								<RelationsTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
 							</BTab>
 						</BTabs>
 					</div>
@@ -602,6 +596,7 @@ import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
 import { BTabs, BTab } from 'bootstrap-vue'
 import { getTheme } from '../../services/getTheme.js'
+import { updateFileLabels } from '../../services/fileMetadata.js'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
@@ -621,6 +616,11 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import EmailsTab from '../../components/object-relations/EmailsTab.vue'
+import EventsTab from '../../components/object-relations/EventsTab.vue'
+import ContactsTab from '../../components/object-relations/ContactsTab.vue'
+import DeckTab from '../../components/object-relations/DeckTab.vue'
+import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { stringToDate, dateToString } from '../../services/dateUtils.js'
 export default {
 	name: 'ViewObject',
@@ -659,6 +659,11 @@ export default {
 		ExclamationThick,
 		ArrowRight,
 		PaginationComponent,
+		EmailsTab,
+		EventsTab,
+		ContactsTab,
+		DeckTab,
+		RelationsTab,
 	},
 	data() {
 		return {
@@ -677,8 +682,6 @@ export default {
 			objectEditors: {},
 			tabOptions: ['Properties', 'Metadata', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
 			selectedAttachments: [],
-			publishLoading: [],
-			depublishLoading: [],
 			fileIdsLoading: [],
 			editingLabelsFileId: null,
 			editingLabels: [],
@@ -698,6 +701,9 @@ export default {
 	},
 	computed: {
 		// Check if we need to show register/schema selection
+		/**
+		 * @spec exclude computed gate for register/schema selection step
+		 */
 		showRegisterSchemaSelection() {
 			return this.isNewObject
 				&& !this.registerSchemaSelectionConfirmed
@@ -705,22 +711,34 @@ export default {
 		},
 
 		// Available registers for selection
+		/**
+		 * @spec exclude computed display helper exposing store registers
+		 */
 		availableRegisters() {
 			return objectStore.availableRegistersForNewObject || []
 		},
 
 		// Available schemas for selection
+		/**
+		 * @spec exclude computed display helper exposing store schemas
+		 */
 		availableSchemas() {
 			return objectStore.availableSchemasForNewObject || []
 		},
 
 		// Can proceed to properties if selections are made
+		/**
+		 * @spec exclude computed form-validation gate
+		 */
 		canProceedToProperties() {
 			const hasRegister = this.availableRegisters.length === 1 || this.selectedRegisterForNewObject
 			const hasSchema = this.availableSchemas.length === 1 || this.selectedSchemaForNewObject
 			return hasRegister && hasSchema
 		},
 
+		/**
+		 * @spec exclude computed display helper building property rows from schema
+		 */
 		objectProperties() {
 			console.info('objectProperties computed called:', {
 				objectItem: objectStore?.objectItem,
@@ -811,12 +829,21 @@ export default {
 			// Combine existing properties and missing schema properties
 			return [...existingProperties, ...missingSchemaProperties]
 		},
+		/**
+		 * @spec exclude computed JSON display helper
+		 */
 		editorContent() {
 			return JSON.stringify(objectStore.objectItem, null, 2)
 		},
+		/**
+		 * @spec exclude computed accessor for active register from store
+		 */
 		currentRegister() {
 			return registerStore.registerItem
 		},
+		/**
+		 * @spec exclude computed accessor merging inherited schema properties for display
+		 */
 		currentSchema() {
 			const schema = schemaStore.schemaItem
 			if (!schema) return schema
@@ -836,68 +863,43 @@ export default {
 			}
 			return { ...schema, properties: { ...inherited, ...(schema.properties || {}) } }
 		},
-		selectedPublishedCount() {
-			return this.selectedAttachments.filter((a) => {
-				const found = objectStore.files.results
-					?.find(item => item.id === a)
-				if (!found) return false
-
-				return !!found.published
-			}).length
-		},
-		selectedUnpublishedCount() {
-			return this.selectedAttachments.filter((a) => {
-				const found = objectStore.files.results
-					?.find(item => item.id === a)
-				if (!found) return false
-				return found.published === null
-			}).length
-		},
-		allPublishedSelected() {
-			const published = objectStore.files.results
-				?.filter(item => !!item.published)
-				.map(item => item.id) || []
-
-			if (!published.length) {
-				return false
-			}
-			return published.every(pubId => this.selectedAttachments.includes(pubId))
-		},
-		allUnpublishedSelected() {
-			const unpublished = objectStore.files.results
-				?.filter(item => !item.published)
-				.map(item => item.id) || []
-
-			if (!unpublished.length) {
-				return false
-			}
-			return unpublished.every(unpubId => this.selectedAttachments.includes(unpubId))
-		},
+		/**
+		 * @spec exclude computed aggregate loading flag for file actions
+		 */
 		loading() {
-			return this.publishLoading.length > 0 || this.depublishLoading.length > 0 || this.fileIdsLoading.length > 0
+			return this.fileIdsLoading.length > 0
 		},
-		filesHasPublished() {
-			return objectStore.files.results?.some(item => !!item.published)
-		},
-		filesHasUnpublished() {
-			return objectStore.files.results?.some(item => !item.published)
-		},
+		/**
+		 * @spec exclude computed pagination slice of files
+		 */
 		paginatedFiles() {
 			const files = objectStore.files?.results || []
 			const start = (this.filesCurrentPage - 1) * this.filesPerPage
 			const end = start + this.filesPerPage
 			return files.slice(start, end)
 		},
+		/**
+		 * @spec exclude computed total page count for files pagination
+		 */
 		filesTotalPages() {
 			const totalFiles = objectStore.files?.results?.length || 0
 			return Math.ceil(totalFiles / this.filesPerPage)
 		},
+		/**
+		 * @spec exclude computed select-all state for current files page
+		 */
 		allFilesSelected() {
 			return this.paginatedFiles.length > 0 && this.paginatedFiles.every(file => this.selectedAttachments.includes(file.id))
 		},
+		/**
+		 * @spec exclude computed indeterminate-selection state for files
+		 */
 		someFilesSelected() {
 			return this.selectedAttachments.length > 0 && !this.allFilesSelected
 		},
+		/**
+		 * @spec exclude computed display helper merging schema + object fields
+		 */
 		formFields() {
 			console.info('formFields computed called:', {
 				currentSchema: this.currentSchema,
@@ -943,6 +945,9 @@ export default {
 			console.info('formFields returning:', fields)
 			return fields
 		},
+		/**
+		 * @spec exclude computed display helper building metadata rows
+		 */
 		metadataProperties() {
 			// Return array of [key, value, hasAction] for metadata display
 			// Use formData instead of objectStore.objectItem to reflect real-time changes
@@ -1030,10 +1035,37 @@ export default {
 		isNewObject() {
 			return !objectStore?.objectItem || !objectStore?.objectItem['@self']?.id
 		},
+		/**
+		 * Build the (register, schema, id) triple used by the entity-relations
+		 * tabs (Emails, Events, Contacts, Deck, Relations). Returns null when
+		 * any of the three is missing, so the tabs only render once a saved
+		 * object is being viewed.
+		 *
+		 * @return {{register:(string|number), schema:(string|number), id:string}|null}
+		 * @spec exclude computed context object for relation tabs
+		 */
+		relationContext() {
+			const self = objectStore?.objectItem?.['@self']
+			if (!self) {
+				return null
+			}
+
+			const register = self.register ?? registerStore.registerItem?.id
+			const schema = self.schema ?? schemaStore.schemaItem?.id
+			const id = self.id || self.uuid
+			if (!register || !schema || !id) {
+				return null
+			}
+
+			return { register, schema, id }
+		},
 
 	},
 	watch: {
 		objectStore: {
+			/**
+			 * @spec exclude watcher re-initializing data on store change
+			 */
 			handler(newValue) {
 				if (newValue) {
 					this.initializeData()
@@ -1043,6 +1075,9 @@ export default {
 		},
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
+			/**
+			 * @spec exclude watcher re-resolving schema and re-initializing data
+			 */
 			async handler(newSchema) {
 				console.info('Schema changed in ViewObject:', newSchema)
 
@@ -1077,6 +1112,9 @@ export default {
 		},
 		// Watch for register changes to re-initialize data
 		currentRegister: {
+			/**
+			 * @spec exclude watcher re-initializing data on register change
+			 */
 			handler(newRegister) {
 				console.info('Register changed in ViewObject:', newRegister)
 				if (newRegister && this.isNewObject) {
@@ -1087,6 +1125,9 @@ export default {
 			immediate: true,
 		},
 		jsonData: {
+			/**
+			 * @spec exclude watcher syncing form from JSON editor
+			 */
 			handler(newValue) {
 				if (!this.isInternalUpdate && this.isValidJson(newValue)) {
 					this.updateFormFromJson()
@@ -1094,6 +1135,9 @@ export default {
 			},
 		},
 		formData: {
+			/**
+			 * @spec exclude watcher syncing JSON editor from form
+			 */
 			handler(_newValue) {
 				if (!this.isInternalUpdate) {
 					this.updateJsonFromForm()
@@ -1102,6 +1146,9 @@ export default {
 			deep: true,
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook initializing modal data
+	 */
 	async mounted() {
 		// Debug: Log current state when modal opens
 		console.info('ViewObject mounted:', {
@@ -1127,6 +1174,9 @@ export default {
 		this.initializeData()
 		this.loadTitles()
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook re-loading data on update
+	 */
 	updated() {
 		if (!this.isUpdated && navigationStore.modal === 'viewObject') {
 			this.isUpdated = true
@@ -1138,6 +1188,8 @@ export default {
 		/**
 		 * Returns { type, objectId } needed for all file store operations.
 		 * Handles both string IDs and embedded register/schema objects.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
 		 */
 		_getFileParams() {
 			const rawRegister = objectStore.objectItem['@self']?.register
@@ -1151,6 +1203,9 @@ export default {
 			}
 			return { type, objectId }
 		},
+		/**
+		 * @spec exclude modal step transition handler for register/schema selection
+		 */
 		confirmRegisterSchemaSelection() {
 			// Set the selected register and schema in the store
 			const selectedRegister = this.selectedRegisterForNewObject || this.availableRegisters[0]
@@ -1171,6 +1226,9 @@ export default {
 			this.initializeData()
 		},
 
+		/**
+		 * @spec exclude computed display helper for modal title
+		 */
 		getModalTitle() {
 			if (!objectStore?.objectItem || !objectStore.objectItem['@self']?.id) {
 				return 'Add Object'
@@ -1186,6 +1244,9 @@ export default {
 
 			return `${name} (${schemaName})`
 		},
+		/**
+		 * @spec exclude form-state loader resolving register/schema titles for display
+		 */
 		async loadTitles() {
 			// Only load titles if we have an existing object with @self data
 			if (!objectStore.objectItem || !objectStore.objectItem['@self']) {
@@ -1200,6 +1261,9 @@ export default {
 			this.registerTitle = register?.title || 'Not set'
 			this.schemaTitle = schema?.title || 'Not set'
 		},
+		/**
+		 * @spec exclude modal close + form-state reset handler
+		 */
 		closeModal() {
 			// Clear state first
 			this.isUpdated = false
@@ -1233,6 +1297,9 @@ export default {
 			navigationStore.setModal(null)
 			navigationStore.setDialog(null)
 		},
+		/**
+		 * @spec exclude modal open/close UI handler
+		 */
 		handleDialogClose(isOpen) {
 			if (!isOpen) {
 				this.closeModal()
@@ -1241,6 +1308,7 @@ export default {
 		/**
 		 * Open a file in the Nextcloud Files app
 		 * @param {object} file - The file object to open
+		 * @spec exclude opens file in Nextcloud Files app (UI navigation)
 		 */
 		openFile(file) {
 			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
@@ -1252,6 +1320,7 @@ export default {
 		 * Format file size for display
 		 * @param {number} bytes - The file size in bytes
 		 * @return {string} The formatted file size
+		 * @spec exclude display helper formatting file size
 		 */
 		formatFileSize(bytes) {
 			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
@@ -1265,22 +1334,32 @@ export default {
 		 * Truncate file name to prevent dialog alignment issues
 		 * @param {string} fileName - The file name to truncate
 		 * @return {string} The truncated file name (22 chars + ... if longer than 25)
+		 * @spec exclude display helper truncating file name
 		 */
 		truncateFileName(fileName) {
 			if (!fileName) return ''
 			if (fileName.length <= 25) return fileName
 			return fileName.substring(0, 22) + '...'
 		},
+		/**
+		 * @spec exclude client-side date validation helper
+		 */
 		isValidDate(value) {
 			if (!value) return false
 			const date = new Date(value)
 			return date instanceof Date && !isNaN(date)
 		},
+		/**
+		 * @spec exclude display helper formatting value as JSON
+		 */
 		formatValue(val) {
 			return JSON.stringify(val, null, 2)
 		},
 
 		getTheme,
+		/**
+		 * @spec exclude clipboard UI helper
+		 */
 		async copyToClipboard(text) {
 			try {
 				await navigator.clipboard.writeText(text)
@@ -1290,6 +1369,9 @@ export default {
 				console.error('Failed to copy text:', err)
 			}
 		},
+		/**
+		 * @spec exclude form-state initializer seeding formData/jsonData
+		 */
 		initializeData() {
 			console.info('initializeData called:', {
 				objectItem: objectStore.objectItem,
@@ -1368,6 +1450,9 @@ export default {
 
 		},
 
+		/**
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 */
 		async saveObject() {
 			if (!this.currentRegister || !this.currentSchema) {
 				this.error = 'Register and schema are required'
@@ -1414,6 +1499,9 @@ export default {
 				this.isSaving = false
 			}
 		},
+		/**
+		 * @spec exclude form/JSON sync helper (JSON editor to form)
+		 */
 		updateFormFromJson() {
 			if (this.isInternalUpdate) return
 
@@ -1430,6 +1518,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude form/JSON sync helper (form to JSON editor)
+		 */
 		updateJsonFromForm() {
 			if (this.isInternalUpdate) return
 
@@ -1445,6 +1536,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude client-side JSON validation helper
+		 */
 		isValidJson(str) {
 			if (!str || !str.trim()) {
 				return false
@@ -1457,6 +1551,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude JSON formatting UI helper
+		 */
 		formatJSON() {
 			try {
 				if (this.jsonData) {
@@ -1471,26 +1568,44 @@ export default {
 		setFieldValue(key, value) {
 			this.formData[key] = value
 		},
+		/**
+		 * @spec exclude form-state helper updating an array item
+		 */
 		updateArrayItem(key, index, value) {
 			if (!this.formData[key]) {
 				this.formData[key] = []
 			}
 			this.formData[key][index] = value
 		},
+		/**
+		 * @spec exclude display/payload coercion helper for null values
+		 */
 		toDisplay(v) { return v === null ? '' : v },
+		/**
+		 * @spec exclude display/payload coercion helper for empty values
+		 */
 		toPayload(v) { return v === '' ? null : v },
 
+		/**
+		 * @spec exclude form-state helper adding an array item
+		 */
 		addArrayItem(key) {
 			if (!this.formData[key] || !Array.isArray(this.formData[key])) {
 				this.formData[key] = []
 			}
 			this.formData[key].push('')
 		},
+		/**
+		 * @spec exclude form-state helper removing an array item
+		 */
 		removeArrayItem(key, i) {
 			if (this.formData[key] && Array.isArray(this.formData[key])) {
 				this.formData[key].splice(i, 1)
 			}
 		},
+		/**
+		 * @spec exclude form-state helper updating an object-typed field
+		 */
 		updateObjectField(key, val) {
 			this.objectEditors[key] = val
 			try {
@@ -1499,6 +1614,9 @@ export default {
 				console.error('Invalid JSON format:', e)
 			}
 		},
+		/**
+		 * @spec exclude file-selection UI toggle (select all)
+		 */
 		toggleSelectAllFiles(checked) {
 			if (checked) {
 				// Add all current page files to selection
@@ -1513,6 +1631,9 @@ export default {
 				this.selectedAttachments = this.selectedAttachments.filter(id => !currentPageIds.includes(id))
 			}
 		},
+		/**
+		 * @spec exclude file-selection UI toggle (single file)
+		 */
 		toggleFileSelection(fileId, checked) {
 			if (checked) {
 				if (!this.selectedAttachments.includes(fileId)) {
@@ -1522,79 +1643,61 @@ export default {
 				this.selectedAttachments = this.selectedAttachments.filter(id => id !== fileId)
 			}
 		},
+		/**
+		 * @spec exclude files pagination UI handler
+		 */
 		onFilesPageChanged(page) {
 			this.filesCurrentPage = page
 		},
+		/**
+		 * @spec exclude files page-size UI handler
+		 */
 		onFilesPageSizeChanged(pageSize) {
 			this.filesPerPage = pageSize
 			this.filesCurrentPage = 1
 		},
+		/**
+		 * @spec exclude router navigation UI handler to audit trails
+		 */
 		viewAuditTrails() {
 			// Close the current modal and navigate to audit trails
 			this.closeModal()
 			this.$router.push('/audit-trails')
 		},
-		async publishSelectedFiles() {
+		// Apply a batch action across the selected files. Prefers the
+		// shared-store batchFiles action (one POST to /files/batch); falls
+		// back to N sequential single-file calls when the runtime store
+		// doesn't expose batchFiles yet (older @conduction/nextcloud-vue).
+		/**
+		 * @spec exclude file batch-action dispatch helper delegating to objectStore.batchFiles
+		 */
+		async _runBatchAction(action, perFileFallback) {
 			if (this.selectedAttachments.length === 0) return
+			const { type, objectId } = this._getFileParams()
+			const fileIds = [...this.selectedAttachments]
 
-			try {
-				this.publishLoading = [...this.selectedAttachments]
-				const { type, objectId } = this._getFileParams()
+			if (typeof objectStore.batchFiles === 'function') {
+				await objectStore.batchFiles(type, objectId, action, fileIds)
+				return
+			}
 
-				const selectedFiles = objectStore.files.results.filter(file =>
-					this.selectedAttachments.includes(file.id),
-				)
-
-				for (const file of selectedFiles) {
-					await objectStore.publishFile(type, objectId, file.id)
-				}
-
-				this.selectedAttachments = []
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Error publishing files:', error)
-			} finally {
-				this.publishLoading = []
+			// Legacy fallback: loop the per-file action.
+			for (const fileId of fileIds) {
+				await perFileFallback(type, objectId, fileId)
 			}
 		},
-		async depublishSelectedFiles() {
-			if (this.selectedAttachments.length === 0) return
-
-			try {
-				this.depublishLoading = [...this.selectedAttachments]
-				const { type, objectId } = this._getFileParams()
-
-				const selectedFiles = objectStore.files.results.filter(file =>
-					this.selectedAttachments.includes(file.id),
-				)
-
-				for (const file of selectedFiles) {
-					await objectStore.unpublishFile(type, objectId, file.id)
-				}
-
-				this.selectedAttachments = []
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Error depublishing files:', error)
-			} finally {
-				this.depublishLoading = []
-			}
-		},
+		/**
+		 * @spec exclude bulk file-delete handler delegating to objectStore
+		 */
 		async deleteSelectedFiles() {
 			if (this.selectedAttachments.length === 0) return
 
 			try {
 				this.fileIdsLoading = [...this.selectedAttachments]
-				const { type, objectId } = this._getFileParams()
-
-				const selectedFiles = objectStore.files.results?.filter(item =>
-					this.selectedAttachments.includes(item.id),
-				) || []
-
-				for (const file of selectedFiles) {
-					await objectStore.deleteFile(type, objectId, file.id)
-				}
-
+				await this._runBatchAction(
+					'delete',
+					(type, objectId, fileId) => objectStore.deleteFile(type, objectId, fileId),
+				)
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -1603,30 +1706,9 @@ export default {
 				this.fileIdsLoading = []
 			}
 		},
-		async publishFile(file) {
-			try {
-				this.publishLoading.push(file.id)
-				const { type, objectId } = this._getFileParams()
-				await objectStore.publishFile(type, objectId, file.id)
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Failed to publish file:', error)
-			} finally {
-				this.publishLoading = this.publishLoading.filter(id => id !== file.id)
-			}
-		},
-		async depublishFile(file) {
-			try {
-				this.depublishLoading.push(file.id)
-				const { type, objectId } = this._getFileParams()
-				await objectStore.unpublishFile(type, objectId, file.id)
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Failed to depublish file:', error)
-			} finally {
-				this.depublishLoading = this.depublishLoading.filter(id => id !== file.id)
-			}
-		},
+		/**
+		 * @spec exclude single file-delete handler delegating to objectStore.deleteFile
+		 */
 		async deleteFile(file) {
 			try {
 				this.fileIdsLoading.push(file.id)
@@ -1639,16 +1721,31 @@ export default {
 				this.fileIdsLoading = this.fileIdsLoading.filter(id => id !== file.id)
 			}
 		},
+		/**
+		 * @spec exclude form-state handler entering file-label edit mode
+		 */
 		async editFileLabels(file) {
 			this.editingLabelsFileId = file.id
 			this.editingLabels = [...(file.labels || [])]
 			const tags = await objectStore.fetchTags()
 			this.availableLabels = Array.isArray(tags) ? tags : objectStore.getTags || []
 		},
+		/**
+		 * @spec exclude form-state handler cancelling file-label edit
+		 */
 		cancelFileLabels() {
 			this.editingLabelsFileId = null
 			this.editingLabels = []
 		},
+		// Persist label changes via the dedicated /files/{fileId}/labels
+		// endpoint with optimistic UI: the in-memory attachment.labels
+		// flips to the new value as soon as the user clicks save, and
+		// reverts on error so the UI never lies if the request fails.
+		// API call shape is implemented in services/fileMetadata.js so it
+		// can be unit-tested without mounting this modal.
+		/**
+		 * @spec exclude file-label save handler delegating to services/fileMetadata
+		 */
 		async saveFileLabels(file) {
 			const { type, objectId } = this._getFileParams()
 			const rawRegister = objectStore.objectItem['@self']?.register
@@ -1656,24 +1753,39 @@ export default {
 			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
 			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
 
+			// Snapshot the current value so we can revert on failure.
+			const previousLabels = Array.isArray(file.labels) ? [...file.labels] : []
+			const nextLabels = [...this.editingLabels]
+
+			// Optimistic update — flip the in-memory file row immediately.
+			file.labels = nextLabels
 			this.labelsLoading = true
+
 			try {
-				const url = `/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectId}/files/${file.id}`
-				const response = await fetch(url, {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ tags: this.editingLabels }),
+				await updateFileLabels({
+					registerId,
+					schemaId,
+					objectId,
+					fileId: file.id,
+					labels: nextLabels,
 				})
-				if (!response.ok) throw new Error(`HTTP ${response.status}`)
+				// Re-fetch to pick up server-side normalisation (dedup, tag
+				// resolution) and any other fields that change as a side
+				// effect of the label update.
 				await objectStore.fetchFiles(type, objectId)
 				this.cancelFileLabels()
 			} catch (error) {
+				// Revert the optimistic update so the UI matches the server.
+				file.labels = previousLabels
 				// eslint-disable-next-line no-console
 				console.error('Failed to save file labels:', error)
 			} finally {
 				this.labelsLoading = false
 			}
 		},
+		/**
+		 * @spec exclude computed CSS-class helper for property validation state
+		 */
 		getPropertyValidationClass(key, value) {
 			// Skip @self as it's metadata
 			if (key === '@self') {
@@ -1703,6 +1815,9 @@ export default {
 				return 'property-invalid'
 			}
 		},
+		/**
+		 * @spec exclude client-side property-value validation helper
+		 */
 		isValidPropertyValue(key, value, schemaProperty) {
 			// Handle null/undefined values
 			if (value === null || value === undefined || value === '') {
@@ -1741,6 +1856,9 @@ export default {
 				return true // Unknown type, assume valid
 			}
 		},
+		/**
+		 * @spec exclude display helper building property error message
+		 */
 		getPropertyErrorMessage(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
@@ -1784,6 +1902,7 @@ export default {
 		 * Convert any value to a string suitable for NcTextField
 		 * @param {*} value - The value to convert
 		 * @return {string} The string representation
+		 * @spec exclude display helper coercing value to string
 		 */
 		getStringValue(value) {
 			if (value === null || value === undefined) {
@@ -1805,6 +1924,9 @@ export default {
 			}
 			return String(value)
 		},
+		/**
+		 * @spec exclude table-row click UI handler for inline edit
+		 */
 		handleRowClick(key, event) {
 			// Don't select if clicking on an input or button
 			if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.closest('.value-input-container')) {
@@ -1839,6 +1961,9 @@ export default {
 				this.showWarningNotification(`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`)
 			}
 		},
+		/**
+		 * @spec exclude form-state handler selecting/focusing a property for edit
+		 */
 		selectProperty(key) {
 			this.selectedProperty = key
 
@@ -1853,6 +1978,9 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @spec exclude form-state handler updating a property value with type coercion
+		 */
 		updatePropertyValue(key, newValue) {
 			// Get the old value for comparison
 			const oldValue = this.formData[key] !== undefined
@@ -1916,6 +2044,7 @@ export default {
 		},
 		/**
 		 * Remove all existing toast notifications
+		 * @spec exclude toast cleanup UI helper
 		 */
 		clearAllToasts() {
 			const toasts = document.querySelectorAll('.property-change-toast, .property-warning-toast')
@@ -1925,6 +2054,9 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @spec exclude toast notification UI helper for property changes
+		 */
 		showPropertyChangeNotification(key, oldValue, newValue) {
 			// Clear any existing toasts before showing a new one
 			this.clearAllToasts()
@@ -1956,10 +2088,16 @@ export default {
 				}
 			}, 3000)
 		},
+		/**
+		 * @spec exclude display helper checking string-typed property
+		 */
 		isStringProperty(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			return schemaProperty?.type === 'string'
 		},
+		/**
+		 * @spec exclude display helper checking property editability (const/immutable)
+		 */
 		isPropertyEditable(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
@@ -1978,6 +2116,9 @@ export default {
 
 			return true
 		},
+		/**
+		 * @spec exclude display helper building editability warning text
+		 */
 		getEditabilityWarning(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
@@ -1991,9 +2132,15 @@ export default {
 
 			return null
 		},
+		/**
+		 * @spec exclude display helper delegating to dateUtils.stringToDate
+		 */
 		stringToDate(value, format) {
 			return stringToDate(value, format)
 		},
+		/**
+		 * @spec exclude display helper mapping schema type to input type
+		 */
 		getPropertyInputType(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			if (!schemaProperty) return 'text'
@@ -2020,6 +2167,9 @@ export default {
 				return 'text'
 			}
 		},
+		/**
+		 * @spec exclude display helper mapping schema type to input component
+		 */
 		getPropertyInputComponent(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			if (!schemaProperty) return 'NcTextField'
@@ -2047,6 +2197,7 @@ export default {
 		 * Get the display name for a property (title if available, otherwise key)
 		 * @param {string} key - The property key
 		 * @return {string} The display name
+		 * @spec exclude display helper for property display name
 		 */
 		getPropertyDisplayName(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2056,6 +2207,7 @@ export default {
 		 * Get the tooltip text for a property
 		 * @param {string} key - The property key
 		 * @return {string} The tooltip text
+		 * @spec exclude display helper for property tooltip text
 		 */
 		getPropertyTooltip(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2076,6 +2228,7 @@ export default {
 		 * Get the minimum value for a property
 		 * @param {string} key - The property key
 		 * @return {number|undefined} The minimum value
+		 * @spec exclude display helper exposing schema minimum
 		 */
 		getPropertyMinimum(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2085,6 +2238,7 @@ export default {
 		 * Get the maximum value for a property
 		 * @param {string} key - The property key
 		 * @return {number|undefined} The maximum value
+		 * @spec exclude display helper exposing schema maximum
 		 */
 		getPropertyMaximum(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2094,6 +2248,7 @@ export default {
 		 * Get the step value for a property
 		 * @param {string} key - The property key
 		 * @return {string|undefined} The step value
+		 * @spec exclude display helper exposing input step
 		 */
 		getPropertyStep(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2105,6 +2260,9 @@ export default {
 			}
 			return undefined
 		},
+		/**
+		 * @spec exclude display helper resolving value to show for a property
+		 */
 		getDisplayValue(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
@@ -2126,6 +2284,9 @@ export default {
 			// Otherwise use the original value
 			return value
 		},
+		/**
+		 * @spec exclude toast notification UI helper for warnings
+		 */
 		showWarningNotification(warning) {
 			// Clear any existing toasts before showing a new one
 			this.clearAllToasts()

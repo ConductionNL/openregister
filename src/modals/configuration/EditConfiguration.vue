@@ -5,7 +5,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editConfiguration'"
-		:name="configurationStore.configurationItem?.id ? 'Edit Configuration' : 'New Configuration'"
+		:name="configurationStore.configurationItem?.id ? t('openregister', 'Edit Configuration') : t('openregister', 'New Configuration')"
 		size="large"
 		:can-close="true"
 		:open="true"
@@ -20,33 +20,34 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 				<BTab active>
 					<template #title>
 						<Cog :size="16" />
-						<span>Settings</span>
+						<span>{{ t('openregister', 'Settings') }}</span>
 					</template>
 
 					<div class="form-editor">
 						<NcTextField
-							label="Title *"
-							placeholder="Enter configuration title"
+							:label="t('openregister', 'Title *')"
+							:placeholder="t('openregister', 'Enter configuration title')"
 							:value="configurationStore.configurationItem?.title || ''"
 							:error="!configurationStore.configurationItem?.title?.trim?.()"
 							@update:value="updateTitle" />
 
 						<NcTextArea
-							label="Description"
-							placeholder="Enter configuration description (optional)"
+							:label="t('openregister', 'Description')"
+							:placeholder="t('openregister', 'Enter configuration description (optional)')"
 							:value="configurationStore.configurationItem?.description || ''"
 							@update:value="updateDescription" />
 
 						<div class="selectField">
-							<label for="type-select">Type</label>
+							<label for="type-select">{{ t('openregister', 'Type') }}</label>
 							<NcSelect
+						input-label="Selected Type"
 								id="type-select"
 								v-model="selectedType"
 								:options="typeOptions"
 								label="label"
 								track-by="value"
 								:label-outside="true"
-								placeholder="Select configuration type..."
+								:placeholder="t('openregister', 'Select configuration type...')"
 								@input="updateType">
 								<template #option="{ label, description }">
 									<div class="option-content">
@@ -56,17 +57,17 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								</template>
 							</NcSelect>
 							<p class="field-hint">
-								Configuration type (default, application, etc.)
+								{{ t('openregister', 'Configuration type (default, application, etc.)') }}
 							</p>
 						</div>
 
 						<NcTextField
-							label="App ID"
-							placeholder="myapp"
+							:label="t('openregister', 'App ID')"
+							:placeholder="t('openregister', 'myapp')"
 							:value="configurationStore.configurationItem?.app || ''"
 							@update:value="updateApp">
 							<template #helper-text-message>
-								<p>Application identifier for this configuration (optional)</p>
+								<p>{{ t('openregister', 'Application identifier for this configuration (optional)') }}</p>
 							</template>
 						</NcTextField>
 
@@ -78,13 +79,14 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 				<BTab>
 					<template #title>
 						<Database :size="16" />
-						<span>Configuration</span>
+						<span>{{ t('openregister', 'Configuration') }}</span>
 					</template>
 
 					<div class="form-editor">
 						<div class="selectField">
-							<label for="registers-select">Registers</label>
+							<label for="registers-select">{{ t('openregister', 'Registers') }}</label>
 							<NcSelect
+						input-label="Selected Registers"
 								id="registers-select"
 								v-model="selectedRegisters"
 								:options="registerOptions"
@@ -94,7 +96,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search registers..."
+								:placeholder="t('openregister', 'Search registers...')"
 								:close-on-select="false"
 								@search-change="searchRegisters"
 								@input="updateRegisters">
@@ -105,8 +107,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingRegisters">Searching...</span>
-									<span v-else>No registers found</span>
+									<span v-if="loadingRegisters">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else>{{ t('openregister', 'No registers found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -115,8 +117,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="schemas-select">Schemas</label>
+							<label for="schemas-select">{{ t('openregister', 'Schemas') }}</label>
 							<NcSelect
+						input-label="Selected Schemas"
 								id="schemas-select"
 								v-model="selectedSchemas"
 								:options="schemaOptions"
@@ -126,7 +129,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search schemas..."
+								:placeholder="t('openregister', 'Search schemas...')"
 								:close-on-select="false"
 								@search-change="searchSchemas"
 								@input="updateSchemas">
@@ -137,8 +140,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingSchemas">Searching...</span>
-									<span v-else>No schemas found</span>
+									<span v-if="loadingSchemas">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else>{{ t('openregister', 'No schemas found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -147,8 +150,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="objects-select">Objects</label>
+							<label for="objects-select">{{ t('openregister', 'Objects') }}</label>
 							<NcSelect
+						input-label="Selected Objects"
 								id="objects-select"
 								v-model="selectedObjects"
 								:options="objectOptions"
@@ -158,7 +162,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search objects..."
+								:placeholder="t('openregister', 'Search objects...')"
 								:close-on-select="false"
 								:disabled="selectedRegisters.length === 0 && selectedSchemas.length === 0"
 								@search-change="searchObjects"
@@ -170,9 +174,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingObjects">Searching...</span>
-									<span v-else-if="selectedRegisters.length === 0 && selectedSchemas.length === 0">Please select registers or schemas first</span>
-									<span v-else>No objects found</span>
+									<span v-if="loadingObjects">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else-if="selectedRegisters.length === 0 && selectedSchemas.length === 0">{{ t('openregister', 'Please select registers or schemas first') }}</span>
+									<span v-else>{{ t('openregister', 'No objects found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -182,8 +186,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="sources-select">Data Sources</label>
+							<label for="sources-select">{{ t('openregister', 'Data Sources') }}</label>
 							<NcSelect
+						input-label="Selected Sources"
 								id="sources-select"
 								v-model="selectedSources"
 								:options="sourceOptions"
@@ -193,7 +198,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search data sources..."
+								:placeholder="t('openregister', 'Search data sources...')"
 								:close-on-select="false"
 								@search-change="searchSources"
 								@input="updateSources">
@@ -204,8 +209,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingSources">Searching...</span>
-									<span v-else>No sources found</span>
+									<span v-if="loadingSources">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else>{{ t('openregister', 'No sources found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -214,8 +219,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="agents-select">Agents</label>
+							<label for="agents-select">{{ t('openregister', 'Agents') }}</label>
 							<NcSelect
+						input-label="Selected Agents"
 								id="agents-select"
 								v-model="selectedAgents"
 								:options="agentOptions"
@@ -225,7 +231,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search agents..."
+								:placeholder="t('openregister', 'Search agents...')"
 								:close-on-select="false"
 								@search-change="searchAgents"
 								@input="updateAgents">
@@ -236,8 +242,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingAgents">Searching...</span>
-									<span v-else>No agents found</span>
+									<span v-if="loadingAgents">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else>{{ t('openregister', 'No agents found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -246,8 +252,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="views-select">Views</label>
+							<label for="views-select">{{ t('openregister', 'Views') }}</label>
 							<NcSelect
+						input-label="Selected Views"
 								id="views-select"
 								v-model="selectedViews"
 								:options="viewOptions"
@@ -257,7 +264,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search views..."
+								:placeholder="t('openregister', 'Search views...')"
 								:close-on-select="false"
 								@search-change="searchViews"
 								@input="updateViews">
@@ -280,6 +287,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="managed-applications-select">Applications</label>
 							<NcSelect
+						input-label="Selected Managed Applications"
 								id="managed-applications-select"
 								v-model="selectedManagedApplications"
 								:options="applicationOptions"
@@ -289,7 +297,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search applications..."
+								:placeholder="t('openregister', 'Search applications...')"
 								:close-on-select="false"
 								@search-change="searchApplications"
 								@input="updateManagedApplications">
@@ -322,13 +330,14 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="source-type-select">Source Type *</label>
 							<NcSelect
+						input-label="Selected Source Type"
 								id="source-type-select"
 								v-model="selectedSourceType"
 								:options="sourceTypeOptions"
 								label="label"
 								track-by="value"
 								:label-outside="true"
-								placeholder="Select source type..."
+								:placeholder="t('openregister', 'Select source type...')"
 								@input="updateSourceType">
 								<template #option="{ label, description }">
 									<div class="option-content">
@@ -366,13 +375,14 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="application-select">Owner Application</label>
 							<NcSelect
+						input-label="Selected Application"
 								id="application-select"
 								v-model="selectedApplication"
 								:options="applicationOptions"
 								label="name"
 								track-by="id"
 								:label-outside="true"
-								placeholder="Select owner application (optional)..."
+								:placeholder="t('openregister', 'Select owner application (optional)...')"
 								@input="updateApplication">
 								<template #option="{ name, description }">
 									<div class="option-content">
@@ -423,6 +433,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="notification-groups-select">Notification Groups</label>
 							<NcSelect
+						input-label="Selected Notification Groups"
 								id="notification-groups-select"
 								v-model="selectedNotificationGroups"
 								:options="notificationGroupOptions"
@@ -430,7 +441,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="label"
 								track-by="value"
 								:label-outside="true"
-								placeholder="Select groups to notify..."
+								:placeholder="t('openregister', 'Select groups to notify...')"
 								:close-on-select="false"
 								@input="updateNotificationGroups">
 								<template #option="{ label }">
@@ -588,10 +599,16 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed form-validity guard (title non-empty); UI validation helper.
+		 */
 		isValid() {
 			const item = configurationStore.configurationItem
 			return Boolean(item?.title?.trim())
 		},
+		/**
+		 * @spec exclude Computed static select-option list; UI presentation data.
+		 */
 		sourceTypeOptions() {
 			return [
 				{ value: 'local', label: 'Local', description: 'Manually managed configuration' },
@@ -600,6 +617,9 @@ export default {
 				{ value: 'url', label: 'URL', description: 'Configuration from any URL' },
 			]
 		},
+		/**
+		 * @spec exclude Computed static select-option list; UI presentation data.
+		 */
 		typeOptions() {
 			return [
 				{ value: 'default', label: 'Default', description: 'Standard configuration type' },
@@ -607,6 +627,9 @@ export default {
 				{ value: 'manual', label: 'Manual', description: 'Manually created configuration' },
 			]
 		},
+		/**
+		 * @spec exclude Computed static select-option list (placeholder groups); UI presentation data.
+		 */
 		notificationGroupOptions() {
 			// In a real implementation, this would fetch from Nextcloud groups API
 			// For now, return common groups
@@ -616,6 +639,9 @@ export default {
 			]
 		},
 	},
+	/**
+	 * @spec exclude Vue created() lifecycle hook — hydrates store lists and seeds a blank configurationItem; modal init plumbing.
+	 */
 	async created() {
 		// Organisations and applications are now hot-loaded at app startup
 		// Only refresh if somehow they're empty (shouldn't happen in normal flow)
@@ -680,24 +706,36 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 */
 		updateTitle(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.title = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
+		 */
 		updateDescription(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.description = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
+		 */
 		updateVersion(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.version = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding select value to configurationStore.configurationItem; UI plumbing.
+		 */
 		updateType(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -705,12 +743,18 @@ export default {
 			configurationStore.configurationItem.type = value ? value.value : 'default'
 			this.selectedType = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
+		 */
 		updateApp(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.app = value || ''
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding selected application to configurationStore.configurationItem; UI plumbing.
+		 */
 		updateApplication(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -719,6 +763,9 @@ export default {
 			configurationStore.configurationItem.application = value ? value.uuid : ''
 			this.selectedApplication = value
 		},
+		/**
+		 * @spec exclude Reactive multi-select setter mapping selected registers to IDs on configurationItem; UI plumbing.
+		 */
 		updateRegisters(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -727,6 +774,9 @@ export default {
 			configurationStore.configurationItem.registers = value.map(r => parseInt(r.id))
 			this.selectedRegisters = value
 		},
+		/**
+		 * @spec exclude Reactive multi-select setter mapping selected schemas to IDs on configurationItem; UI plumbing.
+		 */
 		updateSchemas(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -735,6 +785,9 @@ export default {
 			configurationStore.configurationItem.schemas = value.map(s => parseInt(s.id))
 			this.selectedSchemas = value
 		},
+		/**
+		 * @spec exclude Reactive multi-select setter mapping selected objects to IDs on configurationItem; UI plumbing.
+		 */
 		updateObjects(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -743,6 +796,9 @@ export default {
 			configurationStore.configurationItem.objects = value.map(o => parseInt(o.id))
 			this.selectedObjects = value
 		},
+		/**
+		 * @spec exclude Reactive multi-select setter mapping selected sources to IDs on configurationItem; UI plumbing.
+		 */
 		updateSources(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -751,6 +807,9 @@ export default {
 			configurationStore.configurationItem.sources = value.map(s => parseInt(s.id))
 			this.selectedSources = value
 		},
+		/**
+		 * @spec exclude Reactive multi-select setter mapping selected agents to IDs on configurationItem; UI plumbing.
+		 */
 		updateAgents(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -759,6 +818,9 @@ export default {
 			configurationStore.configurationItem.agents = value.map(a => parseInt(a.id))
 			this.selectedAgents = value
 		},
+		/**
+		 * @spec exclude Reactive multi-select setter mapping selected views to IDs on configurationItem; UI plumbing.
+		 */
 		updateViews(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -767,6 +829,9 @@ export default {
 			configurationStore.configurationItem.views = value.map(v => parseInt(v.id))
 			this.selectedViews = value
 		},
+		/**
+		 * @spec exclude Reactive multi-select setter mapping managed applications to IDs on configurationItem; UI plumbing.
+		 */
 		updateManagedApplications(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -776,6 +841,9 @@ export default {
 			this.selectedManagedApplications = value
 		},
 		// Management tab update methods
+		/**
+		 * @spec exclude Reactive form-field setter binding source-type select to configurationItem; UI plumbing.
+		 */
 		updateSourceType(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -783,24 +851,36 @@ export default {
 			configurationStore.configurationItem.sourceType = value ? value.value : 'local'
 			this.selectedSourceType = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
+		 */
 		updateSourceUrl(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.sourceUrl = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
+		 */
 		updateLocalVersion(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.localVersion = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding toggle to configurationItem; UI plumbing.
+		 */
 		updateAutoUpdate(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.autoUpdate = value
 		},
+		/**
+		 * @spec exclude Reactive multi-select setter mapping notification groups to values on configurationItem; UI plumbing.
+		 */
 		updateNotificationGroups(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
@@ -808,24 +888,36 @@ export default {
 			configurationStore.configurationItem.notificationGroups = value.map(g => g.value)
 			this.selectedNotificationGroups = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
+		 */
 		updateGithubRepo(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.githubRepo = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
+		 */
 		updateGithubBranch(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.githubBranch = value
 		},
+		/**
+		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
+		 */
 		updateGithubPath(value) {
 			if (!configurationStore.configurationItem) {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.githubPath = value
 		},
+		/**
+		 * @spec exclude Hydrates local select-model refs from an existing configurationItem on edit-open; modal init plumbing.
+		 */
 		async loadExistingSelections() {
 			const item = configurationStore.configurationItem
 			if (item) {
@@ -965,6 +1057,9 @@ export default {
 			}
 		},
 		// Search methods with debouncing
+		/**
+		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
+		 */
 		searchRegisters(query) {
 			clearTimeout(this.registerSearchDebounce)
 			this.registerSearchDebounce = setTimeout(async () => {
@@ -987,6 +1082,9 @@ export default {
 				}
 			}, 300)
 		},
+		/**
+		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
+		 */
 		searchSchemas(query) {
 			clearTimeout(this.schemaSearchDebounce)
 			this.schemaSearchDebounce = setTimeout(async () => {
@@ -1009,6 +1107,9 @@ export default {
 				}
 			}, 300)
 		},
+		/**
+		 * @spec exclude Debounced autocomplete fetch (register/schema-filtered) populating select options; UI search plumbing.
+		 */
 		searchObjects(query) {
 			clearTimeout(this.objectSearchDebounce)
 			this.objectSearchDebounce = setTimeout(async () => {
@@ -1050,6 +1151,9 @@ export default {
 				}
 			}, 300)
 		},
+		/**
+		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
+		 */
 		searchSources(query) {
 			clearTimeout(this.sourceSearchDebounce)
 			this.sourceSearchDebounce = setTimeout(async () => {
@@ -1072,6 +1176,9 @@ export default {
 				}
 			}, 300)
 		},
+		/**
+		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
+		 */
 		searchAgents(query) {
 			clearTimeout(this.agentSearchDebounce)
 			this.agentSearchDebounce = setTimeout(async () => {
@@ -1094,6 +1201,9 @@ export default {
 				}
 			}, 300)
 		},
+		/**
+		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
+		 */
 		searchViews(query) {
 			clearTimeout(this.viewSearchDebounce)
 			this.viewSearchDebounce = setTimeout(async () => {
@@ -1116,6 +1226,9 @@ export default {
 				}
 			}, 300)
 		},
+		/**
+		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
+		 */
 		searchApplications(query) {
 			clearTimeout(this.applicationSearchDebounce)
 			this.applicationSearchDebounce = setTimeout(async () => {
@@ -1138,9 +1251,15 @@ export default {
 				}
 			}, 300)
 		},
+		/**
+		 * @spec exclude Dialog close-event passthrough to closeModal; UI plumbing.
+		 */
 		handleDialogClose() {
 			this.closeModal()
 		},
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and local select-model refs; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
@@ -1153,6 +1272,9 @@ export default {
 			this.selectedViews = []
 			this.selectedApplication = null
 		},
+		/**
+		 * @spec exclude Save-button handler delegating to configurationStore.saveConfiguration; entity persistence lives in the store, this is modal orchestration plumbing.
+		 */
 		async saveConfiguration() {
 			this.loading = true
 			this.error = null

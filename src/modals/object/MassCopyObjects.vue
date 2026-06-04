@@ -10,28 +10,29 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		:can-close="false">
 		<div v-if="success === null">
 			<p>
-				Create copies of <b>{{ objectStore.selectedObjects.length }} selected objects</b>
+				{{ t('openregister', 'Create copies of') }} <b>{{ objectStore.selectedObjects.length }} {{ t('openregister', 'selected objects') }}</b>
 			</p>
 
 			<div class="form-group">
-				<label for="namingPattern">Naming pattern for copies:</label>
+				<label for="namingPattern">{{ t('openregister', 'Naming pattern for copies:') }}</label>
 				<NcSelect
+						input-label="Selected Naming Pattern"
 					v-model="selectedNamingPattern"
 					:options="namingPatternOptions"
 					:disabled="loading"
 					label="label"
 					track-by="value" />
 				<p class="help-text">
-					Preview: "{{ getPreviewName(objectStore.selectedObjects[0]) }}"
+					{{ t('openregister', 'Preview:') }} "{{ getPreviewName(objectStore.selectedObjects[0]) }}"
 				</p>
 			</div>
 
 			<div v-if="selectedNamingPattern?.value === 'custom'" class="form-group">
-				<label for="customPattern">Custom pattern:</label>
+				<label for="customPattern">{{ t('openregister', 'Custom pattern:') }}</label>
 				<NcTextField
 					id="customPattern"
 					v-model="customPattern"
-					placeholder="Copy of {name}"
+					:placeholder="t('openregister', 'Copy of {name}')"
 					:disabled="loading"
 					@input="updateCustomPreview" />
 				<p class="help-text">
@@ -143,6 +144,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -154,6 +158,9 @@ export default {
 			// Clear selection after closing
 			objectStore.selectedObjects = []
 		},
+		/**
+		 * @spec exclude computed display helper for copy-name preview
+		 */
 		getPreviewName(object) {
 			if (!object) return 'Preview Name'
 
@@ -170,10 +177,16 @@ export default {
 				.replace('{name}', originalName)
 				.replace('{id}', object['@self']?.id || object.id || 'ID')
 		},
+		/**
+		 * @spec exclude form-state UI helper to refresh preview
+		 */
 		updateCustomPreview() {
 			// Trigger reactivity for preview update
 			this.$forceUpdate()
 		},
+		/**
+		 * @spec exclude modal bulk-submit handler delegating to objectStore.saveObject
+		 */
 		async copyObjects() {
 			this.loading = true
 			this.error = false
