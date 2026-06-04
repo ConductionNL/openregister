@@ -116,6 +116,27 @@ class PdfTextReplacer
             return $pdfBytes;
         }
 
+        // Defensive longest-first ordering. SAPP iterates the map in PHP
+        // key-insertion order (linear matcher and the cross-operator /
+        // cross-block / cross-line passes all `foreach` it directly; the
+        // cross-line claimed-range guard explicitly assumes longest-first
+        // — see Conduction/sapp PR #1). DocumentProcessingHandler already
+        // orders its map, but re-sorting here makes the overlap guarantee
+        // hold for every caller and survive future SAPP bumps. Same
+        // comparator as the caller: length desc, bytewise asc tie-break
+        // for deterministic output. Params are deliberately untyped:
+        // PHP coerces purely-numeric needle text ("2026", a spaceless
+        // BSN) to INT array keys, which would fatal a string-typed
+        // closure.
+        uksort(
+            $substitutions,
+            static function ($left, $right): int {
+                $left  = (string) $left;
+                $right = (string) $right;
+                return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
+            }
+        );
+
         try {
             $doc = PDFDoc::from_string(buffer: $pdfBytes);
         } catch (Throwable $e) {
@@ -252,15 +273,70 @@ class PdfTextReplacer
         // smalot re-extraction inserts the line structure, but the entity
         // is semantically present either way. Needles get the same
         // treatment below so both sides compare in collapsed-space form.
-        $normalisedExtracted = (string) preg_replace('/\s+/u', ' ', $extracted);
+        //
+        // `preg_replace` with the /u modifier returns NULL on invalid
+        // UTF-8 (PREG_BAD_UTF8_ERROR) — a realistic mode here, since the
+        // encoding gaps SAPP tracks (font_encoding_misses,
+        // cid_split_mismatch, encoding_dict_unhandled) make smalot emit
+        // raw font-encoded bytes. A silent ""-fallback would make every
+        // probe below miss and strict mode pass unaudited output — the
+        // documents most at risk of residual PII are exactly the ones
+        // that would slip through. Fail CLOSED in strict mode; in
+        // lenient mode fall back to the un-normalised haystack, which
+        // keeps the pre-normalisation detection coverage.
+        $normalisedExtracted = preg_replace('/\s+/u', ' ', $extracted);
+        if ($normalisedExtracted === null) {
+            if ($strict === true && preg_last_error() === PREG_BAD_UTF8_ERROR) {
+                throw new PdfAnonymisationException(
+                    reason: PdfAnonymisationException::REASON_VALIDATION_FAILED,
+                    message: 'Cannot audit anonymised PDF — extracted text is not valid UTF-8',
+                    diagnostic: [
+                        'stage'      => 'validate.normalise',
+                        'preg_error' => preg_last_error_msg(),
+                    ]
+                );
+            }
+
+            $this->logger->warning(
+                message: '[PdfTextReplacer] Haystack normalisation failed — falling back to un-normalised extraction',
+                context: [
+                    'stage'      => 'validate.normalise',
+                    'preg_error' => preg_last_error_msg(),
+                ]
+            );
+            $normalisedExtracted = $extracted;
+        }//end if
 
         $residual = [];
-        foreach (array_keys($substitutions) as $needle) {
+        foreach (array_keys($substitutions) as $needleIndex => $needle) {
             if ($needle === '') {
                 continue;
             }
 
-            $normalisedNeedle = trim((string) preg_replace('/\s+/u', ' ', (string) $needle));
+            $rawNeedle        = (string) $needle;
+            $normalisedNeedle = preg_replace('/\s+/u', ' ', $rawNeedle);
+            if ($normalisedNeedle === null) {
+                // Invalid-UTF-8 needle: do NOT silently skip — that would
+                // hide a residual this needle should have flagged. Probe
+                // the raw bytes instead (`strpos` is encoding-agnostic)
+                // and surface the degradation structurally (needle index
+                // only, never the needle text — ADR-005).
+                $this->logger->warning(
+                    message: '[PdfTextReplacer] Needle normalisation failed — probing raw bytes',
+                    context: [
+                        'stage'        => 'validate.normalise',
+                        'needle_index' => $needleIndex,
+                        'preg_error'   => preg_last_error_msg(),
+                    ]
+                );
+                if (strpos($extracted, $rawNeedle) !== false) {
+                    $residual[] = $rawNeedle;
+                }
+
+                continue;
+            }
+
+            $normalisedNeedle = trim($normalisedNeedle);
             if ($normalisedNeedle === '') {
                 continue;
             }
@@ -273,9 +349,9 @@ class PdfTextReplacer
             // LOCATION needle "Amsterdam") and failed runs that were in
             // fact fully anonymised.
             if (mb_strpos($normalisedExtracted, $normalisedNeedle) !== false) {
-                $residual[] = (string) $needle;
+                $residual[] = $rawNeedle;
             }
-        }
+        }//end foreach
 
         if (count($residual) > 0) {
             $diagnostic = [
