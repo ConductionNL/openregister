@@ -792,7 +792,7 @@ return array (
       ),
       'lib/Controller/FileTextController.php' => 
       array (
-        'hash' => '12d179d2caad31c6fa083543311ab882ddd42779',
+        'hash' => '2a58130dd85961893b3933e8d964ebee078f48ee',
         'violations' => 
         array (
           0 => 
@@ -803,7 +803,7 @@ return array (
             'methodName' => NULL,
             'functionName' => NULL,
             'beginLine' => 58,
-            'endLine' => 855,
+            'endLine' => 870,
             'description' => 'The class FileTextController has a coupling between objects value of 15. Consider to reduce the number of dependencies under 13.',
             'args' => 
             array (
@@ -840,7 +840,7 @@ return array (
             'methodName' => 'addManualEntity',
             'functionName' => NULL,
             'beginLine' => 659,
-            'endLine' => 750,
+            'endLine' => 765,
             'description' => 'The method addManualEntity() has a Cyclomatic Complexity of 12. The configured cyclomatic complexity threshold is 10.',
             'args' => 
             array (
@@ -859,7 +859,7 @@ return array (
             'methodName' => 'addManualEntity',
             'functionName' => NULL,
             'beginLine' => 659,
-            'endLine' => 750,
+            'endLine' => 765,
             'description' => 'The method addManualEntity() has an NPath complexity of 1152. The configured NPath complexity threshold is 200.',
             'args' => 
             array (
@@ -1320,7 +1320,7 @@ return array (
       ),
       'lib/Controller/EntityRelationsController.php' => 
       array (
-        'hash' => 'a33c56c3a4b8acbcecf30dc932a114a072119761',
+        'hash' => '2a6acb6604b75188786fb6cd0befe42b5cda2c2c',
         'violations' => 
         array (
           0 => 
@@ -1331,7 +1331,7 @@ return array (
             'methodName' => NULL,
             'functionName' => NULL,
             'beginLine' => 63,
-            'endLine' => 452,
+            'endLine' => 468,
             'description' => 'The class EntityRelationsController has a coupling between objects value of 17. Consider to reduce the number of dependencies under 13.',
             'args' => 
             array (
@@ -3900,7 +3900,7 @@ return array (
       ),
       'lib/Service/File/ManualEntityService.php' => 
       array (
-        'hash' => '726ff00d6c2806349a31dbdc0570018344ff98d2',
+        'hash' => '320b52998c7857b7397c6afea774c6d89772f9f9',
         'violations' => 
         array (
           0 => 
@@ -3911,7 +3911,7 @@ return array (
             'methodName' => NULL,
             'functionName' => NULL,
             'beginLine' => 61,
-            'endLine' => 526,
+            'endLine' => 531,
             'description' => 'The class ManualEntityService has a coupling between objects value of 21. Consider to reduce the number of dependencies under 13.',
             'args' => 
             array (
@@ -3947,8 +3947,8 @@ return array (
             'className' => NULL,
             'methodName' => NULL,
             'functionName' => NULL,
-            'beginLine' => 376,
-            'endLine' => 376,
+            'beginLine' => 381,
+            'endLine' => 381,
             'description' => 'Avoid using static access to class \'\\OCA\\OpenRegister\\Service\\TextExtraction\\EntityRecognitionHandler\' in method \'lookupOrCreateEntity\'.',
             'args' => 
             array (
@@ -5371,7 +5371,7 @@ return array (
       ),
       'lib/Db/MagicMapper.php' => 
       array (
-        'hash' => 'd2359f9a1d595ce7374d7736ff2f80e3a0ce4016',
+        'hash' => '80f2470b69b12dc4083653b28c3ed594729829e3',
         'violations' => 
         array (
           0 => 
@@ -5381,8 +5381,8 @@ return array (
             'className' => NULL,
             'methodName' => NULL,
             'functionName' => NULL,
-            'beginLine' => 2720,
-            'endLine' => 2722,
+            'beginLine' => 2721,
+            'endLine' => 2723,
             'description' => 'The method createTable uses an else expression. Else clauses are basically not necessary and you can simplify the code by not using them.',
             'args' => 
             array (
@@ -5807,7 +5807,7 @@ return array (
       ),
       'lib/Db/EntityRelationMapper.php' => 
       array (
-        'hash' => 'aa9396fdd66077edc792938c270cb9f077ae1821',
+        'hash' => '3994bd1dc9f4269db42f0154026396b60d68266f',
         'violations' => 
         array (
           0 => 
@@ -5818,7 +5818,7 @@ return array (
             'methodName' => NULL,
             'functionName' => NULL,
             'beginLine' => 49,
-            'endLine' => 822,
+            'endLine' => 838,
             'description' => 'The class EntityRelationMapper has 13 public methods. Consider refactoring EntityRelationMapper to keep number of public methods under 10.',
             'args' => 
             array (
@@ -5837,7 +5837,7 @@ return array (
             'methodName' => NULL,
             'functionName' => NULL,
             'beginLine' => 49,
-            'endLine' => 822,
+            'endLine' => 838,
             'description' => 'The class EntityRelationMapper has an overall complexity of 69 which is very high. The configured complexity threshold is 50.',
             'args' => 
             array (
@@ -5855,7 +5855,7 @@ return array (
             'methodName' => NULL,
             'functionName' => NULL,
             'beginLine' => 49,
-            'endLine' => 822,
+            'endLine' => 838,
             'description' => 'The class EntityRelationMapper has a coupling between objects value of 16. Consider to reduce the number of dependencies under 13.',
             'args' => 
             array (
@@ -5872,8 +5872,8 @@ return array (
             'className' => 'EntityRelationMapper',
             'methodName' => 'buildRelationFromRow',
             'functionName' => NULL,
-            'beginLine' => 434,
-            'endLine' => 500,
+            'beginLine' => 437,
+            'endLine' => 513,
             'description' => 'The method buildRelationFromRow() has a Cyclomatic Complexity of 23. The configured cyclomatic complexity threshold is 10.',
             'args' => 
             array (
@@ -5891,8 +5891,8 @@ return array (
             'className' => 'EntityRelationMapper',
             'methodName' => 'buildRelationFromRow',
             'functionName' => NULL,
-            'beginLine' => 434,
-            'endLine' => 500,
+            'beginLine' => 437,
+            'endLine' => 513,
             'description' => 'The method buildRelationFromRow() has an NPath complexity of 419904. The configured NPath complexity threshold is 200.',
             'args' => 
             array (
@@ -5910,8 +5910,8 @@ return array (
             'className' => NULL,
             'methodName' => NULL,
             'functionName' => NULL,
-            'beginLine' => 494,
-            'endLine' => 496,
+            'beginLine' => 507,
+            'endLine' => 509,
             'description' => 'The method buildRelationFromRow uses an else expression. Else clauses are basically not necessary and you can simplify the code by not using them.',
             'args' => 
             array (
@@ -5926,8 +5926,8 @@ return array (
             'className' => 'EntityRelationMapper',
             'methodName' => 'updateDecisionMetadata',
             'functionName' => NULL,
-            'beginLine' => 610,
-            'endLine' => 743,
+            'beginLine' => 623,
+            'endLine' => 756,
             'description' => 'The method updateDecisionMetadata() has a Cyclomatic Complexity of 17. The configured cyclomatic complexity threshold is 10.',
             'args' => 
             array (
@@ -5945,8 +5945,8 @@ return array (
             'className' => 'EntityRelationMapper',
             'methodName' => 'updateDecisionMetadata',
             'functionName' => NULL,
-            'beginLine' => 610,
-            'endLine' => 743,
+            'beginLine' => 623,
+            'endLine' => 756,
             'description' => 'The method updateDecisionMetadata() has an NPath complexity of 5616. The configured NPath complexity threshold is 200.',
             'args' => 
             array (
@@ -5964,8 +5964,8 @@ return array (
             'className' => 'EntityRelationMapper',
             'methodName' => 'updateDecisionMetadata',
             'functionName' => NULL,
-            'beginLine' => 610,
-            'endLine' => 743,
+            'beginLine' => 623,
+            'endLine' => 756,
             'description' => 'The method updateDecisionMetadata() has 134 lines of code. Current threshold is set to 100. Avoid really long methods.',
             'args' => 
             array (
