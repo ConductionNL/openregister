@@ -498,16 +498,14 @@ class CalendarLinkService
         usort(
                 $results,
                 static function (array $a, array $b): int {
+                    $timeA = PHP_INT_MAX;
                     if ($a['dtstart'] !== null) {
                         $timeA = strtotime((string) $a['dtstart']);
-                    } else {
-                        $timeA = PHP_INT_MAX;
                     }
 
+                    $timeB = PHP_INT_MAX;
                     if ($b['dtstart'] !== null) {
                         $timeB = strtotime((string) $b['dtstart']);
-                    } else {
-                        $timeB = PHP_INT_MAX;
                     }
 
                     return $timeA <=> $timeB;

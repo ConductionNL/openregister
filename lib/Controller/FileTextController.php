@@ -684,10 +684,25 @@ class FileTextController extends Controller
         $body = $this->request->getParams();
         unset($body['fileId'], $body['_route']);
 
-        $value         = isset($body['value']) === true ? (string) $body['value'] : '';
-        $type          = isset($body['type']) === true ? (string) $body['type'] : '';
-        $wholeWord     = isset($body['wholeWord']) === true ? (bool) $body['wholeWord'] : true;
-        $caseSensitive = isset($body['caseSensitive']) === true ? (bool) $body['caseSensitive'] : true;
+        $value = '';
+        if (isset($body['value']) === true) {
+            $value = (string) $body['value'];
+        }
+
+        $type = '';
+        if (isset($body['type']) === true) {
+            $type = (string) $body['type'];
+        }
+
+        $wholeWord = true;
+        if (isset($body['wholeWord']) === true) {
+            $wholeWord = (bool) $body['wholeWord'];
+        }
+
+        $caseSensitive = true;
+        if (isset($body['caseSensitive']) === true) {
+            $caseSensitive = (bool) $body['caseSensitive'];
+        }
 
         if ($value === '') {
             return new JSONResponse(

@@ -840,20 +840,18 @@ class SchemasController extends Controller
         // SECURITY (H3): gate schema uploads on appropriate permissions.
         // Updating an existing schema requires manage-permission (same as update/destroy).
         // Creating a new schema requires admin (same as create).
-        if ($id !== null) {
-            if ($this->checkSchemaManagePermission(schema: $schema) === false) {
-                return new JSONResponse(
-                    data: ['error' => 'You do not have permission to update this schema'],
-                    statusCode: 403
-                );
-            }
-        } else {
-            if ($this->isCurrentUserAdmin() === false) {
-                return new JSONResponse(
-                    data: ['error' => 'Admin privileges required to upload new schemas'],
-                    statusCode: 403
-                );
-            }
+        if ($id !== null && $this->checkSchemaManagePermission(schema: $schema) === false) {
+            return new JSONResponse(
+                data: ['error' => 'You do not have permission to update this schema'],
+                statusCode: 403
+            );
+        }
+
+        if ($id === null && $this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(
+                data: ['error' => 'Admin privileges required to upload new schemas'],
+                statusCode: 403
+            );
         }
 
         // Get the uploaded JSON data.

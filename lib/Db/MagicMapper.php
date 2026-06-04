@@ -337,25 +337,19 @@ class MagicMapper extends AbstractObjectMapper
         // (CacheHandler→RegisterMapper→MagicMapper, SettingsService→MagicMapper)
         // were since broken via lazy container resolution + the
         // `objectMapper`-removed-from-SettingsService fix.
-        //
-        /*
-         * Verification trail for future readers (PR #1431 review minor):
-         *
-         * - CacheHandler→RegisterMapper cycle: `CacheHandler` no longer
-         *   eagerly constructs a `RegisterMapper`; it resolves via its
-         *   injected `ContainerInterface $container` at first use.
-         * - SettingsService→MagicMapper cycle: `SettingsService` no
-         *   longer carries the `$objectMapper` field that previously
-         *   transitively pulled in `MagicMapper` at construction.
-         *
-         * Both paths can be re-verified by inspection:
-         *   git grep -nE 'new RegisterMapper|RegisterMapper \$' lib/Service/Object/CacheHandler.php
-         *   git grep -nE '\$objectMapper|MagicMapper \$' lib/Service/SettingsService.php
-         *
-         * If a future change re-introduces either pattern, restoring a
-         * static `$constructCount` is the documented escape hatch — see
-         * issue #1564 for the original trigger conditions.
-         */
+        // Verification trail for future readers (PR #1431 review minor):
+        // - CacheHandler→RegisterMapper cycle: `CacheHandler` no longer
+        // eagerly constructs a `RegisterMapper`; it resolves via its
+        // injected `ContainerInterface $container` at first use.
+        // - SettingsService→MagicMapper cycle: `SettingsService` no
+        // longer carries the `$objectMapper` field that previously
+        // transitively pulled in `MagicMapper` at construction.
+        // Both paths can be re-verified by inspection:
+        // git grep -nE 'new RegisterMapper|RegisterMapper \$' lib/Service/Object/CacheHandler.php
+        // git grep -nE '\$objectMapper|MagicMapper \$' lib/Service/SettingsService.php
+        // If a future change re-introduces either pattern, restoring a
+        // static `$constructCount` is the documented escape hatch — see
+        // issue #1564 for the original trigger conditions.
         $this->initializeHandlers();
     }//end __construct()
 
@@ -2715,10 +2709,9 @@ class MagicMapper extends AbstractObjectMapper
             foreach ($uniqueConstraints as $uniqueCol) {
                 $rawCol         = trim($uniqueCol, '`"');
                 $constraintName = $tableName.'_'.ltrim($rawCol, '_').'_uq';
+                $quote          = '`';
                 if ($isPostgres === true) {
                     $quote = '"';
-                } else {
-                    $quote = '`';
                 }
 
                 $sql .= ', CONSTRAINT '.$quote.$constraintName.$quote.' UNIQUE ('.$uniqueCol.')';

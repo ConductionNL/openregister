@@ -142,15 +142,14 @@ class ActionExecutor
             if ($isAsync === true) {
                 // Fire-and-forget: execute but don't process response for event modification.
                 try {
-                    $result = $engine->execute(
+                    $result   = $engine->execute(
                         $action->getWorkflowId(),
                         $cloudEventPayload,
                         $action->getTimeout()
                     );
+                    $response = (array) $result;
                     if ($result instanceof WorkflowResult) {
                         $response = $result->toArray();
-                    } else {
-                        $response = (array) $result;
                     }
                 } catch (Exception $e) {
                     $status = 'failure';

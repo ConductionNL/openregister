@@ -171,10 +171,14 @@ npm run build      # Production build
 ### Code quality
 
 ```bash
-# PHP
-composer phpcs          # Check coding standards
-composer cs:fix         # Auto-fix issues
-composer phpmd          # Mess detection
+# Authoritative gate (same as CI) — must pass before pushing
+composer check:strict   # phpcs + phpmd + phpstan + psalm + all tests
+
+# Individual tools
+composer phpcs          # Check coding standards (0 errors required)
+composer cs:fix         # Auto-fix coding-standard issues
+composer phpmd          # Mess detection (52 violations tracked in openspec/changes/openregister-legacy-quality-cleanup/)
+composer phpstan        # Static analysis (baseline: 1371 entries, tracked in phpstan-baseline.neon)
 composer phpmetrics     # HTML metrics report
 
 # Frontend

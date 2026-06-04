@@ -308,9 +308,17 @@ class EntityRelationsController extends Controller
         string $userId
     ): bool {
         try {
-            $register = $registerId !== null ? $this->registerMapper->find($registerId) : null;
-            $schema   = $schemaId !== null ? $this->schemaMapper->find($schemaId) : null;
-            $object   = $this->magicMapper->find(
+            $register = null;
+            if ($registerId !== null) {
+                $register = $this->registerMapper->find($registerId);
+            }
+
+            $schema = null;
+            if ($schemaId !== null) {
+                $schema = $this->schemaMapper->find($schemaId);
+            }
+
+            $object = $this->magicMapper->find(
                 identifier: $objectId,
                 register: $register,
                 schema: $schema
@@ -330,7 +338,11 @@ class EntityRelationsController extends Controller
             return false;
         }//end try
 
-        $resolvedSchemaId = $schemaId !== null ? $schemaId : (string) $object->getSchema();
+        $resolvedSchemaId = (string) $object->getSchema();
+        if ($schemaId !== null) {
+            $resolvedSchemaId = $schemaId;
+        }
+
         try {
             $resolvedSchema = $this->schemaMapper->find($resolvedSchemaId);
         } catch (\Throwable $e) {
@@ -406,8 +418,12 @@ class EntityRelationsController extends Controller
             // EmailLink's `@method int getRegisterId()` is non-nullable in
             // the docblock; defensively coerce via empty() in case the
             // column is unexpectedly null at runtime.
-            $register = empty($parentRegisterId) === false ? $this->registerMapper->find((string) $parentRegisterId) : null;
-            $object   = $this->magicMapper->find(
+            $register = null;
+            if (empty($parentRegisterId) === false) {
+                $register = $this->registerMapper->find((string) $parentRegisterId);
+            }
+
+            $object = $this->magicMapper->find(
                 identifier: $parentObjectUuid,
                 register: $register
             );

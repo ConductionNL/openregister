@@ -274,10 +274,9 @@ class EmailLinkService
 
         $link->setMailAccountId($mailAccountId);
         $link->setMailMessageId($messageIdInt);
+        $effectiveUid = $message['uid'];
         if ($uidForMatch !== null || $message['uid'] === '') {
             $effectiveUid = $uidForMatch;
-        } else {
-            $effectiveUid = $message['uid'];
         }
 
         $link->setMailMessageUid($effectiveUid);

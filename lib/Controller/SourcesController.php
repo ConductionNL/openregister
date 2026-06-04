@@ -146,7 +146,7 @@ class SourcesController extends Controller
         );
         return new JSONResponse(
             data: [
-                'results' => array_map(fn(Source $s) => $this->serializeSource(source: $s), $sources),
+                'results' => array_map(fn(Source $src) => $this->serializeSource(source: $src), $sources),
             ]
         );
     }//end index()

@@ -133,10 +133,9 @@ class PdfAnonymisationException extends \Exception
         $this->reason     = $reason;
         $this->diagnostic = $diagnostic;
 
+        $finalMessage = $message;
         if ($message === '') {
             $finalMessage = sprintf('PDF anonymisation failed: %s', $reason);
-        } else {
-            $finalMessage = $message;
         }
 
         parent::__construct(message: $finalMessage, code: 0, previous: $previous);

@@ -45,6 +45,7 @@ use OCP\IRequest;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * WebhookService handles webhook delivery and request interception
@@ -242,19 +243,19 @@ class WebhookService
     {
         $parsed = parse_url($uri);
         if ($parsed === false) {
-            throw new \RuntimeException('Webhook target URL is not parseable');
+            throw new RuntimeException('Webhook target URL is not parseable');
         }
 
         $scheme = strtolower($parsed['scheme'] ?? '');
         if (in_array($scheme, ['http', 'https'], true) === false) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL must use http or https scheme; got "'.$scheme.'"'
             );
         }
 
         $host = strtolower($parsed['host'] ?? '');
         if ($host === '') {
-            throw new \RuntimeException('Webhook target URL is missing a host');
+            throw new RuntimeException('Webhook target URL is missing a host');
         }
 
         // ── IPv6 literal detection ──────────────────────────────────────
@@ -270,7 +271,7 @@ class WebhookService
         if ($isIpv6Literal === true) {
             $reason = $this->blockedIpv6Reason(ip: $bareHost);
             if ($reason !== null) {
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     'Webhook target URL resolves to a blocked IP range ('.$reason.')'
                 );
             }
@@ -292,7 +293,7 @@ class WebhookService
 
                 $reason = $this->blockedIpv6Reason(ip: $ipv6);
                 if ($reason !== null) {
-                    throw new \RuntimeException(
+                    throw new RuntimeException(
                         'Webhook target URL resolves to a blocked IP range ('.$reason.')'
                     );
                 }
@@ -322,35 +323,35 @@ class WebhookService
 
         // Loopback 127.0.0.0/8.
         if (($longIp & 0xFF000000) === 0x7F000000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (loopback)'
             );
         }
 
         // RFC-1918 10.0.0.0/8.
         if (($longIp & 0xFF000000) === 0x0A000000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (RFC-1918)'
             );
         }
 
         // RFC-1918 172.16.0.0/12.
         if (($longIp & 0xFFF00000) === 0xAC100000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (RFC-1918)'
             );
         }
 
         // RFC-1918 192.168.0.0/16.
         if (($longIp & 0xFFFF0000) === 0xC0A80000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (RFC-1918)'
             );
         }
 
         // Link-local 169.254.0.0/16 — includes cloud metadata 169.254.169.254.
         if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (link-local/metadata)'
             );
         }

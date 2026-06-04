@@ -108,10 +108,9 @@ class ExtendedFieldTypeValidator
             return "Property '{$propertyName}': color value must be a string";
         }
 
-        if ($format === null || $format === '') {
+        $format = strtolower((string) $format);
+        if ($format === '') {
             $format = 'hex';
-        } else {
-            $format = strtolower($format);
         }
 
         if ($format === 'rgba') {

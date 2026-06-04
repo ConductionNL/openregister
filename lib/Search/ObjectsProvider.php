@@ -464,10 +464,9 @@ class ObjectsProvider implements IFilteringProvider
             try {
                 $schema = $this->schemaMapper->find($schemaId);
                 $title  = $schema->getTitle();
+                $this->nameCache[$key] = (string) $schemaId;
                 if ($title !== null && $title !== '') {
                     $this->nameCache[$key] = $title;
-                } else {
-                    $this->nameCache[$key] = (string) $schemaId;
                 }
             } catch (\Exception $e) {
                 $this->nameCache[$key] = (string) $schemaId;
@@ -493,10 +492,9 @@ class ObjectsProvider implements IFilteringProvider
             try {
                 $register = $this->registerMapper->find($registerId);
                 $title    = $register->getTitle();
+                $this->nameCache[$key] = (string) $registerId;
                 if ($title !== null && $title !== '') {
                     $this->nameCache[$key] = $title;
-                } else {
-                    $this->nameCache[$key] = (string) $registerId;
                 }
             } catch (\Exception $e) {
                 $this->nameCache[$key] = (string) $registerId;

@@ -715,10 +715,9 @@ class AggregationRunner
                     continue;
                 }
 
+                $stamp = strtotime((string) $raw);
                 if (is_numeric($raw) === true) {
                     $stamp = (int) $raw;
-                } else {
-                    $stamp = strtotime((string) $raw);
                 }
 
                 if ($stamp === false || $stamp < $start || $stamp >= $end) {
@@ -882,10 +881,9 @@ class AggregationRunner
         $buckets = [];
         foreach ($rows as $row) {
             $bucket = $row[$groupField] ?? null;
+            $key    = json_encode($bucket);
             if (is_scalar($bucket) === true) {
                 $key = (string) $bucket;
-            } else {
-                $key = json_encode($bucket);
             }
 
             if (isset($buckets[$key]) === false) {
@@ -929,9 +927,10 @@ class AggregationRunner
             $count++;
             if ($acc === null) {
                 $acc = (float) $value;
-            } else {
-                $acc = $reducer((float) $acc, (float) $value);
+                continue;
             }
+
+            $acc = $reducer((float) $acc, (float) $value);
         }
 
         if ($count === 0 && $acc === null) {

@@ -37,6 +37,8 @@ use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\TemplateProcessor;
 use Psr\Log\LoggerInterface;
+use Smalot\PdfParser\Parser as PdfParser;
+use ZipArchive;
 
 /**
  * Handles document processing operations.
@@ -258,12 +260,11 @@ class DocumentProcessingHandler
             // row on the file (shouldn't happen in the normal
             // extract → review → anonymise flow, but defensive against
             // direct DI callers that bypass extraction).
+            $key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
+            $replacements[$originalText] = '['.$entityType.': '.$key.']';
             if (isset($entityIdMap[$originalText]) === true) {
                 $stableId = $entityIdMap[$originalText]['id'];
                 $replacements[$originalText] = '['.$entityType.': '.$stableId.']';
-            } else {
-                $key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
-                $replacements[$originalText] = '['.$entityType.': '.$key.']';
             }
         }//end foreach
 
@@ -305,8 +306,10 @@ class DocumentProcessingHandler
         // walker cannot reach (comments, tracked changes, metadata, custom XML,
         // person field codes, hyperlink URLs). Sanitise to a clean derivative
         // BEFORE the entity walker pass. The original NC file is untouched.
-        // Both branches assign $anonymizedFile so the markAsAnonymized audit
-        // flag below runs for every path (per `entity-relation-grondslagen`).
+        // Entity anonymisation is GDPR-critical: fail closed (strict) if any
+        // original entity text survives in the output rather than writing a
+        // file marked '_anonymized' that still contains it.
+        $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName, strict: true);
         if (($node instanceof File) === true
             && $this->sanitizer->isSanitizable($node->getMimeType()) === true
         ) {
@@ -315,11 +318,6 @@ class DocumentProcessingHandler
                 replacements: $replacements,
                 outputName: $anonymizedFileName
             );
-        } else {
-            // Entity anonymisation is GDPR-critical: fail closed (strict) if any
-            // original entity text survives in the output rather than writing a
-            // file marked '_anonymized' that still contains it.
-            $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName, strict: true);
         }
 
         // Flip the source's EntityRelation rows to `anonymized = 1` so the
@@ -442,7 +440,7 @@ class DocumentProcessingHandler
         string $outputName,
         string $sanitizedSourcePath
     ): File {
-        $zip = new \ZipArchive();
+        $zip = new ZipArchive();
         if ($zip->open($sanitizedSourcePath) !== true) {
             throw new Exception('Failed to open sanitised Office container');
         }
@@ -535,7 +533,9 @@ class DocumentProcessingHandler
                 unlink($tempFile);
                 throw new Exception('Failed to copy sanitised source for processing');
             }
-        } else {
+        }//end if
+
+        if ($sanitizedSourcePath === null) {
             // Get the file content as a stream and save to a temp file.
             $stream     = $node->fopen('r');
             $tempStream = fopen($tempFile, 'w');
@@ -848,7 +848,7 @@ class DocumentProcessingHandler
         // to the `ocr-document-scanning` capability rather than producing
         // an empty no-op output via the byte-replace path.
         try {
-            $parser    = new \Smalot\PdfParser\Parser();
+            $parser    = new PdfParser();
             $parsedPdf = $parser->parseContent($content);
             $extracted = $parsedPdf->getText();
         } catch (\Throwable $e) {

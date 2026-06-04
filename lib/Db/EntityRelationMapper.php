@@ -223,7 +223,10 @@ class EntityRelationMapper extends QBMapper
         foreach ($rows as &$row) {
             if (isset($row['bases']) === true && is_string($row['bases']) === true) {
                 $decoded      = json_decode($row['bases'], associative: true);
-                $row['bases'] = is_array($decoded) === true ? $decoded : null;
+                $row['bases'] = null;
+                if (is_array($decoded) === true) {
+                    $row['bases'] = $decoded;
+                }
             }
 
             // Normalise boolean-as-int values returned by some DB drivers.
@@ -470,11 +473,21 @@ class EntityRelationMapper extends QBMapper
         }
 
         if (array_key_exists('context', $row) === true) {
-            $relation->setContext($row['context'] !== null ? (string) $row['context'] : null);
+            $contextValue = null;
+            if ($row['context'] !== null) {
+                $contextValue = (string) $row['context'];
+            }
+
+            $relation->setContext($contextValue);
         }
 
         if (array_key_exists('role', $row) === true) {
-            $relation->setRole($row['role'] !== null ? (string) $row['role'] : null);
+            $roleValue = null;
+            if ($row['role'] !== null) {
+                $roleValue = (string) $row['role'];
+            }
+
+            $relation->setRole($roleValue);
         }
 
         if (array_key_exists('anonymized', $row) === true) {
@@ -489,10 +502,9 @@ class EntityRelationMapper extends QBMapper
             $relation->setBases($row['bases']);
         }
 
+        $relation->setCreatedAt(new DateTime());
         if (array_key_exists('createdAt', $row) === true && $row['createdAt'] !== null) {
             $relation->setCreatedAt($row['createdAt']);
-        } else {
-            $relation->setCreatedAt(new DateTime());
         }
 
         return $relation;
@@ -799,7 +811,10 @@ class EntityRelationMapper extends QBMapper
         ?IUser $actingUser=null
     ): void {
         $user   = $actingUser ?? $this->userSession->getUser();
-        $userId = $user !== null ? $user->getUID() : 'system';
+        $userId = 'system';
+        if ($user !== null) {
+            $userId = $user->getUID();
+        }
 
         $auditTrail = new AuditTrail();
         $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
