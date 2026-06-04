@@ -1,5 +1,8 @@
 # Design: Register Resolver Service
 
+status: pr-created
+pr: https://codeberg.org/Conduction/openregister/pulls/76
+
 ## Reuse analysis
 
 - `OCA\OpenRegister\Db\RegisterMapper` exposes `find()`, `findBySlug()`,
