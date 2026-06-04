@@ -116,8 +116,10 @@ use OCA\OpenRegister\Service\Settings\SolrSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Command\ResolverListCommand;
 use OCA\OpenRegister\Command\SolrDebugCommand;
 use OCA\OpenRegister\Command\SolrManagementCommand;
+use OCA\OpenRegister\Service\RegisterResolverService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -266,6 +268,18 @@ class Application extends App implements IBootstrap
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
+
+        // RegisterResolverService — public service for resolving Register/Schema from app config keys.
+        $context->registerService(
+            RegisterResolverService::class,
+            function (ContainerInterface $container) {
+                return new RegisterResolverService(
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                );
+            }
+        );
         $this->registerConfigurationServices(context: $context);
         $this->registerSettingsServices(context: $context);
         $this->registerSearchBackend(context: $context);

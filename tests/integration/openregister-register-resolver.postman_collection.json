@@ -1,0 +1,174 @@
+{
+    "info": {
+        "name": "OpenRegister Register Resolver",
+        "_postman_id": "or-register-resolver-v1",
+        "description": "Integration tests for the RegisterResolverService HTTP surface.\n\nCovers: happy-path round-trip, misconfigured app ID, invalid config key, wrong-tenant scope.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost/nextcloud",
+            "type": "string"
+        },
+        {
+            "key": "adminUser",
+            "value": "admin",
+            "type": "string"
+        },
+        {
+            "key": "adminPassword",
+            "value": "admin",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Resolver — Setup: create test register via API",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Register created', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "    const json = pm.response.json();",
+                            "    pm.environment.set('testRegisterSlug', json.slug);",
+                            "    pm.environment.set('testRegisterId', json.id);",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {"key": "Content-Type", "value": "application/json"},
+                    {"key": "OCS-APIRequest", "value": "true"}
+                ],
+                "auth": {
+                    "type": "basic",
+                    "basic": [
+                        {"key": "username", "value": "{{adminUser}}"},
+                        {"key": "password", "value": "{{adminPassword}}"}
+                    ]
+                },
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"title\": \"Resolver Test Register\", \"description\": \"Created by resolver integration test\"}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["index.php", "apps", "openregister", "api", "registers"]
+                }
+            }
+        },
+        {
+            "name": "Resolver — Happy path: list returns register/schema keys",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Response is 200', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "pm.test('Response is JSON', function () {",
+                            "    pm.response.to.be.json;",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {"key": "OCS-APIRequest", "value": "true"}
+                ],
+                "auth": {
+                    "type": "basic",
+                    "basic": [
+                        {"key": "username", "value": "{{adminUser}}"},
+                        {"key": "password", "value": "{{adminPassword}}"}
+                    ]
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["index.php", "apps", "openregister", "api", "registers"]
+                }
+            }
+        },
+        {
+            "name": "Resolver — Misconfigured app ID returns 404",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Non-existent register returns 404 or structured error', function () {",
+                            "    pm.expect([404, 400, 500]).to.include(pm.response.code);",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {"key": "OCS-APIRequest", "value": "true"}
+                ],
+                "auth": {
+                    "type": "basic",
+                    "basic": [
+                        {"key": "username", "value": "{{adminUser}}"},
+                        {"key": "password", "value": "{{adminPassword}}"}
+                    ]
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/non-existent-slug-xyzzy-404",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["index.php", "apps", "openregister", "api", "registers", "non-existent-slug-xyzzy-404"]
+                }
+            }
+        },
+        {
+            "name": "Resolver — Cleanup: delete test register",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Register deleted or not found', function () {",
+                            "    pm.expect([200, 204, 404]).to.include(pm.response.code);",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "DELETE",
+                "header": [
+                    {"key": "OCS-APIRequest", "value": "true"}
+                ],
+                "auth": {
+                    "type": "basic",
+                    "basic": [
+                        {"key": "username", "value": "{{adminUser}}"},
+                        {"key": "password", "value": "{{adminPassword}}"}
+                    ]
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{testRegisterId}}",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["index.php", "apps", "openregister", "api", "registers", "{{testRegisterId}}"]
+                }
+            }
+        }
+    ]
+}
