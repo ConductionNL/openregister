@@ -37,6 +37,8 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use Psr\Log\LoggerInterface;
 use DateTime;
 use Symfony\Component\Uid\Uuid;
@@ -476,8 +478,8 @@ class ConversationController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
      */
-    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
-    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function create(): JSONResponse
     {
         try {

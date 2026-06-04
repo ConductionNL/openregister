@@ -13,6 +13,8 @@ namespace OCA\OpenRegister\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\IndexService;
@@ -390,8 +392,8 @@ class SolrController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
-    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
-    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function testVectorEmbedding(): JSONResponse
     {
         try {
@@ -1040,8 +1042,8 @@ class SolrController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
-    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
-    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function bulkVectorizeObjects(
         ?int $schemaId=null,
         ?int $registerId=null,
@@ -1175,8 +1177,8 @@ class SolrController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
-    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
-    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function getVectorizationStats(): JSONResponse
     {
         try {

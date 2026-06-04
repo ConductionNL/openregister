@@ -27,6 +27,8 @@ use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -265,8 +267,8 @@ class DashboardController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-6
      */
-    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
-    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function index(): JSONResponse
     {
         try {

@@ -56,6 +56,8 @@ use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -1608,8 +1610,8 @@ class RegistersController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
-    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
-    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function stats(int $id): JSONResponse
     {
         try {
