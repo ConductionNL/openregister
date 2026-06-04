@@ -390,6 +390,8 @@ class SolrController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
+    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
+    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
     public function testVectorEmbedding(): JSONResponse
     {
         try {
@@ -1038,6 +1040,8 @@ class SolrController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
+    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
+    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
     public function bulkVectorizeObjects(
         ?int $schemaId=null,
         ?int $registerId=null,
@@ -1171,6 +1175,8 @@ class SolrController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-21
      */
+    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
+    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
     public function getVectorizationStats(): JSONResponse
     {
         try {

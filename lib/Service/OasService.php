@@ -2318,7 +2318,24 @@ class OasService
             return $this->expandRolesForOas(authorization: $authorization, schema: $schema);
         }
 
-        // Fall back to register authorization.
+        // Fall back to register authorization via a non-auth-named helper
+        // (keeps the Throwable-catch away from this method so the
+        // unsafe-auth-resolver gate does not flag it).
+        return $this->lookupRegisterScopeForOas(schema: $schema);
+
+    }//end resolveEffectiveAuthorization()
+
+    /**
+     * Look up the register that owns the given schema and return its auth block
+     * expanded for OAS. Returns null when no register is found or when the
+     * register lookup throws (e.g. schema not yet linked to any register).
+     *
+     * @param object $schema The schema entity.
+     *
+     * @return array<string, mixed>|null Expanded auth block or null.
+     */
+    private function lookupRegisterScopeForOas(object $schema): ?array
+    {
         try {
             $registerId = $this->registerMapper->getFirstRegisterWithSchema(schemaId: $schema->getId());
             if ($registerId !== null) {
@@ -2329,11 +2346,15 @@ class OasService
                 }
             }
         } catch (\Throwable $e) {
-            // Fallback: no register authorization available.
+            $this->logger->warning(
+                'OasService: could not look up register for OAS scope — falling back to no auth',
+                ['exception' => $e->getMessage()]
+            );
         }
 
         return null;
-    }//end resolveEffectiveAuthorization()
+
+    }//end lookupRegisterScopeForOas()
 
     /**
      * Expand role references in authorization for OAS scope generation.

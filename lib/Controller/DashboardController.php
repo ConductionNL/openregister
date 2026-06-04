@@ -265,6 +265,8 @@ class DashboardController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-6
      */
+    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
+    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
     public function index(): JSONResponse
     {
         try {

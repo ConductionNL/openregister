@@ -1608,6 +1608,8 @@ class RegistersController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
      */
+    #[\OCP\AppFramework\Http\Attribute\NoAdminRequired]
+    #[\OCP\AppFramework\Http\Attribute\NoCSRFRequired]
     public function stats(int $id): JSONResponse
     {
         try {
