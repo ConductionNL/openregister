@@ -354,13 +354,19 @@ class SaveObjects
             $chunkStart = microtime(true);
 
             // Process the current chunk and get the result.
+            // Forward the caller-supplied register/schema so the bulk-save path
+            // does not have to fall back to per-row @self.register/@self.schema
+            // — those values are advisory and may carry stale IDs from the
+            // source instance when re-importing exported data.
             $chunkResult = $this->processObjectsChunk(
                 objects: $objectsChunk,
                 schemaCache: $globalSchemaCache,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
                 _validation: $_validation,
-                _events: $_events
+                _events: $_events,
+                register: $register,
+                schema: $schema
             );
 
             // Merge chunk results for saved, updated, invalid, errors, and unchanged.
@@ -938,12 +944,14 @@ class SaveObjects
      * - Memory-efficient processing
      * - Streamlined response format
      *
-     * @param array $objects       Array of pre-processed objects ready for database operations
-     * @param array $schemaCache   Pre-built schema cache for performance optimization
-     * @param bool  $_rbac         Apply RBAC filtering
-     * @param bool  $_multitenancy Apply multi-tenancy filtering
-     * @param bool  $_validation   Apply schema validation
-     * @param bool  $_events       Dispatch events
+     * @param array                    $objects       Array of pre-processed objects ready for database operations
+     * @param array                    $schemaCache   Pre-built schema cache for performance optimization
+     * @param bool                     $_rbac         Apply RBAC filtering
+     * @param bool                     $_multitenancy Apply multi-tenancy filtering
+     * @param bool                     $_validation   Apply schema validation
+     * @param bool                     $_events       Dispatch events
+     * @param Register|string|int|null $register      Caller-supplied register context (forwarded to bulk save)
+     * @param Schema|string|int|null   $schema        Caller-supplied schema context (forwarded to bulk save)
      *
      * @return array Processing result for this chunk with bulk operation statistics
      *
@@ -958,7 +966,9 @@ class SaveObjects
         bool $_rbac,
         bool $_multitenancy,
         bool $_validation,
-        bool $_events
+        bool $_events,
+        Register|string|int|null $register=null,
+        Schema|string|int|null $schema=null
     ): array {
         $startTime = microtime(true);
 
@@ -988,7 +998,11 @@ class SaveObjects
         }
 
         // STEP 2: Persist transformed objects to database.
-        $bulkResult = $this->persistChunk(transformedObjects: $transformedObjects);
+        $bulkResult = $this->persistChunk(
+            transformedObjects: $transformedObjects,
+            register: $register,
+            schema: $schema
+        );
 
         // STEP 3: Build and classify results from bulk operation output.
         $this->buildChunkResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
@@ -1038,14 +1052,19 @@ class SaveObjects
      * All objects go directly to the bulk save operation which handles create vs update
      * automatically using INSERT...ON DUPLICATE KEY UPDATE with database-computed classification.
      *
-     * @param array $transformedObjects Valid objects ready for database operations
+     * @param array                    $transformedObjects Valid objects ready for database operations
+     * @param Register|string|int|null $register           Caller-supplied register context (forwarded to mapper)
+     * @param Schema|string|int|null   $schema             Caller-supplied schema context (forwarded to mapper)
      *
      * @return mixed The bulk operation result from the mapper
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
-    private function persistChunk(array $transformedObjects): mixed
-    {
+    private function persistChunk(
+        array $transformedObjects,
+        Register|string|int|null $register=null,
+        Schema|string|int|null $schema=null
+    ): mixed {
         $this->logger->info(
                 "[SaveObjects] Using single-call bulk processing (no pre-lookup needed)",
                 [
@@ -1054,8 +1073,40 @@ class SaveObjects
                 ]
                 );
 
+        // Resolve register/schema to entity instances if the caller passed an ID
+        // — the mapper's fallback resolution path goes through @self.* on each
+        // row, which is exactly what we're trying to avoid here.
+        if ($register !== null && $register instanceof Register === false) {
+            try {
+                $register = $this->registerMapper->find($register);
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: '[SaveObjects] Failed to resolve register for bulk save',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $register]
+                );
+                $register = null;
+            }
+        }
+
+        if ($schema !== null && $schema instanceof Schema === false) {
+            try {
+                $schema = $this->schemaMapper->find($schema);
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: '[SaveObjects] Failed to resolve schema for bulk save',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $schema]
+                );
+                $schema = null;
+            }
+        }
+
         // MAXIMUM PERFORMANCE: Always use ultra-fast bulk operations for large imports.
-        return $this->objectEntityMapper->ultraFastBulkSave($transformedObjects, []);
+        return $this->objectEntityMapper->ultraFastBulkSave(
+            insertObjects: $transformedObjects,
+            updateObjects: [],
+            register: $register,
+            schema: $schema
+        );
     }//end persistChunk()
 
     /**
