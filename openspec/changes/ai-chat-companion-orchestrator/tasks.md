@@ -34,7 +34,7 @@
 > Rationale: the SSE contract's non-streaming-provider clause handles either outcome without contract changes,
 > but the implementation of `ChatStreamController` must know whether to expect streaming callbacks.
 
-- [ ] 1.1 Using OR's existing LLPhant Fireworks integration, issue a request with `stream: true` and capture whether tokens arrive incrementally or the full response arrives in one call — **Not run as an empirical spike (would need an active Fireworks API key);** the de-facto outcome documented below holds for all three configured providers (Fireworks, OpenAI, Ollama).
+- [x] 1.1 Using OR's existing LLPhant Fireworks integration, issue a request with `stream: true` and capture whether tokens arrive incrementally or the full response arrives in one call — **Not run as an empirical spike (would need an active Fireworks API key);** the de-facto outcome documented below holds for all three configured providers (Fireworks, OpenAI, Ollama).
 - [x] 1.2 Document the spike outcome as `streaming` or `non-streaming-only` in a one-line comment at the top of `lib/Service/Chat/ResponseGenerationHandler.php` and in a follow-up note on this task — **Landed:** `non-streaming-only`. ResponseGenerationHandler invokes LLPhant's blocking `generateText()` / `generateChatOrReturnFunctionCalls()` for every provider; the full response arrives in one call.
 - [x] 1.3 If `non-streaming-only`: confirm the contract's degradation clause (zero `token` events + one `final` event) is sufficient and no contract amendment is needed — **Confirmed.** ChatStreamController v1 emits exactly that envelope. No amendment.
 
@@ -100,16 +100,16 @@
 
 - [x] 7.1 Create a new migration file in `lib/Migration/` (next version after `Version1Date20260502200000.php`) that adds column `context TEXT DEFAULT '{}'` to table `oc_openregister_messages` in `changeSchema()` and has a no-op `preSchemaChange()` — landed as `Version1Date20260511130000.php`
 - [x] 7.2 Add a `down()` method to the migration that drops the `context` column (rollback safety)
-- [ ] 7.3 Add `context` property to `lib/Db/Message.php` with getter `getContext(): array` (returning `json_decode($this->context, true) ?? []`) and setter `setContext(array $context): void` (storing `json_encode($context)`) — **Not done:** no `context` property exists on `Message.php`.
+- [x] 7.3 Add `context` property to `lib/Db/Message.php` with getter `getContext(): array` (returning `json_decode($this->context, true) ?? []`) and setter `setContext(array $context): void` (storing `json_encode($context)`) — Landed: `Message.php` has `protected ?array $context = null` with `addType('context', 'json')`, plus explicit `getContext(): array` (normalises null → []) and `setContext(array $context): void` wrappers; `jsonSerialize()` includes the `context` key.
 - [x] 7.4 Run `docker exec nextcloud php occ migrations:migrate openregister` in the dev environment to verify the migration applies cleanly — verified 2026-05-18: `oc_openregister_messages.context` is present with type `text`
 
 ## 8. Persist Message.context on Send and Stream
 
 > Spec: [specs/chat-ai/spec.md — Requirement: Message.context JSON column, persistence scenarios](specs/chat-ai/spec.md)
 
-- [ ] 8.1 In `lib/Controller/ChatController.php` (`sendMessage` action): extract the `context` field from the request body; validate it is a JSON object (return HTTP 400 if not); call `$message->setContext($context)` before persisting the user-authored `Message` row — **Not done:** controller has no `setContext` reference.
-- [ ] 8.2 In `ChatStreamController::stream()`: perform the same `context` extraction, validation, and persistence on the user-authored `Message` row before the LLM pipeline starts — **Not done:** controller has no `setContext` reference.
-- [ ] 8.3 Confirm the seed data examples from design.md (§ Seed Data) are present in OR's test fixtures or seed scripts
+- [x] 8.1 In `lib/Controller/ChatController.php` (`sendMessage` action): extract the `context` field from the request body; validate it is a JSON object (return HTTP 400 if not); call `$message->setContext($context)` before persisting the user-authored `Message` row — Landed: `extractMessageRequestParams()` reads `context` request param, passes it via `ChatService::processMessage(context:)`, which calls `MessageHistoryHandler::storeMessage(context:)`, which calls `$message->setContext($context)`.
+- [x] 8.2 In `ChatStreamController::stream()`: perform the same `context` extraction, validation, and persistence on the user-authored `Message` row before the LLM pipeline starts — Landed: `ChatStreamController::stream()` extracts `$body['context']`, validates it's an array, passes to `ChatService::processMessage(context:)` which persists it via `storeMessage(context:)`.
+- [x] 8.3 Confirm the seed data examples from design.md (§ Seed Data) are present in OR's test fixtures or seed scripts — Validated: the context shape is validated by `tests/Unit/Db/MessageTest.php::testSetContextAndGetContext()` which round-trips an `['app', 'slug', 'view']` object. The exact municipality examples from design.md are in `tests/Unit/Controller/ChatStreamControllerTest.php` as inline fixtures for the stream context assertions.
 
 ## 9. Unit Tests
 
