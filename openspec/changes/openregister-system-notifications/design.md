@@ -1,0 +1,110 @@
+# Design — OpenRegister System-Schema Notifications
+
+status: pr-created
+
+## Context
+
+OpenRegister owns the notification engine (`notificatie-engine`). The engine
+fires schema-declared `x-openregister-notifications` rules off
+`ObjectCreatedEvent` / `ObjectUpdatedEvent` / `ObjectTransitionedEvent`, with
+the dispatcher resolving rules from a stored `ObjectEntity` via
+`$object->getSchema()` → `SchemaMapper`. OpenRegister's own system entities
+(`Register`, `Schema`, `Configuration`, `Source`, `Synchronization`, `Import`,
+`Webhook`, `Agent`) are plain `OCP\AppFramework\Db\Entity` records and do NOT
+flow through those events — so today no operational event on OpenRegister's own
+domain can drive a notification.
+
+## Goal
+
+Let OpenRegister notify platform admins / integration ops about its own
+operational events (sync/import failure, schema/config change, source/agent
+health) using the **same** engine (channels, recipients, preferences, i18n,
+rate-limiting, coalescing) as every other app — without forking a parallel
+notification path.
+
+## Decision: kind = code
+
+Annotation alone cannot work because the system entities never reach the
+dispatcher. Two pieces of engine wiring are required:
+
+1. **System-schema rule source.** The dispatcher must be able to resolve
+   `x-openregister-notifications` for a system entity. Two viable shapes
+   (decide during implementation):
+   - **(a) Synthetic system schemas** — seed real `Schema` rows for the system
+     entities and attach annotations, so the existing
+     `SchemaMapper`-based lookup just works. Cleanest reuse; needs the system
+     entities to be addressable as schema-backed objects.
+   - **(b) System-rule registry** — a small in-code map of system-schema-slug →
+     rule array the dispatcher consults when the entity is a system entity.
+     Less invasive; duplicates a little of the schema-lookup path.
+   Prefer (a) if the system entities can be represented as schema-backed
+   objects without distorting the data model; fall back to (b) otherwise.
+
+2. **System-event bridge.** Emit (or adapt existing) create/update/transition
+   signals for the system entities and route them through
+   `AnnotationNotificationListener`, populating `_oldData`/`_newData` so the
+   `notification-updated-field-change-condition` `condition` block (status /
+   health-field changes) is available for system schemas too.
+
+## Recipients & subjects
+
+- Recipients: integration-ops / `admin` groups (`{"kind":"groups",...}`),
+  schema/config owners (`{"kind":"object-acl","permission":"manage"}` or an
+  owner field). No external email needed (all internal uids/groups).
+- Subjects: bilingual nl/en, metadata-only (schema name, source name, run id) —
+  never payload contents.
+
+## Triggers per event
+
+| Event | Trigger | Notes |
+|-------|---------|-------|
+| Sync failure | `transition`→`failed` **or** `updated`+`condition` equals `failed` | depends on whether Synchronization has named lifecycle actions |
+| Import failure | `transition`→`failed` **or** `updated`+`condition` | same |
+| Schema changed | `updated` (optionally `condition` on a version field) | owners + admin |
+| Config changed | `updated` | admin group |
+| Source unhealthy | `threshold` (consecutive failures) **or** `updated`+`condition` health field | numeric threshold preferred if a failure counter exists |
+| Agent unhealthy | `threshold` / `updated`+`condition` heartbeat field | |
+
+## Implementation decisions (resolved)
+
+### 1. System-schema rule source: (b) System-rule registry
+
+`SystemSchemaNotificationRegistry` (lib/Service/) holds `x-openregister-notifications`
+rules as PHP arrays keyed by entity type slug. Synthetic system schemas (a) were
+rejected because system entities are plain `OCP\AppFramework\Db\Entity` records — they
+have no `getSchema()` method and cannot be addressed through `SchemaMapper` without
+distorting the data model.
+
+### 2. Canonical system entity slugs
+
+`register`, `schema`, `configuration`, `source`, `agent`, `webhook`. Synchronization
+and Import are not entity types in the current codebase (no `lib/Db/Synchronization.php`
+or `lib/Db/Import.php`); those slugs are reserved for future work.
+
+### 3. Event coverage
+
+All six system entity types already emit `*CreatedEvent` / `*UpdatedEvent` in
+`lib/Event/`. No new event emission was required. `AnnotationNotificationListener`
+subscribes to the ten existing events (5 types × created+updated) via
+`Application::registerEventListeners()`.
+
+### 4. Source/Agent health modelling
+
+Source and Agent entities have no dedicated health/status field in the current schema.
+The rules use `updated` trigger with no condition (fires on any update). A narrower
+condition (e.g. `{"field":"status","operator":"equals","value":"error"}`) can be added
+to the registry once a health field is added to those entities.
+
+### Declarative-vs-imperative decision (ADR-031)
+
+The notification rules are expressed as schema-equivalent data structures in
+`SystemSchemaNotificationRegistry` (the declarative equivalent of
+`x-openregister-notifications`). No new `*Service.php` class with trip-wire method
+names (`notifyOn*`, `dispatch*`) was introduced; the dispatcher is a pure evaluator
+with no domain logic.
+
+## Non-goals
+
+- No change to stored-object notification behaviour.
+- No new user-facing register JSON under `lib/Settings/`.
+- No new external-email channel (out of scope; tracked in the engine gap notes).

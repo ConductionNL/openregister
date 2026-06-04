@@ -57,4 +57,28 @@ class ConfigurationUpdatedEvent extends Event
         $this->newConfiguration = $newConfiguration;
         $this->oldConfiguration = $oldConfiguration;
     }//end __construct()
+
+    /**
+     * Get the configuration after update.
+     *
+     * @return Configuration The configuration after update.
+     *
+     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3.2
+     */
+    public function getNewConfiguration(): Configuration
+    {
+        return $this->newConfiguration;
+    }//end getNewConfiguration()
+
+    /**
+     * Get the configuration before update.
+     *
+     * @return Configuration The configuration before update.
+     *
+     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3.2
+     */
+    public function getOldConfiguration(): Configuration
+    {
+        return $this->oldConfiguration;
+    }//end getOldConfiguration()
 }//end class

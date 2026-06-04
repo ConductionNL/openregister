@@ -143,6 +143,7 @@ use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\HookListener;
+use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\Comments\CommentsEntityEvent;
@@ -801,6 +802,19 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SchemaCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
         $context->registerEventListener(SchemaDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+
+        // AnnotationNotificationListener routes system entity events through the annotation-sourced
+        // notification dispatch path (system-event bridge, ADR-031 / openregister-system-notifications).
+        $context->registerEventListener(RegisterCreatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(ConfigurationCreatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(ConfigurationUpdatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(SourceCreatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(SourceUpdatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(AgentCreatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(AgentUpdatedEvent::class, AnnotationNotificationListener::class);
     }//end registerEventListeners()
 
     /**

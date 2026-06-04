@@ -98,10 +98,56 @@ class Notifier implements INotifier
                 return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
 
             default:
-                // Unknown subject.
+                // System entity notifications use a shared template renderer.
+                if (str_starts_with(haystack: $notification->getSubject(), needle: 'system_entity_') === true) {
+                    return $this->prepareSystemEntityNotification(
+                        notification: $notification,
+                        l: $l,
+                        languageCode: $languageCode
+                    );
+                }
                 throw new InvalidArgumentException('Unknown subject');
         }//end switch
     }//end prepare()
+
+    /**
+     * Prepare a system entity notification for display.
+     *
+     * Reads the bilingual subject templates stored in the notification parameters by
+     * AnnotationNotificationDispatcher and renders the correct language variant.
+     * All system entity notifications are metadata-only: entity title and UUID,
+     * never payload contents.
+     *
+     * @param INotification $notification The notification to prepare.
+     * @param mixed         $l            The localisation instance.
+     * @param string        $languageCode The language code for the recipient.
+     *
+     * @return INotification The prepared notification.
+     *
+     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-4.2
+     */
+    private function prepareSystemEntityNotification(INotification $notification, $l, string $languageCode): INotification
+    {
+        $params     = $notification->getSubjectParameters();
+        $subjectKey = $languageCode === 'nl' ? 'subject_nl' : 'subject_en';
+
+        $template    = $params[$subjectKey] ?? ($params['subject_en'] ?? '');
+        $entityTitle = $params['entityTitle'] ?? '';
+
+        // Interpolate {{title}} / {{name}} placeholders (metadata-only, no payload contents).
+        $parsed = str_replace(
+            search: ['{{title}}', '{{name}}'],
+            replace: [$entityTitle, $entityTitle],
+            subject: $template
+        );
+
+        $notification->setParsedSubject(subject: $parsed !== '' ? $parsed : $l->t('OpenRegister system notification'));
+        $notification->setIcon(
+            icon: $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+        );
+
+        return $notification;
+    }//end prepareSystemEntityNotification()
 
     /**
      * Prepare configuration update notification.
