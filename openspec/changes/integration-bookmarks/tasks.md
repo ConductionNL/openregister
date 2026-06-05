@@ -2,11 +2,11 @@
 
 ## Backend
 
-- [ ] `BookmarkLink` entity + mapper + migration
-- [ ] `BookmarkService` wrapping Bookmarks REST API
-- [ ] `BookmarksController`
+- [x] `BookmarkLink` entity + mapper + migration
+- [x] `BookmarkService` wrapping Bookmarks REST API
+- [x] `BookmarksController`
 - [x] `BookmarksProvider` — id='bookmarks', label='Bookmarks', icon='Bookmark', group='docs', requiredApp='bookmarks', storage='link-table'
-- [ ] DI-tag, routes, unit tests
+- [x] DI-tag, routes, unit tests
 
 ## Frontend — Tab
 
@@ -24,11 +24,11 @@
 
 ## Registration
 
-- [ ] `src/integrations/builtin/bookmarks.js` — register with `referenceType: 'bookmarks'`
+- [x] `src/integrations/builtin/bookmarks.js` — register with `referenceType: 'bookmarks'`
 
 ## Quality
 
-- [ ] Parity gate passes; nl+en; strict checks; ESLint clean
+- [x] Parity gate passes; nl+en; strict checks; ESLint clean
 
 ## Acceptance verification
 

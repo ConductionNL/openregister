@@ -19,6 +19,7 @@ import {
 	registerBuiltinIntegrations,
 	registerLeafIntegrations,
 } from '@conduction/nextcloud-vue'
+import { registerBookmarksIntegration } from './builtin/bookmarks.js'
 
 let bootstrapped = false
 
@@ -39,5 +40,6 @@ export function ensureIntegrationRegistry() {
 	const registry = getSharedRegistry(window)
 	registerBuiltinIntegrations(registry)
 	registerLeafIntegrations(registry)
+	registerBookmarksIntegration(registry)
 	bootstrapped = true
 }
