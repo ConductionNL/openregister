@@ -1,0 +1,124 @@
+# XWiki OpenConnector Source Configuration Template
+#
+# Import this file once in OpenConnector (Settings → Sources → Import)
+# to configure the XWiki source used by the OpenRegister XWiki integration.
+#
+# Requirements:
+#   - OpenConnector app installed and enabled in Nextcloud
+#   - A reachable XWiki instance (XWiki >= 5.x, tested against xwiki:lts 17.10)
+#   - Credentials: Basic auth (username + password/token) or OAuth2 client credentials
+#
+# After import, update the following fields:
+#   - spec.baseUrl: replace with your XWiki base URL
+#   - spec.auth.username / spec.auth.password  (for basic auth)
+#   - spec.auth.clientId / spec.auth.clientSecret / spec.auth.tokenUrl  (for OAuth2)
+
+apiVersion: openconnector/v1
+kind: Source
+metadata:
+  name: xwiki
+  label: XWiki
+  description: >
+    XWiki knowledge platform source. Links XWiki pages to OpenRegister objects.
+    Auth is configured on this source; the XwikiProvider in OpenRegister delegates
+    all CRUD here through ExternalIntegrationRouter.
+  group: external
+  icon: FileDocumentMultiple
+
+spec:
+  type: rest
+  baseUrl: https://wiki.example.com
+
+  auth:
+    type: basic            # change to 'oauth2' for OAuth2 setups
+    username: ""
+    password: ""
+    # OAuth2 fields (used when type: oauth2):
+    # clientId: ""
+    # clientSecret: ""
+    # tokenUrl: "https://wiki.example.com/xwiki/rest/oauth2/token"
+    # scope: ""
+
+  headers:
+    Accept: application/json
+    X-Requested-With: XMLHttpRequest
+
+  # ── Endpoint mappings ────────────────────────────────────────────────────
+  #
+  # OpenConnector calls these endpoints when the XwikiProvider delegates a
+  # list / get / create / update / delete / health action.
+  #
+  # Placeholders:
+  #   {wiki}     — wiki name (defaults to 'xwiki' for the main wiki)
+  #   {space}    — dot-separated space hierarchy (e.g. Dept.Policy)
+  #   {page}     — page name
+  #   {context.register}, {context.schema}, {context.object} — OR object context
+
+  endpoints:
+    # List: return all pages linked to a given OR object.
+    # OR stores link records; this endpoint fetches the live page metadata.
+    list:
+      method: GET
+      path: /rest/wikis/{wiki}/pages
+      params:
+        limit: 50
+        start: 0
+      responseMapping:
+        items: "$.pageSummaries[*]"
+        id: "$.fullName"
+        title: "$.title"
+        space: "$.space"
+        page: "$.name"
+        url: "$.xwikiAbsoluteUrl"
+        breadcrumb: "$.hierarchy.items[*].label | join(' / ')"
+        content: ""    # populated by the get endpoint
+
+    # Get a single page with rendered content.
+    # XWiki's REST API returns raw xwiki/2.1 syntax in the 'content' field.
+    # ?xpage=plain returns the rendered body with macros executed server-side.
+    get:
+      method: GET
+      path: /bin/get/{space}/{page}
+      params:
+        xpage: plain
+        outputSyntax: plain
+      responseMapping:
+        content: "$"   # plain text body
+
+    # Create: stores the canonical reference returned by XWiki after URL resolution.
+    # The 'reference' field accepts a full XWiki URL or a Space.Page path.
+    # XWiki resolves the URL to the canonical fullName (e.g. "Dept.Policy.Privacy").
+    create:
+      method: POST
+      path: /rest/wikis/{wiki}/pages
+      body:
+        reference: "{payload.reference}"
+      responseMapping:
+        id: "$.fullName"
+        title: "$.title"
+        space: "$.space"
+        page: "$.name"
+        url: "$.xwikiAbsoluteUrl"
+        breadcrumb: "$.hierarchy.items[*].label | join(' / ')"
+
+    # Update: update link metadata (not the page content — editing lives in XWiki).
+    update:
+      method: PUT
+      path: /rest/wikis/{wiki}/pages/{id}
+      body: "{payload}"
+      responseMapping:
+        id: "$.fullName"
+        title: "$.title"
+
+    # Delete: removes the OR sub-resource pairing only.
+    # The page in XWiki is NEVER deleted by this endpoint.
+    delete:
+      method: DELETE
+      path: /rest/wikis/{wiki}/pages/{id}
+
+    # Health: lightweight connectivity check.
+    health:
+      method: GET
+      path: /rest/wikis
+      responseMapping:
+        status: "ok"

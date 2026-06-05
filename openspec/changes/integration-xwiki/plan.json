@@ -1,0 +1,154 @@
+{
+  "change": "integration-xwiki",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "created": "2026-05-11",
+  "tracking_issue": 1326,
+  "depends_on_issues": [1307],
+  "tasks": [
+    {
+      "id": "1.1",
+      "section": "Backend",
+      "title": "Create lib/Service/Integration/Providers/XwikiProvider.php",
+      "description": "Provider class with id='xwiki', label='Articles', icon='FileDocumentMultiple', group='external', requiredApp='openconnector', storage='external', getOpenConnectorSource()='xwiki'.",
+      "status": "done",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: XWiki Provider Registration",
+      "files_likely_affected": ["lib/Service/Integration/Providers/XwikiProvider.php"]
+    },
+    {
+      "id": "1.2",
+      "section": "Backend",
+      "title": "Declare auth requirements (basic or oauth2, configurable at source level)",
+      "description": "XwikiProvider::authRequirements() returns the OpenConnector source's declared auth type. Basic auth and OAuth2 both supported depending on customer XWiki version.",
+      "status": "done",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: External Routing via OpenConnector",
+      "files_likely_affected": ["lib/Service/Integration/Providers/XwikiProvider.php"]
+    },
+    {
+      "id": "1.3",
+      "section": "Backend",
+      "title": "Delegate CRUD to ExternalIntegrationRouter",
+      "description": "All CRUD methods on XwikiProvider delegate to ExternalIntegrationRouter. Provider stays thin; routing logic stays in the router.",
+      "status": "done",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: External Routing via OpenConnector",
+      "files_likely_affected": ["lib/Service/Integration/Providers/XwikiProvider.php"]
+    },
+    {
+      "id": "1.4",
+      "section": "Backend",
+      "title": "Ship OpenConnector source config template",
+      "description": "YAML template at docs/Integrations/xwiki-openconnector-source.yaml. Also docs/Integrations/xwiki.md user guide.",
+      "status": "done",
+      "spec_ref": "design.md#Files Affected",
+      "files_likely_affected": ["docs/Integrations/xwiki-openconnector-source.yaml", "docs/Integrations/xwiki.md"]
+    },
+    {
+      "id": "1.5",
+      "section": "Backend",
+      "title": "Register provider via addProvider() at boot()",
+      "description": "XwikiProvider registered in Application.php bootBuiltinIntegrationProviders() via addProvider() on IntegrationRegistry.",
+      "status": "done",
+      "spec_ref": "../pluggable-integration-registry/proposal.md#IntegrationRegistry service",
+      "files_likely_affected": ["lib/AppInfo/Application.php"]
+    },
+    {
+      "id": "1.6",
+      "section": "Backend",
+      "title": "Unit tests (OpenConnector client mocked)",
+      "description": "tests/Unit/Service/Integration/Providers/XwikiProviderTest.php — 10 test methods covering metadata, auth requirements, list, create, delete, health, normalizeRow, isEnabled, and exception propagation.",
+      "status": "done",
+      "spec_ref": "design.md#Risks",
+      "files_likely_affected": ["tests/Unit/Service/Integration/Providers/XwikiProviderTest.php"]
+    },
+    {
+      "id": "2.1",
+      "section": "Frontend — Tab",
+      "title": "CnXwikiTab.vue — linked pages with title + full breadcrumb",
+      "description": "In nextcloud-vue repo (PR #213). Out of scope for this PR.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: Breadcrumb in Tab",
+      "files_likely_affected": ["src/components/CnXwikiTab/CnXwikiTab.vue", "src/components/CnXwikiTab/index.js"]
+    },
+    {
+      "id": "2.2",
+      "section": "Frontend — Tab",
+      "title": "Barrel + tests",
+      "description": "In nextcloud-vue repo (PR #213). Out of scope for this PR.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Scenario: Paste URL resolves to canonical reference",
+      "files_likely_affected": ["src/components/CnXwikiTab/index.js", "tests/components/CnXwikiTab.test.js"]
+    },
+    {
+      "id": "3.1",
+      "section": "Frontend — Widget",
+      "title": "CnXwikiCard.vue — 4 surfaces with detail-page text preview",
+      "description": "In nextcloud-vue repo (PR #213). Out of scope for this PR.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: Widget Surfaces",
+      "files_likely_affected": ["src/components/CnXwikiCard/CnXwikiCard.vue"]
+    },
+    {
+      "id": "3.2",
+      "section": "Frontend — Widget",
+      "title": "Barrel + surface tests",
+      "description": "In nextcloud-vue repo (PR #213). Out of scope for this PR.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Scenario: Macros not executed in preview",
+      "files_likely_affected": ["src/components/CnXwikiCard/index.js", "tests/components/CnXwikiCard.test.js"]
+    },
+    {
+      "id": "4.1",
+      "section": "Registration",
+      "title": "src/integrations/builtin/xwiki.js — register with referenceType: 'xwiki'",
+      "description": "In nextcloud-vue repo (PR #213). Out of scope for this PR.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: Reference-Property Auto-Rendering",
+      "files_likely_affected": ["src/integrations/builtin/xwiki.js"]
+    },
+    {
+      "id": "5.1",
+      "section": "Quality",
+      "title": "Parity gate, nl+en translations, strict checks, ESLint",
+      "description": "composer check:strict passes on backend files. Frontend parity gate is in nextcloud-vue.",
+      "status": "done",
+      "spec_ref": "../pluggable-integration-registry/proposal.md#Widget-parity contract",
+      "files_likely_affected": ["lib/Service/Integration/Providers/XwikiProvider.php"]
+    },
+    {
+      "id": "6.1",
+      "section": "Acceptance verification",
+      "title": "E2E: configure OpenConnector xwiki source, link a page, verify breadcrumb in tab + text preview on detail-page",
+      "description": "Deferred until umbrella + leaf PRs merge and land in a deployed Nextcloud with a reachable XWiki instance.",
+      "status": "pending",
+      "spec_ref": "tasks.md#Acceptance verification",
+      "files_likely_affected": ["tests/e2e/integration-xwiki.test.js"]
+    },
+    {
+      "id": "6.2",
+      "section": "Acceptance verification",
+      "title": "Link-by-URL test: paste full URL, verify resolution to canonical space.page",
+      "description": "Covered in XwikiProviderTest: testCreatePassesReferenceThroughToRouter asserts POST body is {reference: url}. URL resolution happens in OpenConnector source.",
+      "status": "done",
+      "spec_ref": "specs/generic-integrations/spec.md#Scenario: Paste URL resolves to canonical reference",
+      "files_likely_affected": ["tests/Unit/Service/Integration/Providers/XwikiProviderTest.php"]
+    },
+    {
+      "id": "6.3",
+      "section": "Acceptance verification",
+      "title": "Auth test, hide test, reference-property test",
+      "description": "Covered in XwikiProviderTest: testIsEnabled*. Reference-property rendering is in nextcloud-vue.",
+      "status": "done",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: Auth Expiry Surfacing",
+      "files_likely_affected": ["tests/Unit/Service/Integration/Providers/XwikiProviderTest.php"]
+    },
+    {
+      "id": "6.4",
+      "section": "Acceptance verification",
+      "title": "Security: verify XWiki macros are NOT executed in preview (text-only)",
+      "description": "Security test for preview macro stripping is in nextcloud-vue CnXwikiCard.spec.js. Backend normalizeRow() returns plain text content from the source; no HTML injection.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Scenario: XWiki macro output sanitisation",
+      "files_likely_affected": ["tests/components/CnXwikiCard-security.test.js"]
+    }
+  ]
+}
