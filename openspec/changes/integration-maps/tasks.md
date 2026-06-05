@@ -2,20 +2,20 @@
 
 ## Backend
 
-- [ ] `MapLink` entity + mapper (with `lat`/`lon`/`address`/`address_source` columns) + migration
-- [ ] `MapLocationService` — geocode (via Maps), reverse-geocode, CRUD
-- [ ] `MapsController` with sub-resource endpoints
+- [x] `MapLink` entity + mapper (with `lat`/`lon`/`address`/`address_source` columns) + migration
+- [x] `MapLocationService` — geocode (via Maps), reverse-geocode, CRUD
+- [x] `MapsController` with sub-resource endpoints
 - [x] `MapsProvider` — id='maps', label='Location', icon='MapMarker', group='docs', requiredApp='maps', storage='link-table'
-- [ ] DI-tag, routes, unit tests
+- [x] DI-tag, routes, unit tests
 
 ## Frontend — Tab
 
-- [ ] `CnMapTab.vue` — address-list + embedded Leaflet map; add-location flows (by address, by map click); unlink
+- [ ] `CnMapTab.vue` — address-list + embedded Leaflet map; add-location flows (by address, by map click); unlink (nextcloud-vue repo — separate PR)
 - [ ] Barrel + tests
 
 ## Frontend — Widget
 
-- [ ] `CnMapCard.vue`:
+- [ ] `CnMapCard.vue`: (nextcloud-vue repo — separate PR)
   - `user-dashboard`: address list
   - `app-dashboard`: scoped
   - `detail-page`: mini-map with pins
@@ -24,7 +24,7 @@
 
 ## Registration
 
-- [ ] `src/integrations/builtin/maps.js` — register with `referenceType: 'maps'`
+- [x] `src/integrations/builtin/maps.js` — register with `referenceType: 'maps'`
 
 ## Quality
 
