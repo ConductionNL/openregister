@@ -37,7 +37,7 @@
 
     <php>
         <env name="PHPUNIT_RUN" value="1"/>
-        <env name="NEXTCLOUD_CONFIG_DIR" value="/var/www/html/config"/>
+        <env name="NEXTCLOUD_CONFIG_DIR" value="/tmp/nextcloud-config"/>
     </php>
 </phpunit>
 
