@@ -1,0 +1,26 @@
+{
+  "spec": "openspec/changes/integration-time-tracker",
+  "verified": [
+    {"task": "1", "file": "lib/Db/TimeLink.php", "ok": true},
+    {"task": "1", "file": "lib/Db/TimeLinkMapper.php", "ok": true},
+    {"task": "1", "file": "lib/Migration/Version1Date20260605000001.php", "ok": true},
+    {"task": "2", "file": "lib/Service/TimeEntryService.php", "ok": true},
+    {"task": "3", "file": "lib/Controller/TimeController.php", "ok": true},
+    {"task": "4", "file": "lib/Service/Integration/TimeProvider.php", "ok": true},
+    {"task": "4", "file": "lib/Service/Integration/IntegrationProvider.php", "ok": true},
+    {"task": "5", "file": "lib/Command/TimeReconcileCommand.php", "ok": true},
+    {"task": "6", "file": "appinfo/routes.php", "ok": true},
+    {"task": "6", "file": "lib/AppInfo/Application.php", "ok": true},
+    {"task": "7", "file": "tests/Unit/Db/TimeLinkTest.php", "ok": true},
+    {"task": "7", "file": "tests/Unit/Service/TimeEntryServiceTest.php", "ok": true},
+    {"task": "7", "file": "tests/Unit/Controller/TimeControllerTest.php", "ok": true},
+    {"task": "7", "file": "tests/Unit/Service/Integration/TimeProviderTest.php", "ok": true},
+    {"task": "7", "file": "tests/Unit/Command/TimeReconcileCommandTest.php", "ok": true},
+    {"task": "8", "file": "src/integrations/builtin/CnTimeTab.vue", "ok": true},
+    {"task": "9", "file": "src/integrations/builtin/CnTimeCard.vue", "ok": true},
+    {"task": "10", "file": "src/integrations/builtin/time-tracker.js", "ok": true},
+    {"task": "10", "file": "src/integrations/builtin/index.js", "ok": true}
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
