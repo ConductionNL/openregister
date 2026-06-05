@@ -197,6 +197,9 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
+use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 
 /**
  * Class Application
@@ -272,6 +275,7 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerEventListeners(context: $context);
+        $this->registerIntegrationServices(context: $context);
     }//end register()
 
     /**
@@ -804,6 +808,68 @@ class Application extends App implements IBootstrap
     }//end registerEventListeners()
 
     /**
+     * Register integration registry and built-in integration providers.
+     *
+     * IntegrationRegistry is a singleton; XwikiProvider is registered as
+     * the first external-storage leaf. Registration uses explicit addProvider()
+     * at boot() rather than DI tags — NC has no public queryAll() (ADR-019).
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md#task-1.5
+     */
+    private function registerIntegrationServices(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            IntegrationRegistry::class,
+            static fn() => new IntegrationRegistry()
+        );
+
+        $context->registerService(
+            ExternalIntegrationRouter::class,
+            static function (ContainerInterface $container): ExternalIntegrationRouter {
+                return new ExternalIntegrationRouter(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        $context->registerService(
+            XwikiProvider::class,
+            static function (ContainerInterface $container): XwikiProvider {
+                return new XwikiProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+    }//end registerIntegrationServices()
+
+    /**
+     * Register built-in integration providers with the IntegrationRegistry.
+     *
+     * Uses explicit addProvider() per ADR-019 (NC has no public queryAll).
+     * Called from boot() so the registry is populated before any request handler.
+     *
+     * @param IBootContext $context Boot context
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-xwiki/tasks.md#task-1.5
+     */
+    private function bootBuiltinIntegrationProviders(IBootContext $context): void
+    {
+        $container = $context->getServerContainer();
+        $registry  = $container->get(IntegrationRegistry::class);
+
+        $registry->addProvider(provider: $container->get(XwikiProvider::class));
+    }//end bootBuiltinIntegrationProviders()
+
+    /**
      * Boot application components
      *
      * @param IBootContext $context The boot context
@@ -822,5 +888,8 @@ class Application extends App implements IBootstrap
         $dispatcher = $server->get(IEventDispatcher::class);
         $registry   = $server->get(DeepLinkRegistryService::class);
         $dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $registry));
+
+        // Register built-in integration providers (ADR-019).
+        $this->bootBuiltinIntegrationProviders(context: $context);
     }//end boot()
 }//end class

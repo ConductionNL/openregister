@@ -1,0 +1,101 @@
+# XWiki OpenConnector Source Configuration Template
+#
+# Import this template into OpenConnector to enable the XWiki integration.
+# After import, set your XWiki base URL and credentials.
+#
+# Path: docs/Integrations/xwiki-openconnector-source.yaml
+# See:  docs/Integrations/xwiki.md for full setup instructions.
+
+apiVersion: openconnector/v1
+kind: Source
+metadata:
+  name: xwiki
+  label: XWiki Knowledge Base
+  description: XWiki REST API source for linking XWiki pages to OpenRegister objects.
+
+spec:
+  # Base URL of your XWiki instance (no trailing slash).
+  # Example: https://wiki.example.gov
+  baseUrl: "${XWIKI_BASE_URL}"
+
+  # Authentication — choose one of: basic, oauth2
+  auth:
+    type: "${XWIKI_AUTH_TYPE}"  # basic | oauth2
+
+    # Basic auth (username + password or token)
+    basic:
+      username: "${XWIKI_USERNAME}"
+      password: "${XWIKI_PASSWORD}"
+
+    # OAuth 2.0
+    oauth2:
+      clientId:     "${XWIKI_OAUTH_CLIENT_ID}"
+      clientSecret: "${XWIKI_OAUTH_CLIENT_SECRET}"
+      tokenUrl:     "${XWIKI_OAUTH_TOKEN_URL}"
+      scope:        "openid profile"
+
+  headers:
+    Accept:       "application/json"
+    Content-Type: "application/json"
+
+  # Endpoint definitions — mapped by the XwikiProvider CRUD methods.
+  endpoints:
+    list:
+      method: GET
+      path:   "/rest/wikis/xwiki/objects/openregister/linked"
+      params:
+        objectId: "{{ objectId }}"
+        _limit:   "{{ _limit | default(50) }}"
+        _offset:  "{{ _offset | default(0) }}"
+      mapping:
+        id:        "$.id"
+        title:     "$.title"
+        space:     "$.spaceName"
+        page:      "$.pageName"
+        url:       "$.pageUrl"
+        reference: "$.fullName"
+        hierarchy: "$.hierarchy"
+        # Rendered body is fetched from the plain-text endpoint (AD-1).
+        content: "$.content"
+
+    get:
+      method: GET
+      path:   "/bin/get/{{ space }}/{{ page }}"
+      params:
+        xpage: plain
+      mapping:
+        id:        "$.id"
+        title:     "$.title"
+        space:     "$.spaceName"
+        page:      "$.pageName"
+        url:       "$.pageUrl"
+        reference: "$.fullName"
+        hierarchy: "$.hierarchy"
+        content:   "$.content"
+
+    create:
+      # URL resolution (full URL or Space.Page path) is performed server-side
+      # by the OpenConnector source; the provider passes the raw reference (AD-2).
+      method: POST
+      path:   "/rest/wikis/xwiki/objects/openregister/linked"
+      body:
+        objectId:  "{{ objectId }}"
+        reference: "{{ reference }}"
+
+    update:
+      method: PUT
+      path:   "/rest/wikis/xwiki/objects/openregister/linked/{{ id }}"
+      body:   "{{ data }}"
+
+    delete:
+      # Removes the OR sub-resource pairing only — never deletes in XWiki.
+      method: DELETE
+      path:   "/rest/wikis/xwiki/objects/openregister/linked/{{ id }}"
+
+    probe:
+      method: GET
+      path:   "/rest/wikis/xwiki"
+      healthMapping:
+        status:      "ok"
+        authExpired: "$.error == 'Unauthorized'"
+        reason:      "$.error"
