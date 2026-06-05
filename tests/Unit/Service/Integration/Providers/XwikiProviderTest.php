@@ -28,7 +28,6 @@ use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 
 /**
  * Unit tests for XwikiProvider.
@@ -38,9 +37,32 @@ use RuntimeException;
 class XwikiProviderTest extends TestCase
 {
 
+    /**
+     * Integration router mock.
+     *
+     * @var ExternalIntegrationRouter&MockObject
+     */
     private ExternalIntegrationRouter&MockObject $router;
+
+    /**
+     * App manager mock.
+     *
+     * @var IAppManager&MockObject
+     */
     private IAppManager&MockObject $appManager;
+
+    /**
+     * Logger mock.
+     *
+     * @var LoggerInterface&MockObject
+     */
     private LoggerInterface&MockObject $logger;
+
+    /**
+     * Subject under test.
+     *
+     * @var XwikiProvider
+     */
     private XwikiProvider $provider;
 
     /**
@@ -50,9 +72,9 @@ class XwikiProviderTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->router     = $this->createMock(ExternalIntegrationRouter::class);
-        $this->appManager = $this->createMock(IAppManager::class);
-        $this->logger     = $this->createMock(LoggerInterface::class);
+        $this->router     = $this->createMock(originalClassName: ExternalIntegrationRouter::class);
+        $this->appManager = $this->createMock(originalClassName: IAppManager::class);
+        $this->logger     = $this->createMock(originalClassName: LoggerInterface::class);
 
         $this->provider = new XwikiProvider(
             router: $this->router,
@@ -72,13 +94,13 @@ class XwikiProviderTest extends TestCase
      */
     public function testProviderMetadata(): void
     {
-        $this->assertSame('xwiki', $this->provider->getId());
-        $this->assertSame('Articles', $this->provider->getLabel());
-        $this->assertSame('FileDocumentMultiple', $this->provider->getIcon());
-        $this->assertSame('external', $this->provider->getGroup());
-        $this->assertSame('openconnector', $this->provider->getRequiredApp());
-        $this->assertSame('external', $this->provider->getStorageStrategy());
-        $this->assertSame('xwiki', $this->provider->getOpenConnectorSource());
+        $this->assertSame(expected: 'xwiki', actual: $this->provider->getId());
+        $this->assertSame(expected: 'Articles', actual: $this->provider->getLabel());
+        $this->assertSame(expected: 'FileDocumentMultiple', actual: $this->provider->getIcon());
+        $this->assertSame(expected: 'external', actual: $this->provider->getGroup());
+        $this->assertSame(expected: 'openconnector', actual: $this->provider->getRequiredApp());
+        $this->assertSame(expected: 'external', actual: $this->provider->getStorageStrategy());
+        $this->assertSame(expected: 'xwiki', actual: $this->provider->getOpenConnectorSource());
     }//end testProviderMetadata()
 
     // ──────────────────────────────────────────────
@@ -97,7 +119,7 @@ class XwikiProviderTest extends TestCase
             ->with('openconnector')
             ->willReturn(true);
 
-        $this->assertTrue($this->provider->isEnabled());
+        $this->assertTrue(condition: $this->provider->isEnabled());
     }//end testIsEnabledWhenOpenConnectorInstalled()
 
     /**
@@ -112,7 +134,7 @@ class XwikiProviderTest extends TestCase
             ->with('openconnector')
             ->willReturn(false);
 
-        $this->assertFalse($this->provider->isEnabled());
+        $this->assertFalse(condition: $this->provider->isEnabled());
     }//end testIsEnabledWhenOpenConnectorAbsent()
 
     // ──────────────────────────────────────────────
@@ -128,11 +150,11 @@ class XwikiProviderTest extends TestCase
     {
         $auth = $this->provider->authRequirements();
 
-        $this->assertSame('external', $auth['type']);
-        $this->assertSame('openconnector', $auth['configuredVia']);
-        $this->assertSame('xwiki', $auth['source']);
-        $this->assertContains('basic', $auth['supports']);
-        $this->assertContains('oauth2', $auth['supports']);
+        $this->assertSame(expected: 'external', actual: $auth['type']);
+        $this->assertSame(expected: 'openconnector', actual: $auth['configuredVia']);
+        $this->assertSame(expected: 'xwiki', actual: $auth['source']);
+        $this->assertContains(needle: 'basic', haystack: $auth['supports']);
+        $this->assertContains(needle: 'oauth2', haystack: $auth['supports']);
     }//end testAuthRequirementsShape()
 
     // ──────────────────────────────────────────────
@@ -157,7 +179,7 @@ class XwikiProviderTest extends TestCase
                     'content'   => 'This is the policy text.',
                 ],
             ],
-            'total' => 1,
+            'total'   => 1,
         ];
 
         $this->router
@@ -166,7 +188,7 @@ class XwikiProviderTest extends TestCase
             ->with(
                 source: 'xwiki',
                 operation: 'list',
-                context: $this->arrayHasKey('register')
+                context: $this->arrayHasKey(key: 'register')
             )
             ->willReturn($raw);
 
@@ -176,10 +198,10 @@ class XwikiProviderTest extends TestCase
             objectId: 'obj-uuid'
         );
 
-        $this->assertSame(1, $result['total']);
-        $this->assertCount(1, $result['results']);
-        $this->assertSame('Privacy Policy', $result['results'][0]['title']);
-        $this->assertSame('Dept', $result['results'][0]['space']);
+        $this->assertSame(expected: 1, actual: $result['total']);
+        $this->assertCount(expectedCount: 1, haystack: $result['results']);
+        $this->assertSame(expected: 'Privacy Policy', actual: $result['results'][0]['title']);
+        $this->assertSame(expected: 'Dept', actual: $result['results'][0]['space']);
     }//end testListDelegatesToRouter()
 
     // ──────────────────────────────────────────────
@@ -204,7 +226,7 @@ class XwikiProviderTest extends TestCase
             linkedId: 'page-1'
         );
 
-        $this->assertNull($result);
+        $this->assertNull(actual: $result);
     }//end testGetReturnsNullOnEmptyResponse()
 
     /**
@@ -216,14 +238,16 @@ class XwikiProviderTest extends TestCase
     {
         $this->router
             ->method('call')
-            ->willReturn([
-                'id'        => 'page-42',
-                'title'     => 'Legal Notice',
-                'space'     => 'Legal',
-                'reference' => 'Legal.Notice',
-                'url'       => 'https://wiki.example.org/bin/view/Legal/Notice',
-                'content'   => 'Plain text body.',
-            ]);
+            ->willReturn(
+                [
+                    'id'        => 'page-42',
+                    'title'     => 'Legal Notice',
+                    'space'     => 'Legal',
+                    'reference' => 'Legal.Notice',
+                    'url'       => 'https://wiki.example.org/bin/view/Legal/Notice',
+                    'content'   => 'Plain text body.',
+                ]
+            );
 
         $result = $this->provider->get(
             register: 'reg',
@@ -232,9 +256,9 @@ class XwikiProviderTest extends TestCase
             linkedId: 'page-42'
         );
 
-        $this->assertNotNull($result);
-        $this->assertSame('page-42', $result['id']);
-        $this->assertSame('Legal Notice', $result['title']);
+        $this->assertNotNull(actual: $result);
+        $this->assertSame(expected: 'page-42', actual: $result['id']);
+        $this->assertSame(expected: 'Legal Notice', actual: $result['title']);
     }//end testGetReturnsNormalisedRow()
 
     // ──────────────────────────────────────────────
@@ -257,19 +281,21 @@ class XwikiProviderTest extends TestCase
                 source: 'xwiki',
                 operation: 'create',
                 context: $this->callback(
-                    function (array $ctx) use ($linkData): bool {
+                    callback: function (array $ctx) use ($linkData): bool {
                         return $ctx['data'] === $linkData;
                     }
                 )
             )
-            ->willReturn([
-                'id'        => 'new-link-1',
-                'title'     => 'Privacy Policy',
-                'space'     => 'Dept',
-                'reference' => 'Dept.Privacy',
-                'url'       => 'https://wiki.example.org/bin/view/Dept/Privacy',
-                'content'   => '',
-            ]);
+            ->willReturn(
+                [
+                    'id'        => 'new-link-1',
+                    'title'     => 'Privacy Policy',
+                    'space'     => 'Dept',
+                    'reference' => 'Dept.Privacy',
+                    'url'       => 'https://wiki.example.org/bin/view/Dept/Privacy',
+                    'content'   => '',
+                ]
+            );
 
         $result = $this->provider->create(
             register: 'reg',
@@ -278,8 +304,8 @@ class XwikiProviderTest extends TestCase
             data: $linkData
         );
 
-        $this->assertSame('new-link-1', $result['id']);
-        $this->assertSame('Privacy Policy', $result['title']);
+        $this->assertSame(expected: 'new-link-1', actual: $result['id']);
+        $this->assertSame(expected: 'Privacy Policy', actual: $result['title']);
     }//end testCreateDelegatesToRouter()
 
     // ──────────────────────────────────────────────
@@ -300,7 +326,7 @@ class XwikiProviderTest extends TestCase
                 source: 'xwiki',
                 operation: 'delete',
                 context: $this->callback(
-                    function (array $ctx): bool {
+                    callback: function (array $ctx): bool {
                         return $ctx['id'] === 'link-99';
                     }
                 )
@@ -315,7 +341,7 @@ class XwikiProviderTest extends TestCase
         );
 
         // No exception = pass.
-        $this->addToAssertionCount(1);
+        $this->addToAssertionCount(count: 1);
     }//end testDeleteDelegatesToRouter()
 
     // ──────────────────────────────────────────────
@@ -337,7 +363,7 @@ class XwikiProviderTest extends TestCase
 
         $result = $this->provider->health();
 
-        $this->assertSame('ok', $result['status']);
+        $this->assertSame(expected: 'ok', actual: $result['status']);
     }//end testHealthDelegatesToRouterProbe()
 
     // ──────────────────────────────────────────────
@@ -371,16 +397,16 @@ class XwikiProviderTest extends TestCase
 
         $row = $this->provider->normalizeRow(row: $raw);
 
-        $this->assertSame('xwiki-page-5', $row['id']);
-        $this->assertSame('Dept.Policy.Privacy', $row['reference']);
-        $this->assertSame('Privacy Policy', $row['title']);
-        $this->assertSame('Dept.Policy', $row['space']);
-        $this->assertSame('Privacy', $row['page']);
-        $this->assertSame('https://wiki.example.org/bin/view/Dept/Policy/Privacy', $row['url']);
-        $this->assertSame('This is the plain text of the privacy policy.', $row['content']);
+        $this->assertSame(expected: 'xwiki-page-5', actual: $row['id']);
+        $this->assertSame(expected: 'Dept.Policy.Privacy', actual: $row['reference']);
+        $this->assertSame(expected: 'Privacy Policy', actual: $row['title']);
+        $this->assertSame(expected: 'Dept.Policy', actual: $row['space']);
+        $this->assertSame(expected: 'Privacy', actual: $row['page']);
+        $this->assertSame(expected: 'https://wiki.example.org/bin/view/Dept/Policy/Privacy', actual: $row['url']);
+        $this->assertSame(expected: 'This is the plain text of the privacy policy.', actual: $row['content']);
 
         // Breadcrumb drops the last item (page title) — expects "Wiki / Dept / Policy".
-        $this->assertSame('Wiki / Dept / Policy', $row['breadcrumb']);
+        $this->assertSame(expected: 'Wiki / Dept / Policy', actual: $row['breadcrumb']);
     }//end testNormalizeRowMapsAllFields()
 
     // ──────────────────────────────────────────────
@@ -402,7 +428,6 @@ class XwikiProviderTest extends TestCase
 
         $row = $this->provider->normalizeRow(row: $raw);
 
-        $this->assertSame('Legal.GDPR', $row['breadcrumb']);
+        $this->assertSame(expected: 'Legal.GDPR', actual: $row['breadcrumb']);
     }//end testNormalizeRowBreadcrumbFallbackToSpace()
-
 }//end class
