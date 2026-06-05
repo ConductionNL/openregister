@@ -214,10 +214,14 @@ and SHALL fail the job on schema errors.
 
 #### Scenario: Valid manifest passes the gate
 
+@e2e exclude CI build gate — `npm run check:manifest` exit code, not a browser surface
+
 - **WHEN** CI runs `npm run check:manifest` on a valid `src/manifest.json`
 - **THEN** the script exits 0 and the job continues
 
 #### Scenario: Invalid manifest fails the gate
+
+@e2e exclude CI build gate — validator non-zero exit on schema violation, not a browser surface
 
 - **WHEN** CI runs `npm run check:manifest` on a manifest with a schema
   violation (missing required field, unknown `type`, duplicate `id`, etc.)
@@ -225,6 +229,8 @@ and SHALL fail the job on schema errors.
   inside the JSON, and the job fails
 
 #### Scenario: Gate is wired into the composite check
+
+@e2e exclude CI build wiring — `check:specs` composite invocation, not a browser surface
 
 - **WHEN** `npm run check:specs` is invoked
 - **THEN** `check:manifest` runs as part of the composite
@@ -240,10 +246,14 @@ proposal is superseded by the shell-swap shipping the full shell at once).
 
 #### Scenario: Tier-4 ships at 1.0.0
 
+@e2e exclude static — asserts `manifest.version === "1.0.0"` in JSON, validated by `check:manifest`, no UI surface
+
 - **WHEN** the manifest is loaded
 - **THEN** `manifest.version` is `"1.0.0"`
 
 #### Scenario: Validator enforces the field
+
+@e2e exclude build-time — validator behaviour on absent/empty `version`, not a browser surface
 
 - **WHEN** the validator runs (Ajv against v2 schema, with structuralLint as
   a no-Ajv fallback)
@@ -261,6 +271,8 @@ menu / hides pages / overrides locale per tenant) SHALL add the endpoint
 when needed.
 
 #### Scenario: Endpoint returns 404 today
+
+@e2e exclude API contract — HTTP 404 on a backend endpoint; covered by Newman/API, not UI
 
 - **WHEN** a request hits `/index.php/apps/openregister/api/manifest`
 - **THEN** the response is HTTP 404 and the loader silently keeps the
@@ -281,12 +293,16 @@ posture in the original proposal — the shell-swap (archive change
 
 #### Scenario: App.vue is the CnAppRoot wrapper
 
+@e2e exclude static code-inspection — reviewer inspects `src/App.vue` source; runtime shell mount is covered by cnapproot-mounts-the-shell
+
 - **WHEN** a reviewer inspects `src/App.vue`
 - **THEN** the root template is `<CnAppRoot ...>` with `#menu` / `#sidebar`
   / `#footer` slot overrides; no direct `NcContent` / `NcAppNavigation`
   mount is present
 
 #### Scenario: Legacy router file is gone
+
+@e2e exclude static code-inspection — reviewer searches `src/` for the deleted `router/index.js`, no browser surface
 
 - **WHEN** a reviewer searches `src/`
 - **THEN** `src/router/index.js` does not exist; only `main.js` imports the
@@ -303,11 +319,15 @@ deprecated `customComponents` prop SHALL NOT be passed to `CnAppRoot`.
 
 #### Scenario: Registry uses kind:"page" wrapping
 
+@e2e exclude static code-inspection — reviewer inspects `src/registry.js` shape; runtime dispatch is covered by the registry-dispatch tests
+
 - **WHEN** a reviewer inspects `src/registry.js`
 - **THEN** each entry is `{ kind: "page", component: <imported component> }`,
   produced via the `page()` helper
 
 #### Scenario: No customComponents prop
+
+@e2e exclude static code-inspection — reviewer inspects `src/App.vue` / `src/main.js`; runtime absence of the deprecation warning is covered by no-deprecation-warning-at-runtime
 
 - **WHEN** a reviewer inspects `src/App.vue` / `src/main.js`
 - **THEN** neither file passes `customComponents` to `CnAppRoot`; only
