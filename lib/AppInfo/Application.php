@@ -735,6 +735,7 @@ class Application extends App implements IBootstrap
                     appConfig: $container->get('OCP\IAppConfig'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }

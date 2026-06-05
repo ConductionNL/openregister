@@ -137,6 +137,12 @@ class TimeController extends Controller
             );
         }
 
+        try {
+            $this->timeEntryService->requireAuthenticatedUser();
+        } catch (\OCP\AppFramework\OCS\OCSForbiddenException $e) {
+            return new JSONResponse(['error' => 'Not authorized'], 403);
+        }
+
         $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
         if ($object === null) {
             return new JSONResponse(['error' => 'Object not found'], 404);
@@ -178,6 +184,12 @@ class TimeController extends Controller
                 ],
                 501
             );
+        }
+
+        try {
+            $this->timeEntryService->requireAuthenticatedUser();
+        } catch (\OCP\AppFramework\OCS\OCSForbiddenException $e) {
+            return new JSONResponse(['error' => 'Not authorized'], 403);
         }
 
         $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
@@ -246,6 +258,12 @@ class TimeController extends Controller
             );
         }
 
+        try {
+            $this->timeEntryService->requireAuthenticatedUser();
+        } catch (\OCP\AppFramework\OCS\OCSForbiddenException $e) {
+            return new JSONResponse(['error' => 'Not authorized'], 403);
+        }
+
         $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
         if ($object === null) {
             return new JSONResponse(['error' => 'Object not found'], 404);
@@ -258,6 +276,8 @@ class TimeController extends Controller
             );
 
             return new JSONResponse(['success' => true]);
+        } catch (\OCP\AppFramework\OCS\OCSForbiddenException $e) {
+            return new JSONResponse(['error' => 'Not authorized'], 403);
         } catch (Exception $e) {
             if ($e->getMessage() === 'Time entry not found.') {
                 return new JSONResponse(['error' => 'Time entry not found'], 404);

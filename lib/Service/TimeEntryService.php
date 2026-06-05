@@ -28,7 +28,9 @@ use Exception;
 use OCA\OpenRegister\Db\TimeLink;
 use OCA\OpenRegister\Db\TimeLinkMapper;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Http;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -82,6 +84,13 @@ class TimeEntryService
     private readonly IUserSession $userSession;
 
     /**
+     * Group manager for admin checks.
+     *
+     * @var IGroupManager
+     */
+    private readonly IGroupManager $groupManager;
+
+    /**
      * Logger for error reporting.
      *
      * @var LoggerInterface
@@ -95,6 +104,7 @@ class TimeEntryService
      * @param IAppConfig      $appConfig      App configuration.
      * @param IAppManager     $appManager     App manager.
      * @param IUserSession    $userSession    User session.
+     * @param IGroupManager   $groupManager   Group manager.
      * @param LoggerInterface $logger         Logger.
      *
      * @spec openspec/changes/integration-time-tracker/tasks.md#task-2
@@ -104,14 +114,66 @@ class TimeEntryService
         IAppConfig $appConfig,
         IAppManager $appManager,
         IUserSession $userSession,
+        IGroupManager $groupManager,
         LoggerInterface $logger
     ) {
         $this->timeLinkMapper = $timeLinkMapper;
         $this->appConfig      = $appConfig;
         $this->appManager     = $appManager;
         $this->userSession    = $userSession;
+        $this->groupManager   = $groupManager;
         $this->logger         = $logger;
     }//end __construct()
+
+    /**
+     * Authorize access to time entries for the current user.
+     *
+     * Throws OCSForbiddenException when the current session has no authenticated
+     * user (should not normally happen with NoAdminRequired, but provides an
+     * explicit guard that satisfies gate-7).
+     *
+     * @return string The current user's UID.
+     *
+     * @throws \OCP\AppFramework\OCS\OCSForbiddenException When no authenticated user.
+     *
+     * @spec openspec/changes/integration-time-tracker/tasks.md#task-3
+     */
+    public function requireAuthenticatedUser(): string
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            throw new \OCP\AppFramework\OCS\OCSForbiddenException('Not authorized');
+        }
+
+        return $user->getUID();
+    }//end requireAuthenticatedUser()
+
+    /**
+     * Authorize a time entry deletion: only the owner or an admin may delete.
+     *
+     * @param TimeLink $entry The time entry to check ownership of.
+     *
+     * @return void
+     *
+     * @throws \OCP\AppFramework\OCS\OCSForbiddenException When the user is not allowed.
+     *
+     * @spec openspec/changes/integration-time-tracker/tasks.md#task-3
+     */
+    public function authorizeEntryDeletion(TimeLink $entry): void
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            throw new \OCP\AppFramework\OCS\OCSForbiddenException('Not authorized');
+        }
+
+        $uid      = $user->getUID();
+        $isAdmin  = $this->groupManager->isAdmin($uid);
+        $isOwner  = $uid === $entry->getUserId();
+
+        if ($isOwner === false && $isAdmin === false) {
+            throw new \OCP\AppFramework\OCS\OCSForbiddenException('Not authorized to delete this time entry');
+        }
+    }//end authorizeEntryDeletion()
 
     /**
      * Return the configured backend name (admin setting or default).
@@ -237,6 +299,8 @@ class TimeEntryService
         if ($found === null) {
             throw new Exception('Time entry not found.');
         }
+
+        $this->authorizeEntryDeletion(entry: $found);
 
         $this->timeLinkMapper->delete(entity: $found);
         $this->recalculateTotal(objectUuid: $objectUuid);

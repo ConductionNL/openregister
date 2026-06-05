@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\TimeLinkMapper;
 use OCA\OpenRegister\Service\TimeEntryService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -28,6 +29,7 @@ class TimeEntryServiceTest extends TestCase
     private IAppConfig&MockObject $appConfig;
     private IAppManager&MockObject $appManager;
     private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
     private LoggerInterface&MockObject $logger;
     private TimeEntryService $service;
 
@@ -35,23 +37,25 @@ class TimeEntryServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->mapper      = $this->getMockBuilder(TimeLinkMapper::class)
+        $this->mapper       = $this->getMockBuilder(TimeLinkMapper::class)
             ->disableOriginalConstructor()
             ->onlyMethods([
                 'findByObjectUuid', 'sumDurationByObjectUuid', 'updateTotalForObject',
                 'findDistinctObjectUuids', 'insert', 'delete',
             ])
             ->getMock();
-        $this->appConfig   = $this->createMock(IAppConfig::class);
-        $this->appManager  = $this->createMock(IAppManager::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->logger      = $this->createMock(LoggerInterface::class);
+        $this->appConfig    = $this->createMock(IAppConfig::class);
+        $this->appManager   = $this->createMock(IAppManager::class);
+        $this->userSession  = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->logger       = $this->createMock(LoggerInterface::class);
 
         $this->service = new TimeEntryService(
             timeLinkMapper: $this->mapper,
             appConfig: $this->appConfig,
             appManager: $this->appManager,
             userSession: $this->userSession,
+            groupManager: $this->groupManager,
             logger: $this->logger
         );
     }//end setUp()
