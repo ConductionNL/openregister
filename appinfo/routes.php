@@ -321,6 +321,11 @@ return [
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+
+        // Time tracking operations under objects (Time Tracker integration, spec: integration-time-tracker).
+        ['name' => 'time#index', 'url' => '/api/objects/{register}/{schema}/{id}/time', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'time#create', 'url' => '/api/objects/{register}/{schema}/{id}/time', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'time#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/time/{entryId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
         
         // Schemas.
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],

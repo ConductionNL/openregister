@@ -117,6 +117,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
 		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
 		<command>OCA\OpenRegister\Command\MigrateStorageCommand</command>
+		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
 	</commands>
 	-->
 

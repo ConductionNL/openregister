@@ -726,6 +726,28 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\TimeEntryService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\TimeEntryService(
+                    timeLinkMapper: $container->get(\OCA\OpenRegister\Db\TimeLinkMapper::class),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\TimeProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\TimeProvider(
+                    appConfig: $container->get('OCP\IAppConfig')
+                );
+            }
+        );
     }//end registerObjectInteractionServices()
 
     /**
