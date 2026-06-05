@@ -272,6 +272,7 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerEventListeners(context: $context);
+        $this->registerIntegrationProviders(context: $context);
     }//end register()
 
     /**
@@ -802,6 +803,33 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
         $context->registerEventListener(SchemaDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
     }//end registerEventListeners()
+
+    /**
+     * Register integration providers (ADR-019).
+     *
+     * Each provider is tagged so IntegrationRegistry can discover them.
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/integration-talk/tasks.md#task-2
+     */
+    private function registerIntegrationProviders(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\Providers\TalkProvider(
+                    talkLinkMapper: $container->get(\OCA\OpenRegister\Db\TalkLinkMapper::class),
+                    chatService: $container->get(\OCA\OpenRegister\Service\ChatService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+    }//end registerIntegrationProviders()
 
     /**
      * Boot application components
