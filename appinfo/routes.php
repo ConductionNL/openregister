@@ -321,6 +321,14 @@ return [
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+
+        // Collectives integration — link/unlink Collectives pages to objects.
+        ['name' => 'collectives#listCollectives', 'url' => '/api/collectives', 'verb' => 'GET'],
+        ['name' => 'collectives#listPages', 'url' => '/api/collectives/{collective}/pages', 'verb' => 'GET', 'requirements' => ['collective' => '[^/]+']],
+        ['name' => 'collectives#index', 'url' => '/api/objects/{register}/{schema}/{id}/collectives', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'collectives#create', 'url' => '/api/objects/{register}/{schema}/{id}/collectives', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'collectives#content', 'url' => '/api/objects/{register}/{schema}/{id}/collectives/{linkId}/content', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'linkId' => '\d+']],
+        ['name' => 'collectives#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/collectives/{linkId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'linkId' => '\d+']],
         
         // Schemas.
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
